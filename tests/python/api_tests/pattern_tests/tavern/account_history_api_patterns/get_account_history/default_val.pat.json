@@ -644,8 +644,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "anca3drandom",
-            "comment_permlink": "steemart-the-art-of-quilling-paper-steemit-logo",
+            "author": "anca3drandom",
+            "permlink": "steemart-the-art-of-quilling-paper-steemit-logo",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -719,8 +719,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "favorit",
-            "comment_permlink": "enchanted-forest",
+            "author": "favorit",
+            "permlink": "enchanted-forest",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -745,8 +745,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "dabaisha",
-            "comment_permlink": "7-major-anti-inflammatory-food-eating-a-healthy-save-beer-belly",
+            "author": "dabaisha",
+            "permlink": "7-major-anti-inflammatory-food-eating-a-healthy-save-beer-belly",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -771,8 +771,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "mrlee",
-            "comment_permlink": "beautiful-macarons",
+            "author": "mrlee",
+            "permlink": "beautiful-macarons",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -797,8 +797,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "tanyabtc",
-            "comment_permlink": "dragon-ferocious",
+            "author": "tanyabtc",
+            "permlink": "dragon-ferocious",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -823,8 +823,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "jpiper20",
-            "comment_permlink": "hand-drawn-typography-from-this-week",
+            "author": "jpiper20",
+            "permlink": "hand-drawn-typography-from-this-week",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -849,8 +849,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "storyseeker",
-            "comment_permlink": "my-process-step-by-step-start-to-finish-intricate-collage-and-acrylic-painting",
+            "author": "storyseeker",
+            "permlink": "my-process-step-by-step-start-to-finish-intricate-collage-and-acrylic-painting",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -924,8 +924,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "opheliafu",
-            "comment_permlink": "i-was-a-different-person-yesterday",
+            "author": "opheliafu",
+            "permlink": "i-was-a-different-person-yesterday",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -950,8 +950,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "yangyang",
-            "comment_permlink": "mermaid-drawing",
+            "author": "yangyang",
+            "permlink": "mermaid-drawing",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -976,8 +976,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alexbeyman",
-            "comment_permlink": "psychedelics-the-beautiful-bossy-dryad-my-encounters-with-forest-intelligence",
+            "author": "alexbeyman",
+            "permlink": "psychedelics-the-beautiful-bossy-dryad-my-encounters-with-forest-intelligence",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1002,8 +1002,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "allasyummyfood",
-            "comment_permlink": "alla-goes-to-usa-part-1-san-francisco",
+            "author": "allasyummyfood",
+            "permlink": "alla-goes-to-usa-part-1-san-francisco",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1028,8 +1028,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "mammasitta",
-            "comment_permlink": "kaffeehaus-culture-the-viennese-coffee-house-an-intangible-cultural-heritage-and-the-secession-an-artist-movement",
+            "author": "mammasitta",
+            "permlink": "kaffeehaus-culture-the-viennese-coffee-house-an-intangible-cultural-heritage-and-the-secession-an-artist-movement",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1054,8 +1054,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "ndbeledrifts",
-            "comment_permlink": "i-met-a-girl-from-germany-once",
+            "author": "ndbeledrifts",
+            "permlink": "i-met-a-girl-from-germany-once",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1080,8 +1080,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "juliac",
-            "comment_permlink": "mythical-creature-original-artwork",
+            "author": "juliac",
+            "permlink": "mythical-creature-original-artwork",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1106,8 +1106,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "anwenbaumeister",
-            "comment_permlink": "pura-vida-my-experience-working-on-a-permaculture-farm-in-costa-rica",
+            "author": "anwenbaumeister",
+            "permlink": "pura-vida-my-experience-working-on-a-permaculture-farm-in-costa-rica",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1132,8 +1132,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "opheliafu",
-            "comment_permlink": "say-hello-to-big-bob",
+            "author": "opheliafu",
+            "permlink": "say-hello-to-big-bob",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1250,8 +1250,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pixielolz",
-            "comment_permlink": "re-camilla-re-pixielolz-can-steemit-take-some-fanart--20160807t183600081z",
+            "author": "pixielolz",
+            "permlink": "re-camilla-re-pixielolz-can-steemit-take-some-fanart--20160807t183600081z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1375,8 +1375,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alexft",
-            "comment_permlink": "re-camilla-the-magic-world-of-books-20160809t081535352z",
+            "author": "alexft",
+            "permlink": "re-camilla-the-magic-world-of-books-20160809t081535352z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1496,8 +1496,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alexft",
-            "comment_permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160807t062503313z",
+            "author": "alexft",
+            "permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160807t062503313z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1522,8 +1522,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "joelinux",
-            "comment_permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160810t164432985z",
+            "author": "joelinux",
+            "permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160810t164432985z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1833,8 +1833,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "monopoly-man",
-            "comment_permlink": "re-camilla-my-ladybug-drawing-20160807t081105049z",
+            "author": "monopoly-man",
+            "permlink": "re-camilla-my-ladybug-drawing-20160807t081105049z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1878,8 +1878,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "helle",
-            "comment_permlink": "re-camilla-my-ladybug-drawing-20160807t184458232z",
+            "author": "helle",
+            "permlink": "re-camilla-my-ladybug-drawing-20160807t184458232z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -1904,8 +1904,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "juvyjabian",
-            "comment_permlink": "re-camilla-my-ladybug-drawing-20160808t072735516z",
+            "author": "juvyjabian",
+            "permlink": "re-camilla-my-ladybug-drawing-20160808t072735516z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -2236,8 +2236,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "acidyo",
-            "comment_permlink": "gemo-dna-introduction-and-prologue-sci-fi-action-rpg-futurism",
+            "author": "acidyo",
+            "permlink": "gemo-dna-introduction-and-prologue-sci-fi-action-rpg-futurism",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -2480,8 +2480,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "joelinux",
-            "comment_permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160810t164328721z",
+            "author": "joelinux",
+            "permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160810t164328721z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -2506,8 +2506,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "steemswede",
-            "comment_permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160828t214107644z",
+            "author": "steemswede",
+            "permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160828t214107644z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -2551,8 +2551,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "anwenbaumeister",
-            "comment_permlink": "my-cross-country-road-trip-greater-than-sf-greater-than-vegas-greater-than-boulder-greater-than-houston-greater-than-new-orleans",
+            "author": "anwenbaumeister",
+            "permlink": "my-cross-country-road-trip-greater-than-sf-greater-than-vegas-greater-than-boulder-greater-than-houston-greater-than-new-orleans",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -2577,8 +2577,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "infovore",
-            "comment_permlink": "the-rise-of-the-human-cyborgs-outsmarting-smartphones-and-the-internables-trend",
+            "author": "infovore",
+            "permlink": "the-rise-of-the-human-cyborgs-outsmarting-smartphones-and-the-internables-trend",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -3018,8 +3018,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pixielolz",
-            "comment_permlink": "copic-markers-a-beginner-s-guide",
+            "author": "pixielolz",
+            "permlink": "copic-markers-a-beginner-s-guide",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -3044,8 +3044,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pixielolz",
-            "comment_permlink": "fennec-fox-step-by-step-of-my-drawing-process-from-sketch-to-finished-artwork",
+            "author": "pixielolz",
+            "permlink": "fennec-fox-step-by-step-of-my-drawing-process-from-sketch-to-finished-artwork",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -3070,8 +3070,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "stellabelle",
-            "comment_permlink": "new-idea-for-steemit-let-s-open-our-own-bars",
+            "author": "stellabelle",
+            "permlink": "new-idea-for-steemit-let-s-open-our-own-bars",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -7525,8 +7525,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "fairytalelife",
-            "comment_permlink": "how-to-draw-a-braid",
+            "author": "fairytalelife",
+            "permlink": "how-to-draw-a-braid",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -7771,8 +7771,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "infovore",
-            "comment_permlink": "a-day-in-the-life-of-a-steemcleaner-steemians-speak-fondest-moment-on-steemit-this-week-on-steemit-steemmag-steemit-s-weekend",
+            "author": "infovore",
+            "permlink": "a-day-in-the-life-of-a-steemcleaner-steemians-speak-fondest-moment-on-steemit-this-week-on-steemit-steemmag-steemit-s-weekend",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -8120,8 +8120,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "infovore",
-            "comment_permlink": "steemmag-steemit-s-weekend-digest-9-of-community-curation-and-reputation-chats-with-a-whale-steemit-chat-lead-moderators-a-day",
+            "author": "infovore",
+            "permlink": "steemmag-steemit-s-weekend-digest-9-of-community-curation-and-reputation-chats-with-a-whale-steemit-chat-lead-moderators-a-day",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -10486,8 +10486,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "lyubovbar",
-            "comment_permlink": "gentle-casserole-of-minced-chicken-and-vegetables-recipe-and-cooking-lyubovbar",
+            "author": "lyubovbar",
+            "permlink": "gentle-casserole-of-minced-chicken-and-vegetables-recipe-and-cooking-lyubovbar",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -10806,8 +10806,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "ekaterina4ka",
-            "comment_permlink": "knitting-needles-my-passion-post-14-vyazanie-spicami-moe-uvlechenie-post-14",
+            "author": "ekaterina4ka",
+            "permlink": "knitting-needles-my-passion-post-14-vyazanie-spicami-moe-uvlechenie-post-14",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -12166,8 +12166,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "diana.catherine",
-            "comment_permlink": "my-last-days-in-greece-cloudy-but-beautiful-shocked-but-alive-part-3",
+            "author": "diana.catherine",
+            "permlink": "my-last-days-in-greece-cloudy-but-beautiful-shocked-but-alive-part-3",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -12607,8 +12607,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "anwenbaumeister",
-            "comment_permlink": "a-peek-into-pre-columbian-worldviews-found-in-agricultural-practices-duality-complementarity-cyclicity-and-reciprocity",
+            "author": "anwenbaumeister",
+            "permlink": "a-peek-into-pre-columbian-worldviews-found-in-agricultural-practices-duality-complementarity-cyclicity-and-reciprocity",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13190,8 +13190,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "runridefly",
-            "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160910t233510136z",
+            "author": "runridefly",
+            "permlink": "re-camilla-colors-of-the-falling-leaves-20160910t233510136z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13216,8 +13216,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "bullionstackers",
-            "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160910t234539398z",
+            "author": "bullionstackers",
+            "permlink": "re-camilla-colors-of-the-falling-leaves-20160910t234539398z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13242,8 +13242,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "sompitonov",
-            "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t001828852z",
+            "author": "sompitonov",
+            "permlink": "re-camilla-colors-of-the-falling-leaves-20160911t001828852z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13268,8 +13268,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "tmendieta",
-            "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t034905376z",
+            "author": "tmendieta",
+            "permlink": "re-camilla-colors-of-the-falling-leaves-20160911t034905376z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13294,8 +13294,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alexft",
-            "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t065104109z",
+            "author": "alexft",
+            "permlink": "re-camilla-colors-of-the-falling-leaves-20160911t065104109z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13320,8 +13320,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "sompitonov",
-            "comment_permlink": "re-camilla-re-sompitonov-re-camilla-colors-of-the-falling-leaves-20160911t093158180z",
+            "author": "sompitonov",
+            "permlink": "re-camilla-re-sompitonov-re-camilla-colors-of-the-falling-leaves-20160911t093158180z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13346,8 +13346,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alexft",
-            "comment_permlink": "re-camilla-re-alexft-re-camilla-colors-of-the-falling-leaves-20160911t113557524z",
+            "author": "alexft",
+            "permlink": "re-camilla-re-alexft-re-camilla-colors-of-the-falling-leaves-20160911t113557524z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13396,8 +13396,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "royalmacro",
-            "comment_permlink": "moonlit-night-an-original-abstract-art-and-a-poem",
+            "author": "royalmacro",
+            "permlink": "moonlit-night-an-original-abstract-art-and-a-poem",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13422,8 +13422,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "peskov",
-            "comment_permlink": "a-cup-of-tea-featuring-vasily-peskov-as-author",
+            "author": "peskov",
+            "permlink": "a-cup-of-tea-featuring-vasily-peskov-as-author",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13448,8 +13448,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "smailer",
-            "comment_permlink": "my-daytime-latte-art-tryings-200-followers-milestone",
+            "author": "smailer",
+            "permlink": "my-daytime-latte-art-tryings-200-followers-milestone",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13474,8 +13474,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "complexring",
-            "comment_permlink": "bypassing-the-great-firewall-of-china",
+            "author": "complexring",
+            "permlink": "bypassing-the-great-firewall-of-china",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13580,8 +13580,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "sompitonov",
-            "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t124743311z",
+            "author": "sompitonov",
+            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t124743311z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13606,8 +13606,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "kus-knee",
-            "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t190836197z",
+            "author": "kus-knee",
+            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t190836197z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13632,8 +13632,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "shadowspub",
-            "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t210552014z",
+            "author": "shadowspub",
+            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t210552014z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13658,8 +13658,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "mlialen",
-            "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t212832160z",
+            "author": "mlialen",
+            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t212832160z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13684,8 +13684,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "dumar022",
-            "comment_permlink": "i-never-plan-to-get-a-new-cactus-but-it-happens-all-the-time",
+            "author": "dumar022",
+            "permlink": "i-never-plan-to-get-a-new-cactus-but-it-happens-all-the-time",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13710,8 +13710,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "xiaofang",
-            "comment_permlink": "my-photography-flower-collections",
+            "author": "xiaofang",
+            "permlink": "my-photography-flower-collections",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13736,8 +13736,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "aaronkoenig",
-            "comment_permlink": "steemit-meetup-berlin-with-ned-scott-and-steemians-from-hamburg",
+            "author": "aaronkoenig",
+            "permlink": "steemit-meetup-berlin-with-ned-scott-and-steemians-from-hamburg",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13762,8 +13762,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "labradorsem",
-            "comment_permlink": "diet-apple-pie-with-apples-and-pears",
+            "author": "labradorsem",
+            "permlink": "diet-apple-pie-with-apples-and-pears",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13788,8 +13788,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "terrycraft",
-            "comment_permlink": "traveling-to-peru-to-the-wild-jungle-through-the-city-of-shamans-iquitos-puteshestvie-v-ikitos-featuring-njall-as-author",
+            "author": "terrycraft",
+            "permlink": "traveling-to-peru-to-the-wild-jungle-through-the-city-of-shamans-iquitos-puteshestvie-v-ikitos-featuring-njall-as-author",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13814,8 +13814,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "opheliafu",
-            "comment_permlink": "the-blue-raven",
+            "author": "opheliafu",
+            "permlink": "the-blue-raven",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -13840,8 +13840,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "kus-knee",
-            "comment_permlink": "the-old-dog-investigates-the-curious-case-of-the-swiss-bomb-shelters",
+            "author": "kus-knee",
+            "permlink": "the-old-dog-investigates-the-curious-case-of-the-swiss-bomb-shelters",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -19017,8 +19017,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "jamielefay",
-            "comment_permlink": "ahe-ey-allegiance-an-original-novel-part-18",
+            "author": "jamielefay",
+            "permlink": "ahe-ey-allegiance-an-original-novel-part-18",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -21085,8 +21085,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "shadowspub",
-            "comment_permlink": "sunday-ramble-through-steemit-notes-on-my-favourite-reads-sept-11th",
+            "author": "shadowspub",
+            "permlink": "sunday-ramble-through-steemit-notes-on-my-favourite-reads-sept-11th",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -21111,8 +21111,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "sirwinchester",
-            "comment_permlink": "bitcoin-exchange-berlin-meetup-with-ned-on-skype",
+            "author": "sirwinchester",
+            "permlink": "bitcoin-exchange-berlin-meetup-with-ned-on-skype",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -22364,8 +22364,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alex2016",
-            "comment_permlink": "my-new-works-from-genuine-leather",
+            "author": "alex2016",
+            "permlink": "my-new-works-from-genuine-leather",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -22390,8 +22390,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "kalipo",
-            "comment_permlink": "raptor-art-drawing-all-day",
+            "author": "kalipo",
+            "permlink": "raptor-art-drawing-all-day",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23290,8 +23290,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "goldmatters",
-            "comment_permlink": "re-camilla-apple-and-leaves-20160912t171320575z",
+            "author": "goldmatters",
+            "permlink": "re-camilla-apple-and-leaves-20160912t171320575z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23316,8 +23316,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "ashwim",
-            "comment_permlink": "re-camilla-apple-and-leaves-20160912t171828553z",
+            "author": "ashwim",
+            "permlink": "re-camilla-apple-and-leaves-20160912t171828553z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23342,8 +23342,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "acidyo",
-            "comment_permlink": "re-camilla-apple-and-leaves-20160912t172139964z",
+            "author": "acidyo",
+            "permlink": "re-camilla-apple-and-leaves-20160912t172139964z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23368,8 +23368,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "aavkc",
-            "comment_permlink": "re-camilla-apple-and-leaves-20160912t172202293z",
+            "author": "aavkc",
+            "permlink": "re-camilla-apple-and-leaves-20160912t172202293z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23394,8 +23394,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pixielolz",
-            "comment_permlink": "re-camilla-apple-and-leaves-20160912t182902111z",
+            "author": "pixielolz",
+            "permlink": "re-camilla-apple-and-leaves-20160912t182902111z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23420,8 +23420,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "shortcut",
-            "comment_permlink": "re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t190120534z",
+            "author": "shortcut",
+            "permlink": "re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t190120534z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23446,8 +23446,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "shortcut",
-            "comment_permlink": "re-camilla-re-shortcut-re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t192137286z",
+            "author": "shortcut",
+            "permlink": "re-camilla-re-shortcut-re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t192137286z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23472,8 +23472,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "zivile",
-            "comment_permlink": "pumpkin-pie-with-meat",
+            "author": "zivile",
+            "permlink": "pumpkin-pie-with-meat",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23547,8 +23547,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "curie",
-            "comment_permlink": "project-curie-s-daily-curation-list-11-sept-12-sept-2016",
+            "author": "curie",
+            "permlink": "project-curie-s-daily-curation-list-11-sept-12-sept-2016",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23573,8 +23573,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "acidyo",
-            "comment_permlink": "sketch-kitty-cat-oc",
+            "author": "acidyo",
+            "permlink": "sketch-kitty-cat-oc",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23599,8 +23599,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "acidyo",
-            "comment_permlink": "re-camilla-re-acidyo-sketch-kitty-cat-oc-20160912t173408484z",
+            "author": "acidyo",
+            "permlink": "re-camilla-re-acidyo-sketch-kitty-cat-oc-20160912t173408484z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23705,8 +23705,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "karenb54",
-            "comment_permlink": "re-camilla-girl-with-a-pink-bow-20160912t225246008z",
+            "author": "karenb54",
+            "permlink": "re-camilla-girl-with-a-pink-bow-20160912t225246008z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23731,8 +23731,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "sompitonov",
-            "comment_permlink": "re-camilla-girl-with-a-pink-bow-20160913t055737074z",
+            "author": "sompitonov",
+            "permlink": "re-camilla-girl-with-a-pink-bow-20160913t055737074z",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23757,8 +23757,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "anwenbaumeister",
-            "comment_permlink": "what-is-culture-a-look-into-various-explanations-of-culture-and-forming-my-own-definition",
+            "author": "anwenbaumeister",
+            "permlink": "what-is-culture-a-look-into-various-explanations-of-culture-and-forming-my-own-definition",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23783,8 +23783,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "timsaid",
-            "comment_permlink": "life-explorers-the-human-senses-part-iii-touch",
+            "author": "timsaid",
+            "permlink": "life-explorers-the-human-senses-part-iii-touch",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23809,8 +23809,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "dollarvigilante",
-            "comment_permlink": "boom-end-game-nears-as-central-banks-buying-up-gold-mining-companies",
+            "author": "dollarvigilante",
+            "permlink": "boom-end-game-nears-as-central-banks-buying-up-gold-mining-companies",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -23982,8 +23982,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "yangyang",
-            "comment_permlink": "my-happy-whale",
+            "author": "yangyang",
+            "permlink": "my-happy-whale",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -24107,8 +24107,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "elfkitchen",
-            "comment_permlink": "i-want-to-take-you-into-the-chinese-vegetable-market",
+            "author": "elfkitchen",
+            "permlink": "i-want-to-take-you-into-the-chinese-vegetable-market",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -24133,8 +24133,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "aldentan",
-            "comment_permlink": "from-weak-ass-bitch-to-ripped-my-fight-with-hyperthyroidism",
+            "author": "aldentan",
+            "permlink": "from-weak-ass-bitch-to-ripped-my-fight-with-hyperthyroidism",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -24159,8 +24159,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "hisnameisolllie",
-            "comment_permlink": "the-last-12-weeks-at-the-university-of-steemit-where-has-the-time-gone",
+            "author": "hisnameisolllie",
+            "permlink": "the-last-12-weeks-at-the-university-of-steemit-where-has-the-time-gone",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
@@ -24185,8 +24185,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "smailer",
-            "comment_permlink": "my-daytime-latte-art-tryings-crown",
+            "author": "smailer",
+            "permlink": "my-daytime-latte-art-tryings-crown",
             "curator": "camilla",
             "payout_must_be_claimed": false,
             "reward": {
