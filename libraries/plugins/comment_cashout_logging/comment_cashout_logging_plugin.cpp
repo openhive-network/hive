@@ -158,8 +158,8 @@ struct operation_visitor
       << _db.head_block_num() << ";"
       << static_cast<std::string>(op.curator) << ";"
       << asset_to_string(op.reward) << ";"
-      << static_cast<std::string>(op.comment_author) << ";"
-      << op.comment_permlink
+      << static_cast<std::string>(op.author) << ";"
+      << op.permlink
       << "\n";
   }
 
