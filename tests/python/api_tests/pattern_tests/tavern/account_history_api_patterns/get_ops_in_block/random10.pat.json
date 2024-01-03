@@ -100,8 +100,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "teego",
-          "comment_permlink": "steem-docker-images-roadmap",
+          "author": "teego",
+          "permlink": "steem-docker-images-roadmap",
           "curator": "steempower",
           "payout_must_be_claimed": false,
           "reward": {
@@ -123,8 +123,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "teego",
-          "comment_permlink": "steem-docker-images-roadmap",
+          "author": "teego",
+          "permlink": "steem-docker-images-roadmap",
           "curator": "drinkzya",
           "payout_must_be_claimed": false,
           "reward": {
