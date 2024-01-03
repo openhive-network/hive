@@ -11,14 +11,14 @@ package hive.protocol.buffers;
  *
  * @param {string} curator - user that curated the comment (receiver of reward)
  * @param {asset} reward - (VESTS) curation reward
- * @param {string} comment_author - author of curated comment
- * @param {string} comment_permlink - permlink of curated comment
+ * @param {string} author - author of curated comment
+ * @param {string} permlink - permlink of curated comment
  * @param {bool} payout_must_be_claimed - true if payouts require use of claim_reward_balance_operation
  */
 message curation_reward {
   required string curator = 1;
   required asset  reward = 2;
-  required string comment_author = 3 [json_name = "comment_author"];
-  required string comment_permlink = 4 [json_name = "comment_permlink"];
+  required string author = 3;
+  required string permlink = 4;
   required bool   payout_must_be_claimed = 5 [json_name = "payout_must_be_claimed"];
 }
