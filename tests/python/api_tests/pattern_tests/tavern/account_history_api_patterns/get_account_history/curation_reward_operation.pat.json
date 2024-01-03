@@ -7,8 +7,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "adm",
-            "comment_permlink": "re-skeptic-dickbutt-has-taken-over-steemit-20160911t121510219z",
+            "author": "adm",
+            "permlink": "re-skeptic-dickbutt-has-taken-over-steemit-20160911t121510219z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -33,8 +33,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pfunk",
-            "comment_permlink": "re-dailybest-sketch-4-birds-in-love-20160911t123342655z",
+            "author": "pfunk",
+            "permlink": "re-dailybest-sketch-4-birds-in-love-20160911t123342655z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -59,8 +59,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "fubar-bdhr",
-            "comment_permlink": "re-boss-money-new-cars-for-2016-infiniti-20160910t203137711z",
+            "author": "fubar-bdhr",
+            "permlink": "re-boss-money-new-cars-for-2016-infiniti-20160910t203137711z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -85,8 +85,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "fubar-bdhr",
-            "comment_permlink": "re-boss-money-new-cars-for-2016-bentley-and-bugatti-20160910t202610048z",
+            "author": "fubar-bdhr",
+            "permlink": "re-boss-money-new-cars-for-2016-bentley-and-bugatti-20160910t202610048z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -111,8 +111,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "fubar-bdhr",
-            "comment_permlink": "re-boss-money-new-cars-for-2016-audi-20160910t203355239z",
+            "author": "fubar-bdhr",
+            "permlink": "re-boss-money-new-cars-for-2016-audi-20160910t203355239z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -137,8 +137,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "fubar-bdhr",
-            "comment_permlink": "re-promaxx-pumpkin-cheesecake-20160911t193335507z",
+            "author": "fubar-bdhr",
+            "permlink": "re-promaxx-pumpkin-cheesecake-20160911t193335507z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -163,8 +163,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "steemcleaners",
-            "comment_permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160911t205657266z",
+            "author": "steemcleaners",
+            "permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160911t205657266z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -189,8 +189,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "predator",
-            "comment_permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z",
+            "author": "predator",
+            "permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -215,8 +215,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "cheetah",
-            "comment_permlink": "re-re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z-20160912t025022",
+            "author": "cheetah",
+            "permlink": "re-re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z-20160912t025022",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -241,8 +241,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "pfunk",
-            "comment_permlink": "re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t070708654z",
+            "author": "pfunk",
+            "permlink": "re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t070708654z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -267,8 +267,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "steemcleaners",
-            "comment_permlink": "re-pfunk-re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t135550554z",
+            "author": "steemcleaners",
+            "permlink": "re-pfunk-re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t135550554z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -293,8 +293,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "robotev",
-            "comment_permlink": "re-lucylee-characters-based-on-the-steemit-logo-20160914t103319040z",
+            "author": "robotev",
+            "permlink": "re-lucylee-characters-based-on-the-steemit-logo-20160914t103319040z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
@@ -319,8 +319,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "cryptos",
-            "comment_permlink": "re-alwaysfelicia-whats-your-animal-spirit-20160914t155147621z",
+            "author": "cryptos",
+            "permlink": "re-alwaysfelicia-whats-your-animal-spirit-20160914t155147621z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {

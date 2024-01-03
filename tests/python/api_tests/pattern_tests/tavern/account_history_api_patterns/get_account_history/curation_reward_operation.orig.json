@@ -7,8 +7,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-first-post",
+            "author": "abit",
+            "permlink": "abit-first-post",
             "curator": "adm",
             "reward": {
               "amount": "3386877857",
@@ -32,8 +32,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post",
+            "author": "abit",
+            "permlink": "abit-witness-post",
             "curator": "adm",
             "reward": {
               "amount": "36810703386",
@@ -57,8 +57,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post-re3",
+            "author": "abit",
+            "permlink": "abit-witness-post-re3",
             "curator": "adm",
             "reward": {
               "amount": "3659084423",
@@ -82,8 +82,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post-re3-re1",
+            "author": "abit",
+            "permlink": "abit-witness-post-re3-re1",
             "curator": "adm",
             "reward": {
               "amount": "335023466",
@@ -107,8 +107,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "come-on-miners",
+            "author": "abit",
+            "permlink": "come-on-miners",
             "curator": "adm",
             "reward": {
               "amount": "3454929498",
@@ -132,8 +132,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "re-masteryoda-test-post-test-20160612t105535643z",
+            "author": "abit",
+            "permlink": "re-masteryoda-test-post-test-20160612t105535643z",
             "curator": "adm",
             "reward": {
               "amount": "3821361415",
@@ -157,8 +157,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "mummyimperfect",
-            "comment_permlink": "8-weeks-ive-become-one-with-the-sofa-9th-jan-2016",
+            "author": "mummyimperfect",
+            "permlink": "8-weeks-ive-become-one-with-the-sofa-9th-jan-2016",
             "curator": "adm",
             "reward": {
               "amount": "942253499",
@@ -182,8 +182,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "gavvet",
-            "comment_permlink": "how-to-defeat-a-bot-add-a-little-chaos",
+            "author": "gavvet",
+            "permlink": "how-to-defeat-a-bot-add-a-little-chaos",
             "curator": "adm",
             "reward": {
               "amount": "34277088420",
@@ -207,8 +207,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alyssas",
-            "comment_permlink": "re-liondani-re-alyssas-re-abit-ned-started-voting-randomly-on-new-posts-20160602t152250745z",
+            "author": "alyssas",
+            "permlink": "re-liondani-re-alyssas-re-abit-ned-started-voting-randomly-on-new-posts-20160602t152250745z",
             "curator": "adm",
             "reward": {
               "amount": "3821361415",
@@ -232,8 +232,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "oholiab",
-            "comment_permlink": "vrhackspace-proof-of-concept",
+            "author": "oholiab",
+            "permlink": "vrhackspace-proof-of-concept",
             "curator": "adm",
             "reward": {
               "amount": "1245868516",
@@ -257,8 +257,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "nanzo-scoop",
-            "comment_permlink": "an-idiots-to-what-the-dollar-figure-against-your-post-means-i-think",
+            "author": "nanzo-scoop",
+            "permlink": "an-idiots-to-what-the-dollar-figure-against-your-post-means-i-think",
             "curator": "adm",
             "reward": {
               "amount": "5250445889",
@@ -282,8 +282,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "gregory-f",
-            "comment_permlink": "clueless-users-guide-to-upgrading-to-version-0",
+            "author": "gregory-f",
+            "permlink": "clueless-users-guide-to-upgrading-to-version-0",
             "curator": "adm",
             "reward": {
               "amount": "25456548715",
@@ -307,8 +307,8 @@
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "liondani",
-            "comment_permlink": "re-tuck-fheman-re-galina-hello-im-galina-and-you--20160610t154341363z",
+            "author": "liondani",
+            "permlink": "re-tuck-fheman-re-galina-hello-im-galina-and-you--20160610t154341363z",
             "curator": "adm",
             "reward": {
               "amount": "3774248740",
