@@ -58,13 +58,13 @@ struct curation_reward_operation : public virtual_operation
 {
   curation_reward_operation() = default;
   curation_reward_operation( const account_name_type& c, const asset& r, const account_name_type& a, const string& p, bool must_be_claimed )
-    : curator( c ), reward( r ), comment_author( a ), comment_permlink( p ), payout_must_be_claimed( must_be_claimed )
+    : curator( c ), reward( r ), author( a ), permlink( p ), payout_must_be_claimed( must_be_claimed )
   {}
 
   account_name_type curator; //user that curated the comment (receiver of reward)
   asset             reward; //(VESTS) curation reward
-  account_name_type comment_author; //author of curated comment
-  string            comment_permlink; //permlink of curated comment
+  account_name_type author; //author of curated comment
+  string            permlink; //permlink of curated comment
   bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
@@ -821,7 +821,7 @@ struct declined_voting_rights_operation : public virtual_operation
 
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
-FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
+FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(author)(permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
