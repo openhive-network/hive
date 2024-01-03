@@ -25,7 +25,7 @@ class beekeeper_app: public beekeeper_app_base
 
     appbase::application app;
 
-    virtual std::string get_notifications_endpoint( const boost::program_options::variables_map& args );
+    void process_notifications( const boost::program_options::variables_map& args );
     std::string check_version();
     bool save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password );
 
