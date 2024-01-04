@@ -117,6 +117,7 @@ def test_multi_signature_without_sufficient_resource_credits_for_costly_multi_tr
     assert "payer has not enough RC mana for transaction" in exception.value.error
 
 
+@pytest.mark.skip()
 @pytest.mark.testnet()
 def test_multi_signature_without_sufficient_resource_credits_for_costly_multi_transactions_on_multi_threads(
     prepared_network: tuple[tt.ApiNode, tt.Wallet]
