@@ -612,6 +612,21 @@ bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uin
       }
     }
     std::cout << artifacts->get_artifacts_contents(starting_block_number, ending_block_number, header_only) << "\n";
+    block_log.close();
+    return true;
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
+bool generate_block_log_artifacts(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+{
+  try
+  {
+    hive::chain::block_log block_log( app );
+    std::cout << "Opening block_log file: " << block_log_path.generic_string() << " with read & write options. Generating artifacts (or resume generating process) if necessary.\n";
+    block_log.open(block_log_path, thread_pool, false, true);
+    std::cout << "Closing block_log file.\n";
+    block_log.close();
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -706,15 +721,22 @@ int main(int argc, char** argv)
   get_block_artifacts_options.add_options()("header-only", "only print the artifacts header");
   get_block_artifacts_options.add_options()("do-full-artifacts-verification-match-check", "Performs check if all artifacts from file matches block_log");
   boost::program_options::positional_options_description get_block_artifacts_positional_options;
-  get_block_artifacts_positional_options.add("block-log-artifacts", 1);
+  get_block_artifacts_positional_options.add("block-log", 1);
   get_block_artifacts_positional_options.add("starting-block-number", 1);
   get_block_artifacts_positional_options.add("ending-block-number", 1);
+
+  // args for generate-artifacts subcommand
+  boost::program_options::options_description generate_artifacts_options("generate-artifacts options");
+  generate_artifacts_options.add_options()("block-log", boost::program_options::value<std::string>()->value_name("filename")->required(), "Path to block_log file.");
+  boost::program_options::positional_options_description generate_artifacts_positional_options;
+  generate_artifacts_positional_options.add("block-log", 1);
 
   const auto print_usage = [&]() {
     std::cout << global_options << "\n";
     std::cout << "Supported subcommands:\n";
     std::cout << "  cmp\n";
     std::cout << "  find-end\n";
+    std::cout << "  generate-artifacts\n";
     std::cout << "  get-block\n";
     std::cout << "  get-block-artifacts\n";
     std::cout << "  get-block-ids\n";
@@ -724,6 +746,7 @@ int main(int argc, char** argv)
 
     std::cout << cmp_options << "\n";
     std::cout << find_end_options << "\n";
+    std::cout << generate_artifacts_options << "\n";
     std::cout << get_block_options << "\n";
     std::cout << get_block_artifacts_options << "\n";
     std::cout << get_block_ids_options << "\n";
@@ -933,6 +956,20 @@ int main(int argc, char** argv)
       }
 
       return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification, theApp, thread_pool);
+    }
+    else if (command == "generate-artifacts")
+    {
+      std::vector<std::string> subcommand_options = boost::program_options::collect_unrecognized(parsed_global_options.options, boost::program_options::include_positional);
+      subcommand_options.erase(subcommand_options.begin());
+
+      boost::program_options::parsed_options parsed_generate_artifacts_options = boost::program_options::command_line_parser(subcommand_options).
+        options(generate_artifacts_options).
+        positional(generate_artifacts_positional_options).
+        run();
+      boost::program_options::store(parsed_generate_artifacts_options, options_map);
+
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
+      return generate_block_log_artifacts(options_map["block-log"].as<std::string>(), theApp, thread_pool);
     }
     else
     {
