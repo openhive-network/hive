@@ -951,11 +951,11 @@ int main(int argc, char** argv)
         if (starting_block_number && ending_block_number < starting_block_number)
         {
           std::cerr << "ending_block_number must be bigger or equal to starting_block_number\n";
-          return false;
+          return 1;
         }
       }
 
-      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification, theApp, thread_pool);
+      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification, theApp, thread_pool) ? 0 : 1;
     }
     else if (command == "generate-artifacts")
     {
@@ -969,7 +969,7 @@ int main(int argc, char** argv)
       boost::program_options::store(parsed_generate_artifacts_options, options_map);
 
       FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
-      return generate_block_log_artifacts(options_map["block-log"].as<std::string>(), theApp, thread_pool);
+      return generate_block_log_artifacts(options_map["block-log"].as<std::string>(), theApp, thread_pool) ? 0 : 1;
     }
     else
     {
