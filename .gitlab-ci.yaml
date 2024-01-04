@@ -963,7 +963,7 @@ artifacts_generation_tests:
     BINARY_CACHE_PATH: "hived-binaries"
   script:
     - cd tests/integration/artifacts_generation
-    - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived"
+    - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/block_log_util"
   tags:
     - public-runner-docker
 
