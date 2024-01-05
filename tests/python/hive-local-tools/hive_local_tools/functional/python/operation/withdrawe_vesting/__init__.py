@@ -28,7 +28,15 @@ class PowerDown(Operation):
         self._timestamp = get_transaction_timestamp(node, self._transaction)
         self._rc_cost = self._transaction["rc_cost"]
         self._vests_to_power_down = tt.Asset.from_legacy(self._transaction["operations"][0][1]["vesting_shares"])
-        self._weekly_vest_reduction = self._vests_to_power_down / VESTING_WITHDRAW_INTERVALS
+
+        self._weekly_vest_reduction = tt.Asset.Vest(
+            (int(self._vests_to_power_down.amount) / VESTING_WITHDRAW_INTERVALS) / 1000000
+        )
+        if int((self._weekly_vest_reduction * VESTING_WITHDRAW_INTERVALS).amount) < int(
+            self._vests_to_power_down.amount
+        ):
+            self._weekly_vest_reduction = tt.Asset.Vest((int(self._weekly_vest_reduction.amount) + 1) / 1000000)
+
         self._remaining_executions = 13
         self._update_timestamp = get_transaction_timestamp(self._node, self._transaction) if update else None
         self._tranche_schedule = (
