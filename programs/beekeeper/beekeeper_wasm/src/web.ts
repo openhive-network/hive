@@ -1,5 +1,5 @@
 import createBeekeeperBase from "./detailed/beekeeper.js";
-import Beekeeper from "./beekeeper.web.js";
+import Beekeeper from "./beekeeper.js";
 
 export * from "./interfaces.js";
 export * from "./errors.js";

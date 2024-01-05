@@ -2,6 +2,11 @@ import typescript from 'rollup-plugin-typescript2';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
+import alias from '@rollup/plugin-alias';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const commonConfiguration = (env, merge = {}) => ({
   input: `dist/${env}.js`,
@@ -11,6 +16,11 @@ const commonConfiguration = (env, merge = {}) => ({
     ...(merge.output || {})
   },
   plugins: [
+    alias({
+      entries: [
+        { find: 'beekeeper_wasm/beekeeper_wasm.web.js', replacement: path.resolve(__dirname, `./build/beekeeper_wasm.${env}.js`) }
+      ]
+    }),
     replace({
       'process.env.ROLLUP_TARGET_ENV': `"${env}"`,
       preventAssignment: true

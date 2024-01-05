@@ -45,7 +45,13 @@
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
 
-    "noErrorTruncation": true
+    "noErrorTruncation": true,
+
+    "paths": {
+      "beekeeper_wasm/*": [
+        "./build/*"
+      ]
+    }
   },
   "buildOptions": {
     "force": true,

@@ -124,6 +124,7 @@ results.json
 results.xml
 programs/beekeeper/beekeeper_wasm/LICENSE.md
 programs/beekeeper/beekeeper_wasm/dist
+programs/beekeeper/beekeeper_wasm/storage_root-node
 
 # pyrest tests
 *.out.json
