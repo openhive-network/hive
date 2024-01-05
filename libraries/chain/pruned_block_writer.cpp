@@ -155,6 +155,15 @@ std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
+bool pruned_block_writer::is_known_irreversible_block( const block_id_type& id ) const
+{
+  try {
+    const auto& idx = _db.get_index< full_block_index, by_hash >();
+    auto itr = idx.find( id );
+    return itr != idx.end();
+  } FC_CAPTURE_AND_RETHROW()
+}
+
 bool pruned_block_writer::is_known_block(const block_id_type& id) const
 {
   try {
@@ -163,9 +172,7 @@ bool pruned_block_writer::is_known_block(const block_id_type& id) const
       return true;
 
     // Then check among stored full blocks.
-    const auto& idx = _db.get_index< full_block_index, by_hash >();
-    auto itr = idx.find( id );
-    return itr != idx.end();
+    return is_known_irreversible_block( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 
@@ -173,7 +180,7 @@ std::deque<block_id_type>::const_iterator pruned_block_writer::find_first_item_n
   const std::deque<block_id_type>& item_hashes_received ) const
 {
   return fork_db_block_reader::find_first_item_not_in_blockchain( _fork_db, item_hashes_received, 
-    [&](const block_id_type& id){ return this->is_known_block( id ); } );
+    [&](const block_id_type& id){ return this->is_known_irreversible_block( id ); } );
 }
 
 full_block_vector_t pruned_block_writer::fetch_block_range( 
@@ -226,11 +233,15 @@ block_id_type pruned_block_writer::get_block_id_for_num( uint32_t block_num ) co
 std::vector<block_id_type> pruned_block_writer::get_blockchain_synopsis( 
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
+  try
+  {
   return fork_db_block_reader::get_blockchain_synopsis( _fork_db, reference_point,
      number_of_blocks_after_reference_point,
     [&](uint32_t block_num)->block_id_type {
       return this->get_block_id_for_num( block_num );
     });
+  }
+  FC_CAPTURE_AND_RETHROW()
 }
 
 std::vector<block_id_type> pruned_block_writer::get_block_ids(
