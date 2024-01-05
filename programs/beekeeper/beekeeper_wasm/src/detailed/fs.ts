@@ -1,4 +1,4 @@
-import type { BeekeeperModule } from "../beekeeper.web.js";
+import type { BeekeeperModule } from "../beekeeper.js";
 
 export class BeekeeperFileSystem {
   public constructor(

@@ -1,4 +1,7 @@
-import type { MainModule } from '../build/beekeeper_wasm.web.js';
+// Note: This import will be replaced with Node.js version upon bundling
+import beekeeper from 'beekeeper_wasm/beekeeper_wasm.web.js';
+
+import type { MainModule } from 'beekeeper_wasm/beekeeper_wasm.web.js';
 
 export interface FileSystemType {
   MEMFS: {};
@@ -46,4 +49,9 @@ export interface BeekeeperModule extends MainModule {
   }
 }
 
+// Note: This import will be replaced with Node.js version upon bundling
+export { MainModule, StringList, beekeeper_api } from 'beekeeper_wasm/beekeeper_wasm.web.js';
+
 export type beekeepermodule = () => Promise<BeekeeperModule>;
+
+export default beekeeper as beekeepermodule;
