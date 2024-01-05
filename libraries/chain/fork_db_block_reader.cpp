@@ -151,8 +151,12 @@ full_block_vector_t fork_db_block_reader::fetch_block_range(
 std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis( 
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
+  try
+  {
   return get_blockchain_synopsis( _fork_db, reference_point, number_of_blocks_after_reference_point,
     [&](uint32_t block_num)->block_id_type { return this->get_block_id_for_num(block_num); } );
+  }
+  FC_CAPTURE_AND_RETHROW()
 }
 
 std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis( 
