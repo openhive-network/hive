@@ -77,7 +77,10 @@ do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$
 if [[ -z "$BUILD_IMAGE_TAG" ]]; then
   pushd "./hive-${COMMIT}" || exit 1
   BUILD_IMAGE_TAG=$(git rev-parse --short "$COMMIT")
-  popd || exit 1  
+  popd || exit 1
 fi
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" "${NETWORK_TYPE_ARG}" "${EXPORT_BINARIES_ARG}"
+# Use the build_instance.sh script from the new source root to avoid path resolution issues
+pushd "./hive-${COMMIT}" || exit 1
+"scripts/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "$(pwd)" "${REGISTRY}" "${NETWORK_TYPE_ARG}" "${EXPORT_BINARIES_ARG}"
+popd || exit 1

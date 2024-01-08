@@ -17,30 +17,19 @@ IMAGE_TAG_PREFIX=""
 BUILD_HIVE_TESTNET=OFF
 HIVE_CONVERTER_BUILD=OFF
 
-
-print_help () {
-    echo "Usage: $0 <image_tag> <src_dir> <registry_url> [OPTION[=VALUE]]..."
-    echo
-    echo "Allows to build docker image containing Hived installation"
-    echo "OPTIONS:"
-    echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
-    echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
-    echo "  --help                    Display this help screen and exit"
-    echo
-}
-
 EXPORT_PATH=""
 
-# Extract relative HIVE_SUBDIR and absolute root SOURCE_DIR containing gitdir data automatically
-hive_root=$(realpath "${SCRIPTSDIR}/..")
+print_help () {
+cat <<-EOF
+  Usage: $0 <image_tag> <src_dir> <registry_url> [OPTION[=VALUE]]...
 
-# Be sure we're inside source tree (in case of out of source build)
-pushd "${hive_root}"
-SOURCE_DIR=$(git rev-parse --show-superproject-working-tree --show-toplevel | head -1)
-popd
-
-HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$hive_root")
-
+  Builds docker image containing Hived installation
+  OPTIONS:
+      --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet
+      --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image.
+      --help|-h|-?              Display this help screen and exit
+EOF
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -72,7 +61,7 @@ while [ $# -gt 0 ]; do
         arg="${1#*=}"
         EXPORT_PATH="$arg"
         ;;
-    --help)
+    --help|-h|-?)
         print_help
         exit 0
         ;;
@@ -108,6 +97,11 @@ echo "Moving into source root directory: ${SRCROOTDIR}"
 
 pushd "$SRCROOTDIR"
 #pwd
+
+# Extract relative HIVE_SUBDIR and absolute root SOURCE_DIR containing gitdir data automatically
+HIVE_ROOT=$(realpath "${SCRIPTSDIR}/..")
+SOURCE_DIR=$(git rev-parse --show-superproject-working-tree --show-toplevel | head -1)
+HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$HIVE_ROOT")
 
 export DOCKER_BUILDKIT=1
 

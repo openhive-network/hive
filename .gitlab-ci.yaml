@@ -63,7 +63,7 @@ prepare_hived_image:
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-binaries"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
     - public-runner-docker
@@ -97,7 +97,7 @@ testnet_node_build:
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-testnet-binaries"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries"
     HIVE_NETWORK_TYPE: testnet
   artifacts:
     paths:
@@ -169,7 +169,7 @@ mirrornet_node_build:
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-mirrornet-binaries"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
   after_script:
     - |

@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "337fabaa5cd03019e9b82dd7df32121783c9391e"
+  CI_COMMON_JOB_VERSION: "44ad61be5f9d0588512f478e5baf3ec89cb92a3f"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 7c58303ffb61d91ef9662ec20e7b498bc6f62b8f # develop
+    ref: 44ad61be5f9d0588512f478e5baf3ec89cb92a3f # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -41,20 +41,20 @@ include:
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
     REGISTRY_USER: "$CI_IMG_BUILDER_USER"
     REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-binaries"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   script:
     - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh
         "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ HIVED "$REGISTRY_USER" "$REGISTRY_PASS"
         --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
-    - chmod -Rc a+rwx "./$BINARY_CACHE_PATH"
-    - ls -la ./$BINARY_CACHE_PATH/*
+    - chmod -Rc a+rwx "$BINARY_CACHE_PATH"
+    - ls -la $BINARY_CACHE_PATH/*
 
   artifacts:
     reports:
       dotenv: docker_image_name.env
     paths:
-      - ./$BINARY_CACHE_PATH/*
+      - $BINARY_CACHE_PATH/*
       - ./docker_image_name.env
 
 .prepare_hived_data_5m:
