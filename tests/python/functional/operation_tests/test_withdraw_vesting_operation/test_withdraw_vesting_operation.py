@@ -19,10 +19,11 @@ def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerD
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
+    prepared_node.wait_for_irreversible_block()
 
     for _week_number in range(1, VESTING_WITHDRAW_INTERVALS):  # check weekly vests/ hives changes (from week 1 to 12)
         power_down.execute_next_withdraw()
@@ -53,10 +54,11 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
+    prepared_node.wait_for_irreversible_block()
 
     for _week_number in range(1, 3):  # check weekly vests/ hives changes (from week 1 to 3)
         power_down.execute_next_withdraw()
@@ -73,10 +75,8 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     power_down.execute_next_withdraw()
     alice.assert_hive_power_is_unchanged()
     alice.assert_hive_balance_is_unchanged()
-    err_message = "Max rc mana did not return to the state before the canceled `power down`."
-    assert (
-        alice.get_rc_max_mana() == alice.rc_manabar.max_mana + int(power_down.weekly_vest_reduction.amount) + 1
-    ), err_message
+    err_msg = "Max rc mana did not return to the state before the canceled `power down`."
+    assert alice.get_rc_max_mana() == alice.rc_manabar.max_mana + int(power_down.weekly_vest_reduction.amount), err_msg
 
 
 @pytest.mark.testnet()
@@ -96,10 +96,11 @@ def test_modify_power_down_amount(
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
+    prepared_node.wait_for_irreversible_block()
 
     for _week_number in range(1, 3):  # check weekly vests/ hives changes from week 1 to 2 (first power down)
         power_down.execute_next_withdraw()
