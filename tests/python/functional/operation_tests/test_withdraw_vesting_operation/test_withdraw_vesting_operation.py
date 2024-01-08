@@ -87,8 +87,9 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
         (tt.Asset.Test(10_000), tt.Asset.Test(3_000)),  # User wants to decrease the amount of Power down.
     ],
 )
+@pytest.mark.parametrize("a", list(range(100)))
 def test_modify_power_down_amount(
-    prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount, first_pd_amount, second_pd_amount
+    prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount, first_pd_amount, second_pd_amount, a: int
 ):
     first_pd_vest_amount = PowerDown.convert_to_vest(prepared_node, first_pd_amount)
     power_down = PowerDown(prepared_node, wallet, alice.name, first_pd_vest_amount)
