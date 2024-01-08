@@ -112,7 +112,11 @@ def test_modify_power_down_amount(
         alice.update_account_info()
 
     # Jump to 2.5 hours after first power down operation (in mainnet its 2.5 week).
-    jump_to_date(prepared_node, power_down.timestamp + tt.Time.seconds(2.5 * VESTING_WITHDRAW_INTERVAL_SECONDS))
+    jump_to_date(
+        prepared_node,
+        power_down.timestamp + tt.Time.seconds(2.5 * VESTING_WITHDRAW_INTERVAL_SECONDS),
+        wait_for_irreversible=True,
+    )
     err = "The headblock timing is not between the 2nd and 3rd week of power down."
     assert (
         power_down._tranche_schedule[1]  # noqa: SLF001
@@ -133,7 +137,11 @@ def test_modify_power_down_amount(
         alice.rc_manabar.assert_max_rc_mana_state("reduced")
 
     # Jump to time between 2 and 3 week after first power down operation (in mainnet its 2.5 week).
-    jump_to_date(prepared_node, power_down.update_timestamp + tt.Time.seconds(VESTING_WITHDRAW_INTERVAL_SECONDS // 2))
+    jump_to_date(
+        prepared_node,
+        power_down.update_timestamp + tt.Time.seconds(VESTING_WITHDRAW_INTERVAL_SECONDS // 2),
+        wait_for_irreversible=True,
+    )
 
     alice.assert_hive_balance_is_unchanged()
     alice.assert_hive_power_is_unchanged()
