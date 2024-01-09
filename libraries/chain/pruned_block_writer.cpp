@@ -100,6 +100,16 @@ pruned_block_writer::find_new_last_irreversible_block(
     old_last_irreversible );
 }
 
+std::shared_ptr<full_block_type> pruned_block_writer::irreversible_head_block() const
+{
+  const full_block_object& head_block = get_head_block_data();
+
+  if( head_block.get_num() )
+    return head_block.create_full_block();
+
+  return std::shared_ptr<full_block_type>();
+}
+
 uint32_t pruned_block_writer::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
