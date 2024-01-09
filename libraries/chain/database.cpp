@@ -193,6 +193,7 @@ void database::initialize_state_independent_data(const open_args& args, const bo
 
   initialize_evaluators();
   initialize_irreversible_storage();
+  _block_writer->initialize_block_data();
 
   if(!find< dynamic_global_property_object >())
   {
