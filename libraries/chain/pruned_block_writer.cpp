@@ -64,16 +64,14 @@ void pruned_block_writer::initialize_block_data()
 
   // Get fork db in sync with full block objects.
   const full_block_object& head_block = *( idx.rbegin() );
-  uint32_t irreversible_head_num = head_block.get_num();
-  if( irreversible_head_num )
+  if( head_block.get_num() )
     _fork_db.start_block( head_block.create_full_block() );
 }
 
 void pruned_block_writer::store_block( uint32_t current_irreversible_block_num,
   uint32_t state_head_block_number )
 {
-  const auto& idx = _db.get_index< full_block_index, by_num >();
-  const full_block_object& head_block = *( idx.rbegin() );
+  const full_block_object& head_block = get_head_block_data();
   uint32_t irreversible_head_num = head_block.get_num();
 
   return sync_block_writer::store_block(
@@ -211,6 +209,13 @@ full_block_vector_t pruned_block_writer::fetch_block_range(
     starting_block_num,
     count,
     wait_for_microseconds );
+}
+
+const full_block_object& pruned_block_writer::get_head_block_data() const
+{
+  const auto& idx = _db.get_index< full_block_index, by_num >();
+  const full_block_object& head_block_object = *( idx.rbegin() );
+  return head_block_object;
 }
 
 full_block_vector_t pruned_block_writer::get_block_range( 
