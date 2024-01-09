@@ -157,7 +157,7 @@ class chain_plugin_impl
     bool replay_blockchain( const replay_block_read_i& replay_block_reader, 
                             hive::chain::blockchain_worker_thread_pool& thread_pool );
     void process_snapshot();
-    bool check_data_consistency( const block_read_i& block_reader );
+    bool check_data_consistency( const replay_block_read_i& block_reader );
 
     void prepare_work( bool started, synchronization_type& on_sync );
     void work( synchronization_type& on_sync );
@@ -280,7 +280,7 @@ class chain_plugin_impl
       * @return information if replaying was finished
       */
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
-                              const block_read_i& block_reader ) const;
+                              const replay_block_read_i& block_reader ) const;
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -736,7 +736,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.load_snapshot = load_snapshot;
 }
 
-bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
+bool chain_plugin_impl::check_data_consistency( const replay_block_read_i& block_reader )
 {
   uint64_t head_block_num_origin = 0;
   uint64_t head_block_num_state = 0;
@@ -1123,10 +1123,9 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
 }
 
 bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog,
-  uint64_t* head_block_num_in_db, const block_read_i& block_reader ) const
+  uint64_t* head_block_num_in_db, const replay_block_read_i& block_reader ) const
 {
-  irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
-  std::shared_ptr<full_block_type> head = reindex_block_writer.get_replay_block_reader().irreversible_head_block();
+  auto head = block_reader.irreversible_head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
   ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}",
@@ -1628,7 +1627,7 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->current_block_writer->get_block_reader() ) )
+    if( my->check_data_consistency( my->current_block_writer->get_irreversible_block_reader()) )
     {
       if( my->db.get_snapshot_loaded() )
       {
