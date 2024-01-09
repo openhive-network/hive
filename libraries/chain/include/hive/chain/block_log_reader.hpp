@@ -12,7 +12,7 @@ namespace hive { namespace chain {
     block_log_reader( const block_log& the_log );
     virtual ~block_log_reader() = default;
 
-    virtual std::shared_ptr<full_block_type> head_block() const override;
+    virtual std::shared_ptr<full_block_type> irreversible_head_block() const override;
 
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
