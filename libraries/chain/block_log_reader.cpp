@@ -8,7 +8,7 @@ block_log_reader::block_log_reader( const block_log& block_log )
   : _block_log( block_log )
 {}
 
-std::shared_ptr<full_block_type> block_log_reader::head_block() const
+std::shared_ptr<full_block_type> block_log_reader::irreversible_head_block() const
 {
   return _block_log.head();
 }
