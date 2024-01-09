@@ -12,7 +12,7 @@ namespace hive { namespace chain {
     fork_db_block_reader( fork_database& fork_db, block_log& block_log );
     virtual ~fork_db_block_reader() = default;
 
-    virtual std::shared_ptr<full_block_type> head_block() const override;
+    virtual std::shared_ptr<full_block_type> irreversible_head_block() const override;
 
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
