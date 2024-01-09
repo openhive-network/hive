@@ -17,9 +17,6 @@ pruned_block_writer::pruned_block_writer( uint16_t stored_block_number,
   FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
 
   initialize_pruning_indexes( _db );
-
-  for( uint16_t i = 0; i < stored_block_number; ++i )
-    _db.create< full_block_object >();
 }
 
 void pruned_block_writer::on_reindex_start()
@@ -52,6 +49,24 @@ void pruned_block_writer::switch_forks( const block_id_type& new_head_block_id, 
   sync_block_writer::switch_forks( _fork_db, _db, new_head_block_id, new_head_block_num, skip,
     pushed_block_ctrl, original_head_block_id, original_head_block_number, apply_block_extended,
     pop_block_extended );
+}
+
+void pruned_block_writer::initialize_block_data()
+{
+  // Create irreversible data object pool if needed.
+  const auto& idx = _db.get_index< full_block_index, by_num >();
+  if( idx.begin() == idx.end() )
+  {
+    for( uint16_t i = 0; i < _stored_block_number; ++i )
+      _db.create< full_block_object >();
+    // TODO fill the pool with data provided by other writer via chain plugin, if available.
+  }
+
+  // Get fork db in sync with full block objects.
+  const full_block_object& head_block = *( idx.rbegin() );
+  uint32_t irreversible_head_num = head_block.get_num();
+  if( irreversible_head_num )
+    _fork_db.start_block( head_block.create_full_block() );
 }
 
 void pruned_block_writer::store_block( uint32_t current_irreversible_block_num,

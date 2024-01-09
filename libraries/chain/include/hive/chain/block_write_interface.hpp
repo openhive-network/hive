@@ -18,6 +18,9 @@ namespace hive { namespace chain {
   public:
     virtual block_read_i& get_block_reader() = 0;
 
+    // Initialize block-related data if needed.
+    virtual void initialize_block_data() = 0;
+
     /**
      * Check that fork head (head block of the longest fork) matches state head.
      * Update block log up to current (not old) LIB (excluding) with the reversible blocks on main branch.
