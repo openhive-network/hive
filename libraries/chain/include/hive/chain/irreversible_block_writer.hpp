@@ -16,6 +16,8 @@ namespace hive { namespace chain {
 
     virtual block_read_i& get_block_reader() override;
 
+    virtual void initialize_block_data() override {}
+
     /**
      * 
      */

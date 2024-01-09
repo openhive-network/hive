@@ -34,6 +34,7 @@ namespace hive { namespace chain {
 
     // ### block_write_i overrides ###
     virtual block_read_i& get_block_reader() override { return *this; };
+    virtual void initialize_block_data() override;
     virtual void store_block( uint32_t current_irreversible_block_num,
                               uint32_t state_head_block_number ) override;
     virtual void pop_block() override;
