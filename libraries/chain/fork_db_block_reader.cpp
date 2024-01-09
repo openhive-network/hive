@@ -11,10 +11,10 @@ fork_db_block_reader::fork_db_block_reader( fork_database& fork_db, block_log& t
   : block_log_reader( the_log ), _fork_db( fork_db )
 {}
 
-std::shared_ptr<full_block_type> fork_db_block_reader::head_block() const
+std::shared_ptr<full_block_type> fork_db_block_reader::irreversible_head_block() const
 {
   auto head = _fork_db.head();
-  return head ? head->full_block : block_log_reader::head_block();
+  return head ? head->full_block : block_log_reader::irreversible_head_block();
 }
 
 uint32_t fork_db_block_reader::head_block_num(
