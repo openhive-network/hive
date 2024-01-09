@@ -50,6 +50,7 @@ namespace hive { namespace chain {
       irreversible_block_append_t irreversible_block_append,
       irreversible_block_flush_t irreversible_block_flush );
 
+    virtual const replay_block_read_i& get_irreversible_block_reader() const override;
     virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
     virtual void on_reindex_start() override;
     virtual void on_reindex_end( const std::shared_ptr<full_block_type>& end_block ) override;

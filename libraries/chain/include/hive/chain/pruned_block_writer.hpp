@@ -12,7 +12,7 @@ namespace hive { namespace chain {
   class full_block_object;
   using appbase::application;
 
-  class pruned_block_writer : public block_write_chain_i, public block_read_i
+  class pruned_block_writer : public block_write_chain_i, public replay_block_read_i
   {
   public:
     pruned_block_writer( uint16_t stored_block_number, 
@@ -20,6 +20,8 @@ namespace hive { namespace chain {
     virtual ~pruned_block_writer() = default;
 
     // ### block_write_chain_i overrides ###
+    virtual const replay_block_read_i& get_irreversible_block_reader() const override
+      { return *this; };
     virtual void set_is_at_live_sync() override {}
     virtual void on_reindex_start() override;
     virtual void on_reindex_end( const std::shared_ptr<full_block_type>& end_block ) override;
@@ -43,6 +45,9 @@ namespace hive { namespace chain {
       const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
       const unsigned witnesses_required_for_irreversiblity,
       const uint32_t old_last_irreversible ) const override;
+
+    // ### replay_block_read_i overrides ###
+    virtual std::shared_ptr<full_block_type> irreversible_head_block() const override;
 
     // ### block_read_i overrides ###
     virtual uint32_t head_block_num( 

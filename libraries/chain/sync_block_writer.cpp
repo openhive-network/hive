@@ -19,6 +19,11 @@ block_read_i& sync_block_writer::get_block_reader()
   return _reader;
 }
 
+const replay_block_read_i& sync_block_writer::get_irreversible_block_reader() const
+{
+  return _reader;
+}
+
 void sync_block_writer::initialize_block_data()
 {
   // Get fork db in sync with block log.

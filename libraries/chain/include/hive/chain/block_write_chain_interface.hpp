@@ -12,6 +12,8 @@ namespace hive { namespace chain {
     virtual ~block_write_chain_i() = default;
 
   public:
+    virtual const replay_block_read_i& get_irreversible_block_reader() const = 0;
+
     virtual void set_is_at_live_sync() = 0;
     virtual void on_reindex_start() = 0;
     virtual void on_reindex_end( const std::shared_ptr<full_block_type>& end_block ) = 0;
