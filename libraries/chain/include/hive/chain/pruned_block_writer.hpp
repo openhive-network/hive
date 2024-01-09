@@ -82,9 +82,12 @@ namespace hive { namespace chain {
 
   private:
     bool is_known_irreversible_block( const block_id_type& id ) const;
+
     void store_full_block( const std::shared_ptr<full_block_type> full_block );
     std::shared_ptr<full_block_type> retrieve_full_block( uint32_t recent_block_num ) const;
     const full_block_object* find_full_block( uint32_t recent_block_num ) const;
+
+    const full_block_object& get_head_block_data() const;
     full_block_vector_t get_block_range( uint32_t starting_block_num, uint32_t count ) const;
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
