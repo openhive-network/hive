@@ -19,6 +19,14 @@ block_read_i& sync_block_writer::get_block_reader()
   return _reader;
 }
 
+void sync_block_writer::initialize_block_data()
+{
+  // Get fork db in sync with block log.
+  auto head = _block_log.head();
+  if( head )
+    _fork_db.start_block( head );
+}
+
 void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
   uint32_t state_head_block_number )
 {
@@ -438,11 +446,6 @@ void sync_block_writer::open( const fc::path& file, bool enable_compression,
                               enable_block_log_auto_fixing,
                               thread_pool );
   });
-  
-  // Get fork db in sync with block log.
-  auto head = _block_log.head();
-  if( head )
-    _fork_db.start_block( head );
 }
 
 void sync_block_writer::close()
