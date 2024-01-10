@@ -129,18 +129,14 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 {
   FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
-  const auto& bucket_idx = _db.get_index< order_history_index, by_time >();
-  auto itr = bucket_idx.lower_bound( args.start );
+  const auto& trade_idx = _db.get_index< order_history_index, by_time >();
+  auto itr = trade_idx.lower_bound( args.start );
 
   get_trade_history_return result;
 
-  while( itr != bucket_idx.end() && itr->time <= args.end && result.trades.size() < args.limit )
+  while( itr != trade_idx.end() && itr->time <= args.end && result.trades.size() < args.limit )
   {
-    market_trade trade;
-    trade.date = itr->time;
-    trade.current_pays = itr->op.current_pays;
-    trade.open_pays = itr->op.open_pays;
-    result.trades.push_back( trade );
+    result.trades.emplace_back( itr->time, itr->op );
     ++itr;
   }
 
@@ -150,18 +146,14 @@ DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 DEFINE_API_IMPL( market_history_api_impl, get_recent_trades )
 {
   FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
-  const auto& order_idx = _db.get_index< order_history_index, by_time >();
-  auto itr = order_idx.rbegin();
+  const auto& trade_idx = _db.get_index< order_history_index, by_time >();
+  auto itr = trade_idx.rbegin();
 
   get_recent_trades_return result;
 
-  while( itr != order_idx.rend() && result.trades.size() < args.limit )
+  while( itr != trade_idx.rend() && result.trades.size() < args.limit )
   {
-    market_trade trade;
-    trade.date = itr->time;
-    trade.current_pays = itr->op.current_pays;
-    trade.open_pays = itr->op.open_pays;
-    result.trades.push_back( trade );
+    result.trades.emplace_back( itr->time, itr->op );
     ++itr;
   }
 
