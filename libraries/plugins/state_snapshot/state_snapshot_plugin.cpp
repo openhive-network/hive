@@ -903,6 +903,16 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       {
       collectOptions(options);
 
+      if (!_num_threads)
+      {
+        _num_threads = std::thread::hardware_concurrency();
+        if (_num_threads == 0)
+        {
+          _num_threads = 8;
+          wlog("Could not detect available threads number. Setting threads number for snapshot processing to ${_num_threads}", (_num_threads));
+        }
+      }
+
       app.get_plugin<hive::plugins::chain::chain_plugin>().register_snapshot_provider(*this);
 
       ilog("Registering add_prepare_snapshot_handler...");
@@ -940,10 +950,9 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;
-      uint32_t                _num_threads = 32;
+      uint32_t                _num_threads = 0;
       bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
-      bool                    _allow_concurrency = true;
   };
 
 void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& options)
@@ -970,6 +979,11 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
   if(_do_immediate_dump)
     _snapshot_name = options.at("dump-snapshot").as<std::string>();
 
+  if (options.count("process-snapshot-threads-num"))
+  {
+    _num_threads = options.at("process-snapshot-threads-num").as<unsigned>();
+    FC_ASSERT(_num_threads, "You have to assing at least one thread for snapshot processing");
+  }
   FC_ASSERT(!_do_immediate_load || !_do_immediate_dump, "You can only dump or load snapshot at once.");
 
   fc::mutable_variant_object state_opts;
@@ -1341,37 +1355,38 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     FC_ASSERT(bfs::is_empty(actualStoragePath), "Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
   }
   
-
   const auto& indices = _mainDb.get_abstract_index_cntr();
-
-  ilog("Attempting to dump contents of ${n} indices...", ("n", indices.size()));
-
-  boost::asio::io_service ioService;
-  boost::thread_group threadpool;
-  std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
-
-  for(unsigned int i = 0; _allow_concurrency && i < _num_threads; ++i)
-    threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
-
+  ilog("Attempting to dump contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
   std::vector<std::unique_ptr<index_dump_writer>> builtWriters;
 
-  for(const chainbase::abstract_index* idx : indices)
-    {
-    builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, _allow_concurrency));
-    index_dump_writer* writer = builtWriters.back().get();
+  if (_num_threads > 1)
+  {
+    boost::asio::io_service ioService;
+    boost::thread_group threadpool;
+    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
 
-    if(_allow_concurrency)
+    for(unsigned int i = 0; i < _num_threads; ++i)
+      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+
+    for(const chainbase::abstract_index* idx : indices)
+    {
+      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, true /* allow_concurrency */));
+      index_dump_writer* writer = builtWriters.back().get();
       ioService.post(boost::bind(&impl::safe_spawn_snapshot_dump, this, idx, writer));
-    else
+    }
+    ilog("Waiting for dumping jobs completion");
+    work.reset();
+    threadpool.join_all();
+  }
+  else
+  {
+    for(const chainbase::abstract_index* idx : indices)
+    {
+      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, false /* allow_concurrency */));
+      index_dump_writer* writer = builtWriters.back().get();
       safe_spawn_snapshot_dump(idx, writer);
     }
-
-  ilog("Waiting for dumping jobs completion");
-
-  /// Run the horses...
-  work.reset();
-
-  threadpool.join_all();
+  }
 
   fc::path external_data_storage_base_path(actualStoragePath);
   external_data_storage_base_path /= "ext_data";
@@ -1455,35 +1470,38 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
+  ilog("Attempting to load contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
 
-  ilog("Attempting to load contents of ${n} indices...", ("n", indices.size()));
+  if (_num_threads > 1)
+  {
+    boost::asio::io_service ioService;
+    boost::thread_group threadpool;
+    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
 
-  boost::asio::io_service ioService;
-  boost::thread_group threadpool;
-  std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
+    for(unsigned int i = 0; i < _num_threads; ++i)
+      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
 
-  for(unsigned int i = 0; _allow_concurrency && i < _num_threads; ++i)
-    threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+    std::vector<std::unique_ptr< index_dump_reader>> builtReaders;
 
-  std::vector<std::unique_ptr< index_dump_reader>> builtReaders;
-
-  for(chainbase::abstract_index* idx : indices)
+    for(chainbase::abstract_index* idx : indices)
     {
-    builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath));
-    index_dump_reader* reader = builtReaders.back().get();
-
-    if(_allow_concurrency)
+      builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath));
+      index_dump_reader* reader = builtReaders.back().get();
       ioService.post(boost::bind(&impl::safe_spawn_snapshot_load, this, idx, reader));
-    else
-      safe_spawn_snapshot_load(idx, reader);
     }
 
-  ilog("Waiting for loading jobs completion");
-
-  /// Run the horses...
-  work.reset();
-
-  threadpool.join_all();
+    ilog("Waiting for loading jobs completion");
+    work.reset();
+    threadpool.join_all();
+  }
+  else
+  {
+    for(chainbase::abstract_index* idx : indices)
+    {
+      std::unique_ptr< index_dump_reader> reader = std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath);
+      safe_spawn_snapshot_load(idx, reader.get());
+    }
+  }
 
   plugin_external_data_index& extDataIdx = std::get<1>(snapshotManifest);
   if(extDataIdx.empty())
@@ -1567,6 +1585,8 @@ void state_snapshot_plugin::set_program_options(
       "Allows to force immediate snapshot import at plugin startup. All data in state storage are overwritten")
     ("dump-snapshot", bpo::value<std::string>(),
       "Allows to force immediate snapshot dump at plugin startup. All data in the snaphsot storage are overwritten")
+    ("process-snapshot-threads-num", bpo::value<unsigned>(),
+      "Number of threads intended for snapshot processing. By default set to detected available threads count.")
     ;
   }
 
