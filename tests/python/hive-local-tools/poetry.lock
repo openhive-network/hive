@@ -459,12 +459,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev125+419067e"
+version = "0.0.1.dev126+28cbc34"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev125+419067e-py3-none-any.whl", hash = "sha256:232b2acbb5e6729873b4a813f7f87bf7269c7ba7eae10174e9ee2ca72f546d81"},
+    {file = "helpy-0.0.1.dev126+28cbc34-py3-none-any.whl", hash = "sha256:83d9530d1cf84675a64e571defc06c70cad975dd8d51c2a0d1ef98f0302ee197"},
 ]
 
 [package.dependencies]
@@ -474,7 +474,7 @@ loguru = "0.7.2"
 pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev283+db2351d"
+schemas = "0.0.1.dev287+6dbd4ec"
 wax = "0.0.3a2.dev39+44db07f"
 
 [package.source]
@@ -1460,12 +1460,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev283+db2351d"
+version = "0.0.1.dev287+6dbd4ec"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev283+db2351d-py3-none-any.whl", hash = "sha256:371ecc39834be2c8c728d563a798e683b39be17cd5113cb5fc72e728d3dfc1dd"},
+    {file = "schemas-0.0.1.dev287+6dbd4ec-py3-none-any.whl", hash = "sha256:50f2e8720ae4d76935caf982f9a702caae5d998f2a1000b7cfb2e601f23d4f01"},
 ]
 
 [package.dependencies]
@@ -1578,7 +1578,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-helpy = "0.0.1.dev125+419067e"
+helpy = "0.0.1.dev126+28cbc34"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
