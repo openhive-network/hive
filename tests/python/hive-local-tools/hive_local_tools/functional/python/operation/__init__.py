@@ -319,7 +319,11 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True
+    wallet: tt.Wallet,
+    *operations: AnyLegacyOperation,
+    only_result: bool = True,
+    broadcast_transaction: bool = True,
+    sign_transaction: bool = True,
 ) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
     if wallet.transaction_serialization == "hf26":
@@ -328,7 +332,11 @@ def create_transaction_with_any_operation(
     else:
         transaction = get_transaction_model()
         transaction.operations = [(op.get_name(), op) for op in operations]
-    return wallet.api.sign_transaction(transaction, only_result=only_result)
+    if sign_transaction and not broadcast_transaction:
+        return wallet.api.sign_transaction(transaction, only_result=only_result, broadcast=False)
+    if sign_transaction and broadcast_transaction:
+        return wallet.api.sign_transaction(transaction, only_result=only_result)
+    return transaction
 
 
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
