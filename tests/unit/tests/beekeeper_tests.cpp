@@ -129,6 +129,41 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
 } FC_LOG_AND_RETHROW() }
 
+
+BOOST_AUTO_TEST_CASE(wallet_name_test)
+{ try {
+  beekeeper_mgr b_mgr;
+  b_mgr.remove_wallets();
+
+  appbase::application app;
+
+  beekeeper_wallet_manager wm = b_mgr.create_wallet( app, 900, 3 );
+
+  BOOST_REQUIRE( wm.start() );
+  std::string _token = wm.create_session( "this is salt", "" );
+
+  wm.create(_token, "wallet.wallet", std::optional<std::string>());
+  wm.create(_token, "wallet_wallet", std::optional<std::string>());
+  wm.create(_token, "wallet-wallet", std::optional<std::string>());
+  wm.create(_token, "wallet@wallet", std::optional<std::string>());
+
+  wm.create(_token, ".wallet", std::optional<std::string>());
+  wm.create(_token, "_wallet", std::optional<std::string>());
+  wm.create(_token, "-wallet", std::optional<std::string>());
+  wm.create(_token, "@wallet", std::optional<std::string>());
+
+  wm.create(_token, "wallet.", std::optional<std::string>());
+  wm.create(_token, "wallet_", std::optional<std::string>());
+  wm.create(_token, "wallet-", std::optional<std::string>());
+  wm.create(_token, "wallet@", std::optional<std::string>());
+
+  wm.create(_token, ".wallet.", std::optional<std::string>());
+  wm.create(_token, "_wallet_", std::optional<std::string>());
+  wm.create(_token, "-wallet-", std::optional<std::string>());
+  wm.create(_token, "@wallet@", std::optional<std::string>());
+
+} FC_LOG_AND_RETHROW() }
+
 /// Test wallet manager
 BOOST_AUTO_TEST_CASE(wallet_manager_test)
 { try {
