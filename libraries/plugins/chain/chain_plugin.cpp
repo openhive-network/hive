@@ -125,7 +125,6 @@ class chain_plugin_impl
       thread_pool( app ),
       db( app ),
       default_block_writer( db, app ),
-      current_block_writer( &default_block_writer ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
@@ -138,6 +137,23 @@ class chain_plugin_impl
 
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
+    }
+
+    void set_block_writer( const fc::string& block_storage_type )
+    {
+      if( block_storage_type == "BLOCK_LOG" )
+      {
+        block_storage = block_storage_t::BLOCK_LOG;
+        current_block_writer = &default_block_writer;
+      }
+      else if( block_storage_type == "PRUNED" )
+      {
+        block_storage = block_storage_t::PRUNED;
+        current_block_writer =
+          new pruned_block_writer( 1024, db, theApp, default_block_writer.get_fork_db() );
+      }
+      else
+        FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block storage type" );
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
@@ -204,6 +220,12 @@ class chain_plugin_impl
     flat_map<uint32_t,block_id_type> checkpoints;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
+    enum class block_storage_t
+    {
+      BLOCK_LOG, // single file (default)
+      PRUNED // a pool of recent blocks, kept in memory (state)
+    };
+    block_storage_t                  block_storage = block_storage_t::BLOCK_LOG;
 
 
     uint32_t allow_future_time = 5;
@@ -226,7 +248,7 @@ class chain_plugin_impl
 
     database                         db;
     sync_block_writer                default_block_writer;
-    block_write_chain_i*             current_block_writer;
+    block_write_chain_i*             current_block_writer = nullptr;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -644,6 +666,7 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
+  FC_ASSERT( block_storage == block_storage_t::BLOCK_LOG, "Only block-log based replay is supported now" );
   irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
   db.set_block_writer( &reindex_block_writer );
 
@@ -778,11 +801,14 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    default_block_writer.open(  db_open_args.data_dir / "block_log",
-                                db_open_args.enable_block_log_compression,
-                                db_open_args.block_log_compression_level,
-                                db_open_args.enable_block_log_auto_fixing,
-                                thread_pool );
+    if( block_storage == block_storage_t::BLOCK_LOG )
+    {
+      default_block_writer.open(  db_open_args.data_dir / "block_log",
+                                  db_open_args.enable_block_log_compression,
+                                  db_open_args.block_log_compression_level,
+                                  db_open_args.enable_block_log_auto_fixing,
+                                  thread_pool );
+    }
     db.open( db_open_args );
 
     if( dump_memory_details )
@@ -1314,6 +1340,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
+      ("block-storage-type", bpo::value<string>()->default_value( "BLOCK_LOG" ), "Where to store full block info: BLOCK_LOG, PRUNED. Default BLOCK_LOG." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1341,6 +1368,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
+
+  if( options.count( "block-storage-type" ) )
+    my->set_block_writer( options.at( "block-storage-type" ).as< string >() );
 
   get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
