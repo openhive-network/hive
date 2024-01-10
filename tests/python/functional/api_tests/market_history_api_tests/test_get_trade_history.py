@@ -42,6 +42,8 @@ def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: in
     assert len(response) == 1
     assert response[0].current_pays == tt.Asset.Tbd(tbds_amount)
     assert response[0].open_pays == tt.Asset.Hive(tests_amount)
+    assert response[0].maker == "alice"
+    assert response[0].taker == "initminer"
 
 
 @run_for("testnet", enable_plugins=["market_history_api"])

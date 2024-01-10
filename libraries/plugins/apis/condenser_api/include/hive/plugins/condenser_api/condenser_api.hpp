@@ -855,12 +855,16 @@ struct market_trade
   market_trade( const market_history::market_trade& t ) :
     date( t.date ),
     current_pays( legacy_asset::from_asset( t.current_pays ) ),
-    open_pays( legacy_asset::from_asset( t.open_pays ) )
+    open_pays( legacy_asset::from_asset( t.open_pays ) ),
+    taker( t.taker ),
+    maker( t.maker )
   {}
 
-  time_point_sec date;
-  legacy_asset   current_pays;
-  legacy_asset   open_pays;
+  time_point_sec    date;
+  legacy_asset      current_pays;
+  legacy_asset      open_pays;
+  account_name_type taker;
+  account_name_type maker;
 };
 
 typedef hive::protocol::serializer_wrapper< vector< rc::rc_account_api_object > > find_rc_accounts_return;
@@ -1261,6 +1265,6 @@ FC_REFLECT( hive::plugins::condenser_api::order_book,
         (bids)(asks) )
 
 FC_REFLECT( hive::plugins::condenser_api::market_trade,
-        (date)(current_pays)(open_pays) )
+        (date)(current_pays)(open_pays)(taker)(maker) )
 
 FC_REFLECT_EMPTY( hive::plugins::condenser_api::no_return )
