@@ -1121,7 +1121,9 @@ namespace detail
     const auto& trades = _market_history_api->get_trade_history( { args.at(0).as< time_point_sec >(), args.at(1).as< time_point_sec >(), args.size() == 3 ? args.at(2).as< uint32_t >() : 1000 } ).trades;
     get_trade_history_return result;
 
-    for( const auto& t : trades ) result.push_back( market_trade( t ) );
+    result.reserve( trades.size() );
+    for( const auto& t : trades )
+      result.emplace_back( t );
 
     return result;
   }
@@ -1134,7 +1136,9 @@ namespace detail
     const auto& trades = _market_history_api->get_recent_trades( { args.size() == 1 ? args.at(0).as< uint32_t >() : 1000 } ).trades;
     get_trade_history_return result;
 
-    for( const auto& t : trades ) result.push_back( market_trade( t ) );
+    result.reserve( trades.size() );
+    for( const auto& t : trades )
+      result.emplace_back( t );
 
     return result;
   }

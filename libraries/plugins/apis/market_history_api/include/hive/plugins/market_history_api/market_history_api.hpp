@@ -2,6 +2,7 @@
 #include <hive/plugins/json_rpc/utility.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 
+#include <hive/protocol/hive_virtual_operations.hpp>
 #include <hive/protocol/types.hpp>
 
 #include <fc/optional.hpp>
@@ -60,9 +61,16 @@ struct get_order_book_return
 
 struct market_trade
 {
-  time_point_sec date;
-  asset          current_pays;
-  asset          open_pays;
+  market_trade( const time_point_sec& _date, const protocol::fill_order_operation& op )
+    : date( _date ), current_pays( op.current_pays ), open_pays( op.open_pays ),
+      taker( op.current_owner ), maker( op.open_owner )
+  {}
+
+  time_point_sec    date;
+  asset             current_pays;
+  asset             open_pays;
+  account_name_type taker;
+  account_name_type maker;
 };
 
 struct get_trade_history_args
@@ -145,7 +153,7 @@ FC_REFLECT( hive::plugins::market_history::get_order_book_return,
         (bids)(asks) )
 
 FC_REFLECT( hive::plugins::market_history::market_trade,
-        (date)(current_pays)(open_pays) )
+        (date)(current_pays)(open_pays)(taker)(maker) )
 
 FC_REFLECT( hive::plugins::market_history::get_trade_history_args,
         (start)(end)(limit) )
