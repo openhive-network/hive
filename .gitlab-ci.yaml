@@ -490,6 +490,7 @@ hived_tests:
   variables:
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
+    PYTEST_ARGS: "--log-level=INFO"
 
   script:
     - cd tests/python/functional/hived
