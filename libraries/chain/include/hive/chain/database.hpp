@@ -924,11 +924,6 @@ namespace chain {
         return theApp;
       }
 
-
-    private:
-
-
-      void open_block_log(const open_args& args);
   };
 
 
