@@ -3351,10 +3351,12 @@ std::shared_ptr< custom_operation_interpreter > database::get_custom_json_evalua
 }
 
 void initialize_core_indexes( database& db );
+void initialize_pruning_indexes( database& db );
 
 void database::initialize_indexes()
 {
   initialize_core_indexes( *this );
+  initialize_pruning_indexes( *this );
   _plugin_index_signal();
 }
 
