@@ -15,8 +15,6 @@ pruned_block_writer::pruned_block_writer( uint16_t stored_block_number,
   : _stored_block_number(stored_block_number), _fork_db( fork_db ), _db( db ), _app( app )
 {
   FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
-
-  initialize_pruning_indexes( _db );
 }
 
 void pruned_block_writer::on_reindex_start()
