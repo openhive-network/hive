@@ -18,11 +18,7 @@ from schemas.filter import (
     build_vop_filter,
 )
 from schemas.jsonrpc import get_response_model
-from schemas.operations import (
-    CommentOperation,
-    CommentOptionsOperationLegacy,
-    DeleteCommentOperation,
-)
+from schemas.operations import CommentOperation, CommentOptionsOperationLegacy, DeleteCommentOperation, VoteOperation
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
 from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
 from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
@@ -493,6 +489,11 @@ class CommentTransaction(TransactionLegacy):
 
 class DeleteCommentTransaction(TransactionLegacy):
     operations: tuple[LegacyRepresentation[DeleteCommentOperation]]
+    rc_cost: int
+
+
+class VoteTransaction(TransactionLegacy):
+    operations: tuple[LegacyRepresentation[VoteOperation]]
     rc_cost: int
 
 
@@ -1057,7 +1058,7 @@ class Vote:
     def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount):
         self.__comment_obj = comment_obj
         self.__voter = voter
-        self.__vote_transaction: TransactionLegacy | None = None
+        self.__vote_transaction: VoteTransaction | None = None
         if isinstance(voter, Account):
             self.__voter_obj = voter
         else:
@@ -1086,7 +1087,7 @@ class Vote:
             operation_values = []
             for i in (1, 2):
                 operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
-                    block_num=self.__vote_transaction["ref_block_num"] + i, include_reversible=True
+                    block_num=self.__vote_transaction.ref_block_num + i, include_reversible=True
                 ).ops
                 operation_values = operation_values + [operation.op.value for operation in operations]
             assert vote_operation in operation_values, "Vote_operation not generated, but it should have been"
@@ -1097,7 +1098,7 @@ class Vote:
 
     def assert_rc_mana_after_vote_or_downvote(self, mode: Literal["decrease", "is_unchanged"]) -> None:
         if mode == "decrease":
-            vote_rc_cost = int(self.__vote_transaction["rc_cost"])
+            vote_rc_cost = int(self.__vote_transaction.rc_cost)
             vote_timestamp = get_transaction_timestamp(self.__comment_obj.node, self.__vote_transaction)
             self.__voter_obj.rc_manabar.assert_rc_current_mana_is_reduced(vote_rc_cost, vote_timestamp)
         elif mode == "is_unchanged":
@@ -1119,7 +1120,7 @@ class Vote:
 
     def assert_effective_comment_vote_operation(self, mode: Literal["generated", "not_generated"]) -> None:
         vops = get_virtual_operations(self.__comment_obj.node, EffectiveCommentVoteOperation)
-        effective_comment_vote_operations = [vop["op"]["value"] for vop in vops]
+        effective_comment_vote_operations = [vop.op.value for vop in vops]
         voter_and_comment_permlink = [(vop.voter, vop.permlink) for vop in effective_comment_vote_operations]
         if mode == "generated":
             assert (
@@ -1138,9 +1139,16 @@ class Vote:
 
     def __update_account_info_and_execute_vote(self, weight: int) -> None:
         self.__voter_obj.update_account_info()  # Refresh RC mana and Vote mana before vote
-        self.__vote_transaction = self.__comment_obj.wallet.api.vote(
-            self.__voter_obj.name, self.__comment_obj.author, self.__comment_obj.permlink, weight
-        )
+        self.__vote_transaction = get_response_model(
+            VoteTransaction,
+            **self.__comment_obj.wallet.api.vote(
+                voter=self.__voter_obj.name,
+                author=self.__comment_obj.author,
+                permlink=self.__comment_obj.permlink,
+                weight=weight,
+                only_result=False,
+            ),
+        ).result
 
     def vote(self, weight: int) -> None:
         if not 0 <= weight <= 100:
