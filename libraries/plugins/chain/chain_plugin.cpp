@@ -116,6 +116,86 @@ struct write_context
   write_request_ptr             req_ptr;
 };
 
+class block_storage_manager_t final
+{
+public:
+  block_storage_manager_t( database& db, appbase::application& app ) :
+    _app( app ),
+    _db( db ),
+    _default_block_writer( db, app )
+  {}
+
+  block_write_chain_i* get_block_writer() { return _current_block_writer; }
+
+  block_write_chain_i* init_storage( const std::string& block_storage_type )
+  {
+    if( not block_storage_type.empty() )
+    {
+      if( block_storage_type == "BLOCK_LOG" )
+      {
+        _storage_type = block_storage_t::BLOCK_LOG;
+      }
+      else if( block_storage_type == "PRUNED" )
+      {
+        _storage_type = block_storage_t::PRUNED;
+      }
+      else
+        FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block storage type" );
+    }
+
+    switch( _storage_type )
+    {
+      case block_storage_t::BLOCK_LOG:
+        _current_block_writer = &_default_block_writer;
+        break;
+      case block_storage_t::PRUNED:
+        _current_block_writer = 
+          new pruned_block_writer( 1024, _db, _app, _default_block_writer.get_fork_db() );
+        break;
+      default: FC_THROW_EXCEPTION( fc::parse_error_exception, "Unsupported block storage value set" );
+        break;
+    }
+
+    return _current_block_writer;
+  }
+
+  std::shared_ptr< irreversible_block_writer > get_reindex_block_writer()
+  {
+    FC_ASSERT( _storage_type == block_storage_t::BLOCK_LOG, "Only block-log based replay is supported now" );
+    return std::make_shared< irreversible_block_writer >( _default_block_writer.get_block_log() );
+  }
+
+  void open_storage( const hive::chain::open_args& db_open_args,
+             hive::chain::blockchain_worker_thread_pool& thread_pool )
+  {
+    if( _storage_type == block_storage_t::BLOCK_LOG )
+    {
+      _default_block_writer.open( db_open_args.data_dir / "block_log",
+                                  db_open_args.enable_block_log_compression,
+                                  db_open_args.block_log_compression_level,
+                                  db_open_args.enable_block_log_auto_fixing,
+                                  thread_pool );
+    }
+  }
+
+  void close_storage()
+  {
+    _default_block_writer.close();
+  }
+
+private:
+  enum class block_storage_t
+  {
+    BLOCK_LOG, // single file (default)
+    PRUNED // a pool of recent blocks, kept in memory (state)
+  };
+  block_storage_t       _storage_type = block_storage_t::BLOCK_LOG;
+  appbase::application& _app;
+  database&             _db;
+  sync_block_writer     _default_block_writer;
+  block_write_chain_i*  _current_block_writer = nullptr;
+};
+
 namespace detail {
 
 class chain_plugin_impl
@@ -124,7 +204,7 @@ class chain_plugin_impl
     chain_plugin_impl( appbase::application& app ):
       thread_pool( app ),
       db( app ),
-      default_block_writer( db, app ),
+      block_storage_mgr( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
@@ -137,23 +217,6 @@ class chain_plugin_impl
 
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
-    }
-
-    void set_block_writer( const fc::string& block_storage_type )
-    {
-      if( block_storage_type == "BLOCK_LOG" )
-      {
-        block_storage = block_storage_t::BLOCK_LOG;
-        current_block_writer = &default_block_writer;
-      }
-      else if( block_storage_type == "PRUNED" )
-      {
-        block_storage = block_storage_t::PRUNED;
-        current_block_writer =
-          new pruned_block_writer( 1024, db, theApp, default_block_writer.get_fork_db() );
-      }
-      else
-        FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block storage type" );
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
@@ -220,12 +283,6 @@ class chain_plugin_impl
     flat_map<uint32_t,block_id_type> checkpoints;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
-    enum class block_storage_t
-    {
-      BLOCK_LOG, // single file (default)
-      PRUNED // a pool of recent blocks, kept in memory (state)
-    };
-    block_storage_t                  block_storage = block_storage_t::BLOCK_LOG;
 
 
     uint32_t allow_future_time = 5;
@@ -247,8 +304,7 @@ class chain_plugin_impl
     hive::chain::blockchain_worker_thread_pool thread_pool;
 
     database                         db;
-    sync_block_writer                default_block_writer;
-    block_write_chain_i*             current_block_writer = nullptr;
+    block_storage_manager_t          block_storage_mgr;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -591,7 +647,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          current_block_writer->set_is_at_live_sync();
+          block_storage_mgr.get_block_writer()->set_is_at_live_sync();
           theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
@@ -666,17 +722,17 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
-  FC_ASSERT( block_storage == block_storage_t::BLOCK_LOG, "Only block-log based replay is supported now" );
-  irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
-  db.set_block_writer( &reindex_block_writer );
+  std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+    block_storage_mgr.get_reindex_block_writer();
+  db.set_block_writer( reindex_block_writer.get() );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( this_->current_block_writer );
+    this_->db.set_block_writer( this_->block_storage_mgr.get_block_writer() );
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
   bool replay_is_last_operation = 
-    replay_blockchain( reindex_block_writer.get_replay_block_reader(), thread_pool );
+    replay_blockchain( reindex_block_writer->get_replay_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -705,7 +761,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
 
 void chain_plugin_impl::initial_settings()
 {
-  db.set_block_writer( current_block_writer );
+  db.set_block_writer( block_storage_mgr.get_block_writer() );
 
   if( statsd_on_replay )
   {
@@ -722,7 +778,7 @@ void chain_plugin_impl::initial_settings()
   {
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( theApp.data_dir() / "blockchain", shared_memory_dir, true );
-    default_block_writer.close();
+    block_storage_mgr.close_storage();
   }
 
   db.set_flush_interval( flush_interval );
@@ -801,14 +857,7 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    if( block_storage == block_storage_t::BLOCK_LOG )
-    {
-      default_block_writer.open(  db_open_args.data_dir / "block_log",
-                                  db_open_args.enable_block_log_compression,
-                                  db_open_args.block_log_compression_level,
-                                  db_open_args.enable_block_log_auto_fixing,
-                                  thread_pool );
-    }
+    block_storage_mgr.open_storage( db_open_args, thread_pool );
     db.open( db_open_args );
 
     if( dump_memory_details )
@@ -853,7 +902,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              current_block_writer->switch_forks( 
+              block_storage_mgr.get_block_writer()->switch_forks( 
                 new_head_block_id,
                 new_head_block_num,
                 skip,
@@ -971,7 +1020,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const uint32_t skip = db.get_node_skip_flags();
 
-  return current_block_writer->push_block(
+  return block_storage_mgr.get_block_writer()->push_block(
     full_block,
     block_ctrl,
     db.head_block_num(),
@@ -1021,7 +1070,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
 
-    current_block_writer->on_reindex_start();
+    block_storage_mgr.get_block_writer()->on_reindex_start();
 
     auto start_time = fc::time_point::now();
     HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
@@ -1073,7 +1122,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
 
     FC_ASSERT( replay_block_reader.irreversible_head_block()->get_block_num(),
                "this should never happen" );
-    current_block_writer->on_reindex_end( replay_block_reader.irreversible_head_block() );
+    block_storage_mgr.get_block_writer()->on_reindex_end( replay_block_reader.irreversible_head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1292,7 +1341,7 @@ const block_read_i& chain_plugin::block_reader() const
 {
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
-  return my->current_block_writer->get_block_reader();
+  return my->block_storage_mgr.get_block_writer()->get_block_reader();
 }
 
 fc::microseconds chain_plugin::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
@@ -1369,8 +1418,11 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  if( options.count( "block-storage-type" ) )
-    my->set_block_writer( options.at( "block-storage-type" ).as< string >() );
+  my->block_storage_mgr.init_storage( 
+    options.count( "block-storage-type" ) ?
+      options.at( "block-storage-type" ).as< std::string >() :
+      std::string()
+    );
 
   get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
@@ -1668,7 +1720,7 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->current_block_writer->get_irreversible_block_reader()) )
+    if( my->check_data_consistency( my->block_storage_mgr.get_block_writer()->get_irreversible_block_reader() ) )
     {
       if( my->db.get_snapshot_loaded() )
       {
@@ -1706,7 +1758,7 @@ void chain_plugin::plugin_shutdown()
   get_thread_pool().shutdown();
   my->stop_write_processing();
   my->db.close();
-  my->default_block_writer.close();
+  my->block_storage_mgr.close_storage();
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }
