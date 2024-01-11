@@ -491,6 +491,11 @@ class CommentTransaction(TransactionLegacy):
     rc_cost: int = 0
 
 
+class DeleteCommentTransaction(TransactionLegacy):
+    operations: tuple[LegacyRepresentation[DeleteCommentOperation]]
+    rc_cost: int
+
+
 class CommentOptionsTransaction(TransactionLegacy):
     operations: tuple[LegacyRepresentation[CommentOptionsOperationLegacy]]
     rc_cost: int = 0
@@ -809,10 +814,14 @@ class Comment:
 
     def delete(self) -> None:
         self.author_obj.update_account_info()  # Refresh RC mana before update
-        self.__delete_transaction = create_transaction_with_any_operation(
-            self.__wallet,
-            DeleteCommentOperation(author=self.author, permlink=self.permlink),
-        )
+        self.__delete_transaction = get_response_model(
+            DeleteCommentTransaction,
+            **create_transaction_with_any_operation(
+                self.__wallet,
+                DeleteCommentOperation(author=self.author, permlink=self.permlink),
+                only_result=False,
+            ),
+        ).result
 
     def options(self, **comment_options: Any) -> None:
         """
@@ -904,7 +913,7 @@ class Comment:
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
-        delete_rc_cost = int(self.__delete_transaction["rc_cost"])
+        delete_rc_cost = int(self.__delete_transaction.rc_cost)
         delete_timestamp = get_transaction_timestamp(self.__node, self.__delete_transaction)
         self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(delete_rc_cost, delete_timestamp)
 
