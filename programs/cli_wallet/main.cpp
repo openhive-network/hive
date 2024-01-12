@@ -99,6 +99,7 @@ int main( int argc, char** argv )
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
+      ("retry-server-connection-delay", bpo::value<uint16_t>()->default_value(10), "Delay [s] between every attempt of establishing a connection to the Server websocket RPC endpoint")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
       ("rpc-tls-endpoint,t", bpo::value<string>()->implicit_value("127.0.0.1:8092"), "Endpoint for wallet websocket TLS RPC to listen on")
       ("rpc-tls-certificate,c", bpo::value<string>()->implicit_value("server.pem"), "PEM certificate for wallet websocket TLS RPC")
@@ -266,15 +267,24 @@ int main( int argc, char** argv )
         }
         catch (const fc::exception& e)
         {
+          elog("Error during an attempt of connecting to a server RPC endpoint. ${error}", ("error", e.to_detail_string()));
           if (!options.count("retry-server-connection"))
+          {
+            ilog("Retrying a connection to a server RPC endpoint is not allowed");
             throw;
+          }
         }
         if (con)
+        {
+          ilog("Connection to a server RPC endpoint is correctly done");
           break;
+        }
         else
         {
-          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
-          fc::usleep(fc::seconds(10));
+          FC_ASSERT( options.count("retry-server-connection-delay") );
+          auto _delay = options["retry-server-connection-delay"].as<uint16_t>();
+          wlog("Error connecting to server RPC endpoint, retrying in ${_delay} seconds", (_delay));
+          fc::usleep(fc::seconds(_delay));
         }
       }
       auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
