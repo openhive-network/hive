@@ -886,7 +886,7 @@ class Comment:
             ),
         ).result
 
-    def assert_options_are_apply(self) -> None:
+    def assert_options_are_applied(self) -> None:
         comment_content = self.__node.api.database.find_comments(comments=[[self.author, self.__permlink]]).comments[0]
 
         for key in ["max_accepted_payout", "percent_hbd", "allow_votes", "allow_curation_rewards", "beneficiaries"]:
