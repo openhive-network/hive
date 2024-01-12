@@ -22,15 +22,15 @@ def test_comment_and_comment_options_operations_in_the_same_transaction(
     """
     updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
 
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type, **updated_comment_options)
+    comment.send(reply_type=reply_type, **updated_comment_options)
 
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -42,18 +42,18 @@ def test_comment_and_comment_options_operations_in_the_different_transaction(
     """
     updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
 
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.send(reply_type=reply_type)
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.options(**updated_comment_options)
+    comment.options(**updated_comment_options)
 
-    comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_rc_mana_after_change_comment_options("decrease")
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -65,29 +65,29 @@ def test_change_comment_options_operations_twice(
     """
     updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
 
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
     updated_comment_options["allow_votes"] = True
     updated_comment_options["allow_curation_rewards"] = True
 
-    comment_0.send(reply_type=reply_type, **updated_comment_options)
+    comment.send(reply_type=reply_type, **updated_comment_options)
 
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
     updated_comment_options["max_accepted_payout"] = tt.Asset.Tbd(70).as_legacy()
     updated_comment_options["percent_hbd"] = 30
     updated_comment_options["allow_votes"] = False
     updated_comment_options["allow_curation_rewards"] = False
 
-    comment_0.options(**updated_comment_options)
+    comment.options(**updated_comment_options)
 
-    comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_rc_mana_after_change_comment_options("decrease")
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize(
@@ -135,26 +135,26 @@ def test_try_change_comment_option_again(
     """
     updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
 
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
     for option_name_and_value_set in option_name_and_value_sets_1_list:
         updated_comment_options[option_name_and_value_set[0]] = option_name_and_value_set[1]
 
-    comment_0.send(reply_type=reply_type, **updated_comment_options)
+    comment.send(reply_type=reply_type, **updated_comment_options)
 
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
     updated_comment_options[option_name_and_value_set_2[0]] = option_name_and_value_set_2[1]
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
-        comment_0.options(**updated_comment_options)
+        comment.options(**updated_comment_options)
 
     assert error_message in error.value.error
-    comment_0.assert_rc_mana_after_change_comment_options("is_unchanged")
+    comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -164,19 +164,19 @@ def test_change_options_of_comment_with_reply(prepared_node: tt.InitNode, wallet
     """
     updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
 
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
-    comment_0.create_parent_comment()
+    comment.send(reply_type=reply_type)
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.create_parent_comment()
 
-    comment_0.options(**updated_comment_options)
-    comment_0.assert_rc_mana_after_change_comment_options("decrease")
+    comment.options(**updated_comment_options)
+    comment.assert_rc_mana_after_change_comment_options("decrease")
 
-    comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_applied()
+    comment.assert_is_comment_sent_or_update()
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -184,18 +184,18 @@ def test_change_percent_hbd_after_vote(prepared_node: tt.InitNode, wallet: tt.Wa
     """
     Test case 17, 18 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
-    comment_0.vote()
+    comment.send(reply_type=reply_type)
+    comment.vote()
 
-    comment_0.options(
+    comment.options(
         percent_hbd=50,
     )
-    comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_options_are_applied()
+    comment.assert_rc_mana_after_change_comment_options("decrease")
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize(
@@ -219,21 +219,21 @@ def test_change_comment_options_after_vote(
     """
     Test case 19:24 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
-    comment_0.vote()
+    comment.send(reply_type=reply_type)
+    comment.vote()
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
-        comment_0.options(**comment_options)
+        comment.options(**comment_options)
 
     assert (
         "One of the included comment options requires the comment to have no rshares allocated to it."
         in error.value.error
     )
-    comment_0.assert_rc_mana_after_change_comment_options("is_unchanged")
+    comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -241,18 +241,18 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
     """
     Test case 25, 28 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
+    comment.send(reply_type=reply_type)
 
-    comment_0.create_parent_comment()
+    comment.create_parent_comment()
 
-    comment_0.options(beneficiaries=[{"account": "initminer", "weight": 100}])
+    comment.options(beneficiaries=[{"account": "initminer", "weight": 100}])
 
-    comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_options_are_applied()
+    comment.assert_rc_mana_after_change_comment_options("decrease")
+    comment.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -273,19 +273,19 @@ def test_beneficiary_after_comment(
     """
     Test case 26, 27, 29, 30 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type, beneficiaries=[{"account": "initminer", "weight": 100}])
+    comment.send(reply_type=reply_type, beneficiaries=[{"account": "initminer", "weight": 100}])
 
-    comment_0.create_parent_comment()
+    comment.create_parent_comment()
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
-        comment_0.options(beneficiaries=beneficiaries)
+        comment.options(beneficiaries=beneficiaries)
     assert error_message in error.value.error
 
-    comment_0.assert_rc_mana_after_change_comment_options("is_unchanged")
+    comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -314,16 +314,16 @@ def test_beneficiary_after_vote(
     """
     Test case 31:36 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
+    comment.send(reply_type=reply_type)
 
-    comment_0.vote()
+    comment.vote()
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
-        comment_0.options(beneficiaries=beneficiaries)
+        comment.options(beneficiaries=beneficiaries)
 
     assert error_message in error.value.error
-    comment_0.assert_rc_mana_after_change_comment_options("is_unchanged")
+    comment.assert_rc_mana_after_change_comment_options("is_unchanged")
