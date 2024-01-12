@@ -85,10 +85,11 @@ namespace hive { namespace chain {
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
 
+    void store_full_block( const std::shared_ptr<full_block_type> full_block );
+
   private:
     bool is_known_irreversible_block( const block_id_type& id ) const;
 
-    void store_full_block( const std::shared_ptr<full_block_type> full_block );
     std::shared_ptr<full_block_type> retrieve_full_block( uint32_t recent_block_num ) const;
     const full_block_object* find_full_block( uint32_t recent_block_num ) const;
 
