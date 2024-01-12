@@ -13,11 +13,11 @@ def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet) -> None
     """
     Test case 1 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
-    comment_0 = Comment(prepared_node, wallet)
-    comment_0.send(reply_type="no_reply")
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment = Comment(prepared_node, wallet)
+    comment.send(reply_type="no_reply")
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.assert_is_comment_sent_or_update()
+    comment.assert_is_comment_sent_or_update()
 
 
 @pytest.mark.parametrize(
@@ -27,12 +27,12 @@ def test_if_comment_with_parent_exist(prepared_node: tt.InitNode, wallet: tt.Wal
     """
     Test cases 2, 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
-    comment_0 = Comment(prepared_node, wallet)
-    comment_0.create_parent_comment()
-    comment_0.send(reply_type=reply_type)
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment = Comment(prepared_node, wallet)
+    comment.create_parent_comment()
+    comment.send(reply_type=reply_type)
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.assert_is_comment_sent_or_update()
+    comment.assert_is_comment_sent_or_update()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
@@ -40,16 +40,16 @@ def test_update_comment_without_replies(prepared_node: tt.InitNode, wallet: tt.W
     """
     Test cases 4, 5 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
+    comment.send(reply_type=reply_type)
 
-    comment_0.update()
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.update()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.assert_is_comment_sent_or_update()
+    comment.assert_is_comment_sent_or_update()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
@@ -57,18 +57,18 @@ def test_update_comment_with_replies(prepared_node: tt.InitNode, wallet: tt.Wall
     """
     Test cases 6, 7 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
+    comment.send(reply_type=reply_type)
 
-    comment_0.reply(reply_type="reply_another_comment")
+    comment.reply(reply_type="reply_another_comment")
 
-    comment_0.update()
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.update()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.assert_is_comment_sent_or_update()
+    comment.assert_is_comment_sent_or_update()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
@@ -134,22 +134,22 @@ def test_update_comment_with_replies_after_cashout(
     """
     Test cases 10, 11 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
-    comment_0 = Comment(prepared_node, wallet)
+    comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
-        comment_0.create_parent_comment()
+        comment.create_parent_comment()
 
-    comment_0.send(reply_type=reply_type)
+    comment.send(reply_type=reply_type)
 
-    comment_0.reply(reply_type="reply_another_comment")
+    comment.reply(reply_type="reply_another_comment")
 
     # vote is necessary to cashout
-    comment_0.vote()
+    comment.vote()
 
     # waiting for cashout 60 minutes
     time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
     prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
-    comment_0.update()
-    comment_0.assert_is_rc_mana_decreased_after_post_or_update()
+    comment.update()
+    comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment_0.assert_is_comment_sent_or_update()
+    comment.assert_is_comment_sent_or_update()
