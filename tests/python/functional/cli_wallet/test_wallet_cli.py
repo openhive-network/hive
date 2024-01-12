@@ -26,6 +26,7 @@ def test_help_option() -> None:
         "--output-formatter",
         "--transaction-serialization",
         "--store-transaction",
+        "--retry-server-connection-delay",
     ]
 
     cli_wallet_path = tt.paths_to_executables.get_path_of("cli_wallet")
