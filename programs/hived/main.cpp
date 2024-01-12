@@ -15,6 +15,7 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/interprocess/signals.hpp>
@@ -115,7 +116,8 @@ int main( int argc, char** argv )
     theApp.set_default_plugins<
       hive::plugins::witness::witness_plugin,
       hive::plugins::account_by_key::account_by_key_plugin,
-      hive::plugins::account_by_key::account_by_key_api_plugin >();
+      hive::plugins::account_by_key::account_by_key_api_plugin,
+      hive::plugins::state_snapshot::state_snapshot_plugin >();
 
     if( theApp.is_interrupt_request() ) return 0;
 
