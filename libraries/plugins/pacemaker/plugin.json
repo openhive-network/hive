@@ -1,0 +1,5 @@
+{
+   "plugin_name": "pacemaker",
+   "plugin_namespace": "pacemaker",
+   "plugin_project": "pacemaker_plugin"
+}
