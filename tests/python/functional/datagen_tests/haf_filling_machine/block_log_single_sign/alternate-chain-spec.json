@@ -1,12 +1,12 @@
 {
-  "genesis_time": 1702654665,
+  "genesis_time": 1705047478,
   "hardfork_schedule": [
     {
       "block_num": 0,
       "hardfork": 18
     },
     {
-      "block_num": 200,
+      "block_num": 300,
       "hardfork": 28
     }
   ],
