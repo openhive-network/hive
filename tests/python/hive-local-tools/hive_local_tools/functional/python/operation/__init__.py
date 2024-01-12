@@ -601,7 +601,7 @@ class Comment:
         self.__permlink = permlink or f"main-permlink-{self.author}"
         self.__children: list[Comment] = [child] if child is not None else []
         self.__comment_transaction: CommentTransaction | None = None
-        self.__comment_option_transaction: CommentOptionsTransaction
+        self.__comment_option_transaction: CommentOptionsTransaction = None
         self.__deleted: bool = False
         self.__beneficiaries: list[dict] = []
         self.__benefactors: list[str] = []
