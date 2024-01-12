@@ -18,7 +18,9 @@ class beekeeper_app_base
 
   protected:
 
-    bpo::options_description                              options;
+    bpo::options_description                              options_cli;
+    bpo::options_description                              options_cfg;
+
     std::shared_ptr<beekeeper::beekeeper_wallet_manager>  wallet_manager_ptr;
 
     virtual init_data initialize( int argc, char** argv ) = 0;

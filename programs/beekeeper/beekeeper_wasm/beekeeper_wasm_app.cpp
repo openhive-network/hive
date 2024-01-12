@@ -22,7 +22,7 @@ beekeeper_wasm_app::~beekeeper_wasm_app()
 
 void beekeeper_wasm_app::set_program_options()
 {
-  options.add_options()
+  options_cfg.add_options()
     ("enable-logs", boost::program_options::value<bool>()->default_value( true ), "Whether logs can be written. By default logs are enabled" )
     ;
 
@@ -31,7 +31,7 @@ void beekeeper_wasm_app::set_program_options()
 
 init_data beekeeper_wasm_app::initialize( int argc, char** argv )
 {
-  bpo::store( bpo::parse_command_line( argc, argv, options ), args );
+  bpo::store( bpo::parse_command_line( argc, argv, options_cfg ), args );
   return initialize_program_options();
 }
 

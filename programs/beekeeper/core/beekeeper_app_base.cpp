@@ -21,7 +21,7 @@ beekeeper_app_base::~beekeeper_app_base()
 
 void beekeeper_app_base::set_program_options()
 {
-  options.add_options()
+  options_cfg.add_options()
   /*
     The option `wallet-dir` can't have `boost::filesystem::path` type.
     Explanation:
