@@ -24,9 +24,9 @@ beekeeper_app::~beekeeper_app()
 
 void beekeeper_app::set_program_options()
 {
-  hive::utilities::notifications::add_program_options( options );
+  hive::utilities::notifications::add_program_options( options_cfg );
 
-  options.add_options()
+  options_cli.add_options()
     ("export-keys-wallet", boost::program_options::value< std::vector<std::string> >()->composing()->multitoken(),
       "Export explicitly private keys to a local file `wallet_name.keys`. Both [name, password] are required for every wallet. By default is empty."
       "Two wallets example: --export-keys-wallet \"[\"blue-wallet\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]\" --export-keys-wallet \"[\"green-wallet\", \"PW5KYF9Rt4ETnuP4uheHSCm9kLbCuunf6RqeKgQ8QRoxZmGeZUhhk\"]\" ")
@@ -149,7 +149,7 @@ bool beekeeper_app::save_keys( const std::string& notification, const std::strin
 
 init_data beekeeper_app::initialize( int argc, char** argv )
 {
-  app.add_program_options( bpo::options_description(), options );
+  app.add_program_options( options_cli, options_cfg );
   app.set_app_name( "beekeeper" );
   app.set_version_string( check_version() );
 
