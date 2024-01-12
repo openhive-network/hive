@@ -30,7 +30,7 @@ def test_comment_and_comment_options_operations_in_the_same_transaction(
 
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -53,7 +53,7 @@ def test_comment_and_comment_options_operations_in_the_different_transaction(
 
     comment_0.assert_rc_mana_after_change_comment_options("decrease")
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -76,7 +76,7 @@ def test_change_comment_options_operations_twice(
 
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
     updated_comment_options["max_accepted_payout"] = tt.Asset.Tbd(70).as_legacy()
     updated_comment_options["percent_hbd"] = 30
@@ -87,7 +87,7 @@ def test_change_comment_options_operations_twice(
 
     comment_0.assert_rc_mana_after_change_comment_options("decrease")
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize(
@@ -146,7 +146,7 @@ def test_try_change_comment_option_again(
 
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
     updated_comment_options[option_name_and_value_set_2[0]] = option_name_and_value_set_2[1]
 
@@ -176,7 +176,7 @@ def test_change_options_of_comment_with_reply(prepared_node: tt.InitNode, wallet
     comment_0.assert_rc_mana_after_change_comment_options("decrease")
 
     comment_0.assert_is_comment_sent_or_update()
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
@@ -195,7 +195,7 @@ def test_change_percent_hbd_after_vote(prepared_node: tt.InitNode, wallet: tt.Wa
         percent_hbd=50,
     )
     comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize(
@@ -252,7 +252,7 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
     comment_0.options(beneficiaries=[{"account": "initminer", "weight": 100}])
 
     comment_0.assert_rc_mana_after_change_comment_options("decrease")
-    comment_0.assert_options_are_apply()
+    comment_0.assert_options_are_applied()
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
