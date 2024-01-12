@@ -703,12 +703,7 @@ class Comment:
             - "reply_own_comment": Reply to your own comment.
             - "reply_another_comment": Reply to another comment.
 
-        **comment_options: Optional parameters related to the comment. It can include the following keys and their corresponding values:
-            - max_accepted_payout (dict): Maximum accepted payout.
-            - percent_hbd (int): The percentage of HBD rewards.
-            - allow_votes (bool): Whether to allow votes.
-            - allow_curation_rewards (bool): Whether to allow curation rewards.
-            - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
+        **comment_options: for details check `options` method description.
         """
 
         def new_post() -> None:
@@ -853,12 +848,7 @@ class Comment:
         """
         Private function for modifying a comment options.
 
-        **comment_options: Optional parameters related to the comment. It can include the following keys and their corresponding values:
-            - max_accepted_payout (dict): Maximum accepted payout.
-            - percent_hbd (int): The percentage of HBD rewards.
-            - allow_votes (bool): Whether to allow votes.
-            - allow_curation_rewards (bool): Whether to allow curation rewards.
-            - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
+        **comment_options: for details check `options` method description.
         """
         self.__comment_options = deepcopy(comment_options)
 
