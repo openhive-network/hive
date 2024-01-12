@@ -116,6 +116,13 @@ struct write_context
   write_request_ptr             req_ptr;
 };
 
+class target_block_storage_i
+{
+public:
+  virtual ~target_block_storage_i() {}
+  virtual void store_irreversible_block( const std::shared_ptr<full_block_type>& full_block ) = 0;
+};
+
 class block_storage_manager_t final
 {
 public:
@@ -127,7 +134,8 @@ public:
 
   block_write_chain_i* get_block_writer() { return _current_block_writer; }
 
-  block_write_chain_i* init_storage( const std::string& block_storage_type )
+  block_write_chain_i* init_storage( const std::string& block_storage_type, 
+                                     const std::string& aux_block_storage_type )
   {
     if( not block_storage_type.empty() )
     {
@@ -140,7 +148,17 @@ public:
         _storage_type = block_storage_t::PRUNED;
       }
       else
-        FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block storage type" );
+        FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported block storage type" );
+    }
+
+    if( not aux_block_storage_type.empty() )
+    {
+      if( aux_block_storage_type == "BLOCK_LOG" )
+      {
+        _aux_storage_type = block_storage_t::BLOCK_LOG;
+      }
+      else
+        FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported auxiliary block storage type" );
     }
 
     switch( _storage_type )
@@ -161,14 +179,45 @@ public:
 
   std::shared_ptr< irreversible_block_writer > get_reindex_block_writer()
   {
-    FC_ASSERT( _storage_type == block_storage_t::BLOCK_LOG, "Only block-log based replay is supported now" );
-    return std::make_shared< irreversible_block_writer >( _default_block_writer.get_block_log() );
+    if( _storage_type == block_storage_t::BLOCK_LOG ||
+        ( _aux_storage_type && *_aux_storage_type == block_storage_t::BLOCK_LOG ) )
+    {
+      return std::make_shared< irreversible_block_writer >( _default_block_writer.get_block_log() );
+    }
+
+    ilog("No auxiliary storage provided for replaying");
+    return std::shared_ptr< irreversible_block_writer >();
+  }
+
+  target_block_storage_i& get_target_block_storage()
+  {
+    if( not _target_block_storage )
+    {
+      switch( _storage_type )
+      {
+        case block_storage_t::BLOCK_LOG:
+          _target_block_storage = std::make_unique< no_target_block_storage_t >();
+          break;
+        case block_storage_t::PRUNED:
+          {
+            pruned_block_writer* writer = dynamic_cast< pruned_block_writer* >( _current_block_writer );
+            FC_ASSERT( writer, "Current block writer is not pruned one though the flag says so!" );
+            _target_block_storage = std::make_unique< pruned_target_block_storage_t >( writer );
+          }
+          break;
+        default: FC_THROW_EXCEPTION( fc::parse_error_exception, "Unsupported block storage value set" );
+          break;
+      }
+    }
+    
+    return *_target_block_storage;
   }
 
   void open_storage( const hive::chain::open_args& db_open_args,
              hive::chain::blockchain_worker_thread_pool& thread_pool )
   {
-    if( _storage_type == block_storage_t::BLOCK_LOG )
+    if( _storage_type == block_storage_t::BLOCK_LOG || 
+        ( _aux_storage_type && *_aux_storage_type == block_storage_t::BLOCK_LOG ) )
     {
       _default_block_writer.open( db_open_args.data_dir / "block_log",
                                   db_open_args.enable_block_log_compression,
@@ -184,16 +233,37 @@ public:
   }
 
 private:
+  class no_target_block_storage_t : public target_block_storage_i
+  {
+  public:
+    virtual ~no_target_block_storage_t() {}
+    virtual void store_irreversible_block( const std::shared_ptr<full_block_type>& full_block ) override {}
+  };
+  class pruned_target_block_storage_t : public target_block_storage_i
+  {
+  public:
+    pruned_target_block_storage_t( pruned_block_writer* writer ) : _writer( writer ) {}
+    virtual ~pruned_target_block_storage_t() {}
+    virtual void store_irreversible_block( const std::shared_ptr<full_block_type>& full_block ) override
+    {
+      _writer->store_full_block( full_block );
+    }
+
+  private:
+    pruned_block_writer* _writer = nullptr;
+  };
   enum class block_storage_t
   {
     BLOCK_LOG, // single file (default)
     PRUNED // a pool of recent blocks, kept in memory (state)
   };
-  block_storage_t       _storage_type = block_storage_t::BLOCK_LOG;
-  appbase::application& _app;
-  database&             _db;
-  sync_block_writer     _default_block_writer;
-  block_write_chain_i*  _current_block_writer = nullptr;
+  block_storage_t                           _storage_type = block_storage_t::BLOCK_LOG;
+  std::optional< block_storage_t >          _aux_storage_type;
+  appbase::application&                     _app;
+  database&                                 _db;
+  std::unique_ptr< target_block_storage_i > _target_block_storage;
+  sync_block_writer                         _default_block_writer;
+  block_write_chain_i*                      _current_block_writer = nullptr;
 };
 
 namespace detail {
@@ -230,12 +300,14 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool );
+    bool start_replay_processing( std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+                                  hive::chain::blockchain_worker_thread_pool& thread_pool );
 
     void initial_settings();
     void open();
     bool replay_blockchain( const replay_block_read_i& replay_block_reader, 
-                            hive::chain::blockchain_worker_thread_pool& thread_pool );
+                            hive::chain::blockchain_worker_thread_pool& thread_pool,
+                            target_block_storage_i& target_storage );
     void process_snapshot();
     bool check_data_consistency( const replay_block_read_i& block_reader );
 
@@ -343,11 +415,13 @@ class chain_plugin_impl
     bool _push_block( const block_flow_control& block_ctrl );
 
     uint32_t reindex( const open_args& args, const replay_block_read_i& replay_block_reader,
-                      hive::chain::blockchain_worker_thread_pool& thread_pool );
+                      hive::chain::blockchain_worker_thread_pool& thread_pool,
+                      target_block_storage_i& target_storage );
     uint32_t reindex_internal( const open_args& args, 
                                const std::shared_ptr<full_block_type>& start_block,
                                const replay_block_read_i& replay_block_reader,
-                               hive::chain::blockchain_worker_thread_pool& thread_pool );
+                               hive::chain::blockchain_worker_thread_pool& thread_pool,
+                               target_block_storage_i& target_storage );
     /**
       * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
       *
@@ -720,10 +794,10 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool )
+bool chain_plugin_impl::start_replay_processing( 
+  std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+  hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
-  std::shared_ptr< irreversible_block_writer > reindex_block_writer =
-    block_storage_mgr.get_reindex_block_writer();
   db.set_block_writer( reindex_block_writer.get() );
 
   BOOST_SCOPE_EXIT(this_) {
@@ -732,7 +806,8 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
 
   theApp.notify_status("replaying");
   bool replay_is_last_operation = 
-    replay_blockchain( reindex_block_writer->get_replay_block_reader(), thread_pool );
+    replay_blockchain( reindex_block_writer->get_replay_block_reader(), thread_pool,
+                       block_storage_mgr.get_target_block_storage() );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -1036,7 +1111,8 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
 
 uint32_t chain_plugin_impl::reindex( const open_args& args,
   const replay_block_read_i& replay_block_reader,
-  hive::chain::blockchain_worker_thread_pool& thread_pool )
+  hive::chain::blockchain_worker_thread_pool& thread_pool,
+  target_block_storage_i& target_storage )
 {
   reindex_notification note( args );
 
@@ -1108,7 +1184,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
         note.last_block_number = 
-          reindex_internal( args, start_block, replay_block_reader, thread_pool );
+          reindex_internal( args, start_block, replay_block_reader, thread_pool, target_storage );
       }
       else
       {
@@ -1138,7 +1214,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
 uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
   const std::shared_ptr<full_block_type>& start_block,
   const replay_block_read_i& replay_block_reader,
-  hive::chain::blockchain_worker_thread_pool& thread_pool )
+  hive::chain::blockchain_worker_thread_pool& thread_pool,
+  target_block_storage_i& target_storage )
 {
   uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
   if (args.validate_during_replay)
@@ -1182,6 +1259,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
     }
 
     db.apply_block(full_block, skip_flags);
+    target_storage.store_irreversible_block(full_block);
     last_applied_block = full_block;
 
     return !theApp.is_interrupt_request();
@@ -1226,13 +1304,14 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
 }
 
 bool chain_plugin_impl::replay_blockchain( const replay_block_read_i& replay_block_reader,
-  hive::chain::blockchain_worker_thread_pool& thread_pool )
+  hive::chain::blockchain_worker_thread_pool& thread_pool,
+  target_block_storage_i& target_storage )
 {
   try
   {
     ilog("Replaying blockchain on user request.");
     uint32_t last_block_number = 0;
-    last_block_number = reindex( db_open_args, replay_block_reader, thread_pool );
+    last_block_number = reindex( db_open_args, replay_block_reader, thread_pool, target_storage );
 
     if( benchmark_interval > 0 )
     {
@@ -1390,6 +1469,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
       ("block-storage-type", bpo::value<string>()->default_value( "BLOCK_LOG" ), "Where to store full block info: BLOCK_LOG, PRUNED. Default BLOCK_LOG." )
+      ("auxiliary-block-storage-type", bpo::value<string>(), "Additional source of irreversible blocks, handy e.g. during replay. Supported value: BLOCK_LOG (only with block-storage-type set to PRUNED)." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1421,6 +1501,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->block_storage_mgr.init_storage( 
     options.count( "block-storage-type" ) ?
       options.at( "block-storage-type" ).as< std::string >() :
+      std::string(),
+    options.count( "auxiliary-block-storage-type" ) ?
+      options.at( "auxiliary-block-storage-type" ).as< std::string >() :
       std::string()
     );
 
@@ -1710,8 +1793,11 @@ void chain_plugin::plugin_startup()
 
   if( my->replay )
   {
+    std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+      my->block_storage_mgr.get_reindex_block_writer();
+    FC_ASSERT( reindex_block_writer , "Can't force replay with current configuration of block storage options.");
     ilog("Replaying...");
-    if( !my->start_replay_processing( get_thread_pool() ) )
+    if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
     {
       ilog("P2P enabling after replaying...");
       my->work( on_sync );
@@ -1724,11 +1810,23 @@ void chain_plugin::plugin_startup()
     {
       if( my->db.get_snapshot_loaded() )
       {
-        ilog("Replaying...");
-        //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing( get_thread_pool() ) )
+        std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+          my->block_storage_mgr.get_reindex_block_writer();
+        if( reindex_block_writer )
         {
-          ilog("P2P enabling after replaying...");
+          ilog("Replaying...");
+          //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+          if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
+          {
+            ilog("P2P enabling after replaying...");
+            my->work( on_sync );
+          }
+        }
+        else
+        {
+          // TODO: Hide ugly initialization below.
+          my->block_storage_mgr.get_block_writer()->on_reindex_end( my->block_storage_mgr.get_block_writer()->get_irreversible_block_reader().irreversible_head_block() );
+          ilog("P2P enabling after snapshot loading...");
           my->work( on_sync );
         }
       }
