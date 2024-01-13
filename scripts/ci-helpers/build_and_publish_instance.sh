@@ -81,8 +81,8 @@ done
 CI_PROJECT_NAME="${CI_REGISTRY_IMAGE##*/}"
 
 echo "Logging to Docker Hub and $CI_REGISTRY"
-docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
+docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" <<< "$CI_REGISTRY_PASSWORD"
+docker login -u "$DOCKER_HUB_USER" --password-stdin <<< "$DOCKER_HUB_PASSWORD"
 
 echo "Building an instance image in the source directory $SRC_DIR"
 "$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
