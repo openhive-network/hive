@@ -3,6 +3,7 @@
 #include <hive/chain/block_write_chain_interface.hpp>
 
 #include <hive/chain/fork_db_block_reader.hpp>
+//#include <hive/chain/pruned_block_writer.hpp>
 
 #include <hive/chain/database.hpp>
 #include <appbase/application.hpp>
@@ -111,6 +112,8 @@ namespace hive { namespace chain {
       const block_id_type original_head_block_id, const uint32_t original_head_block_number,
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
+    //void set_aux( pruned_block_writer* aux );
+
   private:
     block_log&            _block_log;
     fork_database&        _fork_db;
@@ -118,6 +121,7 @@ namespace hive { namespace chain {
     bool                  _is_at_live_sync = false;
     database&             _db; /// Needed only for notification purposes.
     application&          _app; /// Needed only for notification purposes.
+    //std::unique_ptr< pruned_block_writer > _aux;
   };
 
 } }

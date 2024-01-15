@@ -31,6 +31,8 @@ void sync_block_writer::initialize_block_data()
   auto head = _block_log.head();
   if( head )
     _fork_db.start_block( head );
+
+  //_aux->initialize_block_data();
 }
 
 void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
@@ -45,7 +47,7 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
     state_head_block_number,
     blocklog_head_num,
     [&]( const std::shared_ptr<full_block_type>& full_block )
-      { _block_log.append( full_block, _is_at_live_sync ); },
+      { _block_log.append( full_block, _is_at_live_sync ); /*_aux->store_full_block( full_block );*/ },
     [&](){ _block_log.flush(); } );
 }
 
@@ -440,5 +442,10 @@ void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& 
 {
   _fork_db.start_block( end_block );
 }
-
+/*
+void sync_block_writer::set_aux( pruned_block_writer* aux )
+{
+  _aux = std::unique_ptr< pruned_block_writer >( aux );
+}
+*/
 } } //hive::chain
