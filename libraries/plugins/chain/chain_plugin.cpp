@@ -1319,8 +1319,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
-      ("block-storage-type", bpo::value<string>()->default_value( "BLOCK_LOG" ), "Where to store full block info: BLOCK_LOG, PRUNED. Default BLOCK_LOG." )
-      ("auxiliary-block-storage-type", bpo::value<string>(), "Additional source of irreversible blocks, handy e.g. during replay. Supported value: BLOCK_LOG (only with block-storage-type set to PRUNED)." )
+      //("block-storage-type", bpo::value<string>()->default_value( "BLOCK_LOG" ), "Where to store full block info: BLOCK_LOG, PRUNED. Default BLOCK_LOG." )
+      //("auxiliary-block-storage-type", bpo::value<string>(), "Additional source of irreversible blocks, handy e.g. during replay. Supported value: BLOCK_LOG (only with block-storage-type set to PRUNED)." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1675,8 +1675,7 @@ void chain_plugin::plugin_startup()
         }
         else
         {
-          // TODO: Hide ugly initialization below.
-          my->block_storage_mgr.get_block_writer()->on_reindex_end( my->block_storage_mgr.get_block_writer()->get_irreversible_block_reader().irreversible_head_block() );
+          my->block_storage_mgr.on_snapshot_loaded_without_replay();
           ilog("P2P enabling after snapshot loading...");
           my->work( on_sync );
         }

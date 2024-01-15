@@ -42,35 +42,42 @@ block_write_chain_i* block_storage_manager_t::init_storage(
   const std::string& block_storage_type, 
   const std::string& aux_block_storage_type )
 {
-  if( not block_storage_type.empty() )
+  /*if( not block_storage_type.empty() )
   {
     if( block_storage_type == "BLOCK_LOG" )
     {
       _storage_type = block_storage_t::BLOCK_LOG;
     }
     else if( block_storage_type == "PRUNED" )
-    {
+    {*/
       _storage_type = block_storage_t::PRUNED;
-    }
+    /*}
     else
       FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported block storage type" );
-  }
+  }*/
 
-  if( not aux_block_storage_type.empty() )
+  /*if( not aux_block_storage_type.empty() )
   {
     if( aux_block_storage_type == "BLOCK_LOG" )
-    {
+    {*/
       _aux_storage_type = block_storage_t::BLOCK_LOG;
-    }
+    /*}
     else
       FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported auxiliary block storage type" );
-  }
+  }*/
 
   switch( _storage_type )
   {
     case block_storage_t::BLOCK_LOG:
+      {
       _current_block_writer = 
         std::make_unique< sync_block_writer >( _block_log, _fork_db, _db, _app );
+      /*sync_block_writer* aux =
+        new sync_block_writer( _block_log, _fork_db, _db, _app );
+      aux->set_aux( new pruned_block_writer( 1024, _db, _app, _fork_db ) );
+      _current_block_writer = 
+        std::unique_ptr< sync_block_writer >( aux );*/
+      }
       break;
     case block_storage_t::PRUNED:
       _current_block_writer = 
@@ -117,6 +124,12 @@ target_block_storage_i& block_storage_manager_t::get_target_block_storage()
   }
   
   return *_target_block_storage;
+}
+
+void block_storage_manager_t::on_snapshot_loaded_without_replay()
+{
+  auto lib = _current_block_writer->get_irreversible_block_reader().irreversible_head_block();
+  _current_block_writer->on_reindex_end( lib );
 }
 
 void block_storage_manager_t::open_storage( 

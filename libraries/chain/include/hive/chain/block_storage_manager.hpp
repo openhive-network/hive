@@ -37,6 +37,8 @@ public:
 
   target_block_storage_i& get_target_block_storage();
 
+  void on_snapshot_loaded_without_replay();
+
   void open_storage( const hive::chain::open_args& db_open_args,
              hive::chain::blockchain_worker_thread_pool& thread_pool );
 
