@@ -101,7 +101,7 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
-void open_test_database( database& db, sync_block_writer& sbw,
+void open_test_database( database& db, block_log& bl, sync_block_writer& sbw,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
@@ -112,11 +112,14 @@ void open_test_database( database& db, sync_block_writer& sbw,
   args.database_cfg = hive::utilities::default_database_configuration();
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
-  sbw.open( args.data_dir / "block_log",
-            args.enable_block_log_compression,
-            args.block_log_compression_level,
-            args.enable_block_log_auto_fixing,
-            thread_pool );
+  db.with_write_lock([&]()
+  {
+    bl.open_and_init( args.data_dir / "block_log",
+                      args.enable_block_log_compression,
+                      args.block_log_compression_level,
+                      args.enable_block_log_auto_fixing,
+                      thread_pool );
+  });
   db.open( args );
 }
 
@@ -1357,9 +1360,13 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
 
 #define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
   database NAME( APP ); \
-  sync_block_writer sbw_ ## NAME ( NAME, APP ); \
+  { \
+  block_log bl_ ## NAME ( APP ); \
+  fork_database fdb_ ## NAME; \
+  sync_block_writer sbw_ ## NAME ( bl_ ## NAME, fdb_ ## NAME, NAME, APP ); \
   NAME.set_block_writer( &sbw_ ## NAME ); \
-  open_test_database( NAME, sbw_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS );
+  open_test_database( NAME, bl_ ## NAME, sbw_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
+  }
   
 BOOST_AUTO_TEST_CASE( safe_closing_database )
 {

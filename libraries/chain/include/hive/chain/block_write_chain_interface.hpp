@@ -8,10 +8,9 @@ namespace hive { namespace chain {
 
   class block_write_chain_i : public block_write_i
   {
-  protected:
+  public:
     virtual ~block_write_chain_i() = default;
 
-  public:
     virtual const replay_block_read_i& get_irreversible_block_reader() const = 0;
 
     virtual void set_is_at_live_sync() = 0;
