@@ -67,12 +67,14 @@ include:
     CONFIG_INI_SOURCE: ""
     HIVE_NETWORK_TYPE: mainnet
   script:
-    - mkdir "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir" -p
+    - mkdir "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir" -pv
+    - cd "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
     - flock "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
         --data-cache="${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
-    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/docker_entrypoint.log" "$CI_PROJECT_DIR"
-    - echo "HIVED_UID=$(id -u)" > hived_uid.env
-    - cat hived_uid.env
+    - cd "$CI_PROJECT_DIR"
+    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/hived_uid.env" "$CI_PROJECT_DIR/hived_uid.env"
+    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log"
+    - ls -la "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
 
   artifacts:
     reports:
