@@ -80,7 +80,9 @@ int main( int argc, char** argv, char** envp )
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 
   hive::chain::database db( app );
-  hive::chain::sync_block_writer block_writer( db, app );
+  hive::chain::block_log bl( app );
+  hive::chain::fork_database fdb;
+  hive::chain::sync_block_writer block_writer( bl, fdb, db, app );
   db.set_block_writer( &block_writer );
 
   hive::chain::open_args db_args;
@@ -91,11 +93,14 @@ int main( int argc, char** argv, char** envp )
 
   std::map< std::string, schema_info > schema_map;
 
-  block_writer.open(  db_args.data_dir / "block_log",
+  db.with_write_lock([&]()
+  {
+    bl.open_and_init( db_args.data_dir / "block_log",
                       db_args.enable_block_log_compression,
                       db_args.block_log_compression_level,
                       db_args.enable_block_log_auto_fixing,
                       thread_pool );
+  });
   db.open( db_args );
 
   hive_schema ss;
@@ -118,7 +123,8 @@ int main( int argc, char** argv, char** envp )
   std::cout << fc::json::to_string( ss ) << std::endl;
 
   db.close();
-  block_writer.close();
+  bl.close();
+  fdb.reset();
 
   return 0;
 }
