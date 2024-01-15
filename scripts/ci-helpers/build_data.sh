@@ -93,5 +93,7 @@ docker logs -f hived_instance &
 
 status=$(docker wait hived_instance)
 
+echo "HIVED_UID=$(id -u)" > "$DATA_CACHE/datadir/hived_uid.env"
+
 echo "$status" > "$DATA_CACHE/datadir/status"
 exit $status
