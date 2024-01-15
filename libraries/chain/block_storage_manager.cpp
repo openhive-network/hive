@@ -29,12 +29,13 @@ private:
 block_storage_manager_t::block_storage_manager_t( database& db, appbase::application& app ) :
   _app( app ),
   _db( db ),
-  _default_block_writer( db, app )
+  _block_log( app )
 {}
 
 block_write_chain_i* block_storage_manager_t::get_block_writer()
 {
-  return _current_block_writer;
+  FC_ASSERT( _current_block_writer, "Internal error: block writer not initialized!" );
+  return _current_block_writer.get();
 }
 
 block_write_chain_i* block_storage_manager_t::init_storage(
@@ -68,17 +69,18 @@ block_write_chain_i* block_storage_manager_t::init_storage(
   switch( _storage_type )
   {
     case block_storage_t::BLOCK_LOG:
-      _current_block_writer = &_default_block_writer;
+      _current_block_writer = 
+        std::make_unique< sync_block_writer >( _block_log, _fork_db, _db, _app );
       break;
     case block_storage_t::PRUNED:
       _current_block_writer = 
-        new pruned_block_writer( 1024, _db, _app, _default_block_writer.get_fork_db() );
+        std::make_unique< pruned_block_writer >( 1024, _db, _app, _fork_db );
       break;
     default: FC_THROW_EXCEPTION( fc::parse_error_exception, "Unsupported block storage value set" );
       break;
   }
 
-  return _current_block_writer;
+  return _current_block_writer.get();
 }
 
 std::shared_ptr< irreversible_block_writer > block_storage_manager_t::get_reindex_block_writer()
@@ -86,7 +88,7 @@ std::shared_ptr< irreversible_block_writer > block_storage_manager_t::get_reinde
   if( _storage_type == block_storage_t::BLOCK_LOG ||
       ( _aux_storage_type && *_aux_storage_type == block_storage_t::BLOCK_LOG ) )
   {
-    return std::make_shared< irreversible_block_writer >( _default_block_writer.get_block_log() );
+    return std::make_shared< irreversible_block_writer >( _block_log );
   }
 
   ilog("No auxiliary storage provided for replaying");
@@ -104,7 +106,7 @@ target_block_storage_i& block_storage_manager_t::get_target_block_storage()
         break;
       case block_storage_t::PRUNED:
         {
-          pruned_block_writer* writer = dynamic_cast< pruned_block_writer* >( _current_block_writer );
+          pruned_block_writer* writer = dynamic_cast< pruned_block_writer* >( _current_block_writer.get() );
           FC_ASSERT( writer, "Current block writer is not pruned one though the flag says so!" );
           _target_block_storage = std::make_unique< pruned_target_block_storage_t >( writer );
         }
@@ -124,17 +126,21 @@ void block_storage_manager_t::open_storage(
   if( _storage_type == block_storage_t::BLOCK_LOG || 
       ( _aux_storage_type && *_aux_storage_type == block_storage_t::BLOCK_LOG ) )
   {
-    _default_block_writer.open( db_open_args.data_dir / "block_log",
+    _db.with_write_lock([&]()
+    {
+      _block_log.open_and_init( db_open_args.data_dir / "block_log",
                                 db_open_args.enable_block_log_compression,
                                 db_open_args.block_log_compression_level,
                                 db_open_args.enable_block_log_auto_fixing,
                                 thread_pool );
+    });
   }
 }
 
 void block_storage_manager_t::close_storage()
 {
-  _default_block_writer.close();
+  _fork_db.reset();
+  _block_log.close();
 }
 
 } } //hive::chain
