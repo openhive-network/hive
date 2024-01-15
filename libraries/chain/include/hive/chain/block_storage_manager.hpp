@@ -52,9 +52,10 @@ private:
   std::optional< block_storage_t >          _aux_storage_type;
   appbase::application&                     _app;
   database&                                 _db;
+  block_log                                 _block_log;
+  fork_database                             _fork_db;
+  std::unique_ptr< block_write_chain_i >    _current_block_writer;
   std::unique_ptr< target_block_storage_i > _target_block_storage;
-  sync_block_writer                         _default_block_writer;
-  block_write_chain_i*                      _current_block_writer = nullptr;
 };
 
 } }

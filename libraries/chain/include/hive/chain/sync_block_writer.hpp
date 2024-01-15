@@ -16,7 +16,7 @@ namespace hive { namespace chain {
   class sync_block_writer : public block_write_chain_i
   {
   public:
-    sync_block_writer( database& db, application& app );
+    sync_block_writer( block_log& bl, fork_database& fdb, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
     virtual block_read_i& get_block_reader() override;
@@ -111,17 +111,10 @@ namespace hive { namespace chain {
       const block_id_type original_head_block_id, const uint32_t original_head_block_number,
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
-    void open(  const fc::path& file, bool enable_compression,
-                int compression_level, bool enable_block_log_auto_fixing,
-                hive::chain::blockchain_worker_thread_pool& thread_pool );
-    void close();
-    const block_log& get_block_log() const { return _block_log; }
-    fork_database& get_fork_db() { return _fork_db; };
-    
   private:
-    block_log             _block_log;
+    block_log&            _block_log;
+    fork_database&        _fork_db;
     fork_db_block_reader  _reader;
-    fork_database         _fork_db;
     bool                  _is_at_live_sync = false;
     database&             _db; /// Needed only for notification purposes.
     application&          _app; /// Needed only for notification purposes.
