@@ -596,6 +596,8 @@ class Comment:
         self.__comment_transaction: CommentTransaction | None = None
         self.__comment_option_transaction: CommentOptionsTransaction
         self.__deleted: bool = False
+        self.__beneficiaries: list[dict] = []
+        self.__benefactors: list[str] = []
 
     @property
     def node(self) -> tt.InitNode:
@@ -627,6 +629,14 @@ class Comment:
     @property
     def parent(self) -> Comment | None:
         return self.__parent
+
+    @property
+    def benefactors(self) -> list:
+        return self.__benefactors
+
+    def fill_beneficiares(self, beneficiaries: list, beneficiary_accounts: list) -> None:
+        self.__beneficiaries = beneficiaries
+        self.__benefactors = beneficiary_accounts
 
     def __force_get_parent(self) -> Comment:
         """
@@ -912,6 +922,90 @@ class Comment:
             if account_reputation.account == self.__author.name:
                 return account_reputation.reputation
         raise ValueError(f"Cannot get reputation for account: {self.__author.name}")
+
+    def assert_author_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]) -> None:
+        author_reward_operations = get_reward_operations(self.__node, "author")
+        author_and_permlink = [(value.author, value.permlink) for value in author_reward_operations]
+        if mode == "generated":
+            assert (
+                self.author,
+                self.permlink,
+            ) in author_and_permlink, "Author_reward_operation not generated, but it should have been"
+        elif mode == "not_generated":
+            assert (
+                self.author,
+                self.permlink,
+            ) not in author_and_permlink, "Author_reward_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def assert_comment_benefactors_reward_virtual_operations(self, mode: Literal["generated", "not_generated"]) -> None:
+        comment_benefactors_operations = get_reward_operations(self.__node, "comment_benefactor")
+        for beneficiary in self.__beneficiaries:
+            benefactor_and_permlink = [(value.benefactor, value.permlink) for value in comment_benefactors_operations]
+            if mode == "generated":
+                assert (
+                    beneficiary["account"],
+                    self.permlink,
+                ) in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation not generated, but it should have been"
+                )
+            elif mode == "not_generated":
+                assert (
+                    beneficiary["account"],
+                    self.permlink,
+                ) not in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation generated, but it should have not been"
+                )
+            else:
+                raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def get_reward(
+        self,
+        reward_type: Literal["author", "comment_benefactor"],
+        mode: Literal["hbd_payout", "vesting_payout"],
+        benefactor: str | None = None,
+    ):
+        assert mode in ["hbd_payout", "vesting_payout"], f"Unexpected value for 'mode': '{mode}'"
+        if reward_type == "comment_benefactor":
+            assert benefactor is not None, "You have to provide benefactor."
+
+        reward_operations = get_reward_operations(self.__node, reward_type)
+        for value in reward_operations:
+            condition = (value.author == self.author) if reward_type == "author" else (value.benefactor == benefactor)
+            if condition and value.permlink == self.permlink:
+                return getattr(value, mode)
+        raise ValueError(f"Comment not have generated {reward_type}_reward_operation")
+
+    def assert_resource_percentage_in_reward(
+        self,
+        reward_type: Literal["author", "comment_benefactor"],
+        hbd_percentage: int,
+        vesting_percentage: int,
+        benefactor: str | None = None,
+    ):
+        if reward_type == "author":
+            assert benefactor is None, "You have not to provide benefactor."
+
+        if benefactor is None and reward_type == "comment_benefactor":
+            benefactor = self.__benefactors[0].name
+
+        hbd_reward = self.get_reward(reward_type=reward_type, mode="hbd_payout", benefactor=benefactor)
+        hbd_reward_as_hive = convert_hbd_to_hive(self.__node, hbd_reward)
+        vesting_payout = self.get_reward(reward_type=reward_type, mode="vesting_payout", benefactor=benefactor)
+        vesting_payout_as_hive = convert_vesting_to_hive(self.__node, vesting_payout)
+        assert (
+            abs(hbd_reward_as_hive.as_float() * vesting_percentage - vesting_payout_as_hive.as_float() * hbd_percentage)
+            <= 100
+        ), "Resources percentage in reward are incorrect"
+
+    def verify_balances(self):
+        self.__author.assert_reward_balance(self.node, "hbd")
+        self.__author.assert_reward_balance(self.node, "vesting")
+        if self.__benefactors:
+            for benefactor in self.__benefactors:
+                benefactor.assert_reward_balance(self.node, "hbd")
+                benefactor.assert_reward_balance(self.node, "vesting")
 
 
 class Proposal:
