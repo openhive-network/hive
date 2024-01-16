@@ -65,7 +65,7 @@ enum Columns
 #define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
 
 #define STORE_MAJOR_VERSION          1
-#define STORE_MINOR_VERSION          0
+#define STORE_MINOR_VERSION          1
 
 namespace hive { namespace plugins { namespace account_history_rocksdb {
 
@@ -664,8 +664,27 @@ private:
     _columnHandles.clear();
   }
 
+  uint64_t build_next_operation_id(const rocksdb_operation_object& obj, const hive::protocol::operation& processed_op)
+  {
+    auto number_in_block = _operationSeqId++;
+
+    //msb.....................lsb
+    // || block | seq | type ||
+    // ||  32b  | 24b |  8b  ||
+    constexpr auto  TYPE_ID_LIMIT = 255; // 2^8-1
+    constexpr auto NUMBER_IN_BLOCK_LIMIT = 16777215; // 2^24-1
+    FC_ASSERT(processed_op.which() <= TYPE_ID_LIMIT, "Operation type is to large to fit in 8 bits");
+    FC_ASSERT(number_in_block <= NUMBER_IN_BLOCK_LIMIT, "Operation in block number is to large to fit in 24 bits");
+    uint64_t operation_id = obj.block;
+    operation_id <<= 32;
+    operation_id |= (number_in_block << 8);
+    operation_id |= processed_op.which();
+
+    return operation_id;
+  }
+
   template< typename T >
-  void importOperation( rocksdb_operation_object& obj, const T& impacted )
+  void importOperation( rocksdb_operation_object& obj, const hive::protocol::operation& processed_op, const T& impacted )
   {
     if(_lastTx != obj.trx_id && obj.trx_id != transaction_id_type()/*An virtual operation shouldn't increase `_txNo` counter.*/ )
     {
@@ -674,7 +693,7 @@ private:
       storeTransactionInfo(obj.trx_id, obj.block, obj.trx_in_block);
     }
 
-    obj.id = _operationSeqId++;
+    obj.id = build_next_operation_id(obj, processed_op);
 
     serialize_buffer_t serializedObj;
     auto size = fc::raw::pack_size(obj);
@@ -739,36 +758,29 @@ private:
 
   void storeSequenceIds()
   {
-    Slice opSeqIdName("OPERATION_SEQ_ID");
     Slice ahSeqIdName("AH_SEQ_ID");
 
-    id_slice_t opId(_operationSeqId);
     id_slice_t ahId(_accountHistorySeqId);
 
-    auto s = _writeBuffer.Put(opSeqIdName, opId);
-    checkStatus(s);
-    s = _writeBuffer.Put(ahSeqIdName, ahId);
+    auto s = _writeBuffer.Put(ahSeqIdName, ahId);
     checkStatus(s);
   }
 
   void loadSeqIdentifiers(DB* storageDb)
   {
-    Slice opSeqIdName("OPERATION_SEQ_ID");
     Slice ahSeqIdName("AH_SEQ_ID");
 
     ReadOptions rOptions;
 
     std::string buffer;
-    auto s = storageDb->Get(rOptions, opSeqIdName, &buffer);
-    checkStatus(s);
-    _operationSeqId = id_slice_t::unpackSlice(buffer);
+    /// OP-seq-id is local to block num
+    _operationSeqId = 0; /// id_slice_t::unpackSlice(buffer);
 
-    s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
+    auto s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
     checkStatus(s);
     _accountHistorySeqId = id_slice_t::unpackSlice(buffer);
 
-    ilog("Loaded OperationObject seqId: ${o}, AccountHistoryObject seqId: ${ah}.",
-      ("o", _operationSeqId)("ah", _accountHistorySeqId));
+    ilog("Loaded AccountHistoryObject seqId: ${ah}.", ("ah", _accountHistorySeqId));
   }
 
   void flushWriteBuffer(DB* storage = nullptr)
@@ -1945,7 +1957,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     fc::datastream< char* > ds( obj.serialized_op.data(), size );
     fc::raw::pack( ds, n.op );
 
-    importOperation( obj, impacted );
+    importOperation( obj, n.op, impacted );
   }
   else
   {
@@ -2017,7 +2029,8 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
         //dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
         //  ("txs", to_string(txs)));
         rocksdb_operation_object obj(operation);
-        importOperation(obj, operation.impacted);
+        hive::protocol::operation hive_op = fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op);
+        importOperation(obj, hive_op, operation.impacted);
         return true; /// Allow move_to_external_storage internals to erase this object
       }
       else
@@ -2142,6 +2155,8 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
       }
     }
   }
+
+  _operationSeqId = 0;
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
