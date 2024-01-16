@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 2889020,
-  "next_operation_begin": 3846535,
+  "next_operation_begin": "12408246437323572",
   "ops": [
     {
       "block": 2889020,
@@ -8,9 +8,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "reward": {
             "amount": "565352099",
             "nai": "@@000000037",
@@ -19,7 +19,7 @@
         }
       },
       "op_in_trx": 77218,
-      "operation_id": 3846277,
+      "operation_id": "12408246437257524",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -56,7 +56,7 @@
         }
       },
       "op_in_trx": 77219,
-      "operation_id": 3846278,
+      "operation_id": "12408246437257779",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -93,7 +93,7 @@
         }
       },
       "op_in_trx": 77220,
-      "operation_id": 3846279,
+      "operation_id": "12408246437258037",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -105,9 +105,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
           "reward": {
             "amount": "539178391",
             "nai": "@@000000037",
@@ -116,7 +116,7 @@
         }
       },
       "op_in_trx": 77223,
-      "operation_id": 3846282,
+      "operation_id": "12408246437258804",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -153,7 +153,7 @@
         }
       },
       "op_in_trx": 77224,
-      "operation_id": 3846283,
+      "operation_id": "12408246437259059",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -190,7 +190,7 @@
         }
       },
       "op_in_trx": 77225,
-      "operation_id": 3846284,
+      "operation_id": "12408246437259317",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -202,9 +202,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
           "reward": {
             "amount": "554882616",
             "nai": "@@000000037",
@@ -213,7 +213,7 @@
         }
       },
       "op_in_trx": 77227,
-      "operation_id": 3846286,
+      "operation_id": "12408246437259828",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -250,7 +250,7 @@
         }
       },
       "op_in_trx": 77228,
-      "operation_id": 3846287,
+      "operation_id": "12408246437260083",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -287,7 +287,7 @@
         }
       },
       "op_in_trx": 77229,
-      "operation_id": 3846288,
+      "operation_id": "12408246437260341",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -299,9 +299,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "1882701013417",
             "nai": "@@000000037",
@@ -310,7 +310,7 @@
         }
       },
       "op_in_trx": 77240,
-      "operation_id": 3846299,
+      "operation_id": "12408246437263156",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -322,9 +322,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "1638924328834",
             "nai": "@@000000037",
@@ -333,7 +333,7 @@
         }
       },
       "op_in_trx": 77241,
-      "operation_id": 3846300,
+      "operation_id": "12408246437263412",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -345,9 +345,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "skywalker",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "1544254025828",
             "nai": "@@000000037",
@@ -356,7 +356,7 @@
         }
       },
       "op_in_trx": 77242,
-      "operation_id": 3846301,
+      "operation_id": "12408246437263668",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -368,9 +368,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "rainman",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "182388869081",
             "nai": "@@000000037",
@@ -379,7 +379,7 @@
         }
       },
       "op_in_trx": 77243,
-      "operation_id": 3846302,
+      "operation_id": "12408246437263924",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -391,9 +391,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "114792649965",
             "nai": "@@000000037",
@@ -402,7 +402,7 @@
         }
       },
       "op_in_trx": 77244,
-      "operation_id": 3846303,
+      "operation_id": "12408246437264180",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -414,9 +414,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "taoteh1221",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -425,7 +425,7 @@
         }
       },
       "op_in_trx": 77245,
-      "operation_id": 3846304,
+      "operation_id": "12408246437264436",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -462,7 +462,7 @@
         }
       },
       "op_in_trx": 77246,
-      "operation_id": 3846305,
+      "operation_id": "12408246437264691",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -499,7 +499,7 @@
         }
       },
       "op_in_trx": 77247,
-      "operation_id": 3846306,
+      "operation_id": "12408246437264949",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -511,9 +511,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "ned",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "2526610881367",
             "nai": "@@000000037",
@@ -522,7 +522,7 @@
         }
       },
       "op_in_trx": 77250,
-      "operation_id": 3846309,
+      "operation_id": "12408246437265716",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -534,9 +534,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "476042172246",
             "nai": "@@000000037",
@@ -545,7 +545,7 @@
         }
       },
       "op_in_trx": 77251,
-      "operation_id": 3846310,
+      "operation_id": "12408246437265972",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -557,9 +557,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "172715066485",
             "nai": "@@000000037",
@@ -568,7 +568,7 @@
         }
       },
       "op_in_trx": 77252,
-      "operation_id": 3846311,
+      "operation_id": "12408246437266228",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -580,9 +580,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "enki",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "95670138664",
             "nai": "@@000000037",
@@ -591,7 +591,7 @@
         }
       },
       "op_in_trx": 77253,
-      "operation_id": 3846312,
+      "operation_id": "12408246437266484",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -603,9 +603,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "83829153018",
             "nai": "@@000000037",
@@ -614,7 +614,7 @@
         }
       },
       "op_in_trx": 77254,
-      "operation_id": 3846313,
+      "operation_id": "12408246437266740",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -626,9 +626,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "62743613593",
             "nai": "@@000000037",
@@ -637,7 +637,7 @@
         }
       },
       "op_in_trx": 77255,
-      "operation_id": 3846314,
+      "operation_id": "12408246437266996",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -649,9 +649,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "lafona",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "42877768975",
             "nai": "@@000000037",
@@ -660,7 +660,7 @@
         }
       },
       "op_in_trx": 77256,
-      "operation_id": 3846315,
+      "operation_id": "12408246437267252",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -672,9 +672,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "3852769865",
             "nai": "@@000000037",
@@ -683,7 +683,7 @@
         }
       },
       "op_in_trx": 77257,
-      "operation_id": 3846316,
+      "operation_id": "12408246437267508",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -695,9 +695,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "reward": {
             "amount": "68051641",
             "nai": "@@000000037",
@@ -706,7 +706,7 @@
         }
       },
       "op_in_trx": 77258,
-      "operation_id": 3846317,
+      "operation_id": "12408246437267764",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -743,7 +743,7 @@
         }
       },
       "op_in_trx": 77259,
-      "operation_id": 3846318,
+      "operation_id": "12408246437268019",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -780,7 +780,7 @@
         }
       },
       "op_in_trx": 77260,
-      "operation_id": 3846319,
+      "operation_id": "12408246437268277",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -792,9 +792,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "xeldal",
-          "permlink": "re-anwenbaumeister-if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would-20160619t002029691z",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "re-anwenbaumeister-if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would-20160619t002029691z",
           "reward": {
             "amount": "26608191881",
             "nai": "@@000000037",
@@ -803,7 +803,7 @@
         }
       },
       "op_in_trx": 77263,
-      "operation_id": 3846322,
+      "operation_id": "12408246437269044",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -840,7 +840,7 @@
         }
       },
       "op_in_trx": 77264,
-      "operation_id": 3846323,
+      "operation_id": "12408246437269299",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -877,7 +877,7 @@
         }
       },
       "op_in_trx": 77265,
-      "operation_id": 3846324,
+      "operation_id": "12408246437269557",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -889,9 +889,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "312948560940",
             "nai": "@@000000037",
@@ -900,7 +900,7 @@
         }
       },
       "op_in_trx": 77276,
-      "operation_id": 3846335,
+      "operation_id": "12408246437272372",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -912,9 +912,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "abit",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "70768472565",
             "nai": "@@000000037",
@@ -923,7 +923,7 @@
         }
       },
       "op_in_trx": 77277,
-      "operation_id": 3846336,
+      "operation_id": "12408246437272628",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -935,9 +935,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "53959717079",
             "nai": "@@000000037",
@@ -946,7 +946,7 @@
         }
       },
       "op_in_trx": 77278,
-      "operation_id": 3846337,
+      "operation_id": "12408246437272884",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -958,9 +958,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "onceuponatime",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "8715844871",
             "nai": "@@000000037",
@@ -969,7 +969,7 @@
         }
       },
       "op_in_trx": 77279,
-      "operation_id": 3846338,
+      "operation_id": "12408246437273140",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -981,9 +981,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "4810727589",
             "nai": "@@000000037",
@@ -992,7 +992,7 @@
         }
       },
       "op_in_trx": 77280,
-      "operation_id": 3846339,
+      "operation_id": "12408246437273396",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1004,9 +1004,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "stan",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "884671341",
             "nai": "@@000000037",
@@ -1015,7 +1015,7 @@
         }
       },
       "op_in_trx": 77281,
-      "operation_id": 3846340,
+      "operation_id": "12408246437273652",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1027,9 +1027,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "827089183",
             "nai": "@@000000037",
@@ -1038,7 +1038,7 @@
         }
       },
       "op_in_trx": 77282,
-      "operation_id": 3846341,
+      "operation_id": "12408246437273908",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1050,9 +1050,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "lafona",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "57582158",
             "nai": "@@000000037",
@@ -1061,7 +1061,7 @@
         }
       },
       "op_in_trx": 77283,
-      "operation_id": 3846342,
+      "operation_id": "12408246437274164",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1073,9 +1073,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "ajvest",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "52347416",
             "nai": "@@000000037",
@@ -1084,7 +1084,7 @@
         }
       },
       "op_in_trx": 77284,
-      "operation_id": 3846343,
+      "operation_id": "12408246437274420",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1096,9 +1096,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "james-show",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "26173708",
             "nai": "@@000000037",
@@ -1107,7 +1107,7 @@
         }
       },
       "op_in_trx": 77285,
-      "operation_id": 3846344,
+      "operation_id": "12408246437274676",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1119,9 +1119,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stan",
-          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "chryspano",
           "payout_must_be_claimed": false,
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -1130,7 +1130,7 @@
         }
       },
       "op_in_trx": 77286,
-      "operation_id": 3846345,
+      "operation_id": "12408246437274932",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1167,7 +1167,7 @@
         }
       },
       "op_in_trx": 77287,
-      "operation_id": 3846346,
+      "operation_id": "12408246437275187",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1204,7 +1204,7 @@
         }
       },
       "op_in_trx": 77288,
-      "operation_id": 3846347,
+      "operation_id": "12408246437275445",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1216,9 +1216,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "965998287837",
             "nai": "@@000000037",
@@ -1227,7 +1227,7 @@
         }
       },
       "op_in_trx": 77291,
-      "operation_id": 3846350,
+      "operation_id": "12408246437276212",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1239,9 +1239,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "skywalker",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "658064609411",
             "nai": "@@000000037",
@@ -1250,7 +1250,7 @@
         }
       },
       "op_in_trx": 77292,
-      "operation_id": 3846351,
+      "operation_id": "12408246437276468",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1262,9 +1262,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "546732123686",
             "nai": "@@000000037",
@@ -1273,7 +1273,7 @@
         }
       },
       "op_in_trx": 77293,
-      "operation_id": 3846352,
+      "operation_id": "12408246437276724",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1285,9 +1285,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "excalibur",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "54792041004",
             "nai": "@@000000037",
@@ -1296,7 +1296,7 @@
         }
       },
       "op_in_trx": 77294,
-      "operation_id": 3846353,
+      "operation_id": "12408246437276980",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1308,9 +1308,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "clayop",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "48944834564",
             "nai": "@@000000037",
@@ -1319,7 +1319,7 @@
         }
       },
       "op_in_trx": 77295,
-      "operation_id": 3846354,
+      "operation_id": "12408246437277236",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1331,9 +1331,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "32596736346",
             "nai": "@@000000037",
@@ -1342,7 +1342,7 @@
         }
       },
       "op_in_trx": 77296,
-      "operation_id": 3846355,
+      "operation_id": "12408246437277492",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1354,9 +1354,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "kushed",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "21954506541",
             "nai": "@@000000037",
@@ -1365,7 +1365,7 @@
         }
       },
       "op_in_trx": 77297,
-      "operation_id": 3846356,
+      "operation_id": "12408246437277748",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1377,9 +1377,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "20713872767",
             "nai": "@@000000037",
@@ -1388,7 +1388,7 @@
         }
       },
       "op_in_trx": 77298,
-      "operation_id": 3846357,
+      "operation_id": "12408246437278004",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1400,9 +1400,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "376901399",
             "nai": "@@000000037",
@@ -1411,7 +1411,7 @@
         }
       },
       "op_in_trx": 77299,
-      "operation_id": 3846358,
+      "operation_id": "12408246437278260",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1423,9 +1423,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "stellabelle",
-          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "ajvest",
           "payout_must_be_claimed": false,
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "reward": {
             "amount": "15704224",
             "nai": "@@000000037",
@@ -1434,7 +1434,7 @@
         }
       },
       "op_in_trx": 77300,
-      "operation_id": 3846359,
+      "operation_id": "12408246437278516",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1471,7 +1471,7 @@
         }
       },
       "op_in_trx": 77301,
-      "operation_id": 3846360,
+      "operation_id": "12408246437278771",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1508,7 +1508,7 @@
         }
       },
       "op_in_trx": 77302,
-      "operation_id": 3846361,
+      "operation_id": "12408246437279029",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1520,9 +1520,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "publicworker",
-          "permlink": "where-steemit-data-is-stored",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
+          "permlink": "where-steemit-data-is-stored",
           "reward": {
             "amount": "47442463707",
             "nai": "@@000000037",
@@ -1531,7 +1531,7 @@
         }
       },
       "op_in_trx": 77305,
-      "operation_id": 3846364,
+      "operation_id": "12408246437279796",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1543,9 +1543,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "publicworker",
-          "permlink": "where-steemit-data-is-stored",
           "curator": "rimantas",
           "payout_must_be_claimed": false,
+          "permlink": "where-steemit-data-is-stored",
           "reward": {
             "amount": "225093891",
             "nai": "@@000000037",
@@ -1554,7 +1554,7 @@
         }
       },
       "op_in_trx": 77306,
-      "operation_id": 3846365,
+      "operation_id": "12408246437280052",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1591,7 +1591,7 @@
         }
       },
       "op_in_trx": 77307,
-      "operation_id": 3846366,
+      "operation_id": "12408246437280307",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1628,7 +1628,7 @@
         }
       },
       "op_in_trx": 77308,
-      "operation_id": 3846367,
+      "operation_id": "12408246437280565",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1640,9 +1640,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dantheman",
-          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "curator": "sean-king",
           "payout_must_be_claimed": false,
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "reward": {
             "amount": "1392441282",
             "nai": "@@000000037",
@@ -1651,7 +1651,7 @@
         }
       },
       "op_in_trx": 77312,
-      "operation_id": 3846371,
+      "operation_id": "12408246437281588",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1663,9 +1663,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dantheman",
-          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "curator": "proctologic",
           "payout_must_be_claimed": false,
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "reward": {
             "amount": "57582158",
             "nai": "@@000000037",
@@ -1674,7 +1674,7 @@
         }
       },
       "op_in_trx": 77313,
-      "operation_id": 3846372,
+      "operation_id": "12408246437281844",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1711,7 +1711,7 @@
         }
       },
       "op_in_trx": 77314,
-      "operation_id": 3846373,
+      "operation_id": "12408246437282099",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1748,7 +1748,7 @@
         }
       },
       "op_in_trx": 77315,
-      "operation_id": 3846374,
+      "operation_id": "12408246437282357",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1760,9 +1760,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "ash",
-          "permlink": "re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t200720693z",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
+          "permlink": "re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t200720693z",
           "reward": {
             "amount": "43799083508",
             "nai": "@@000000037",
@@ -1771,7 +1771,7 @@
         }
       },
       "op_in_trx": 77323,
-      "operation_id": 3846382,
+      "operation_id": "12408246437284404",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1808,7 +1808,7 @@
         }
       },
       "op_in_trx": 77324,
-      "operation_id": 3846383,
+      "operation_id": "12408246437284659",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1845,7 +1845,7 @@
         }
       },
       "op_in_trx": 77325,
-      "operation_id": 3846384,
+      "operation_id": "12408246437284917",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1857,9 +1857,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pheonike",
-          "permlink": "re-ash-re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t202700023z",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
+          "permlink": "re-ash-re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t202700023z",
           "reward": {
             "amount": "45437557649",
             "nai": "@@000000037",
@@ -1868,7 +1868,7 @@
         }
       },
       "op_in_trx": 77327,
-      "operation_id": 3846386,
+      "operation_id": "12408246437285428",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1905,7 +1905,7 @@
         }
       },
       "op_in_trx": 77328,
-      "operation_id": 3846387,
+      "operation_id": "12408246437285683",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1942,7 +1942,7 @@
         }
       },
       "op_in_trx": 77329,
-      "operation_id": 3846388,
+      "operation_id": "12408246437285941",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1954,9 +1954,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "ned",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "14359131949647",
             "nai": "@@000000037",
@@ -1965,7 +1965,7 @@
         }
       },
       "op_in_trx": 77333,
-      "operation_id": 3846392,
+      "operation_id": "12408246437286964",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -1977,9 +1977,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "2491888839905",
             "nai": "@@000000037",
@@ -1988,7 +1988,7 @@
         }
       },
       "op_in_trx": 77334,
-      "operation_id": 3846393,
+      "operation_id": "12408246437287220",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2000,9 +2000,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "enki",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "1027579788780",
             "nai": "@@000000037",
@@ -2011,7 +2011,7 @@
         }
       },
       "op_in_trx": 77335,
-      "operation_id": 3846394,
+      "operation_id": "12408246437287476",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2023,9 +2023,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "621677920099",
             "nai": "@@000000037",
@@ -2034,7 +2034,7 @@
         }
       },
       "op_in_trx": 77336,
-      "operation_id": 3846395,
+      "operation_id": "12408246437287732",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2046,9 +2046,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "289784829074",
             "nai": "@@000000037",
@@ -2057,7 +2057,7 @@
         }
       },
       "op_in_trx": 77337,
-      "operation_id": 3846396,
+      "operation_id": "12408246437287988",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2069,9 +2069,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "240206590768",
             "nai": "@@000000037",
@@ -2080,7 +2080,7 @@
         }
       },
       "op_in_trx": 77338,
-      "operation_id": 3846397,
+      "operation_id": "12408246437288244",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2092,9 +2092,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "summon",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "167862460961",
             "nai": "@@000000037",
@@ -2103,7 +2103,7 @@
         }
       },
       "op_in_trx": 77339,
-      "operation_id": 3846398,
+      "operation_id": "12408246437288500",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2115,9 +2115,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "128806053401",
             "nai": "@@000000037",
@@ -2126,7 +2126,7 @@
         }
       },
       "op_in_trx": 77340,
-      "operation_id": 3846399,
+      "operation_id": "12408246437288756",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2138,9 +2138,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "112295678191",
             "nai": "@@000000037",
@@ -2149,7 +2149,7 @@
         }
       },
       "op_in_trx": 77341,
-      "operation_id": 3846400,
+      "operation_id": "12408246437289012",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2161,9 +2161,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "steempty",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "13317182794",
             "nai": "@@000000037",
@@ -2172,7 +2172,7 @@
         }
       },
       "op_in_trx": 77342,
-      "operation_id": 3846401,
+      "operation_id": "12408246437289268",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2184,9 +2184,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "clayop",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "5873380147",
             "nai": "@@000000037",
@@ -2195,7 +2195,7 @@
         }
       },
       "op_in_trx": 77343,
-      "operation_id": 3846402,
+      "operation_id": "12408246437289524",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2207,9 +2207,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "4423356706",
             "nai": "@@000000037",
@@ -2218,7 +2218,7 @@
         }
       },
       "op_in_trx": 77344,
-      "operation_id": 3846403,
+      "operation_id": "12408246437289780",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2230,9 +2230,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "795680733",
             "nai": "@@000000037",
@@ -2241,7 +2241,7 @@
         }
       },
       "op_in_trx": 77345,
-      "operation_id": 3846404,
+      "operation_id": "12408246437290036",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2253,9 +2253,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "lafona",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "444953041",
             "nai": "@@000000037",
@@ -2264,7 +2264,7 @@
         }
       },
       "op_in_trx": 77346,
-      "operation_id": 3846405,
+      "operation_id": "12408246437290292",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2276,9 +2276,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "434483558",
             "nai": "@@000000037",
@@ -2287,7 +2287,7 @@
         }
       },
       "op_in_trx": 77347,
-      "operation_id": 3846406,
+      "operation_id": "12408246437290548",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2299,9 +2299,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "stino-san",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "272206566",
             "nai": "@@000000037",
@@ -2310,7 +2310,7 @@
         }
       },
       "op_in_trx": 77348,
-      "operation_id": 3846407,
+      "operation_id": "12408246437290804",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2322,9 +2322,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pinky-jangra",
-          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -2333,7 +2333,7 @@
         }
       },
       "op_in_trx": 77349,
-      "operation_id": 3846408,
+      "operation_id": "12408246437291060",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2370,7 +2370,7 @@
         }
       },
       "op_in_trx": 77350,
-      "operation_id": 3846409,
+      "operation_id": "12408246437291315",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2407,7 +2407,7 @@
         }
       },
       "op_in_trx": 77351,
-      "operation_id": 3846410,
+      "operation_id": "12408246437291573",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2419,9 +2419,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "blocktrades",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "1743430711428",
             "nai": "@@000000037",
@@ -2430,7 +2430,7 @@
         }
       },
       "op_in_trx": 77379,
-      "operation_id": 3846438,
+      "operation_id": "12408246437298740",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2442,9 +2442,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "erath",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "36271524994",
             "nai": "@@000000037",
@@ -2453,7 +2453,7 @@
         }
       },
       "op_in_trx": 77380,
-      "operation_id": 3846439,
+      "operation_id": "12408246437298996",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2465,9 +2465,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "cylonmaker2053",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "1518075082",
             "nai": "@@000000037",
@@ -2476,7 +2476,7 @@
         }
       },
       "op_in_trx": 77381,
-      "operation_id": 3846440,
+      "operation_id": "12408246437299252",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2488,9 +2488,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "chryspano",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "664812191",
             "nai": "@@000000037",
@@ -2499,7 +2499,7 @@
         }
       },
       "op_in_trx": 77382,
-      "operation_id": 3846441,
+      "operation_id": "12408246437299508",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2511,9 +2511,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "clains",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "115164316",
             "nai": "@@000000037",
@@ -2522,7 +2522,7 @@
         }
       },
       "op_in_trx": 77383,
-      "operation_id": 3846442,
+      "operation_id": "12408246437299764",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2534,9 +2534,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "20938966",
             "nai": "@@000000037",
@@ -2545,7 +2545,7 @@
         }
       },
       "op_in_trx": 77384,
-      "operation_id": 3846443,
+      "operation_id": "12408246437300020",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2557,9 +2557,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "lindee-hamner",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "10469483",
             "nai": "@@000000037",
@@ -2568,7 +2568,7 @@
         }
       },
       "op_in_trx": 77385,
-      "operation_id": 3846444,
+      "operation_id": "12408246437300276",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2580,9 +2580,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "psylains",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -2591,7 +2591,7 @@
         }
       },
       "op_in_trx": 77386,
-      "operation_id": 3846445,
+      "operation_id": "12408246437300532",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2603,9 +2603,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "business",
-          "permlink": "worst-altcoin-ive-ever-found",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "worst-altcoin-ive-ever-found",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -2614,7 +2614,7 @@
         }
       },
       "op_in_trx": 77387,
-      "operation_id": 3846446,
+      "operation_id": "12408246437300788",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2651,7 +2651,7 @@
         }
       },
       "op_in_trx": 77388,
-      "operation_id": 3846447,
+      "operation_id": "12408246437301043",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2688,7 +2688,7 @@
         }
       },
       "op_in_trx": 77389,
-      "operation_id": 3846448,
+      "operation_id": "12408246437301301",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2700,9 +2700,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "tuck-fheman",
-          "permlink": "re-business-worst-altcoin-ive-ever-found-20160623t005316003z",
           "curator": "pal",
           "payout_must_be_claimed": false,
+          "permlink": "re-business-worst-altcoin-ive-ever-found-20160623t005316003z",
           "reward": {
             "amount": "978896691",
             "nai": "@@000000037",
@@ -2711,7 +2711,7 @@
         }
       },
       "op_in_trx": 77393,
-      "operation_id": 3846452,
+      "operation_id": "12408246437302324",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2748,7 +2748,7 @@
         }
       },
       "op_in_trx": 77394,
-      "operation_id": 3846453,
+      "operation_id": "12408246437302579",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2785,7 +2785,7 @@
         }
       },
       "op_in_trx": 77395,
-      "operation_id": 3846454,
+      "operation_id": "12408246437302837",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2797,9 +2797,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "innuendo",
-          "permlink": "re-business-worst-altcoin-ive-ever-found-20160623t100904925z",
           "curator": "help-yourself",
           "payout_must_be_claimed": false,
+          "permlink": "re-business-worst-altcoin-ive-ever-found-20160623t100904925z",
           "reward": {
             "amount": "476361491",
             "nai": "@@000000037",
@@ -2808,7 +2808,7 @@
         }
       },
       "op_in_trx": 77398,
-      "operation_id": 3846457,
+      "operation_id": "12408246437303604",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2845,7 +2845,7 @@
         }
       },
       "op_in_trx": 77399,
-      "operation_id": 3846458,
+      "operation_id": "12408246437303859",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2882,7 +2882,7 @@
         }
       },
       "op_in_trx": 77400,
-      "operation_id": 3846459,
+      "operation_id": "12408246437304117",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2894,9 +2894,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "ned",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "14214878173593",
             "nai": "@@000000037",
@@ -2905,7 +2905,7 @@
         }
       },
       "op_in_trx": 77404,
-      "operation_id": 3846463,
+      "operation_id": "12408246437305140",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2917,9 +2917,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "enki",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "2795598081808",
             "nai": "@@000000037",
@@ -2928,7 +2928,7 @@
         }
       },
       "op_in_trx": 77405,
-      "operation_id": 3846464,
+      "operation_id": "12408246437305396",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2940,9 +2940,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "1462366961967",
             "nai": "@@000000037",
@@ -2951,7 +2951,7 @@
         }
       },
       "op_in_trx": 77406,
-      "operation_id": 3846465,
+      "operation_id": "12408246437305652",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2963,9 +2963,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "375493254350",
             "nai": "@@000000037",
@@ -2974,7 +2974,7 @@
         }
       },
       "op_in_trx": 77407,
-      "operation_id": 3846466,
+      "operation_id": "12408246437305908",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -2986,9 +2986,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "255094196062",
             "nai": "@@000000037",
@@ -2997,7 +2997,7 @@
         }
       },
       "op_in_trx": 77408,
-      "operation_id": 3846467,
+      "operation_id": "12408246437306164",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3009,9 +3009,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "212896943503",
             "nai": "@@000000037",
@@ -3020,7 +3020,7 @@
         }
       },
       "op_in_trx": 77409,
-      "operation_id": 3846468,
+      "operation_id": "12408246437306420",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3032,9 +3032,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "summon",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "124555443169",
             "nai": "@@000000037",
@@ -3043,7 +3043,7 @@
         }
       },
       "op_in_trx": 77410,
-      "operation_id": 3846469,
+      "operation_id": "12408246437306676",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3055,9 +3055,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "9888427004",
             "nai": "@@000000037",
@@ -3066,7 +3066,7 @@
         }
       },
       "op_in_trx": 77411,
-      "operation_id": 3846470,
+      "operation_id": "12408246437306932",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3078,9 +3078,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "7475211097",
             "nai": "@@000000037",
@@ -3089,7 +3089,7 @@
         }
       },
       "op_in_trx": 77412,
-      "operation_id": 3846471,
+      "operation_id": "12408246437307188",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3101,9 +3101,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "steempty",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "7333873072",
             "nai": "@@000000037",
@@ -3112,7 +3112,7 @@
         }
       },
       "op_in_trx": 77413,
-      "operation_id": 3846472,
+      "operation_id": "12408246437307444",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3124,9 +3124,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "4271549198",
             "nai": "@@000000037",
@@ -3135,7 +3135,7 @@
         }
       },
       "op_in_trx": 77414,
-      "operation_id": 3846473,
+      "operation_id": "12408246437307700",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3147,9 +3147,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "601995291",
             "nai": "@@000000037",
@@ -3158,7 +3158,7 @@
         }
       },
       "op_in_trx": 77415,
-      "operation_id": 3846474,
+      "operation_id": "12408246437307956",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3170,9 +3170,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "502535199",
             "nai": "@@000000037",
@@ -3181,7 +3181,7 @@
         }
       },
       "op_in_trx": 77416,
-      "operation_id": 3846475,
+      "operation_id": "12408246437308212",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3193,9 +3193,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "lafona",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "31408449",
             "nai": "@@000000037",
@@ -3204,7 +3204,7 @@
         }
       },
       "op_in_trx": 77417,
-      "operation_id": 3846476,
+      "operation_id": "12408246437308468",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3216,9 +3216,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "10469483",
             "nai": "@@000000037",
@@ -3227,7 +3227,7 @@
         }
       },
       "op_in_trx": 77418,
-      "operation_id": 3846477,
+      "operation_id": "12408246437308724",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3239,9 +3239,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "10469483",
             "nai": "@@000000037",
@@ -3250,7 +3250,7 @@
         }
       },
       "op_in_trx": 77419,
-      "operation_id": 3846478,
+      "operation_id": "12408246437308980",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3262,9 +3262,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "anwenbaumeister",
-          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "curator": "cylonmaker2053",
           "payout_must_be_claimed": false,
+          "permlink": "a-four-day-backpacking-journey-through-patagonia-and-tips-on-what-food-to-bring-in",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -3273,7 +3273,7 @@
         }
       },
       "op_in_trx": 77420,
-      "operation_id": 3846479,
+      "operation_id": "12408246437309236",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3310,7 +3310,7 @@
         }
       },
       "op_in_trx": 77421,
-      "operation_id": 3846480,
+      "operation_id": "12408246437309491",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3347,7 +3347,7 @@
         }
       },
       "op_in_trx": 77422,
-      "operation_id": 3846481,
+      "operation_id": "12408246437309749",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3359,9 +3359,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "1536757875764",
             "nai": "@@000000037",
@@ -3370,7 +3370,7 @@
         }
       },
       "op_in_trx": 77441,
-      "operation_id": 3846500,
+      "operation_id": "12408246437314612",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3382,9 +3382,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "skywalker",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "1020895023674",
             "nai": "@@000000037",
@@ -3393,7 +3393,7 @@
         }
       },
       "op_in_trx": 77442,
-      "operation_id": 3846501,
+      "operation_id": "12408246437314868",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3405,9 +3405,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "enki",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "141364198655",
             "nai": "@@000000037",
@@ -3416,7 +3416,7 @@
         }
       },
       "op_in_trx": 77443,
-      "operation_id": 3846502,
+      "operation_id": "12408246437315124",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3428,9 +3428,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "33277252762",
             "nai": "@@000000037",
@@ -3439,7 +3439,7 @@
         }
       },
       "op_in_trx": 77444,
-      "operation_id": 3846503,
+      "operation_id": "12408246437315380",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3451,9 +3451,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "complexring",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "20902323467",
             "nai": "@@000000037",
@@ -3462,7 +3462,7 @@
         }
       },
       "op_in_trx": 77445,
-      "operation_id": 3846504,
+      "operation_id": "12408246437315636",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3474,9 +3474,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "1141173682",
             "nai": "@@000000037",
@@ -3485,7 +3485,7 @@
         }
       },
       "op_in_trx": 77446,
-      "operation_id": 3846505,
+      "operation_id": "12408246437315892",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3497,9 +3497,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "lafona",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "36643191",
             "nai": "@@000000037",
@@ -3508,7 +3508,7 @@
         }
       },
       "op_in_trx": 77447,
-      "operation_id": 3846506,
+      "operation_id": "12408246437316148",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3520,9 +3520,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "joseph",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "15704224",
             "nai": "@@000000037",
@@ -3531,7 +3531,7 @@
         }
       },
       "op_in_trx": 77448,
-      "operation_id": 3846507,
+      "operation_id": "12408246437316404",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3543,9 +3543,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "taoteh1221",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -3554,7 +3554,7 @@
         }
       },
       "op_in_trx": 77449,
-      "operation_id": 3846508,
+      "operation_id": "12408246437316660",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3566,9 +3566,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -3577,7 +3577,7 @@
         }
       },
       "op_in_trx": 77450,
-      "operation_id": 3846509,
+      "operation_id": "12408246437316916",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3589,9 +3589,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "a-steem-powered-investing-network",
           "curator": "donkeypong",
           "payout_must_be_claimed": false,
+          "permlink": "a-steem-powered-investing-network",
           "reward": {
             "amount": "5234741",
             "nai": "@@000000037",
@@ -3600,7 +3600,7 @@
         }
       },
       "op_in_trx": 77451,
-      "operation_id": 3846510,
+      "operation_id": "12408246437317172",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3637,7 +3637,7 @@
         }
       },
       "op_in_trx": 77452,
-      "operation_id": 3846511,
+      "operation_id": "12408246437317427",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3674,7 +3674,7 @@
         }
       },
       "op_in_trx": 77453,
-      "operation_id": 3846512,
+      "operation_id": "12408246437317685",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3686,9 +3686,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "steemship",
-          "permlink": "re-andrarchy-a-steem-powered-investing-network-20160622t214537272z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
+          "permlink": "re-andrarchy-a-steem-powered-investing-network-20160622t214537272z",
           "reward": {
             "amount": "860774745634",
             "nai": "@@000000037",
@@ -3697,7 +3697,7 @@
         }
       },
       "op_in_trx": 77455,
-      "operation_id": 3846514,
+      "operation_id": "12408246437318196",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3734,7 +3734,7 @@
         }
       },
       "op_in_trx": 77456,
-      "operation_id": 3846515,
+      "operation_id": "12408246437318451",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3771,7 +3771,7 @@
         }
       },
       "op_in_trx": 77457,
-      "operation_id": 3846516,
+      "operation_id": "12408246437318709",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3783,9 +3783,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "cryptoctopus",
-          "permlink": "re-andrarchy-a-steem-powered-investing-network-20160623t010519926z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
+          "permlink": "re-andrarchy-a-steem-powered-investing-network-20160623t010519926z",
           "reward": {
             "amount": "828785239321",
             "nai": "@@000000037",
@@ -3794,7 +3794,7 @@
         }
       },
       "op_in_trx": 77459,
-      "operation_id": 3846518,
+      "operation_id": "12408246437319220",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3831,7 +3831,7 @@
         }
       },
       "op_in_trx": 77460,
-      "operation_id": 3846519,
+      "operation_id": "12408246437319475",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3868,7 +3868,7 @@
         }
       },
       "op_in_trx": 77461,
-      "operation_id": 3846520,
+      "operation_id": "12408246437319733",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3880,9 +3880,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pigeons",
-          "permlink": "slockit-white-hat-siphoning-has-occurred",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
+          "permlink": "slockit-white-hat-siphoning-has-occurred",
           "reward": {
             "amount": "536587194340",
             "nai": "@@000000037",
@@ -3891,7 +3891,7 @@
         }
       },
       "op_in_trx": 77469,
-      "operation_id": 3846528,
+      "operation_id": "12408246437321780",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3903,9 +3903,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "pigeons",
-          "permlink": "slockit-white-hat-siphoning-has-occurred",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
+          "permlink": "slockit-white-hat-siphoning-has-occurred",
           "reward": {
             "amount": "1073122041",
             "nai": "@@000000037",
@@ -3914,7 +3914,7 @@
         }
       },
       "op_in_trx": 77470,
-      "operation_id": 3846529,
+      "operation_id": "12408246437322036",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3951,7 +3951,7 @@
         }
       },
       "op_in_trx": 77471,
-      "operation_id": 3846530,
+      "operation_id": "12408246437322291",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -3988,7 +3988,7 @@
         }
       },
       "op_in_trx": 77472,
-      "operation_id": 3846531,
+      "operation_id": "12408246437322549",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -4000,9 +4000,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "benjojo",
-          "permlink": "unsung-heroes-of-steem",
           "curator": "freedom",
           "payout_must_be_claimed": false,
+          "permlink": "unsung-heroes-of-steem",
           "reward": {
             "amount": "949906691959",
             "nai": "@@000000037",
@@ -4011,7 +4011,7 @@
         }
       },
       "op_in_trx": 77474,
-      "operation_id": 3846533,
+      "operation_id": "12408246437323060",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -4023,9 +4023,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "benjojo",
-          "permlink": "unsung-heroes-of-steem",
           "curator": "wang",
           "payout_must_be_claimed": false,
+          "permlink": "unsung-heroes-of-steem",
           "reward": {
             "amount": "81415937111",
             "nai": "@@000000037",
@@ -4034,7 +4034,7 @@
         }
       },
       "op_in_trx": 77475,
-      "operation_id": 3846534,
+      "operation_id": "12408246437323316",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,

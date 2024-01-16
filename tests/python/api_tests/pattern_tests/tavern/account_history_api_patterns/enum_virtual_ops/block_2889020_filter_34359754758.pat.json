@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 2889020,
-  "next_operation_begin": 3846300,
+  "next_operation_begin": "12408246437263412",
   "ops": [
     {
       "block": 2889020,
@@ -8,9 +8,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "reward": {
             "amount": "565352099",
             "nai": "@@000000037",
@@ -19,7 +19,7 @@
         }
       },
       "op_in_trx": 77218,
-      "operation_id": 3846277,
+      "operation_id": "12408246437257524",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -56,7 +56,7 @@
         }
       },
       "op_in_trx": 77219,
-      "operation_id": 3846278,
+      "operation_id": "12408246437257779",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -68,9 +68,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
           "reward": {
             "amount": "539178391",
             "nai": "@@000000037",
@@ -79,7 +79,7 @@
         }
       },
       "op_in_trx": 77223,
-      "operation_id": 3846282,
+      "operation_id": "12408246437258804",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -116,7 +116,7 @@
         }
       },
       "op_in_trx": 77224,
-      "operation_id": 3846283,
+      "operation_id": "12408246437259059",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -128,9 +128,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
           "reward": {
             "amount": "554882616",
             "nai": "@@000000037",
@@ -139,7 +139,7 @@
         }
       },
       "op_in_trx": 77227,
-      "operation_id": 3846286,
+      "operation_id": "12408246437259828",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -176,7 +176,7 @@
         }
       },
       "op_in_trx": 77228,
-      "operation_id": 3846287,
+      "operation_id": "12408246437260083",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -188,9 +188,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "andrarchy",
-          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "reward": {
             "amount": "1882701013417",
             "nai": "@@000000037",
@@ -199,7 +199,7 @@
         }
       },
       "op_in_trx": 77240,
-      "operation_id": 3846299,
+      "operation_id": "12408246437263156",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
