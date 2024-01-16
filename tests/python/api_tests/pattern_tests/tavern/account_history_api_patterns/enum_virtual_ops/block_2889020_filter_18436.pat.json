@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 2889020,
-  "next_operation_begin": 3846281,
+  "next_operation_begin": "12408246437258557",
   "ops": [
     {
       "block": 2889020,
@@ -12,7 +12,7 @@
         }
       },
       "op_in_trx": 77216,
-      "operation_id": 3846275,
+      "operation_id": "12408246437257021",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -28,7 +28,7 @@
         }
       },
       "op_in_trx": 77217,
-      "operation_id": 3846276,
+      "operation_id": "12408246437257277",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -40,9 +40,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "dana-edwards",
-          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "reward": {
             "amount": "565352099",
             "nai": "@@000000037",
@@ -51,7 +51,7 @@
         }
       },
       "op_in_trx": 77218,
-      "operation_id": 3846277,
+      "operation_id": "12408246437257524",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -67,7 +67,7 @@
         }
       },
       "op_in_trx": 77221,
-      "operation_id": 3846280,
+      "operation_id": "12408246437258301",
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
