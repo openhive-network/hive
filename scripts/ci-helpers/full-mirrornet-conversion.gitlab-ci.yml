@@ -1,0 +1,59 @@
+include:
+  - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
+  - local: '/scripts/ci-helpers/mirrornet-job-templates.gitlab-ci.yml'
+
+variables:
+  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 82000000
+
+mirrornet_node_build:
+  extends: .prepare_hived_image
+  stage: build
+  when: manual
+  variables:
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    HIVE_NETWORK_TYPE: mirrornet
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Pushing hived image for commits on develop, master and tagged"
+      docker images
+      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet-instance:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
+      then
+        docker tag $HIVED_IMAGE_NAME_INSTANCE ${IMAGE_NAME_PREFIX}latest
+        docker push ${IMAGE_NAME_PREFIX}latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
+      then
+        docker tag $HIVED_IMAGE_NAME_INSTANCE ${IMAGE_NAME_PREFIX}stable
+        docker push ${IMAGE_NAME_PREFIX}stable
+      elif [[ -n "$CI_COMMIT_TAG" ]];
+      then
+        docker tag $HIVED_IMAGE_NAME_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+      fi
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
+block-conversion:
+  extends: .block-conversion-job-template
+  stage: deploy
+  when: manual
+  needs:
+    - job: mirrornet_node_build
+  variables:
+    MIRRORNET_IMAGE: "$HIVED_IMAGE_NAME"
+    NUMBER_OF_BLOCKS: ${TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS}
+
+mirrornet-replay:
+  extends: .replay-template
+  stage: deploy
+  when: manual
+  needs:
+    - job: mirrornet_node_build
+    - job: block-conversion
+  variables:
+    MIRRORNET_IMAGE: "$HIVED_IMAGE_NAME"
+    NUMBER_OF_BLOCKS: ${TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS}

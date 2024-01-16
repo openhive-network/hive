@@ -1,0 +1,247 @@
+stages:
+- setup
+- build
+- test
+- cleanup
+
+variables:
+  DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
+
+include:
+  - local: scripts/ci-helpers/templates.gitlab-ci.yml
+
+######## Templates ########
+
+# Moved to scripts/ci-helpers/templates.gitlab-ci.yml
+
+.hived-service:
+  services:
+    - name: $HIVED_IMAGE_NAME
+      alias: hived-instance
+      variables:
+        DATA_SOURCE: "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}"
+        LOG_FILE: $CI_JOB_NAME.log
+      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+
+.test_tools_based:
+  extends: .test_tools_based_base
+  needs:
+    - job: rewrite-dotenv-and-extract-binaries-testnet
+      artifacts: true
+
+######## End templates ########
+
+######## Setup ########
+
+environment-debug-job:
+  stage: setup
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  script:
+    - |
+      echo "Current environment:"
+      set
+  tags:
+    - public-runner-docker
+
+######## End setup ########
+
+######## Build ########
+
+rewrite-dotenv-and-extract-binaries-mainnet:
+  extends: .rewrite-dotenv-and-extract-binaries
+  stage: build
+  variables:
+    DOT_ENV_FILENAME: "docker_image_name"
+    DOTENV_VAR_PREFIX: "HIVED"
+    DOTENV_VAR_NAME: "MAINNET_HIVED"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
+
+# Kept job name the same since it's referenced in the templated used in both pipelines
+rewrite-dotenv-and-extract-binaries-testnet:
+  extends: .rewrite-dotenv-and-extract-binaries
+  stage: build
+  variables:
+    DOT_ENV_FILENAME: "docker_image_name"
+    DOTENV_VAR_PREFIX: "HIVED"
+    DOTENV_VAR_NAME: "TESTNET_HIVED"
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries"
+
+prepare_hived_data:
+  extends: 
+    - .prepare_hived_data_5m
+    - .dynamic-runner-job-template
+  stage: build
+  needs:
+    - job: rewrite-dotenv-and-extract-binaries-mainnet
+      artifacts: true
+  variables:
+    HIVE_NETWORK_TYPE: mainnet
+    BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
+    CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
+
+######## End build ########
+
+######## Test ########
+
+# Any test jobs that produce JUnit xml's need to be added to 
+# job dynamic-pipeline-test-results-collector
+# in the main ppeline
+
+patterns_tests:
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  extends: 
+    - .pytest_based
+    - .dynamic-runner-job-template
+    - .hived-service
+  variables:
+    FF_NETWORK_PER_BUILD: 1
+    TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
+    HIVED_UID: $HIVED_UID
+    HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT and HIVED_UID must be in this section to be passed to service
+  needs:
+    - job: prepare_hived_data
+      artifacts: true
+  before_script:
+    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+    - !reference [.test_tools_based, before_script]
+  script:
+    # run pattern tests
+    - cd $CI_PROJECT_DIR/tests/python/api_tests/pattern_tests
+    - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
+  artifacts:
+    reports:
+      junit: tests/python/api_tests/pattern_tests/results.xml
+    paths:
+    - "**/from_node.log"
+    - "**/ah.log"
+    - "**/*.out.json"
+    - "$CI_PROJECT_DIR/tests/python/hive-local-tools/tests-api/hived/workdir_*"
+    - "$CI_PROJECT_DIR/tests/python/api_tests/pattern_tests/results.xml"
+    when: always
+
+python_pattern_mainnet_tests:
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  extends: 
+    - .test_tools_based
+    - .dynamic-runner-job-template
+    - .hived-service
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 27
+    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
+    HIVED_UID: $HIVED_UID
+    HIVED_COMMIT: $HIVED_COMMIT
+  needs:
+    - job: rewrite-dotenv-and-extract-binaries-mainnet
+      artifacts: true
+    - job: prepare_hived_data
+      artifacts: true
+  before_script:
+    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+    - !reference [.test_tools_based, before_script]
+  script:
+    # run pattern tests
+    - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
+    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $BINARY_CACHE_PATH/cli_wallet)
+    - !reference [.run-pytest, script]
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    reports:
+      junit: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+    paths:
+      - "**/generated_during_*"
+      - "**/generated_by_package_fixtures"
+      - "$CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml"
+    exclude:
+      - "**/generated_during_*/**/block_log"
+      - "**/generated_during_*/**/block_log.artifacts"
+      - "**/generated_during_*/**/shared_memory.bin"
+      - "**/generated_during_*/**/*.sst"
+    when: always
+
+message_format_mainnet_5m_tests:
+  extends: 
+    - .message_format_tests
+    - .dynamic-runner-job-template
+    - .hived-service
+  needs:
+    - job: prepare_hived_data
+      artifacts: true
+    - job: rewrite-dotenv-and-extract-binaries-testnet
+      artifacts: true
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 10
+    NODE_ADDRESS: "hived-instance:8091"
+    NODE_TYPE: "mainnet_5m"
+    HIVED_UID: $HIVED_UID
+    HIVED_COMMIT: $HIVED_COMMIT
+  before_script:
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+    - !reference [.message_format_tests, before_script]
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    reports:
+      junit: $PYTEST_JUNIT_REPORT
+    paths:
+      - "**/generated_during_*"
+      - "**/generated_by_package_fixtures"
+      - "$PYTEST_JUNIT_REPORT"
+    exclude:
+      - "**/generated_during_*/**/block_log"
+      - "**/generated_during_*/**/block_log.artifacts"
+      - "**/generated_during_*/**/shared_memory.bin"
+      - "**/generated_during_*/**/*.sst"
+    when: always
+    expire_in: 1 week
+
+witness_tests:
+  stage: test
+  extends: 
+    - .test_tools_based
+    - .dynamic-runner-job-template
+    - .hived-service
+  needs:
+    - job: prepare_hived_data
+      artifacts: true
+  variables:
+    NODE_ADDRESS: "hived-instance:8091"
+    PYTEST_TIMEOUT_MINUTES: 5
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
+    HIVED_UID: $HIVED_UID
+    HIVED_COMMIT: $HIVED_COMMIT
+  script:
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+    - cd tests/python/functional/witness_tests
+    - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
+    - !reference [.run-pytest, script]
+  artifacts:
+    paths:
+      - "generated_during.tar.7z"
+      - "generated_by_package_fixtures.tar.7z"
+      - "$CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml"
+
+
+######## End test ########
+
+######## Cleanup ########
+
+cleanup_hived_cache_manual:
+  extends: 
+    - .cleanup_cache_manual_template
+    - .dynamic-runner-job-template
+  stage: cleanup
+  variables:
+    CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
+
+cleanup_old_hived_cache:
+  extends:
+    - .cleanup_old_cache_template
+    - .dynamic-runner-job-template
+  stage: cleanup
+  variables:
+    CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
+
+######## End cleanup ########

@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "d4e29410ea168096e1a822f77c7ce741d9cfb57a"
+  CI_COMMON_JOB_VERSION: "a3e97d90268154fae7933ea98e50e3c1c7c72d43"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: d4e29410ea168096e1a822f77c7ce741d9cfb57a # develop
+    ref: a3e97d90268154fae7933ea98e50e3c1c7c72d43 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -55,14 +55,18 @@ include:
     CONFIG_INI_SOURCE: ""
     HIVE_NETWORK_TYPE: mainnet
   script:
-    - mkdir "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir" -pv
-    - cd "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
-    - flock "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
+    # ${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir is deleted by build_data.sh if found without valid replay, causing 
+    # shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    # so we need to use its parent directory instead
+    - mkdir "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}" -pv
+    - cd "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}"
+    - flock "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
         --data-cache="${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
     - cd "$CI_PROJECT_DIR"
     - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/hived_uid.env" "$CI_PROJECT_DIR/hived_uid.env"
     - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log"
-    - ls -la "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
+    - ls -lah "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
+    - ls -lah "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/shm_dir"
   after_script:
     - rm "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/replay_running" -f
 
@@ -72,4 +76,6 @@ include:
         - docker_image_name.env
         - hived_uid.env
     paths:
+      - docker_image_name.env
+      - hived_uid.env
       - docker_entrypoint.log

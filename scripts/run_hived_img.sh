@@ -23,6 +23,7 @@ cat <<EOF
     --data-dir=DIRECTORY_PATH             Specify path to a hived data directory on the host.
     --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host.
     --name=CONTAINER_NAME                 Specify a dedicated name for the spawned container instance.
+    --rm=true/false                       Automatically remove container once it's stopped (default: true)"
     --detach                              Starts the container instance in detached mode. Note: you can detach later using Ctrl+p+q key binding.
     --docker-option=OPTION                Specify a docker option to be passed to the underlying docker run command.
     --help,-h,-?                          Display this help screen and exit
@@ -37,6 +38,7 @@ CONTAINER_NAME=instance
 IMAGE_NAME=
 HIVED_DATADIR=
 HIVED_SHM_FILE_DIR=
+AUTOREMOVE=true
 
 HTTP_ENDPOINT="0.0.0.0:8091"
 WS_ENDPOINT="0.0.0.0:8090"
@@ -112,6 +114,11 @@ while [ $# -gt 0 ]; do
         echo "Container name is: $CONTAINER_NAME"
         ;;
 
+    --rm=*)
+        AUTOREMOVE="${1#*=}"
+        echo "Autoremove is set to: $AUTOREMOVE"
+        ;;
+
     --detach)
       add_docker_arg "--detach"
       ;;
@@ -183,6 +190,10 @@ if [ -n "$HIVED_SHM_FILE_DIR" ]; then
   add_docker_arg "${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
 fi
 
+if [ "$AUTOREMOVE" == "true" ]; then
+  add_docker_arg "--rm"
+fi
+
 # Similar to hived, the dockerized version should also immediately start listening on the specified ports 
 add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
 add_docker_arg "--publish=${WS_ENDPOINT}:8090"
@@ -205,6 +216,4 @@ docker container rm -f -v "$CONTAINER_NAME" 2>/dev/null || true
 # echo "DOCKER_ARGS: ${DOCKER_ARGS[*]}"
 
 # Scritps should use long options for better readability
-docker run --rm --interactive --tty --env HIVED_UID="$(id --user)" --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
-
-
+docker run --interactive --tty --env HIVED_UID="$(id --user)" --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"

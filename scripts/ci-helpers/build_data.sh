@@ -80,7 +80,7 @@ touch "$DATA_CACHE/replay_running"
 
 echo "Didn't find valid previous replay, performing fresh replay"
 ls "$DATA_CACHE" -lath
-ls "$DATA_CACHE/datadir" -lath
+[[ -d "$DATA_CACHE/datadir" ]] && ls "$DATA_CACHE/datadir" -lath
 sudo rm "$DATA_CACHE/datadir" -rf
 sudo rm "$DATA_CACHE/shm_dir" -rf
 
