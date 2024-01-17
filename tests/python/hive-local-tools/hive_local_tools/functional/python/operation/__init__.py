@@ -529,6 +529,20 @@ def get_reward_operations(node, mode: Literal["author", "curation", "comment_ben
     return [vop["op"]["value"] for vop in reward_operations]
 
 
+def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
+    hbd_to_hive_feed = node.api.database.get_current_price_feed()
+    hbd_to_hive_feed = hbd_to_hive_feed["base"].as_float() / hbd_to_hive_feed["quote"].as_float()
+    return tt.Asset.Hive(hbd.as_float() / 1000 * hbd_to_hive_feed)
+
+
+def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
+    gdgp = node.api.database.get_dynamic_global_properties()
+    total_vesting_shares = gdgp.total_vesting_shares
+    total_vesting_fund_hive = gdgp.total_vesting_fund_hive
+    vesting_to_hive_feed = (total_vesting_shares.as_float() / 1000000) / (total_vesting_fund_hive.as_float() / 1000)
+    return tt.Asset.Hive(vesting.as_float() / 1000000 / vesting_to_hive_feed)
+
+
 class Comment:
     """Represents chain comment instance.
 
