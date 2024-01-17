@@ -71,7 +71,7 @@ def prepare_second_stage_of_block_log(signature_type: Literal["open_sign", "mult
     # wallet.api.import_keys([tt.PrivateKey("account", secret=f"active-{num}") for num in range(6)])
     # wallet.api.import_keys([tt.PrivateKey("account", secret=f"posting-{num}") for num in range(10)])
 
-    operations = generate_operations.create_list_of_operations(1, 1)
+    operations = generate_operations.create_list_of_operations(100, 1)
 
     # for name in [f"account-{num}" for num in range(10_000)]:
     #     operations.append([create_transfer(name)])
