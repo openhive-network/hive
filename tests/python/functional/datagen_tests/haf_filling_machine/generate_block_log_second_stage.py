@@ -1,25 +1,20 @@
 from __future__ import annotations
 
-import random
-import tempfile
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from copy import deepcopy
-from pathlib import Path
-from typing import Final, Literal, Any
-import generate_operations
-from functools import partial
-
 import json
+import tempfile
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from functools import partial
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Final, Literal
+
+import generate_operations
+
 import test_tools as tt
 from hive_local_tools import ALTERNATE_CHAIN_JSON_FILENAME
-from hive_local_tools.constants import TRANSACTION_TEMPLATE
-from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, get_vesting_price
-from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.custom_json_operation import CustomJsonOperation
-from schemas.operations.transfer_operation import TransferOperation
-from schemas.operations.vote_operation import VoteOperation
-from schemas.operation import Operation
+
+if TYPE_CHECKING:
+    from schemas.operation import Operation
 
 NUMBER_OF_ACCOUNTS: Final[int] = 100_000
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
@@ -39,7 +34,7 @@ def prepare_second_stage_of_block_log(signature_type: Literal["open_sign", "mult
 
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
-    node.config.shared_file_size = "2G"
+    node.config.shared_file_size = "24G"
     node.config.webserver_thread_pool_size = "64"
     for witness in WITNESSES:
         key = tt.Account(witness).private_key
@@ -96,20 +91,20 @@ def prepare_second_stage_of_block_log(signature_type: Literal["open_sign", "mult
 
     http_endpoint = node.http_endpoint.as_string()
     # __fast_broadcast(node, signed_transactions)
-    with ProcessPoolExecutor(max_workers=16) as executor:
+    max_workers = 16
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
         processor = BroadcastSingleTransaction()
 
-        num_chunks = 1000
+        num_chunks = max_workers
         chunk_size = len(transactions) // num_chunks
-        chunks = [transactions[i: i + chunk_size] for i in range(0, len(transactions), chunk_size)]
+        chunks = [transactions[i : i + chunk_size] for i in range(0, len(transactions), chunk_size)]
 
         single_transaction_broadcast_with_address = partial(
             processor.single_transaction_broadcast, node_address=http_endpoint
         )
 
         results = []
-        for chunk in chunks:
-            results.extend(list(executor.map(single_transaction_broadcast_with_address, chunk)))
+        results.extend(list(executor.map(single_transaction_broadcast_with_address, chunks)))
 
     print("Final results:", results)
     ####################################################################################################################
@@ -133,9 +128,10 @@ def prepare_second_stage_of_block_log(signature_type: Literal["open_sign", "mult
 
 
 class BroadcastSingleTransaction:
-    def single_transaction_broadcast(self, transaction: dict, node_address: str) -> None:
+    def single_transaction_broadcast(self, chunk: list[dict], node_address: str) -> None:
         node = tt.RemoteNode(http_endpoint=node_address)
-        node.api.network_broadcast.broadcast_transaction(trx=transaction)
+        for trx in chunk:
+            node.api.network_broadcast.broadcast_transaction(trx=trx)
 
 
 def __fast_broadcast2(node, chunk):
@@ -160,8 +156,7 @@ def __prepare_and_sign_transactions(wallet, all_operations: list[list[Operation]
     with ThreadPoolExecutor(max_workers=6) as executor:
         results = list(executor.map(__sign_transaction_in_chunk, chunks))
 
-    transactions = [item for sublist in results for item in sublist]
-    return transactions
+    return [item for sublist in results for item in sublist]
 
 
 def __fast_broadcast(node: tt.InitNode, transactions: list) -> None:
@@ -176,7 +171,7 @@ def __fast_broadcast(node: tt.InitNode, transactions: list) -> None:
     chunks = [transactions[i : i + chunk_size] for i in range(0, len(transactions), chunk_size)]
 
     with ThreadPoolExecutor(max_workers=6) as executor:
-        results = list(executor.map(a, chunks))
+        list(executor.map(a, chunks))
 
 
 if __name__ == "__main__":
