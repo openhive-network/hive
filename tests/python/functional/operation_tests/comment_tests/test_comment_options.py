@@ -20,13 +20,11 @@ def test_comment_and_comment_options_operations_in_the_same_transaction(
     """
     Test case 1, 2 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
-
     comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
         comment.create_parent_comment()
 
-    comment.send(reply_type=reply_type, **updated_comment_options)
+    comment.send(reply_type=reply_type, **UPDATED_COMMENT_OPTIONS)
 
     comment.assert_is_rc_mana_decreased_after_post_or_update()
     comment.assert_is_comment_sent_or_update()
@@ -40,8 +38,6 @@ def test_comment_and_comment_options_operations_in_the_different_transaction(
     """
     Test case 3, 4 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
-
     comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
         comment.create_parent_comment()
@@ -49,7 +45,7 @@ def test_comment_and_comment_options_operations_in_the_different_transaction(
     comment.send(reply_type=reply_type)
     comment.assert_is_rc_mana_decreased_after_post_or_update()
 
-    comment.options(**updated_comment_options)
+    comment.options(**UPDATED_COMMENT_OPTIONS)
 
     comment.assert_rc_mana_after_change_comment_options("decrease")
     comment.assert_is_comment_sent_or_update()
@@ -91,25 +87,29 @@ def test_change_comment_options_operations_twice(
 
 
 @pytest.mark.parametrize(
-    ("option_name_and_value_sets_1_list", "option_name_and_value_set_2", "error_message"),
+    (
+        "options_to_modify_before_creating_comment",
+        "options_and_values_to_modify_after_creating_comment",
+        "error_message",
+    ),
     [
         (
-            [("allow_votes", True), ("allow_curation_rewards", True)],
+            ("allow_votes", "allow_curation_rewards"),
             ("max_accepted_payout", tt.Asset.Tbd(120).as_legacy()),
             "A comment cannot accept a greater payout.",
         ),
         (
-            [("allow_votes", True), ("allow_curation_rewards", True)],
+            ("allow_votes", "allow_curation_rewards"),
             ("percent_hbd", 70),
             "A comment cannot accept a greater percent HBD.",
         ),
         (
-            [("allow_curation_rewards", True)],
+            ("allow_curation_rewards",),
             ("allow_votes", True),
             "Voting cannot be re-enabled.",
         ),
         (
-            [("allow_votes", True)],
+            ("allow_votes",),
             ("allow_curation_rewards", True),
             "Curation rewards cannot be re-enabled.",
         ),
@@ -126,8 +126,8 @@ def test_try_change_comment_option_again(
     prepared_node: tt.InitNode,
     wallet: tt.Wallet,
     reply_type: str,
-    option_name_and_value_sets_1_list: list,
-    option_name_and_value_set_2: tuple,
+    options_to_modify_before_creating_comment: list,
+    options_and_values_to_modify_after_creating_comment: tuple,
     error_message: str,
 ) -> None:
     """
@@ -139,8 +139,8 @@ def test_try_change_comment_option_again(
     if reply_type == "reply_another_comment":
         comment.create_parent_comment()
 
-    for option_name_and_value_set in option_name_and_value_sets_1_list:
-        updated_comment_options[option_name_and_value_set[0]] = option_name_and_value_set[1]
+    for option_name in options_to_modify_before_creating_comment:
+        updated_comment_options[option_name] = True
 
     comment.send(reply_type=reply_type, **updated_comment_options)
 
@@ -148,12 +148,14 @@ def test_try_change_comment_option_again(
     comment.assert_is_comment_sent_or_update()
     comment.assert_options_are_applied()
 
-    updated_comment_options[option_name_and_value_set_2[0]] = option_name_and_value_set_2[1]
+    updated_comment_options[options_and_values_to_modify_after_creating_comment[0]] = (
+        options_and_values_to_modify_after_creating_comment[1]
+    )
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment.options(**updated_comment_options)
 
-    assert error_message in error.value.error
+    assert error_message in error.value.error, "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
@@ -162,8 +164,6 @@ def test_change_options_of_comment_with_reply(prepared_node: tt.InitNode, wallet
     """
     Test case 15, 16 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
     """
-    updated_comment_options = UPDATED_COMMENT_OPTIONS.copy()
-
     comment = Comment(prepared_node, wallet)
     if reply_type == "reply_another_comment":
         comment.create_parent_comment()
@@ -172,7 +172,7 @@ def test_change_options_of_comment_with_reply(prepared_node: tt.InitNode, wallet
     comment.assert_is_rc_mana_decreased_after_post_or_update()
     comment.create_parent_comment()
 
-    comment.options(**updated_comment_options)
+    comment.options(**UPDATED_COMMENT_OPTIONS)
     comment.assert_rc_mana_after_change_comment_options("decrease")
 
     comment.assert_is_comment_sent_or_update()
@@ -214,7 +214,7 @@ def test_change_percent_hbd_after_vote(prepared_node: tt.InitNode, wallet: tt.Wa
 )
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
 def test_change_comment_options_after_vote(
-    prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str, comment_options: str
+    prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str, comment_options: dict
 ) -> None:
     """
     Test case 19:24 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
@@ -232,7 +232,7 @@ def test_change_comment_options_after_vote(
     assert (
         "One of the included comment options requires the comment to have no rshares allocated to it."
         in error.value.error
-    )
+    ), "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
@@ -283,7 +283,7 @@ def test_beneficiary_after_comment(
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment.options(beneficiaries=beneficiaries)
-    assert error_message in error.value.error
+    assert error_message in error.value.error, "Appropriate error message is not raise"
 
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
@@ -325,5 +325,5 @@ def test_beneficiary_after_vote(
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment.options(beneficiaries=beneficiaries)
 
-    assert error_message in error.value.error
+    assert error_message in error.value.error, "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
