@@ -38,7 +38,9 @@ def __prepare_operation(
         )
     if 50 <= random_number < 75:
         return create_comment_operation(account_name, depth_level, comment_permlinks, permlinks_for_current_iteration)
-    return create_custom_json()
+    # fixme: uncomment after schema repair
+    # return create_custom_json()
+    return create_transfer(account_name)
 
 
 def create_transfer(from_account: str) -> TransferOperation:
