@@ -6,7 +6,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
-from hive_local_tools.functional.python.operation import Comment
+from hive_local_tools.functional.python.operation.comment import Comment
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])

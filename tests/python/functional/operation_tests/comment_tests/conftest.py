@@ -4,10 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from hive_local_tools.functional.python.operation import (
-    Comment,
-    CommentAccount,
-)
+from hive_local_tools.functional.python.operation.comment import Comment, CommentAccount
 
 if TYPE_CHECKING:
     import test_tools as tt
