@@ -107,6 +107,11 @@ namespace helpers
   class index_statistic_provider
   {
   public:
+    size_t get_item_additional_allocation(const typename IndexType::value_type&) const
+    {
+      return 0;
+    }
+
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -327,6 +332,10 @@ namespace chainbase {
       generic_index( allocator<value_type> a )
       :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
+      size_t get_item_additional_allocation() const {
+        return _item_additional_allocation;
+      }
+
       /**
         * Construct a new element in the multi_index_container.
         * Set the ID to the next available ID, then increment _next_id and fire off on_create().
@@ -344,6 +353,8 @@ namespace chainbase {
 
         ++_next_id;
         on_create( *insert_result.first );
+        helpers::index_statistic_provider<index_type> provider;
+        _item_additional_allocation += provider.get_item_additional_allocation(*insert_result.first);
         return *insert_result.first;
       }
 
@@ -397,7 +408,10 @@ namespace chainbase {
 
         auto itr = _indices.iterator_to( obj );
 
+        helpers::index_statistic_provider<index_type> provider;
+        const auto old_size = provider.get_item_additional_allocation(obj);
         auto ok = _indices.modify( itr, safe_modifier);
+        const auto new_size = provider.get_item_additional_allocation(obj);
 
         if(fc_exception_ptr)
           fc_exception_ptr->dynamic_rethrow_exception();
@@ -409,18 +423,26 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
             "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
+
+        _item_additional_allocation += new_size - old_size;
       }
 
       void remove( const value_type& obj ) {
+        helpers::index_statistic_provider<index_type> provider;
+        const auto size = provider.get_item_additional_allocation(obj);
         on_remove( obj );
         _indices.erase( _indices.iterator_to( obj ) );
+        _item_additional_allocation -= size;
       }
 
       template< typename ByIndex >
       typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI) {
         auto& idx = _indices.template get< ByIndex >();
         on_remove( *objI );
-        return idx.erase(objI);
+        const auto ret = idx.erase(objI);
+        helpers::index_statistic_provider<index_type> provider;
+        _item_additional_allocation -= provider.get_item_additional_allocation(*objI);
+        return ret;
       }
 
       template< typename ByIndex, typename ExternalStorageProcessor, typename Iterator = typename MultiIndexType::template index_iterator<ByIndex>::type >
@@ -781,6 +803,7 @@ namespace chainbase {
         *  Commit will discard all revisions prior to the committed revision.
         */
       int64_t                         _revision = 0;
+      size_t                          _item_additional_allocation = 0;
       id_type                         _next_id = id_type(0);
       index_type                      _indices;
       uint32_t                        _size_of_value_type = 0;
@@ -875,7 +898,9 @@ namespace chainbase {
       {
         typedef typename BaseIndex::index_type index_type;
         helpers::index_statistic_provider<index_type> provider;
-        return provider.gather_statistics(_base.indices(), onlyStaticInfo);
+        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), onlyStaticInfo);
+        stats._item_additional_allocation = _base.get_item_additional_allocation();
+        return stats;
       }
 
       virtual size_t size() const override final

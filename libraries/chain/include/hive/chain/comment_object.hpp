@@ -538,6 +538,18 @@ namespace helpers
 #ifdef HIVE_ENABLE_SMT
     typedef typename hive::chain::comment_cashout_object::t_votable_assets t_votable_assets;
 #endif
+
+    size_t get_item_additional_allocation(const hive::chain::comment_cashout_object& o) const
+    {
+      size_t size = 0;
+      size += o.get_permlink().capacity()*sizeof(shared_string::value_type);
+      size += o.get_beneficiaries().capacity()*sizeof(t_beneficiaries::value_type);
+#ifdef HIVE_ENABLE_SMT
+      size += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);
+#endif
+      return size;
+    }
+
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -547,11 +559,7 @@ namespace helpers
       {
         for(const auto& o : index)
         {
-          info._item_additional_allocation += o.get_permlink().capacity()*sizeof(shared_string::value_type);
-          info._item_additional_allocation += o.get_beneficiaries().capacity()*sizeof(t_beneficiaries::value_type);
-#ifdef HIVE_ENABLE_SMT
-          info._item_additional_allocation += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);
-#endif
+          info._item_additional_allocation += get_item_additional_allocation(o);
         }
       }
 
