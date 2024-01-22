@@ -21,7 +21,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #else
       template< typename Allocator >
       environment_check( allocator< Allocator > a )
-                  : version_info( a ), decoded_state_objects_data_json(a), plugins( a )
+                  : version_info( a ), decoded_state_objects_data_json(a), blockchain_config_json(a), plugins( a )
 #endif
       {
         memset( &compiler_version, 0, sizeof( compiler_version ) );
@@ -37,7 +37,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         windows = true;
 #endif
       }
-      // decoded_state_objects_data_json is generated later, so we don't check it here.
+      // decoded_state_objects_data_json and blockchain_config_json is generated later, so we don't check it here.
       friend bool operator == ( const environment_check& a, const environment_check& b ) {
         return std::make_tuple( a.compiler_version, a.debug, a.apple, a.windows )
           ==  std::make_tuple( b.compiler_version, b.debug, b.apple, b.windows );
@@ -50,6 +50,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #endif
         version_info = other.version_info;
         decoded_state_objects_data_json = other.decoded_state_objects_data_json;
+        blockchain_config_json = other.blockchain_config_json;
         compiler_version = other.compiler_version;
         debug = other.debug;
         apple = other.apple;
@@ -183,6 +184,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       shared_string                 version_info;
       shared_string                 decoded_state_objects_data_json;
+      shared_string                 blockchain_config_json;
       t_flat_set< shared_string >   plugins;
 #endif
       boost::array<char,256>  compiler_version;
@@ -402,6 +404,24 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
     assert(env);
     return std::string(env->decoded_state_objects_data_json.c_str());
+  }
+
+  void database::set_blockchain_config(const std::string& json)
+  {
+    /* Blockchain config can change for example via hardfork*/
+    assert(_is_open);
+    environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    assert(env);
+    ilog("Updating blockchain configuration stored in DB to: \n${json}", (json));
+    env->blockchain_config_json = json.c_str();
+  }
+
+  std::string database::get_blockchain_config_from_shm() const
+  {
+    assert(_is_open);
+    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    assert(env);
+    return std::string(env->blockchain_config_json.c_str());
   }
 }  // namespace chainbase
 
