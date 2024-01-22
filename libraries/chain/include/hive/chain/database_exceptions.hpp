@@ -89,6 +89,8 @@ namespace hive { namespace chain {
 
   FC_DECLARE_DERIVED_EXCEPTION( shm_state_definitions_mismatch_exception,      hive::chain::chain_exception, 4130000, "State objects definitions from shared memory file mismatch current version of app." )
   FC_DECLARE_DERIVED_EXCEPTION( snapshot_state_definitions_mismatch_exception, hive::chain::chain_exception, 4130100, "State objects definitions from snapshot mismatch current version of app." )
+  FC_DECLARE_DERIVED_EXCEPTION( blockchain_config_mismatch_exception, hive::chain::chain_exception, 4130200, "Blockchain config from shared memory file mismatch current version of app." )
+  FC_DECLARE_DERIVED_EXCEPTION( snapshot_blockchain_config_mismatch_exception, hive::chain::chain_exception, 4130300, "Blockchain config from snapshot mismatch current version of app." )
 
   FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_check_exception, 4030100, "transaction expiration exception" )
   FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_check_exception, 4030200, "transaction tapos exception" )
