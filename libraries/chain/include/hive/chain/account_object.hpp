@@ -735,6 +735,13 @@ namespace helpers
     typedef hive::chain::account_index IndexType;
     typedef typename hive::chain::account_object::t_delayed_votes t_delayed_votes;
 
+    size_t get_item_additional_allocation(const hive::chain::account_object& o) const
+    {
+      size_t size = 0;
+      size += o.delayed_votes.capacity()*sizeof(t_delayed_votes::value_type);
+      return size;
+    }
+
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -744,7 +751,7 @@ namespace helpers
       {
         for(const auto& o : index)
         {
-          info._item_additional_allocation += o.delayed_votes.capacity()*sizeof(t_delayed_votes::value_type);
+          info._item_additional_allocation += get_item_additional_allocation(o);
         }
       }
 

@@ -60,6 +60,11 @@ namespace helpers
   public:
     typedef hive::chain::transaction_index IndexType;
 
+    size_t get_item_additional_allocation(const hive::chain::transaction_object& o) const
+    {
+      return 0;
+    }
+
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;

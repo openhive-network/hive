@@ -282,6 +282,13 @@ namespace helpers
     typedef hive::plugins::follow::feed_index IndexType;
     typedef typename hive::plugins::follow::feed_object::t_reblogged_by_container t_reblogged_by_container;
 
+    size_t get_item_additional_allocation(const hive::plugins::follow::feed_object& o) const
+    {
+      size_t size = 0;
+      size += o.reblogged_by.capacity()*sizeof(t_reblogged_by_container::value_type);
+      return size;
+    }
+
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -291,7 +298,7 @@ namespace helpers
       {
         for(const auto& o : index)
         {
-          info._item_additional_allocation += o.reblogged_by.capacity()*sizeof(t_reblogged_by_container::value_type);
+          info._item_additional_allocation += get_item_additional_allocation(o);
         }
       }
 
