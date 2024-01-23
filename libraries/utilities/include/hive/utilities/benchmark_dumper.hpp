@@ -86,7 +86,7 @@ public:
     measurement                   total_measurement;
   };
 
-  typedef std::function<void(index_memory_details_cntr_t&, bool)> get_indexes_memory_details_t;
+  typedef std::function<void(index_memory_details_cntr_t&)> get_indexes_memory_details_t;
   typedef std::function<void(database_object_sizeof_cntr_t&)> get_database_objects_sizeofs_t;
 
   bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
@@ -117,7 +117,7 @@ public:
             int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
             current_virtual,
             peak_virtual );
-    get_indexes_memory_details(data.index_memory_details_cntr, true);
+    get_indexes_memory_details(data.index_memory_details_cntr);
   
     _last_sys_time = current_sys_time;
     _last_cpu_time = current_cpu_time;
@@ -148,7 +148,7 @@ public:
 
       idxData.clear();
 
-      get_indexes_memory_details(idxData, false);
+      get_indexes_memory_details(idxData);
 
       std::sort(idxData.begin(), idxData.end(),
         [](const index_memory_details_t& info1, const index_memory_details_t& info2) -> bool

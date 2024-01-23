@@ -1404,7 +1404,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   auto blockNo = _mainDb.head_block_num();
 
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
+  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&) {});
   ilog("State snapshot generation. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
     ("rt", measure.real_ms)
     ("ct", measure.cpu_ms)
@@ -1524,7 +1524,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);
 
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
+  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&) {});
   ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
     ("rt", measure.real_ms)
     ("ct", measure.cpu_ms)
