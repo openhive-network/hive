@@ -129,8 +129,6 @@ public:
       current_virtual,
       peak_virtual );
 
-    dump(false, get_indexes_memory_details);
-
     // no sense to store data that will not be dumped to file
     if(   _all_data.measurements.empty() || is_file_available() ) _all_data.measurements.push_back( data );
     else  _all_data.measurements[0] = data;
