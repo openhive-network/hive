@@ -13,6 +13,8 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
+#include <hive/protocol/get_config.hpp>
+
 #include <hive/utilities/benchmark_dumper.hpp>
 
 #include <appbase/application.hpp>
@@ -40,7 +42,7 @@
 
 namespace bpo = boost::program_options;
 
-#define SNAPSHOT_FORMAT_VERSION "2.1"
+#define SNAPSHOT_FORMAT_VERSION "2.2"
 
 namespace {
 
@@ -939,7 +941,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1025,6 +1027,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   ::rocksdb::ColumnFamilyHandle* externalDataCF = db.create_column_family("EXTERNAL_DATA");
   ::rocksdb::ColumnFamilyHandle* snapshotManifestCF = db.create_column_family("IRREVERSIBLE_STATE");
   ::rocksdb::ColumnFamilyHandle* StateDefinitionsDataCF = db.create_column_family("STATE_DEFINITIONS_DATA");
+  ::rocksdb::ColumnFamilyHandle* BlockchainConfigurationCF = db.create_column_family("BLOCKCHAIN_CONFIGURATION");
 
   ::rocksdb::WriteOptions writeOptions;
 
@@ -1104,7 +1107,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     }
   }
 
-    {
+  {
     const std::string json = _mainDb.get_decoded_state_objects_data_from_shm();
     Slice key("STATE_DEFINITIONS_DATA");
     Slice value(json);
@@ -1119,10 +1122,25 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     }
   }
 
+  {
+    const std::string json = _mainDb.get_blockchain_config_from_shm();
+    Slice key("BLOCKCHAIN_CONFIGURATION");
+    Slice value(json);
+    auto status = db->Put(writeOptions, BlockchainConfigurationCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"BLOCKCHAIN_CONFIGURATION\"");
+
+      throw std::exception();
+    }
+  }
+
   db.close();
   }
 
-std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
 {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -1148,6 +1166,10 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t>
 
   cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
   cfDescriptor.name = "STATE_DEFINITIONS_DATA";
+  cfDescriptors.push_back(cfDescriptor);
+
+  cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
+  cfDescriptor.name = "BLOCKCHAIN_CONFIGURATION";
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
@@ -1290,6 +1312,23 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t>
     state_definitions_data = valueSlice.ToString();
   }
 
+  std::string blockchain_configuration;
+
+  {
+    ::rocksdb::ReadOptions rOptions;
+
+    std::unique_ptr<::rocksdb::Iterator> blockchainConfigurationDataIterator(manifestDb->NewIterator(rOptions, cfHandles[5]));
+    blockchainConfigurationDataIterator->SeekToFirst();
+    FC_ASSERT(blockchainConfigurationDataIterator->Valid(), "No entry for BLOCKCHAIN_CONFIGURATION. Probably used old snapshot format (must be regenerated).");
+
+    Slice keySlice = blockchainConfigurationDataIterator->key();
+    auto valueSlice = blockchainConfigurationDataIterator->value();
+
+    std::string keyName = keySlice.ToString();
+    FC_ASSERT(keyName == "BLOCKCHAIN_CONFIGURATION", "Broken snapshot - no entry for BLOCKCHAIN_CONFIGURATION");
+    blockchain_configuration = valueSlice.ToString();
+  }
+
   for(auto* cfh : cfHandles)
   {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
@@ -1302,7 +1341,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t>
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), lib);
+  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), lib);
 }
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
@@ -1467,12 +1506,84 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
+  const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
+  {
+    fc::mutable_variant_object current_blockchain_config = protocol::get_config(_mainDb.get_treasury_name(), _mainDb.get_chain_id());
+    fc::variant full_current_blockchain_config_as_variant;
+    fc::to_variant(current_blockchain_config, full_current_blockchain_config_as_variant);
+
+    if (_mainDb.head_block_num() > 0 && full_loaded_blockchain_configuration_json != fc::json::to_string(full_current_blockchain_config_as_variant))
+    {
+      constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
+      constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
+
+      fc::mutable_variant_object loaded_blockchain_config = fc::json::from_string(full_loaded_blockchain_configuration_json, fc::json::format_validation_mode::full).get_object();
+      const std::string loaded_hive_treasury_account = loaded_blockchain_config[HIVE_TREASURY_ACCOUNT_KEY].as_string();
+      const std::string loaded_hive_chain_id = loaded_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
+
+      loaded_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
+      current_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
+      loaded_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
+      current_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
+      bool throw_exception = false;
+
+      {
+        fc::variant modified_current_blockchain_config;
+        fc::to_variant(current_blockchain_config, modified_current_blockchain_config);
+        fc::variant modified_loaded_blockchain_config;
+        fc::to_variant(loaded_blockchain_config, modified_loaded_blockchain_config);
+
+        if (fc::json::to_string(modified_current_blockchain_config) != fc::json::to_string(modified_loaded_blockchain_config))
+          throw_exception = true;
+      }
+
+      if (!throw_exception)
+      {
+        if (_mainDb.get_hardfork() < HIVE_HARDFORK_1_24)
+        {
+          if (loaded_hive_treasury_account != OBSOLETE_TREASURY_ACCOUNT || loaded_hive_chain_id != std::string(OLD_CHAIN_ID))
+            throw_exception = true;
+        }
+        else
+        {
+          if (loaded_hive_treasury_account != NEW_HIVE_TREASURY_ACCOUNT || loaded_hive_chain_id != std::string(HIVE_CHAIN_ID))
+            throw_exception = true;
+        }
+      }
+
+      if (throw_exception)
+      {
+        std::fstream loaded_blockchain_config_file, current_blockchain_config_file;
+        constexpr char current_config_filename[] = "current_blockchain_config.log";
+        constexpr char loaded_config_filename[] = "loaded_from_snapshot_blockchain_config.log";
+
+        loaded_blockchain_config_file.open(loaded_config_filename, std::ios::out | std::ios::trunc);
+        if (loaded_blockchain_config_file.good())
+          loaded_blockchain_config_file << fc::json::to_pretty_string(fc::json::from_string(full_loaded_blockchain_configuration_json, fc::json::format_validation_mode::full));
+        loaded_blockchain_config_file.flush();
+        loaded_blockchain_config_file.close();
+
+        current_blockchain_config_file.open(current_config_filename, std::ios::out | std::ios::trunc);
+        if (current_blockchain_config_file.good())
+          current_blockchain_config_file << fc::json::to_pretty_string(full_current_blockchain_config_as_variant);
+        current_blockchain_config_file.flush();
+        current_blockchain_config_file.close();
+
+        FC_THROW_EXCEPTION(chain::snapshot_blockchain_config_mismatch_exception,
+                           "Mismatch between blockchain configuration loaded from snapshot file and the current one"
+                           "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
+                           (current_config_filename)(loaded_config_filename));
+      }
+    }
+  }
+
   wlog("Snapshot state definitions matches current app version - wiping DB.");
   _mainDb.close();
   _mainDb.wipe(openArgs.data_dir, openArgs.shared_mem_dir, false);
   _mainDb.open(openArgs);
-
+  dlog("Updating DB decoded state objects data and blockchain config with data from snapshot.");
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
+  _mainDb.set_blockchain_config(full_loaded_blockchain_configuration_json);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
   ilog("Attempting to load contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
@@ -1518,7 +1629,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     load_snapshot_external_data(extDataIdx);
   }
 
-  auto last_irr_block = std::get<3>(snapshotManifest);
+  auto last_irr_block = std::get<4>(snapshotManifest);
   
   _mainDb.set_last_irreversible_block_num(last_irr_block);
 
