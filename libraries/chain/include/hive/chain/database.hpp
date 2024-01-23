@@ -205,6 +205,7 @@ namespace chain {
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm(const bool throw_an_error_on_state_definitions_mismatch);
+      void verify_match_of_blockchain_configuration();
 
     public:
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
