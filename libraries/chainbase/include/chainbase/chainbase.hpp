@@ -859,7 +859,7 @@ namespace chainbase {
       virtual void    undo_all()const = 0;
       virtual uint32_t type_id()const  = 0;
 
-      virtual statistic_info get_statistics(bool onlyStaticInfo) const = 0;
+      virtual statistic_info get_statistics() const = 0;
       virtual size_t size() const = 0;
       virtual void clear() = 0;
 
@@ -894,11 +894,11 @@ namespace chainbase {
       virtual void     undo_all() const override {_base.undo_all(); }
       virtual uint32_t type_id()const override { return BaseIndex::value_type::type_id; }
 
-      virtual statistic_info get_statistics(bool onlyStaticInfo) const override final
+      virtual statistic_info get_statistics() const override final
       {
         typedef typename BaseIndex::index_type index_type;
         helpers::index_statistic_provider<index_type> provider;
-        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), onlyStaticInfo);
+        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), /* onlyStaticInfo */ true);
         stats._item_additional_allocation = _base.get_item_additional_allocation();
         return stats;
       }

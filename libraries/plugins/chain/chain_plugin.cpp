@@ -48,7 +48,7 @@ using hive::chain::block_id_type;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
-using get_indexes_memory_details_type = std::function< void( index_memory_details_cntr_t&, bool ) >;
+using get_indexes_memory_details_type = std::function< void( index_memory_details_cntr_t& ) >;
 
 #define NUM_THREADS 1
 
@@ -748,11 +748,11 @@ void chain_plugin_impl::initial_settings()
   const auto& abstract_index_cntr = db.get_abstract_index_cntr();
 
   get_indexes_memory_details = [ this, &abstract_index_cntr ]
-    (index_memory_details_cntr_t& index_memory_details_cntr, bool onlyStaticInfo)
+    (index_memory_details_cntr_t& index_memory_details_cntr)
   {
     for (auto idx : abstract_index_cntr)
     {
-      auto info = idx->get_statistics(onlyStaticInfo);
+      auto info = idx->get_statistics();
       index_memory_details_cntr.emplace_back(std::move(info._value_type_name), info._item_count,
         info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
     }
@@ -1277,7 +1277,7 @@ void chain_plugin_impl::setup_benchmark_dumper()
       database_object_sizeof_cntr.reserve(abstract_index_cntr.size());
       for (auto idx : abstract_index_cntr)
       {
-        auto info = idx->get_statistics(true);
+        auto info = idx->get_statistics();
         database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
       }
     };
