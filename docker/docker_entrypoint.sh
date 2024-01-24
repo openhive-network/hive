@@ -21,6 +21,9 @@ then
     exit 1
 fi
 
+# Be sure this directory exists
+sudo -Enu hived mkdir --mode=775 -p "$DATADIR/blockchain"
+
 if sudo -Enu hived test ! -d "$SHM_DIR"
 then
     echo "Shared memory file directory (SHM_DIR) $SHM_DIR does not exist. Exiting."
@@ -56,9 +59,6 @@ cleanup () {
 #trap 'exit' INT QUIT TERM
 #trap cleanup EXIT
 trap cleanup INT QUIT TERM
-
-# Be sure this directory exists
-sudo -Enu hived mkdir --mode=775 -p "$DATADIR/blockchain"
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
