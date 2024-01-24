@@ -25,11 +25,14 @@ class transaction_status_plugin : public appbase::plugin< transaction_status_plu
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
 
-    uint32_t earliest_tracked_block_num();
+    bool is_tracking();
+
+    fc::time_point_sec get_earliest_tracked_block_timestamp();
+    fc::time_point_sec get_last_irreversible_block_timestamp();
 
 #ifdef IS_TEST_NET
+#define HIVE_TRANSACTION_STATUS_TESTNET_CALCULATED_HEAD_NUM 1300
     bool     state_is_valid();
-    void     rebuild_state();
 #endif
 
   private:

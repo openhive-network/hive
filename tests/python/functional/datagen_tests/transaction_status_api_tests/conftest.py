@@ -8,7 +8,7 @@ import test_tools as tt
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "transaction_status_track_after_block: set argument in config.ini")
+    # config.addinivalue_line("markers", "transaction_status_track_after_block: set argument in config.ini")
     config.addinivalue_line("markers", "transaction_status_block_depth: set argument in config.ini")
 
 
@@ -20,11 +20,11 @@ def wallet(node: tt.InitNode) -> tt.Wallet:
 @pytest.fixture()
 def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
     api_node = tt.ApiNode()
-    transaction_status_track_after_block = request.node.get_closest_marker("transaction_status_track_after_block")
+    # transaction_status_track_after_block = request.node.get_closest_marker("transaction_status_track_after_block")
     transaction_status_block_depth = request.node.get_closest_marker("transaction_status_block_depth")
 
-    if transaction_status_track_after_block:
-        api_node.config.transaction_status_track_after_block = next(iter(transaction_status_track_after_block.args))
+    # if transaction_status_track_after_block:
+    #    api_node.config.transaction_status_track_after_block = next(iter(transaction_status_track_after_block.args))
 
     if transaction_status_block_depth:
         api_node.config.transaction_status_block_depth = next(iter(transaction_status_block_depth.args))
