@@ -112,8 +112,11 @@ if [ -z "$GIT_COMMIT_SHA" ]; then
     GIT_COMMIT_SHA="[unknown]"
   fi
 fi
-GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH"
-if [ -z "$GIT_CURRENT_BRANCH" ]; then
+if [ -n "$CI_COMMIT_BRANCH" ]; then
+  GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH"
+elif [ -n "$CI_COMMIT_TAG" ]; then
+  GIT_CURRENT_BRANCH="$CI_COMMIT_TAG"
+else
   GIT_CURRENT_BRANCH="$(git branch --show-current || true)"
   if [ -z "$GIT_CURRENT_BRANCH" ]; then
     GIT_CURRENT_BRANCH="$(git describe --abbrev=0 --all | sed 's/^.*\///' || true)"
@@ -122,6 +125,7 @@ if [ -z "$GIT_CURRENT_BRANCH" ]; then
     fi
   fi
 fi
+
 
 GIT_LAST_LOG_MESSAGE="$CI_COMMIT_MESSAGE"
 if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
