@@ -38,7 +38,7 @@ class BeekeeperConfig(CliveBaseModel):
     webserver_unix_endpoint: Url | None = None
     webserver_ws_endpoint: Url | None = None
     webserver_ws_deflate: int = 0
-    webserver_thread_pool_size: int = 1
+    webserver_thread_pool_size: int = 5
     notifications_endpoint: Url | None = BeekeeperDefaults.DEFAULT_NOTIFICATIONS_ENDPOINT
     backtrace: str = BeekeeperDefaults.DEFAULT_BACKTRACE
     plugin: list[str] = Field(default_factory=lambda: ["json_rpc", "webserver"])

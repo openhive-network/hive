@@ -51,17 +51,19 @@ def __prepare_operation(
     if 0 <= random_number <= 20:
         return create_transfer(account_name)
     if 21 <= random_number <= 40:
-        return create_vote(
-            account_name,
-            depth_level,
-            comment_permlinks,
-        )
+        return create_transfer(account_name)
+        # return create_vote(
+        #     account_name,
+        #     depth_level,
+        #     comment_permlinks,
+        # )
     if 41 <= random_number <= 60:
-        return create_comment_operation(account_name, depth_level, comment_permlinks, permlinks_for_current_iteration)
+        # return create_comment_operation(account_name, depth_level, comment_permlinks, permlinks_for_current_iteration)
+        return create_custom_json(account_name)
     if 61 <= random_number <= 80:
         return create_custom_json(account_name)
-    return create_comment_options(depth_level, comment_permlinks)
-
+    # return create_comment_options(depth_level, comment_permlinks)
+    return create_custom_json(account_name)
 
 def create_transfer(from_account: str) -> TransferOperation:
     return TransferOperation(

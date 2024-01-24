@@ -68,8 +68,8 @@ def prepare_second_stage_of_block_log(signature_type: Literal["open_sign", "mult
     tt.logger.info("Start Signing Transactions")
     http_endpoint = node.http_endpoint.as_string()
     ws_endpoint = node.ws_endpoint.as_string()
-    max_sign_workers = 12  # fixme
-    # max_sign_workers = 6 # fixme
+    # max_sign_workers = 12  # fixme
+    max_sign_workers = 4  # fixme
     with ProcessPoolExecutor(max_workers=max_sign_workers) as executor:
         bk = Beekeeper()
         bk.launch()
