@@ -13,8 +13,6 @@
 using namespace hive::chain;
 using namespace hive::protocol;
 
-#define TRANSCATION_STATUS_TRACK_AFTER_BLOCK 1300
-#define TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR BOOST_PP_STRINGIZE( TRANSCATION_STATUS_TRACK_AFTER_BLOCK )
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH 30
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR BOOST_PP_STRINGIZE( TRANSACTION_STATUS_TEST_BLOCK_DEPTH )
 
@@ -41,9 +39,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
         config_line_t( { "transaction-status-block-depth",
           { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } }
         ),
-        config_line_t( { "transaction-status-track-after-block",
-          { TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR } }
-        ),
         config_line_t( { "shared-file-size",
           { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
         )
@@ -57,6 +52,8 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
+    BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_id >().empty() );
+    BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_block_num >().empty() );
 
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
@@ -103,10 +100,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     _tx0.set_expiration( _tx0_expiration );
     auto tx0 = push_transaction( _tx0, alice_private_key, 0, hive::protocol::pack_type::legacy );
 
-    // Tracking should not be enabled until we have reached TRANSCATION_STATUS_TRACK_AFTER_BLOCK - ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) blocks
+    // Tracking should not be enabled until we have reached 
+    // TRANSCATION_STATUS_TRACK_AFTER_BLOCK - ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) blocks
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
+    BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_id >().empty() );
+    BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_block_num >().empty() );
 
     // Transaction 0 should not be tracked
     auto tso = db->find< transaction_status_object, by_trx_id >( tx0->get_transaction_id() );
@@ -122,7 +122,11 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-    generate_blocks( TRANSCATION_STATUS_TRACK_AFTER_BLOCK - db->head_block_num() );
+    generate_blocks( HIVE_TRANSACTION_STATUS_TESTNET_CALCULATED_HEAD_NUM - TRANSACTION_STATUS_TEST_BLOCK_DEPTH - db->head_block_num() );
+
+    // Tracking began. Tracked blocks exist in the mem pool
+    BOOST_REQUIRE( not db->get_index< transaction_status_block_index >().indices().get< by_id >().empty() );
+    BOOST_REQUIRE( not db->get_index< transaction_status_block_index >().indices().get< by_block_num >().empty() );
 
     signed_transaction _tx1;
     transfer_operation op1;
@@ -153,7 +157,23 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
+    // Transaction 1 block is missing in the mem pool (block not generated yet)
+    auto tx_block_num = db->head_block_num() + 1;
+    auto tsbo = db->find< transaction_status_block_object, by_block_num >( tx_block_num );
+    BOOST_REQUIRE( tsbo == nullptr );
+
     generate_block();
+
+    // After block generation transaction's block number is updated in object ...
+    tso = db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
+    BOOST_REQUIRE( tso != nullptr );
+    BOOST_REQUIRE( tso->block_num == tx_block_num );
+    // ... and the block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+    auto tx1_block_num = tso->block_num;
 
     /*
       * Test for two transactions in the same block
@@ -205,6 +225,12 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
+    // Transaction 1 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+
     // Transaction 2 exists in a mem pool
     tso = db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
     BOOST_REQUIRE( tso != nullptr );
@@ -237,9 +263,10 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
+    generate_block(); 
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
-    generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH );
+    generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH -1 );
 
     // Transaction 1 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
@@ -261,6 +288,12 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
+    // Transaction 1 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+
     // Transaction 2 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
     BOOST_REQUIRE( tso != nullptr );
@@ -281,6 +314,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
+    // Transaction 2 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+    auto tx2_block_num = tso->block_num;
+
     // Transaction 3 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
     BOOST_REQUIRE( tso != nullptr );
@@ -300,6 +340,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
+
+    // Transaction 3 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+    auto tx3_block_num = tso->block_num;
 
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
@@ -319,6 +366,10 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
+    // Transaction 1 block is no longer tracked
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tx1_block_num );
+    BOOST_REQUIRE( tsbo == nullptr );
+
     // Transaction 2 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
     BOOST_REQUIRE( tso != nullptr );
@@ -338,6 +389,12 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
+
+    // Transaction 2 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
 
     // Transaction 3 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
@@ -359,6 +416,12 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() );
     BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
+    // Transaction 3 block exists in the mem pool
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tso->block_num );
+    BOOST_REQUIRE( tsbo != nullptr );
+    BOOST_REQUIRE( tsbo->block_num == tso->block_num );
+    BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
     generate_block();
@@ -377,6 +440,10 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
+    // Transaction 2 block is no longer tracked
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tx2_block_num );
+    BOOST_REQUIRE( tsbo == nullptr );
+
     // Transaction 3 is no longer tracked
     tso = db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
     BOOST_REQUIRE( tso == nullptr );
@@ -391,10 +458,21 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
+    // Transaction 3 block is no longer tracked
+    tsbo = db->find< transaction_status_block_object, by_block_num >( tx3_block_num );
+    BOOST_REQUIRE( tsbo == nullptr );
+
     // At this point our index should be empty
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
+    // Each transaction block is already removed from our index (see above). 
+    // Also no older block should exist in our index.
+    auto lower_bound = std::max< uint32_t >( { tx1_block_num, tx2_block_num, tx3_block_num} );
+    const auto& bidx = db->get_index< transaction_status_block_index >().indices().get< by_block_num >();
+    auto bitr = bidx.begin();
+    BOOST_REQUIRE( bitr != bidx.end() );
+    BOOST_REQUIRE( bitr->block_num > lower_bound );
 
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
@@ -473,38 +551,14 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
     const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4->get_transaction_id() );
-    db->remove( tx_status_obj );
+    const auto& tx_block_obj = db->get< transaction_status_block_object, by_block_num >( tx_status_obj.block_num );
+    db->remove( tx_block_obj );
 
-    // Upper bound of transaction status state should cause state to be invalid
+    // Missing transaction block should cause state to be invalid
     BOOST_REQUIRE( tx_status->state_is_valid() == false );
 
-    tx_status->rebuild_state();
-
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
-    // Create transaction 5
-    signed_transaction _tx5;
-    transfer_operation op5;
-    auto _tx5_expiration = db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION;
-
-    op5.from = "alice";
-    op5.to = "bob";
-    op5.amount = ASSET( "5.000 TESTS" );
-
-    _tx5.operations.push_back( op5 );
-    _tx5.set_expiration( _tx5_expiration );
-    auto tx5 = push_transaction( _tx5, alice_private_key, 0, hive::protocol::pack_type::legacy );
-
-    generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) - 1 );
-
-    const auto& tx_status_obj2 = db->get< transaction_status_object, by_trx_id >( tx5->get_transaction_id() );
-    db->remove( tx_status_obj2 );
-
-    // Lower bound of transaction status state should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
-
-    tx_status->rebuild_state();
-
+    // Generate block number big enough to rebuild valid state.
+    generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) );
     BOOST_REQUIRE( tx_status->state_is_valid() );
   }
   FC_LOG_AND_RETHROW()

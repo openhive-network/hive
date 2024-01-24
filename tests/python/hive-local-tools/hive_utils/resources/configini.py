@@ -37,7 +37,6 @@ class config:  # noqa: N801
         self.tags_start_promoted = "0"
         self.tags_skip_startup_update = "0"
         self.transaction_status_block_depth = "64000"
-        self.transaction_status_track_after_block = "0"
         self.webserver_http_endpoint = "127.0.0.1:8090"
         self.webserver_ws_endpoint = "127.0.0.1:8090"
         self.webserver_thread_pool_size = "32"
