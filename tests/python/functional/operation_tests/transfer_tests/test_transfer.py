@@ -88,3 +88,41 @@ def test_transfer_hives_to_hive_fund_account(
     assert (
         rc_amount_before_sending_op > rc_amount_after_sending_op
     ), "RC amount after sending transfer wasn't decreased."
+
+from schemas.operations.comment_options_operation import CommentOptionsOperation
+import random
+from hive_local_tools.functional.python.operation import create_transaction_with_any_operation
+def create_comment_options() -> CommentOptionsOperation:
+    beneficiaries = []
+
+    for name in ["bob", "carol", "danny"]:  # draw 3 accounts to be beneficiaries
+        account_name = f"{name}"
+        if account_name not in beneficiaries:
+            beneficiaries.append({"weight": 500, "account": account_name})
+
+    extensions = [["comment_payout_beneficiaries", {"beneficiaries": beneficiaries}]]
+
+    return CommentOptionsOperation(
+        author="alice",
+        permlink="alice-permlink",
+        max_accepted_payout=tt.Asset.Tbd(100),
+        percent_hbd=10000,
+        allow_votes=random.randint(0, 1),
+        allow_curation_rewards=random.randint(0, 1),
+        extensions=extensions,
+    )
+
+def test():
+    node = tt.InitNode()
+    node.run()
+    wallet = tt.Wallet(attach_to=node)
+    wallet.create_account("alice", hives=50, hbds=50, vests=50)
+    wallet.create_account("bob", hives=50, hbds=50, vests=50)
+    wallet.create_account("carol", hives=50, hbds=50, vests=50)
+    wallet.create_account("danny", hives=50, hbds=50, vests=50)
+    wallet.api.post_comment("alice", "alice-permlink", "", "category", "title", "{}", "{}")
+    op = create_comment_options()
+    trx = create_transaction_with_any_operation(wallet, op)
+    print()
+
+
