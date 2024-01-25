@@ -105,16 +105,16 @@ HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$HIVE_ROOT")
 
 export DOCKER_BUILDKIT=1
 BUILD_TIME="$(date -uIseconds)"
-GIT_COMMIT_SHA="$CI_COMMIT_SHA"
+GIT_COMMIT_SHA="${CI_COMMIT_SHA:-}"
 if [ -z "$GIT_COMMIT_SHA" ]; then
   GIT_COMMIT_SHA="$(git rev-parse HEAD || true)"
   if [ -z "$GIT_COMMIT_SHA" ]; then
     GIT_COMMIT_SHA="[unknown]"
   fi
 fi
-if [ -n "$CI_COMMIT_BRANCH" ]; then
+if [ -n "${CI_COMMIT_BRANCH:-}" ]; then
   GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH"
-elif [ -n "$CI_COMMIT_TAG" ]; then
+elif [ -n "${CI_COMMIT_TAG:-}" ]; then
   GIT_CURRENT_BRANCH="$CI_COMMIT_TAG"
 else
   GIT_CURRENT_BRANCH="$(git branch --show-current || true)"
@@ -127,7 +127,7 @@ else
 fi
 
 
-GIT_LAST_LOG_MESSAGE="$CI_COMMIT_MESSAGE"
+GIT_LAST_LOG_MESSAGE="${CI_COMMIT_MESSAGE:-}"
 if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
   GIT_LAST_LOG_MESSAGE="$(git log -1 --pretty=%B || true)"
   if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
@@ -136,7 +136,7 @@ if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
 fi
 
 
-GIT_LAST_COMMITTER="$CI_COMMIT_AUTHOR"
+GIT_LAST_COMMITTER="${CI_COMMIT_AUTHOR:-}"
 if [ -z "$GIT_LAST_COMMITTER" ]; then
   GIT_LAST_COMMITTER="$(git log -1 --pretty="%an <%ae>" || true)"
   if [ -z "$GIT_LAST_COMMITTER" ]; then
@@ -144,7 +144,7 @@ if [ -z "$GIT_LAST_COMMITTER" ]; then
   fi
 fi
 
-GIT_LAST_COMMIT_DATE="$CI_COMMIT_TIMESTAMP"
+GIT_LAST_COMMIT_DATE="${CI_COMMIT_TIMESTAMP:-}"
 if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
   GIT_LAST_COMMIT_DATE="$(git log -1 --pretty="%aI" || true)"
   if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
