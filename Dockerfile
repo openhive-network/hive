@@ -78,6 +78,27 @@ RUN \
 
 FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG as base_instance
 
+ARG BUILD_TIME
+ARG GIT_COMMIT_SHA
+ARG GIT_CURRENT_BRANCH
+ARG GIT_LAST_LOG_MESSAGE
+ARG GIT_LAST_COMMITTER
+ARG GIT_LAST_COMMIT_DATE
+LABEL org.opencontainers.image.created="$BUILD_TIME"
+LABEL org.opencontainers.image.url="https://hive.io/"
+LABEL org.opencontainers.image.documentation="https://gitlab.syncad.com/hive/hive"
+LABEL org.opencontainers.image.source="https://gitlab.syncad.com/hive/hive"
+#LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="$GIT_COMMIT_SHA"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.ref.name="HIVE Daemon"
+LABEL org.opencontainers.image.title="Hive Daemon (hived) Image"
+LABEL org.opencontainers.image.description="Runs hived instance. Contains various tools (including cli_wallet)"
+LABEL io.hive.image.branch="$GIT_CURRENT_BRANCH"
+LABEL io.hive.image.commit.log_message="$GIT_LAST_LOG_MESSAGE"
+LABEL io.hive.image.commit.author="$GIT_LAST_COMMITTER"
+LABEL io.hive.image.commit.date="$GIT_LAST_COMMIT_DATE"
+
 ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG}
 
 ARG P2P_PORT=2001

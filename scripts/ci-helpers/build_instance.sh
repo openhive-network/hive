@@ -105,58 +105,40 @@ HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$HIVE_ROOT")
 
 export DOCKER_BUILDKIT=1
 BUILD_TIME="$(date -uIseconds)"
-GIT_COMMIT_SHA="${CI_COMMIT_SHA:-}"
+GIT_COMMIT_SHA="$(git rev-parse HEAD || true)"
 if [ -z "$GIT_COMMIT_SHA" ]; then
-  GIT_COMMIT_SHA="$(git rev-parse HEAD || true)"
-  if [ -z "$GIT_COMMIT_SHA" ]; then
-    GIT_COMMIT_SHA="[unknown]"
-  fi
+  GIT_COMMIT_SHA="[unknown]"
 fi
-if [ -n "${CI_COMMIT_BRANCH:-}" ]; then
-  GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH"
-elif [ -n "${CI_COMMIT_TAG:-}" ]; then
-  GIT_CURRENT_BRANCH="$CI_COMMIT_TAG"
-else
-  GIT_CURRENT_BRANCH="$(git branch --show-current || true)"
+
+GIT_CURRENT_BRANCH="$(git branch --show-current || true)"
+if [ -z "$GIT_CURRENT_BRANCH" ]; then
+  GIT_CURRENT_BRANCH="$(git describe --abbrev=0 --all | sed 's/^.*\///' || true)"
   if [ -z "$GIT_CURRENT_BRANCH" ]; then
-    GIT_CURRENT_BRANCH="$(git describe --abbrev=0 --all | sed 's/^.*\///' || true)"
-    if [ -z "$GIT_CURRENT_BRANCH" ]; then
-      GIT_CURRENT_BRANCH="[unknown]"
-    fi
+    GIT_CURRENT_BRANCH="[unknown]"
   fi
 fi
 
 
-GIT_LAST_LOG_MESSAGE="${CI_COMMIT_MESSAGE:-}"
+GIT_LAST_LOG_MESSAGE="$(git log -1 --pretty=%B || true)"
 if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
-  GIT_LAST_LOG_MESSAGE="$(git log -1 --pretty=%B || true)"
-  if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
-    GIT_LAST_LOG_MESSAGE="[unknown]"
-  fi
+  GIT_LAST_LOG_MESSAGE="[unknown]"
 fi
 
-
-GIT_LAST_COMMITTER="${CI_COMMIT_AUTHOR:-}"
+GIT_LAST_COMMITTER="$(git log -1 --pretty="%an <%ae>" || true)"
 if [ -z "$GIT_LAST_COMMITTER" ]; then
-  GIT_LAST_COMMITTER="$(git log -1 --pretty="%an <%ae>" || true)"
-  if [ -z "$GIT_LAST_COMMITTER" ]; then
-    GIT_LAST_COMMITTER="[unknown]"
-  fi
+  GIT_LAST_COMMITTER="[unknown]"
 fi
 
-GIT_LAST_COMMIT_DATE="${CI_COMMIT_TIMESTAMP:-}"
+GIT_LAST_COMMIT_DATE="$(git log -1 --pretty="%aI" || true)"
 if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
-  GIT_LAST_COMMIT_DATE="$(git log -1 --pretty="%aI" || true)"
-  if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
-    GIT_LAST_COMMIT_DATE="[unknown]"
-  fi
+  GIT_LAST_COMMIT_DATE="[unknown]"
 fi
 
 docker build --target=base_instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
-  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
+  --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
+  --build-arg HIVE_CONVERTER_BUILD="$HIVE_CONVERTER_BUILD" \
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --build-arg BUILD_TIME="$BUILD_TIME" \
   --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
   --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
@@ -166,7 +148,7 @@ docker build --target=base_instance \
   --tag "${REGISTRY}base_instance:${BUILD_IMAGE_TAG}" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  -f Dockerfile "$SOURCE_DIR"
+  --file Dockerfile "$SOURCE_DIR"
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
@@ -181,7 +163,7 @@ docker build --target=instance \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  -f Dockerfile "$SOURCE_DIR"
+  --file Dockerfile "$SOURCE_DIR"
 
 popd
 
