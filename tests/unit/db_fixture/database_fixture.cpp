@@ -1208,6 +1208,30 @@ void database_fixture::recover_account( const std::string& account_to_recover, c
   push_transaction( tx, { recent_owner_key, new_owner_key } );
 }
 
+bool database_fixture::compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
+{
+  const auto& idx = db->get_index< account_index, by_delayed_voting >();
+  for(const auto& usr : idx)
+    if(usr.get_name() == name)
+    {
+      if (usr.delayed_votes.size() != data_to_compare.size()) {
+        BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.delayed_votes.size());
+        return false;
+      }
+      const auto p = std::mismatch(
+        usr.delayed_votes.begin(),
+        usr.delayed_votes.end(),
+        data_to_compare.begin(),
+        data_to_compare.end(),
+        [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
+      if (p.first != usr.delayed_votes.end() && p.second != data_to_compare.end()) {
+        BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
+      }
+      return p.first == usr.delayed_votes.end() && p.second == data_to_compare.end();
+    }
+  return false;
+};
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
