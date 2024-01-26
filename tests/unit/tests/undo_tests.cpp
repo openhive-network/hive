@@ -169,22 +169,21 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    ACTORS( (alice) )
+    ACTOR_DEFAULT_FEE( alice )
     generate_block();
     ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
-    const uint64_t old_alice_vesting = static_cast<uint64_t>(get_vesting( "alice" ).amount.value);
-    BOOST_REQUIRE( get_delayed_vote_count("alice", {old_alice_vesting}) );
+    BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
-    BOOST_REQUIRE( get_delayed_vote_count("alice", { { static_cast<uint64_t>(get_vesting( "alice" ).amount.value)} }) );
+    BOOST_REQUIRE( get_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
-    BOOST_REQUIRE( get_delayed_vote_count("alice", {old_alice_vesting}) );
+    BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
   }
   FC_LOG_AND_RETHROW()
 }
