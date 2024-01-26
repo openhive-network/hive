@@ -245,6 +245,7 @@ namespace chainbase {
       id_type_set                  new_ids;
       id_type                      old_next_id = id_type(0);
       int64_t                      revision = 0;
+      size_t                       item_additional_allocation = 0;
   };
 
   /**
@@ -539,6 +540,7 @@ namespace chainbase {
         _stack.emplace_back( _indices.get_allocator() );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
+        _stack.back().item_additional_allocation = _item_additional_allocation;
         return session( *this, _revision );
       }
 
@@ -563,6 +565,8 @@ namespace chainbase {
         if( !enabled() ) return;
 
         auto& head = _stack.back();
+
+        _item_additional_allocation = head.item_additional_allocation;
 
         for( auto& item : head.old_values ) {
           bool ok = false;
