@@ -16,8 +16,8 @@ namespace hive { namespace chain {
     private:
 
       chain::database& db;
-
       std::list< Object > old_values;
+      size_t old_additional_allocation = 0;
 
     public:
 
@@ -55,6 +55,8 @@ namespace hive { namespace chain {
       {
         old_values.clear();
 
+        old_additional_allocation = db.get_index<Index>().get_item_additional_allocation();
+
         const auto& idx = db.get_index< Index, by_id >();
         auto it = idx.begin();
 
@@ -77,6 +79,10 @@ namespace hive { namespace chain {
       {
         try
         {
+          const size_t new_additional_allocation = db.get_index<Index>().get_item_additional_allocation();
+          if (new_additional_allocation != old_additional_allocation)
+            return false;
+
           const auto& idx = db.get_index< Index, by_id >();
 
           uint32_t idx_size = idx.size();
