@@ -134,6 +134,9 @@ COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived_admin/build/tests/unit/* /home/hived/bin/
 
+COPY --from=build --chown=hived:users \
+  /usr/local/lib/faketime /usr/local/lib/faketime
+
 COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
 
 USER hived_admin
