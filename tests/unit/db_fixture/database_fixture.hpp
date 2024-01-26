@@ -481,6 +481,8 @@ public:
   void recover_account( const std::string& account_to_recover, const fc::ecc::private_key& new_owner_key, 
                         const fc::ecc::private_key& recent_owner_key );
 
+  bool compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare );
+
   vector< operation > get_last_operations( uint32_t ops );
 
   void validate_database();

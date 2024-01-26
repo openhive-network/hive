@@ -1416,21 +1416,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    // support function
-    const auto get_delayed_vote_count = [&]( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
-    {
-      const auto& idx = db->get_index< account_index, by_delayed_voting >();
-      for(const auto& usr : idx)
-        if(usr.get_name() == name)
-          return std::equal(
-                usr.delayed_votes.begin(), 
-                usr.delayed_votes.end(), 
-                data_to_compare.begin(), 
-                data_to_compare.end(), 
-                [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
-      return false;
-    };
-
     // user setup
     BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
     const auto start_time = db->head_block_time();
@@ -1464,8 +1449,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     uint64_t last{ alice_values.back() };
 
     // entry check
-    BOOST_REQUIRE( get_delayed_vote_count("bob", { { static_cast<uint64_t>(get_vesting( "bob" ).amount.value) } }) );
-    BOOST_REQUIRE( get_delayed_vote_count("alice", { { static_cast<uint64_t>(get_vesting( "alice" ).amount.value)} }) );
+    BOOST_REQUIRE( compare_delayed_vote_count("bob", { { static_cast<uint64_t>(get_vesting( "bob" ).amount.value) } }) );
+    BOOST_REQUIRE( compare_delayed_vote_count("alice", { { static_cast<uint64_t>(get_vesting( "alice" ).amount.value)} }) );
 
     // check everyday for month
     bool s = false;
@@ -1476,8 +1461,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 
       // base checks for witness, bob and celine
       BOOST_REQUIRE( get_votes("witness") == basic_votes );
-      BOOST_REQUIRE( get_delayed_vote_count("bob", { { static_cast<uint64_t>(get_vesting( "bob" ).amount.value)} }) );
-      BOOST_REQUIRE( get_delayed_vote_count("celine", { { static_cast<uint64_t>(get_vesting( "celine" ).amount.value)} }) );
+      BOOST_REQUIRE( compare_delayed_vote_count("bob", { { static_cast<uint64_t>(get_vesting( "bob" ).amount.value)} }) );
+      BOOST_REQUIRE( compare_delayed_vote_count("celine", { { static_cast<uint64_t>(get_vesting( "celine" ).amount.value)} }) );
 
       // celine arythmia
       s=!s;
@@ -1490,16 +1475,16 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       const uint64_t val = static_cast<uint64_t>(get_vesting( "alice" ).amount.value);
       alice_values.push_back(val - last);
       last = val;
-      BOOST_REQUIRE( get_delayed_vote_count("alice", alice_values) );
+      BOOST_REQUIRE( compare_delayed_vote_count("alice", alice_values) );
     }
 
     // check is bob ok
     generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
-    BOOST_REQUIRE( get_delayed_vote_count("bob", {}) );
+    BOOST_REQUIRE( compare_delayed_vote_count("bob", {}) );
 
     // check is alice ok (after another month)
     generate_blocks( start_time + (2 * HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS) , true );
-    BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
+    BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
 
     // check is witness ok
     const auto alice_power = get_vesting( "alice" ).amount.value;

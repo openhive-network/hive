@@ -138,30 +138,6 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 {
   try
   {
-    const auto get_delayed_vote_count = [&]( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
-    {
-      const auto& idx = db->get_index< account_index, by_delayed_voting >();
-      for(const auto& usr : idx)
-        if(usr.get_name() == name)
-        {
-          if (usr.delayed_votes.size() != data_to_compare.size()) {
-            BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.delayed_votes.size());
-            return false;
-          }
-          const auto p = std::mismatch(
-            usr.delayed_votes.begin(),
-            usr.delayed_votes.end(),
-            data_to_compare.begin(),
-            data_to_compare.end(),
-            [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
-          if (p.first != usr.delayed_votes.end() && p.second != data_to_compare.end()) {
-            BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
-          }
-          return p.first == usr.delayed_votes.end() && p.second == data_to_compare.end();
-        }
-      return false;
-    };
-
     BOOST_TEST_MESSAGE( "--- Testing: undo_delayed_votes" );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -172,18 +148,18 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
     ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
-    BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
+    BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
-    BOOST_REQUIRE( get_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
+    BOOST_REQUIRE( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
-    BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
+    BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
   }
   FC_LOG_AND_RETHROW()
 }
