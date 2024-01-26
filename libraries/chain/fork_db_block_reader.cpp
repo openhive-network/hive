@@ -80,7 +80,7 @@ bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) co
 std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_not_in_blockchain(
   const std::deque<block_id_type>& item_hashes_received ) const
 {
-  return _fork_db.with_read_lock([&](){
+  return _fork_db.with_read_lock( BOOST_CURRENT_FUNCTION, [&](){
     return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
       return is_known_block_unlocked(block_id);
     });
@@ -193,16 +193,16 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
   const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
   uint32_t limit) const
 {
-  uint32_t first_block_num_in_reply;
-  uint32_t last_block_num_in_reply;
-  uint32_t last_block_from_block_log_in_reply;
+  uint32_t first_block_num_in_reply = 0;
+  uint32_t last_block_num_in_reply = 0;
+  uint32_t last_block_from_block_log_in_reply = 0;
   shared_ptr<fork_item> head;
-  uint32_t head_block_num;
+  uint32_t head_block_num = 0;
   vector<block_id_type> result;
 
   // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
   // this list of block ids
-  _fork_db.with_read_lock([&]() {
+  _fork_db.with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     remaining_item_count = 0;
     head = _fork_db.head_unlocked();
     if (!head)

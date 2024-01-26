@@ -43,10 +43,14 @@ namespace hive { namespace chain {
 
   struct forkdb_lock_exception : public chainbase::lock_exception
   {
-    explicit forkdb_lock_exception() {}
+    explicit forkdb_lock_exception(std::string additional_info) {
+      _what = std::string( "Unable to acquire forkdb lock (" ) + additional_info + ")";
+    }
     virtual ~forkdb_lock_exception() {}
 
-    virtual const char* what() const noexcept { return "Unable to acquire forkdb lock"; }
+    virtual const char* what() const noexcept { return _what.c_str(); }
+
+    std::string _what;
   };
 
   /**
@@ -153,8 +157,11 @@ namespace hive { namespace chain {
       };
 
       template< typename Lambda >
-      auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) const -> decltype( (*(Lambda*)nullptr)() )
+      auto with_read_lock( std::string caller, Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) const -> decltype( (*(Lambda*)nullptr)() )
       {
+        static std::vector< std::string > callers;
+        callers.push_back( caller );
+
         chainbase::read_lock lock(_rw_lock, boost::defer_lock_t());
 
         fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
@@ -169,12 +176,19 @@ namespace hive { namespace chain {
         {
           fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
                   ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
-          CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
+          std::string callers_info;
+          for( const auto& s : callers )
+          {
+            callers_info += s;
+            callers_info += ',';
+          }
+          CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception( callers_info ) );
         }
 
         fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
       
+        callers.pop_back();
         return callback();
       }
 

@@ -88,7 +88,7 @@ void fork_database::_push_block(const item_ptr& item)
 
 shared_ptr<fork_item> fork_database::head()const 
 {
-  return with_read_lock( [&]() { return _head; } );
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() { return _head; } );
 }
 
 shared_ptr<fork_item> fork_database::head_unlocked()const
@@ -167,7 +167,7 @@ void fork_database::set_max_size( uint32_t s )
 
 bool fork_database::is_known_block(const block_id_type& id)const
 {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     auto& index = _index.get<block_id>();
     auto itr = index.find(id);
     if( itr != index.end() )
@@ -196,7 +196,7 @@ item_ptr fork_database::fetch_block_unlocked(const block_id_type& id, bool searc
 
 item_ptr fork_database::fetch_block(const block_id_type& id, bool search_linked_blocks_only)const
 {
-  return with_read_lock([&]() { return fetch_block_unlocked(id, search_linked_blocks_only); });
+  return with_read_lock( BOOST_CURRENT_FUNCTION,[&]() { return fetch_block_unlocked(id, search_linked_blocks_only); });
 }
 
 vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)const
@@ -220,7 +220,7 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 {
   try
   {
-    return with_read_lock( [&]() {
+    return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
       return fetch_block_by_number_unlocked(num);
     });
   }
@@ -229,7 +229,7 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 
 vector<item_ptr> fork_database::fetch_heads() const
 {
-  return with_read_lock([&](){
+  return with_read_lock( BOOST_CURRENT_FUNCTION,[&](){
     vector<item_ptr> result;
     const auto& prev_idx = _index.get<by_previous>();
     std::copy_if(_index.begin(), _index.end(), std::back_inserter(result), 
@@ -242,7 +242,7 @@ vector<item_ptr> fork_database::fetch_heads() const
 
 std::map<account_name_type, block_id_type> fork_database::get_last_block_generated_by_each_witness() const
 {
-  return with_read_lock([&](){
+  return with_read_lock( BOOST_CURRENT_FUNCTION,[&](){
     std::map<account_name_type, block_id_type> result;
 
     const auto& block_num_idx = _index.get<block_num>();
@@ -255,21 +255,21 @@ std::map<account_name_type, block_id_type> fork_database::get_last_block_generat
 
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return _head ? _head->get_block_header().timestamp : time_point_sec();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 uint32_t fork_database::head_block_num(fc::microseconds wait_for_microseconds)const
 { try {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return _head ? _head->get_block_num() : 0;
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 block_id_type fork_database::head_block_id(fc::microseconds wait_for_microseconds)const
 { try {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return _head ? _head->get_block_id() : block_id_type();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
@@ -277,7 +277,7 @@ block_id_type fork_database::head_block_id(fc::microseconds wait_for_microsecond
 
 pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch_branch_from(block_id_type first, block_id_type second)const
 { try {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     // This function gets a branch (i.e. vector<fork_item>) leading
     // back to the most recent common ancestor.
     pair<branch_type,branch_type> result;
@@ -334,14 +334,14 @@ shared_ptr<fork_item> fork_database::walk_main_branch_to_num_unlocked( uint32_t 
 
 shared_ptr<fork_item> fork_database::walk_main_branch_to_num( uint32_t block_num )const
 {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return walk_main_branch_to_num_unlocked( block_num );
   });
 }
 
 shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return fetch_block_on_main_branch_by_number_unlocked(block_num);
   }, wait_for_microseconds);
 }
@@ -360,7 +360,7 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number_unlock
 
 vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )const
 {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     vector<fork_item> results;
 
     if (!_head ||
@@ -407,7 +407,7 @@ void fork_database::set_head(shared_ptr<fork_item> h)
 
 const item_ptr fork_database::get_head() const
 {
-  return with_read_lock( [&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION, [&]() {
     return _head;
   });
 }
@@ -423,7 +423,7 @@ void fork_database::remove(block_id_type id)
 
 uint32_t fork_database::get_last_irreversible_block_num() const
 {
-  return with_read_lock([&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION,[&]() {
     const auto& block_num_idx = _index.get<block_num>();
     // The oldest block in the fork database is always the last irreversible block
     return (*block_num_idx.begin())->get_block_num();
@@ -433,7 +433,7 @@ uint32_t fork_database::get_last_irreversible_block_num() const
 std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, 
                                                                   /* out */ fc::optional<uint32_t>& block_number_needed_from_block_log)const
 { try {
-  return with_read_lock([&]() {
+  return with_read_lock( BOOST_CURRENT_FUNCTION,[&]() {
     std::vector<block_id_type> synopsis;
 
     if (!_head)
