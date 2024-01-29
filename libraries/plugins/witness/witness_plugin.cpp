@@ -80,7 +80,7 @@ namespace detail {
 
     std::map< hive::protocol::public_key_type, fc::ecc::private_key > _private_keys;
     std::set< hive::protocol::account_name_type >                     _witnesses;
-    boost::asio::deadline_timer                                        _timer;
+    boost::asio::deadline_timer                                       _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
@@ -89,7 +89,7 @@ namespace detail {
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;
 
-    std::shared_ptr< witness::block_producer >                         _block_producer;
+    std::shared_ptr< witness::block_producer >                        _block_producer;
     uint32_t _last_fast_confirmation_block_number = 0;
 
     std::atomic<bool> _enable_fast_confirm = true;
@@ -255,7 +255,7 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::on_post_apply_block(const block_notification& note)
+  void witness_plugin_impl::on_post_apply_block( const block_notification& note )
   {
     //note that we can't use clear on mutable version of this index because it bypasses undo sessions
     const auto& idx = _db.get_index<witness_custom_op_index>().indices().get<by_id>();
@@ -268,16 +268,16 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::on_finish_push_block(const block_notification& note)
+  void witness_plugin_impl::on_finish_push_block( const block_notification& note )
   {
     // Broadcast a transaction to let the other witnesses know we've accepted this block for fast 
     // confirmation.
     // I think it's called multiple times during a fork switch, which isn't what we want, so
     // only generate this transaction if our head block number has increased
-    if (_db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) && 
+    if( _db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) &&
         note.block_num > _last_fast_confirmation_block_number &&
         _production_enabled && _is_p2p_enabled &&
-        fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM)
+        fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM )
     {
       std::set<account_name_type> scheduled_witnesses;
       const witness_schedule_object& wso_for_irreversibility = _db.get_witness_schedule_object_for_irreversibility();
@@ -350,12 +350,13 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::schedule_production_loop() {
+  void witness_plugin_impl::schedule_production_loop()
+  {
     // Sleep for 200ms, before checking the block production
     fc::time_point now = fc::time_point::now();
     int64_t time_to_sleep = BLOCK_PRODUCTION_LOOP_SLEEP_TIME - (now.time_since_epoch().count() % BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
-    if (time_to_sleep < 50000) // we must sleep for at least 50ms
-        time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
+    if( time_to_sleep < 50000 ) // we must sleep for at least 50ms
+      time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );
@@ -533,15 +534,15 @@ void witness_plugin::set_program_options(
 {
   string witness_id_example = "initwitness";
   cfg.add_options()
-      ("enable-stale-production", bpo::value<bool>()->default_value( false ), "Enable block production, even if the chain is stale.")
-      ("required-participation", bpo::value< uint32_t >()->default_value( DEFAULT_WITNESS_PARTICIPATION ), "Percent of witnesses (0-99) that must be participating in order to produce blocks")
-      ("witness,w", bpo::value<vector<string>>()->composing()->multitoken(),
-        ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
-      ("private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
-      ;
+    ( "enable-stale-production", bpo::value<bool>()->default_value( false ), "Enable block production, even if the chain is stale." )
+    ( "required-participation", bpo::value< uint32_t >()->default_value( DEFAULT_WITNESS_PARTICIPATION ), "Percent of witnesses (0-99) that must be participating in order to produce blocks" )
+    ( "witness,w", bpo::value<vector<string>>()->composing()->multitoken(),
+      ( "name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
+    ( "private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
+    ;
   cli.add_options()
-      ("enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale.")
-      ;
+    ( "enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale." )
+    ;
 }
 
 void witness_plugin::plugin_initialize(const boost::program_options::variables_map& options)
@@ -551,7 +552,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
-  fc::load_value_set<hive::protocol::account_name_type>( options, "witness", my->_witnesses);
+  fc::load_value_set<hive::protocol::account_name_type>( options, "witness", my->_witnesses );
 
   if( options.count("private-key") )
   {
@@ -565,20 +566,20 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   }
 
   my->_production_enabled = options.at( "enable-stale-production" ).as< bool >();
-  if (my->_production_enabled)
-    wlog("warning: stale production is enabled, make sure you know what you are doing.");
+  if( my->_production_enabled )
+    wlog( "warning: stale production is enabled, make sure you know what you are doing." );
 
   if( options.count( "required-participation" ) )
   {
     my->_required_witness_participation = HIVE_1_PERCENT * options.at( "required-participation" ).as< uint32_t >();
   }
-  if ( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT)
-    wlog("warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION));
+  if( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT )
+    wlog( "warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION) );
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
-    [&]( const chain::operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0);
+    [&]( const chain::operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0 );
   my->_finish_push_block_conn = my->_db.add_finish_push_block_handler(
     [&]( const chain::block_notification& note ){ my->on_finish_push_block( note ); }, *this, 0 );
 
@@ -592,32 +593,33 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
 void witness_plugin::plugin_startup()
 { try {
-  ilog("witness plugin:  plugin_startup() begin" );
-  auto& _chain_plugin = get_app().get_plugin< hive::plugins::chain::chain_plugin >();
-  my->_is_p2p_enabled = _chain_plugin.is_p2p_enabled();
-  chain::database& d  = _chain_plugin.db();
+  ilog( "witness plugin:  plugin_startup() begin" );
+  my->_is_p2p_enabled = my->_chain_plugin.is_p2p_enabled();
 
   if( !my->_is_p2p_enabled )
   {
-    ilog("Witness plugin is not enabled, because P2P plugin is disabled...");
+    ilog( "Witness plugin is not enabled, because P2P plugin is disabled..." );
     return;
   }
 
   if( !my->_witnesses.empty() )
   {
-    ilog( "Launching block production for ${n} witnesses.", ("n", my->_witnesses.size()) );
+    ilog( "Launching block production for ${n} witnesses.", ( "n", my->_witnesses.size() ) );
     get_app().get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
     if( my->_production_enabled )
     {
-      if( d.head_block_num() == 0 )
-        new_chain_banner( d );
+      if( my->_db.head_block_num() == 0 )
+        new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
     my->schedule_production_loop();
-  } else
-    elog("No witnesses configured! Please add witness IDs and private keys to configuration.");
-  ilog("witness plugin:  plugin_startup() end");
-  } FC_CAPTURE_AND_RETHROW() }
+  }
+  else
+  {
+    elog( "No witnesses configured! Please add witness IDs and private keys to configuration." );
+  }
+  ilog( "witness plugin:  plugin_startup() end" );
+} FC_CAPTURE_AND_RETHROW() }
 
 void witness_plugin::plugin_shutdown()
 {
