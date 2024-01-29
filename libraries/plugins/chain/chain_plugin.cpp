@@ -143,6 +143,7 @@ class chain_plugin_impl
 
     bool is_interrupt_request() const;
     bool is_running() const;
+    fc::microseconds get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time );
 
     void start_write_processing();
     void stop_write_processing();
@@ -416,6 +417,11 @@ bool chain_plugin_impl::is_running() const
   return running && !is_interrupt_request();
 }
 
+fc::microseconds chain_plugin_impl::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
+{
+  return fc::time_point::now() - head_block_time - fc::minutes(1);
+}
+
 void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared<std::thread>([&]()
@@ -599,7 +605,7 @@ void chain_plugin_impl::start_write_processing()
           head_block_time = db.head_block_time();
         }); // with_write_lock
 
-        if (is_syncing && fc::time_point::now() - head_block_time < fc::minutes(1)) //we're syncing, see if we are close enough to move to live sync
+        if (is_syncing && get_time_gap_to_live_sync( head_block_time ).count() < 0) //we're syncing, see if we are close enough to move to live sync
         {
           is_syncing = false;
           db.notify_end_of_syncing();
@@ -1298,6 +1304,11 @@ const block_read_i& chain_plugin::block_reader() const
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
   return my->default_block_writer.get_block_reader();
+}
+
+fc::microseconds chain_plugin::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
+{
+  return my->get_time_gap_to_live_sync( head_block_time );
 }
 
 hive::chain::blockchain_worker_thread_pool& chain_plugin::get_thread_pool()

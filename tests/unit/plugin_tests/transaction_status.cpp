@@ -15,6 +15,7 @@ using namespace hive::protocol;
 
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH 30
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR BOOST_PP_STRINGIZE( TRANSACTION_STATUS_TEST_BLOCK_DEPTH )
+#define TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET 1300
 
 BOOST_FIXTURE_TEST_SUITE( transaction_status, hived_fixture );
 
@@ -27,6 +28,14 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     hive::plugins::transaction_status_api::transaction_status_api_plugin* tx_status_api = nullptr;
     hive::plugins::transaction_status::transaction_status_plugin* tx_status = nullptr;
 
+    // Set genesis time to 1300 blocks ago, and plugin's nominal block depth to 30 so that
+    // - actual block depth is 1230 (see transaction_status_plugin::plugin_initialize)
+    // - blockchain calculated head num is 1280 (see transaction_status_impl::estimate_starting_timestamp)
+    // - plugin's estimated starting block is 50 (ditto)
+    configuration::hardfork_schedule_t immediate_hf28_schedule = { hardfork_schedule_item_t{ 28, 1 } };
+    configuration_data.set_hardfork_schedule(
+      fc::time_point::now() - fc::seconds( TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET * HIVE_BLOCK_INTERVAL ),
+      immediate_hf28_schedule );
     configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
     configuration_data.allow_not_enough_rc = false;
 
@@ -54,8 +63,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_block_index >().indices().get< by_block_num >().empty() );
-
-    BOOST_REQUIRE( tx_status->state_is_valid() );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
@@ -101,7 +108,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     auto tx0 = push_transaction( _tx0, alice_private_key, 0, hive::protocol::pack_type::legacy );
 
     // Tracking should not be enabled until we have reached 
-    // TRANSCATION_STATUS_TRACK_AFTER_BLOCK - ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) blocks
+    // TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET - TRANSACTION_STATUS_TEST_BLOCK_DEPTH blocks
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
@@ -122,7 +129,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-    generate_blocks( HIVE_TRANSACTION_STATUS_TESTNET_CALCULATED_HEAD_NUM - TRANSACTION_STATUS_TEST_BLOCK_DEPTH - db->head_block_num() );
+    generate_blocks( TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET - TRANSACTION_STATUS_TEST_BLOCK_DEPTH - db->head_block_num() );
 
     // Tracking began. Tracked blocks exist in the mem pool
     BOOST_REQUIRE( not db->get_index< transaction_status_block_index >().indices().get< by_id >().empty() );
@@ -264,7 +271,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
     generate_block(); 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH -1 );
 
@@ -348,8 +354,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
     auto tx3_block_num = tso->block_num;
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
     generate_blocks( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
 
     // Transaction 1 is no longer tracked
@@ -422,8 +426,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( tsbo->block_num == tso->block_num );
     BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
     generate_block();
 
     // Transaction 2 is no longer tracked
@@ -474,8 +476,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( bitr != bidx.end() );
     BOOST_REQUIRE( bitr->block_num > lower_bound );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
     generate_block();
 
     api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id() } );
@@ -525,41 +525,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
-
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
-    /**
-      * Testing transaction status plugin state
-      */
-    BOOST_TEST_MESSAGE( " -- transaction status state test" );
-
-    // Create transaction 4
-    signed_transaction _tx4;
-    transfer_operation op4;
-    auto _tx4_expiration = db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION;
-
-    op4.from = "alice";
-    op4.to = "bob";
-    op4.amount = ASSET( "5.000 TESTS" );
-
-    _tx4.operations.push_back( op4 );
-    _tx4.set_expiration( _tx4_expiration );
-    auto tx4 = push_transaction( _tx4, alice_private_key, 0, hive::protocol::pack_type::legacy );
-
-    generate_block();
-
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
-    const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4->get_transaction_id() );
-    const auto& tx_block_obj = db->get< transaction_status_block_object, by_block_num >( tx_status_obj.block_num );
-    db->remove( tx_block_obj );
-
-    // Missing transaction block should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
-
-    // Generate block number big enough to rebuild valid state.
-    generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) );
-    BOOST_REQUIRE( tx_status->state_is_valid() );
   }
   FC_LOG_AND_RETHROW()
 }

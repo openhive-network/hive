@@ -135,6 +135,8 @@ public:
 
   const block_read_i& block_reader() const;
 
+  fc::microseconds get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time );
+
   hive::chain::blockchain_worker_thread_pool& get_thread_pool();
 
   // Emitted when the blockchain is syncing/live.
