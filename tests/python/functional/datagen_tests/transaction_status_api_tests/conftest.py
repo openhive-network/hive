@@ -29,9 +29,10 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
     if transaction_status_block_depth:
         api_node.config.transaction_status_block_depth = next(iter(transaction_status_block_depth.args))
 
+    # Note that the timestamp provided below should match the timestamp of block log head block.
     api_node.run(
         replay_from=Path(__file__).parent.joinpath("block_log/block_log"),
         wait_for_live=False,
-        time_offset="2022-12-22 10:47:05",
+        time_offset="2023-01-03 14:18:24",
     )
     return api_node

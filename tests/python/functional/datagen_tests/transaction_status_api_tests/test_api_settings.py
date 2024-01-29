@@ -16,24 +16,12 @@ if TYPE_CHECKING:
 __PATTERNS_DIRECTORY = Path(__file__).with_name("block_log")
 
 """
-Real transaction_status_block_depth = transaction_status_block_depth + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL
-Real default transaction_status_block_depth = 64000 + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL
-Real default transaction status tracking start block (TESTNET) = max( 0, 1300 - real block depth)
+Block log size is 1500 blocks
+Real transaction_status_block_depth = transaction_status_block_depth + 1200
+  (transaction_status_block_depth + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL)
+Real default transaction_status_block_depth = 64000 + 1200
+  (64000 + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL)
 """
-
-
-@pytest.mark.skip(reason="transaction status api was removed")
-# @pytest.mark.transaction_status_track_after_block("1200")
-def test_transaction_status_track_after_0_block(replayed_node: tt.ApiNode) -> None:
-    transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
-    verify_transaction_status_in_block_range(replayed_node, 0, 101, transactions, "within_irreversible_block")
-
-
-@pytest.mark.skip(reason="transaction status api was removed")
-# @pytest.mark.transaction_status_track_after_block("1300")
-def test_transaction_status_track_after_100_block(replayed_node: tt.ApiNode) -> None:
-    transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
-    verify_transaction_status_in_block_range(replayed_node, 0, 101, transactions, "unknown")
 
 
 @pytest.mark.transaction_status_block_depth("64000")
@@ -51,17 +39,4 @@ def test_transaction_status_1300_block_depth(replayed_node: tt.ApiNode) -> None:
 @pytest.mark.transaction_status_block_depth("300")
 def test_transaction_status_1500_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
-    verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "within_irreversible_block")
-
-
-@pytest.mark.skip(reason="transaction status api was removed")
-@pytest.mark.transaction_status_block_depth("100")
-def test_transaction_status_rebuild_state(replayed_node: tt.ApiNode) -> None:
-    transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
-    verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "unknown")
-
-    replayed_node.close()
-    replayed_node.config.transaction_status_block_depth = "300"
-    replayed_node.run(wait_for_live=False, arguments=["--transaction-status-rebuild-state"])
-
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "within_irreversible_block")
