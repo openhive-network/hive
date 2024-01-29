@@ -83,4 +83,28 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
  */
 void collect_potential_keys( std::vector< public_key_type >* keys, const account_name_type& account, const std::string& str );
 
+struct memo_data
+{
+  public_key_type from;
+  public_key_type to;
+  uint64_t        nonce = 0;
+  uint32_t        check = 0;
+  vector<char>    encrypted;
+
+  static std::optional<memo_data> from_string( std::string str );
+  operator std::string() const;
+};
+
+/**
+ * Encrypts given memo (it has to start with #).
+ */
+std::string encrypt_memo( const private_key_type& from_priv, const public_key_type& to_key, std::string memo );
+
+/**
+ * Decrypts given memo (it has to start with #).
+ */
+std::string decrypt_memo( std::function<fc::optional<private_key_type>( const public_key_type& )> key_finder, std::string encrypted_memo );
+
 } } // hive::protocol
+
+FC_REFLECT( hive::protocol::memo_data, (from)(to)(nonce)(check)(encrypted) )

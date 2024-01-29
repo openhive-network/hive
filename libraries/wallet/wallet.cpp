@@ -1449,10 +1449,12 @@ wallet_signed_transaction wallet_api::create_funded_account_with_keys( const str
       if( memo.size() > 0 && memo[0] == '#' )
       {
          auto from_account = get_account( creator ).value;
-         transfer_op.memo = get_encrypted_memo_using_keys( from_account.memo_key, memo_key, memo );
+         transfer_op.memo = protocol::encrypt_memo( my->get_private_key( from_account.memo_key ), memo_key, memo );
       }
       else
+      {
         transfer_op.memo = memo;
+      }
 
       tx.operations.push_back(transfer_op);
       idump((tx.operations[1]));
@@ -2068,28 +2070,6 @@ void wallet_api::check_memo(
   }
 }
 
-string wallet_api::get_encrypted_memo_using_keys( const public_key_type& from_key, const public_key_type& to_key, string memo ) const
-{
-  FC_ASSERT( memo.size() > 0 && memo[0] == '#' );
-  memo_data m;
-
-  m.from            = from_key;
-  m.to              = to_key;
-  m.nonce = fc::time_point::now().time_since_epoch().count();
-
-  auto from_priv = my->get_private_key( m.from );
-  auto shared_secret = from_priv.get_shared_secret( m.to );
-
-  fc::sha512::encoder enc;
-  fc::raw::pack( enc, m.nonce );
-  fc::raw::pack( enc, shared_secret );
-  auto encrypt_key = enc.result();
-
-  m.encrypted = fc::aes_encrypt( encrypt_key, fc::raw::pack_to_vector(memo.substr(1)) );
-  m.check = fc::sha256::hash( encrypt_key )._hash[0];
-  return m;
-}
-
 string wallet_api::get_encrypted_memo( const string& from, const string& to, const string& memo )
 {
   if( memo.size() > 0 && memo[0] == '#' )
@@ -2097,8 +2077,10 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
     auto from_account = get_account( from ).value;
     auto to_account   = get_account( to ).value;
 
-    return get_encrypted_memo_using_keys(from_account.memo_key, to_account.memo_key, memo);
-  } else {
+    return protocol::encrypt_memo( my->get_private_key( from_account.memo_key ), to_account.memo_key, memo );
+  }
+  else
+  {
     return memo;
   }
 }
@@ -2481,44 +2463,12 @@ wallet_serializer_wrapper<vector< database_api::api_collateralized_convert_reque
 
 string wallet_api::decrypt_memo( string encrypted_memo )
 {
-  if( is_locked() )
-    return encrypted_memo;
-
-  if( encrypted_memo.size() && encrypted_memo[0] == '#' )
+  if( !is_locked() && encrypted_memo.size() && encrypted_memo[0] == '#' )
   {
-    auto m = memo_data::from_string( encrypted_memo );
-    if( m )
-    {
-      fc::sha512 shared_secret;
-      auto from_key = my->try_get_private_key( m->from );
-      if( !from_key )
-      {
-        auto to_key   = my->try_get_private_key( m->to );
-        if( !to_key )
-          return encrypted_memo;
-        shared_secret = to_key->get_shared_secret( m->from );
-      }
-      else
-      {
-        shared_secret = from_key->get_shared_secret( m->to );
-      }
-      fc::sha512::encoder enc;
-      fc::raw::pack( enc, m->nonce );
-      fc::raw::pack( enc, shared_secret );
-      auto encryption_key = enc.result();
-
-      uint32_t check = fc::sha256::hash( encryption_key )._hash[0];
-      if( check != m->check )
-        return encrypted_memo;
-
-      try
-      {
-        vector<char> decrypted = fc::aes_decrypt( encryption_key, m->encrypted );
-        std::string descrypted_string;
-        fc::raw::unpack_from_vector( decrypted, descrypted_string);
-        return descrypted_string;
-      } catch ( ... ){}
-    }
+    return protocol::decrypt_memo(
+      [&]( const public_key_type& key ) { return my->try_get_private_key( key ); },
+      encrypted_memo
+    );
   }
   return encrypted_memo;
 }
