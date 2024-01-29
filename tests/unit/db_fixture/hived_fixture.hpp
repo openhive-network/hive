@@ -23,7 +23,7 @@ struct hived_fixture : public database_fixture
 {
   private:
   
-  /// @brief Alows verification that logging-related configuration is correctly processed.
+  /// @brief Allows verification that logging-related configuration is correctly processed.
   fc::optional< fc::logging_config > _logging_config;
   /// @brief Where tested "hived" data go. Valid after a call to postponed_init.
   fc::path _data_dir;
