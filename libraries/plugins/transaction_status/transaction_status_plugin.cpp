@@ -14,15 +14,12 @@
 #define TRANSACTION_STATUS_DEFAULT_BLOCK_DEPTH        64000
 
 /*
-  *                             window of uncertainty              trackable
-  *                          .-------------------------. .---------------------------.
+  *                                                 trackable
+  *                          .-------------------------------------------------------.
   *                         |                           |                             |
   *   <- - - - - - - - - - [*] - - - - - - - - - - - - [*] - - - - - - - - - - - - - [*]
   *                        /                            |                              \
   *               actual block depth            nominal block depth                head block
-  *
-  * - Within the window of uncertainy, if the transaction is found we will return the status
-  *      If the transaction is not found and an expiration is provided, we will return `too_old`
   *
   * - Within the trackable range, if the transaction is found we will return the status
   *      If the transaction is not found and an expiration is provided we will return the expiration status
@@ -40,22 +37,23 @@ namespace detail {
 class transaction_status_impl
 {
 public:
-  transaction_status_impl( appbase::application& app )
-    : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  transaction_status_impl( appbase::application& app ) :
+    _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
+    _db( _chain_plugin.db() ) {}
   virtual ~transaction_status_impl() {}
 
   void on_post_apply_transaction( const transaction_notification& note );
   void on_post_apply_block( const block_notification& note );
 
+  plugins::chain::chain_plugin& _chain_plugin;
   chain::database&              _db;
   uint32_t                      nominal_block_depth = 0;       //!< User provided block-depth
   uint32_t                      actual_block_depth = 0;        //!< Calculated block-depth
-  uint32_t                      estimated_starting_block = 0;
+  fc::time_point_sec            estimated_starting_timestamp;
   bool                          tracking = false;
   boost::signals2::connection   post_apply_transaction_connection;
   boost::signals2::connection   post_apply_block_connection;
-  bool                          state_is_valid();
-  uint32_t                      estimate_starting_block();
+  fc::time_point_sec            estimate_starting_timestamp();
 };
 
 void transaction_status_impl::on_post_apply_transaction( const transaction_notification& note )
@@ -73,6 +71,20 @@ void transaction_status_impl::on_post_apply_transaction( const transaction_notif
 
 void transaction_status_impl::on_post_apply_block( const block_notification& note )
 {
+  fc::time_point_sec block_timestamp = note.get_block_timestamp();
+  if ( not tracking && estimated_starting_timestamp <= block_timestamp )
+  {
+    // Make sure we caught up with blockchain head fast enough.
+    estimated_starting_timestamp = estimate_starting_timestamp();
+
+    if ( estimated_starting_timestamp <= block_timestamp )
+    {
+      ilog( "Transaction status tracking activated at block ${bn}, timestamp ${bt}",
+        ("bn", note.block_num)("bt", block_timestamp) );
+      tracking = true;
+    }
+  }
+
   if ( tracking )
   {
     // Update all status objects with the transaction current block number
@@ -116,72 +128,34 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
       }
     }
   }
-  else if ( estimated_starting_block <= note.block_num )
+}
+
+fc::time_point_sec transaction_status_impl::estimate_starting_timestamp()
+{
+  // Let's see how far are we from live sync now.
+  fc::microseconds time_gap = _chain_plugin.get_time_gap_to_live_sync( _db.head_block_time() );
+  // In live sync current head block time is fine.
+  if( time_gap.count() <= 0 )
   {
-    // Make sure we caught up with blockchain head fast enough.
-    estimated_starting_block = estimate_starting_block();
-
-    if ( estimated_starting_block <= note.block_num )
-    {
-      ilog( "Transaction status tracking activated at block ${block_num}, statuses will be available after block ${estimated_trackable_block}",
-        ("block_num", note.block_num)("estimated_trackable_block", estimated_starting_block + actual_block_depth - nominal_block_depth ) );
-      tracking = true;
-    }
+    dlog( "Estimating starting timestamp, in live sync." );
+    return _db.head_block_time();
   }
-}
 
-/**
-  * Determine if the plugin state is valid.
-  *
-  * We determine validity by checking if tracked block numbers included in our state
-  * fit within desired range.
-  *
-  * \return True if the transaction state is considered valid, otherwise false
-  */
-bool transaction_status_impl::state_is_valid()
-{
-  const auto& idx = _db.get_index< transaction_status_index >().indices().get< by_block_num >();
-  auto itr = idx.begin();
-  auto ritr = idx.rbegin();
-  const auto& bidx = _db.get_index< transaction_status_block_index >().indices().get< by_block_num >();
-  auto bitr = bidx.begin();
-  auto britr = bidx.rbegin();
+  // Compare the time gap to actual block depth gap.
+  fc::microseconds actual_block_depth_gap = fc::seconds( int64_t( actual_block_depth ) * HIVE_BLOCK_INTERVAL );
+  // Within actual block depth head block time is fine too.
+  if( time_gap <= actual_block_depth_gap )
+  {
+    dlog( "Estimating starting timestamp, within actual block depth (${tg} seconds vs ${abdg} seconds).",
+          ( "tg", time_gap.to_seconds() )( "abdg", actual_block_depth_gap.to_seconds() ) );
+    return _db.head_block_time();
+  }
 
-  // Check that transaction index includes only transactions from desired range
-  // and that transaction blocks are included in their index too
-  bool tx_lower_bound_is_valid = itr == idx.end() || 
-    ( itr->block_num >= estimated_starting_block && 
-      _db.find< transaction_status_block_object, by_block_num >( itr->block_num ) != nullptr );
-  bool tx_upper_bound_is_valid = ritr == idx.rend() || 
-    ( ritr->block_num <= _db.head_block_num() &&
-      _db.find< transaction_status_block_object, by_block_num >( ritr->block_num ) != nullptr );
-
-  // Check that block index includes only blocks from desired range.
-  bool block_lower_bound_is_valid = bitr == bidx.end() || bitr->block_num >= estimated_starting_block;
-  bool block_upper_bound_is_valid = britr == bidx.rend() || britr->block_num <= _db.head_block_num();
-
-  return tx_lower_bound_is_valid && tx_upper_bound_is_valid &&
-         block_lower_bound_is_valid && block_upper_bound_is_valid;
-}
-
-uint32_t transaction_status_impl::estimate_starting_block()
-{
-  int64_t calculated_head_num = 0;
-#ifdef IS_TEST_NET
-  calculated_head_num = HIVE_TRANSACTION_STATUS_TESTNET_CALCULATED_HEAD_NUM;
-#else
-  fc::time_point_sec head_block_time = _db.head_block_time();
-  uint32_t head_block_num = _db.head_block_num();
-
-  // Let's calculate what number should the blockchain head be right now.
-  fc::time_point_sec now = fc::time_point::now();
-  fc::microseconds time_gap = now - head_block_time;
-  int64_t block_gap = time_gap.to_seconds() / HIVE_BLOCK_INTERVAL;
-  FC_ASSERT( block_gap >= 0 );
-  calculated_head_num = int64_t( head_block_num ) + block_gap;
-#endif
-
-  return std::max< int64_t >({ 0, calculated_head_num - int64_t( actual_block_depth ) });
+  // Count missing time and estimated timestamp.
+  fc::microseconds missing_time_gap = time_gap - actual_block_depth_gap;
+  dlog( "Estimating starting timestamp, (block) time to live sync is ${tg} seconds, (block) time to start tracking is ${mtg} seconds.",
+        ("tg", time_gap.to_seconds())( "mtg", missing_time_gap.to_seconds() ) );
+  return _db.head_block_time() + missing_time_gap;
 }
 
 } // detail
@@ -217,13 +191,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
     dlog( "transaction status initializing" );
     dlog( "  -> nominal block depth: ${block_depth}", ("block_depth", my->nominal_block_depth) );
     dlog( "  -> actual block depth: ${actual_block_depth}", ("actual_block_depth", my->actual_block_depth) );
-    /*
-    if ( !my->actual_track_after_block )
-    {
-      ilog( "Transaction status tracking activated" );
-      my->tracking = true;
-    }
-    */
+
     HIVE_ADD_PLUGIN_INDEX(my->_db, transaction_status_index);
     HIVE_ADD_PLUGIN_INDEX(my->_db, transaction_status_block_index);
 
@@ -242,14 +210,8 @@ void transaction_status_plugin::plugin_startup()
   {
     ilog( "transaction_status: plugin_startup() begin" );
     
-    my->estimated_starting_block = my->estimate_starting_block();
+    my->estimated_starting_timestamp = my->estimate_starting_timestamp();
     
-    if ( !my->state_is_valid() )
-    {
-      wlog( "The transaction status plugin state does not contain valid tracking information for the last ${num_blocks} blocks yet. Catching up...",
-        ("num_blocks", my->nominal_block_depth) );
-    }
-
     ilog( "transaction_status: plugin_startup() end" );
 
   } FC_CAPTURE_AND_RETHROW()
@@ -279,15 +241,6 @@ fc::time_point_sec transaction_status_plugin::get_last_irreversible_block_timest
   const auto& bo = my->_db.find< transaction_status_block_object, by_block_num >( last_irreversible_block_num );
   return bo == nullptr ? fc::time_point_sec() : bo->timestamp;
 }
-
-#ifdef IS_TEST_NET
-
-bool transaction_status_plugin::state_is_valid()
-{
-  return my->state_is_valid();
-}
-
-#endif
 
 } } } // hive::plugins::transaction_status
 
