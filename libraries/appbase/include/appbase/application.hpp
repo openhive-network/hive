@@ -165,7 +165,7 @@ namespace appbase {
 
       std::set< std::string > get_plugins_names() const;
 
-      void kill();
+      void kill( bool direct_stop = false ); // direct_stop is only viable for unit tests where signals don't work
       bool quit();
 
     protected:

@@ -29,6 +29,16 @@ void signals_handler::init( std::promise<void> after_attach_signals )
   io_serv.run();
 }
 
+void signals_handler::force_stop()
+{
+  /*
+    when application gets another SIGINT, it won't be processed correctly, so it is only viable
+    for unit tests, where signals are captured by boost anyway
+  */
+  clear_signals();
+  io_serv.stop();
+}
+
 boost::asio::io_service& signals_handler::get_io_service()
 {
   return io_serv;
@@ -134,6 +144,11 @@ void signals_handler_wrapper::wait()
       handler_thread->join();
   }
   thread_closed = true;
+}
+
+void signals_handler_wrapper::force_stop()
+{
+  handler.force_stop();
 }
 
 bool signals_handler_wrapper::is_thread_closed()
