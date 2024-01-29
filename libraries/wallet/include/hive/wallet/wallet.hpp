@@ -43,37 +43,6 @@ struct annotated_signed_transaction_ex : hive::plugins::account_history::annotat
 
 typedef wallet_serializer_wrapper<annotated_signed_transaction_ex> wallet_signed_transaction;
 
-struct memo_data
-{
-
-  static optional<memo_data> from_string( string str ) {
-    try {
-      if( str.size() > sizeof(memo_data) && str[0] == '#') {
-        auto data = fc::from_base58( str.substr(1) );
-        memo_data m;
-        fc::raw::unpack_from_vector( data, m );
-        FC_ASSERT( string(m) == str );
-        return m;
-      }
-    } catch ( ... ) {}
-    return optional<memo_data>();
-  }
-
-  public_key_type from;
-  public_key_type to;
-  uint64_t        nonce = 0;
-  uint32_t        check = 0;
-  vector<char>    encrypted;
-
-  operator string()const {
-    auto data = fc::raw::pack_to_vector(*this);
-    auto base58 = fc::to_base58( data );
-    return '#'+base58;
-  }
-};
-
-
-
 struct brain_key_info
 {
   string               brain_priv_key;
@@ -1291,9 +1260,6 @@ class wallet_api
       */
     string get_encrypted_memo( const string& from, const string& to, const string& memo );
 
-    // helper for above
-    string get_encrypted_memo_using_keys( const public_key_type& from_key, const public_key_type& to_key, string memo ) const;
-
     /**
       * Returns the decrypted memo if possible given wallet's known private keys
       */
@@ -1646,5 +1612,3 @@ FC_API( hive::wallet::wallet_api,
     )
 
 FC_REFLECT_DERIVED( hive::wallet::annotated_signed_transaction_ex, (hive::plugins::account_history::annotated_signed_transaction), (rc_cost) );
-
-FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

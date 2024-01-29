@@ -1,5 +1,8 @@
 #include <hive/protocol/transaction_util.hpp>
 
+#include <fc/crypto/aes.hpp>
+#include <fc/crypto/base58.hpp>
+
 namespace hive { namespace protocol {
 
 void verify_authority(const required_authorities_type& required_authorities, 
@@ -134,6 +137,92 @@ void collect_potential_keys( std::vector< public_key_type >* keys,
   keys->push_back( generate_key( "active" ) );
   keys->push_back( generate_key( "posting" ) );
   keys->push_back( generate_key( "memo" ) );
+}
+
+std::optional<memo_data> memo_data::from_string( std::string str )
+{
+  try
+  {
+    if( str.size() > sizeof( memo_data ) && str[0] == '#' )
+    {
+      auto data = fc::from_base58( str.substr( 1 ) );
+      memo_data m;
+      fc::raw::unpack_from_vector( data, m );
+      FC_ASSERT( string( m ) == str );
+      return m;
+    }
+  }
+  catch( ... ) {}
+  return std::optional<memo_data>();
+}
+
+memo_data::operator std::string() const
+{
+  auto data = fc::raw::pack_to_vector( *this );
+  auto base58 = fc::to_base58( data );
+  return '#' + base58;
+}
+
+std::string encrypt_memo( const private_key_type& from_priv, const public_key_type& to_key, std::string memo )
+{
+  FC_ASSERT( memo.size() > 0 && memo[0] == '#' );
+  memo_data m;
+
+  m.from = from_priv.get_public_key();
+  m.to = to_key;
+  m.nonce = fc::time_point::now().time_since_epoch().count();
+
+  auto shared_secret = from_priv.get_shared_secret( m.to );
+
+  fc::sha512::encoder enc;
+  fc::raw::pack( enc, m.nonce );
+  fc::raw::pack( enc, shared_secret );
+  auto encrypt_key = enc.result();
+
+  m.encrypted = fc::aes_encrypt( encrypt_key, fc::raw::pack_to_vector( memo.substr( 1 ) ) );
+  m.check = fc::sha256::hash( encrypt_key )._hash[0];
+  return m;
+}
+
+std::string decrypt_memo( std::function< fc::optional<private_key_type>( const public_key_type& )> key_finder, std::string encrypted_memo )
+{
+  FC_ASSERT( encrypted_memo.size() > 0 && encrypted_memo[0] == '#' );
+  auto m = memo_data::from_string( encrypted_memo );
+  if( !m )
+    return encrypted_memo;
+
+  fc::sha512 shared_secret;
+  auto from_key = key_finder( m->from );
+  if( !from_key )
+  {
+    auto to_key = key_finder( m->to );
+    if( !to_key )
+      return encrypted_memo;
+    shared_secret = to_key->get_shared_secret( m->from );
+  }
+  else
+  {
+    shared_secret = from_key->get_shared_secret( m->to );
+  }
+  fc::sha512::encoder enc;
+  fc::raw::pack( enc, m->nonce );
+  fc::raw::pack( enc, shared_secret );
+  auto encryption_key = enc.result();
+
+  uint32_t check = fc::sha256::hash( encryption_key )._hash[0];
+  if( check != m->check )
+    return encrypted_memo;
+
+  try
+  {
+    vector<char> decrypted = fc::aes_decrypt( encryption_key, m->encrypted );
+    std::string decrypted_string;
+    fc::raw::unpack_from_vector( decrypted, decrypted_string );
+    return decrypted_string;
+  }
+  catch( ... ) {}
+
+  return encrypted_memo;
 }
 
 } } // hive::protocol
