@@ -27,10 +27,12 @@ struct hived_fixture : public database_fixture
   fc::optional< fc::logging_config > _logging_config;
   /// @brief Where tested "hived" data go. Valid after a call to postponed_init.
   fc::path _data_dir;
+  /// @brief Disables p2p in standard initialization
+  bool _disable_p2p = true;
 
   public:
 
-  hived_fixture( bool remove_db_files = true );
+  hived_fixture( bool remove_db_files = true, bool disable_p2p = true );
   virtual ~hived_fixture();
 
   typedef std::vector< std::pair< std::string, std::vector< std::string > > > config_arg_override_t;

@@ -14,8 +14,8 @@ namespace bpo = boost::program_options;
 
 namespace hive { namespace chain {
 
-hived_fixture::hived_fixture( bool remove_db_files /*= true*/ ) 
-  : _remove_db_files( remove_db_files )
+hived_fixture::hived_fixture( bool remove_db_files /*= true*/, bool disable_p2p /*= true*/)
+  : _disable_p2p( disable_p2p ), _remove_db_files( remove_db_files )
 {}
 
 hived_fixture::~hived_fixture() 
@@ -126,7 +126,8 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
       db_plugin->logging = false;
 
       _chain = &( app.get_plugin< hive::plugins::chain::chain_plugin >() );
-      _chain->disable_p2p(); // We don't want p2p plugin connections at all.
+      if( _disable_p2p )
+        _chain->disable_p2p(); // We don't want p2p plugin connections at all.
       _block_reader = &( _chain->block_reader() );
       db = &( _chain->db() );
       BOOST_REQUIRE( db );
