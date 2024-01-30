@@ -16,6 +16,7 @@
 
 using namespace hive::chain;
 using namespace hive::protocol;
+using namespace hive::plugins::witness;
 
 struct witness_fixture : public hived_fixture
 {
@@ -64,8 +65,11 @@ struct witness_fixture : public hived_fixture
       tx.set_reference_block( db->head_block_id() );
     } );
     tx.operations.emplace_back( op );
+    schedule_transaction( tx );
+  }
+  void schedule_transaction( const signed_transaction& tx ) const
+  {
     full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
-    tx.clear();
     _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), fc::ecc::fc_canonical, serialization_type::hf26 );
     get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
@@ -144,8 +148,6 @@ catch( ... )                                                                  \
 
 BOOST_AUTO_TEST_CASE( witness_basic_test )
 {
-  using namespace hive::plugins::witness;
-
   try
   {
     initialize();
@@ -219,8 +221,6 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
 
 BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 {
-  using namespace hive::plugins::witness;
-
   try
   {
     configuration_data.min_root_comment_interval = fc::seconds( 3 * HIVE_BLOCK_INTERVAL );
@@ -486,6 +486,316 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
       CATCH( "DAN" )
       --active_feeders;
       ilog( "'DAN' thread finished" );
+    } );
+
+    theApp.wait();
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( queen_mode_test )
+{
+  try
+  {
+    //not using initialize() because queen mode needs a bit different configuration
+
+    theApp.init_signals_handler();
+
+    configuration_data.min_root_comment_interval = fc::seconds( 3 * HIVE_BLOCK_INTERVAL );
+    configuration_data.set_initial_asset_supply(
+      200'000'000'000ul, 1'000'000'000ul, 100'000'000'000ul,
+      price( VEST_asset( 1'800 ), HIVE_asset( 1'000 ) )
+    );
+
+    postponed_init(
+      {
+        config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
+        config_line_t( { "queen-mode", { "1" } } ),
+        config_line_t( { "shared-file-size", { "8G" } } ),
+        config_line_t( { "witness", {
+          "\"initminer\"", "\"initminer1\"", "\"initminer2\"", "\"initminer3\"", "\"initminer4\"",
+          "\"initminer5\"", "\"initminer6\"", "\"initminer7\"", "\"initminer8\"", "\"initminer9\"",
+          "\"initminer10\"", "\"initminer11\"", "\"initminer12\"", "\"initminer13\"", "\"initminer14\"",
+          "\"initminer15\"", "\"initminer16\"", "\"initminer17\"", "\"initminer18\"", "\"initminer19\"",
+          "\"initminer20\""
+        } } ),
+        config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
+      }
+    );
+
+    init_account_pub_key = init_account_priv_key.get_public_key();
+
+    generate_block();
+    db->set_hardfork( HIVE_NUM_HARDFORKS );
+    generate_block();
+    db->_log_hardforks = true;
+
+    // Fill up the rest of the required miners
+    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
+    {
+      std::string witness_name = HIVE_INIT_MINER_NAME + fc::to_string( i );
+      account_create( witness_name, init_account_pub_key );
+      vest( witness_name, ASSET( "10.000 TESTS" ) );
+      fund( witness_name, ASSET( "10.000 TESTS") );
+      fund( witness_name, ASSET( "10.000 TBD" ) );
+      witness_create( witness_name, init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
+    }
+
+    validate_database();
+
+    const int ACCOUNTS = 20000;
+    for( size_t i = 0; i < ACCOUNTS; ++i )
+    {
+      auto account_name = "account" + std::to_string( i );
+      signed_transaction tx; // building multiop transaction to speed up the process
+
+      account_create_operation create;
+      create.new_account_name = account_name;
+      create.creator = HIVE_INIT_MINER_NAME;
+      create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+      create.owner = authority( 1, init_account_pub_key, 1 );
+      create.active = create.owner;
+      create.posting = create.owner;
+      create.memo_key = init_account_pub_key;
+      tx.operations.emplace_back( create );
+
+      transfer_to_vesting_operation vest;
+      vest.from = HIVE_INIT_MINER_NAME;
+      vest.to = account_name;
+      vest.amount = ASSET( "1000.000 TESTS" );
+      tx.operations.emplace_back( vest );
+
+      transfer_operation fund;
+      fund.from = HIVE_INIT_MINER_NAME;
+      fund.to = account_name;
+      fund.amount = ASSET( "1.000 TBD" );
+      tx.operations.emplace_back( fund );
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_reference_block( db->head_block_id() );
+      push_transaction( tx, init_account_priv_key, database::skip_nothing, serialization_type::hf26 );
+
+      // generate block once every 100 accounts
+      // it also serves as wait time for witnesses to become active
+      if( i % 100 == 0 )
+      {
+        ilog( "Adding users... ${i}", (i) );
+        generate_block();
+      }
+    }
+    post_comment( "account0", "test", "test", "I have a cat", "testing", init_account_priv_key );
+    generate_block();
+
+    fc::thread test_thread;
+    test_thread.async( [&]()
+    {
+      const int ARTICLES = 10;
+      const int SHORT_REPLIES = 100;
+      const int LONG_REPLIES = 100;
+      const int VOTES = 200;
+      const int SHORT_TRANSFERS = 300;
+      const int LONG_TRANSFERS = 300;
+      const int SHORT_CUSTOMS = 2000;
+      const int LONG_CUSTOMS = 2000;
+      const int ALL = ARTICLES + SHORT_REPLIES + LONG_REPLIES + VOTES +
+        SHORT_TRANSFERS + LONG_TRANSFERS + SHORT_CUSTOMS + LONG_CUSTOMS;
+
+      int comment_count = 0;
+      int transfer_count = 0;
+      int custom_count = 0;
+      const auto& comments = db->get_index< comment_cashout_index, by_id >();
+      signed_transaction tx;
+      auto schedule_transaction = [&]( const operation& op )
+      {
+        //expiration and tapos are updated once every 1000 transactions in main test loop
+        tx.operations.emplace_back( op );
+        this->schedule_transaction( tx );
+        tx.clear();
+      };
+      auto fill = []( std::string& str, size_t size )
+      {
+        str.resize( size, ' ' );
+        for( size_t i = 0; i < str.size(); ++i )
+        {
+          if( i % 13 == 0 )
+            continue;
+          else
+            str.at( i ) = '0' + ( i % 10 );
+        }
+      };
+      auto get_random_comment = [&]()
+      {
+        // needs to be called under read lock
+        comment_cashout_object::id_type randomCommentId( rand() % comments.size() );
+        auto commentI = comments.lower_bound( randomCommentId );
+        FC_ASSERT( commentI != comments.end(), "No active comments to reply to" );
+        return commentI;
+      };
+      auto generate_article = [&]( const account_name_type& author )
+      {
+        comment_operation article;
+        article.title = std::to_string( comment_count );
+        article.parent_permlink = "category" + std::to_string( comment_count % 101 );
+        article.author = author;
+        article.permlink = author + article.title;
+        fill( article.body, 10000 + 100 * ( comment_count % 97 ) );
+        schedule_transaction( article );
+        ++comment_count;
+      };
+      auto generate_reply = [&]( const account_name_type& author, size_t size )
+      {
+        comment_operation reply;
+        db->with_read_lock( [&]()
+        {
+          auto commentI = get_random_comment();
+          reply.parent_author = db->get_account( commentI->get_author_id() ).get_name();
+          reply.parent_permlink = commentI->get_permlink();
+        } );
+        reply.author = author;
+        reply.permlink = author + std::to_string( comment_count );
+        fill( reply.body, size );
+        schedule_transaction( reply );
+        ++comment_count;
+      };
+      auto generate_vote = [&]( const account_name_type& voter )
+      {
+        vote_operation vote;
+        db->with_read_lock( [&]()
+        {
+          auto commentI = get_random_comment();
+          vote.author = db->get_account( commentI->get_author_id() ).get_name();
+          vote.permlink = commentI->get_permlink();
+        } );
+        vote.voter = voter;
+        vote.weight = HIVE_1_PERCENT;
+        schedule_transaction( vote );
+      };
+      auto generate_transfer = [&]( const account_name_type& resender, bool add_memo )
+      {
+        transfer_operation transfer;
+        transfer.from = resender;
+        transfer.to = resender;
+        transfer.amount = asset( transfer_count % 999 + 1, HBD_SYMBOL );
+        ++transfer_count;
+        if( add_memo )
+          transfer.memo = hive::protocol::encrypt_memo( init_account_priv_key, init_account_pub_key, "#memo" );
+        schedule_transaction( transfer );
+      };
+      auto generate_custom = [&]( const account_name_type& account, size_t count )
+      {
+        custom_json_operation custom;
+        custom.required_auths.emplace( account );
+        custom.id = "custom";
+        std::stringstream str;
+        str << "[" << custom_count;
+        ++custom_count;
+        for( size_t i = 0; i < count; ++i )
+          str << ",0";
+        str << "]";
+        custom.json = str.str();
+        schedule_transaction( custom );
+      };
+
+      srand( 1234 );
+      size_t accountNo = 0;
+      try
+      {
+        for( size_t i = 0; i < 100000; ++i )
+        {
+          if( theApp.is_interrupt_request() )
+            break;
+          if( i % 1000 == 0 )
+          {
+            // update transaction expiration and tapos
+            db->with_read_lock( [&]()
+            {
+              tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+              tx.set_reference_block( db->head_block_id() );
+            } );
+            ilog( "Generating... ${i}", (i) );
+            // switch to 1M blocks after 40k transactions
+            if( i == 40000 )
+            {
+              witness_set_properties_operation witness_props;
+              witness_props.owner = "initminer";
+              witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+              witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( 1500000 );
+              tx.operations.emplace_back( witness_props );
+              for( int j = HIVE_NUM_INIT_MINERS; j < HIVE_MAX_WITNESSES; ++j )
+              {
+                witness_props.owner = "initminer" + std::to_string( j );
+                tx.operations.emplace_back( witness_props );
+              }
+              ilog( "Requesting switch to bigger blocks." );
+              this->schedule_transaction( tx );
+              tx.clear();
+              // new bigger blocks will trigger within two schedules after this point
+            }
+          }
+          size_t randomTx = rand() % ALL;
+          std::string account = "account" + std::to_string( accountNo );
+          accountNo = ( accountNo + 1 ) % ACCOUNTS;
+          size_t max = ARTICLES;
+          if( randomTx < max )
+          {
+            generate_article( account );
+            continue;
+          }
+          max += SHORT_REPLIES;
+          if( randomTx < max )
+          {
+            generate_reply( account, 30 );
+            continue;
+          }
+          max += LONG_REPLIES;
+          if( randomTx < max )
+          {
+            generate_reply( account, 6000 );
+            continue;
+          }
+          max += VOTES;
+          if( randomTx < max )
+          {
+            generate_vote( account );
+            continue;
+          }
+          max += SHORT_TRANSFERS;
+          if( randomTx < max )
+          {
+            generate_transfer( account, false );
+            continue;
+          }
+          max += LONG_TRANSFERS;
+          if( randomTx < max )
+          {
+            generate_transfer( account, true );
+            continue;
+          }
+          max += SHORT_CUSTOMS;
+          if( randomTx < max )
+          {
+            generate_custom( account, 5 );
+            continue;
+          }
+          max += LONG_CUSTOMS;
+          if( randomTx < max )
+          {
+            generate_custom( account, 500 );
+            continue;
+          }
+        }
+        ilog( "Finished generating transactions - wait 10s to allow witness to clear queue" );
+        sleep( 10 );
+        theApp.generate_interrupt_request();
+        sleep( 1 );
+        ilog( "Generate one more block that might be not entirely filled" );
+        generate_block();
+      }
+      CATCH( "TEST" )
+      
+      ilog( "Forcefully finish application" );
+      theApp.kill( true );
     } );
 
     theApp.wait();

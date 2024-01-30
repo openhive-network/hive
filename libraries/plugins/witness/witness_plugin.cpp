@@ -66,11 +66,13 @@ namespace detail {
       {}
 
     void on_post_apply_block( const chain::block_notification& note );
+    void on_post_apply_transaction( const chain::transaction_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
 
     void schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop();
+    block_production_condition::block_production_condition_enum queen_mode_production_loop();
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
     bool     _production_enabled              = false;
@@ -86,6 +88,7 @@ namespace detail {
     chain::database&              _db;
     const chain::block_read_i&    _block_reader;
     boost::signals2::connection   _post_apply_block_conn;
+    boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;
 
@@ -93,6 +96,39 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     std::atomic<bool> _enable_fast_confirm = true;
+
+    struct queen_mode_data
+    {
+      uint32_t postponed_tx_count = 0;
+      uint32_t remaining_block_size = 0;
+      fc::time_point_sec next_block_time = HIVE_GENESIS_TIME;
+
+      bool can_produce_full_block() const
+      {
+        return postponed_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT;
+      }
+
+      void on_new_transaction( const size_t tx_size )
+      {
+        if( remaining_block_size >= tx_size )
+          remaining_block_size -= (uint32_t)tx_size;
+        else
+          postponed_tx_count += 1;
+      }
+
+      void on_new_block( const chain::database& _db )
+      {
+        const auto& dgpo = _db.get_dynamic_global_properties();
+        uint32_t max_block_size = dgpo.maximum_block_size;
+
+        ilog( "QUEEN MODE block generated with ${s} bytes remaining and ${p} count; new will be ${n}",
+          ( "s", remaining_block_size )( "p", postponed_tx_count )( "n", max_block_size - 256 ) );
+        postponed_tx_count = 0;
+        remaining_block_size = max_block_size - 256; // 256 taken from trx_size_limit check in database.cpp
+        next_block_time = _db.get_slot_time( 1 );
+      }
+    };
+    std::unique_ptr<queen_mode_data> _queen_mode;
 
     appbase::application& theApp;
   };
@@ -115,6 +151,16 @@ namespace detail {
 
   private:
     hive::plugins::p2p::p2p_plugin& p2p;
+  };
+
+  class queen_generate_block_flow_control final : public generate_block_flow_control
+  {
+  public:
+    using generate_block_flow_control::generate_block_flow_control;
+    virtual ~queen_generate_block_flow_control() = default;
+
+  private:
+    virtual const char* buffer_type() const override { return "queen"; }
   };
 
   void check_memo( const string& memo, const chain::account_object& account, const account_authority_object& auth )
@@ -247,6 +293,13 @@ namespace detail {
     }
   };
 
+  void witness_plugin_impl::on_post_apply_transaction( const chain::transaction_notification& note )
+  {
+    // this signal is only active in queen mode
+    if( _db.is_validating_one_tx() || _db.is_reapplying_one_tx() )
+      _queen_mode->on_new_transaction( note.full_transaction->get_transaction_size() );
+  }
+
   void witness_plugin_impl::on_pre_apply_operation( const chain::operation_notification& note )
   {
     if( _db.is_in_control() )
@@ -270,6 +323,8 @@ namespace detail {
 
   void witness_plugin_impl::on_finish_push_block( const block_notification& note )
   {
+    if( _queen_mode )
+      _queen_mode->on_new_block( _db );
     // Broadcast a transaction to let the other witnesses know we've accepted this block for fast 
     // confirmation.
     // I think it's called multiple times during a fork switch, which isn't what we want, so
@@ -359,7 +414,10 @@ namespace detail {
       time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
-    _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );
+    if( _queen_mode )
+      _timer.async_wait( boost::bind( &witness_plugin_impl::queen_mode_production_loop, this ) );
+    else
+      _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );
   }
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop()
@@ -431,6 +489,7 @@ namespace detail {
         elog( "exception producing block" );
         break;
       case block_production_condition::wait_for_genesis:
+      case block_production_condition::queen_mode_not_full_block_yet:
         break;
     }
 
@@ -441,10 +500,98 @@ namespace detail {
     return result;
   }
 
+  block_production_condition::block_production_condition_enum witness_plugin_impl::queen_mode_production_loop()
+  {
+    if( fc::time_point::now() < fc::time_point( HIVE_GENESIS_TIME ) )
+    {
+      wlog( "waiting until genesis time to produce block: ${t}", ( "t", HIVE_GENESIS_TIME ) );
+      schedule_production_loop();
+      return block_production_condition::wait_for_genesis;
+    }
+
+    bool try_to_produce_next = false;
+    block_production_condition::block_production_condition_enum result;
+    do
+    {
+      fc::mutable_variant_object capture;
+      try
+      {
+        try_to_produce_next = false;
+        result = maybe_produce_block( capture );
+      }
+      catch( const fc::canceled_exception& )
+      {
+        //We're trying to exit. Go ahead and let this one out.
+        throw;
+      }
+      catch( const chain::unknown_hardfork_exception& e )
+      {
+        // Hit a hardfork that the current node know nothing about, stop production and inform user
+        elog( "${e}\nNode may be out of date...", ( "e", e.to_detail_string() ) );
+        throw;
+      }
+      catch( const fc::exception& e )
+      {
+        elog( "Got exception while generating block:\n${e}", ( "e", e.to_detail_string() ) );
+        result = block_production_condition::exception_producing_block;
+      }
+
+      switch( result )
+      {
+      case block_production_condition::produced:
+        ilog( "Generated block #${n} with timestamp ${t} at time ${c}", ( "n", capture[ "n" ] )( "t", capture[ "t" ] )( "c", capture[ "c" ] ) );
+        try_to_produce_next = true;
+        break;
+      case block_production_condition::not_my_turn:
+        _queen_mode->next_block_time += HIVE_BLOCK_INTERVAL;
+        ilog( "Not producing block because it isn't my turn - missing witness in queen mode" );
+        try_to_produce_next = true;
+        break;
+      case block_production_condition::queen_mode_not_full_block_yet:
+        break;
+      case block_production_condition::no_private_key:
+        _queen_mode->next_block_time += HIVE_BLOCK_INTERVAL;
+        ilog( "Not producing block because I don't have the private key for ${scheduled_key} in queen mode", ( "scheduled_key", capture[ "scheduled_key" ] ) );
+        try_to_produce_next = true;
+        break;
+      case block_production_condition::exception_producing_block:
+        break;
+      case block_production_condition::not_time_yet:
+      case block_production_condition::not_synced:
+      case block_production_condition::low_participation:
+      case block_production_condition::lag:
+      case block_production_condition::consecutive:
+      case block_production_condition::wait_for_genesis:
+        elog( "returned ${x} in queen mode", ( "x", (int)result ) );
+        theApp.generate_interrupt_request();
+        break;
+      }
+    }
+    while( try_to_produce_next );
+
+    if( !theApp.is_interrupt_request() )
+      schedule_production_loop();
+    else
+      ilog( "exiting queen_mode_production_loop" );
+    return result;
+  }
+
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    fc::time_point now_fine = fc::time_point::now();
-    fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
+    fc::time_point_sec now;
+
+    if( _queen_mode )
+    {
+      if( !_queen_mode->can_produce_full_block() )
+        return block_production_condition::queen_mode_not_full_block_yet;
+
+      now = _queen_mode->next_block_time;
+    }
+    else
+    {
+      fc::time_point now_fine = fc::time_point::now();
+      now = now_fine + fc::microseconds( 500000 );
+    }
 
     // If the next block production opportunity is in the present or future, we're synced.
     if( !_production_enabled )
@@ -505,8 +652,17 @@ namespace detail {
       return block_production_condition::lag;
     }
 
-    auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( scheduled_time,
-      scheduled_witness, private_key_itr->second, _production_skip_flags, theApp );
+    std::shared_ptr<generate_block_flow_control> generate_block_ctrl;
+    if( _queen_mode )
+    {
+      generate_block_ctrl = std::make_shared<queen_generate_block_flow_control>( scheduled_time,
+        scheduled_witness, private_key_itr->second, _production_skip_flags );
+    }
+    else
+    {
+      generate_block_ctrl = std::make_shared<witness_generate_block_flow_control>( scheduled_time,
+        scheduled_witness, private_key_itr->second, _production_skip_flags, theApp );
+    }
     _chain_plugin.generate_block( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
@@ -548,6 +704,9 @@ void witness_plugin::set_program_options(
     ( "witness,w", bpo::value<vector<string>>()->composing()->multitoken(),
       ( "name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
     ( "private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
+#ifdef IS_TEST_NET
+    ( "queen-mode", bpo::value<bool>()->default_value( false ), "Enable special mode of block production for filling up blocks to max." )
+#endif
     ;
   cli.add_options()
     ( "enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale." )
@@ -585,8 +744,18 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   if( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT )
     wlog( "warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION) );
 
+#ifdef IS_TEST_NET
+  if( options.at( "queen-mode" ).as< bool >() )
+    my->_queen_mode = std::make_unique< detail::witness_plugin_impl::queen_mode_data >();
+#endif
+
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
+  if( my->_queen_mode )
+  {
+    my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler(
+      [&]( const chain::transaction_notification& note ) { my->on_post_apply_transaction( note ); }, *this, 0 );
+  }
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
     [&]( const chain::operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0 );
   my->_finish_push_block_conn = my->_db.add_finish_push_block_handler(
@@ -613,7 +782,15 @@ void witness_plugin::plugin_startup()
 
   if( !my->_witnesses.empty() )
   {
-    ilog( "Launching block production for ${n} witnesses.", ( "n", my->_witnesses.size() ) );
+    if( my->_queen_mode )
+    {
+      ilog( "Launching QUEEN MODE with ${n} witnesses.", ( "n", my->_witnesses.size() ) );
+      my->_queen_mode->on_new_block( my->_db );
+    }
+    else
+    {
+      ilog( "Launching block production for ${n} witnesses.", ( "n", my->_witnesses.size() ) );
+    }
     get_app().get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
     if( my->_production_enabled )
     {
@@ -641,6 +818,7 @@ void witness_plugin::plugin_shutdown()
     }
 
     chain::util::disconnect_signal( my->_post_apply_block_conn );
+    chain::util::disconnect_signal( my->_post_apply_transaction_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
     chain::util::disconnect_signal( my->_finish_push_block_conn );
 
