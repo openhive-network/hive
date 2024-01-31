@@ -422,6 +422,7 @@ formatting_with_black_check:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/get_dev_key"
+    BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: testnet_node_build
@@ -463,6 +464,7 @@ beem_mirrornet_tests:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
+    BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/block_log_util"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
   before_script:
