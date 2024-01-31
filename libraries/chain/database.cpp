@@ -171,8 +171,7 @@ void database::open( const open_args& args )
                                                 theApp.get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    const bool wipe_shared_file = args.force_replay || args.load_snapshot;
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay /* wipe_shared_file */ );
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
     load_state_initial_data(args);
