@@ -18,6 +18,7 @@ namespace hive { namespace chain {
       chain::database& db;
 
       std::list< Object > old_values;
+      size_t total_additional_allocation = 0;
 
     public:
 
@@ -53,7 +54,14 @@ namespace hive { namespace chain {
       template< typename Index >
       void remember_old_values()
       {
+        ilog("remember_old_values");
         old_values.clear();
+
+        const auto& index = db.get_index<Index>();
+        helpers::index_statistic_provider<Index> provider;
+        helpers::index_statistic_info stats = provider.gather_statistics(index.indices(), false);
+        total_additional_allocation = stats._item_additional_allocation;
+        ilog("total_additional_allocation=${total_additional_allocation}", (total_additional_allocation));
 
         const auto& idx = db.get_index< Index, by_id >();
         auto it = idx.begin();
@@ -75,8 +83,18 @@ namespace hive { namespace chain {
       template< typename Index >
       bool check()
       {
+        ilog("check");
         try
         {
+          const auto& index = db.get_index<Index>();
+          helpers::index_statistic_provider<Index> provider;
+          helpers::index_statistic_info stats = provider.gather_statistics(index.indices(), false);
+          const auto new_total_additional_allocation = stats._item_additional_allocation;
+          ilog("total_additional_allocation was=${total_additional_allocation}", (total_additional_allocation));
+          ilog("total_additional_allocation is =${new_total_additional_allocation}", (new_total_additional_allocation));
+          if (new_total_additional_allocation != total_additional_allocation)
+            return false;
+
           const auto& idx = db.get_index< Index, by_id >();
 
           uint32_t idx_size = idx.size();
