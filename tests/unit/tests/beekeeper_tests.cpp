@@ -652,14 +652,16 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       const uint64_t _timeout = 90;
       const uint32_t _session_limit = 64;
 
+      const std::string _wallet_name = "0";
+
       appbase::application app;
 
       beekeeper_wallet_manager wm = b_mgr.create_wallet( app, _timeout, _session_limit );
       BOOST_REQUIRE( wm.start() );
 
       auto _token = wm.create_session( "salt", _host );
-      auto _password = wm.create(_token, "0", std::optional<std::string>());
-      auto _imported_public_key = wm.import_key( _token, "0", _private_key_str );
+      auto _password = wm.create(_token, _wallet_name, std::optional<std::string>());
+      auto _imported_public_key = wm.import_key( _token, _wallet_name, _private_key_str );
       BOOST_REQUIRE( _imported_public_key == _public_key_str );
 
       auto _calculate_signature = [&]( const std::string& json_trx, const std::string& signature_pattern )
@@ -667,11 +669,17 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
         hive::protocol::transaction _trx = fc::json::from_string( json_trx, fc::json::format_validation_mode::full ).as<hive::protocol::transaction>();
         hive::protocol::digest_type _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
 
-        auto _signature_local = _private_key.sign_compact( _sig_digest );
+        auto _signature_local   = _private_key.sign_compact( _sig_digest );
+        auto __signature_local  = fc::json::to_string( _signature_local );
 
-        auto _local = fc::json::to_string( _signature_local );
-        BOOST_TEST_MESSAGE( _local );
-        BOOST_REQUIRE( _local.substr( 1, _local.size() - 2 )          == signature_pattern );
+        auto _signature_wallet  = wm.sign_digest( _token, _sig_digest.str(), _imported_public_key, _wallet_name );
+        auto __signature_wallet = fc::json::to_string( _signature_wallet );
+
+        BOOST_TEST_MESSAGE( __signature_local );
+        BOOST_REQUIRE( __signature_local.substr( 1, __signature_local.size() - 2 )    == signature_pattern );
+
+        BOOST_TEST_MESSAGE( __signature_wallet );
+        BOOST_REQUIRE( __signature_wallet.substr( 1, __signature_wallet.size() - 2 )  == signature_pattern );
       };
 
       std::string _signature_00_result = "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21";
@@ -680,6 +688,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       std::string _signature_01_result = "1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340";
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
                             _signature_01_result );
+
+      BOOST_REQUIRE_THROW( wm.sign_digest( _token, "", _imported_public_key, _wallet_name ), fc::exception );
     }
 
   } FC_LOG_AND_RETHROW()
@@ -909,6 +919,9 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       std::string _signature_01_result = "1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340";
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
                             _signature_01_result );
+
+      auto _error_message = _obj.sign_digest( _token, "", _public_key_str, "avocado" );
+      BOOST_REQUIRE( _error_message.find( "`sig_digest` can't be empty" ) != std::string::npos );
     }
 
   } FC_LOG_AND_RETHROW()
