@@ -151,7 +151,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
   std::lock_guard<std::mutex> guard( mtx );
 
   using namespace beekeeper;
-  return { _wallet_mgr->sign_digest( args.token, digest_type( args.sig_digest ), args.public_key, args.wallet_name ) };
+  return { _wallet_mgr->sign_digest( args.token, args.sig_digest, args.public_key, args.wallet_name ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )

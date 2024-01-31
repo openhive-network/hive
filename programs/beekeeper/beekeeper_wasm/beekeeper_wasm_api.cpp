@@ -262,7 +262,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, digest_type( sig_digest ), public_key, wallet_name ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, sig_digest, public_key, wallet_name ) };
       return to_string( _result );
     };
     return exception_handler( _method );
