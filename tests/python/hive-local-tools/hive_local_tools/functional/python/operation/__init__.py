@@ -540,3 +540,12 @@ def publish_feeds(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int) -
         for witness in witnesses:
             exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
             wallet.api.publish_feed(witness, exchange_rate, broadcast=False)
+
+
+def publish_feeds_with_confirmation(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int) -> None:
+    old_feed_current_median_history = node.api.wallet_bridge.get_feed_history().current_median_history
+    for _ in range(45):
+        publish_feeds(node, wallet, base, quote)
+        if node.api.wallet_bridge.get_feed_history().current_median_history != old_feed_current_median_history:
+            return
+    raise TimeoutError("Current median history not change on time")
