@@ -97,7 +97,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       void test_version( const helpers::environment_extension_resources& environment_extension )
       {
         if( created_storage )
+        {
+          ilog("Saving version into database: ${version_info}", ("version_info", environment_extension.version_info));
           version_info = environment_extension.version_info.c_str();
+        }
         else
         {
           const std::string loaded_version_str(version_info.c_str());
@@ -136,8 +139,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       {
         if( created_storage )
         {
+          std::string list_of_plugins;
           for( auto& item : environment_extension->plugins )
+          {
             plugins.insert( shared_string( item.c_str(), version_info.get_allocator()));
+            list_of_plugins += item + " ";
+          }
+          ilog("Saving list of plugins into database: ${list_of_plugins}", (list_of_plugins));
         }
         else
         {
@@ -243,6 +251,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
+      ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
 
     auto env = _segment->find< environment_check >( "environment" );
