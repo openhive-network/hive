@@ -367,37 +367,40 @@ void application::finish()
     elog("Plugin ${plugin} raised an exception...", ("plugin", _actual_plugin_name));
   };
 
-  try
+  if( !is_finished )
   {
-    pre_shutdown( _actual_plugin_name );
-    shutdown( _actual_plugin_name );
-
-    is_finished = true;
-
-    fc::promise<void>::ptr quitDone( new fc::promise<void>("Logging thread quit") );
-    my->_logging_thread.quit( quitDone.get() );
-    quitDone->wait();
-  }
-  catch ( const boost::exception& e )
-  {
-    plugin_exception_info();
-    elog(boost::diagnostic_information(e));
-  }
-  catch( std::exception& e )
-  {
-    plugin_exception_info();
-    elog("exception: ${what}", ("what", e.what()));
-  }
-  catch(...)
-  {
-    plugin_exception_info();
     try
     {
-      std::rethrow_exception( std::current_exception() );
+      pre_shutdown( _actual_plugin_name );
+      shutdown( _actual_plugin_name );
+
+      fc::promise<void>::ptr quitDone( new fc::promise<void>("Logging thread quit") );
+      my->_logging_thread.quit( quitDone.get() );
+      quitDone->wait();
+
+      is_finished = true;
     }
-    catch( const std::exception& e )
+    catch( const boost::exception& e )
     {
+      plugin_exception_info();
+      elog(boost::diagnostic_information(e));
+    }
+    catch( std::exception& e )
+    {
+      plugin_exception_info();
       elog("exception: ${what}", ("what", e.what()));
+    }
+    catch(...)
+    {
+      plugin_exception_info();
+      try
+      {
+        std::rethrow_exception( std::current_exception() );
+      }
+      catch( const std::exception& e )
+      {
+        elog("exception: ${what}", ("what", e.what()));
+      }
     }
   }
 }
