@@ -428,7 +428,10 @@ namespace detail {
         break;
     }
 
-    schedule_production_loop();
+    if( theApp.is_interrupt_request() )
+      ilog( "ending block_production_loop" );
+    else
+      schedule_production_loop();
     return result;
   }
 

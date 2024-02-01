@@ -35,7 +35,6 @@ namespace appbase {
       void clear_signals();
 
       void attach_signals();
-      void close();
 
     public:
 
@@ -43,7 +42,7 @@ namespace appbase {
       ~signals_handler();
 
       void init( std::promise<void> after_attach_signals );
-      void force_stop();
+      void close();
 
       boost::asio::io_service& get_io_service();
   };
