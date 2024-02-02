@@ -14,9 +14,7 @@ def prepare_environment(request) -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     block_log_directory = Path(__file__).parent.joinpath("block_log")
-
-    with open(block_log_directory / "timestamp", encoding="utf-8") as file:
-        timestamp = tt.Time.parse(file.read())
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
     with open(block_log_directory / "genesis_time", encoding="utf-8") as file:
         genesis_time = file.read()
@@ -37,7 +35,9 @@ def prepare_environment(request) -> tt.InitNode:
     )
 
     node.run(
-        time_offset=f"{tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)} x10",
+        time_offset=(
+            f"{block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)} x10"
+        ),
         replay_from=block_log_directory / "block_log",
         arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
     )

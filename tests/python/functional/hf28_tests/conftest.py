@@ -31,13 +31,12 @@ def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wal
     node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
 
     block_log_directory = Path(__file__).parent / "block_log"
-    with open(block_log_directory / "timestamp", encoding="utf-8") as file:
-        absolute_start_time = tt.Time.parse(file.read())
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
-    absolute_start_time -= tt.Time.seconds(5)
+    absolute_start_time = block_log.get_head_block_time() - tt.Time.seconds(5)
     time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
     node.run(
-        replay_from=block_log_directory / "block_log",
+        replay_from=block_log,
         time_offset=time_offset,
     )
 
