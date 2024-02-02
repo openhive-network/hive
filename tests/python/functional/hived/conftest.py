@@ -36,13 +36,9 @@ def block_log_length(block_log_helper) -> int:
 @pytest.fixture()
 def node_with_20k_proposal_votes() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
-    block_log_path = block_log_directory / "block_log"
-    timestamp_path = block_log_directory / "timestamp"
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
-    with open(timestamp_path, encoding="utf-8") as file:
-        timestamp = tt.Time.parse(file.read())
-
-    timestamp -= tt.Time.seconds(5)
+    timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
 
     init_node = tt.InitNode()
     init_node.config.plugin.append("condenser_api")
@@ -50,7 +46,7 @@ def node_with_20k_proposal_votes() -> tt.InitNode:
 
     init_node.run(
         time_offset=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
-        replay_from=block_log_path,
+        replay_from=block_log,
     )
 
     return init_node

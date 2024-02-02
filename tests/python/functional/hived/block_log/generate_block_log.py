@@ -34,13 +34,6 @@ def prepare_node_with_proposal_votes():
     tt.logger.info("Waiting for the blocks with the transactions to become irreversible")
     node.wait_for_irreversible_block()
 
-    head_block_num = node.get_last_block_number()
-    timestamp = node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
-    tt.logger.info(f"head block timestamp: {timestamp}")
-
-    with open("timestamp", "w", encoding="utf-8") as file:
-        file.write(f"{timestamp}")
-
     node.close()
     node.block_log.copy_to(Path(__file__).parent)
 
