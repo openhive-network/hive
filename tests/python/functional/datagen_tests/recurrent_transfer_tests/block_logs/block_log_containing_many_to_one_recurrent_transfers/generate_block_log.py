@@ -50,9 +50,6 @@ def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     timestamp = init_node.api.block.get_block(block_num=head_block_num).block.timestamp
     tt.logger.info(f"head block timestamp: {timestamp}")
 
-    with open("timestamp", "w", encoding="utf-8") as file:
-        file.write(f"{timestamp}")
-
     init_node.close()
     init_node.block_log.copy_to(Path(__file__).parent)
 

@@ -15,12 +15,11 @@ if TYPE_CHECKING:
 
 def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker) -> None:
     block_log_directory = Path(bl.__file__).parent
-    with open(block_log_directory / "timestamp", encoding="utf-8") as file:
-        timestamp = tt.Time.parse(file.read())
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
     replayed_node: tt.InitNode = replayed_node(
         block_log_directory,
-        absolute_start_time=timestamp + tt.Time.days(2),
+        absolute_start_time=block_log.get_head_block_time() + tt.Time.days(2),
         time_multiplier=50,
     )
 
