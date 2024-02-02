@@ -16,13 +16,9 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def node(chain_id, skeleton_key):
     block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
-    block_log_path = block_log_directory / "block_log"
-    timestamp_path = block_log_directory / "timestamp"
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
-    with open(timestamp_path, encoding="utf-8") as file:
-        timestamp = tt.Time.parse(file.read())
-
-    timestamp -= tt.Time.seconds(5)
+    timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
 
     init_node = tt.InitNode()
     init_node.config.private_key = skeleton_key
@@ -32,7 +28,7 @@ def node(chain_id, skeleton_key):
     init_node.run(
         time_offset=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
         wait_for_live=True,
-        replay_from=block_log_path,
+        replay_from=block_log,
         arguments=[f"--chain-id={chain_id}", f"--skeleton-key={skeleton_key}"],
     )
 
