@@ -74,9 +74,6 @@ def prepare_blocklog_with_witnesses_and_active_proposals() -> None:
     tt.logger.info(f"Final block_log head block number: {node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 
-    with open("timestamp", "w", encoding="utf-8") as file:
-        file.write(f"{timestamp}")
-
     node.close()
     node.block_log.copy_to(Path(__file__).parent.absolute())
 
