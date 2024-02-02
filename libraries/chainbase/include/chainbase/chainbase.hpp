@@ -425,7 +425,8 @@ namespace chainbase {
             "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
 
-        _item_additional_allocation += new_size - old_size;
+        _item_additional_allocation -= old_size;
+        _item_additional_allocation += new_size;
       }
 
       void remove( const value_type& obj ) {
@@ -564,21 +565,25 @@ namespace chainbase {
       void undo() {
         if( !enabled() ) return;
 
+        helpers::index_statistic_provider<index_type> provider;
         auto& head = _stack.back();
-
-        _item_additional_allocation = head.item_additional_allocation;
 
         for( auto& item : head.old_values ) {
           bool ok = false;
+          size_t old_size = 0;
+          size_t new_size = 0;
           auto itr = _indices.find( item.second.get_id() );
           if( itr != _indices.end() )
           {
+            old_size = provider.get_item_additional_allocation(*itr);
+            new_size = provider.get_item_additional_allocation(item.second);
             ok = _indices.modify( itr, [&]( value_type& v ) {
               v = std::move( item.second );
             });
           }
           else
           {
+            new_size = provider.get_item_additional_allocation(item.second);
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
@@ -588,6 +593,8 @@ namespace chainbase {
               "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: "
                 + get_type_name()));
           }
+          _item_additional_allocation -= old_size;
+          _item_additional_allocation += new_size;
         }
 
         for( const auto& id : head.new_ids )
@@ -600,17 +607,21 @@ namespace chainbase {
               std::to_string(id) + "in the index holding types: " + get_type_name()));
           }
 
-            _indices.erase( position );
+          const auto size = provider.get_item_additional_allocation(*position);
+          _indices.erase( position );
+          _item_additional_allocation -= size;
         }
         _next_id = head.old_next_id;
 
         for( auto& item : head.removed_values ) {
+          const auto new_size = provider.get_item_additional_allocation(item.second);
           bool ok = _indices.emplace( std::move( item.second ) ).second;
           if( !ok )
           {
             CHAINBASE_THROW_EXCEPTION(std::logic_error(
               "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
           }
+          _item_additional_allocation += new_size;
         }
 
         _stack.pop_back();
