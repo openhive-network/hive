@@ -22,9 +22,10 @@ def replayed_node() -> ReplayedNodeMaker:
         time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
+        block_log = tt.BlockLog(block_log_directory / "block_log")
+
         if absolute_start_time is None:
-            with open(block_log_directory / "timestamp", encoding="utf-8") as file:
-                absolute_start_time = tt.Time.parse(file.read())
+            absolute_start_time = block_log.get_head_block_time()
 
         absolute_start_time -= tt.Time.seconds(5)
 
@@ -34,7 +35,7 @@ def replayed_node() -> ReplayedNodeMaker:
 
         node = tt.InitNode()
         node.config.shared_file_size = "16G"
-        node.run(time_offset=time_offset, replay_from=block_log_directory / "block_log", timeout=timeout)
+        node.run(time_offset=time_offset, replay_from=block_log, timeout=timeout)
 
         return node
 

@@ -94,9 +94,6 @@ def prepare_block_log() -> None:
     tt.logger.info(f"head block number: {head_block_num}")
     tt.logger.info(f"head block timestamp: {timestamp}")
 
-    with open("timestamp", "w", encoding="utf-8") as file:
-        file.write(f"{timestamp}")
-
     node.close()
     node.block_log.copy_to(Path(__file__).parent)
 

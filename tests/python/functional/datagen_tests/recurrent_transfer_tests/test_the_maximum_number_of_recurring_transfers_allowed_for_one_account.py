@@ -23,12 +23,14 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     """
     block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
 
-    with open(block_log_directory / "timestamp", encoding="utf-8") as file:
-        timestamp = tt.Time.parse(file.read())
+    block_log = tt.BlockLog(block_log_directory / "block_log")
 
     # during this replay, before entering live mode node processes a lots of recurrent transfers, therefore the timeout has been increased.
     replayed_node: tt.InitNode = replayed_node(
-        block_log_directory, absolute_start_time=timestamp + tt.Time.days(2), time_multiplier=45, timeout=1200
+        block_log_directory,
+        absolute_start_time=block_log.get_head_block_time() + tt.Time.days(2),
+        time_multiplier=45,
+        timeout=1200,
     )
     wallet = tt.Wallet(attach_to=replayed_node)
 
