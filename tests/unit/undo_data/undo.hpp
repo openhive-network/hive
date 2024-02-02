@@ -17,7 +17,7 @@ namespace hive { namespace chain {
 
       chain::database& db;
       std::list< Object > old_values;
-      size_t old_additional_allocation = 0;
+      size_t initial_additional_allocation = 0;
 
     public:
 
@@ -26,6 +26,13 @@ namespace hive { namespace chain {
       }
 
       virtual ~undo_scenario(){}
+
+      template< typename Index >
+      void remember_additional_allocation()
+      {
+        const auto& index = db.get_index<Index>();
+        initial_additional_allocation = index.get_item_additional_allocation();
+      }
 
       //Proxy method for `database::create`.
       template< typename ... CALL_ARGS >
@@ -55,7 +62,6 @@ namespace hive { namespace chain {
       {
         old_values.clear();
 
-        old_additional_allocation = db.get_index<Index>().get_item_additional_allocation();
 
         const auto& idx = db.get_index< Index, by_id >();
         auto it = idx.begin();
@@ -79,9 +85,6 @@ namespace hive { namespace chain {
       {
         try
         {
-          const size_t new_additional_allocation = db.get_index<Index>().get_item_additional_allocation();
-          if (new_additional_allocation != old_additional_allocation)
-            return false;
 
           const auto& idx = db.get_index< Index, by_id >();
 
@@ -108,6 +111,19 @@ namespace hive { namespace chain {
         }
         FC_LOG_AND_RETHROW()
 
+        return true;
+      }
+
+      template< typename Index >
+      bool check_additional_allocation(size_t expected_additional_allocation)
+      {
+        const auto& index = db.get_index<Index>();
+        const size_t actual_additional_allocation = index.get_item_additional_allocation();
+        if (initial_additional_allocation + expected_additional_allocation != actual_additional_allocation)
+        {
+          ilog("Additional allocation mismatch, remembered ${initial}, current ${current}, expected ${expected}", ("initial", initial_additional_allocation)("current", actual_additional_allocation)("expected", expected_additional_allocation));
+          return false;
+        }
         return true;
       }
 
