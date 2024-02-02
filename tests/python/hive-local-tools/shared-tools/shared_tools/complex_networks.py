@@ -7,12 +7,15 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
 
 from .complex_networks_helper_functions import connect_sub_networks
+
+if TYPE_CHECKING:
+    import datetime
 
 last_used_port_number = 0
 
@@ -22,13 +25,8 @@ class NodesPreparer:
         pass
 
 
-def get_time_offset_from_file(file: Path) -> str:
-    with open(file, encoding="UTF-8") as file:
-        return file.read().strip()
-
-
-def get_relative_time_offset_from_timestamp(timestamp: str) -> str:
-    delta = tt.Time.now(serialize=False) - tt.Time.parse(timestamp)
+def get_relative_time_offset_from_timestamp(timestamp: datetime.datatime) -> str:
+    delta = tt.Time.now(serialize=False) - timestamp
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
     return f"-{delta.total_seconds():.3f}s"
 
@@ -101,11 +99,6 @@ def init_network(
                 f"current head block: {result['head_block_num']}"
             )
 
-    result = wallet.api.info()
-    head_block_num = result["head_block_number"]
-    timestamp = init_node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
-    tt.logger.info(f"head block timestamp: {timestamp}")
-
     # If a directory of `block_log` is given then it"s possible to save 2 files:
     # 1) "block_log" file that contains whole saved network
     # 2) "timestamp" file that contains information about time what should be set by `libfaketime` library
@@ -120,10 +113,6 @@ def init_network(
         init_node.close()
         init_node.block_log.copy_to(block_log_directory_name)
 
-        # Create "timestamp file"
-        with (block_log_directory_name / "timestamp").open(mode="w", encoding="UTF-8") as file_handle:
-            file_handle.write(f"{timestamp}")
-
 
 def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
     new_iso_date = tt.Time.serialize(tt.Time.parse(old_iso_date) - tt.Time.seconds(offset_in_seconds))
@@ -136,9 +125,9 @@ def run_networks(
     networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Iterable[str] | None = None
 ) -> None:
     if blocklog_directory is not None:
-        timestamp = get_time_offset_from_file(blocklog_directory / "timestamp")
-        time_offset = get_relative_time_offset_from_timestamp(timestamp)
         block_log = tt.BlockLog(blocklog_directory / "block_log")
+        timestamp = block_log.get_head_block_time()
+        time_offset = get_relative_time_offset_from_timestamp(timestamp)
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
         alternate_chain_spec_path = blocklog_directory / "alternate-chain-spec.json"
         arguments = (
@@ -192,7 +181,7 @@ def run_networks(
                                 time_offset=(
                                     modify_time_offset(timestamp, time_offsets[_node_num])
                                     if allow_external_time_offsets
-                                    else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S")
+                                    else tt.Time.serialize(timestamp, format_="@%Y-%m-%d %H:%M:%S")
                                 ),
                                 arguments=arguments,
                             ),
