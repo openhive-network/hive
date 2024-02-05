@@ -1357,6 +1357,33 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
   }
 }
 
+BOOST_AUTO_TEST_CASE( additional_allocations_after_clear_index )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: additional_allocations_after_clear_index" );
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto& index = db->get_mutable_index<account_index>();
+    const size_t initial_allocations = index.get_item_additional_allocation();
+
+    ACTOR_DEFAULT_FEE( alice )
+    generate_block();
+    ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+
+    vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+    generate_block();
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + 4*sizeof(hive::chain::delayed_votes_data));
+
+    index.clear();
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), 0);
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 template <typename T>
 std::string_view get_decoded_type_checksum(hive::chain::util::decoded_types_data_storage& dtds)
 {
