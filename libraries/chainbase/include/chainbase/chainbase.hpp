@@ -490,7 +490,10 @@ namespace chainbase {
 
       const index_type& indices()const { return _indices; }
 
-      void clear() { _indices.clear(); }
+      void clear() {
+        _indices.clear();
+        _item_additional_allocation = 0;
+      }
 
       class session {
         public:
