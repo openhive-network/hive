@@ -145,25 +145,28 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    ao.remember_additional_allocation< account_index >();
+    const auto& index = db->get_index<account_index>();
+    const size_t initial_allocations = index.get_item_additional_allocation();
+
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
     ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
-    BOOST_REQUIRE( ao.check_additional_allocation< account_index >(0) );
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
     BOOST_REQUIRE( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
-    BOOST_REQUIRE( ao.check_additional_allocation< account_index >(2*sizeof(hive::chain::delayed_votes_data)) );
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + 2*sizeof(hive::chain::delayed_votes_data));
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
-    BOOST_REQUIRE( ao.check_additional_allocation< account_index >(sizeof(hive::chain::delayed_votes_data)) );
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + sizeof(hive::chain::delayed_votes_data));
   }
   FC_LOG_AND_RETHROW()
 }
