@@ -35,3 +35,16 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
         time_offset="2022-12-22 10:47:05",
     )
     return api_node
+
+
+@pytest.fixture()
+def node_with_genesis_time() -> tt.InitNode:
+    node = tt.InitNode()
+    node.config.plugin.extend(["transaction_status_api", "condenser_api"])
+    node.run(time_offset="@2018-01-01 12:00:00")
+    return node
+
+
+@pytest.fixture()
+def wallet_with_genesis_time(node_with_genesis_time: tt.InitNode) -> tt.Wallet:
+    return tt.Wallet(attach_to=node_with_genesis_time, time_offset="@2018-01-01 12:00:00")

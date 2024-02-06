@@ -9,24 +9,26 @@ if TYPE_CHECKING:
     import test_tools as tt
 
 
-@run_for("testnet", enable_plugins=["transaction_status_api"])
-def test_find_existing_transaction(node: tt.ApiNode, wallet: tt.Wallet) -> None:
-    wallet.api.set_transaction_expiration(90)
-    transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
+def test_find_existing_transaction(node_with_genesis_time, wallet_with_genesis_time) -> None:
+    transaction = wallet_with_genesis_time.api.create_account("initminer", "alice", "{}", broadcast=False)
     transaction_id = transaction["transaction_id"]
-    node.api.network_broadcast.broadcast_transaction(trx=transaction)
+    node_with_genesis_time.api.condenser.broadcast_transaction(transaction)
 
-    assert node.api.transaction_status.find_transaction(transaction_id=transaction_id).status == "within_mempool"
-
-    node.wait_number_of_blocks(1)
-    assert node.api.database.is_known_transaction(id=transaction_id).is_known is True
     assert (
-        node.api.transaction_status.find_transaction(transaction_id=transaction_id).status == "within_reversible_block"
+        node_with_genesis_time.api.transaction_status.find_transaction(transaction_id=transaction_id).status
+        == "within_mempool"
     )
 
-    node.wait_for_irreversible_block()
+    node_with_genesis_time.wait_number_of_blocks(1)
+    assert node_with_genesis_time.api.database.is_known_transaction(id=transaction_id).is_known is True
     assert (
-        node.api.transaction_status.find_transaction(transaction_id=transaction_id).status
+        node_with_genesis_time.api.transaction_status.find_transaction(transaction_id=transaction_id).status
+        == "within_reversible_block"
+    )
+
+    node_with_genesis_time.wait_for_irreversible_block()
+    assert (
+        node_with_genesis_time.api.transaction_status.find_transaction(transaction_id=transaction_id).status
         == "within_irreversible_block"
     )
 
@@ -36,7 +38,7 @@ def test_find_existing_transaction(node: tt.ApiNode, wallet: tt.Wallet) -> None:
         transaction (after expiration) because it holds transactions for one hour before it flag it as expired. Instead
         of this is_known_transaction from database API is used.
     """
-    assert node.api.database.is_known_transaction(id=transaction_id).is_known is False
+    assert node_with_genesis_time.api.database.is_known_transaction(id=transaction_id).is_known is False
 
 
 @run_for("testnet", enable_plugins=["transaction_status_api"])
