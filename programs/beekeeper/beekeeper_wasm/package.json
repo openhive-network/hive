@@ -40,7 +40,8 @@
         "types": "./dist/bundle/node.d.ts",
         "default": "./dist/bundle/node.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "LICENSE.md",

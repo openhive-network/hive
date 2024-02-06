@@ -22,7 +22,7 @@
 
 #### Defined in
 
-src/interfaces.ts:1
+src/interfaces.ts:4
 
 ___
 
@@ -32,21 +32,31 @@ ___
 
 #### Defined in
 
-src/interfaces.ts:2
+src/interfaces.ts:5
+
+## Variables
+
+### DEFAULT\_STORAGE\_ROOT
+
+• `Const` **DEFAULT\_STORAGE\_ROOT**: ``"/storage_root"``
+
+#### Defined in
+
+src/web.ts:10
 
 ## Functions
 
 ### default
 
-▸ **default**(`options?`): `Promise`\<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
+▸ **default**(`...args`): `Promise`\<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
 
 Creates a Beekeeper instance able to own sessions and wallets
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `options` | `Partial`\<[`IBeekeeperOptions`](#interfacesibeekeeperoptionsmd)\> | options passed to the WASM Beekeeper |
+| Name | Type |
+| :------ | :------ |
+| `...args` | [options: Partial\<IBeekeeperOptions\>] |
 
 #### Returns
 
@@ -60,7 +70,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/detailed/beekeeper.web.ts:21
+node_modules/.pnpm/typescript@5.2.2/node_modules/typescript/lib/lib.es5.d.ts:365
 
 
 <a name="interfacesibeekeeperinfomd"></a>
@@ -79,7 +89,7 @@ Note: Time is in format: YYYY-MM-DDTHH:mm:ss
 
 #### Defined in
 
-src/interfaces.ts:31
+src/interfaces.ts:34
 
 ___
 
@@ -93,7 +103,7 @@ Note: Time is in format: YYYY-MM-DDTHH:mm:ss
 
 #### Defined in
 
-src/interfaces.ts:40
+src/interfaces.ts:43
 
 
 <a name="interfacesibeekeeperinstancemd"></a>
@@ -126,7 +136,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:232
+src/interfaces.ts:235
 
 ___
 
@@ -146,7 +156,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:239
+src/interfaces.ts:242
 
 
 <a name="interfacesibeekeeperoptionsmd"></a>
@@ -169,7 +179,7 @@ true
 
 #### Defined in
 
-src/interfaces.ts:58
+src/interfaces.ts:61
 
 ___
 
@@ -183,7 +193,7 @@ Defaults to "/storage_root" for web and "." for web
 
 #### Defined in
 
-src/interfaces.ts:51
+src/interfaces.ts:54
 
 ___
 
@@ -203,7 +213,7 @@ Activity is defined as any wallet command e.g. list-wallets
 
 #### Defined in
 
-src/interfaces.ts:68
+src/interfaces.ts:71
 
 
 <a name="interfacesibeekeepersessionmd"></a>
@@ -230,7 +240,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:219
+src/interfaces.ts:222
 
 ___
 
@@ -259,7 +269,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:190
+src/interfaces.ts:193
 
 ___
 
@@ -281,7 +291,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:169
+src/interfaces.ts:172
 
 ___
 
@@ -303,7 +313,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:178
+src/interfaces.ts:181
 
 ___
 
@@ -325,7 +335,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:210
+src/interfaces.ts:213
 
 ___
 
@@ -353,7 +363,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:201
+src/interfaces.ts:204
 
 
 <a name="interfacesibeekeeperunlockedwalletmd"></a>
@@ -380,7 +390,7 @@ Name of this wallet
 
 #### Defined in
 
-src/interfaces.ts:20
+src/interfaces.ts:23
 
 ## Methods
 
@@ -406,7 +416,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:12
+src/interfaces.ts:15
 
 ___
 
@@ -428,7 +438,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:121
+src/interfaces.ts:124
 
 ___
 
@@ -456,7 +466,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:90
+src/interfaces.ts:93
 
 ___
 
@@ -478,7 +488,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:79
+src/interfaces.ts:82
 
 ___
 
@@ -505,7 +515,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:100
+src/interfaces.ts:103
 
 ___
 
@@ -534,7 +544,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:112
+src/interfaces.ts:115
 
 
 <a name="interfacesibeekeeperwalletmd"></a>
@@ -561,7 +571,7 @@ Name of this wallet
 
 #### Defined in
 
-src/interfaces.ts:20
+src/interfaces.ts:23
 
 ___
 
@@ -573,7 +583,7 @@ Indicates if the wallet is unlocked. If the wallet is locked, this property will
 
 #### Defined in
 
-src/interfaces.ts:142
+src/interfaces.ts:145
 
 ## Methods
 
@@ -599,7 +609,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:12
+src/interfaces.ts:15
 
 ___
 
@@ -627,7 +637,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:134
+src/interfaces.ts:137
 
 
 <a name="interfacesiwalletmd"></a>
@@ -652,7 +662,7 @@ Name of this wallet
 
 #### Defined in
 
-src/interfaces.ts:20
+src/interfaces.ts:23
 
 ## Methods
 
@@ -674,7 +684,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:12
+src/interfaces.ts:15
 
 
 <a name="interfacesiwalletcreatedmd"></a>
@@ -691,7 +701,7 @@ Password used for unlocking your wallet
 
 #### Defined in
 
-src/interfaces.ts:158
+src/interfaces.ts:161
 
 ___
 
@@ -703,4 +713,4 @@ Unlocked, ready to use wallet
 
 #### Defined in
 
-src/interfaces.ts:151
+src/interfaces.ts:154
