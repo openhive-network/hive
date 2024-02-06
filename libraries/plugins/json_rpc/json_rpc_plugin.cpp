@@ -6,6 +6,7 @@
 #include <hive/protocol/misc_utilities.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <fc/log/logger_config.hpp>
 #include <fc/exception/exception.hpp>
@@ -22,6 +23,67 @@ using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 
 namespace detail
 {
+  class rpc_obfuscator
+  {
+    private:
+
+      const char* new_value = "*****";
+
+      using methods_type = std::map<std::string, std::string>;
+      methods_type methods;
+
+      void init()
+      {
+        methods.insert( std::make_pair( "beekeeper_api.unlock",     "password" ) );
+        methods.insert( std::make_pair( "beekeeper_api.import_key", "wif_key" ) );
+        methods.insert( std::make_pair( "beekeeper_api.remove_key", "password" ) );
+      }
+
+    public:
+
+      rpc_obfuscator()
+      {
+        init();
+      }
+
+      bool obfuscate( const fc::variant& msg, const std::string& method_name, const fc::variant& args )
+      {
+        try
+        {
+          auto _found = methods.find( method_name );
+          if( _found != methods.end() )
+          {
+            if( args.is_object() )
+            {
+              const auto& _args = args.get_object();
+              if( _args.contains( _found->second.c_str() ) )
+              {
+                const auto& _key_value = _args[ _found->second ].as<std::string>();
+
+                auto _msg = fc::json::to_string( msg );
+                auto _idx = _msg.find( _key_value );
+                if( _idx != std::string::npos )
+                {
+                  _msg.replace( _idx, _key_value.size(), new_value );
+
+                  fc::variant message( std::move( _msg ) );
+                  ddump( (message) );
+
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        catch(...)
+        {
+          ilog("RPC obfuscation failed");
+        }
+
+        return false;
+      }
+  };
+
   struct json_rpc_error
   {
     json_rpc_error()
@@ -150,6 +212,8 @@ namespace detail
       map< string, map< string, api_method_signature > > _method_sigs;
     } data, proxy_data;
 
+    detail::rpc_obfuscator obfuscator;
+
     public:
       json_rpc_plugin_impl( appbase::application& app );
       ~json_rpc_plugin_impl();
@@ -162,7 +226,7 @@ namespace detail
       api_method* find_api_method( const std::string& api, const std::string& method );
       api_method* process_params( string method, const fc::variant_object& request, fc::variant& func_args, string* method_name );
       void rpc_id( const fc::variant_object& request, json_rpc_response& response );
-      void rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response );
+      bool rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response );
       json_rpc_response rpc( const fc::variant& message );
 
       void initialize();
@@ -337,8 +401,10 @@ namespace detail
     }
   }
 
-  void json_rpc_plugin_impl::rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response )
+  bool json_rpc_plugin_impl::rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response )
   {
+    bool _result = false;
+
     STATSD_START_TIMER( "jsonrpc", "overhead", "rpc_jsonrpc", 1.0f, theApp );
     if( request.contains( "jsonrpc" ) && request[ "jsonrpc" ].is_string() && request[ "jsonrpc" ].as_string() == "2.0" )
     {
@@ -358,6 +424,7 @@ namespace detail
             try
             {
               call = process_params( method, request, func_args, &method_name );
+              _result = obfuscator.obfuscate( request, method_name, func_args );
             }
             catch( fc::assert_exception& e )
             {
@@ -447,13 +514,21 @@ namespace detail
     }
 
   log(request, response);
+
+  return _result;
   }
 
   json_rpc_response json_rpc_plugin_impl::rpc( const fc::variant& message )
   {
     json_rpc_response response;
 
-    ddump( (message) );
+    bool _logged = false;
+
+    BOOST_SCOPE_EXIT(&_logged, &message)
+    {
+      if( !_logged )
+        ddump( (message) );
+    } BOOST_SCOPE_EXIT_END
 
     STATSD_START_TIMER( "jsonrpc", "overhead", "total", 1.0f, theApp );
 
@@ -467,7 +542,7 @@ namespace detail
       try
       {
         if( !response.error.valid() )
-          rpc_jsonrpc( request, response );
+          _logged = rpc_jsonrpc( request, response );
       }
       catch( fc::exception& e )
       {
