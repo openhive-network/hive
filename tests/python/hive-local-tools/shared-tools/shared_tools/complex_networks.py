@@ -114,8 +114,8 @@ def init_network(
         init_node.block_log.copy_to(block_log_directory_name)
 
 
-def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
-    new_iso_date = tt.Time.serialize(tt.Time.parse(old_iso_date) - tt.Time.seconds(offset_in_seconds))
+def modify_time_offset(old_iso_date: datetime, offset_in_seconds: int) -> str:
+    new_iso_date = old_iso_date - tt.Time.seconds(offset_in_seconds)
     tt.logger.info(f"old date: {old_iso_date} new date(after time offset): {new_iso_date}")
 
     return get_relative_time_offset_from_timestamp(new_iso_date)
