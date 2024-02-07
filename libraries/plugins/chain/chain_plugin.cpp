@@ -1188,13 +1188,32 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
+
+  bool good_bye = false;
+
+  auto right_now = fc::time_point::now();
+  auto state_time = db.head_block_time();
+  if (state_time > right_now)
+  {
+    ilog( "Shutting down node due to time travel detected - state is from future (${state_time} vs ${right_now}).",
+          (state_time)(right_now) );
+    good_bye = true;
+  }
+
   const bool exit_at_block_reached = exit_at_block > 0 && exit_at_block == db.head_block_num();
   if (this->exit_before_sync || exit_at_block_reached)
   {
     ilog("Shutting down node without performing any action on user request");
+    good_bye = true;
+  }
+
+  if (good_bye)
+  {
     theApp.kill();
     return;
-  }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
+  }
+  else 
+    ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
   this->theApp.notify_status("chain API ready");
