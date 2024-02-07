@@ -588,6 +588,7 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
     generate_block();
 
     fc::thread test_thread;
+    fc::thread sender_thread;
     test_thread.async( [&]()
     {
       const int ARTICLES = 10;
@@ -610,7 +611,7 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
       {
         //expiration and tapos are updated once every 1000 transactions in main test loop
         tx.operations.emplace_back( op );
-        this->schedule_transaction( tx );
+        sender_thread.async( [this,tx]() { this->schedule_transaction( tx ); } );
         tx.clear();
       };
       auto fill = []( std::string& str, size_t size )
