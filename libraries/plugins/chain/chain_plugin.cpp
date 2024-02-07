@@ -1258,17 +1258,36 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
+
+  bool good_bye = false;
+
+  auto right_now_plus_margin = fc::time_point_sec(fc::time_point::now()) + allow_future_time;
+  auto state_time = db.head_block_time();
+  if (state_time != HIVE_GENESIS_TIME && // GENESIS (default value) is obiously allowed to be in future
+      state_time > right_now_plus_margin) // also cut some sclack for compatibility with check_time_in_block
+  {
+    ilog( "Shutting down node due to time travel detected - state is from future (${state_time} vs ${right_now_plus_margin}).",
+          (state_time)(right_now_plus_margin) );
+    good_bye = true;
+  }
+
   const bool exit_at_block_reached = exit_at_block > 0 && exit_at_block == db.head_block_num();
   if (this->exit_before_sync || exit_at_block_reached)
   {
     ilog("Shutting down node without performing any action on user request");
+    good_bye = true;
+  }
+
+  if (good_bye)
+  {
     theApp.kill();
     return;
   }
-
-  log_wrapper->reopen_for_writing();
-
-  ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
+  else
+  {
+    log_wrapper->reopen_for_writing();
+    ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
+  }
 
   on_sync();
   start_write_processing();
