@@ -3,6 +3,8 @@
 
 #include "../db_fixture/hived_fixture.hpp"
 
+#include "../utils/beekeeper_mgr.hpp"
+
 #include <core/beekeeper_wallet_manager.hpp>
 
 #include <beekeeper/session_manager.hpp>
@@ -10,6 +12,9 @@
 #include <beekeeper/beekeeper_wallet_api.hpp>
 
 #include <boost/scope_exit.hpp>
+
+#include <chrono>
+#include <thread>
 
 using namespace hive::chain;
 
@@ -20,20 +25,167 @@ using beekeeper_wallet_api      = beekeeper::beekeeper_wallet_api;
 
 BOOST_FIXTURE_TEST_SUITE( beekeeper_api_tests, json_rpc_database_fixture )
 
-std::shared_ptr<beekeeper_wallet_manager> create_wallet_ptr( appbase::application& app, const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
+BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
 {
-  return std::shared_ptr<beekeeper_wallet_manager>( new beekeeper_wallet_manager( std::make_shared<session_manager>( "127.0.0.1:666" ), std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, "127.0.0.1:666" ),
-                                    cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit, std::move( method ) ) );
+  try
+  {
+    auto _sleep = []( uint32_t delay )
+    {
+      std::this_thread::sleep_for( std::chrono::milliseconds( delay ) );
+    };
+
+    struct wallet_data
+    {
+      std::string name;
+      std::string password;
+    };
+
+    struct wallet_status
+    {
+      std::string name;
+      bool unlocked = false;
+    };
+
+    struct cmp
+    {
+        bool operator()( const wallet_status& a, const wallet_status& b ) const
+        {
+          return a.name < b.name;
+        }
+    };
+    using set_type = std::set<wallet_status, cmp>;
+
+    std::vector<wallet_data> _wallets{ {"w0"}, {"w1"}, {"w2"} };
+
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    uint64_t _interval = 500;
+
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
+
+    auto _list_created_wallets_checker = [&_api]( const std::string& token, const set_type& unlock_statuses )
+    {
+      std::vector<beekeeper::wallet_details> _wallets = _api.list_created_wallets( beekeeper::list_wallets_args{ token } ).wallets;
+      BOOST_REQUIRE( _wallets.size() == unlock_statuses.size() );
+
+      for( auto& item : _wallets )
+      {
+        auto _found = unlock_statuses.find( { item.name } );
+        BOOST_REQUIRE( _found != unlock_statuses.end() );
+        BOOST_REQUIRE_EQUAL( item.unlocked, _found->unlocked );
+      }
+    };
+
+    //************preparation************
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    for( size_t i = 0; i < _wallets.size(); ++i )
+    {
+      auto _password = _api.create( beekeeper::create_args{ _token, _wallets[i].name } ).password;
+      BOOST_REQUIRE( !_password.empty() );
+      _wallets[i].password = _password;
+    }
+    _list_created_wallets_checker( _token, { {"w0", true}, {"w1", true}, {"w2", true} } );
+    //************end of preparation************
+
+    {
+      BOOST_TEST_MESSAGE( "lock_all" );
+      _api.lock_all( beekeeper::lock_all_args{ _token } );
+      _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
+    }
+    {
+      {
+        BOOST_TEST_MESSAGE( "sleep: _interval + 5" );
+        _sleep(_interval + 5 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[0]" );
+        _api.unlock( beekeeper::unlock_args{ _token, _wallets[0].name, _wallets[0].password } );
+        _list_created_wallets_checker( _token, { {"w0", true}, {"w1", false}, {"w2", false} } );
+      }
+      {
+        BOOST_TEST_MESSAGE( "sleep: " + std::to_string( _interval / 2 ) );
+        _sleep( _interval / 2 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[1]" );
+        _api.unlock( beekeeper::unlock_args{ _token, _wallets[1].name, _wallets[1].password } );
+        _list_created_wallets_checker( _token, { {"w0", true}, {"w1", true}, {"w2", false} } );
+      }
+      {
+        BOOST_TEST_MESSAGE( "sleep: 5" );
+        _sleep( 5 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[2]" );
+        _api.unlock( beekeeper::unlock_args{ _token, _wallets[2].name, _wallets[2].password } );
+        _list_created_wallets_checker( _token, { {"w0", true}, {"w1", true}, {"w2", true} } );
+      }
+    }
+    {
+      BOOST_TEST_MESSAGE( "lock_all" );
+      _api.lock_all( beekeeper::lock_all_args{ _token } );
+      _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
+    }
+    {
+      {
+        BOOST_TEST_MESSAGE( "sleep: " + std::to_string( _interval + 5 ) );
+        _sleep(_interval + 5 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[0]" );
+        try
+        {
+          _api.unlock( beekeeper::unlock_args{ _token, _wallets[0].name, _wallets[1].password } );
+        }
+        catch( const fc::exception& e )
+        {
+          BOOST_TEST_MESSAGE( e.to_string() );
+          BOOST_REQUIRE( e.to_string().find( "AES error:error during aes" ) != std::string::npos );
+        }
+        _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
+      }
+      {
+        BOOST_TEST_MESSAGE( "sleep: " + std::to_string( _interval / 2 ) );
+        _sleep( _interval / 2 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[1]" );
+        try
+        {
+          _api.unlock( beekeeper::unlock_args{ _token, _wallets[1].name, _wallets[1].password } );
+        }
+        catch( const fc::exception& e )
+        {
+          BOOST_TEST_MESSAGE( e.to_string() );
+          BOOST_REQUIRE( e.to_string().find( "unlock is not accessible" ) != std::string::npos );
+        }
+        _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
+      }
+      {
+        BOOST_TEST_MESSAGE( "sleep: 5" );
+        _sleep( 5 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[2]" );
+        try
+        {
+          _api.unlock( beekeeper::unlock_args{ _token, _wallets[2].name, _wallets[2].password } );
+        }
+        catch( const fc::exception& e )
+        {
+          BOOST_TEST_MESSAGE( e.to_string() );
+          BOOST_REQUIRE( e.to_string().find( "unlock is not accessible" ) != std::string::npos );
+        }
+        _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
+      }
+      {
+        BOOST_TEST_MESSAGE( "sleep: " + std::to_string( _interval / 2 ) );
+        _sleep( _interval / 2 );
+        BOOST_TEST_MESSAGE( "unlock: _wallets[1]" );
+        _api.unlock( beekeeper::unlock_args{ _token, _wallets[1].name, _wallets[1].password } );
+        _list_created_wallets_checker( _token, { {"w0", false}, {"w1", true}, {"w2", false} } );
+      }
+    }
+  } FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
 {
   try
   {
-    if( fc::exists("w0.wallet") )
-      fc::remove("w0.wallet");
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
-    beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 3 ), theApp );
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
 
     std::string _wallet_name                = "w0";
     std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
@@ -208,7 +360,10 @@ struct password
 BOOST_AUTO_TEST_CASE(beekeeper_api_sessions_create_close)
 {
   try {
-    beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 64, [](){} ), theApp );
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){} ), theApp );
 
     std::srand( time(0) );
 
@@ -301,10 +456,10 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
 {
   try
   {
-    if( fc::exists("w0.wallet") )
-      fc::remove("w0.wallet");
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
-    beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 3, [](){} ), theApp );
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){} ), theApp );
 
     password _password;
 
@@ -404,6 +559,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
 {
   try
   {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
     const uint32_t _nr_threads = 10;
 
     std::vector<std::string> _wallet_names;
@@ -424,7 +582,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
     for( auto& wallet_name : _wallet_names )
       _delete_wallet_file( wallet_name );
 
-    beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 3 ), theApp );
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
 
     std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
 

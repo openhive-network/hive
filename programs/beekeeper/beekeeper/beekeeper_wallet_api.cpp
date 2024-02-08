@@ -101,8 +101,17 @@ DEFINE_API_IMPL( beekeeper_api_impl, unlock )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  if( ex_api.enabled() )
-    _wallet_mgr->unlock( args.token, args.wallet_name, args.password );
+  if( ex_api.unlock_allowed() )
+  {
+    try
+    {
+      _wallet_mgr->unlock( args.token, args.wallet_name, args.password );
+    }
+    FC_CAPTURE_CALL_LOG_AND_RETHROW(([this]()
+      {
+        ex_api.was_error();
+      }), ());
+  }
   else
     FC_ASSERT(false, "unlock is not accessible");
 

@@ -1,31 +1,43 @@
 #include<beekeeper/extended_api.hpp>
 
+#include <fc/log/logger.hpp>
+
 #include<chrono>
 #include<mutex>
 
 namespace beekeeper {
 
-  extended_api::extended_api(): start( get_milliseconds() )
+  extended_api::extended_api(): error_status( false ), start( get_milliseconds() )
   {
   }
 
-  bool extended_api::enabled()
+  extended_api::status extended_api::unlock_allowed()
   {
+    std::unique_lock<std::mutex> _lock( mtx );
+
+    if( !error_status.load() )
+    {
+      return enabled_without_error;
+    }
+
     std::atomic<uint64_t> _end( get_milliseconds() );
 
-    if( _end.load() > start.load() && _end.load() - start.load() > interval )
+    if( enabled_impl( _end ) )
     {
-      std::unique_lock<std::mutex> _lock( mtx );
-
-      if( _end.load() > start.load() && _end.load() - start.load() > interval )
-      {
-        start.store( get_milliseconds() );
-        return true;
-      }
-
-      return false;
+      error_status.store( false );
+      return enabled_after_interval;
     }
-    return false;
+
+    return disabled;
+  }
+
+  void extended_api::was_error()
+  {
+    if( error_status.load() == false )
+    {
+      error_status.store( true );
+      start.store( get_milliseconds() );
+    }
   }
 
 }
