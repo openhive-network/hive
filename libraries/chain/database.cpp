@@ -175,6 +175,9 @@ void database::open( const open_args& args )
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
     load_state_initial_data(args);
+
+    if (!args.load_snapshot)
+      verify_match_of_blockchain_configuration();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
@@ -199,9 +202,6 @@ void database::initialize_state_independent_data(const open_args& args, const bo
       init_genesis();
     });
   }
-
-  if (!args.load_snapshot)
-    verify_match_of_blockchain_configuration(false);
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
   if( _benchmark_dumper.is_enabled() &&
