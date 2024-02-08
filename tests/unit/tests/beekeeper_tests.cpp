@@ -1,5 +1,8 @@
 #ifdef IS_TEST_NET
 
+
+#include "../utils/beekeeper_mgr.hpp"
+
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/transaction.hpp>
 
@@ -25,62 +28,15 @@
 
 using public_key_type           = beekeeper::public_key_type;
 using private_key_type          = beekeeper::private_key_type;
-using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
 using beekeeper_api             = beekeeper::beekeeper_api;
 using wallet_data               = beekeeper::wallet_data;
-using beekeeper_wallet          = beekeeper::beekeeper_wallet;
-using session_manager           = beekeeper::session_manager;
-using beekeeper_instance        = beekeeper::beekeeper_instance;
-
-struct beekeeper_mgr
-{
-  fc::path dir;
-
-  beekeeper_mgr()
-    : dir( fc::current_path() / "beekeeper-storage" )
-  {
-    fc::create_directories( dir );
-  }
-
-  void remove_wallets()
-  {
-    boost::filesystem::directory_iterator _end_itr;
-
-    for( boost::filesystem::directory_iterator itr( dir ); itr != _end_itr; ++itr )
-      boost::filesystem::remove_all( itr->path() );
-  }
-
-  void remove_wallet( const std::string& wallet_name )
-  {
-    try
-    {
-      auto _wallet_name = wallet_name + ".wallet";
-      fc::remove( dir / _wallet_name );
-    }
-    catch(...)
-    {
-    }
-  }
-
-  bool exists_wallet( const std::string& wallet_name )
-  {
-    auto _wallet_name = wallet_name + ".wallet";
-    return fc::exists( dir / _wallet_name );
-  }
-
-  beekeeper_wallet_manager create_wallet( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
-  {
-    return beekeeper_wallet_manager( std::make_shared<session_manager>( "" ), std::make_shared<beekeeper_instance>( app, dir, "" ),
-                                      dir, cmd_unlock_timeout, cmd_session_limit, std::move( method ) );
-  }
-};
 
 BOOST_AUTO_TEST_SUITE(beekeeper_tests)
 
 /// Test creating the wallet
 BOOST_AUTO_TEST_CASE(wallet_test)
 { try {
-  beekeeper_mgr b_mgr;
+  test_utils::beekeeper_mgr b_mgr;
   b_mgr.remove_wallets();
 
   beekeeper_wallet wallet;
@@ -132,7 +88,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
 BOOST_AUTO_TEST_CASE(wallet_name_test)
 { try {
-  beekeeper_mgr b_mgr;
+  test_utils::beekeeper_mgr b_mgr;
   b_mgr.remove_wallets();
 
   appbase::application app;
@@ -167,7 +123,7 @@ BOOST_AUTO_TEST_CASE(wallet_name_test)
 /// Test wallet manager
 BOOST_AUTO_TEST_CASE(wallet_manager_test)
 { try {
-  beekeeper_mgr b_mgr;
+  test_utils::beekeeper_mgr b_mgr;
   b_mgr.remove_wallets();
 
   appbase::application app;
@@ -303,7 +259,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     appbase::application app;
@@ -353,7 +309,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
 BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
@@ -425,7 +381,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
 BOOST_AUTO_TEST_CASE(wallet_manager_info)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
@@ -484,7 +440,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_info)
 BOOST_AUTO_TEST_CASE(wallet_manager_session_limit)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
@@ -536,7 +492,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_session_limit)
 BOOST_AUTO_TEST_CASE(wallet_manager_close)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
@@ -636,7 +592,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
 BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     {
@@ -723,7 +679,7 @@ std::string get_wasm_data( const std::string& json )
 BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     beekeeper_api _obj( { "--wallet-dir", b_mgr.dir.string() } );
@@ -930,7 +886,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     {
@@ -958,34 +914,71 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
 BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    beekeeper::extended_api _api;
+    uint64_t _interval = 10;
+    beekeeper::extended_api _api( _interval );
 
     const uint32_t _nr_threads = 10;
 
-    std::vector<std::shared_ptr<std::thread>> threads;
+    auto _unlock_in_threads = [&]()
+    {
+      std::vector<std::shared_ptr<std::thread>> threads;
 
-    auto _start = std::chrono::high_resolution_clock::now();
+      auto _start = std::chrono::high_resolution_clock::now();
 
-    for( size_t i = 0; i < _nr_threads; ++i )
-      threads.emplace_back( std::make_shared<std::thread>( [&]()
+      auto _calculate_interval = [&_start]( const std::string& message = "" )
       {
-        while( !_api.enabled() )
+        auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start );
+        BOOST_TEST_MESSAGE( ( message.size() ? message : " " ) + std::to_string( _duration.count() ) + " [ms]" );
+
+        return _duration;
+      };
+
+      size_t _cnt = 0;
+
+      for( size_t i = 0; i < _nr_threads; ++i )
+        threads.emplace_back( std::make_shared<std::thread>( [&]()
         {
-        }
-      } ) );
+          while( _cnt < _nr_threads )
+          {
+            _api.was_error();
+          }
+        }) );
 
-    for( auto& thread : threads )
-      thread->join();
+      std::this_thread::sleep_for( std::chrono::milliseconds(10) );
 
-    auto _stop = std::chrono::high_resolution_clock::now();
+      for( size_t i = 0; i < _nr_threads; ++i )
+        threads.emplace_back( std::make_shared<std::thread>( [&]( size_t number_thread )
+        {
+          while( _api.unlock_allowed() != beekeeper::extended_api::enabled_after_interval )
+          {
+          }
+          _calculate_interval( "*****thread: " + std::to_string( number_thread ) + " *****" );
+          ++_cnt;
+        }, i ) );
 
-    auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( _stop - _start );
+      for( auto& thread : threads )
+        thread->join();
 
-    BOOST_TEST_MESSAGE( std::to_string( _duration.count() ) + " [ms]" );
-    BOOST_REQUIRE( _duration.count() >= 5000 );
+      return _calculate_interval();
+    };
+
+    const uint32_t _nr_attempts = 20;
+    for( uint32_t i = 0; i < _nr_attempts; ++i )
+    {
+      auto _duration = _unlock_in_threads();
+      if( _duration.count() >= (int64_t)( _interval * _nr_threads ) )
+      {
+        BOOST_TEST_MESSAGE("********unlocks work correctly in many threads. Finished: (" + std::to_string(i) + ")");
+        break;
+      }
+      else
+      {
+        BOOST_TEST_MESSAGE("********unlocks didn't work correctly in many threads. Repeating: (" + std::to_string(i) + ")");
+      }
+    }
 
   } FC_LOG_AND_RETHROW()
 }
@@ -1028,7 +1021,7 @@ class timeout_simulation
     {
       BOOST_TEST_MESSAGE("*********************" + name + "*********************");
 
-      beekeeper_mgr b_mgr;
+      test_utils::beekeeper_mgr b_mgr;
       b_mgr.remove_wallets();
 
       simulation _sim;
@@ -1122,7 +1115,7 @@ std::vector<beekeeper::wallet_details> timeout_simulation<beekeeper_wallet_manag
 
 class wasm_simulation_executor
 {
-  beekeeper_mgr b_mgr;
+  test_utils::beekeeper_mgr b_mgr;
   timeout_simulation<beekeeper_api> sim;
 
   public:
@@ -1142,7 +1135,7 @@ class wasm_simulation_executor
 
 class simulation_executor
 {
-  beekeeper_mgr b_mgr;
+  test_utils::beekeeper_mgr b_mgr;
   timeout_simulation<beekeeper_wallet_manager> sim;
 
   appbase::application app;
@@ -1266,7 +1259,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_refresh_timeout)
 
     auto _refresh_timeout_simulation = []( action_type&& action, action_type&& aux_action = action_type() )
     {
-      beekeeper_mgr b_mgr;
+      test_utils::beekeeper_mgr b_mgr;
       b_mgr.remove_wallets();
 
       beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
@@ -1312,7 +1305,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 
     auto _refresh_timeout_simulation = []( action_type&& action, action_type&& aux_action = action_type() )
     {
-      beekeeper_mgr b_mgr;
+      test_utils::beekeeper_mgr b_mgr;
       b_mgr.remove_wallets();
 
       const std::string _host = "";
@@ -1347,7 +1340,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
@@ -1394,7 +1387,7 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
 BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
 {
   try {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
@@ -1445,7 +1438,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
 {
   try
   {
-    beekeeper_mgr b_mgr;
+    test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
     const std::string _host = "";
