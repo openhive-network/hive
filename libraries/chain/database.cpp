@@ -6320,6 +6320,14 @@ void database::apply_hardfork( uint32_t hardfork )
     //hardfork code with assumption of nonzero balance
     consolidate_treasury_balance();
   }
+  // HF 24 updates blockchain configuration.
+  if (hardfork == HIVE_HARDFORK_1_24)
+  {
+    const auto current_blockchain_config = protocol::get_config(get_treasury_name(), get_chain_id());
+    fc::variant current_blockchain_config_as_variant;
+    fc::to_variant(current_blockchain_config, current_blockchain_config_as_variant);
+    set_blockchain_config(fc::json::to_string(current_blockchain_config_as_variant));
+  }
 
   post_push_virtual_operation( hardfork_vop, _op_in_trx );
 }
