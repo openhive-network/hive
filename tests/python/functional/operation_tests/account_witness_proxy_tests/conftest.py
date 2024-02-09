@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 import test_tools as tt
-from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 from hive_local_tools.functional.python.operation import Account, Proposal
 
 from .block_log.generate_block_log import WITNESSES
@@ -26,7 +25,7 @@ def node() -> tt.InitNode:
     node.run(
         time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
         replay_from=block_log,
-        arguments=["--alternate-chain-spec", str(block_log_directory / ALTERNATE_CHAIN_JSON_FILENAME)],
+        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(block_log_directory),
     )
     return node
 
