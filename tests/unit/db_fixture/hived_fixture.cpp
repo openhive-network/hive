@@ -102,21 +102,19 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
         }
         using multi_line_t = config_arg_override_t::value_type::second_type;
         // For non-plugin overrides add default string descriptions.
-        for( const auto& override : default_overrides )
+        for( const auto& [name, _value] : default_overrides )
         {
-          // override.first contains name of the option, e.g. "log-appender"
-          if( cfg_descriptions.find_nothrow( key.c_str(), false /*approx*/ ) == nullptr )
+          if( cfg_descriptions.find_nothrow( name.c_str(), false /*approx*/ ) == nullptr )
           {
             cfg_descriptions.add_options()
-              ( override.first.c_str(), bpo::value< multi_line_t >() );
+              ( name.c_str(), bpo::value< multi_line_t >() );
           }
         }
         // 2. Add the options actual "parsed" values.
         bpo::parsed_options the_options( &cfg_descriptions );
-        for( const auto& override : default_overrides )
+        for( const auto& [name, value] : default_overrides )
         {
-          bpo::option opt( override.first, override.second );
-          the_options.options.push_back( opt );
+          the_options.options.emplace_back( name, value );
         }
         // 3. Use the only way to add options to variables_map.
         bpo::store( the_options, option_overrides );
