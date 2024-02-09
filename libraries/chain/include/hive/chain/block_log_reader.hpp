@@ -30,6 +30,9 @@ namespace hive { namespace chain {
     virtual std::shared_ptr<full_block_type> fetch_block_by_id( 
       const block_id_type& id ) const override; 
 
+    virtual std::shared_ptr<full_block_type> get_block_by_number(
+      uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
+
     virtual bool is_known_block( const block_id_type& id ) const override;
 
     virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
