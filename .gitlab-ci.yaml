@@ -246,8 +246,8 @@ mirrornet_replay_test:
     - cd "$BINARIES_DIR"
   script:
     - echo "Generating artifacts file for block_log."
-    - time ./hived
-      -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
+    - time ./block_log_util
+      generate-artifacts --block-log "$MIRRORNET_SOURCE_5M_DATA_DIR/block_log"
     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
     - time ./compress_block_log
       -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
