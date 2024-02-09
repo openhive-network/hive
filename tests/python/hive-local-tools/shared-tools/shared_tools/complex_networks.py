@@ -124,18 +124,17 @@ def modify_time_offset(old_iso_date: datetime, offset_in_seconds: int) -> str:
 def run_networks(
     networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Iterable[str] | None = None
 ) -> None:
+    arguments = []
+    alternate_chain_spec: tt.AlternateChainSpecs | None = None
     if blocklog_directory is not None:
         block_log = tt.BlockLog(blocklog_directory / "block_log")
         timestamp = block_log.get_head_block_time()
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
-        alternate_chain_spec_path = blocklog_directory / "alternate-chain-spec.json"
-        arguments = (
-            ["--alternate-chain-spec", str(alternate_chain_spec_path)] if alternate_chain_spec_path.is_file() else []
-        )
+        if (acs_path := blocklog_directory / "alternate-chain-spec.json").is_file():
+            alternate_chain_spec = tt.AlternateChainSpecs.parse_file(acs_path)
     else:
         tt.logger.info("'block_log' directory hasn't been defined")
-        arguments = []
 
     tt.logger.info("Running nodes...")
 
@@ -164,7 +163,12 @@ def run_networks(
             node.config.log_logger = (
                 '{"name":"default","level":"info","appender":"stderr"}{"name":"p2p","level":"info","appender":"p2p"}'
             )
-            node.run(replay_from=block_log, exit_before_synchronization=True, arguments=arguments)
+            node.run(
+                replay_from=block_log,
+                exit_before_synchronization=True,
+                arguments=arguments,
+                alternate_chain_specs=alternate_chain_spec,
+            )
         cnt_node += 1
 
     for network in networks:
