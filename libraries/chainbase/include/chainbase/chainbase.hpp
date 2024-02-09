@@ -337,6 +337,12 @@ namespace chainbase {
         return _item_additional_allocation;
       }
 
+      void recalculate_additional_allocation() {
+        helpers::index_statistic_provider<index_type> provider;
+        helpers::index_statistic_info stats = provider.gather_statistics(_indices, /* onlyStaticInfo */ false);
+        _item_additional_allocation = stats._item_additional_allocation;
+      }
+
       /**
         * Construct a new element in the multi_index_container.
         * Set the ID to the next available ID, then increment _next_id and fire off on_create().
@@ -943,6 +949,7 @@ namespace chainbase {
         generic_index_snapshot_loader<BaseIndex> loader(_base, reader);
         auto next_id = loader.load();
         _base.store_next_id(next_id);
+        _base.recalculate_additional_allocation();
       }
 
     private:
