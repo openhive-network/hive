@@ -45,6 +45,16 @@ std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_number( uint32
   } FC_LOG_AND_RETHROW()
 }
 
+std::shared_ptr<full_block_type> block_log_reader::get_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds ) const
+{
+  // For the time being we'll silently return empty pointer for requests of future blocks.
+  // FC_ASSERT( block_num <= head_block_num(), "Got no block with number greater than ${num}.", ("num", head_block_num()) );
+  std::shared_ptr<full_block_type> blk = fetch_block_by_number( block_num, wait_for_microseconds );
+  FC_ASSERT( blk, "Internal error, block ${block_num} should have been found in block log file", (block_num) );
+  return blk;
+}
+
 std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_id( 
   const block_id_type& id ) const
 {
