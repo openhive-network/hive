@@ -56,6 +56,14 @@ std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
+std::shared_ptr<full_block_type> fork_db_block_reader::get_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds ) const
+{
+  FC_ASSERT( block_num <= head_block_num(), "Got no block with number greater than ${num}.", ("num", head_block_num()) );
+  std::shared_ptr<full_block_type> blk = fetch_block_by_number( block_num, wait_for_microseconds );
+  FC_ASSERT( blk, "Internal error, Block ${block_num} should have been found in fork db or block log file.", (block_num) );
+  return blk;
+}
 
 bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 {

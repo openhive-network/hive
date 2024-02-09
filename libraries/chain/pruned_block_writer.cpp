@@ -159,6 +159,26 @@ std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_number( uin
   } FC_LOG_AND_RETHROW()
 }
 
+std::shared_ptr<full_block_type> pruned_block_writer::get_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds ) const
+{
+  FC_ASSERT( block_num <= head_block_num(),
+             "Got no block with number greater than ${num}.", ("num", head_block_num()) );
+
+  const auto& idx = _db.get_index< full_block_index, by_num >();
+  const full_block_object& oldest_block_object = *( idx.begin() );
+
+  FC_ASSERT( block_num >= oldest_block_object.get_num(),
+             "Block ${num} has been pruned (oldest stored block is ${old}). Consider disabling pruning or increasing its depth (currently ${depth}).",
+             ("num", block_num)("old", oldest_block_object.get_num())("depth", _stored_block_number) );
+
+  std::shared_ptr<full_block_type> blk = fetch_block_by_number( block_num, wait_for_microseconds );
+
+  FC_ASSERT( blk, "Internal error, block ${block_num} was not found although expected.", (block_num) );
+
+  return blk;
+}
+
 std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_id( 
   const block_id_type& id ) const
 {
