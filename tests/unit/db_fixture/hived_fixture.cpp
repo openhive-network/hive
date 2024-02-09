@@ -92,22 +92,27 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
       {
         // In order to create boost::variables_map with overrides we need to:
         // 1. Create the options descriptions (definitions), so that they will be recognized later.
-        bpo::options_description descriptions, dummy;
+        bpo::options_description cfg_descriptions, cli_descriptions;
         // In case some plugin option is provided we need to know every plugin option descriptions.
-        app.set_plugin_options( &dummy, &descriptions );
+        app.set_plugin_options( &cli_descriptions, &cfg_descriptions );
+        for (const auto& opt : cli_descriptions.options())
+        {
+          if ( cfg_descriptions.find_nothrow( opt->long_name(), false /*approx*/ ) == nullptr )
+            cfg_descriptions.add(opt);
+        }
         using multi_line_t = config_arg_override_t::value_type::second_type;
         // For non-plugin overrides add default string descriptions.
         for( const auto& override : default_overrides )
         {
           // override.first contains name of the option, e.g. "log-appender"
-          if( descriptions.find_nothrow( override.first.c_str(), false /*approx*/ ) == nullptr )
+          if( cfg_descriptions.find_nothrow( key.c_str(), false /*approx*/ ) == nullptr )
           {
-            descriptions.add_options()
+            cfg_descriptions.add_options()
               ( override.first.c_str(), bpo::value< multi_line_t >() );
           }
         }
         // 2. Add the options actual "parsed" values.
-        bpo::parsed_options the_options( &descriptions );
+        bpo::parsed_options the_options( &cfg_descriptions );
         for( const auto& override : default_overrides )
         {
           bpo::option opt( override.first, override.second );
