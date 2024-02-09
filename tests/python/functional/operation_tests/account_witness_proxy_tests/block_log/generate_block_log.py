@@ -1,30 +1,23 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 
 import test_tools as tt
-from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME, HIVE_MIN_ROOT_COMMENT_INTERVAL
+from hive_local_tools.constants import HIVE_MIN_ROOT_COMMENT_INTERVAL
 
 WITNESSES = ["witness-x", "witness-y", "witness-z"]
 PROPOSALS = ["proposal-x", "proposal-y", "proposal-z"]
 
 
 def prepare_blocklog_with_witnesses_and_active_proposals() -> None:
-    set_vest_price_by_alternate_chain_spec()
     node = tt.InitNode()
 
     for name in WITNESSES:
         node.config.witness.append(name)
         node.config.private_key.append(tt.Account(name).private_key)
 
-    node.run(
-        arguments=[
-            "--alternate-chain-spec",
-            str(tt.context.get_current_directory().parent / ALTERNATE_CHAIN_JSON_FILENAME),
-        ],
-    )
+    node.run(alternate_chain_specs=set_vest_price_by_alternate_chain_spec())
 
     wallet = tt.Wallet(attach_to=node)
 
@@ -94,20 +87,15 @@ def create_proposal(wallet: tt.Wallet, permlink: str) -> None:
     )
 
 
-def set_vest_price_by_alternate_chain_spec() -> None:
+def set_vest_price_by_alternate_chain_spec() -> tt.AlternateChainSpecs:
     current_time = datetime.now()
-    alternate_chain_spec_content = {
-        "genesis_time": int(current_time.timestamp()),
-        "hardfork_schedule": [{"hardfork": 28, "block_num": 1}],
-        "init_supply": 20_000_000_000,
-        "hbd_init_supply": 100_000,
-        "initial_vesting": {"vests_per_hive": 1800, "hive_amount": 10_000_000_000},
-    }
-
-    directory = tt.context.get_current_directory().parent
-    directory.mkdir(parents=True, exist_ok=True)
-    with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, "w") as json_file:
-        json.dump(alternate_chain_spec_content, json_file)
+    return tt.AlternateChainSpecs(
+        genesis_time=int(current_time.timestamp()),
+        hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+        init_supply=20_000_000_000,
+        hbd_init_supply=100_000,
+        initial_vesting=tt.InitialVesting(vests_per_hive=1800, hive_amount=10_000_000_000),
+    )
 
 
 if __name__ == "__main__":

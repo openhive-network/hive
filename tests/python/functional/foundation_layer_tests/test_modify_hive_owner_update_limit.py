@@ -3,8 +3,6 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-from hive_local_tools import create_alternate_chain_spec_file
-from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
 @pytest.mark.testnet()
@@ -13,15 +11,13 @@ def test_modify_hive_owner_update_limit(limit: int) -> None:
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
-    create_alternate_chain_spec_file(
-        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-        hardfork_schedule=[{"hardfork": current_hardfork_number, "block_num": 1}],
-        hive_owner_update_limit=limit,
-    )
-
     node = tt.InitNode()
     node.run(
-        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)]
+        alternate_chain_specs=tt.AlternateChainSpecs(
+            genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+            hardfork_schedule=[tt.HardforkSchedule(hardfork=current_hardfork_number, block_num=1)],
+            hive_owner_update_limit=limit,
+        )
     )
 
     limit_in_microseconds = node.api.database.get_config().HIVE_OWNER_UPDATE_LIMIT
@@ -40,16 +36,11 @@ def test_invalid_hive_owner_update_limit_modification(limit: int) -> None:
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
-    create_alternate_chain_spec_file(
-        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-        hardfork_schedule=[{"hardfork": current_hardfork_number, "block_num": 1}],
-        hive_owner_update_limit=limit,
-    )
-
     with pytest.raises(TimeoutError):
         node.run(
-            arguments=[
-                "--alternate-chain-spec",
-                str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME),
-            ]
+            alternate_chain_specs=tt.AlternateChainSpecs(
+                genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+                hardfork_schedule=[tt.HardforkSchedule(hardfork=current_hardfork_number, block_num=1)],
+                hive_owner_update_limit=limit,
+            )
         )

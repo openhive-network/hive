@@ -5,12 +5,10 @@ from pathlib import Path
 import pytest
 
 import test_tools as tt
-from hive_local_tools import create_alternate_chain_spec_file
-from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
 @pytest.fixture()
-def prepare_environment(request) -> tt.InitNode:
+def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     block_log_directory = Path(__file__).parent.joinpath("block_log")
@@ -22,24 +20,22 @@ def prepare_environment(request) -> tt.InitNode:
     if request.getfixturevalue("hardfork_version") != "current":
         hardfork_number = request.getfixturevalue("hardfork_version")
         hardfork_schedule = [
-            {"hardfork": hardfork_number, "block_num": 1},
-            {"hardfork": hardfork_number + 1, "block_num": 2000},
+            tt.HardforkSchedule(hardfork=hardfork_number, block_num=1),
+            tt.HardforkSchedule(hardfork=hardfork_number + 1, block_num=2000),
         ]
     else:
         blockchain_version = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
-        hardfork_schedule = [{"hardfork": blockchain_version, "block_num": 1}]
-
-    create_alternate_chain_spec_file(
-        genesis_time=genesis_time,
-        hardfork_schedule=hardfork_schedule,
-    )
+        hardfork_schedule = [tt.HardforkSchedule(hardfork=blockchain_version, block_num=1)]
 
     node.run(
         time_offset=(
             f"{block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)} x10"
         ),
         replay_from=block_log_directory / "block_log",
-        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
+        alternate_chain_specs=tt.AlternateChainSpecs(
+            genesis_time=int(genesis_time),
+            hardfork_schedule=hardfork_schedule,
+        ),
     )
 
     wallet = tt.Wallet(attach_to=node)

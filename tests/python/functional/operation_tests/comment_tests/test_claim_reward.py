@@ -6,8 +6,6 @@ from typing import Literal
 import pytest
 
 import test_tools as tt
-from hive_local_tools import create_alternate_chain_spec_file
-from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 from hive_local_tools.functional.python.operation import (
     convert_from_mainnet_to_testnet_asset,
     get_reward_hbd_balance,
@@ -22,16 +20,6 @@ from hive_local_tools.functional.python.operation.comment import Comment, Commen
 def node():
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(20)]
 
-    create_alternate_chain_spec_file(
-        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-        hardfork_schedule=[
-            {"hardfork": 28, "block_num": 1},
-        ],
-        init_witnesses=witnesses_required_for_hf06_and_later,
-        hbd_init_supply=100000000000,
-        init_supply=20000000000,
-        initial_vesting={"hive_amount": 10000000000, "vests_per_hive": 1800},
-    )
     init_node = tt.InitNode()
 
     for witness in witnesses_required_for_hf06_and_later:
@@ -41,7 +29,14 @@ def node():
 
     init_node.run(
         time_offset="+0 x10",
-        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
+        alternate_chain_specs=tt.AlternateChainSpecs(
+            genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+            hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+            init_witnesses=witnesses_required_for_hf06_and_later,
+            hbd_init_supply=100000000000,
+            init_supply=20000000000,
+            initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
+        ),
     )
     init_node.wait_number_of_blocks(100)
 
