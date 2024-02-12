@@ -5,7 +5,7 @@
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
-#include "../db_fixture/hived_fixture.hpp"
+#include "../db_fixture/snapshots_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -14,74 +14,21 @@ BOOST_AUTO_TEST_SUITE( snapshots_tests )
 
 BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
 {
-  struct test_fixture : public hived_fixture {
-    test_fixture(bool remove_db_files) : hived_fixture(remove_db_files)
+  struct test_fixture : public snapshots_fixture {
+    test_fixture(bool remove_db_files) : snapshots_fixture(remove_db_files, "additional_allocation_after_snapshot_load", 24)
     {}
 
-    void dump_snapshot()
+    void load_snapshot() override
     {
-      hive::plugins::state_snapshot::state_snapshot_plugin* plugin = nullptr;
-      postponed_init(
-        {
-          config_line_t( { "plugin",
-            { "state_snapshot" } }
-          ),
-          config_line_t( { "dump-snapshot",
-            { std::string("snap") } }
-          ),
-          config_line_t( { "snapshot-root-dir",
-            { std::string("additional_allocation_after_snapshot_load") } }
-          )
-        },
-        &plugin);
-
-      generate_block();
-      db->set_hardfork( 24 );
-      generate_block();
-
-    }
-
-    void load_snapshot()
-    {
-      hive::plugins::state_snapshot::state_snapshot_plugin* snapshot = nullptr;
-      postponed_init(
-        {
-          config_line_t( { "plugin",
-            { "state_snapshot" } }
-          ),
-          config_line_t( { "load-snapshot",
-            { std::string("snap") } }
-          ),
-          config_line_t( { "snapshot-root-dir",
-            { std::string("additional_allocation_after_snapshot_load") } }
-          )
-        },
-        &snapshot);
-
-      generate_block();
-      db->set_hardfork( 24 );
-      generate_block();
+      snapshots_fixture::load_snapshot();
 
       const auto& index = db->get_index<account_index>();
       BOOST_REQUIRE_GT(index.get_item_additional_allocation(), 0);
     }
 
-    void create_objects()
+    void create_objects() override
     {
-      postponed_init();
-
-      generate_block();
-      db->set_hardfork( 24 );
-      generate_block();
-
-      // Fill up the rest of the required miners
-      for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-      {
-        account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-        fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-        witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
-      }
-      validate_database();
+      snapshots_fixture::create_objects();
 
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
       generate_block();
