@@ -12,7 +12,7 @@ class extended_api
 
   private:
 
-    uint64_t interval = 500;
+    uint64_t interval = 0;
 
     std::atomic<bool> error_status;
     std::atomic<uint64_t> start;
@@ -31,7 +31,7 @@ class extended_api
 
   public:
 
-    extended_api();
+    extended_api( uint64_t unlock_interval = 500 );
     ~extended_api(){}
 
     status unlock_allowed();

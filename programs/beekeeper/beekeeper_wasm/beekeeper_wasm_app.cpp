@@ -50,7 +50,7 @@ bfs::path beekeeper_wasm_app::get_data_dir() const
   return bfs::current_path();
 }
 
-void beekeeper_wasm_app::setup_logger( const boost::program_options::variables_map& args )
+void beekeeper_wasm_app::setup( const boost::program_options::variables_map& args )
 {
   FC_ASSERT( args.count("enable-logs") );
 

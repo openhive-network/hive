@@ -24,7 +24,8 @@ class beekeeper_api_impl
     std::mutex mtx;
 
   public:
-    beekeeper_api_impl( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr ): _wallet_mgr( wallet_mgr ) {}
+    beekeeper_api_impl( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, uint64_t unlock_interval )
+                      : ex_api( unlock_interval ), _wallet_mgr( wallet_mgr ) {}
 
     DECLARE_API_IMPL
     (
@@ -194,7 +195,8 @@ DEFINE_API_IMPL( beekeeper_api_impl, has_matching_private_key )
 
 } // detail
 
-beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app ): my( new detail::beekeeper_api_impl( wallet_mgr ) )
+beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app, uint64_t unlock_interval )
+                    : my( new detail::beekeeper_api_impl( wallet_mgr, unlock_interval ) )
 {
   JSON_RPC_REGISTER_API( HIVE_BEEKEEPER_API_NAME );
 }

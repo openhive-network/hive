@@ -7,7 +7,8 @@
 
 namespace beekeeper {
 
-  extended_api::extended_api(): error_status( false ), start( get_milliseconds() )
+  extended_api::extended_api( uint64_t unlock_interval )
+                : interval( unlock_interval ), error_status( false ), start( get_milliseconds() )
   {
   }
 

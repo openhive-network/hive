@@ -32,17 +32,11 @@ void beekeeper_app::set_program_options()
       "Two wallets example: --export-keys-wallet \"[\"blue-wallet\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]\" --export-keys-wallet \"[\"green-wallet\", \"PW5KYF9Rt4ETnuP4uheHSCm9kLbCuunf6RqeKgQ8QRoxZmGeZUhhk\"]\" ")
     ;
 
-  beekeeper_app_base::set_program_options();
-}
+  options_cfg.add_options()
+    ("unlock-interval", boost::program_options::value<uint64_t>()->default_value( 500 ), "Protection against unlocking by bots. Every wrong `unlock` enables a delay. By default 500[ms]." )
+    ;
 
-void beekeeper_app::process_notifications( const boost::program_options::variables_map& args )
-{
-  if( args.count("notifications-endpoint") )
-  {
-    auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
-    if( !_notifications.empty() )
-      notifications_endpoint = *_notifications.begin();
-  }
+  beekeeper_app_base::set_program_options();
 }
 
 std::string beekeeper_app::check_version()
@@ -171,7 +165,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
       return _initialization;
     }
 
-    api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app );
+    api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
 
     app.notify_status( "beekeeper is starting" );
 
@@ -208,10 +202,19 @@ bfs::path beekeeper_app::get_data_dir() const
   return app.data_dir();
 }
 
-void beekeeper_app::setup_notifications( const boost::program_options::variables_map& args )
+void beekeeper_app::setup( const boost::program_options::variables_map& args )
 {
   app.setup_notifications( args );
-  process_notifications( args );
+
+  if( args.count("notifications-endpoint") )
+  {
+    auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
+    if( !_notifications.empty() )
+      notifications_endpoint = *_notifications.begin();
+  }
+
+  FC_ASSERT( args.count("unlock-interval") );
+  unlock_interval = args.at("unlock-interval").as<uint64_t>();
 }
 
 init_data beekeeper_app::save_keys( const boost::program_options::variables_map& args )

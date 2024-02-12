@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
 
     uint64_t _interval = 500;
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
 
     auto _list_created_wallets_checker = [&_api]( const std::string& token, const set_type& unlock_statuses )
     {
@@ -185,7 +185,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
     test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
 
     std::string _wallet_name                = "w0";
     std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
@@ -363,7 +364,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions_create_close)
     test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){} ), theApp );
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){} ), theApp, _interval );
 
     std::srand( time(0) );
 
@@ -459,7 +461,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
     test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){} ), theApp );
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){} ), theApp, _interval );
 
     password _password;
 
@@ -582,7 +585,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
     for( auto& wallet_name : _wallet_names )
       _delete_wallet_file( wallet_name );
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp );
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
 
     std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
 
