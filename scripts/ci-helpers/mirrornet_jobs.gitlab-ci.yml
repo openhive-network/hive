@@ -26,15 +26,20 @@ variables:
 
   script:
     - |
+      set -e
       echo "Converting block log to mirrornet format"
       sudo mkdir -p "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       sudo chown -Rf $(id -u):$(id -g) "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       ls -lah "$BLOCK_LOG_OUTPUT_DIR"
-      ln "$BLOCK_LOG_SOURCE_DIR/block_log" "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log"
+      MAINNET_BLOCK_LOG_PATH="$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log"
+      [[ -e "$MAINNET_BLOCK_LOG_PATH" ]] && rm "$MAINNET_BLOCK_LOG_PATH"
+      [[ -e "$MAINNET_BLOCK_LOG_PATH.artifacts" ]] && rm "$MAINNET_BLOCK_LOG_PATH.artifacts"
+      ln "$BLOCK_LOG_SOURCE_DIR/block_log" "$MAINNET_BLOCK_LOG_PATH"
+      ln "$BLOCK_LOG_SOURCE_DIR/block_log.artifacts" "$MAINNET_BLOCK_LOG_PATH.artifacts"
       ls -lAh "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       time /home/hived/bin/blockchain_converter \
         --plugin block_log_conversion \
-        --input "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log" \
+        --input "$MAINNET_BLOCK_LOG_PATH" \
         --output "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log" \
         --chain-id $MIRRORNET_CHAIN_ID \
         --private-key "$MIRRORNET_SKELETON_KEY" \
