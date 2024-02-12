@@ -24,7 +24,7 @@ namespace detail
 class beekeeper_wallet_api
 {
   public:
-    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app );
+    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app, uint64_t unlock_interval );
     ~beekeeper_wallet_api();
 
     DECLARE_API(

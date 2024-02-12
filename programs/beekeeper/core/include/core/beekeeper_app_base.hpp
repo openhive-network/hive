@@ -37,8 +37,7 @@ class beekeeper_app_base
 
     virtual const boost::program_options::variables_map& get_args() const = 0;
     virtual bfs::path get_data_dir() const = 0;
-    virtual void setup_notifications( const boost::program_options::variables_map& args ) {};
-    virtual void setup_logger( const boost::program_options::variables_map& args ) {};
+    virtual void setup( const boost::program_options::variables_map& args ) = 0;
     virtual init_data save_keys( const boost::program_options::variables_map& args ) { return { true, get_revision() }; };
 
     virtual std::shared_ptr<beekeeper::beekeeper_wallet_manager> create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit ) = 0;
