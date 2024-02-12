@@ -26,7 +26,7 @@ variables:
 
   script:
     - |
-      set -e
+      set -ex
       echo "Converting block log to mirrornet format"
       sudo mkdir -p "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       sudo chown -Rf $(id -u):$(id -g) "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
