@@ -202,6 +202,27 @@ struct has_matching_private_key_return
   bool exists = false;
 };
 
+struct encrypt_data_args : public session_token_type
+{
+  std::string from_public_key;
+  std::string to_public_key;
+  std::string content;
+};
+struct encrypt_data_return
+{
+  std::string encrypted_content;
+};
+
+struct decrypt_data_args : public session_token_type
+{
+  std::string from_public_key;
+  std::string to_public_key;
+  std::string encrypted_content;
+};
+struct decrypt_data_return
+{
+  std::string decrypted_content;
+};
 struct exception
 {
   static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method, const std::string& additional_message = "" )
@@ -248,6 +269,8 @@ namespace fc
   void to_variant( const beekeeper::signature_return& var, fc::variant& vo );
   void to_variant( const beekeeper::init_data& var, fc::variant& vo );
   void to_variant( const beekeeper::has_matching_private_key_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::encrypt_data_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo );
 }
 
 FC_REFLECT( beekeeper::init_data, (status)(version) )
@@ -274,3 +297,7 @@ FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
 FC_REFLECT_DERIVED( beekeeper::get_public_keys_args, (beekeeper::session_token_type), (wallet_name) )
 FC_REFLECT_DERIVED( beekeeper::has_matching_private_key_args, (beekeeper::wallet_args), (public_key) )
 FC_REFLECT( beekeeper::has_matching_private_key_return, (exists) )
+FC_REFLECT_DERIVED( beekeeper::encrypt_data_args, (beekeeper::session_token_type), (from_public_key)(to_public_key)(content) )
+FC_REFLECT( beekeeper::encrypt_data_return, (encrypted_content) )
+FC_REFLECT_DERIVED( beekeeper::decrypt_data_args, (beekeeper::session_token_type), (from_public_key)(to_public_key)(encrypted_content) )
+FC_REFLECT( beekeeper::decrypt_data_return, (decrypted_content) )

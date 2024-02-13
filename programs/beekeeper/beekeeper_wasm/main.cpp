@@ -224,6 +224,32 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         exists: true if a private key exists otherwise false
     */
     .function("has_matching_private_key(token, wallet_name, public_key)", &beekeeper_api::has_matching_private_key)
+
+    /*
+      ****Encrypting given content represented by a string****
+      PARAMS:
+        token:            a token representing a session
+        from_public_key:  a creator's public key
+        to_public_key:    a receiver's public key
+        content:          a string to encrypt
+      RESULT:
+        {"encrypted_content":"12796218200812abcd032de"}
+        encrypted_content: an encrypted string
+    */
+    .function("encrypt_data(token, from_public_key, to_public_key, content)", &beekeeper_api::encrypt_data)
+
+    /*
+      ****Decrypting given content represented by a string. Private keys for a receiver and a creator must be accessible in unlocked wallets****
+      PARAMS:
+        token:              a token representing a session
+        from_public_key:  a creator's public key
+        to_public_key:    a receiver's public key
+        encrypted_content:  a string to encrypt
+      RESULT:
+        {"decrypted_content":"this is my content"}
+        decrypted_content: an decrypted string
+    */
+    .function("decrypt_data(token, from_public_key, to_public_key, encrypted_content)", &beekeeper_api::decrypt_data)
     ;
 }
 

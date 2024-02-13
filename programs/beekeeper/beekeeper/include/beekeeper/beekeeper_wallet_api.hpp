@@ -45,6 +45,8 @@ class beekeeper_wallet_api
       (create_session)
       (close_session)
       (has_matching_private_key)
+      (encrypt_data)
+      (decrypt_data)
     )
 
   private:

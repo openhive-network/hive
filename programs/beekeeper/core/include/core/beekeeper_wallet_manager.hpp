@@ -140,6 +140,26 @@ public:
   /// @returns true if a private key exists otherwise false
   bool has_matching_private_key( const std::string& token, const std::string& name, const std::string& public_key );
 
+  /** Encrypts given content.
+   *
+   * Using private key of creator and public key of receiver, content is encrypted.
+   * @param from_private_key a public key of creator
+   * @param to_public_key a public key of receiver
+   * @param content a string to encrypt
+   * @returns encrypted string
+   */
+  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& content );
+
+  /** Decrypts given content.
+   *
+   * When private keys are accessible (exist in unlocked wallets) content is decrypted.
+   * @param from_private_key a public key of creator
+   * @param to_public_key a public key of receiver
+   * @param encrypted_content a string to decrypt
+   * @returns decrypted string
+   */
+  std::string decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& encrypted_content );
+
 private:
 
   seconds_type unlock_timeout = 900;

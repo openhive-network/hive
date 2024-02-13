@@ -868,4 +868,29 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
     assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), true);
   });
+
+  test('Check `encrypt_data`, `decrypt data` endpoints', async () => {
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(WALLET_OPTIONS_NODE);
+
+    const walletNo = 9;
+    const from_key_number = 8;
+    const to_key_number = 9;
+    const content = 'peach-pear-plum';
+
+    (api.setAcceptError as unknown as boolean) = true;
+
+    const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], content);
+    assert.equal(error_message.includes("Public key 6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in unlocked wallets"), true);
+
+    (api.setAcceptError as unknown as boolean) = false;
+
+    api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+    api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[from_key_number][0]);
+
+    const encrypted_content = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], content);
+    const decrypted_content = api.decryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], encrypted_content);
+    assert.equal(decrypted_content, content);
+  });
+
 });

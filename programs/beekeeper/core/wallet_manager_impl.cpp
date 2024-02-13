@@ -2,6 +2,7 @@
 #include <core/beekeeper_wallet.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/crypto/crypto_data.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -92,6 +93,26 @@ void wallet_manager_impl::close( const std::string& name )
   wallets.erase( name );
 }
 
+fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_opened_wallets( const public_key_type& public_key )
+{
+  auto _wallets = list_wallets_impl( std::vector< std::string >() );
+
+  for( auto& wallet : _wallets )
+  {
+    if( wallet.unlocked )
+    {
+      std::map<public_key_type, private_key_type> _keys = list_keys_impl( wallet.name, std::string(), false/*password_is_required*/ );
+      for( auto& key : _keys )
+      {
+        if( key.first == public_key )
+          return key.second;
+      }
+    }
+  }
+
+  return fc::optional<private_key_type>();
+}
+
 std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::vector< std::string >& wallet_files )
 {
   std::vector<wallet_details> _result;
@@ -148,13 +169,19 @@ std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
   return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
 
-map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
+std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys_impl( const string& name, const string& pw, bool password_is_required )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-  w->check_password(pw); //throws if bad password
+  if( password_is_required )
+    w->check_password(pw); //throws if bad password
   return w->list_keys();
+}
+
+std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
+{
+  return list_keys_impl( name, pw, true/*password_is_required*/ );
 }
 
 flat_set<public_key_type> wallet_manager_impl::get_public_keys( const std::optional<std::string>& wallet_name )
@@ -305,6 +332,32 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& name, con
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
   return w->has_matching_private_key( public_key );
+}
+
+std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& content )
+{
+  fc::crypto_data _cd;
+
+  auto _private_key = find_private_key_in_opened_wallets( from_public_key );
+  if( !_private_key )
+    FC_ASSERT( false, "Public key ${public_key} not found in unlocked wallets", ("public_key", utility::public_key::to_string( from_public_key )));
+
+  return _cd.encrypt( _private_key.value(), to_public_key, content );
+}
+
+std::string wallet_manager_impl::decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& encrypted_content )
+{
+  fc::crypto_data _cd;
+
+  return _cd.decrypt
+  (
+    [this]( const public_key_type& key )
+    {
+      return find_private_key_in_opened_wallets( key );
+    },
+    from_public_key, to_public_key,
+    encrypted_content
+  );
 }
 
 } //beekeeper

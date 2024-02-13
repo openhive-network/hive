@@ -15,6 +15,9 @@ class wallet_manager_impl {
     std::vector<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );
     std::vector< std::string > list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const;
 
+    fc::optional<private_key_type> find_private_key_in_opened_wallets( const public_key_type& public_key );
+    std::map<public_key_type, private_key_type> list_keys_impl( const string& name, const string& pw, bool password_is_required );
+
   public:
 
     wallet_manager_impl( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory ){}
@@ -24,7 +27,7 @@ class wallet_manager_impl {
     void close( const std::string& name );
     std::vector<wallet_details> list_wallets();
     std::vector<wallet_details> list_created_wallets();
-    map<public_key_type, private_key_type> list_keys( const string& name, const string& pw );
+    std::map<public_key_type, private_key_type> list_keys( const string& name, const string& pw );
     flat_set<public_key_type> get_public_keys( const std::optional<std::string>& wallet_name );
     void lock_all();
     void lock( const std::string& name );
@@ -33,6 +36,8 @@ class wallet_manager_impl {
     void remove_key( const std::string& name, const std::string& password, const std::string& public_key );
     signature_type sign_digest( const digest_type& sig_digest, const public_key_type& public_key, const std::optional<std::string>& wallet_name );
     bool has_matching_private_key( const std::string& name, const public_key_type& public_key );
+    std::string encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& content );
+    std::string decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& encrypted_content );
 
   private:
 

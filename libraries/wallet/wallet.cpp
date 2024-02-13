@@ -7,7 +7,7 @@
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/dhf_operations.hpp>
 #include <hive/protocol/validation.hpp>
-#include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/crypto_memo.hpp>
 #include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
@@ -1449,7 +1449,8 @@ wallet_signed_transaction wallet_api::create_funded_account_with_keys( const str
       if( memo.size() > 0 && memo[0] == '#' )
       {
          auto from_account = get_account( creator ).value;
-         transfer_op.memo = protocol::encrypt_memo( my->get_private_key( from_account.memo_key ), memo_key, memo );
+         protocol::crypto_memo _cm;
+         transfer_op.memo = _cm.encrypt( my->get_private_key( from_account.memo_key ), memo_key, memo );
       }
       else
       {
@@ -2077,7 +2078,8 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
     auto from_account = get_account( from ).value;
     auto to_account   = get_account( to ).value;
 
-    return protocol::encrypt_memo( my->get_private_key( from_account.memo_key ), to_account.memo_key, memo );
+    protocol::crypto_memo _cm;
+    return _cm.encrypt( my->get_private_key( from_account.memo_key ), to_account.memo_key, memo );
   }
   else
   {
@@ -2465,7 +2467,8 @@ string wallet_api::decrypt_memo( string encrypted_memo )
 {
   if( !is_locked() && encrypted_memo.size() && encrypted_memo[0] == '#' )
   {
-    return protocol::decrypt_memo(
+    protocol::crypto_memo _cm;
+    return _cm.decrypt(
       [&]( const public_key_type& key ) { return my->try_get_private_key( key ); },
       encrypted_memo
     );
