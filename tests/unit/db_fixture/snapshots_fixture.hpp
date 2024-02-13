@@ -1,97 +1,69 @@
 #pragma once
 
-#include "hived_fixture.hpp"
+#include "hived_proxy_fixture.hpp"
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
 #include <fc/log/logger_config.hpp>
 #include <fc/optional.hpp>
+#include <fc/filesystem.hpp>
 
 namespace hive { namespace chain {
 
-class snapshots_fixture : public hived_fixture
+struct snapshots_fixture : hived_proxy_fixture
 {
-public:
   snapshots_fixture(
-    bool remove_db_files,
-    std::string snapshot_root_dir,
-    fc::optional<uint32_t> hardfork = fc::optional<uint32_t>())
-    : hived_fixture(remove_db_files), snapshot_root_dir{snapshot_root_dir}, hardfork{hardfork}
+    bool remove_db_files = true)
+    : hived_proxy_fixture(remove_db_files)
   {}
-  virtual ~snapshots_fixture()
+  ~snapshots_fixture()
   {}
 
-  virtual void create_objects()
+  void clear_snapshot(std::string snapshot_root_dir)
   {
-    postponed_init();
-
-    if (hardfork) {
-      generate_block();
-      db->set_hardfork( hardfork.value() );
-      generate_block();
-    }
-
-    // Fill up the rest of the required miners
-    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-    {
-      account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-      fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-      witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
-    }
-    validate_database();
+    // remove any snapshots from last run
+    const fc::path temp_data_dir = hive::utilities::temp_directory_path();
+    fc::remove_all( ( temp_data_dir / snapshot_root_dir ) );
   }
 
-  virtual void dump_snapshot()
+  void dump_snapshot(std::string snapshot_root_dir)
   {
+    reset_fixture(false);
     hive::plugins::state_snapshot::state_snapshot_plugin* plugin = nullptr;
     postponed_init(
       {
-        config_line_t( { "plugin",
+        hived_fixture::config_line_t( { "plugin",
           { "state_snapshot" } }
         ),
-        config_line_t( { "dump-snapshot",
+        hived_fixture::config_line_t( { "dump-snapshot",
           { std::string("snap") } }
         ),
-        config_line_t( { "snapshot-root-dir",
-          { std::string("additional_allocation_after_snapshot_load") } }
+        hived_fixture::config_line_t( { "snapshot-root-dir",
+          { snapshot_root_dir } }
         )
       },
       &plugin);
-
-    if (hardfork) {
-      generate_block();
-      db->set_hardfork( hardfork.value() );
-      generate_block();
-    }
   }
 
-  virtual void load_snapshot()
+  void load_snapshot(std::string snapshot_root_dir)
   {
+    reset_fixture(false);
     hive::plugins::state_snapshot::state_snapshot_plugin* snapshot = nullptr;
     postponed_init(
       {
-        config_line_t( { "plugin",
+        hived_fixture::config_line_t( { "plugin",
           { "state_snapshot" } }
         ),
-        config_line_t( { "load-snapshot",
+        hived_fixture::config_line_t( { "load-snapshot",
           { std::string("snap") } }
         ),
-        config_line_t( { "snapshot-root-dir",
-          { std::string("additional_allocation_after_snapshot_load") } }
+        hived_fixture::config_line_t( { "snapshot-root-dir",
+          { snapshot_root_dir } }
         )
       },
       &snapshot);
-
-    if (hardfork) {
-      generate_block();
-      db->set_hardfork( hardfork.value() );
-      generate_block();
-    }
   }
 
-private:
-  std::string snapshot_root_dir;
-  fc::optional<uint32_t> hardfork;
 };
 
 } }

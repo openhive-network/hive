@@ -10,6 +10,11 @@ namespace hive { namespace chain {
 class hived_proxy_fixture
 {
 public:
+  hived_proxy_fixture(bool remove_db_files = true)
+  {
+    reset_fixture(remove_db_files);
+  }
+
   fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( fc::string( "init_key" ) ) );
   public_key_type init_account_pub_key = init_account_priv_key.get_public_key();
 

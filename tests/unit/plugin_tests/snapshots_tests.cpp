@@ -5,13 +5,12 @@
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
-#include "../db_fixture/hived_proxy_fixture.hpp"
 #include "../db_fixture/snapshots_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
 
-BOOST_FIXTURE_TEST_SUITE( snapshots_tests, hived_proxy_fixture )
+BOOST_FIXTURE_TEST_SUITE( snapshots_tests, snapshots_fixture )
 
 BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
 {
@@ -19,13 +18,8 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
   {
     BOOST_TEST_MESSAGE( "--- Testing: additional_allocation_after_snapshot_load" );
 
-    // remove any snapshots from last run
-    const fc::path temp_data_dir = hive::utilities::temp_directory_path();
-    fc::remove_all( ( temp_data_dir / "additional_allocation_after_snapshot_load" ) );
-
+    clear_snapshot("additional_allocation_after_snapshot_load");
     {
-      reset_fixture(true);
-
       postponed_init();
 
       generate_block();
@@ -59,46 +53,14 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       BOOST_CHECK_EQUAL(index.get_item_additional_allocation(), initial_allocations + 2*sizeof(hive::chain::delayed_votes_data));
     }
     {
-      reset_fixture(false);
+      dump_snapshot("additional_allocation_after_snapshot_load");
 
-      hive::plugins::state_snapshot::state_snapshot_plugin* plugin = nullptr;
-      postponed_init(
-        {
-          hived_fixture::config_line_t( { "plugin",
-            { "state_snapshot" } }
-          ),
-          hived_fixture::config_line_t( { "dump-snapshot",
-            { std::string("snap") } }
-          ),
-          hived_fixture::config_line_t( { "snapshot-root-dir",
-            { std::string("additional_allocation_after_snapshot_load") } }
-          )
-        },
-        &plugin);
-
-        generate_block();
-        db()->set_hardfork( 24 );
-        generate_block();
+      generate_block();
+      db()->set_hardfork( 24 );
+      generate_block();
     }
-
-
     {
-      reset_fixture(false);
-
-      hive::plugins::state_snapshot::state_snapshot_plugin* snapshot = nullptr;
-      postponed_init(
-        {
-          hived_fixture::config_line_t( { "plugin",
-            { "state_snapshot" } }
-          ),
-          hived_fixture::config_line_t( { "load-snapshot",
-            { std::string("snap") } }
-          ),
-          hived_fixture::config_line_t( { "snapshot-root-dir",
-            { std::string("additional_allocation_after_snapshot_load") } }
-          )
-        },
-        &snapshot);
+      load_snapshot("additional_allocation_after_snapshot_load");
 
       generate_block();
       db()->set_hardfork( 24 );
