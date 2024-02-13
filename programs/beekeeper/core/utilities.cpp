@@ -77,4 +77,16 @@ namespace fc
     variant v = mutable_variant_object( "exists", var.exists );
     vo = v;
   }
+
+  void to_variant( const beekeeper::encrypt_data_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "encrypted_content", var.encrypted_content );
+    vo = v;
+  }
+
+  void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "decrypted_content", var.decrypted_content );
+    vo = v;
+  }
 } // fc

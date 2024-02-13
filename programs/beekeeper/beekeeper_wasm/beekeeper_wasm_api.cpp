@@ -297,4 +297,24 @@ namespace beekeeper {
     };
     return exception_handler( _method );
   }
+
+  std::string beekeeper_api::encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& content )
+  {
+    auto _method = [&, this]()
+    {
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, from_public_key, to_public_key, content ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
+
+  std::string beekeeper_api::decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& encrypted_content )
+  {
+    auto _method = [&, this]()
+    {
+      decrypt_data_return _result{ _impl->app.get_wallet_manager()->decrypt_data( token, from_public_key, to_public_key, encrypted_content ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
 };

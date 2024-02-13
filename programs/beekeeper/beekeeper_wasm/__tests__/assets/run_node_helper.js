@@ -169,6 +169,36 @@ export class BeekeeperInstanceHelper {
     }
   };
 
+  encryptData(sessionToken, fromPublicKey, toPublicKey, content) {
+    const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, content);
+
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+
+      return value.encrypted_content;
+    }
+  };
+
+  decryptData(sessionToken, fromPublicKey, toPublicKey, encrypted_content) {
+    const returnedValue = this.instance.decrypt_data(sessionToken, fromPublicKey, toPublicKey, encrypted_content);
+
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+
+      return value.decrypted_content;
+    }
+  };
+
   /**
    * @param {string} sessionToken
    * @param {string} walletName
