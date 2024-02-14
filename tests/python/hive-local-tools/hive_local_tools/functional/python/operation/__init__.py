@@ -548,13 +548,14 @@ class Proposal:
         self.__init__(self._node, self.proposal_id)
 
 
-def publish_feeds(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int) -> None:
+def publish_feeds(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int, broadcast: bool = True) -> dict:
     response = node.api.database.list_witnesses(start=None, limit=100, order="by_name").witnesses
     witnesses = [element["owner"] for element in response]
-    with wallet.in_single_transaction():
+    with wallet.in_single_transaction(broadcast=broadcast) as transaction:
         for witness in witnesses:
             exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
             wallet.api.publish_feed(witness, exchange_rate, broadcast=False)
+    return transaction.get_response()
 
 
 def publish_feeds_with_confirmation(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int) -> None:
