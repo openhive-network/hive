@@ -35,6 +35,25 @@
 #include <atomic>
 #include <algorithm>
 
+struct extended_signed_block_header : public hive::protocol::signed_block_header
+{
+  hive::protocol::block_id_type     block_id;
+  hive::protocol::public_key_type   signing_key;
+
+  extended_signed_block_header(const hive::chain::full_block_type& full_block) :
+    hive::protocol::signed_block_header(full_block.get_block_header()),
+    block_id(full_block.get_block_id()),
+    signing_key(full_block.get_signing_key()) {}
+};
+
+struct extended_signed_block : public extended_signed_block_header
+{
+  std::vector<hive::protocol::signed_transaction>   transactions;
+  extended_signed_block(const hive::chain::full_block_type& full_block) :
+  extended_signed_block_header(full_block),
+  transactions(full_block.get_block().transactions) {}
+};
+
 struct block_log_hashes
 {
   std::optional<fc::sha256> final_hash;
@@ -566,17 +585,21 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
     {
       if (header_only)
       {
+        extended_signed_block_header ebh(*full_block);
+
         if (pretty_print)
-          std::cout << fc::json::to_pretty_string(full_block->get_block_header()) << "\n";
+          std::cout << fc::json::to_pretty_string(ebh) << "\n";
         else
-          std::cout << fc::json::to_string(full_block->get_block_header()) << "\n";
+          std::cout << fc::json::to_string(ebh) << "\n";
       }
       else
       {
+        extended_signed_block esb(*full_block);
+
         if (pretty_print)
-          std::cout << fc::json::to_pretty_string(full_block->get_block()) << "\n";
+          std::cout << fc::json::to_pretty_string(esb) << "\n";
         else
-          std::cout << fc::json::to_string(full_block->get_block()) << "\n";
+          std::cout << fc::json::to_string(esb) << "\n";
       }
     }
     return true;
@@ -996,3 +1019,12 @@ int main(int argc, char** argv)
 
   return 0;
 }
+
+FC_REFLECT_DERIVED(extended_signed_block_header, (hive::protocol::signed_block_header),
+                  (block_id)
+                  (signing_key)
+)
+
+FC_REFLECT_DERIVED(extended_signed_block, (extended_signed_block_header),
+                  (transactions)
+)
