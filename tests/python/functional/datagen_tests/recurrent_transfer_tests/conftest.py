@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -8,22 +9,27 @@ import test_tools as tt
 
 if TYPE_CHECKING:
     from datetime import datetime
-    from pathlib import Path
 
     from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent.joinpath("block_log")
+    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
+
+
 @pytest.fixture()
-def replayed_node() -> ReplayedNodeMaker:
+def replayed_node(block_log: tt.BlockLog) -> ReplayedNodeMaker:
     def _replayed_node(
-        block_log_directory: Path,
         *,
         absolute_start_time: datetime | None = None,
         time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
-        block_log = tt.BlockLog(block_log_directory / "block_log")
-
         if absolute_start_time is None:
             absolute_start_time = block_log.get_head_block_time()
 

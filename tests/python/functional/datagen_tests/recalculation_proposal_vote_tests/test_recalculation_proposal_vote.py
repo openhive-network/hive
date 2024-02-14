@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import test_tools as tt
 from hive_local_tools.functional.python.datagen.recalculation_proposal_vote_tests import (
     get_next_maintenance_time,
@@ -11,10 +13,16 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 from schemas.operations.virtual import ProposalPayOperation
 
 
-def test_recalculation_proposal_votes() -> None:
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
     block_log_directory = Path(__file__).parent.joinpath("block_log")
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
+
+def test_recalculation_proposal_votes(block_log) -> None:
     node = tt.InitNode()
 
     # load block_log to node

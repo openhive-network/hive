@@ -13,21 +13,27 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
+    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
+
+
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
-def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker) -> None:
+def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(
+    block_log: tt.BlockLog, replayed_node: ReplayedNodeMaker
+) -> None:
     """
     Test scenario: block log that was replayed contains ordered recurrent transfers.
       1) replay block_log it contains outstanding recurring transfers,
       2) wait for all recurrent transfers to be processed,
       3) assert if there is any overdue recurring transfer.
     """
-    block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
-
-    block_log = tt.BlockLog(block_log_directory / "block_log")
-
     # during this replay, before entering live mode node processes a lots of recurrent transfers, therefore the timeout has been increased.
     replayed_node: tt.InitNode = replayed_node(
-        block_log_directory,
         absolute_start_time=block_log.get_head_block_time() + tt.Time.days(2),
         time_multiplier=45,
         timeout=1200,

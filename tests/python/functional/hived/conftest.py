@@ -33,12 +33,18 @@ def block_log_length(block_log_helper) -> int:
     return block_log_helper[1]
 
 
-@pytest.fixture()
-def node_with_20k_proposal_votes() -> tt.InitNode:
-    block_log_directory = Path(__file__).parent / "block_log"
+@pytest.fixture(scope="session")
+def block_log_with_artifacts() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent.joinpath("block_log")
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
-    timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
+
+@pytest.fixture()
+def node_with_20k_proposal_votes(block_log_with_artifacts: tt.BlockLog) -> tt.InitNode:
+    timestamp = block_log_with_artifacts.get_head_block_time() - tt.Time.seconds(5)
 
     init_node = tt.InitNode()
     init_node.config.plugin.append("condenser_api")
@@ -46,7 +52,7 @@ def node_with_20k_proposal_votes() -> tt.InitNode:
 
     init_node.run(
         time_offset=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
-        replay_from=block_log,
+        replay_from=block_log_with_artifacts,
     )
 
     return init_node

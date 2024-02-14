@@ -9,14 +9,21 @@ from hive_local_tools import create_alternate_chain_spec_file
 from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
-@pytest.fixture()
-def prepare_environment(request) -> tt.InitNode:
-    node = tt.InitNode()
-    node.config.plugin.append("account_history_api")
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
     block_log_directory = Path(__file__).parent.joinpath("block_log")
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
-    with open(block_log_directory / "genesis_time", encoding="utf-8") as file:
+
+@pytest.fixture()
+def prepare_environment(block_log: tt.BlockLog, request) -> tt.InitNode:
+    node = tt.InitNode()
+    node.config.plugin.append("account_history_api")
+
+    with open(Path(__file__).parent.joinpath("block_log") / "genesis_time", encoding="utf-8") as file:
         genesis_time = file.read()
 
     if request.getfixturevalue("hardfork_version") != "current":
@@ -38,7 +45,7 @@ def prepare_environment(request) -> tt.InitNode:
         time_offset=(
             f"{block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)} x10"
         ),
-        replay_from=block_log_directory / "block_log",
+        replay_from=Path(__file__).parent.joinpath("block_log") / "block_log",
         arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
     )
 

@@ -11,8 +11,17 @@ from hive_local_tools.functional.python.operation import Account, Proposal
 from .block_log.generate_block_log import WITNESSES
 
 
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent.joinpath("block_log")
+    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
+
+
 @pytest.fixture()
-def node() -> tt.InitNode:
+def node(block_log: tt.BlockLog) -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
 
@@ -20,13 +29,13 @@ def node() -> tt.InitNode:
         node.config.witness.append(witness)
         node.config.private_key.append(tt.Account(witness).private_key)
 
-    block_log_directory = Path(__file__).parent.joinpath("block_log")
-    block_log = tt.BlockLog(block_log_directory / "block_log")
-
     node.run(
         time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
         replay_from=block_log,
-        arguments=["--alternate-chain-spec", str(block_log_directory / ALTERNATE_CHAIN_JSON_FILENAME)],
+        arguments=[
+            "--alternate-chain-spec",
+            str(Path(__file__).parent.joinpath("block_log") / ALTERNATE_CHAIN_JSON_FILENAME),
+        ],
     )
     return node
 

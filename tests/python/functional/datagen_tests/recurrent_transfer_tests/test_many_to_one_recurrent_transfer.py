@@ -4,6 +4,8 @@ import math
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+
 import test_tools as tt
 from hive_local_tools.constants import MAX_RECURRENT_TRANSFERS_PER_BLOCK
 
@@ -13,12 +15,17 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
-def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker) -> None:
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
     block_log_directory = Path(bl.__file__).parent
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
+
+def test_many_to_one_recurrent_transfer(block_log: tt.BlockLog, replayed_node: ReplayedNodeMaker) -> None:
     replayed_node: tt.InitNode = replayed_node(
-        block_log_directory,
         absolute_start_time=block_log.get_head_block_time() + tt.Time.days(2),
         time_multiplier=50,
     )

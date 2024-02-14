@@ -8,12 +8,18 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import Account
 
 
-@pytest.fixture()
-def node() -> tt.InitNode:
-    node = tt.InitNode()
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
     block_log_directory = Path(__file__).parent.joinpath("block_log")
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
+
+@pytest.fixture()
+def node(block_log: tt.BlockLog) -> tt.InitNode:
+    node = tt.InitNode()
     node.run(
         time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
         replay_from=block_log,

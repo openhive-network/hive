@@ -8,13 +8,11 @@ import test_tools as tt
 
 if TYPE_CHECKING:
     from datetime import datetime
-    from pathlib import Path
 
 
 class ReplayedNodeMaker(Protocol):
     def __call__(
         self,
-        block_log_directory: Path,
         *,
         absolute_start_time: datetime | None = None,
         time_multiplier: float | None = None,

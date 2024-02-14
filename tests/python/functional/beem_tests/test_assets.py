@@ -13,13 +13,18 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
-@pytest.fixture()
-def node(chain_id, skeleton_key):
-    block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent.joinpath("block_log_mirrornet_1k")
     block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
 
+
+@pytest.fixture()
+def node(block_log, chain_id, skeleton_key):
     timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
-
     init_node = tt.InitNode()
     init_node.config.private_key = skeleton_key
     init_node.config.plugin.append("account_history_api")

@@ -8,6 +8,15 @@ import test_tools as tt
 from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
 
 
+@pytest.fixture(scope="session")
+def block_log() -> tt.BlockLog:
+    """Artifacts must be generated before running tests in parallel to avoid race conditions."""
+    block_log_directory = Path(__file__).parent.joinpath("block_log")
+    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log.generate_artifacts()
+    return block_log
+
+
 @pytest.fixture()
 def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
@@ -26,13 +35,9 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
 
 
 @pytest.fixture()
-def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
+def prepare_environment_on_hf_27(block_log: tt.BlockLog, node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
     node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
-
-    block_log_directory = Path(__file__).parent / "block_log"
-    block_log = tt.BlockLog(block_log_directory / "block_log")
-
     absolute_start_time = block_log.get_head_block_time() - tt.Time.seconds(5)
     time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
     node.run(
