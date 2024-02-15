@@ -556,50 +556,63 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block(const fc::path& block_log_filename, fc::optional<uint32_t> block_number, fc::optional<uint32_t> from_block_number,fc::optional<uint32_t> to_block_number, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
-  FC_ASSERT(block_number, "Block number must be a positive number");
-
+  if (binary && header_only)
+  {
+    std::cerr << "Error: unable to write only the header in binary mode\n";
+    return false;
+  }
   try
   {
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    if (block_number > head_block_num)
-    {
-      std::cerr << "Block log only has " << head_block_num << " blocks. Requested block: " << block_number << "\n";
-      return false;
-    }
-    std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(block_number);
-    if (binary)
-    {
-      if (header_only)
-      {
-        std::cerr << "Error: unable to write only the header in binary mode\n";
-        return false;
-      }
-      const hive::chain::uncompressed_block_data& uncompressed = full_block->get_uncompressed_block();
-      std::cout.write(uncompressed.raw_bytes.get(), uncompressed.raw_size);
-    }
+
+    uint32_t starting_block_range = 0;
+    uint32_t ending_block_range = 0;
+
+    if (block_number)
+      starting_block_range = ending_block_range = *block_number;
     else
     {
-      if (header_only)
-      {
-        extended_signed_block_header ebh(*full_block);
+      starting_block_range = from_block_number ? *from_block_number : 1;
+      ending_block_range = to_block_number ? *to_block_number : head_block_num;
+      FC_ASSERT(starting_block_range <= ending_block_range, "starting block cannot be higher than ending block - range: ${starting_block_range} : ${ending_block_range}", (starting_block_range)(ending_block_range));
+    }
 
-        if (pretty_print)
-          std::cout << fc::json::to_pretty_string(ebh) << "\n";
-        else
-          std::cout << fc::json::to_string(ebh) << "\n";
+    FC_ASSERT(starting_block_range);
+    FC_ASSERT(ending_block_range);
+    FC_ASSERT(ending_block_range <= head_block_num, "requested block number: ${ending_block_range} which is higher than head block number: ${head_block_num}", (ending_block_range)(head_block_num));
+
+    for (uint32_t current_block_num = starting_block_range; current_block_num <= ending_block_range; ++current_block_num)
+    {
+      std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(current_block_num);
+      if (binary)
+      {
+        const hive::chain::uncompressed_block_data& uncompressed = full_block->get_uncompressed_block();
+        std::cout.write(uncompressed.raw_bytes.get(), uncompressed.raw_size);
       }
       else
       {
-        extended_signed_block esb(*full_block);
+        if (header_only)
+        {
+          extended_signed_block_header ebh(*full_block);
 
-        if (pretty_print)
-          std::cout << fc::json::to_pretty_string(esb) << "\n";
+          if (pretty_print)
+            std::cout << fc::json::to_pretty_string(ebh) << "\n";
+          else
+            std::cout << fc::json::to_string(ebh) << "\n";
+        }
         else
-          std::cout << fc::json::to_string(esb) << "\n";
+        {
+          extended_signed_block esb(*full_block);
+
+          if (pretty_print)
+            std::cout << fc::json::to_pretty_string(esb) << "\n";
+          else
+            std::cout << fc::json::to_string(esb) << "\n";
+        }
       }
     }
     return true;
@@ -728,13 +741,16 @@ int main(int argc, char** argv)
   // args for get-block subcommand
   boost::program_options::options_description get_block_options("get-block options");
   get_block_options.add_options()("block-log", boost::program_options::value<std::string>()->value_name("filename")->required(), "The block log to read the block from");
-  get_block_options.add_options()("block-number", boost::program_options::value<uint32_t>()->value_name("n")->required(), "The block number to return");
+  get_block_options.add_options()("block-number", boost::program_options::value<uint32_t>()->value_name("n"), "The single block with specified number to return. Cannot be set if \'from-block-number\' or \'to-block-number\' is specified");
+  get_block_options.add_options()("from-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of blocks from block number. If not specified, will return blocks from the beggining of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
+  get_block_options.add_options()("to-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of block to block number. If not specified, will return blocks to the end of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
   get_block_options.add_options()("header", "only print the block header");
   get_block_options.add_options()("pretty", "pretty-print the JSON");
   get_block_options.add_options()("binary", "output the binary form of the block (don't output this to a terminal!)");
   boost::program_options::positional_options_description get_block_positional_options;
   get_block_positional_options.add("block-log", 1);
   get_block_positional_options.add("block-number", 1);
+
 
   // args for get-block-artifacts subcommand
   boost::program_options::options_description get_block_artifacts_options("get-block-artifacts options");
@@ -941,14 +957,20 @@ int main(int argc, char** argv)
       boost::program_options::store(parsed_get_block_options, options_map);
 
       FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
-      FC_ASSERT(options_map.count("block-number"), "\"--block-number\" is mandatory");
+      FC_ASSERT(options_map.count("block-number") || options_map.count("from-block-number") || options_map.count("to-block-number"), "must specify at least one: \"--block-number\", \"--from-block-number\",\"--to-block-number\"");
+      if (options_map.count("block-number"))
+        FC_ASSERT(!options_map.count("from-block-number") && !options_map.count("to-block-number"), "if \"--block-number\" is set, \"--from-block-number\" and \"--to-block-number\" cannot be specified");
+      if (options_map.count("from-block-number") || options_map.count("to-block-number"))
+      FC_ASSERT(!options_map.count("block-number"), "if \"--from-block-number\" or \"--to-block-number\" is set, \"--block-number\" cannot be specified");
 
-      const uint32_t block_number = options_map["block-number"].as<uint32_t>();
+      const fc::optional<uint32_t> block_number = options_map.count("block-number") ? options_map["block-number"].as<uint32_t>() : fc::optional<uint32_t>();
+      const fc::optional<uint32_t> from_block_number = options_map.count("from-block-number") ? options_map["from-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
+      const fc::optional<uint32_t> to_block_number = options_map.count("to-block-number") ? options_map["to-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
       const bool header_only = options_map.count("header") != 0;
       const bool pretty = options_map.count("pretty") != 0;
       const bool binary = options_map.count("binary") != 0;
 
-      return get_block(options_map["block-log"].as<std::string>(), block_number, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
+      return get_block(options_map["block-log"].as<std::string>(), block_number, from_block_number, to_block_number, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
     }
     else if (command == "get-block-artifacts")
     {
