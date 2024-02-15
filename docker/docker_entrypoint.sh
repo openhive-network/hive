@@ -68,6 +68,7 @@ echo "Attempting to execute hived using additional command line arguments: ${HIV
 
 {
 sudo -Enu hived /bin/bash << EOF
+set -euo pipefail
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
