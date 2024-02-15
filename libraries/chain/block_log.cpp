@@ -153,6 +153,7 @@ namespace hive { namespace chain {
 
   void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only /* = false */, bool auto_open_artifacts /*= true*/ )
   {
+      FC_ASSERT(!fc::is_directory(file), "${file} should point to block_log file, not directory", (file));
       close();
 
       my->block_file = file;

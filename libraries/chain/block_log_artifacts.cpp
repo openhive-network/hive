@@ -300,6 +300,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
 {
   try {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
+  FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to block_log.artifacts file, not directory", (_artifact_file_name));
   _is_writable = !read_only;
 
   const auto head_block = source_block_provider.head();
