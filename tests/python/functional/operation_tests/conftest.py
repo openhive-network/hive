@@ -201,6 +201,63 @@ class ConvertAccount(Account):
 
 
 @dataclass
+class EscrowAccount(Account):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.update_account_info()
+
+    def check_account_balance(
+        self, trx: dict, mode: Literal["escrow_creation", "escrow_rejection", "escrow_release"]
+    ) -> None:
+        old_hive_amount = self.hive
+        old_hbd_amount = self.hbd
+
+        self.update_account_info()
+        fee, hbd_amount, hive_amount = self.__extract_escrow_values_from_transaction(trx)
+
+        hbd_message = (
+            f"Escrow fee ({fee}) {f'and HBD amount ({hbd_amount})' if hbd_amount != tt.Asset.Tbd(0) else ''} weren't"
+            f" {'subtracted from' if mode == 'escrow_creation' else 'added to'} account HBD balance."
+        )
+        hive_message = (
+            f"Escrow HIVE amount ({hive_amount}) wasn't"
+            f" {'subtracted from' if mode == 'escrow_creation' else 'added to'} account HIVE balance."
+        )
+        assert (
+            old_hive_amount + hive_amount
+            if mode == "escrow_rejection" or mode == "escrow_release"
+            else old_hive_amount == self.hive + hive_amount if mode == "escrow_creation" else self.hive
+        ), hive_message
+        assert (
+            old_hbd_amount + (hbd_amount + fee)
+            if mode == "escrow_rejection" or mode == "escrow_release"
+            else old_hbd_amount == self.hbd + (hbd_amount + fee) if mode == "escrow_creation" else self.hbd
+        ), hbd_message
+
+    def check_if_escrow_fee_was_added_to_agent_balance_after_approvals(self, trx: dict) -> None:
+        fee = self.__extract_escrow_values_from_transaction(trx)[0]
+        old_hbd_balance = self.hbd
+        self.update_account_info()
+        assert old_hbd_balance + fee == self.hbd, f"Fee ({fee}) wasn't added to agent's balance after escrow approvals."
+
+    def check_if_current_rc_mana_was_reduced(self, trx) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(trx["rc_cost"], get_transaction_timestamp(self._node, trx))
+        self.rc_manabar.update()
+
+    @staticmethod
+    def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
+        ops = trx["operations"]
+        for op in ops:
+            if op[0] == "escrow_transfer" or op[0] == "escrow_release":
+                trx_value = op[1]
+                fee = tt.Asset.from_legacy(trx_value["fee"]) if op[0] == "escrow_transfer" else tt.Asset.Tbd(0)
+                hbd_amount = tt.Asset.from_legacy(trx_value["hbd_amount"])
+                hive_amount = tt.Asset.from_legacy(trx_value["hive_amount"])
+                return fee, hbd_amount, hive_amount
+        return None
+
+
+@dataclass
 class LimitOrderAccount(Account):
     def assert_balance(
         self,
