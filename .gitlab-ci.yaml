@@ -998,6 +998,7 @@ operation_tests:
                      cancel_transfer_from_savings,
                      comment_tests,
                      convert_tests,
+                     escrow_tests,
                      limit_order_tests,
                      proposal_tests,
                      test_recurrent_transfer,
