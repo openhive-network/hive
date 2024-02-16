@@ -127,6 +127,7 @@ void application::startup() {
         break;
     }
   }
+  notify_status("chain API ready");
 }
 
 void application::set_program_options()
