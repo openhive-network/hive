@@ -32,8 +32,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset, uint64_t account_creation_fee )
-    : converter( converter ), block_offset( block_offset.sec_since_epoch() ), account_creation_fee( account_creation_fee ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, uint32_t block_offset, uint64_t account_creation_fee )
+    : converter( converter ), block_offset( block_offset ), account_creation_fee( account_creation_fee ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -336,7 +336,7 @@ namespace hive { namespace converter {
   std::shared_ptr< hc::full_transaction_type > blockchain_converter::convert_signed_transaction( hp::signed_transaction& tx, const hp::block_id_type& previous_block_id, const std::function<void(hp::transaction&)>& apply_trx_expiration_offset, uint32_t block_offset, uint64_t account_creation_fee, bool enable_signing )
   {
     for(auto& op : tx.operations)
-      op = op.visit( convert_operations_visitor{ *this, fc::time_point_sec{ block_offset }, account_creation_fee } );
+      op = op.visit( convert_operations_visitor{ *this, block_offset, account_creation_fee } );
 
     tx.set_reference_block( previous_block_id );
 
@@ -423,11 +423,13 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      full_transactions.emplace_back( std::move( convert_signed_transaction( *transaction_itr, previous_block_id, apply_trx_expiration_offset, block_offset, account_creation_fee, false ) ) );
+      // alter_time_in_visitor will disable the block offset for the visitor (when used e.g. in block_log_conversion plugin) to avoid rewriting operations with invalid time in their bodies
+      // node_based_conversion and iceberg_conversion plugins require such an option to be enabled due to the difference of the applied head_block times in the mirrornet
+      full_transactions.emplace_back( convert_signed_transaction( *transaction_itr, previous_block_id, apply_trx_expiration_offset, alter_time_in_visitor ? block_offset : 0, account_creation_fee, false ) );
 
       while(has_helper_pow_transaction())
       {
-        full_transactions.emplace_back( std::move( pop_helper_pow_transaction() ) );
+        full_transactions.emplace_back( pop_helper_pow_transaction() );
 
         auto insert_pos = transaction_itr;
         ++insert_pos;

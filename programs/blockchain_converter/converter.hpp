@@ -161,7 +161,7 @@ namespace hive { namespace converter {
   public:
     typedef hp::operation result_type;
 
-    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset, uint64_t account_creation_fee );
+    convert_operations_visitor( blockchain_converter& converter, uint32_t block_offset, uint64_t account_creation_fee );
 
     const hp::account_create_operation& operator()( hp::account_create_operation& op )const;
 
