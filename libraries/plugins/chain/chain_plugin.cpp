@@ -862,12 +862,12 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              default_block_writer.switch_forks( 
+              default_block_writer.switch_forks(
                 new_head_block_id,
                 new_head_block_num,
                 skip,
                 nullptr /*pushed_block_ctrl*/,
-                db.head_block_id(), db.head_block_num(), 
+                db.head_block_id(), db.head_block_num(),
                 [&] ( const std::shared_ptr< full_block_type >& fb,
                       uint32_t skip, const block_flow_control* block_ctrl )
                   { db.apply_block_extended(fb,skip,block_ctrl); },
@@ -1252,7 +1252,6 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
-  this->theApp.notify_status("chain API ready");
   start_write_processing();
 }
 
