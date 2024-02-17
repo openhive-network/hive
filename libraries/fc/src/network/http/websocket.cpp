@@ -651,23 +651,28 @@ namespace fc { namespace http {
 
        // wlog( "connecting to ${uri}", ("uri",uri));
        websocketpp::lib::error_code ec;
-
        my->_uri = uri;
+      ilog("trying to connect to websocket");
        my->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
 
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+         ilog("handling connection");
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
           my->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
           my->_connected->set_value();
        });
 
+      ilog("getting connection");
        auto con = my->_client.get_connection( uri, ec );
 
        if( ec ) FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
 
+      ilog("calling connect");
        my->_client.connect(con);
+      ilog("calling wait");
        my->_connected->wait();
+      ilog("returning connection");
        return my->_connection;
    } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
