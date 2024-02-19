@@ -183,6 +183,7 @@ deploy_beekeepy_wheel_to_gitlab:
     PYPROJECT_DIR: "$BEEKEEPY_DIR"
   needs:
     - job: pre_commit_checks
+    - job: beekeepy_tests
     - job: build_beekeepy_wheel
       artifacts: true
   when: on_success
@@ -455,6 +456,17 @@ formatting_with_black_check:
     - job: testnet_node_build
       artifacts: true
 
+.beekeepy_based:
+  extends: .test_tools_based
+  needs:
+    - job: build_beekeepy_wheel
+      artifacts: true
+  before_script:
+    - !reference [.python_based, before_script]
+    # beekeepy is installed from whl so beekeeper is included in package
+    - cd "$BEEKEEPY_DIR" && poetry install --no-root
+    - pip install $(find "$CI_PROJECT_DIR/dist" -name *.whl)
+
 .beem_tests_base:
   stage: test
   extends: .test_tools_based
@@ -467,6 +479,17 @@ formatting_with_black_check:
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+
+beekeepy_tests:
+  extends: .beekeepy_based
+  variables:
+    JUNIT_REPORT: $BEEKEEPY_DIR/tests/report.xml
+    PYTEST_TIMEOUT_MINUTES: 5
+  script:
+    - cd "$BEEKEEPY_DIR/tests"
     - *run-pytest
   tags:
     - public-runner-docker
