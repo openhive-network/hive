@@ -21,6 +21,7 @@ variables:
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
   TOX_VERSION: "3.25.1"
+  BEEKEEPY_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_python"
 
   DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
@@ -38,7 +39,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 7ea99b10bbf0f9b1fbb88f52a78ead4c82f15d75
+    ref: 38773d53b2470a6e6cfa6ba22adabbceac5f4506
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -159,6 +160,32 @@ beekeeper_wasm_package_generation:
     when: always
     expire_in: 1 week
 
+  tags:
+    - public-runner-docker
+
+build_beekeepy_wheel:
+  stage: build
+  extends: .build_wheel_template
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  variables:
+    PYPROJECT_DIR: "$BEEKEEPY_DIR"
+  before_script:
+    - cp $CI_PROJECT_DIR/hived-binaries/beekeeper $BEEKEEPY_DIR/beekeepy/beekeeper
+  tags:
+    - public-runner-docker
+
+deploy_beekeepy_wheel_to_gitlab:
+  stage: publish
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "$BEEKEEPY_DIR"
+  needs:
+    - job: pre_commit_checks
+    - job: build_beekeepy_wheel
+      artifacts: true
+  when: on_success
   tags:
     - public-runner-docker
 
@@ -1089,4 +1116,3 @@ deploy_beekeeper_wasm_production_public_npm:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
       when: manual
       allow_failure: true
-
