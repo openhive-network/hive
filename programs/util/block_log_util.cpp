@@ -14,6 +14,7 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/utilities/io_primitives.hpp>
+#include <hive/utilities/git_revision.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/scope_exit.hpp>
@@ -34,6 +35,21 @@
 #include <queue>
 #include <atomic>
 #include <algorithm>
+
+void print_version()
+{
+  std::stringstream ss;
+  ss << "git revision: " << hive::utilities::git_revision_sha << "\n";
+  ss << "Configured for network type: ";
+#ifdef IS_TEST_NET
+  ss << "testnet";
+#elif HIVE_CONVERTER_BUILD
+  ss << "mirrornet";
+#else
+  ss << "mainnet";
+#endif
+  std::cout << ss.str() << "\n";
+}
 
 struct extended_signed_block_header : public hive::protocol::signed_block_header
 {
@@ -670,12 +686,10 @@ bool generate_block_log_artifacts(const fc::path& block_log_path, appbase::appli
 
 int main(int argc, char** argv)
 {
-  appbase::application theApp;
-  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
-
   boost::program_options::options_description global_options("Global options");
   global_options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(4), "The number of worker threads to spawn");
   global_options.add_options()("help,h", "Print usage instructions");
+  global_options.add_options()("version,v", "Print version info.");
   global_options.add_options()("command", boost::program_options::value<std::string>()->required(), "command to execute");
   global_options.add_options()("subargs", boost::program_options::value<std::vector<std::string>>(), "Arguments for command");
 
@@ -769,6 +783,7 @@ int main(int argc, char** argv)
   generate_artifacts_positional_options.add("block-log", 1);
 
   const auto print_usage = [&]() {
+    print_version();
     std::cout << global_options << "\n";
     std::cout << "Supported subcommands:\n";
     std::cout << "  cmp\n";
@@ -802,11 +817,20 @@ int main(int argc, char** argv)
     boost::program_options::variables_map options_map;
     boost::program_options::store(parsed_global_options, options_map);
 
+    if (options_map.count("version"))
+    {
+      print_version();
+      return 0;
+    }
+
     if (options_map.count("help") || !options_map.count("command"))
     {
       print_usage();
       return options_map.count("help") ? 0 : 1;
     }
+
+    appbase::application theApp;
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
 
     thread_pool.set_thread_pool_size(options_map["jobs"].as<int>());
     BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
