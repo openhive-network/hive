@@ -605,6 +605,8 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
 
   try
   {
+    uint32_t counter = 0;
+
     while(block_num > last_block_num_to_verify)
     {
       const auto block_artifacts = read_block_artifacts(block_num);
@@ -625,6 +627,13 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
         FC_THROW("Full block got by offset has malformed uncompressed block size!");
 
       --block_num;
+      ++counter;
+
+      if (counter >= 1000000)
+      {
+        dlog("artifacts verification in progress - just verified artifacts for block number: ${block_num}", (block_num));
+        counter = 0;
+      }
     }
   }
   catch (const fc::exception& e)
