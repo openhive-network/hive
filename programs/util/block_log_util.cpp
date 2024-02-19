@@ -675,8 +675,6 @@ int main(int argc, char** argv)
 
   boost::program_options::options_description global_options("Global options");
   global_options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(4), "The number of worker threads to spawn");
-  global_options.add_options()("verbose,v", "Enable info messages to stderr");
-  global_options.add_options()("debug", "Enable debug messages to stderr");
   global_options.add_options()("help,h", "Print usage instructions");
   global_options.add_options()("command", boost::program_options::value<std::string>()->required(), "command to execute");
   global_options.add_options()("subargs", boost::program_options::value<std::vector<std::string>>(), "Arguments for command");
@@ -813,17 +811,12 @@ int main(int argc, char** argv)
     thread_pool.set_thread_pool_size(options_map["jobs"].as<int>());
     BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
 
-    if (options_map.count("verbose") || options_map.count("debug"))
-    {
-      fc::logging_config logging_config;
-      logging_config.appenders.push_back(fc::appender_config("stderr", "console", fc::variant(fc::console_appender::config())));
-      logging_config.loggers = { fc::logger_config("default") };
-      logging_config.loggers.front().level = options_map.count("debug") ? fc::log_level::debug : fc::log_level::info;
-      logging_config.loggers.front().appenders = {"stderr"};
-      fc::configure_logging(logging_config);
-    }
-    else
-      fc::configure_logging(fc::logging_config());
+    fc::logging_config logging_config;
+    logging_config.appenders.push_back(fc::appender_config("stderr", "console", fc::variant(fc::console_appender::config())));
+    logging_config.loggers = { fc::logger_config("default") };
+    logging_config.loggers.front().level = fc::log_level::debug;
+    logging_config.loggers.front().appenders = {"stderr"};
+    fc::configure_logging(logging_config);
 
     const std::string command = options_map["command"].as<std::string>();
     if (command == "sha256sum")
