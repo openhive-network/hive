@@ -158,6 +158,7 @@ namespace appbase {
       void set_default_plugins() { default_plugins = { Plugin::name()... }; }
 
       boost::asio::io_service& get_io_service() { return handler_wrapper.get_io_service(); }
+      void barrier( bool start ) { handler_wrapper.barrier( start ); }
 
       void generate_interrupt_request();
 

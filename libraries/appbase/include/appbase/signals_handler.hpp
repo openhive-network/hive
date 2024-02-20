@@ -29,6 +29,21 @@ namespace appbase {
 
       std::mutex                        close_mtx;
 
+      struct
+      {
+        bool                    done = true;
+        std::mutex              mtx;
+        std::condition_variable cv;
+
+        void barrier( bool start )
+        {
+          done = !start;
+          if( !start )
+            cv.notify_one();
+        }
+
+      } final_action_data;
+
       boost::asio::io_service           io_serv;
 
       void handle_signal( const boost::system::error_code& err, int signal_number );
@@ -45,6 +60,7 @@ namespace appbase {
       void close();
 
       boost::asio::io_service& get_io_service();
+      void barrier( bool start );
   };
 
   class signals_handler_wrapper
@@ -72,5 +88,6 @@ namespace appbase {
       bool is_thread_closed();
 
       boost::asio::io_service& get_io_service();
+      void barrier( bool start );
   };
 }

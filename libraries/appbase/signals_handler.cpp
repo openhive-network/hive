@@ -34,6 +34,11 @@ boost::asio::io_service& signals_handler::get_io_service()
   return io_serv;
 }
 
+void signals_handler::barrier( bool start )
+{
+  final_action_data.barrier( start );
+}
+
 void signals_handler::close()
 {
   /** Since signals can be processed asynchronously, it would be possible to call this twice
@@ -44,6 +49,11 @@ void signals_handler::close()
   if( !closed )
   {
     interrupt_request_generation();
+
+    {
+      std::unique_lock<std::mutex> _final_lock( final_action_data.mtx );
+      final_action_data.cv.wait( _final_lock, [this](){ return final_action_data.done; } );
+    }
 
     final_action();
 
@@ -163,6 +173,11 @@ void signals_handler_wrapper::block_signals()
 boost::asio::io_service& signals_handler_wrapper::get_io_service()
 {
   return handler.get_io_service();
+}
+
+void signals_handler_wrapper::barrier( bool start )
+{
+  handler.barrier( start );
 }
 
 }
