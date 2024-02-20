@@ -4,7 +4,7 @@
     {
       "time_unit": "blocks",
       "budget_time": { "days": 30 },
-      "budget": "37500000000",
+      "budget": "3750000000000",
       "half_life": { "days": 15 },
       "resource_unit_base": 10,
       "resource_unit_exponent": 0,
@@ -38,7 +38,7 @@
     {
       "time_unit": "blocks",
       "budget_time": { "days": 30 },
-      "budget": "6250000000",
+      "budget": "625000000000",
       "half_life": { "hours": 16 },
       "resource_unit_base": 10,
       "resource_unit_exponent": 1,
@@ -72,7 +72,7 @@
     {
       "time_unit": "blocks",
       "budget_time": { "hours": 1 },
-      "budget": "48000000000",
+      "budget": "480000000000",
       "half_life": { "hours": 1 },
       "resource_unit_base": 10,
       "resource_unit_exponent": 0,
