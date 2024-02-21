@@ -61,7 +61,7 @@ def test_verify_prepared_signature(serialization_type, expected_signature):
           "account_auths": [],
           "key_auths": [
             [
-              "TST6bNK2f2kwNsNFPY1brmBWFUCnesQfrtHzXAR4h6urZB2WvG8AT",
+              "STM6bNK2f2kwNsNFPY1brmBWFUCnesQfrtHzXAR4h6urZB2WvG8AT",
               1
             ]
           ]
@@ -71,7 +71,7 @@ def test_verify_prepared_signature(serialization_type, expected_signature):
           "account_auths": [],
           "key_auths": [
             [
-              "TST6rnWpbK62dMtgYNm834pJPT5cNMPYsY16BLaa91YMtzdBeAAtc",
+              "STM6rnWpbK62dMtgYNm834pJPT5cNMPYsY16BLaa91YMtzdBeAAtc",
               1
             ]
           ]
@@ -81,12 +81,12 @@ def test_verify_prepared_signature(serialization_type, expected_signature):
           "account_auths": [],
           "key_auths": [
             [
-              "TST7uWKRzb5UnEao9o1cPvviZ4mJwBw9frP5pJcK6DpNhn1BKNYBm",
+              "STM7uWKRzb5UnEao9o1cPvviZ4mJwBw9frP5pJcK6DpNhn1BKNYBm",
               1
             ]
           ]
         },
-        "memo_key": "TST5uwpctKP6bcxhk7poWFqmKSwtwkFrQxFWD8ix7PNr6ekfAd8Wd",
+        "memo_key": "STM5uwpctKP6bcxhk7poWFqmKSwtwkFrQxFWD8ix7PNr6ekfAd8Wd",
         "json_metadata": "{}"
       }
     }
