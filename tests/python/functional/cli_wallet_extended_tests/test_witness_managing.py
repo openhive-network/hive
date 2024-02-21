@@ -20,7 +20,7 @@ def test_witness(wallet: tt.Wallet) -> None:
     wallet.api.update_witness(
         "alice",
         "http:\\url.html",
-        "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
+        "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
         {"account_creation_fee": "2789.030 TESTS", "maximum_block_size": 131072, "hbd_interest_rate": 1000},
     )
 

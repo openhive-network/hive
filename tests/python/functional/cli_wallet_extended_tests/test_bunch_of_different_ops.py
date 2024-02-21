@@ -4,8 +4,8 @@ import test_tools as tt
 
 from .utilities import check_keys, create_accounts
 
-key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
-key2 = "TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
+key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+key2 = "STM7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
 
 """
   This test designed for different operations in different order so as to do some operations similar to main-net.

@@ -15,7 +15,7 @@ def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.Wallet
 
     wallet.api.claim_account_creation_nonblocking("initminer", tt.Asset.Test(0))
 
-    key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+    key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
 
     response = wallet.api.create_account_with_keys("initminer", "alice1", "{}", key, key, key, key)
 
@@ -24,7 +24,7 @@ def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.Wallet
 
     response = wallet.api.get_account("alice1")
 
-    key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+    key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
 
     wallet.api.create_funded_account_with_keys(
         "initminer", "alice2", tt.Asset.Test(2), "banana", "{}", key, key, key, key
@@ -42,7 +42,7 @@ def test_account_creation_with_exception(wallet: tt.Wallet) -> None:
         assert found != -1
 
     try:
-        key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+        key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
         wallet.api.create_account_with_keys_delegated(
             "initminer", tt.Asset.Test(4), tt.Asset.Vest(6.123456), "alicey", "{}", key, key, key, key
         )
