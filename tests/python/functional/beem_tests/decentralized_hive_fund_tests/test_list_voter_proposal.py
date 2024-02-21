@@ -132,7 +132,7 @@ def test_list_voter_proposal(node_client: NodeClientMaker):
     account = {
         "name": "tester001",
         "private_key": "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa",
-        "public_key": "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J",
+        "public_key": "STM8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J",
     }
 
     node_client = node_client(accounts=[account])
