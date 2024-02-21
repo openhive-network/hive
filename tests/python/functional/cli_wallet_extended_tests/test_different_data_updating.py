@@ -24,7 +24,7 @@ def test_update(wallet: tt.Wallet) -> None:
     assert __account_auths[0] == "initminer"
     assert __account_auths[1] == 2
 
-    wallet.api.update_account_auth_key("alice", "posting", "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f", 3)
+    wallet.api.update_account_auth_key("alice", "posting", "STM8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f", 3)
 
     response = wallet.api.get_account("alice")
 
@@ -33,7 +33,7 @@ def test_update(wallet: tt.Wallet) -> None:
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
     assert len(__key_auths) == 2
-    assert __key_auths[0] == "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
+    assert __key_auths[0] == "STM8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
     assert __key_auths[1] == 3
 
     wallet.api.update_account_auth_threshold("alice", "posting", 4)
@@ -45,20 +45,20 @@ def test_update(wallet: tt.Wallet) -> None:
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
     assert len(__key_auths) == 2
-    assert __key_auths[0] == "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
+    assert __key_auths[0] == "STM8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
     assert _posting["weight_threshold"] == 4
 
-    wallet.api.update_account_memo_key("alice", "TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ")
+    wallet.api.update_account_memo_key("alice", "STM84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ")
 
     response = wallet.api.get_account("alice")
 
-    assert response["memo_key"] == "TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ"
+    assert response["memo_key"] == "STM84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ"
 
     wallet.api.update_account_meta("alice", '{ "test" : 4 }')
 
     assert json.loads(wallet.api.get_account("alice")["json_metadata"]) == {"test": 4}
 
-    key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+    key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
 
     wallet.api.update_account("alice", "{}", key, key, key, key)
 
