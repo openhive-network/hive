@@ -68,7 +68,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
-#define HIVE_ADDRESS_PREFIX                   "TST"
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(configuration_data.get_hf_time(0, 1451606400)))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
@@ -147,7 +146,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
 # define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #endif
-#define HIVE_ADDRESS_PREFIX                   "STM"
 
 #ifdef USE_ALTERNATE_CHAIN_ID
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(configuration_data.get_hf_time(0, 1458835200)))
@@ -211,6 +209,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #endif
 
 #define HIVE_BLOCKCHAIN_HARDFORK_VERSION      ( hardfork_version( HIVE_BLOCKCHAIN_VERSION ) )
+
+#define HIVE_ADDRESS_PREFIX                   "STM"
+
 
 #define HIVE_100_PERCENT                      10000
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
