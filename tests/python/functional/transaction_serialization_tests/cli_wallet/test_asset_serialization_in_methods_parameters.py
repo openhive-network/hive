@@ -118,7 +118,7 @@ def test_claim_account_creation_nonblocking(
 def test_create_funded_account_with_keys(
     node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, create_account_test_amount
 ):
-    key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+    key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
     prepared_wallet.api.create_funded_account_with_keys(
         "initminer", "alice", create_account_test_amount, "memo", "{}", key, key, key, key
     )
