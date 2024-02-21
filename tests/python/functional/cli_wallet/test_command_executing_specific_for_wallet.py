@@ -123,7 +123,7 @@ def test_generate_keys(configured_wallet: tt.Wallet) -> None:
     result = configured_wallet.api.get_private_key_from_password("hulabula", "owner", "apricot")
     assert len(result) == 2
 
-    assert result[0] == "TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB"
+    assert result[0] == "STM5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB"
     assert result[1] == "5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H"
 
 
@@ -139,7 +139,7 @@ def test_suggest_brain_key(configured_wallet: tt.Wallet) -> None:
 
     assert len(brain_priv_key) == 16
     assert len(result["wif_priv_key"]) == 51
-    assert result["pub_key"].startswith("TST")
+    assert result["pub_key"].startswith("STM")
 
 
 def test_set_transaction_expiration() -> None:
