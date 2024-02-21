@@ -47,5 +47,5 @@ def test_get_owner_history_with_incorrect_type_of_argument(
 def create_and_update_account(wallet: tt.Wallet, account_name: str) -> None:
     wallet.api.create_account("initminer", account_name, "{}")
     wallet.api.transfer_to_vesting("initminer", account_name, tt.Asset.Test(500))
-    key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
+    key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
     wallet.api.update_account(account_name, "{}", key, key, key, key)
