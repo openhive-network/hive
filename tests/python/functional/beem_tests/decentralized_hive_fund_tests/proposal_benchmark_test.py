@@ -302,7 +302,7 @@ if __name__ == "__main__":
             {
                 "name": "",
                 "private_key": "5JBuekd1sVXXK3wBu6nvPB1LWypZ83BYdu7tGcUNYVd42xQGGh1",
-                "public_key": "TST5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN",
+                "public_key": "STM5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN",
             }
         )
         accounts[len(accounts) - 1]["name"] = "tester" + str(i)
