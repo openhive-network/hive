@@ -33,8 +33,8 @@ def test_list_my_accounts_with_correct_value(
 @pytest.mark.parametrize(
     "account_key",
     [
-        "TST6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qor",  # non exist key with correct format
-        "TST6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qord",  # non exist key with too much signs
+        "STM6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qor",  # non exist key with correct format
+        "STM6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qord",  # non exist key with too much signs
         "TS6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qor",  # non exist key with less signs
         "",
         "true",
