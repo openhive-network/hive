@@ -27,8 +27,8 @@ std::atomic<uint32_t> non_cached_get_required_authorities_calls = {0};
 full_transaction_type::full_transaction_type()
 {
   number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
-  // if (number_of_instances_created.load() % 100000 == 0)
-  //   ilog("Currently ${count} full_transactions in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
+  if (number_of_instances_created.load() % 100000 == 0)
+    ilog("Currently ${count} full_transactions in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
 full_transaction_type::~full_transaction_type()
