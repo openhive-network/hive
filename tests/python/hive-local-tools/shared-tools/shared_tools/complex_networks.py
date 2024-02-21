@@ -245,7 +245,7 @@ def generate_networks(
 
     run_networks(builder.networks, None)
 
-    initminer_public_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+    initminer_public_key = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
     init_network(
         builder.init_node,
         builder.witness_names,
