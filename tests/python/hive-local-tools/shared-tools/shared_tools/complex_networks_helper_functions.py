@@ -83,7 +83,7 @@ def enable_witnesses(wallet: tt.Wallet, witness_details: list):
 
 
 def disable_witnesses(wallet: tt.Wallet, witness_details: list):
-    key = "TST5NUU7M7pmqMpMHUwscgUBMuwLQE56MYwCLF7q9ZGB6po1DMNoG"
+    key = "STM5NUU7M7pmqMpMHUwscgUBMuwLQE56MYwCLF7q9ZGB6po1DMNoG"
     with wallet.in_single_transaction():
         for name in witness_details:
             wallet.api.update_witness(
