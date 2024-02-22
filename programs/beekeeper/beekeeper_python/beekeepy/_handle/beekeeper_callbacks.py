@@ -17,7 +17,8 @@ from schemas.notifications import (
 
 
 class NotificationCallback(Protocol):
-    def __call__(self, notification: Notification[Any]) -> None: ...
+    def __call__(self, notification: Notification[Any]) -> None:
+        ...
 
 
 @dataclass
@@ -70,7 +71,9 @@ class BeekeeperCallbacks:
         return f"{notification.value.address}:{notification.value.port}"
 
     @abstractmethod
-    def _handle_error(self, error: Error) -> None: ...
+    def _handle_error(self, error: Error) -> None:
+        ...
 
     @abstractmethod
-    def _handle_status_change(self, status: Status) -> None: ...
+    def _handle_status_change(self, status: Status) -> None:
+        ...
