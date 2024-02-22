@@ -18,6 +18,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/lock_options.hpp>
+#include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/filesystem.hpp>
 
@@ -56,6 +57,7 @@ namespace hive { namespace chain {
         int block_log_fd;
         fc::path block_file;
         block_log_artifacts::block_log_artifacts_ptr_t _artifacts;
+        boost::interprocess::file_lock _flock;
 
         static void write_with_retry(int filedes, const void* buf, size_t nbyte);
         static void pwrite_with_retry(int filedes, const void* buf, size_t nbyte, off_t offset);
@@ -170,6 +172,20 @@ namespace hive { namespace chain {
       my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
       if (my->block_log_fd == -1)
         FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
+
+      my->_flock = boost::interprocess::file_lock(my->block_file.generic_string().c_str());
+
+      if (read_only)
+      {
+        if (!my->_flock.try_lock_sharable())
+          FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", my->block_file.generic_string().c_str()));
+      }
+      else
+      {
+        if (!my->_flock.try_lock())
+          FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", my->block_file.generic_string().c_str()));
+      }
+
       my->block_log_size = get_file_size(my->block_log_fd);
 
       /* On startup of the block log, there are several states the log file and the index file can be

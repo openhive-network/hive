@@ -14,6 +14,7 @@
 #include <fc/io/json.hpp>
 
 #include <boost/lockfree/spsc_queue.hpp>
+#include <boost/interprocess/sync/file_lock.hpp>
 
 #include <fcntl.h>
 
@@ -286,6 +287,7 @@ private:
   artifact_file_header _header;
   const size_t header_pack_size = sizeof(_header);
   const size_t artifact_chunk_size = sizeof(artifact_file_chunk);
+  boost::interprocess::file_lock _flock;
   bool _is_writable = false;
 
   appbase::application& theApp;
@@ -314,6 +316,10 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     if (_storage_fd == -1)
       FC_THROW("Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
+    _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
+    if (!_flock.try_lock_sharable())
+      FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+
     if (!load_header())
       FC_THROW("Cannot load header of artifacts file: ${_artifact_file_name}", (_artifact_file_name));
 
@@ -341,6 +347,10 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         if (_storage_fd == -1)
           FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
+        _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
+        if (!_flock.try_lock())
+          FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+
         _header.dirty_close = 1;
         flush_header();
 
@@ -359,6 +369,11 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     else
     {
       /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
+
+      _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
+      if (!_flock.try_lock())
+        FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+
       if (load_header())
       {
         _header.dirty_close = 1;
