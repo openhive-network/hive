@@ -14,7 +14,7 @@ def prepare_blocklog_with_comments() -> None:
 
     node = tt.InitNode()
     node.run(
-        time_control="+0h x20",
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=20),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(genesis_time.timestamp()),
             hardfork_schedule=[

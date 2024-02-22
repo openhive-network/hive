@@ -14,12 +14,7 @@ def node() -> tt.InitNode:
     node = tt.InitNode()
     time_of_hf_23 = "2020-03-20T14:00:00"
     # run with a date earlier than the start date of hardfork 23
-    node.run(
-        time_control=tt.Time.serialize(
-            tt.Time.parse(time_of_hf_23) - tt.Time.seconds(10),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
-    )
+    node.run(time_control=tt.StartTimeControl(start_time=tt.Time.parse(time_of_hf_23) - tt.Time.seconds(10)))
 
     assert node.api.condenser.get_hardfork_version() == "0.22.0"
     return node

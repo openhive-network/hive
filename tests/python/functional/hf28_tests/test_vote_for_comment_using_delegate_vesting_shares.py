@@ -11,7 +11,7 @@ def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode) -> Non
     """
     Problem description: https://gitlab.syncad.com/hive/hive/-/issues/463
     """
-    node.restart(time_control="+0h x5")
+    node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     wallet = tt.Wallet(attach_to=node)
 
     node.set_vest_price(tt.Asset.Vest(1800))
@@ -30,7 +30,7 @@ def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode) -> Non
 
 @run_for("testnet")
 def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_rights(node: tt.InitNode) -> None:
-    node.restart(time_control="+0h x5")
+    node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     wallet = tt.Wallet(attach_to=node)
 
     node.set_vest_price(tt.Asset.Vest(1800))
@@ -46,7 +46,7 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
     node.wait_for_irreversible_block()
 
-    node.restart(time_control="+62m")
+    node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
     bob = node.api.wallet_bridge.get_accounts(["bob"])[0]
     assert bob.reward_vesting_balance > tt.Asset.Vest(0)
     assert bob.reward_vesting_hive > tt.Asset.Test(0)
@@ -56,7 +56,7 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
 def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_is_being_executed(
     node: tt.InitNode,
 ) -> None:
-    node.restart(time_control="+0h x5")
+    node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     wallet = tt.Wallet(attach_to=node)
 
     node.set_vest_price(tt.Asset.Vest(1800))
@@ -71,7 +71,7 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
     wallet.api.vote("bob", "creator-0", "comment-of-creator-0", 100)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    node.restart(time_control="+62m")
+    node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
     bob = node.api.wallet_bridge.get_accounts(["bob"])[0]
     assert bob.reward_vesting_balance > tt.Asset.Vest(0)
     assert bob.reward_vesting_hive > tt.Asset.Test(0)
@@ -81,7 +81,7 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
 def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_voting_rights_request(
     node: tt.InitNode | tt.RemoteNode,
 ) -> None:
-    node.restart(time_control="+0h x5")
+    node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     wallet = tt.Wallet(attach_to=node)
 
     node.set_vest_price(tt.Asset.Vest(1800))
@@ -97,7 +97,7 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
     wallet.api.vote("bob", "creator-0", "comment-of-creator-0", 100)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    node.restart(time_control="+62m")
+    node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
     bob = node.api.wallet_bridge.get_accounts(["bob"])[0]
     assert bob.reward_vesting_balance > tt.Asset.Vest(0)
     assert bob.reward_vesting_hive > tt.Asset.Test(0)

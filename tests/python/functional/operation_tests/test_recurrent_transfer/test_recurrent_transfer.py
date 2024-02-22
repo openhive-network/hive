@@ -420,9 +420,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
     receiver.update_account_info()
 
     # Update recurrence after second transfer and before third one.
-    node.restart(
-        time_control=tt.Time.serialize(node.get_head_block_time() + offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
-    )
+    node.restart(time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + offset))
     recurrent_transfer.update(new_recurrence_time=update_recurrence_time)
     sender.rc_manabar.assert_rc_current_mana_is_reduced(
         operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
@@ -508,11 +506,7 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.update_account_info()
 
     # Update first time - increase the number of executions and the frequency of recurrent transfers.
-    node.restart(
-        time_control=tt.Time.serialize(
-            node.get_head_block_time() + tt.Time.days(2), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
-        )
-    )
+    node.restart(time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + tt.Time.days(2)))
 
     recurrent_transfer.update(
         amount=amount_2,
@@ -541,11 +535,7 @@ def test_recurrent_transfer_cases_17_and_18(
     sender.update_account_info()
     receiver.update_account_info()
 
-    node.restart(
-        time_control=tt.Time.serialize(
-            node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
-        )
-    )
+    node.restart(time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + tt.Time.days(1)))
     assert node.get_head_block_time() < recurrent_transfer.get_next_execution_date()
 
     # Update second time - decrease the number of executions and the frequency of recurrent transfers.
@@ -627,9 +617,8 @@ def test_recurrent_transfer_cases_19_and_20(
 
     # Check balances after `recurrence` time.
     node.restart(
-        time_control=tt.Time.serialize(
-            node.get_head_block_time() + tt.Time.hours(MIN_RECURRENT_TRANSFERS_RECURRENCE),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
+        time_control=tt.StartTimeControl(
+            start_time=node.get_head_block_time() + tt.Time.hours(MIN_RECURRENT_TRANSFERS_RECURRENCE)
         )
     )
     assert len(get_virtual_operations(node, FailedRecurrentTransferOperation)) == 2, error_message

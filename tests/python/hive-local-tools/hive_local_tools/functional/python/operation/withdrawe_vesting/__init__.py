@@ -89,23 +89,13 @@ class PowerDown(Operation):
         actual_head_block_time = self._node.get_head_block_time()
         for num, t in enumerate(self._tranche_schedule):
             if t > actual_head_block_time:
-                self._node.restart(
-                    time_control=tt.Time.serialize(
-                        self._tranche_schedule[num],
-                        format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-                    )
-                )
+                self._node.restart(time_control=tt.StartTimeControl(start_time=self._tranche_schedule[num]))
                 self._remaining_executions -= 1
                 self._node.wait_for_irreversible_block()
                 break
 
     def execute_last_withdraw(self) -> None:
-        self._node.restart(
-            time_control=tt.Time.serialize(
-                self._tranche_schedule[-1],
-                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-            )
-        )
+        self._node.restart(time_control=tt.StartTimeControl(start_time=self._tranche_schedule[-1]))
         self._remaining_executions = 0
         self._node.wait_for_irreversible_block()
         assert self._node.get_head_block_time() >= self._tranche_schedule[-1]

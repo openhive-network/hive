@@ -189,9 +189,8 @@ class Account:
             ]
         )
         self._node.restart(
-            time_control=tt.Time.serialize(
-                last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS),
-                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
+            time_control=tt.StartTimeControl(
+                start_time=last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)
             )
         )
         assert len(self._node.api.database.find_accounts(accounts=[self.name]).accounts[0].delayed_votes) == 0
@@ -478,12 +477,7 @@ def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
 def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:
     if wait_for_irreversible:
         node.wait_for_irreversible_block()
-    node.restart(
-        time_control=tt.Time.serialize(
-            time_control,
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
-    )
+    node.restart(time_control=tt.StartTimeControl(start_time=time_control))
 
 
 class ExtendedManabar(Manabar):

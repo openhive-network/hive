@@ -2,16 +2,12 @@
 These tests based on the block-log with existing proposals."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 
+import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 from hive_local_tools.functional.python.operation import Account, list_votes_for_all_proposals
 from hive_local_tools.functional.python.operation.update_proposal_votes import UpdateProposalVotes
-
-if TYPE_CHECKING:
-    import test_tools as tt
 
 
 @pytest.mark.testnet()
@@ -50,5 +46,5 @@ def test_expiration_of_update_proposal_vote(node: tt.InitNode, wallet: tt.Wallet
         assert len(list_votes_for_all_proposals(node)) == proposal_id + 1
         voter.update_account_info()
 
-    node.restart(time_control=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD}s")
+    node.restart(time_control=tt.OffsetTimeControl(offset=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD}s"))
     assert len(list_votes_for_all_proposals(node)) == 0
