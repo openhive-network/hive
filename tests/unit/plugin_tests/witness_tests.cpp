@@ -22,7 +22,8 @@ struct witness_fixture : public hived_fixture
   witness_fixture() : hived_fixture( true, false ) {}
   virtual ~witness_fixture() {}
 
-  void initialize()
+  void initialize( const config_arg_override_t& extra_config_arg_overrides = config_arg_override_t(),
+    const std::string& shared_file_size = "1G" )
   {
     theApp.init_signals_handler();
 
@@ -34,14 +35,15 @@ struct witness_fixture : public hived_fixture
     // genesis slightly in the future
     configuration_data.set_hardfork_schedule( genesis_time, { { HIVE_NUM_HARDFORKS, 1 } } );
 
-    postponed_init(
-      {
-        config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
-        config_line_t( { "shared-file-size", { "1G" } } ),
-        config_line_t( { "witness", { "\"initminer\"" } } ),
-        config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
-      }
-    );
+    config_arg_override_t config_arg_overrides = {
+      config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
+      config_line_t( { "shared-file-size", { shared_file_size } } ),
+      config_line_t( { "witness", { "\"initminer\"" } } ),
+      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
+    };
+    config_arg_overrides.insert( config_arg_overrides.end(),
+      extra_config_arg_overrides.begin(), extra_config_arg_overrides.end() );
+    postponed_init( config_arg_overrides );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
