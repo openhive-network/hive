@@ -472,35 +472,37 @@ namespace detail {
     catch( const chain::unknown_hardfork_exception& e )
     {
       // Hit a hardfork that the current node know nothing about, stop production and inform user
-      elog( "${e}\nNode may be out of date...", ("e", e.to_detail_string()) );
+      elog( "${e}\nNode may be out of date...", ( "e", e.to_detail_string() ) );
       throw;
     }
     catch( const fc::exception& e )
     {
-      elog("Got exception while generating block:\n${e}", ("e", e.to_detail_string()));
+      elog( "Got exception while generating block:\n${e}", ( "e", e.to_detail_string() ) );
       result = block_production_condition::exception_producing_block;
     }
 
     switch(result)
     {
       case block_production_condition::produced:
-        ilog("Generated block #${n} with timestamp ${t} at time ${c}", ("n", capture["n"])("t", capture["t"])("c", capture["c"]));
+        ilog( "Generated block #${n} with timestamp ${t} at time ${c}",
+          ( "n", capture["n"] )( "t", capture["t"] )( "c", capture["c"] ) );
         break;
       case block_production_condition::not_synced:
-  //      ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+        //ilog( "Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)" );
         break;
       case block_production_condition::not_my_turn:
-  //      ilog("Not producing block because it isn't my turn");
+        //ilog( "Not producing block because it isn't my turn" );
         break;
       case block_production_condition::not_time_yet:
-  //      ilog("Not producing block because slot has not yet arrived");
+        //ilog( "Not producing block because slot has not yet arrived" );
         break;
       case block_production_condition::no_private_key:
         break;
       case block_production_condition::low_participation:
         break;
       case block_production_condition::lag:
-        elog("Not producing block because node didn't wake up within ${t}ms of the slot time.", ("t", BLOCK_PRODUCING_LAG_TIME));
+        elog( "Not producing block because node didn't wake up within ${t}ms of the slot time.",
+          ( "t", BLOCK_PRODUCING_LAG_TIME ) );
         break;
       case block_production_condition::exception_producing_block:
         elog( "exception producing block" );
