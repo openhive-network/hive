@@ -24,7 +24,9 @@ struct witness_fixture : public hived_fixture
 
   void initialize( int genesis_delay = 1, // genesis slightly in the future (or past with negative values)
     const std::vector< std::string > initial_witnesses = {}, // initial witnesses over 'initminer'
-    const std::vector< std::string > represented_witnesses = { "initminer" } ) // which witnesses can produce
+    const std::vector< std::string > represented_witnesses = { "initminer" }, // which witnesses can produce
+    const config_arg_override_t& extra_config_args = config_arg_override_t(),
+    const std::string& shared_file_size = "1G" )
   {
     theApp.init_signals_handler();
 
@@ -46,11 +48,12 @@ struct witness_fixture : public hived_fixture
 
     config_arg_override_t config_args = {
       config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
-      config_line_t( { "shared-file-size", { "1G" } } ),
+      config_line_t( { "shared-file-size", { shared_file_size } } ),
       config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
     };
     for( auto& name : represented_witnesses )
       config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
+    config_args.insert( config_args.end(), extra_config_args.begin(), extra_config_args.end() );
 
     postponed_init( config_args, &witness_plugin );
 
