@@ -37,7 +37,7 @@ def prepare_block_log_with_many_vote_for_proposals() -> None:
     """
     node = tt.InitNode()
     node.config.shared_file_size = "16G"
-    node.run(time_control=f"+0s x{TIME_MULTIPLIER!s}")
+    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=TIME_MULTIPLIER))
 
     wallet = tt.Wallet(attach_to=node)
     wallet.api.set_transaction_expiration(3600 - 1)
@@ -74,7 +74,11 @@ def prepare_block_log_with_many_vote_for_proposals() -> None:
 
     # Wait for new vests to be unlocked ( delayed voting mechanism )
     node.wait_for_irreversible_block()
-    node.restart(time_control=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD!s}s x{TIME_MULTIPLIER!s}")
+    node.restart(
+        time_control=tt.StartTimeControl(
+            start_time=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD!s}s", speed_up_rate=TIME_MULTIPLIER
+        )
+    )
     next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
     wallet.api.set_transaction_expiration(3600 - 1)
 

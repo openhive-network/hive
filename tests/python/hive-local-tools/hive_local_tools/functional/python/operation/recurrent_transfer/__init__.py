@@ -125,10 +125,7 @@ class RecurrentTransfer:
         Move forward by {recurrence} time from the last scheduled recurring transfer.
         """
         self._node.restart(
-            time_control=tt.Time.serialize(
-                self._current_schedule[-1] + tt.Time.hours(self._recurrence),
-                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-            )
+            time_control=tt.StartTimeControl(start_time=self._current_schedule[-1] + tt.Time.hours(self._recurrence))
         )
 
     def execute_future_transfer(self, execution_date=None):
@@ -136,31 +133,16 @@ class RecurrentTransfer:
         if not execution_date:
             for num, t in enumerate(self._current_schedule):
                 if t > actual_head_block_time:
-                    self._node.restart(
-                        time_control=tt.Time.serialize(
-                            self._current_schedule[num],
-                            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-                        )
-                    )
+                    self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[num]))
                     time_after_restart = self._node.get_head_block_time()
                     self._last_execution_time = self._current_schedule[num]
                     assert time_after_restart >= self._current_schedule[num]
                     break
         else:
-            self._node.restart(
-                time_control=tt.Time.serialize(
-                    execution_date,
-                    format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-                )
-            )
+            self._node.restart(time_control=tt.StartTimeControl(start_time=execution_date))
 
     def execute_last_transfer(self):
-        self._node.restart(
-            time_control=tt.Time.serialize(
-                self._current_schedule[-1],
-                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-            )
-        )
+        self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[-1]))
         self._node.wait_number_of_blocks(1)
         assert self._node.get_head_block_time() > self._current_schedule[-1]
         self._last_execution_time = self._current_schedule[-1]

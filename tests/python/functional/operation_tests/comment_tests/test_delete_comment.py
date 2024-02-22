@@ -92,7 +92,7 @@ def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: 
 
     # waiting for cashout 60 minutes
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment.delete()
@@ -117,7 +117,7 @@ def test_reuse_deleted_permlink(prepared_node: tt.InitNode, wallet: tt.Wallet, r
     comment.assert_is_rc_mana_decreased_after_comment_delete()
 
     # Skip 1 hour to create post again
-    prepared_node.restart(time_control="+1h")
+    prepared_node.restart(time_control=tt.OffsetTimeControl(offset="+1h"))
     comment.send(reply_type=reply_type)
 
     comment.assert_is_rc_mana_decreased_after_post_or_update()

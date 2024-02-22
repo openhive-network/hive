@@ -31,7 +31,7 @@ def prepare_block_log() -> None:
     """
     node = tt.InitNode()
     node.config.shared_file_size = "16G"
-    node.run(time_control="+0 x15")
+    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=15))
 
     wallet = tt.Wallet(attach_to=node)
 

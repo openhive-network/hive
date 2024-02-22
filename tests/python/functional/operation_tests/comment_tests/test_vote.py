@@ -35,7 +35,7 @@ def test_vote_on_comment(
     if wait_for_payout:
         # waiting for cashout 60 minutes
         start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-        prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+        prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     vote = Vote(comment, voter=voter)
     getattr(vote, vote_type)(vote_weight)
@@ -181,7 +181,7 @@ def test_vote_on_paid_out_comment_with_not_allowed_votes(
 
     # waiting for cashout 60 minutes
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     comment.assert_is_comment_sent_or_update()
 

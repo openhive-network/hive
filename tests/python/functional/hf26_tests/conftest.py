@@ -1,21 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 
 import test_tools as tt
 from shared_tools.complex_networks import init_network
 
 
-def run_with_faketime(node, time):
-    # time example: '2020-01-01T00:00:00'
-    requested_start_time = tt.Time.parse(time)
-    node.run(time_control=f'{tt.Time.serialize(requested_start_time, format_="@%Y-%m-%d %H:%M:%S")}')
-
-
 @pytest.fixture()
 def node_hf25() -> tt.InitNode:
     node = tt.InitNode()
-    run_with_faketime(node, "2022-10-10T10:10:10")
+    node.run(time_control=tt.StartTimeControl(start_time=datetime(2022, 10, 10, 10, 10, 10)))
     return node
 
 

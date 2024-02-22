@@ -28,7 +28,7 @@ def node():
     init_node.config.plugin.append("account_history_api")
 
     init_node.run(
-        time_control="+0 x10",
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),
             hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
@@ -62,13 +62,13 @@ def prepare_account_with_reward_balance(
     vote_0.vote(100)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=f"{tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)} x5")
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 1, 4)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=f"{tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)} x5")
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     assert get_reward_hbd_balance(node, comment_0.author) == tt.Asset.Tbd(0)
     assert get_reward_vesting_balance(node, comment_0.author) != tt.Asset.Vest(0)
@@ -85,14 +85,14 @@ def prepare_account_with_reward_balance(
     vote_1.vote(90)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=f"{tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)} x5")
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     # To receive a reward in HIVE instead of HBD, you must publish new feed and therefore change the median price.
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 25, 1)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=f"{tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)}")
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     assert get_reward_hive_balance(node, comment_0.author) != tt.Asset.Hive(0)
     assert get_reward_hbd_balance(node, comment_0.author) != tt.Asset.Tbd(0)

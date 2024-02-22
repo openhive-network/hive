@@ -20,7 +20,7 @@ def test_simply_hardfork_schedule() -> None:
         init_node.config.witness.append(witness)
 
     init_node.run(
-        time_control="+0 x20",
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=20),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),
             hardfork_schedule=[

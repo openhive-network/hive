@@ -23,7 +23,7 @@ def test_recurrent_transfer(node: tt.InitNode) -> None:
 
     # Wait 24h
     node.wait_for_irreversible_block()
-    node.restart(time_control="+24h")
+    node.restart(time_control=tt.OffsetTimeControl(offset="+24h"))
 
     # Validate that sender's balance is equal 0 Tests after 24h
     assert node.api.wallet_bridge.get_accounts(["sender"])[0].balance == tt.Asset.Test(0).as_nai()

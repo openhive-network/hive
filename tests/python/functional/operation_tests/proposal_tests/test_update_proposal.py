@@ -77,9 +77,7 @@ def test_update_one_parameter_in_proposal(
 
     if "permlink" in update_proposal_args:  # post another comment if permlink of proposal is being updated
         prepared_node.restart(
-            time_control=tt.Time.serialize(
-                prepared_node.get_head_block_time() + tt.Time.minutes(6), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
-            )
+            time_control=tt.StartTimeControl(start_time=prepared_node.get_head_block_time() + tt.Time.minutes(6))
         )  # it's possible to post article every 5 minutes - time jump is needed
         wallet.api.post_comment("alice", "new-permlink", "", "category", "title", "body", "{}")
         alice.update_account_info()

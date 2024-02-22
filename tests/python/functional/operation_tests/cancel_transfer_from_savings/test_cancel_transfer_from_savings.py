@@ -48,10 +48,7 @@ def test_cancel_transfer_from_savings_simplest_scenario(
     prepared_node.wait_for_irreversible_block()
 
     prepared_node.restart(
-        time_control=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(2),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
+        time_control=tt.StartTimeControl(start_time=prepared_node.get_head_block_time() + tt.Time.days(2))
     )
 
     savings_balance_before_withdrawal_cancellation = getattr(alice, check_savings_balance)()
@@ -65,10 +62,7 @@ def test_cancel_transfer_from_savings_simplest_scenario(
     ), f"{currency.token()}S from cancelled withdrawal didn't come back to savings balance"
 
     prepared_node.restart(
-        time_control=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(1),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
+        time_control=tt.StartTimeControl(start_time=prepared_node.get_head_block_time() + tt.Time.days(1))
     )
 
     assert getattr(alice, check_balance)() - funds_after_transfer_to_savings == currency(
@@ -103,10 +97,7 @@ def test_cancel_all_transfers_from_savings(
         wallet.api.cancel_transfer_from_savings("alice", withdrawal_to_cancel)
 
     prepared_node.restart(
-        time_control=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(3),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
+        time_control=tt.StartTimeControl(start_time=prepared_node.get_head_block_time() + tt.Time.days(3))
     )
 
     assert getattr(alice, check_balance)() - funds_after_transfer_to_savings == currency(
@@ -142,10 +133,7 @@ def test_cancel_all_transfers_from_savings_except_one(
         wallet.api.cancel_transfer_from_savings("alice", withdrawal_to_cancel)
 
     prepared_node.restart(
-        time_control=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(3),
-            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-        )
+        time_control=tt.StartTimeControl(start_time=prepared_node.get_head_block_time() + tt.Time.days(3))
     )
 
     assert getattr(alice, check_balance)() - funds_after_transfer_to_savings == currency(amount=10), (
@@ -181,8 +169,5 @@ def create_three_savings_withdrawals_from_fresh_account(
         amount += currency(amount=5)
         withdrawal_id += 1
         node.restart(
-            time_control=tt.Time.serialize(
-                node.get_head_block_time() + tt.Time.hours(time_offset),
-                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
-            )
+            time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + tt.Time.hours(time_offset))
         )

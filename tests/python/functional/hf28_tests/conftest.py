@@ -13,7 +13,7 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     node.config.plugin.append("condenser_api")
-    node.run(time_control="+0 x5")
+    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     wallet = tt.Wallet(attach_to=node)
 
     # price stabilization prevents zero payout for comment votes.

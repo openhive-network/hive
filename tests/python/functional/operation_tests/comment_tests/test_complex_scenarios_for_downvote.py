@@ -38,7 +38,7 @@ def test_2_1_case(prepared_node, wallet):
 
     # waiting for cashout 60 minutes
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     for account in [user_a, user_b, user_c]:
         account.assert_reward_balance(prepared_node, "hbd")
@@ -87,7 +87,7 @@ def test_2_2_case(prepared_node, wallet):
 
     # waiting for cashout 60 minutes
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     for account in [user_a, user_b, user_c, user_d, user_e]:
         account.assert_reward_balance(prepared_node, "hbd")
@@ -143,7 +143,7 @@ def test_2_3_case(prepared_node, wallet):
 
     # waiting for cashout 60 minutes
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     for account in [user_a, user_b, user_c, user_d, user_e]:
         account.assert_reward_balance(prepared_node, "hbd")

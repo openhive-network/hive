@@ -18,7 +18,7 @@ def prepared_node() -> tt.InitNode:
         node.config.private_key.append(tt.PrivateKey(witness))
 
     node.run(
-        time_control="+0h x5",
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),
             hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=0)],

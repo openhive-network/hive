@@ -40,7 +40,7 @@ def create_node_and_wallet_for_convert_tests(
     node.config.witness.extend(init_witnesses)
     node.config.plugin.append("account_history_api")
     node.run(
-        time_offset="+0h x5",
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),
         alternate_chain_specs=alternate_chain_spec,
     )
     wallet = tt.Wallet(attach_to=node)
