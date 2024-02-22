@@ -924,54 +924,83 @@ BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
 
     auto _unlock_in_threads = [&]()
     {
+      std::atomic<bool> _ready{false};
+      std::mutex _mtx_message;
+      std::mutex _mtx;
+      std::condition_variable _cv;
+
       std::vector<std::shared_ptr<std::thread>> threads;
 
       auto _start = std::chrono::high_resolution_clock::now();
 
-      auto _calculate_interval = [&_start]( const std::string& message = "" )
+      auto _calculate_interval = [&_start]( size_t number_thread )
       {
+        std::string _message = "*****thread: " + std::to_string( number_thread ) + " *****";
         auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start );
-        BOOST_TEST_MESSAGE( ( message.size() ? message : " " ) + std::to_string( _duration.count() ) + " [ms]" );
+        BOOST_TEST_MESSAGE( _message + std::to_string( _duration.count() ) + " [ms]" );
 
         return _duration;
       };
 
-      size_t _cnt = 0;
+      auto _calculate_summary = [&_start]()
+      {
+        auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start );
+        BOOST_TEST_MESSAGE( std::to_string( _duration.count() ) + " [ms]" );
 
-      for( size_t i = 0; i < _nr_threads; ++i )
-        threads.emplace_back( std::make_shared<std::thread>( [&]()
-        {
-          while( _cnt < _nr_threads )
-          {
-            _api.was_error();
-          }
-        }) );
+        return _duration;
+      };
 
-      std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+      std::atomic<size_t> _cnt{0};
 
       for( size_t i = 0; i < _nr_threads; ++i )
         threads.emplace_back( std::make_shared<std::thread>( [&]( size_t number_thread )
         {
-          while( _api.unlock_allowed() != beekeeper::extended_api::enabled_after_interval )
           {
+            std::unique_lock<std::mutex> _lock( _mtx );
+            _cv.wait( _lock, [&_ready](){ return true; } );
           }
-          _calculate_interval( "*****thread: " + std::to_string( number_thread ) + " *****" );
-          ++_cnt;
+
+          if( number_thread % 2 == 0 )
+          {
+            while( _cnt.load() < _nr_threads / 2 )
+            {
+              _api.was_error();
+              std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+            }
+          }
+          else
+          {
+            while( _api.unlock_allowed() != beekeeper::extended_api::enabled_after_interval )
+            {
+              std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+            }
+            {
+              std::lock_guard<std::mutex> _guard( _mtx_message );
+              _calculate_interval( number_thread / 2 );
+              _cnt.store( _cnt.load() + 1 );
+            }
+          }
         }, i ) );
+
+      std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+      _ready.store( true );
+      _cv.notify_all();
 
       for( auto& thread : threads )
         thread->join();
 
-      return _calculate_interval();
+      return _calculate_summary();
     };
 
     const uint32_t _nr_attempts = 20;
+    bool _work_in_threads_was_correct = false;
     for( uint32_t i = 0; i < _nr_attempts; ++i )
     {
       auto _duration = _unlock_in_threads();
-      if( _duration.count() >= (int64_t)( _interval * _nr_threads ) )
+      if( _duration.count() >= (int64_t)( _interval * ( _nr_threads / 2 ) ) )
       {
         BOOST_TEST_MESSAGE("********unlocks work correctly in many threads. Finished: (" + std::to_string(i) + ")");
+        _work_in_threads_was_correct = true;
         break;
       }
       else
@@ -979,6 +1008,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
         BOOST_TEST_MESSAGE("********unlocks didn't work correctly in many threads. Repeating: (" + std::to_string(i) + ")");
       }
     }
+    BOOST_REQUIRE( _work_in_threads_was_correct );
 
   } FC_LOG_AND_RETHROW()
 }
