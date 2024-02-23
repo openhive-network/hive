@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 18b2a600936c6f7945d6f1131f606c7083a515ff
+    ref: 8cb1c031bca24effede0008a2fac7f6239c4e635
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'

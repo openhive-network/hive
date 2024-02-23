@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "18b2a600936c6f7945d6f1131f606c7083a515ff"
+  CI_COMMON_JOB_VERSION: "8cb1c031bca24effede0008a2fac7f6239c4e635"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 18b2a600936c6f7945d6f1131f606c7083a515ff # develop
+    ref: 8cb1c031bca24effede0008a2fac7f6239c4e635 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -75,6 +75,8 @@ include:
     - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/hived_uid.env" "$CI_PROJECT_DIR/hived_uid.env"
     - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log"
     - ls -la "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir"
+  after_script:
+    - rm "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/replay_running" -f
 
   artifacts:
     reports:
