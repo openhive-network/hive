@@ -126,9 +126,7 @@ class chain_plugin_impl
       default_block_writer( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
-    {
-      theApp.get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
-    }
+    {}
 
     ~chain_plugin_impl()
     {

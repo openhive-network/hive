@@ -237,14 +237,11 @@ namespace detail
           _logger->log(request, response);
       }
 
-      void add_serialization_status( const std::function<bool()>& call );
-
       DECLARE_API(
         (get_methods)
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
-      std::function<bool()>                              _check_serialization_status = [](){ return true; };
 
       appbase::application& theApp;
   };
@@ -253,11 +250,6 @@ namespace detail
 
   json_rpc_plugin_impl::~json_rpc_plugin_impl() {}
 
-
-  void json_rpc_plugin_impl::add_serialization_status( const std::function<bool()>& serialization_status )
-  {
-    _check_serialization_status = serialization_status;
-  }
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
   {
@@ -437,50 +429,43 @@ namespace detail
               {
                 STATSD_START_TIMER( "jsonrpc", "api", method_name, 1.0f, theApp );
 
-                if( _check_serialization_status() )
+                bool _change_of_serialization_is_allowed = false;
+                try
                 {
-                  bool _change_of_serialization_is_allowed = false;
+                  response.result = (*call)( func_args );
+                }
+                catch( fc::bad_cast_exception& e )
+                {
+                  if( method_name == "network_broadcast_api.broadcast_transaction" ||
+                      method_name == "database_api.verify_authority"
+                    )
+                  {
+                    _change_of_serialization_is_allowed = true;
+                  }
+                  else
+                  {
+                    throw e;
+                  }
+                }
+                catch(...)
+                {
+                  auto eptr = std::current_exception();
+                  std::rethrow_exception( eptr );
+                }
+
+                if( _change_of_serialization_is_allowed )
+                {
                   try
                   {
+                    mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+                    ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
                     response.result = (*call)( func_args );
-                  }
-                  catch( fc::bad_cast_exception& e )
-                  {
-                    if( method_name == "network_broadcast_api.broadcast_transaction" ||
-                        method_name == "database_api.verify_authority"
-                      )
-                    {
-                      _change_of_serialization_is_allowed = true;
-                    }
-                    else
-                    {
-                      throw e;
-                    }
                   }
                   catch(...)
                   {
                     auto eptr = std::current_exception();
                     std::rethrow_exception( eptr );
                   }
-
-                  if( _change_of_serialization_is_allowed )
-                  {
-                    try
-                    {
-                      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
-                      ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
-                      response.result = (*call)( func_args );
-                    }
-                    catch(...)
-                    {
-                      auto eptr = std::current_exception();
-                      std::rethrow_exception( eptr );
-                    }
-                  }
-                }
-                else
-                {
-                  response.result = (*call)( func_args );
                 }
               }
             }
@@ -687,11 +672,6 @@ string json_rpc_plugin::call( const string& message )
     return fc::json::to_string( response );
   }
 
-}
-
-void json_rpc_plugin::add_serialization_status( const std::function<bool()>& serialization_status )
-{
-  my->add_serialization_status( serialization_status );
 }
 
 } } } // hive::plugins::json_rpc
