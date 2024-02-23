@@ -38,14 +38,12 @@ def node_with_20k_proposal_votes() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
     block_log = tt.BlockLog(block_log_directory / "block_log")
 
-    timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
-
     init_node = tt.InitNode()
     init_node.config.plugin.append("condenser_api")
     init_node.config.plugin.append("market_history_api")
 
     init_node.run(
-        time_control=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
+        time_control=tt.StartTimeControl(start_time="head_block_time"),
         replay_from=block_log,
     )
 
