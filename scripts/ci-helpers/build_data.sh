@@ -4,7 +4,8 @@ set -xeuo pipefail
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
 
-LOG_FILE=build_data.log
+export LOG_FILE=build_data.log
+# shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
 
 
@@ -58,7 +59,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -f "$DATA_CACHE/datadir/status" ];
+if [[ -f "$DATA_CACHE/datadir/status" ]];
 then
     echo "Previous replay exit code"
     status=$(cat "$DATA_CACHE/datadir/status")
@@ -69,10 +70,19 @@ then
         exit 0
     fi
 fi
-echo "Didnt find valid previous replay, performing fresh replay"
+
+while [[ -f "$DATA_CACHE/replay_running" ]]; do
+  echo "Another replay is running in $DATA_CACHE. Waiting for it to end..."
+  sleep 60
+done
+
+touch "$DATA_CACHE/replay_running"
+
+echo "Didn't find valid previous replay, performing fresh replay"
 ls "$DATA_CACHE" -lath
-rm "$DATA_CACHE/datadir" -rf
-rm "$DATA_CACHE/shm_dir" -rf
+ls "$DATA_CACHE/datadir" -lath
+sudo rm "$DATA_CACHE/datadir" -rf
+sudo rm "$DATA_CACHE/shm_dir" -rf
 
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
@@ -86,7 +96,7 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --data-dir="$DATA_CACHE/datadir" \
     --shared-file-dir="$DATA_CACHE/shm_dir" \
     --docker-option=--env=HIVED_UID="$(id -u)" \
-    $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
+    "$IMG" --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
 
 echo "Logs from container hived_instance:"
 docker logs -f hived_instance &
@@ -96,4 +106,7 @@ status=$(docker wait hived_instance)
 echo "HIVED_UID=$(id -u)" > "$DATA_CACHE/datadir/hived_uid.env"
 
 echo "$status" > "$DATA_CACHE/datadir/status"
-exit $status
+
+rm "$DATA_CACHE/replay_running" -f
+
+exit "$status"
