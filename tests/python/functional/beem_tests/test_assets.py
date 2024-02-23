@@ -18,15 +18,13 @@ def node(chain_id, skeleton_key):
     block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
     block_log = tt.BlockLog(block_log_directory / "block_log")
 
-    timestamp = block_log.get_head_block_time() - tt.Time.seconds(5)
-
     init_node = tt.InitNode()
     init_node.config.private_key = skeleton_key
     init_node.config.plugin.append("account_history_api")
     init_node.config.plugin.append("condenser_api")
 
     init_node.run(
-        time_control=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
+        time_control=tt.StartTimeControl(start_time="head_block_time"),
         wait_for_live=True,
         replay_from=block_log,
         arguments=[f"--chain-id={chain_id}", f"--skeleton-key={skeleton_key}"],

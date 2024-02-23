@@ -28,10 +28,8 @@ def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt
         hardfork_schedule = [tt.HardforkSchedule(hardfork=blockchain_version, block_num=1)]
 
     node.run(
-        time_control=(
-            f"{block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)} x10"
-        ),
-        replay_from=block_log_directory / "block_log",
+        time_control=tt.StartTimeControl(start_time="head_block_time", speed_up_rate=10),
+        replay_from=block_log,
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(genesis_time),
             hardfork_schedule=hardfork_schedule,

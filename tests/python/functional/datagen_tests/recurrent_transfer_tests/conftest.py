@@ -25,11 +25,11 @@ def replayed_node() -> ReplayedNodeMaker:
         block_log = tt.BlockLog(block_log_directory / "block_log")
 
         if absolute_start_time is None:
-            absolute_start_time = block_log.get_head_block_time()
+            time_offset = tt.StartTimeControl(start_time="head_block_time")
 
-        absolute_start_time -= tt.Time.seconds(5)
+        else:
+            time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
 
-        time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
         if time_multiplier is not None:
             time_offset += f" x{time_multiplier}"
 

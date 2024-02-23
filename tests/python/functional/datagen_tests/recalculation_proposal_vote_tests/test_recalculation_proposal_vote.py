@@ -12,9 +12,6 @@ from schemas.operations.virtual import ProposalPayOperation
 
 
 def test_recalculation_proposal_votes() -> None:
-    block_log_directory = Path(__file__).parent.joinpath("block_log")
-    block_log = tt.BlockLog(block_log_directory / "block_log")
-
     node = tt.InitNode()
 
     # load block_log to node
@@ -26,9 +23,7 @@ def test_recalculation_proposal_votes() -> None:
     )
 
     # run node with specific timestamp ( end of block_log )
-    node.run(
-        time_control=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)
-    )
+    node.run(time_control=tt.StartTimeControl(start_time="head_block_time"))
 
     tt.logger.info(f"next_maintenance_time: {get_next_maintenance_time(node)}")
     tt.logger.info(f"LBN: {node.get_last_block_number()}")
