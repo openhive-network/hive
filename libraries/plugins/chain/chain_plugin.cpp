@@ -2,7 +2,7 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/chain/block_log.hpp>
+#include <hive/chain/block_storage_manager.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
@@ -123,7 +123,7 @@ class chain_plugin_impl
     chain_plugin_impl( appbase::application& app ):
       thread_pool( app ),
       db( app ),
-      default_block_writer( db, app ),
+      block_storage_mgr( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {}
@@ -147,7 +147,8 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool );
+    bool start_replay_processing( std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+                                  hive::chain::blockchain_worker_thread_pool& thread_pool );
 
     void initial_settings();
     void open();
@@ -223,7 +224,7 @@ class chain_plugin_impl
     hive::chain::blockchain_worker_thread_pool thread_pool;
 
     database                         db;
-    sync_block_writer                default_block_writer;
+    block_storage_manager_t          block_storage_mgr;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -603,7 +604,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          default_block_writer.set_is_at_live_sync();
+          block_storage_mgr.get_block_writer()->set_is_at_live_sync();
           theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
@@ -676,17 +677,19 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool )
+bool chain_plugin_impl::start_replay_processing( 
+  std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+  hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
-  irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
-  db.set_block_writer( &reindex_block_writer );
+  db.set_block_writer( reindex_block_writer.get() );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( &( this_->default_block_writer ) );
+    this_->db.set_block_writer( this_->block_storage_mgr.get_block_writer() );
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
-  bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader(), thread_pool );
+  bool replay_is_last_operation = 
+    replay_blockchain( reindex_block_writer->get_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -715,7 +718,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
 
 void chain_plugin_impl::initial_settings()
 {
-  db.set_block_writer( &( default_block_writer ) );
+  db.set_block_writer( block_storage_mgr.get_block_writer() );
 
   if( statsd_on_replay )
   {
@@ -732,7 +735,7 @@ void chain_plugin_impl::initial_settings()
   {
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( theApp.data_dir() / "blockchain", shared_memory_dir, true );
-    default_block_writer.close();
+    block_storage_mgr.close_storage();
   }
 
   db.set_flush_interval( flush_interval );
@@ -811,11 +814,7 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    default_block_writer.open(  db_open_args.data_dir / "block_log",
-                                db_open_args.enable_block_log_compression,
-                                db_open_args.block_log_compression_level,
-                                db_open_args.enable_block_log_auto_fixing,
-                                thread_pool );
+    block_storage_mgr.open_storage( db_open_args, thread_pool );
     db.open( db_open_args );
 
     if( dump_memory_details )
@@ -860,7 +859,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              default_block_writer.switch_forks(
+              block_storage_mgr.get_block_writer()->switch_forks( 
                 new_head_block_id,
                 new_head_block_num,
                 skip,
@@ -984,7 +983,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const uint32_t skip = db.get_node_skip_flags();
 
-  return default_block_writer.push_block(
+  return block_storage_mgr.get_block_writer()->push_block(
     full_block,
     block_ctrl,
     db.head_block_num(),
@@ -1032,7 +1031,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
 
-    default_block_writer.on_reindex_start();
+    block_storage_mgr.on_reindex_start();
 
     auto start_time = fc::time_point::now();
     HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
@@ -1082,7 +1081,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     });
 
     FC_ASSERT( block_reader.head_block()->get_block_num(), "this should never happen" );
-    default_block_writer.on_reindex_end( block_reader.head_block() );
+    block_storage_mgr.on_reindex_end( block_reader.head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1297,7 +1296,7 @@ const block_read_i& chain_plugin::block_reader() const
 {
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
-  return my->default_block_writer.get_block_reader();
+  return my->block_storage_mgr.get_block_writer()->get_block_reader();
 }
 
 hive::chain::blockchain_worker_thread_pool& chain_plugin::get_thread_pool()
@@ -1340,6 +1339,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
+      ("block-log-split", bpo::value<int>()->default_value( -1 ), "Whether the block log should be single file (-1), split into files each containing 1M blocks (0), or split & keeping only N latest files, i.e. N million latest blocks (N). Default -1." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1367,6 +1367,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
+
+  my->block_storage_mgr.init_storage( 
+    options.count( "block-log-split" ) ? options.at( "block-log-split" ).as< int >() : -1 );
 
   get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
@@ -1654,8 +1657,10 @@ void chain_plugin::plugin_startup()
 
   if( my->replay )
   {
+    std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+      my->block_storage_mgr.get_reindex_block_writer();
     ilog("Replaying...");
-    if( !my->start_replay_processing( get_thread_pool() ) )
+    if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
     {
       ilog("P2P enabling after replaying...");
       my->work( on_sync );
@@ -1664,13 +1669,15 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->default_block_writer.get_block_reader() ) )
+    if( my->check_data_consistency( my->block_storage_mgr.get_block_writer()->get_block_reader() ) )
     {
       if( my->db.get_snapshot_loaded() )
       {
+        std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+          my->block_storage_mgr.get_reindex_block_writer();
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing( get_thread_pool() ) )
+        if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
         {
           ilog("P2P enabling after replaying...");
           my->work( on_sync );
@@ -1702,7 +1709,7 @@ void chain_plugin::plugin_shutdown()
   get_thread_pool().shutdown();
   my->stop_write_processing();
   my->db.close();
-  my->default_block_writer.close();
+  my->block_storage_mgr.close_storage();
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }
