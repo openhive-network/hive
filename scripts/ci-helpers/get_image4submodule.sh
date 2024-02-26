@@ -31,6 +31,7 @@ print_help () {
 
 IMGNAME=base_instance
 IMGNAME_INSTANCE=instance
+IMGNAME_MINIMAL_INSTANCE=minimal-instance
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -42,10 +43,12 @@ while [ $# -gt 0 ]; do
           "testnet"*)
             IMGNAME=testnet-base_instance
             IMGNAME_INSTANCE=testnet-instance
+            IMGNAME_MINIMAL_INSTANCE=testnet-minimal-instance
             ;;
           "mirrornet"*)
             IMGNAME=mirrornet-base_instance
             IMGNAME_INSTANCE=mirrornet-instance
+            IMGNAME_MINIMAL_INSTANCE=mirrornet-minimal-instance
             ;;
           "mainnet"*)
             ;;
@@ -96,7 +99,7 @@ commit=$( "$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" )
 echo "commit with last source code changes is $commit"
 
 pushd "${submodule_path}"
-short_commit=$(git rev-parse --short "$commit")
+short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
 img=$( build_image_name $IMGNAME "$short_commit" "$REGISTRY" )
@@ -104,6 +107,7 @@ img_path=$( build_image_registry_path $IMGNAME "$short_commit" "$REGISTRY" )
 img_tag=$( build_image_registry_tag $IMGNAME "$short_commit" "$REGISTRY" )
 
 img_instance=$( build_image_name $IMGNAME_INSTANCE "$short_commit" "$REGISTRY" )
+img_minimal_instance=$( build_image_name $IMGNAME_MINIMAL_INSTANCE "$short_commit" "$REGISTRY" )
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
@@ -117,18 +121,20 @@ then
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
-  
+
   "$SCRIPTPATH/build_instance4commit.sh" "$commit" "$REGISTRY" --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE" --image-tag="$short_commit"
   time docker push "$img"
   time docker push "$img_instance"
+  time docker push "$img_minimal_instance"
 fi
 
 echo "${DOTENV_VAR_NAME}_IMAGE_NAME=$img" > docker_image_name.env
 {
   echo "${DOTENV_VAR_NAME}_BASE_INSTANCE=$img"
   echo "${DOTENV_VAR_NAME}_INSTANCE=$img_instance"
+  echo "${DOTENV_VAR_NAME}_MINIMAL_INSTANCE=$img_minimal_instance"
   echo "${DOTENV_VAR_NAME}_REGISTRY_PATH=$img_path"
-  echo "${DOTENV_VAR_NAME}_REGISTRY_TAG=$img_tag" 
+  echo "${DOTENV_VAR_NAME}_REGISTRY_TAG=$img_tag"
   echo "${DOTENV_VAR_NAME}_COMMIT=$commit"
 } >> docker_image_name.env
 
