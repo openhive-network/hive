@@ -794,9 +794,9 @@ int main(int argc, char** argv)
 
   // args for get-block subcommand
   boost::program_options::options_description get_block_options("get-block options");
-  get_block_options.add_options()("block-number", boost::program_options::value<uint32_t>()->value_name("n"), "The single block with specified number to return. Cannot be set if \'from-block-number\' or \'to-block-number\' is specified");
-  get_block_options.add_options()("from-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of blocks from block number. If not specified, will return blocks from the beggining of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
-  get_block_options.add_options()("to-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of block to block number. If not specified, will return blocks to the end of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
+  get_block_options.add_options()("block-number,n", boost::program_options::value<uint32_t>()->value_name("x"), "Equivalent of '--from x --to x'.");
+  get_block_options.add_options()("from", boost::program_options::value<uint32_t>()->value_name("x"), "Return range of blocks starting from x. Defaults to 1.");
+  get_block_options.add_options()("to", boost::program_options::value<uint32_t>()->value_name("x"), "Return range of blocks ending at x (inclusive). Defaults to -1 (head block).");
   get_block_options.add_options()("header-only", "only print the block header");
   get_block_options.add_options()("pretty", "pretty-print the JSON");
   get_block_options.add_options()("binary", "output the binary form of the block (--output-dir is obligatory for this feature)");
@@ -978,25 +978,25 @@ int main(int argc, char** argv)
       else if (options_map.count("get-block"))
       {
         update_options_map(get_block_options);
-        FC_ASSERT(options_map.count("block-number") || options_map.count("from-block-number") || options_map.count("to-block-number"), "must specify at least one: \"--block-number\", \"--from-block-number\",\"--to-block-number\"");
+        FC_ASSERT( ( options_map.count( "from" ) + options_map.count( "block-number" ) ) <= 1, "'--from' cannot be specified more than once");
+        FC_ASSERT( ( options_map.count( "to" ) + options_map.count( "block-number" ) ) <= 1, "'--to' cannot be specified more than once" );
 
         uint32_t first_block, last_block;
-        if (options_map.count("block-number"))
+        if( options_map.count( "block-number" ) )
         {
-          FC_ASSERT(!options_map.count("from-block-number") && !options_map.count("to-block-number"), "if \"--block-number\" is set, \"--from-block-number\" and \"--to-block-number\" cannot be specified");
-          first_block = last_block = options_map["block-number"].as<uint32_t>();
+          first_block = last_block = options_map[ "block-number" ].as<uint32_t>();
         }
         else
         {
-          if( options_map.count( "from-block-number" ) )
-            first_block = options_map[ "from-block-number" ].as<uint32_t>();
+          if( options_map.count( "from" ) )
+            first_block = options_map[ "from" ].as<uint32_t>();
           else
             first_block = 1;
-          if( options_map.count( "to-block-number" ) )
-            last_block = options_map[ "to-block-number" ].as<uint32_t>();
+          if( options_map.count( "to" ) )
+            last_block = options_map[ "to" ].as<uint32_t>();
           else
             last_block = -1; // head block
-          FC_ASSERT( first_block <= last_block, "Value of from-block-number cannot be bigger than to-block-number - range: ${first_block} : ${last_block}", (first_block)(last_block) );
+          FC_ASSERT( first_block <= last_block, "Value of '--from' cannot be bigger than '--to'" );
         }
 
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
