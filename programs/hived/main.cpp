@@ -138,7 +138,8 @@ int main( int argc, char** argv )
 
     try
     {
-      const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
+      auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
+      theApp.finish_request = [&chainPlugin](){ chainPlugin.finish_request(); };
       auto chainId = chainPlugin.db().get_chain_id();
       info(chainId);
     }

@@ -63,7 +63,7 @@ application::application()
     return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
   }
 ),
-  my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); }, [this](){ finish(); } )
+  my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); } )
 {
 }
 
@@ -407,6 +407,16 @@ void application::finish()
 
 void application::wait()
 {
+  while( !is_interrupt_request() )
+  {
+    std::this_thread::sleep_for( std::chrono::milliseconds(200) );
+  }
+
+  if( finish_request )
+    finish_request();
+
+  finish();
+
   handler_wrapper.wait();
 }
 
