@@ -762,13 +762,12 @@ int main(int argc, char** argv)
   block_log_operations.add_options()("compare", "Compare input block_log with another block_log. (Both block_logs opened in RO mode)");
   block_log_operations.add_options()("find-end","Check if input block_log is not corrupted. Finds out place where last full block is successfully stored in block_log and proposes block_log truncation if recommended.");
   block_log_operations.add_options()("generate-artifacts", "Open input block_log in read & write mode and generate artifacts file if necessary.");
-  block_log_operations.add_options()("get-block", "Get requested block, (Block_log opened in RO mode)");
-  block_log_operations.add_options()("get-blocks", "Get range of requested blocks, (Block_log opened in RO mode)");
-  block_log_operations.add_options()("get-block-artifacts", "Get artifacts header or range of requested artifacts. Allows to run full artifacts verification, (Block_log opened in RO mode)");
+  block_log_operations.add_options()("get-block", "Get range of blocks, (Block_log opened in RO mode)");
+  block_log_operations.add_options()("get-block-artifacts", "Get range of artifacts. Allows to run full artifacts verification, (Block_log opened in RO mode)");
   block_log_operations.add_options()("get-block-ids", "Get range of blocks ids. (Block_log opened in RO mode)");
   block_log_operations.add_options()("get-head-block-number", "Get block_log head block number. (Block_log opened in RO mode)");
   block_log_operations.add_options()("sha256sum", "Verify sha256 checksums in block-log. (Block_log opened in RO mode)");
-  block_log_operations.add_options()("truncate", "Truncate block log to  given block number.");
+  block_log_operations.add_options()("truncate", "Truncate block log to given block number.");
 
   boost::program_options::options_description additional_operations("additional operations");
   additional_operations.add_options()("sha256sum-from-file", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Verify sha256 from text file.");
