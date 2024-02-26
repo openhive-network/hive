@@ -59,6 +59,11 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+while [[ -f "$DATA_CACHE/replay_running" ]]; do
+  echo "Another replay is running in $DATA_CACHE. Waiting for it to end..."
+  sleep 60
+done
+
 if [[ -f "$DATA_CACHE/datadir/status" ]];
 then
     echo "Previous replay exit code"
@@ -70,11 +75,6 @@ then
         exit 0
     fi
 fi
-
-while [[ -f "$DATA_CACHE/replay_running" ]]; do
-  echo "Another replay is running in $DATA_CACHE. Waiting for it to end..."
-  sleep 60
-done
 
 touch "$DATA_CACHE/replay_running"
 

@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "8cb1c031bca24effede0008a2fac7f6239c4e635"
+  CI_COMMON_JOB_VERSION: "7ea99b10bbf0f9b1fbb88f52a78ead4c82f15d75"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 8cb1c031bca24effede0008a2fac7f6239c4e635 # develop
+    ref: 7ea99b10bbf0f9b1fbb88f52a78ead4c82f15d75 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
