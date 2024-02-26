@@ -647,7 +647,7 @@ bool application::quit()
   if( !_is_thread_closed )
     kill();
 
-  wait();
+  handler_wrapper.wait4stop();
 
   return is_thread_closed();
 }
