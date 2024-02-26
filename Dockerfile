@@ -21,6 +21,22 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hi
 USER hived_admin
 WORKDIR /home/hived_admin
 
+FROM ubuntu:22.04 AS minimal-runtime
+
+ENV LANG=en_US.UTF-8
+
+SHELL ["/bin/bash", "-c"]
+
+USER root
+WORKDIR /usr/local/src
+ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
+
+# Install base runtime packages
+RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
+
+USER hived_admin
+WORKDIR /home/hived_admin
+
 FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS ci-base-image
 
 ENV LANG=en_US.UTF-8
@@ -168,3 +184,10 @@ EXPOSE ${WS_PORT}
 EXPOSE ${HTTP_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
+
+# We don't have a separate 'minimal-instance' version of hive.  We could create one, based
+# off `minimal-runtime` instead of `runtime` and probably save a hundred MB or so, but
+# the current `instance` isn't bad.  Our current focus is shrinking the haf image size,
+# and since we use the same scripts for building both hive and haf, we need a 
+# 'minimal-instance' target here to match the one in haf.  Don't use this.
+FROM instance as minimal-instance

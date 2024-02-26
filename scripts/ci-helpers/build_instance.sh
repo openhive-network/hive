@@ -165,6 +165,21 @@ docker build --target=instance \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --file Dockerfile "$SOURCE_DIR"
 
+docker build --target=minimal-instance \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
+  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
+  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+  --build-arg BUILD_TIME="$BUILD_TIME" \
+  --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
+  --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
+  --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
+  --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
+  --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal-instance:${BUILD_IMAGE_TAG}" \
+  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  --file Dockerfile "$SOURCE_DIR"
+
 popd
 
 if [ -n "${EXPORT_PATH}" ];
