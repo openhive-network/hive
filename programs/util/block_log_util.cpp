@@ -797,7 +797,7 @@ int main(int argc, char** argv)
   get_block_options.add_options()("block-number", boost::program_options::value<uint32_t>()->value_name("n"), "The single block with specified number to return. Cannot be set if \'from-block-number\' or \'to-block-number\' is specified");
   get_block_options.add_options()("from-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of blocks from block number. If not specified, will return blocks from the beggining of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
   get_block_options.add_options()("to-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "Return range of block to block number. If not specified, will return blocks to the end of block_log, if returning range of blocks. Cannot be set if \'block-number\' is specified");
-  get_block_options.add_options()("header", "only print the block header");
+  get_block_options.add_options()("header-only", "only print the block header");
   get_block_options.add_options()("pretty", "pretty-print the JSON");
   get_block_options.add_options()("binary", "output the binary form of the block (--output-dir is obligatory for this feature)");
   get_block_options.add_options()("output-dir", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where results will be stored.");
@@ -1000,7 +1000,7 @@ int main(int argc, char** argv)
         }
 
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
-        const bool header_only = options_map.count("header") != 0;
+        const bool header_only = options_map.count("header-only") != 0;
         const bool pretty = options_map.count("pretty") != 0;
         const bool binary = options_map.count("binary") != 0;
         dlog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
