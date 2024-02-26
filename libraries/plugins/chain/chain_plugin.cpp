@@ -244,7 +244,8 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_waiting_for_work;
 
     struct
-    {    
+    {
+      /// Flag should be set to true, to allow immediate exit on scenarios where writer thread didn't start yet
       std::atomic_bool        status{true};
       std::mutex              mtx;
       std::condition_variable cv;
@@ -418,7 +419,11 @@ void chain_plugin_impl::start_write_processing()
     {
       BOOST_SCOPE_EXIT(this_)
       {
-        this_->finish.status = true;
+        {
+          std::unique_lock<std::mutex> _guard(this_->finish.mtx);
+          this_->finish.status = true;
+        }
+        /// Notify waiting (main-thread) that starting shutdown procedure is allowed, since main-writer thread activity finished.
         this_->finish.cv.notify_one();
       } BOOST_SCOPE_EXIT_END
 
