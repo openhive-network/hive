@@ -407,6 +407,13 @@ void chain_plugin_impl::start_write_processing()
   {
     try
     {
+      BOOST_SCOPE_EXIT(this_)
+      {
+        this_->theApp.set_finish_status( true );
+      } BOOST_SCOPE_EXIT_END
+
+      theApp.set_finish_status( false );
+
       uint32_t last_block_number = 0;
       theApp.notify_status("syncing");
       ilog("Write processing thread started.");

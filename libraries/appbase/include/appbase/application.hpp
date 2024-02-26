@@ -160,6 +160,7 @@ namespace appbase {
       boost::asio::io_service& get_io_service() { return handler_wrapper.get_io_service(); }
 
       void generate_interrupt_request();
+      void set_finish_status( bool val );
 
       bool is_interrupt_request() const { return _is_interrupt_request.load(std::memory_order_relaxed); }
 
@@ -211,6 +212,9 @@ namespace appbase {
       signals_handler_wrapper                 handler_wrapper;
 
       std::atomic_bool _is_interrupt_request{false};
+
+      std::atomic_bool _finish_status{true};
+      std::condition_variable _finish_cv;
 
       mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
 

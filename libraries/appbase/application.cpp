@@ -63,7 +63,7 @@ application::application()
     return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
   }
 ),
-  my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); }, [this](){ finish(); } )
+  my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); } )
 {
 }
 
@@ -79,6 +79,13 @@ void application::generate_interrupt_request()
 {
   notify_status("interrupted");
   _is_interrupt_request = true;
+}
+
+void application::set_finish_status( bool val )
+{
+  _finish_status = val;
+  if( _finish_status )
+    _finish_cv.notify_one();
 }
 
 fc::optional< fc::logging_config > application::load_logging_config()
@@ -358,7 +365,8 @@ void application::shutdown( std::string& actual_plugin_name ) {
 
 void application::finish()
 {
-  std::lock_guard<std::mutex> guard( app_mtx );
+  std::unique_lock<std::mutex> guard( app_mtx );
+  _finish_cv.wait( guard, [this](){ return _finish_status.load(); } );
 
   std::string _actual_plugin_name;
 
@@ -632,6 +640,8 @@ bool application::quit()
     kill();
 
   wait();
+
+  finish();
 
   return _is_thread_closed;
 }

@@ -14,7 +14,6 @@ namespace appbase {
 
       using empty_function_type               = std::function< void() >;
 
-      using final_action_type                 = empty_function_type;
       using interrupt_request_generation_type = empty_function_type;
 
     private:
@@ -23,7 +22,6 @@ namespace appbase {
       uint32_t                          last_signal_number  = 0;
 
       interrupt_request_generation_type interrupt_request_generation;
-      final_action_type                 final_action;
 
       p_signal_set                      signals;
 
@@ -38,7 +36,7 @@ namespace appbase {
 
     public:
 
-      signals_handler( interrupt_request_generation_type&& _interrupt_request_generation, final_action_type&& _final_action );
+      signals_handler( interrupt_request_generation_type&& _interrupt_request_generation );
       ~signals_handler();
 
       void init( std::promise<void> after_attach_signals );
@@ -64,7 +62,7 @@ namespace appbase {
 
     public:
 
-      signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation, signals_handler::final_action_type&& _final_action );
+      signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation );
 
       void init();
       void wait();

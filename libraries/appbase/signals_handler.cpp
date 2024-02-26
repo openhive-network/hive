@@ -6,8 +6,8 @@
 
 namespace appbase {
 
-signals_handler::signals_handler( interrupt_request_generation_type&& _interrupt_request_generation, final_action_type&& _final_action )
-      : interrupt_request_generation( _interrupt_request_generation ), final_action( _final_action )
+signals_handler::signals_handler( interrupt_request_generation_type&& _interrupt_request_generation )
+      : interrupt_request_generation( _interrupt_request_generation )
 {
 }
 
@@ -44,8 +44,6 @@ void signals_handler::close()
   if( !closed )
   {
     interrupt_request_generation();
-
-    final_action();
 
     io_serv.stop();
 
@@ -102,8 +100,8 @@ void signals_handler::attach_signals()
   signals->async_wait( boost::bind( &signals_handler::handle_signal, this, boost::placeholders::_1, boost::placeholders::_2 ) );
 }
 
-signals_handler_wrapper::signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation, signals_handler::final_action_type&& _final_action )
-                        : handler( std::move( _interrupt_request_generation ), std::move( _final_action ) )
+signals_handler_wrapper::signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation )
+                        : handler( std::move( _interrupt_request_generation ) )
 {
 
 }
