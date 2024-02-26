@@ -168,6 +168,8 @@ namespace appbase {
       void kill( bool direct_stop = false ); // direct_stop is only viable for unit tests where signals don't work
       bool quit();
 
+      using finish_request_type = std::function<void()>;
+
     protected:
       template< typename Impl >
       friend class plugin;
@@ -224,6 +226,8 @@ namespace appbase {
       std::mutex app_mtx;
 
     public:
+
+      finish_request_type finish_request;
 
       void notify_status(const fc::string& current_status) const noexcept;
       void notify_error(const fc::string& error_message) const noexcept;

@@ -169,6 +169,8 @@ class chain_plugin_impl
     const flat_map<uint32_t,block_id_type> get_checkpoints()const { return checkpoints; }
     bool before_last_checkpoint()const;
 
+    void finish_request();
+
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
     uint16_t                         shared_file_scale_rate = 0;
@@ -240,6 +242,13 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_blocks;
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
+
+    struct
+    {    
+      std::atomic_bool        status{true};
+      std::mutex              mtx;
+      std::condition_variable cv;
+    } finish;
 
     struct sync_progress_data
     {
@@ -407,6 +416,14 @@ void chain_plugin_impl::start_write_processing()
   {
     try
     {
+      BOOST_SCOPE_EXIT(this_)
+      {
+        this_->finish.status = true;
+        this_->finish.cv.notify_one();
+      } BOOST_SCOPE_EXIT_END
+
+      finish.status = false;
+
       uint32_t last_block_number = 0;
       theApp.notify_status("syncing");
       ilog("Write processing thread started.");
@@ -878,6 +895,12 @@ void chain_plugin_impl::add_checkpoints( const flat_map< uint32_t, block_id_type
 bool chain_plugin_impl::before_last_checkpoint()const
 {
   return (checkpoints.size() > 0) && (checkpoints.rbegin()->first >= db.head_block_num());
+}
+
+void chain_plugin_impl::finish_request()
+{
+  std::unique_lock<std::mutex> _guard( finish.mtx );
+  finish.cv.wait( _guard, [this](){ return finish.status.load(); } );
 }
 
 bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32_t skip )
@@ -1895,4 +1918,8 @@ void chain_plugin::disable_p2p() const
   my->is_p2p_enabled = false;
 }
 
+void chain_plugin::finish_request()
+{
+  my->finish_request();
+}
 } } } // namespace hive::plugis::chain::chain_apis

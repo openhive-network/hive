@@ -14,7 +14,6 @@ namespace appbase {
 
       using empty_function_type               = std::function< void() >;
 
-      using final_action_type                 = empty_function_type;
       using interrupt_request_generation_type = empty_function_type;
 
     private:
@@ -23,7 +22,6 @@ namespace appbase {
       uint32_t                          last_signal_number  = 0;
 
       interrupt_request_generation_type interrupt_request_generation;
-      final_action_type                 final_action;
 
       p_signal_set                      signals;
 
@@ -32,17 +30,18 @@ namespace appbase {
       boost::asio::io_service           io_serv;
 
       void handle_signal( const boost::system::error_code& err, int signal_number );
-      void clear_signals();
 
       void attach_signals();
 
     public:
 
-      signals_handler( interrupt_request_generation_type&& _interrupt_request_generation, final_action_type&& _final_action );
+      signals_handler( interrupt_request_generation_type&& _interrupt_request_generation );
       ~signals_handler();
 
       void init( std::promise<void> after_attach_signals );
       void close();
+
+      void clear_signals();
 
       boost::asio::io_service& get_io_service();
   };
@@ -64,7 +63,7 @@ namespace appbase {
 
     public:
 
-      signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation, signals_handler::final_action_type&& _final_action );
+      signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation );
 
       void init();
       void wait();

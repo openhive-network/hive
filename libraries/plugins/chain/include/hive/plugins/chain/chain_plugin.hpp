@@ -144,6 +144,8 @@ public:
   bool is_p2p_enabled() const;
   void disable_p2p() const;
 
+  void finish_request();
+
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
 };
