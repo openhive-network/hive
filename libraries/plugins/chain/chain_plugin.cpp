@@ -421,7 +421,11 @@ void chain_plugin_impl::start_write_processing()
       fc::thread::current().set_name("write_queue");
       cumulative_times_last_reported_time = fc::time_point::now();
 
-      const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
+      const int64_t nr_seconds = 10 * HIVE_BLOCK_INTERVAL;
+      const fc::microseconds block_wait_max_time = fc::seconds(nr_seconds);
+
+      const int64_t time_fragments = nr_seconds * 2;
+
       bool is_syncing = true;
       write_request_visitor req_visitor( *this );
 
@@ -468,9 +472,25 @@ void chain_plugin_impl::start_write_processing()
                                                                                                 : block_wait_max_time - time_since_last_popped_item;
           std::unique_lock<std::mutex> lock(queue_mutex);
           bool wait_timed_out = false;
+
+          //divide `max_time_to_wait` into smaller fragments (~500ms) in order to check faster `is_running` status
+          int64_t chunk_time = max_time_to_wait.count() / time_fragments;
           while (is_running() && write_queue.empty() && !wait_timed_out)
-            if (queue_condition_variable.wait_for(lock, std::chrono::microseconds(max_time_to_wait.count())) == std::cv_status::timeout)
-              wait_timed_out = true;
+          {
+            size_t cnt = 0;
+            size_t wait_timed_out_cnt = 0;
+            while( cnt < time_fragments && is_running() && write_queue.empty() && !wait_timed_out )
+            {
+              if( queue_condition_variable.wait_for(lock, std::chrono::microseconds(chunk_time)) == std::cv_status::timeout )
+              {
+                ++wait_timed_out_cnt;
+              }
+
+              ++cnt;
+              wait_timed_out = wait_timed_out_cnt == time_fragments;
+            }
+          }
+
           if (!is_running()) // we woke because the node is shutting down
             break;
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
