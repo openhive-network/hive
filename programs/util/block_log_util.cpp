@@ -594,7 +594,7 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_range(const fc::path& block_log_filename, const fc::optional<uint32_t> first_block, const fc::optional<uint32_t> last_block, fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block_range(const fc::path& block_log_filename, const uint32_t first_block, const uint32_t last_block, fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   if (binary)
   {
@@ -609,10 +609,8 @@ bool get_block_range(const fc::path& block_log_filename, const fc::optional<uint
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     FC_ASSERT(head_block_num, "block_log is empty");
 
-    const uint32_t starting_block_range = first_block ? *first_block : 1;
-    const uint32_t ending_block_range = last_block ? *last_block : head_block_num;
-    FC_ASSERT(starting_block_range <= ending_block_range, "starting block cannot be higher than ending block - range: ${starting_block_range} : ${ending_block_range}", (starting_block_range)(ending_block_range));
-    FC_ASSERT(ending_block_range <= head_block_num, "requested block number: ${ending_block_range} which is higher than head block number: ${head_block_num}", (ending_block_range)(head_block_num));
+    const uint32_t starting_block_range = first_block > 0 ? first_block : 1;
+    const uint32_t ending_block_range = last_block <= head_block_num ? last_block : head_block_num;
 
     std::stringstream ss;
     std::fstream fs;
@@ -983,17 +981,24 @@ int main(int argc, char** argv)
         update_options_map(get_block_options);
         FC_ASSERT(options_map.count("block-number") || options_map.count("from-block-number") || options_map.count("to-block-number"), "must specify at least one: \"--block-number\", \"--from-block-number\",\"--to-block-number\"");
 
-        fc::optional<uint32_t> first_block, last_block;
+        uint32_t first_block, last_block;
         if (options_map.count("block-number"))
         {
           FC_ASSERT(!options_map.count("from-block-number") && !options_map.count("to-block-number"), "if \"--block-number\" is set, \"--from-block-number\" and \"--to-block-number\" cannot be specified");
           first_block = last_block = options_map["block-number"].as<uint32_t>();
         }
-
-        if (options_map.count("from-block-number"))
-          first_block = options_map["from-block-number"].as<uint32_t>();
-        if (options_map.count("to-block-number"))
-          last_block = options_map["to-block-number"].as<uint32_t>();
+        else
+        {
+          if( options_map.count( "from-block-number" ) )
+            first_block = options_map[ "from-block-number" ].as<uint32_t>();
+          else
+            first_block = 1;
+          if( options_map.count( "to-block-number" ) )
+            last_block = options_map[ "to-block-number" ].as<uint32_t>();
+          else
+            last_block = -1; // head block
+          FC_ASSERT( first_block <= last_block, "Value of from-block-number cannot be bigger than to-block-number - range: ${first_block} : ${last_block}", (first_block)(last_block) );
+        }
 
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
         const bool header_only = options_map.count("header") != 0;
