@@ -39,7 +39,7 @@ namespace appbase {
       ~signals_handler();
 
       void init( std::promise<void> after_attach_signals );
-      void close();
+      void generate_interrupt_request();
 
       void clear_signals();
 
@@ -66,7 +66,7 @@ namespace appbase {
       signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation );
 
       void init();
-      void wait();
+      void wait4stop();
       void force_stop();
       bool is_thread_closed();
 

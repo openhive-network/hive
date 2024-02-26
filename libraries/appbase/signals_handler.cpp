@@ -29,24 +29,14 @@ void signals_handler::init( std::promise<void> after_attach_signals )
   io_serv.run();
 }
 
+void signals_handler::generate_interrupt_request()
+{
+  interrupt_request_generation();
+}
+
 boost::asio::io_service& signals_handler::get_io_service()
 {
   return io_serv;
-}
-
-void signals_handler::close()
-{
-  /** Since signals can be processed asynchronously, it would be possible to call this twice
-  *    concurrently while op service is stopping.
-  */
-  std::lock_guard<std::mutex> guard( close_mtx );
-
-  if( !closed )
-  {
-    interrupt_request_generation();
-
-    closed = true;
-  }
 }
 
 void signals_handler::clear_signals()
@@ -82,7 +72,7 @@ void signals_handler::handle_signal( const boost::system::error_code& err, int s
 
   if( last_signal_number == SIGINT || last_signal_number == SIGTERM )
   {
-    close();
+    generate_interrupt_request();
   }
 }
 
@@ -122,7 +112,7 @@ void signals_handler_wrapper::init()
   initialized = true;
 }
 
-void signals_handler_wrapper::wait()
+void signals_handler_wrapper::wait4stop()
 {
   if( initialized )
   {
@@ -143,7 +133,9 @@ void signals_handler_wrapper::force_stop()
     when application gets SIGINT, it won't be processed correctly, so it is only viable
     for unit tests, where signals are captured by boost anyway;
   */
-  handler.close();
+  handler.generate_interrupt_request();
+
+  wait4stop();
 }
 
 bool signals_handler_wrapper::is_thread_closed()
