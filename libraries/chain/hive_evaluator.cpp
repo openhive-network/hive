@@ -3030,7 +3030,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
       FC_ASSERT( available_downvote_shares >= op.vesting_shares, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
-    FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v}", ("v", min_delegation) );
+    FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v} (${h} HP)", ("v", min_delegation)("h", min_delegation * gpo.get_vesting_share_price()) );
 
     _db.create< vesting_delegation_object >( delegator, delegatee, op.vesting_shares, now );
 
