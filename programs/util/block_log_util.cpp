@@ -575,7 +575,7 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block(const fc::path& block_log_filename, fc::optional<uint32_t> block_number, fc::optional<uint32_t> from_block_number,fc::optional<uint32_t> to_block_number, fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block_range(const fc::path& block_log_filename, const fc::optional<uint32_t> first_block, const fc::optional<uint32_t> last_block, fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   if (binary)
   {
@@ -588,21 +588,11 @@ bool get_block(const fc::path& block_log_filename, fc::optional<uint32_t> block_
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
+    FC_ASSERT(head_block_num, "block_log is empty");
 
-    uint32_t starting_block_range = 0;
-    uint32_t ending_block_range = 0;
-
-    if (block_number)
-      starting_block_range = ending_block_range = *block_number;
-    else
-    {
-      starting_block_range = from_block_number ? *from_block_number : 1;
-      ending_block_range = to_block_number ? *to_block_number : head_block_num;
-      FC_ASSERT(starting_block_range <= ending_block_range, "starting block cannot be higher than ending block - range: ${starting_block_range} : ${ending_block_range}", (starting_block_range)(ending_block_range));
-    }
-
-    FC_ASSERT(starting_block_range);
-    FC_ASSERT(ending_block_range);
+    const uint32_t starting_block_range = first_block ? *first_block : 1;
+    const uint32_t ending_block_range = last_block ? *last_block : head_block_num;
+    FC_ASSERT(starting_block_range <= ending_block_range, "starting block cannot be higher than ending block - range: ${starting_block_range} : ${ending_block_range}", (starting_block_range)(ending_block_range));
     FC_ASSERT(ending_block_range <= head_block_num, "requested block number: ${ending_block_range} which is higher than head block number: ${head_block_num}", (ending_block_range)(head_block_num));
 
     std::stringstream ss;
@@ -956,22 +946,27 @@ int main(int argc, char** argv)
       {
         update_options_map(get_block_options);
         FC_ASSERT(options_map.count("block-number") || options_map.count("from-block-number") || options_map.count("to-block-number"), "must specify at least one: \"--block-number\", \"--from-block-number\",\"--to-block-number\"");
-        if (options_map.count("block-number"))
-          FC_ASSERT(!options_map.count("from-block-number") && !options_map.count("to-block-number"), "if \"--block-number\" is set, \"--from-block-number\" and \"--to-block-number\" cannot be specified");
-        if (options_map.count("from-block-number") || options_map.count("to-block-number"))
-          FC_ASSERT(!options_map.count("block-number"), "if \"--from-block-number\" or \"--to-block-number\" is set, \"--block-number\" cannot be specified");
 
-        const fc::optional<uint32_t> block_number = options_map.count("block-number") ? options_map["block-number"].as<uint32_t>() : fc::optional<uint32_t>();
-        const fc::optional<uint32_t> from_block_number = options_map.count("from-block-number") ? options_map["from-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
-        const fc::optional<uint32_t> to_block_number = options_map.count("to-block-number") ? options_map["to-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
+        fc::optional<uint32_t> first_block, last_block;
+        if (options_map.count("block-number"))
+        {
+          FC_ASSERT(!options_map.count("from-block-number") && !options_map.count("to-block-number"), "if \"--block-number\" is set, \"--from-block-number\" and \"--to-block-number\" cannot be specified");
+          first_block = last_block = options_map["block-number"].as<uint32_t>();
+        }
+
+        if (options_map.count("from-block-number"))
+          first_block = options_map["from-block-number"].as<uint32_t>();
+        if (options_map.count("to-block-number"))
+          last_block = options_map["to-block-number"].as<uint32_t>();
+
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
         const bool header_only = options_map.count("header") != 0;
         const bool pretty = options_map.count("pretty") != 0;
         const bool binary = options_map.count("binary") != 0;
-        ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - block_number: ${block_number}, from_block_number: ${from_block_number}, to_block_number: ${to_block_number}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
-          (block_log_path)(block_number)(from_block_number)(to_block_number)(header_only)(pretty)(binary)(output_dir));
+        ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
+          (block_log_path)(first_block)(last_block)(header_only)(pretty)(binary)(output_dir));
 
-        return get_block(block_log_path, block_number, from_block_number, to_block_number, output_dir, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
+        return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block-artifacts"))
       {
