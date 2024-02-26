@@ -28,7 +28,7 @@ def replayed_node() -> ReplayedNodeMaker:
             time_offset = tt.StartTimeControl(start_time="head_block_time")
 
         else:
-            time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
+            time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.FAKETIME_FORMAT)
 
         if time_multiplier is not None:
             time_offset += f" x{time_multiplier}"
