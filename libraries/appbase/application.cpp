@@ -77,6 +77,8 @@ void application::init_signals_handler()
 
 void application::generate_interrupt_request()
 {
+  ilog("Generating application interrupt request...");
+
   notify_status("interrupted");
   _is_interrupt_request = true;
 }
@@ -413,11 +415,15 @@ void application::wait()
   }
 
   if( finish_request )
+  {
+    ilog("Attempting to request for application shutdown...");
     finish_request();
+    ilog("Request for application shutdown processed.");
+  }
 
   finish();
 
-  handler_wrapper.wait();
+  handler_wrapper.wait4stop();
 }
 
 bool application::is_thread_closed()
@@ -643,7 +649,7 @@ bool application::quit()
 
   wait();
 
-  return _is_thread_closed;
+  return is_thread_closed();
 }
 
 } /// namespace appbase
