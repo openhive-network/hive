@@ -25,8 +25,6 @@ namespace appbase {
 
       p_signal_set                      signals;
 
-      std::mutex                        close_mtx;
-
       boost::asio::io_service           io_serv;
 
       void handle_signal( const boost::system::error_code& err, int signal_number );

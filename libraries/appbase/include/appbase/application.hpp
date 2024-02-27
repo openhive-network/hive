@@ -101,6 +101,7 @@ namespace appbase {
       /**
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
         */
+      void wait4interrupt_request();
       void wait();
       bool is_thread_closed();
 

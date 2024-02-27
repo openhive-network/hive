@@ -84,12 +84,13 @@ int main( int argc, char** argv )
   try
   {
     appbase::application theApp;
+    bool _started_loop = false;
 
     theApp.init_signals_handler();
 
-    BOOST_SCOPE_EXIT(&theApp)
+    BOOST_SCOPE_EXIT(&theApp, &_started_loop)
     {
-      if( theApp.quit() )
+      if( theApp.quit() && _started_loop )
         ilog("exited cleanly");
     } BOOST_SCOPE_EXIT_END
 
@@ -134,6 +135,8 @@ int main( int argc, char** argv )
       return initializationResult.get_result_code();
     else theApp.notify_status("starting");
 
+    _started_loop = true;
+
     theApp.load_logging_config();
 
     try
@@ -164,7 +167,7 @@ int main( int argc, char** argv )
 
     if( theApp.is_interrupt_request() ) return 0;
 
-    theApp.wait();
+    theApp.wait4interrupt_request();
 
     return initializationResult.get_result_code();
   }
