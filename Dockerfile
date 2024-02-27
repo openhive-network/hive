@@ -2,10 +2,10 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=ubuntu22.04-10
+ARG CI_IMAGE_TAG=ubuntu22.04-11
 ARG BUILD_IMAGE_TAG
 
-FROM phusion/baseimage:jammy-1.0.1 AS runtime
+FROM ubuntu:22.04 AS runtime
 
 ENV LANG=en_US.UTF-8
 
@@ -15,21 +15,10 @@ USER root
 WORKDIR /usr/local/src
 ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
-# Install base runtime packages
-RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
-
-USER hived_admin
-WORKDIR /home/hived_admin
-
-FROM ubuntu:22.04 AS minimal-runtime
-
-ENV LANG=en_US.UTF-8
-
-SHELL ["/bin/bash", "-c"]
-
-USER root
-WORKDIR /usr/local/src
-ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
+# Set timezone to UTC to prevent later setup commands from interactively asking what your timezone is.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noniteractive TZ=Etc/UTC apt-get install --no-install-recommends -y tzdata curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install base runtime packages
 RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
