@@ -149,7 +149,9 @@ namespace fc {
    {
       try
       {
-         fc::create_directories(my->cfg.filename.parent_path());
+        const fc::path parent_path = my->cfg.filename.parent_path();
+        if (parent_path != fc::path() && !fc::exists(parent_path))
+          fc::create_directories(parent_path);
 
          if(!my->cfg.rotate) 
             if (my->cfg.truncate)
@@ -157,6 +159,14 @@ namespace fc {
             else
                my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::app);
 
+      }
+      catch(const fc::exception &e)
+      {
+        std::cerr << "error opening log file: " << e.to_detail_string() << "\n";
+      }
+      catch(const std::exception &e)
+      {
+        std::cerr << "error opening log file: " << e.what() << "\n";
       }
       catch( ... )
       {
