@@ -988,8 +988,9 @@ int main(int argc, char** argv)
       else if (options_map.count("get-block"))
       {
         update_options_map(get_block_options);
-        FC_ASSERT( ( options_map.count( "from" ) + options_map.count( "block-number" ) ) <= 1, "'--from' cannot be specified more than once");
-        FC_ASSERT( ( options_map.count( "to" ) + options_map.count( "block-number" ) ) <= 1, "'--to' cannot be specified more than once" );
+
+        if (options_map.count( "from" ) || options_map.count( "to" ))
+          FC_ASSERT(!options_map.count( "block-number" ), "'--from' and '--to' cannot be specified with --block-number");
 
         int32_t first_block, last_block;
         if( options_map.count( "block-number" ) )
