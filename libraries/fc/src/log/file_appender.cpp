@@ -199,8 +199,7 @@ namespace fc {
         else
           line << "            ";
       }
-
-      line << " " << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
+      line << "  " << m.get_context().get_file() << ":" << m.get_context().get_line_number() << "  ";
 
       string method_name = m.get_context().get_method();
       // strip all leading scopes...
@@ -214,12 +213,13 @@ namespace fc {
 
          if( method_name[p] == ':' )
            ++p;
-         line << std::setw( 20 ) << m.get_context().get_method().substr(p,20).c_str() <<" ";
+         line << std::setw( 20 ) << std::left << m.get_context().get_method().substr(p,20).c_str() <<" ";
       }
 
       line << "] ";
       fc::string message = fc::format_string( m.get_format(), m.get_data() );
       line << message.c_str();
+      line << "\n";
 
       //fc::variant lmsg(m);
 
@@ -227,7 +227,7 @@ namespace fc {
 
       {
         fc::scoped_lock<boost::mutex> lock( my->slock );
-        my->out << line.str() << "\t\t\t" << m.get_context().get_file() << ":" << m.get_context().get_line_number() << "\n";
+        my->out << line.str();
         if( my->cfg.flush )
           my->out.flush();
       }
