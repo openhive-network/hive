@@ -265,7 +265,15 @@ bool validate_block_log_checksums_from_file(const fc::path& checksums_file, appb
       if (!validate_block_log_checksum(block_log, hashes_to_validate, app, thread_pool))
         ++fail_count;
     if (fail_count)
-      wlog("${fail_count} block logs had checksums that did NOT match", (fail_count));
+    {
+      std::cerr << "checksums file had " << fail_count << " checksums that did NOT match\n";
+      elog("checksums file had ${fail_count} checksums that did NOT match", (fail_count));
+    }
+    else
+    {
+      std::cout << "All checksums from file match\n";
+      ilog("All checksums from file match");
+    }
     return fail_count == 0;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -351,23 +359,27 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
     if (mismatch_detected.load(std::memory_order_relaxed))
     {
       elog("${first_filename} and ${second_filename} differ at block: ${mismatch_on_block_number}", (first_filename)(second_filename)(mismatch_on_block_number));
+      std::cerr << "Both block_logs differ at block: " << *mismatch_on_block_number << "\n";
       return false;
     }
     if (first_head_block_num > second_head_block_num)
     {
       elog("${first_filename} has ${block_count} more blocks than ${second_filename}. Both logs are equivalent through block ${second_head_block_num}, which is the last block in ${second_filename}",
         (first_filename)("block_count", first_head_block_num - second_head_block_num)(second_filename)(second_head_block_num)(second_filename));
+      std::cerr << first_filename.generic_string() << " has more blocks than " << second_filename.generic_string() << "\n";
       return false;
     }
     else if (second_head_block_num > first_head_block_num)
     {
       elog("${second_filename} has ${block_count} more blocks than ${first_filename}. Both logs are equivalent through block ${first_head_block_num}, which is the last block in ${first_filename}",
         (second_filename)("block_count", second_head_block_num - first_head_block_num)(first_filename)(first_head_block_num)(first_filename));
+      std::cerr << second_filename.generic_string() << " has more blocks than " << first_filename.generic_string() << "\n";
       return false;
     }
     else
     {
       ilog("No difference detected between block_logs");
+      std::cout << "No difference detected between block_logs\n";
       return true;
     }
   }
@@ -398,6 +410,7 @@ bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_bl
     ilog("Original block_log head_block_num: ${head_block_num}", (head_block_num));
     log.truncate(new_head_block_num);
     ilog("Truncating finished.");
+    std::cout << "Truncating finished\n";
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -504,9 +517,13 @@ bool find_end(const fc::path& block_log_filename)
     {
       const uint64_t new_file_size = offset_of_pos_and_flags + sizeof(uint64_t);
       if (new_file_size == block_log_size)
+      {
         ilog("The block log already appears to end in a full block, no truncation is necessary");
+        std::cout << "The block log already appears to end in a full block, no truncation is necessary\n";
+      }
       else
       {
+        wlog("Likely end detected, block log size should be reduced to ${new_file_size}", (new_file_size));
         std::cout << "\n\nLikely end detected, block log size should be reduced to " << new_file_size << ",\n";
         std::cout << "which will reduce the block log size by " << block_log_size - new_file_size << " bytes\n\n";
         std::cout << "Do you want to truncate " << block_log_filename.string() << " now? [yes/no] ";
@@ -523,13 +540,17 @@ bool find_end(const fc::path& block_log_filename)
           FC_ASSERT(ftruncate(block_log_fd, new_file_size) == 0, 
                     "failed to truncate block log, ${error}", ("error", strerror(errno)));
           ilog("Block log truncated");
+          std::cout << "Block log truncated\n";
         }
         else
-          wlog("Leaving the block log unmolested. You may truncate the file manually later using the command: truncate -s ${new_file_size} ${block_log_filename}", (new_file_size)(block_log_filename));
+          std::cout << "Leaving the block log unmolested. You may truncate the file manually later using the command: truncate -s " << new_file_size << " " << block_log_filename.generic_string() << "\n";
       }
     }
     else
+    {
       elog("Unable to detect the end of the block log");
+      std::cerr << "Unable to detect the end of the block log\n";
+    }
 
     close(block_log_fd);
     return possible_end_found;
@@ -545,6 +566,7 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
+    std::cout << "head block number: " << head_block_num << "\n";
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -558,17 +580,14 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     if (starting_block_number > head_block_num ||
         (ending_block_number && *ending_block_number > head_block_num))
-    {
-      elog("Block log only has ${head_block_num} blocks", (head_block_num));
-      return false;
-    }
+      FC_THROW("Block log only has ${head_block_num} blocks", (head_block_num));
 
     for (unsigned i = starting_block_number; i <= ending_block_number.value_or(starting_block_number); ++i)
     {
       if (print_block_numbers)
-        ilog("block num: ${i}, block_id: ${block_id}", (i)("block_id", log.read_block_id_by_num(i).str()));
+        std::cout << "block num:" << i << ", block_id: " << log.read_block_id_by_num(i).str() << "\n";
       else
-        ilog("block_id: ${block_id}", ("block_id", log.read_block_id_by_num(i).str()));
+        std::cout << "block_id: " << log.read_block_id_by_num(i).str() << "\n";
     }
     return true;
   }
@@ -684,7 +703,7 @@ bool get_block_range(const fc::path& block_log_filename, const fc::optional<uint
         fs.close();
     }
     if (!output_dir)
-      ilog("get-block result: ${result}", ("result", ss.str()));
+      std::cout << ss.str() << "\n";
 
     return true;
   }
@@ -708,18 +727,12 @@ bool get_block_artifacts(const fc::path& block_log_path, const fc::optional<uint
     {
       const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
       if (starting_block_number && *starting_block_number > artifacts_block_head_num)
-      {
-        elog("[get_block_artifacts][error] starting_block_number - ${starting_block_number} is bigger than artifacts head block number: ${artifacts_block_head_num}", (starting_block_number)(artifacts_block_head_num));
-        return false;
-      }
+        FC_THROW("[get_block_artifacts][error] starting_block_number - ${starting_block_number} is bigger than artifacts head block number: ${artifacts_block_head_num}", (starting_block_number)(artifacts_block_head_num));
       if (ending_block_number && *ending_block_number > artifacts_block_head_num - 1)
-      {
-        elog("[get_block_artifacts][error] ending_block_number - ${ending_block_number} is bigger than artifacts head block number -1: ${max}", (ending_block_number)("max", artifacts_block_head_num - 1));
-        return false;
-      }
+        FC_THROW("[get_block_artifacts][error] ending_block_number - ${ending_block_number} is bigger than artifacts head block number -1: ${max}", (ending_block_number)("max", artifacts_block_head_num - 1));
     }
-    ilog("Get artifacts result:\n${result}", ("result", artifacts->get_artifacts_contents(starting_block_number, ending_block_number, header_only)));
     block_log.close();
+    std::cout << artifacts->get_artifacts_contents(starting_block_number, ending_block_number, header_only) << "\n";
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -732,6 +745,7 @@ bool generate_artifacts(const fc::path& block_log_path, appbase::application& ap
     hive::chain::block_log block_log( app );
     block_log.open(block_log_path, thread_pool, false, true);
     block_log.close();
+    std::cout << "Opened and closed block log file. Artifacts were generated if needed\n";
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -869,6 +883,11 @@ int main(int argc, char** argv)
     file_config.flush                = true;
     file_config.rotate               = false;
 
+    logging_config.appenders.push_back(fc::appender_config("default", "file", fc::variant(file_config)));
+    logging_config.loggers = { fc::logger_config("default") };
+    logging_config.loggers.front().level = fc::log_level::all;
+    logging_config.loggers.front().appenders = {"default"};
+
     if (options_map.count("version"))
     {
       print_version();
@@ -880,20 +899,17 @@ int main(int argc, char** argv)
       return options_map.count("help") ? 0 : 1;
     }
 
-    logging_config.appenders.push_back(fc::appender_config("default", "file", fc::variant(file_config)));
-    logging_config.loggers = { fc::logger_config("default") };
-    logging_config.loggers.front().level = fc::log_level::all;
-    logging_config.loggers.front().appenders = {"default"};
     fc::configure_logging(logging_config);
 
     // that's additional available operation, which doesn't request block_log file
     if (options_map.count("sha256sum-from-file"))
     {
-      const boost::filesystem::path path_to_file = options_map["sha256sum-from-file"].as<boost::filesystem::path>();
+      const fc::path path_to_file = options_map["sha256sum-from-file"].as<boost::filesystem::path>();
 
       options_map.erase("sha256sum-from-file");
       if (!options_map.empty())
       {
+        std::cerr << "You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " << get_arguments_as_string(options_map) << "\n";
         elog("You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: ${args}", ("args", get_arguments_as_string(options_map)));
         return 1;
       }
@@ -902,6 +918,8 @@ int main(int argc, char** argv)
       hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
       thread_pool.set_thread_pool_size(threads_num);
       BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
+
+      dlog("block_log_util will perform sha256sum-from-file operation on file: ${path_to_file}", (path_to_file));
       return validate_block_log_checksums_from_file(path_to_file, theApp, thread_pool) ? 0 : 1;
     }
     // we should handle operation which request block_log file
@@ -909,6 +927,7 @@ int main(int argc, char** argv)
     {
       if (!options_map.count("block-log"))
       {
+        std::cerr << "--block-log with path to block_log file is requested\n";
         elog("--block-log with path to block_log file is requested");
         return 1;
       }
@@ -918,11 +937,13 @@ int main(int argc, char** argv)
 
       if (options_map.empty())
       {
+        std::cerr << "Could not recognize which operation should be performed on block_log\n";
         elog("Could not recognize which operation should be performed on block_log");
         return 1;
       }
       else if (options_map.size() > 1)
       {
+        std::cerr << "You specified more than one block_log operation. One one at once is allowed. Passed arguments: " << get_arguments_as_string(options_map) << "\n";
         elog("You specified more than one block_log operation. One one at once is allowed. Passed arguments: ${args}", ("args", get_arguments_as_string(options_map)));
         return 1;
       }
@@ -937,23 +958,24 @@ int main(int argc, char** argv)
         update_options_map(cmp_options);
         if (!options_map.count("second-block-log"))
         {
+          std::cerr << "Missing \'--second-block-log\' for compare operation\n";
           elog("Missing \'--second-block-log\' for compare operation");
           return 1;
         }
 
         const fc::path second_block_log_path = options_map["second-block-log"].as<boost::filesystem::path>();
         const fc::optional<uint32_t> start_at_block = options_map.count("start-at-block") ? options_map["start-at-block"].as<uint32_t>() : fc::optional<uint32_t>();
-        ilog("block_log_util will perform compare operation between block_log: ${block_log_path} and ${second_block_log_path}, start_at_block: ${start_at_block}", (block_log_path)(second_block_log_path)(start_at_block));
+        dlog("block_log_util will perform compare operation between block_log: ${block_log_path} and ${second_block_log_path}, start_at_block: ${start_at_block}", (block_log_path)(second_block_log_path)(start_at_block));
         return compare_block_logs(block_log_path, second_block_log_path, start_at_block, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("find-end"))
       {
-        ilog("block_log_util will perform find-end operation on block_log: ${block_log_path}", (block_log_path));
+        dlog("block_log_util will perform find-end operation on block_log: ${block_log_path}", (block_log_path));
         return find_end(block_log_path) ? 0 : 1;
       }
       else if (options_map.count("generate-artifacts"))
       {
-        ilog("block_log_util will open block_log: ${block_log_path} and generate artifacts file if necessary", (block_log_path));
+        dlog("block_log_util will open block_log: ${block_log_path} and generate artifacts file if necessary", (block_log_path));
         return generate_artifacts(block_log_path, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block"))
@@ -977,7 +999,7 @@ int main(int argc, char** argv)
         const bool header_only = options_map.count("header") != 0;
         const bool pretty = options_map.count("pretty") != 0;
         const bool binary = options_map.count("binary") != 0;
-        ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
+        dlog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
           (block_log_path)(first_block)(last_block)(header_only)(pretty)(binary)(output_dir));
 
         return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
@@ -1001,7 +1023,7 @@ int main(int argc, char** argv)
           }
         }
 
-        ilog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, paramters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
+        dlog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, paramters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
           (block_log_path)(starting_block_number)(ending_block_number)(header_only)(full_match_verification));
         return get_block_artifacts(block_log_path, starting_block_number, ending_block_number, header_only, full_match_verification, theApp, thread_pool) ? 0 : 1;
       }
@@ -1013,7 +1035,7 @@ int main(int argc, char** argv)
         const fc::optional<uint32_t> ending_block_number = options_map.count("ending-block-number") ? options_map["ending-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
         const bool print_block_numbers = options_map.count("print-block-numbers") != 0;
 
-        ilog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, print_block_numbers: ${print_block_numbers}",
+        dlog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, print_block_numbers: ${print_block_numbers}",
           (block_log_path)(starting_block_number)(ending_block_number)(print_block_numbers));
         return get_block_ids(block_log_path, starting_block_number, ending_block_number, print_block_numbers, theApp, thread_pool) ? 0 : 1;
       }
@@ -1021,7 +1043,7 @@ int main(int argc, char** argv)
       {
         update_options_map(sha256sum_options);
         const fc::optional<uint32_t> checkpoint_every_n_blocks = options_map.count("checkpoint") ? options_map["checkpoint"].as<uint32_t>() : fc::optional<uint32_t>();
-        ilog("block_log_util will perform sha256sum operation on block_log: ${block_log_path}, checkpoint_every_n_blocks: ${checkpoint_every_n_blocks}", (block_log_path)(checkpoint_every_n_blocks));
+        dlog("block_log_util will perform sha256sum operation on block_log: ${block_log_path}, checkpoint_every_n_blocks: ${checkpoint_every_n_blocks}", (block_log_path)(checkpoint_every_n_blocks));
         checksum_block_log(block_log_path, checkpoint_every_n_blocks, theApp, thread_pool);
       }
       else if (options_map.count("truncate"))
@@ -1030,12 +1052,12 @@ int main(int argc, char** argv)
         FC_ASSERT(options_map.count("block-number"), "\"--block-number\" is mandatory");
         const uint32_t block_number = options_map["block-number"].as<uint32_t>();
         const bool force = options_map.count("force") ? true : false;
-        ilog("block_log_util will perform truncate operation on block_log: ${block_log_path}, block_number: ${block_number}, force: ${force}", (block_log_path)(block_number)(force));
+        dlog("block_log_util will perform truncate operation on block_log: ${block_log_path}, block_number: ${block_number}, force: ${force}", (block_log_path)(block_number)(force));
         truncate_block_log(block_log_path, block_number, force, theApp, thread_pool);
       }
       else if (options_map.count("get-head-block-number"))
       {
-        ilog("block_log_util will perform get-head-block-number operation on block_log: ${block_log_path}", (block_log_path));
+        dlog("block_log_util will perform get-head-block-number operation on block_log: ${block_log_path}", (block_log_path));
         get_head_block_number(block_log_path, theApp, thread_pool);
       }
       else
