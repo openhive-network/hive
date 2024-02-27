@@ -143,6 +143,7 @@ class chain_plugin_impl
       snapshot_provider = &provider;
     }
 
+    bool is_interrupt_request() const;
     bool is_running() const;
 
     void start_write_processing();
@@ -202,6 +203,7 @@ class chain_plugin_impl
     flat_map<uint32_t,block_id_type> checkpoints;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
+    bool                             stop_at_block_interrupt_request = false;
 
 
     uint32_t allow_future_time = 5;
@@ -315,7 +317,7 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
-      if (cp.theApp.is_interrupt_request())
+      if( cp.is_interrupt_request() )
       {
         throw fc::exception(fc::canceled_exception_code, "interrupted by user");
       }
@@ -406,9 +408,14 @@ struct chain_plugin_impl::write_request_visitor
   }
 };
 
+bool chain_plugin_impl::is_interrupt_request() const
+{
+  return theApp.is_interrupt_request() || stop_at_block_interrupt_request;
+}
+
 bool chain_plugin_impl::is_running() const
 {
-  return running && !theApp.is_interrupt_request();
+  return running && !is_interrupt_request();
 }
 
 void chain_plugin_impl::start_write_processing()
@@ -543,7 +550,7 @@ void chain_plugin_impl::start_write_processing()
             if( stop_at_block > 0 && stop_at_block == last_block_number )
             {
               ilog("Stopped ${mode} on user request. Last applied block number: ${n}.", ("n", last_block_number)("mode", is_syncing ? "syncing" : "live mode"));
-              theApp.generate_interrupt_request();
+              stop_at_block_interrupt_request = true;
             }
 
             if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
