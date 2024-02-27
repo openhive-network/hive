@@ -39,7 +39,7 @@ struct operation_params
   uint32_t min = 0, max = 0; //0 <= min <= max, max has different limit depending on kind of operation
   uint32_t weight = 0; // relative weight of operation kind in whole mix
   double exponent = 1.0; // >= 0; values below 1.0 favor bigger operations, above favor small
-    // the size of operation is random with size = (max-min) * rand**exponent - min
+    // the size of operation is random with size = (max-min) * rand(0..1)**exponent + min
 
   void validate( uint32_t max_limit ) const
   {
