@@ -77,8 +77,6 @@ void application::init_signals_handler()
 
 void application::generate_interrupt_request()
 {
-  ilog("Generating application interrupt request...");
-
   notify_status("interrupted");
   _is_interrupt_request = true;
 }
@@ -407,12 +405,18 @@ void application::finish()
   }
 }
 
-void application::wait()
+void application::wait4interrupt_request()
 {
+  const uint32_t _wait_interval = 200;
   while( !is_interrupt_request() )
   {
-    std::this_thread::sleep_for( std::chrono::milliseconds(200) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( _wait_interval ) );
   }
+}
+
+void application::wait()
+{
+  wait4interrupt_request();
 
   if( finish_request )
   {
@@ -647,7 +651,7 @@ bool application::quit()
   if( !_is_thread_closed )
     kill();
 
-  handler_wrapper.wait4stop();
+  wait();
 
   return is_thread_closed();
 }
