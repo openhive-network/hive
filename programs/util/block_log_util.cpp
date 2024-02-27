@@ -594,7 +594,9 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_range(const fc::path& block_log_filename, const uint32_t first_block, const uint32_t last_block, fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block_range( const fc::path& block_log_filename, int32_t first_block, int32_t last_block,
+  fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary,
+  appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   if (binary)
   {
@@ -606,11 +608,19 @@ bool get_block_range(const fc::path& block_log_filename, const uint32_t first_bl
   {
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
+    const int32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     FC_ASSERT(head_block_num, "block_log is empty");
 
-    const uint32_t starting_block_range = first_block > 0 ? first_block : 1;
-    const uint32_t ending_block_range = last_block <= head_block_num ? last_block : head_block_num;
+    if( first_block >= 0 )
+      first_block = std::max( 1, first_block );
+    else
+      first_block = std::max( 1, head_block_num + first_block );
+    if( last_block >= 0 )
+      last_block = std::min( head_block_num, last_block );
+    else
+      last_block = std::min( head_block_num, head_block_num + last_block );
+    FC_ASSERT( first_block <= last_block, "Effective range [${first_block}:${last_block}] is empty.",
+      (first_block)(last_block) );
 
     std::stringstream ss;
     std::fstream fs;
@@ -621,21 +631,21 @@ bool get_block_range(const fc::path& block_log_filename, const uint32_t first_bl
       fc::create_directories(*output_dir);
     }
 
-    for (uint32_t current_block_num = starting_block_range; current_block_num <= ending_block_range; ++current_block_num)
+    for( int32_t current_block_num = first_block; current_block_num <= last_block; ++current_block_num )
     {
       std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(current_block_num);
 
       if (output_dir)
       {
         static std::string filename_pattern;
-        if (filename_pattern.empty())
+        if( filename_pattern.empty() )
         {
-          if (ending_block_range < 10)
+          if( last_block < 10 )
             filename_pattern = "0";
           else
           {
-            uint32_t number = ending_block_range;
-            while (number)
+            int32_t number = last_block;
+            while( number )
             {
               number /= 10;
               filename_pattern += "0";
@@ -794,9 +804,9 @@ int main(int argc, char** argv)
 
   // args for get-block subcommand
   boost::program_options::options_description get_block_options("get-block options");
-  get_block_options.add_options()("block-number,n", boost::program_options::value<uint32_t>()->value_name("x"), "Equivalent of '--from x --to x'.");
-  get_block_options.add_options()("from", boost::program_options::value<uint32_t>()->value_name("x"), "Return range of blocks starting from x. Defaults to 1.");
-  get_block_options.add_options()("to", boost::program_options::value<uint32_t>()->value_name("x"), "Return range of blocks ending at x (inclusive). Defaults to -1 (head block).");
+  get_block_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("x"), "Equivalent of '--from x --to x'.");
+  get_block_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("x"), "Return range of blocks starting from x. Negative numbers mean distance from end (-1 is head block). Defaults to 1.");
+  get_block_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("x"), "Return range of blocks ending at x (inclusive). Negative numbers mean distance from end (-1 is head block). Defaults to -1.");
   get_block_options.add_options()("header-only", "only print the block header");
   get_block_options.add_options()("pretty", "pretty-print the JSON");
   get_block_options.add_options()("binary", "output the binary form of the block (--output-dir is obligatory for this feature)");
@@ -981,29 +991,28 @@ int main(int argc, char** argv)
         FC_ASSERT( ( options_map.count( "from" ) + options_map.count( "block-number" ) ) <= 1, "'--from' cannot be specified more than once");
         FC_ASSERT( ( options_map.count( "to" ) + options_map.count( "block-number" ) ) <= 1, "'--to' cannot be specified more than once" );
 
-        uint32_t first_block, last_block;
+        int32_t first_block, last_block;
         if( options_map.count( "block-number" ) )
         {
-          first_block = last_block = options_map[ "block-number" ].as<uint32_t>();
+          first_block = last_block = options_map[ "block-number" ].as<int32_t>();
         }
         else
         {
           if( options_map.count( "from" ) )
-            first_block = options_map[ "from" ].as<uint32_t>();
+            first_block = options_map[ "from" ].as<int32_t>();
           else
             first_block = 1;
           if( options_map.count( "to" ) )
-            last_block = options_map[ "to" ].as<uint32_t>();
+            last_block = options_map[ "to" ].as<int32_t>();
           else
             last_block = -1; // head block
-          FC_ASSERT( first_block <= last_block, "Value of '--from' cannot be bigger than '--to'" );
         }
 
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
         const bool header_only = options_map.count("header-only") != 0;
         const bool pretty = options_map.count("pretty") != 0;
         const bool binary = options_map.count("binary") != 0;
-        dlog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
+        ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
           (block_log_path)(first_block)(last_block)(header_only)(pretty)(binary)(output_dir));
 
         return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
