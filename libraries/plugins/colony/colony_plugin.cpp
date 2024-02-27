@@ -85,7 +85,8 @@ struct transaction_builder
   uint32_t                                                                         _vote_substitutions = 0;
   uint32_t                                                                         _failed_transactions = 0;
   uint32_t                                                                         _failed_rc = 0;
-  uint64_t                                                                         _tx_num = 0;
+  uint32_t                                                                         _tx_num = 0;
+  uint32_t                                                                         _block_num = 0;
   uint32_t                                                                         _tx_to_produce = 0;
   uint32_t                                                                         _concurrent_tx_count = 0;
 
@@ -266,6 +267,7 @@ void transaction_builder::build_transaction()
     {
       _tx.set_reference_block( _common._db.head_block_id() );
       _tx.set_expiration( _common._db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      _block_num = _common._db.head_block_num();
       if( _common._max_tx_per_block == 0 ) // no limit
         _tx_to_produce = -1;
       else
@@ -285,7 +287,10 @@ void transaction_builder::build_transaction()
   ++_current_account;
   if( _current_account == _accounts.end() )
     _current_account = _accounts.begin();
-  uint32_t nonce = ( _tx_num << 8 ) | _id;
+  uint64_t nonce = ( (uint64_t)_block_num << 40 ) | ( (uint64_t)_tx_num << 8 ) | (uint64_t)_id;
+    // nonce is composed of _id for uniqueness between threads, _tx_num for uniqueness between
+    // transactions of the same thread within production session and _block_num for uniqueness
+    // between different production sessions
   ++_tx_num;
   --_tx_to_produce;
   if( ( _tx_num % 1000000 ) == 0 )
