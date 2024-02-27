@@ -2,7 +2,7 @@
 
 #include <fc/log/logger.hpp>
 #include <fc/log/logger_config.hpp>
-#include <fc/log/console_appender.hpp>
+#include <fc/log/file_appender.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/io/json.hpp>
 #include <fc/filesystem.hpp>
@@ -743,6 +743,7 @@ int main(int argc, char** argv)
   minor_options.add_options()("jobs,j", boost::program_options::value<unsigned>()->default_value(4), "The number of worker threads to spawn. (max 16)");
   minor_options.add_options()("help,h", "Print usage instructions");
   minor_options.add_options()("version,v", "Print version info.");
+  minor_options.add_options()("log-path,l", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->default_value("./block_log_util.log"),"Path to log file. All logs are saved into this file.");
 
   boost::program_options::options_description block_log_operations("block_log operations");
   block_log_operations.add_options()("block-log,i", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->required(), "Path to input block-log for processing, depending on the operation opening in read only (RO) or read & write (RW) mode.");
@@ -855,6 +856,19 @@ int main(int argc, char** argv)
     FC_ASSERT(threads_num <= 16, "jobs limit is 16, cannot use ${threads_num}", (threads_num));
     options_map.erase("jobs");
 
+    fc::logging_config logging_config;
+    fc::file_appender::config file_config;
+    {
+      const fc::path log_path = options_map["log-path"].as<boost::filesystem::path>();
+      options_map.erase("log-path");
+      if (fc::exists(log_path))
+        FC_ASSERT(!fc::is_directory(log_path), "${log_path} points to directory. You must specify a file", (log_path));
+
+      file_config.filename             = log_path;
+    }
+    file_config.flush                = true;
+    file_config.rotate               = false;
+
     if (options_map.count("version"))
     {
       print_version();
@@ -865,8 +879,15 @@ int main(int argc, char** argv)
       print_usage();
       return options_map.count("help") ? 0 : 1;
     }
+
+    logging_config.appenders.push_back(fc::appender_config("default", "file", fc::variant(file_config)));
+    logging_config.loggers = { fc::logger_config("default") };
+    logging_config.loggers.front().level = fc::log_level::all;
+    logging_config.loggers.front().appenders = {"default"};
+    fc::configure_logging(logging_config);
+
     // that's additional available operation, which doesn't request block_log file
-    else if (options_map.count("sha256sum-from-file"))
+    if (options_map.count("sha256sum-from-file"))
     {
       const boost::filesystem::path path_to_file = options_map["sha256sum-from-file"].as<boost::filesystem::path>();
 
@@ -910,13 +931,6 @@ int main(int argc, char** argv)
       hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
       thread_pool.set_thread_pool_size(threads_num);
       BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
-
-      fc::logging_config logging_config;
-      logging_config.appenders.push_back(fc::appender_config("stderr", "console", fc::variant(fc::console_appender::config())));
-      logging_config.loggers = { fc::logger_config("default") };
-      logging_config.loggers.front().level = fc::log_level::debug;
-      logging_config.loggers.front().appenders = {"stderr"};
-      fc::configure_logging(logging_config);
 
       if (options_map.count("compare"))
       {
@@ -1030,18 +1044,27 @@ int main(int argc, char** argv)
   }
   catch (const fc::exception& e)
   {
+    elog("fc error occured: ${error}", ("error", e.to_detail_string()));
     std::cerr << "\n\nFC Error occured: " << e.to_detail_string() << "\n";
     return 1;
   }
   catch (const boost::program_options::error& e)
   {
+    elog("boost error occured: ${error}", ("error", e.what()));
     std::cerr << "\n\n boost program options error occured: " << e.what() << "\n";
     print_usage();
     return 1;
   }
   catch (const std::exception& e)
   {
+    elog("std error occured: ${error}", ("error", e.what()));
     std::cerr << "\n\nstd error occured: " << e.what() << "\n";
+    return 1;
+  }
+  catch(...)
+  {
+    elog("An unknown error occured");
+    std::cerr << "\n\nAn unknown error occured\n";
     return 1;
   }
 
