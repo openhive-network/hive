@@ -3,6 +3,8 @@
 namespace hive { namespace chain {
 
 using hive::protocol::asset;
+using hive::protocol::dhf_conversion_operation;
+using hive::protocol::dhf_funding_operation;
 using hive::protocol::operation;
 
 using hive::chain::proposal_object;

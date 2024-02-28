@@ -105,7 +105,7 @@ namespace graphene { namespace net {
     // we need two extra bytes to specify whether the block is compressed, and if it is, what dictionary
     // to use to decompress it (same data as is stored in the block_log's index)
     data.resize(COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE + compressed_data.compressed_size);
-    if (compressed_data.compression_attributes.flags == hive::chain::block_log::block_flags::zstd)
+    if (compressed_data.compression_attributes.flags == hive::chain::block_flags::zstd)
       data[0] |= 0x80;
     if (compressed_data.compression_attributes.dictionary_number)
     {
@@ -128,8 +128,8 @@ namespace graphene { namespace net {
       FC_ASSERT(data.size() > COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE);
 
       // decode the block attributes in the first two bytes
-      hive::chain::block_log::block_attributes_t block_attributes;
-      block_attributes.flags = (data[0] & 0x80) ? hive::chain::block_log::block_flags::zstd : hive::chain::block_log::block_flags::uncompressed;
+      hive::chain::block_attributes_t block_attributes;
+      block_attributes.flags = (data[0] & 0x80) ? hive::chain::block_flags::zstd : hive::chain::block_flags::uncompressed;
       if (data[0] & 0x40)
         block_attributes.dictionary_number = data[1];
 
