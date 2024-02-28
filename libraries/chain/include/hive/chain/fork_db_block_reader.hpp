@@ -2,9 +2,9 @@
 
 #include <hive/chain/block_log_reader.hpp>
 
-#include <hive/chain/fork_database.hpp>
-
 namespace hive { namespace chain {
+
+  class fork_database;
 
   class fork_db_block_reader : public block_log_reader
   {

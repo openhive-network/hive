@@ -1,5 +1,6 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
+#include <hive/chain/block_log.hpp>
 #include <fc/bitutil.hpp>
 
 #include <fc/io/json.hpp>
@@ -42,7 +43,7 @@ full_block_type::~full_block_type()
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
                                                                                                  size_t compressed_size,
-                                                                                                 const block_log::block_attributes_t& compression_attributes,
+                                                                                                 const block_attributes_t& compression_attributes,
                                                                                                  const std::optional<block_id_type> block_id /* = std::optional<block_id_type>() */)
 {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
@@ -231,7 +232,7 @@ void full_block_type::compress_block() const
     std::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number();
     std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
       block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
-    compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+    compressed_block.compression_attributes.flags = hive::chain::block_flags::zstd;
     compressed_block.compression_attributes.dictionary_number = dictionary_number_to_use;
 
     compression_time = fc::time_point::now() - start;
@@ -251,7 +252,7 @@ void full_block_type::alternate_compress_block() const
     fc::time_point start = fc::time_point::now();
     std::tie(alternate_compressed_block.compressed_bytes, alternate_compressed_block.compressed_size) = 
       block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, std::optional<uint8_t>());
-    alternate_compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+    alternate_compressed_block.compression_attributes.flags = hive::chain::block_flags::zstd;
     alternate_compressed_block.compression_attributes.dictionary_number = std::optional<uint8_t>();
     alternate_compression_time = fc::time_point::now() - start;
     has_alternate_compressed_block.store(true, std::memory_order_release);

@@ -10,6 +10,9 @@ namespace hive { namespace chain {
 
 struct decoded_block_storage_type;
 
+using hive::protocol::chain_id_type;
+using hive::protocol::signed_transaction;
+
 // used to store serialized (but not compressed) transactions or blocks
 struct uncompressed_memory_buffer
 {
@@ -67,7 +70,7 @@ struct full_transaction_type
     // store the data in this structure
     struct standalone_transaction_info
     {
-      std::unique_ptr<hive::protocol::signed_transaction> transaction;
+      std::unique_ptr<signed_transaction> transaction;
       uncompressed_memory_buffer serialization_buffer;
     };
     typedef std::variant<contained_in_block_info, standalone_transaction_info> storage_type;
@@ -98,8 +101,8 @@ struct full_transaction_type
     static std::atomic<uint32_t> number_of_instances_destroyed;
     
     /// Helper method encapsulating full_transaction object creation.
-    static full_transaction_ptr build_transaction_object(const hive::protocol::signed_transaction& transaction, hive::protocol::pack_type serialization_type);
-    static serialized_transaction_data fill_serialization_buffer(const hive::protocol::signed_transaction& transaction, hive::protocol::pack_type serialization_type,
+    static full_transaction_ptr build_transaction_object(const signed_transaction& transaction, hive::protocol::pack_type serialization_type);
+    static serialized_transaction_data fill_serialization_buffer(const signed_transaction& transaction, hive::protocol::pack_type serialization_type,
       uncompressed_memory_buffer* serialization_buffer);
 
   public:
@@ -107,10 +110,10 @@ struct full_transaction_type
     ~full_transaction_type();
 
     void  set_is_in_cache() { is_in_cache = true; }
-    const hive::protocol::signed_transaction& get_transaction() const;
+    const signed_transaction& get_transaction() const;
     const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
-    hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
+    hive::protocol::digest_type compute_sig_digest(const chain_id_type& chain_id) const;
     const fc::ripemd160& get_legacy_transaction_message_hash() const;
     const hive::protocol::transaction_id_type& get_transaction_id() const;
     void compute_signature_keys() const;
@@ -134,7 +137,7 @@ struct full_transaction_type
     }
 
     /// Allows to sign transaction and append signature to the underlying signed_transaction::signatures container;
-    void sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
+    void sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const chain_id_type& chain_id,
       fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type);
 
     static full_transaction_ptr create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, uint32_t index_in_block,
@@ -142,7 +145,7 @@ struct full_transaction_type
     /// Allows to build a full_transaction object basing on not yet signed transaction 
     static full_transaction_ptr create_from_transaction(const hive::protocol::transaction& transaction, hive::protocol::pack_type serialization_type);
     /// Allows to build a full_transaction object from ALREADY signed transaction (pointed transaction object must contain at least one signature).
-    static full_transaction_ptr create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
+    static full_transaction_ptr create_from_signed_transaction(const signed_transaction& transaction,
                                                                hive::protocol::pack_type serialization_type, bool use_transaction_cache);
     static full_transaction_ptr create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache);
 };
@@ -162,12 +165,12 @@ public:
 // utility functions to get the transaction signature validation rules for a given block
 struct transaction_signature_validation_rules_type
 {
-  hive::protocol::chain_id_type chain_id;
+  chain_id_type chain_id;
   hive::protocol::canonical_signature_type signature_type;
 };
 
 #ifdef USE_ALTERNATE_CHAIN_ID
-void set_chain_id_for_transaction_signature_validation(const hive::protocol::chain_id_type& chain_id);
+void set_chain_id_for_transaction_signature_validation(const chain_id_type& chain_id);
 #endif
 const transaction_signature_validation_rules_type& get_transaction_signature_validation_rules_at_time(fc::time_point_sec time);
 const transaction_signature_validation_rules_type& get_signature_validation_for_new_transactions();

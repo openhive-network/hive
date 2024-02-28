@@ -10,9 +10,13 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/protocol/hive_operations.hpp>
+
 namespace hive { namespace plugins { namespace account_by_key {
 
 namespace detail {
+
+using namespace hive::protocol;
 
 class account_by_key_plugin_impl
 {

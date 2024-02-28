@@ -1,8 +1,5 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 
-//#include <hive/chain/block_log.hpp>
-//#include <hive/chain/full_block.hpp>
-
 namespace hive { namespace chain {
 
 irreversible_block_writer::irreversible_block_writer( const block_log& block_log )

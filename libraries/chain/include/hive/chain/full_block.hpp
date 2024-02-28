@@ -1,6 +1,6 @@
 #pragma once
-#include <hive/chain/block_log.hpp>
 #include <hive/chain/full_transaction.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
 
 #include <hive/protocol/block.hpp>
 
@@ -10,6 +10,13 @@
 namespace hive { namespace chain {
 
 using detail::block_attributes_t;
+using detail::block_flags;
+using hive::protocol::block_header;
+using hive::protocol::block_id_type;
+using hive::protocol::checksum_type;
+using hive::protocol::digest_type;
+using hive::protocol::signed_block;
+using hive::protocol::signed_block_header;
 
 // stores a compressed block and the information about how it was compressed
 // (the attributes are needed to correctly decompress it & to tell what peers
