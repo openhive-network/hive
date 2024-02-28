@@ -77,6 +77,27 @@ struct block_log_hashes
 };
 typedef std::map<fc::path, block_log_hashes> block_logs_and_hashes_type;
 
+std::pair<uint32_t, uint32_t> get_effective_range_of_blocks(const int32_t given_first_block, const int32_t given_last_block, const uint32_t given_head_block)
+{
+  FC_ASSERT(given_head_block <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), "given_head_block: ${given_head_block} reached max int32_t value", (given_head_block));
+  const int32_t head_block = static_cast<int32_t>(given_head_block);
+
+  uint32_t first_block, last_block;
+  if( given_first_block >= 0 )
+    first_block = std::max( 1, given_first_block );
+  else
+    first_block = std::max( 1, head_block + given_first_block + 1);
+  if( given_last_block >= 0 )
+    last_block = std::min( head_block, given_last_block);
+  else
+    last_block = std::min( head_block, head_block + given_last_block + 1);
+
+  FC_ASSERT( first_block <= last_block, "Calculated effective range is: [${first_block}:${last_block}] which is wrong. Parameters: given_first_block: ${given_first_block}, given_last_block:${given_last_block}, head_block: ${head_block}",
+    (first_block)(last_block)(given_first_block)(given_last_block)(head_block) );
+
+  return std::make_pair(first_block, last_block);
+}
+
 void append_full_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, uint64_t& start_offset, fc::sha256::encoder& encoder)
 {
   const hive::chain::uncompressed_block_data& uncompressed = full_block->get_uncompressed_block();
@@ -571,18 +592,16 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_number, fc::optional<uint32_t> ending_block_number, bool print_block_numbers, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block_ids(const fc::path& block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, bool print_block_numbers, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try
   {
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    if (starting_block_number > head_block_num ||
-        (ending_block_number && *ending_block_number > head_block_num))
-      FC_THROW("Block log only has ${head_block_num} blocks", (head_block_num));
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num);
 
-    for (unsigned i = starting_block_number; i <= ending_block_number.value_or(starting_block_number); ++i)
+    for (unsigned i = first_block; i <= last_block; ++i)
     {
       if (print_block_numbers)
         std::cout << "block num:" << i << ", block_id: " << log.read_block_id_by_num(i).str() << "\n";
@@ -594,7 +613,7 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_range( const fc::path& block_log_filename, int32_t first_block, int32_t last_block,
+bool get_block_range( const fc::path& block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg,
   fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary,
   appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
@@ -608,19 +627,10 @@ bool get_block_range( const fc::path& block_log_filename, int32_t first_block, i
   {
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
-    const int32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
+    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     FC_ASSERT(head_block_num, "block_log is empty");
 
-    if( first_block >= 0 )
-      first_block = std::max( 1, first_block );
-    else
-      first_block = std::max( 1, head_block_num + first_block );
-    if( last_block >= 0 )
-      last_block = std::min( head_block_num, last_block );
-    else
-      last_block = std::min( head_block_num, head_block_num + last_block );
-    FC_ASSERT( first_block <= last_block, "Effective range [${first_block}:${last_block}] is empty.",
-      (first_block)(last_block) );
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num);
 
     std::stringstream ss;
     std::fstream fs;
@@ -631,7 +641,7 @@ bool get_block_range( const fc::path& block_log_filename, int32_t first_block, i
       fc::create_directories(*output_dir);
     }
 
-    for( int32_t current_block_num = first_block; current_block_num <= last_block; ++current_block_num )
+    for( uint32_t current_block_num = first_block; current_block_num <= last_block; ++current_block_num )
     {
       std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(current_block_num);
 
@@ -644,7 +654,7 @@ bool get_block_range( const fc::path& block_log_filename, int32_t first_block, i
             filename_pattern = "0";
           else
           {
-            int32_t number = last_block;
+            uint32_t number = last_block;
             while( number )
             {
               number /= 10;
@@ -718,7 +728,7 @@ bool get_block_range( const fc::path& block_log_filename, int32_t first_block, i
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path& block_log_path, const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, const bool header_only, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_block_arg, const int32_t last_block_arg, const bool header_only, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try
   {
@@ -732,15 +742,13 @@ bool get_block_artifacts(const fc::path& block_log_path, const fc::optional<uint
     if (full_match_verification)
       ilog("Artifacts file match verification done");
 
-    {
-      const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
-      if (starting_block_number && *starting_block_number > artifacts_block_head_num)
-        FC_THROW("[get_block_artifacts][error] starting_block_number - ${starting_block_number} is bigger than artifacts head block number: ${artifacts_block_head_num}", (starting_block_number)(artifacts_block_head_num));
-      if (ending_block_number && *ending_block_number > artifacts_block_head_num - 1)
-        FC_THROW("[get_block_artifacts][error] ending_block_number - ${ending_block_number} is bigger than artifacts head block number -1: ${max}", (ending_block_number)("max", artifacts_block_head_num - 1));
-    }
+    const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
+    FC_ASSERT(artifacts_block_head_num, "block_log.artifacts is empty");
+
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's is not possible to read head block artifacts*/);
+
     block_log.close();
-    std::cout << artifacts->get_artifacts_contents(starting_block_number, ending_block_number, header_only) << "\n";
+    std::cout << artifacts->get_artifacts_contents(first_block, last_block, header_only) << "\n";
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -798,8 +806,9 @@ int main(int argc, char** argv)
 
   // args for get-block-ids subcommand
   boost::program_options::options_description get_block_ids_options("get-block-ids options");
-  get_block_ids_options.add_options()("starting-block-number", boost::program_options::value<uint32_t>()->value_name("n")->required(), "The block number to return the id of");
-  get_block_ids_options.add_options()("ending-block-number", boost::program_options::value<uint32_t>()->value_name("m"), "If present, return all block ids in from starting-block-number to ending-block-number, inclusive");
+  get_block_ids_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("x"), "Equivalent of '--from x --to x'.");
+  get_block_ids_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("n"), "Return range of ids starting from x. Negative numbers mean distance from end (-1 is head block). Defaults to 1.");
+  get_block_ids_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("m"), "Return range of ids ending at x (inclusive). Negative numbers mean distance from end (-1 is head block). Defaults to -1.");
   get_block_ids_options.add_options()("print-block-numbers", "print the block number before the corresponding block id");
 
   // args for get-block subcommand
@@ -814,8 +823,9 @@ int main(int argc, char** argv)
 
   // args for get-block-artifacts subcommand
   boost::program_options::options_description get_block_artifacts_options("get-block-artifacts options");
-  get_block_artifacts_options.add_options()("starting-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "if present, app will return artifacts from given block number (inclusive)");
-  get_block_artifacts_options.add_options()("ending-block-number", boost::program_options::value<uint32_t>()->value_name("m"), "if present, app will return artifacts to given block number (inclusive)");
+  get_block_artifacts_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("x"), "Equivalent of '--from x --to x'.");
+  get_block_artifacts_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("n"), "Return range of artifacts from given block number (inclusive). Negative numbers mean distance from end (-1 is head block). Defaults to 1.");
+  get_block_artifacts_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("m"), "Return range of artifacts to given block number (inclusive). Negative numbers mean distance from end (-1 is head block). Defaults to -1.");
   get_block_artifacts_options.add_options()("header-only", "only print the artifacts header");
   get_block_artifacts_options.add_options()("do-full-artifacts-verification-match-check", "Performs check if all artifacts from file matches block_log");
 
@@ -942,6 +952,23 @@ int main(int argc, char** argv)
       const fc::path block_log_path = options_map["block-log"].as<boost::filesystem::path>();
       options_map.erase("block-log");
 
+      auto get_first_and_last_block_from_options = [&options_map]() -> std::pair<int32_t, int32_t>
+      {
+        if (options_map.count( "from" ) || options_map.count( "to" ))
+          FC_ASSERT(!options_map.count( "block-number" ), "'--from' and '--to' cannot be specified with --block-number");
+
+        int32_t first_block, last_block;
+        if( options_map.count( "block-number" ) )
+          first_block = last_block = options_map[ "block-number" ].as<int32_t>();
+        else
+        {
+          first_block = options_map.count( "from" ) ? options_map[ "from" ].as<int32_t>() : 1;
+          last_block = options_map.count( "to" ) ? options_map[ "to" ].as<int32_t>() : -1;
+        }
+
+        return std::make_pair(first_block, last_block);
+      };
+
       if (options_map.empty())
       {
         std::cerr << "Could not recognize which operation should be performed on block_log\n";
@@ -989,26 +1016,7 @@ int main(int argc, char** argv)
       {
         update_options_map(get_block_options);
 
-        if (options_map.count( "from" ) || options_map.count( "to" ))
-          FC_ASSERT(!options_map.count( "block-number" ), "'--from' and '--to' cannot be specified with --block-number");
-
-        int32_t first_block, last_block;
-        if( options_map.count( "block-number" ) )
-        {
-          first_block = last_block = options_map[ "block-number" ].as<int32_t>();
-        }
-        else
-        {
-          if( options_map.count( "from" ) )
-            first_block = options_map[ "from" ].as<int32_t>();
-          else
-            first_block = 1;
-          if( options_map.count( "to" ) )
-            last_block = options_map[ "to" ].as<int32_t>();
-          else
-            last_block = -1; // head block
-        }
-
+        const auto [first_block, last_block] = get_first_and_last_block_from_options();
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
         const bool header_only = options_map.count("header-only") != 0;
         const bool pretty = options_map.count("pretty") != 0;
@@ -1023,35 +1031,25 @@ int main(int argc, char** argv)
         update_options_map(get_block_artifacts_options);
         const bool header_only = options_map.count("header-only") != 0;
         const bool full_match_verification = options_map.count("do-full-artifacts-verification-match-check") != 0;
-        fc::optional<uint32_t> starting_block_number, ending_block_number;
 
-        if (!header_only && options_map.count("starting-block-number"))
-          starting_block_number = options_map["starting-block-number"].as<uint32_t>();
-        if (!header_only && options_map.count("ending-block-number"))
-        {
-          ending_block_number = options_map["ending-block-number"].as<uint32_t>();
-          if (starting_block_number && ending_block_number < starting_block_number)
-          {
-            elog("ending_block_number ${ending_block_number} must be bigger or equal to starting_block_number: ${starting_block_number}", (ending_block_number)(ending_block_number));
-            return 1;
-          }
-        }
+        if (header_only)
+          FC_ASSERT(!options_map.count("from") && !options_map.count("to") && !options_map.count("block-number"), "'--get-block-artifacts' with header-only option cannot accept '--from', '--to' and '--block-number' parameters.");
 
-        dlog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, paramters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
-          (block_log_path)(starting_block_number)(ending_block_number)(header_only)(full_match_verification));
-        return get_block_artifacts(block_log_path, starting_block_number, ending_block_number, header_only, full_match_verification, theApp, thread_pool) ? 0 : 1;
+        const auto [first_block, last_block] = get_first_and_last_block_from_options();
+        dlog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
+          (block_log_path)(first_block)(last_block)(header_only)(full_match_verification));
+        return get_block_artifacts(block_log_path, first_block, last_block, header_only, full_match_verification, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block-ids"))
       {
         update_options_map(get_block_ids_options);
-        FC_ASSERT(options_map.count("starting-block-number"), "\"--starting-block-number\" is mandatory");
-        const uint32_t starting_block_number = options_map["starting-block-number"].as<uint32_t>();
-        const fc::optional<uint32_t> ending_block_number = options_map.count("ending-block-number") ? options_map["ending-block-number"].as<uint32_t>() : fc::optional<uint32_t>();
+
+        const auto [first_block, last_block] = get_first_and_last_block_from_options();
         const bool print_block_numbers = options_map.count("print-block-numbers") != 0;
 
-        dlog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - starting_block_number: ${starting_block_number}, ending_block_number: ${ending_block_number}, print_block_numbers: ${print_block_numbers}",
-          (block_log_path)(starting_block_number)(ending_block_number)(print_block_numbers));
-        return get_block_ids(block_log_path, starting_block_number, ending_block_number, print_block_numbers, theApp, thread_pool) ? 0 : 1;
+        dlog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, print_block_numbers: ${print_block_numbers}",
+          (block_log_path)(first_block)(last_block)(print_block_numbers));
+        return get_block_ids(block_log_path, first_block, last_block, print_block_numbers, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("sha256sum"))
       {
@@ -1088,7 +1086,6 @@ int main(int argc, char** argv)
   {
     elog("boost error occured: ${error}", ("error", e.what()));
     std::cerr << "\n\n boost program options error occured: " << e.what() << "\n";
-    print_usage();
     return 1;
   }
   catch (const std::exception& e)
