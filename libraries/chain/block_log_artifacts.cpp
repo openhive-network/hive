@@ -872,9 +872,8 @@ std::string block_log_artifacts::get_artifacts_contents(const fc::optional<uint3
       const uint32_t start_block_num = starting_block_number ? *starting_block_number : 1;
       const uint32_t end_block_num = ending_block_number ? *ending_block_number : (artifacts_head_block_number - 1);
 
-      FC_ASSERT(start_block_num <= artifacts_head_block_number);
-      FC_ASSERT(end_block_num <= artifacts_head_block_number);
-      FC_ASSERT(start_block_num <= end_block_num);
+      FC_ASSERT(start_block_num <= end_block_num, "${start_block_num} <= ${end_block_num}", (start_block_num)(end_block_num));
+      FC_ASSERT(end_block_num <= artifacts_head_block_number, "${end_block_num} <= ${artifacts_head_block_number}", (end_block_num)(artifacts_head_block_number));
 
       std::vector<fc::variant> artifacts_data;
       artifacts_data.reserve(artifacts_head_block_number);
