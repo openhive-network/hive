@@ -24,7 +24,7 @@ def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many
     absolute_start_time -= tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
 
     tt.logger.info(f"Restarting api node with time offset: {head_block_timestamp}")
-    api_node.restart(time_offset=tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    api_node.restart(time_control=tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     # VERIFY
     # Expected behaviour is that restarted node will enter live sync

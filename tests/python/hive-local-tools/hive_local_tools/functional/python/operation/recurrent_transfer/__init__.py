@@ -125,7 +125,7 @@ class RecurrentTransfer:
         Move forward by {recurrence} time from the last scheduled recurring transfer.
         """
         self._node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 self._current_schedule[-1] + tt.Time.hours(self._recurrence),
                 format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
@@ -137,7 +137,7 @@ class RecurrentTransfer:
             for num, t in enumerate(self._current_schedule):
                 if t > actual_head_block_time:
                     self._node.restart(
-                        time_offset=tt.Time.serialize(
+                        time_control=tt.Time.serialize(
                             self._current_schedule[num],
                             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                         )
@@ -148,7 +148,7 @@ class RecurrentTransfer:
                     break
         else:
             self._node.restart(
-                time_offset=tt.Time.serialize(
+                time_control=tt.Time.serialize(
                     execution_date,
                     format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                 )
@@ -156,7 +156,7 @@ class RecurrentTransfer:
 
     def execute_last_transfer(self):
         self._node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 self._current_schedule[-1],
                 format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )

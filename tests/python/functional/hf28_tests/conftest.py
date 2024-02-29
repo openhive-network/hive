@@ -13,7 +13,7 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     node.config.plugin.append("condenser_api")
-    node.run(time_offset="+0 x5")
+    node.run(time_control="+0 x5")
     wallet = tt.Wallet(attach_to=node)
 
     # price stabilization prevents zero payout for comment votes.
@@ -37,7 +37,7 @@ def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wal
     time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
     node.run(
         replay_from=block_log,
-        time_offset=time_offset,
+        time_control=time_offset,
     )
 
     wallet = tt.Wallet(attach_to=node)

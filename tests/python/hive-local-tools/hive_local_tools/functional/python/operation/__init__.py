@@ -189,7 +189,7 @@ class Account:
             ]
         )
         self._node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS),
                 format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
@@ -475,12 +475,12 @@ def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
 
 
-def jump_to_date(node: tt.InitNode, time_offset: datetime, wait_for_irreversible: bool = False) -> None:
+def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:
     if wait_for_irreversible:
         node.wait_for_irreversible_block()
     node.restart(
-        time_offset=tt.Time.serialize(
-            time_offset,
+        time_control=tt.Time.serialize(
+            time_control,
             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )

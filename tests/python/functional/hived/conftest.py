@@ -45,7 +45,7 @@ def node_with_20k_proposal_votes() -> tt.InitNode:
     init_node.config.plugin.append("market_history_api")
 
     init_node.run(
-        time_offset=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
+        time_control=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
         replay_from=block_log,
     )
 

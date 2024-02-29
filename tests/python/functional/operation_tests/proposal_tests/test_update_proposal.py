@@ -77,7 +77,7 @@ def test_update_one_parameter_in_proposal(
 
     if "permlink" in update_proposal_args:  # post another comment if permlink of proposal is being updated
         prepared_node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 prepared_node.get_head_block_time() + tt.Time.minutes(6), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
             )
         )  # it's possible to post article every 5 minutes - time jump is needed

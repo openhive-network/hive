@@ -47,7 +47,7 @@ def test_get_account_history_with_correct_value(
     should_prepare: bool,
 ) -> None:
     if should_prepare:
-        node.restart(time_offset="+0h x10")
+        node.restart(time_control="+0h x10")
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
         node.wait_for_irreversible_block()

@@ -39,5 +39,5 @@ def perform_test_preparation(node: tt.InitNode, wallet: tt.Wallet) -> None:
     # Offset 1 hour allow to skip time necessary to receive reward balances.
     wallet.close()
     node.close()
-    node.run(time_offset="+1h")
+    node.run(time_control="+1h")
     wallet.run()

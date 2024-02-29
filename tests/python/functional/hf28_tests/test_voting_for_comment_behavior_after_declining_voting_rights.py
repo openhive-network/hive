@@ -49,7 +49,7 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+62m")
+    node.restart(time_control="+62m")
 
     assert len(get_virtual_operations(node, CurationRewardOperation)) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
@@ -75,7 +75,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+62m")
+    node.restart(time_control="+62m")
 
     assert len(get_virtual_operations(node, CurationRewardOperation)) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
@@ -119,7 +119,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
     wallet.api.post_comment("creator-2", "comment-of-creator-2", "", "someone2", "test-title", "this is a body", "{}")
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+58m")
+    node.restart(time_control="+58m")
 
     # 60s to reward of comment-0
     node.wait_number_of_blocks(2)

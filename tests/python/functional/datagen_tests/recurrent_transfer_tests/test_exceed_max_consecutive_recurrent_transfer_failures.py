@@ -29,7 +29,7 @@ def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode) -
     # Run a node with a date that exceeds the last of the recurrent transfers.
     # It causes the cumulative execution of all unaccomplished recurrent transfers.
     node.run(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             tt.Time.from_now(days=MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES + 1, serialize=False),
             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )

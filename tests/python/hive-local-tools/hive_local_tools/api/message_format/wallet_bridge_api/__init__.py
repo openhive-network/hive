@@ -51,7 +51,7 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -
         node.config.witness.append(witness.name)
         node.config.private_key.append(witness.private_key)
 
-    node.restart(time_offset="+0h x10")
+    node.restart(time_control="+0h x10")
     wallet = tt.Wallet(attach_to=node)
 
     with wallet.in_single_transaction():

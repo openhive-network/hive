@@ -27,7 +27,7 @@ def test_recalculation_proposal_votes() -> None:
 
     # run node with specific timestamp ( end of block_log )
     node.run(
-        time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)
+        time_control=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT)
     )
 
     tt.logger.info(f"next_maintenance_time: {get_next_maintenance_time(node)}")

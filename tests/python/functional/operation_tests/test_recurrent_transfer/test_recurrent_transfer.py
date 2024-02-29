@@ -421,7 +421,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
 
     # Update recurrence after second transfer and before third one.
     node.restart(
-        time_offset=tt.Time.serialize(node.get_head_block_time() + offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
+        time_control=tt.Time.serialize(node.get_head_block_time() + offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
     )
     recurrent_transfer.update(new_recurrence_time=update_recurrence_time)
     sender.rc_manabar.assert_rc_current_mana_is_reduced(
@@ -509,7 +509,7 @@ def test_recurrent_transfer_cases_17_and_18(
 
     # Update first time - increase the number of executions and the frequency of recurrent transfers.
     node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             node.get_head_block_time() + tt.Time.days(2), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
         )
     )
@@ -542,7 +542,7 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.update_account_info()
 
     node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
         )
     )
@@ -627,7 +627,7 @@ def test_recurrent_transfer_cases_19_and_20(
 
     # Check balances after `recurrence` time.
     node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             node.get_head_block_time() + tt.Time.hours(MIN_RECURRENT_TRANSFERS_RECURRENCE),
             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )

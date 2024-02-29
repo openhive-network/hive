@@ -40,8 +40,8 @@ def test_1_1_case(prepared_node, posts, comments):
     vote_1, vote_2, vote_3, vote_4, vote_5, vote_6, vote_7 = votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in posts:
         post.verify_balances()
@@ -105,8 +105,8 @@ def test_1_2_case(prepared_node, posts, comments):
     votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in posts:
         post.verify_balances()
@@ -150,8 +150,8 @@ def test_1_3_case(prepared_node, posts, comments, post_options, comment_options)
     votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in posts:
         post.verify_balances()
@@ -225,8 +225,8 @@ def test_1_4_case(prepared_node, wallet):
     )
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in [post_1, post_2, post_3]:
         post.verify_balances()
@@ -333,8 +333,8 @@ def test_1_5_case(prepared_node, posts, comments, post_options, comment_options)
     vote_1, vote_2, vote_3, vote_4, vote_5, vote_6, vote_7 = votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in posts:
         post.verify_balances()
@@ -367,8 +367,8 @@ def test_1_6_case(prepared_node, posts, comments, post_options, comment_options)
     vote_1, vote_2, vote_3, vote_4, vote_5, vote_6, vote_7 = votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in posts:
         post.verify_balances()
@@ -419,8 +419,8 @@ def test_1_7_case(prepared_node, posts, comments, beneficiaries_weight):
     votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in [post_1, post_2, post_3, comment_1, comment_2, comment_3]:
         post.verify_balances()
@@ -465,8 +465,8 @@ def test_1_8_case(prepared_node, posts, comments, beneficiaries_weight):
     votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in [post_1, post_2, post_3, comment_1, comment_2, comment_3]:
         post.verify_balances()
@@ -515,8 +515,8 @@ def test_1_9_case(prepared_node, posts, comments, beneficiaries_weight):
     votes(posts, comments)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for post in [post_1, post_2, post_3, comment_1, comment_2, comment_3]:
         post.verify_balances()
