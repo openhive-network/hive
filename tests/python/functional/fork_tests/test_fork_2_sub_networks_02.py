@@ -51,8 +51,6 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
 
     blocks_after_enable_witness = 20
 
-    blocks_after_reconnect = 5
-
     tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
@@ -83,7 +81,12 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     tt.logger.info("Reconnect sub networks")
     sh.connect_sub_networks(networks_builder.networks)
 
-    sh.wait(blocks_after_reconnect, logs, minority_api_node)
+    # In extreme cases (when a machine is under stress) we can wait longer than usual.
+    # So it's better to wait when both API nodes are after a fork. They have the same head block number.
+    # We don't know in advance when it happens.
+    tt.logger.info("Wait for fork")
+    sh.wait_for_final_block(minority_api_node, logs, [_m, _M], False, None, True)
+    tt.logger.info("A fork occured")
 
     tt.logger.info(f"Enable {len(witness_details_part)} witnesses")
     sh.enable_witnesses(majority_witness_wallet, witness_details_part)
