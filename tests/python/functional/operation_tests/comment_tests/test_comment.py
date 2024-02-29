@@ -105,8 +105,8 @@ def test_update_comment_with_replies_votes_and_downvotes(
     author1_comment.update()
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     reward_hbd_balances = []
     for comment in comments:
@@ -146,8 +146,8 @@ def test_update_comment_with_replies_after_cashout(
     comment.vote()
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     comment.update()
     comment.assert_is_rc_mana_decreased_after_post_or_update()

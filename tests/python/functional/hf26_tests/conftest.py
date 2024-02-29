@@ -9,7 +9,7 @@ from shared_tools.complex_networks import init_network
 def run_with_faketime(node, time):
     # time example: '2020-01-01T00:00:00'
     requested_start_time = tt.Time.parse(time)
-    node.run(time_offset=f'{tt.Time.serialize(requested_start_time, format_="@%Y-%m-%d %H:%M:%S")}')
+    node.run(time_control=f'{tt.Time.serialize(requested_start_time, format_="@%Y-%m-%d %H:%M:%S")}')
 
 
 @pytest.fixture()

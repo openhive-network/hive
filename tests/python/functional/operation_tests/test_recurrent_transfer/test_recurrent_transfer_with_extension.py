@@ -90,7 +90,7 @@ def test_recurrent_transfer_with_extension_cases_3_and_4(
     sender.update_account_info()
     receiver.update_account_info()
 
-    jump_to_date(node, time_offset=rtd1.timestamp + tt.Time.hours(3 * MIN_RECURRENT_TRANSFERS_RECURRENCE))
+    jump_to_date(node, time_control=rtd1.timestamp + tt.Time.hours(3 * MIN_RECURRENT_TRANSFERS_RECURRENCE))
 
     sender.assert_balance_is_reduced_by_transfer(rtd3.amount)
     receiver.assert_balance_is_increased_by_transfer(rtd3.amount)
@@ -303,7 +303,7 @@ def test_recurrent_transfer_with_extension_cases_11_and_12(
     sender.update_account_info()
     receiver.update_account_info()
 
-    jump_to_date(node, time_offset=rtd1.timestamp + tt.Time.hours(RECURRENT_TRANSFER_DEFINITIONS[0].recurrence / 2))
+    jump_to_date(node, time_control=rtd1.timestamp + tt.Time.hours(RECURRENT_TRANSFER_DEFINITIONS[0].recurrence / 2))
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         # create recurrent transfer (rtd2) with insufficient resources

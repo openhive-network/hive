@@ -37,8 +37,8 @@ def test_2_1_case(prepared_node, wallet):
         getattr(vote, vote_or_downvote)(weight)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for account in [user_a, user_b, user_c]:
         account.assert_reward_balance(prepared_node, "hbd")
@@ -86,8 +86,8 @@ def test_2_2_case(prepared_node, wallet):
         votes.append(vote)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for account in [user_a, user_b, user_c, user_d, user_e]:
         account.assert_reward_balance(prepared_node, "hbd")
@@ -142,8 +142,8 @@ def test_2_3_case(prepared_node, wallet):
         getattr(vote, vote_or_downvote)(weight)
 
     # waiting for cashout 60 minutes
-    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     for account in [user_a, user_b, user_c, user_d, user_e]:
         account.assert_reward_balance(prepared_node, "hbd")

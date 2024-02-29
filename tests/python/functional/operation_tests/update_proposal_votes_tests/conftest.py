@@ -15,7 +15,7 @@ def node() -> tt.InitNode:
     block_log = tt.BlockLog(block_log_directory / "block_log")
 
     node.run(
-        time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
+        time_control=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
         replay_from=block_log,
     )
     return node

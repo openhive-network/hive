@@ -90,7 +90,7 @@ class PowerDown(Operation):
         for num, t in enumerate(self._tranche_schedule):
             if t > actual_head_block_time:
                 self._node.restart(
-                    time_offset=tt.Time.serialize(
+                    time_control=tt.Time.serialize(
                         self._tranche_schedule[num],
                         format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                     )
@@ -101,7 +101,7 @@ class PowerDown(Operation):
 
     def execute_last_withdraw(self) -> None:
         self._node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 self._tranche_schedule[-1],
                 format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )

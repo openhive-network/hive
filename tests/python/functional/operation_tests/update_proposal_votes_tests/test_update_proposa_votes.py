@@ -50,5 +50,5 @@ def test_expiration_of_update_proposal_vote(node: tt.InitNode, wallet: tt.Wallet
         assert len(list_votes_for_all_proposals(node)) == proposal_id + 1
         voter.update_account_info()
 
-    node.restart(time_offset=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD}s")
+    node.restart(time_control=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD}s")
     assert len(list_votes_for_all_proposals(node)) == 0

@@ -28,7 +28,7 @@ def test_appoint_a_proxy(node: tt.InitNode) -> None:
 
     # restart node with future date. The approval process takes 24 hours.
     node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             tt.Time.parse(timestamp) + tt.Time.hours(24), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
         )
     )
@@ -55,7 +55,7 @@ def test_vote_power_value_after_proxy_removal(node: tt.InitNode) -> None:
     wallet.api.set_voting_proxy("account-layer-1", "")
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+25h")
+    node.restart(time_control="+25h")
 
     assert (response := node.api.wallet_bridge.get_account("account-layer-0")) is not None
     assert not all(response.proxied_vsf_votes)
@@ -73,7 +73,7 @@ def test_sum_of_vesting_shares_on_first_layer_of_proxy(node: tt.InitNode) -> Non
     wallet.api.set_voting_proxy("carol", "alice")
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+25h")
+    node.restart(time_control="+25h")
 
     assert (bob := node.api.wallet_bridge.get_account("bob")) is not None
     bob_vesting_shares = int(bob.vesting_shares.amount)
@@ -122,7 +122,7 @@ def test_proxy_change(node: tt.InitNode) -> None:
     assert alice.proxy == "carol"
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+25h")
+    node.restart(time_control="+25h")
     assert (carol := node.api.wallet_bridge.get_account("carol")) is not None
     assert carol.proxied_vsf_votes[0] == int(alice_vesting_shares)
 
@@ -161,7 +161,7 @@ def test_long_single_layer_proxy_chain(node: tt.InitNode) -> None:
                     wallet.api.set_voting_proxy(accounts[n + num].name, accounts[n + num + 1].name)
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+25h")
+    node.restart(time_control="+25h")
 
     for account_number, _ in enumerate(accounts[:-1]):
         assert (account := node.api.wallet_bridge.get_account(accounts[account_number].name)) is not None
@@ -170,7 +170,7 @@ def test_long_single_layer_proxy_chain(node: tt.InitNode) -> None:
 
 @run_for("testnet")
 def test_vesting_shares_values_on_four_proxy_layers(node: tt.InitNode) -> None:
-    node.restart(time_offset="+0 x5")
+    node.restart(time_control="+0 x5")
     wallet = tt.Wallet(attach_to=node)
 
     accounts = wallet.create_accounts(5)
@@ -184,7 +184,7 @@ def test_vesting_shares_values_on_four_proxy_layers(node: tt.InitNode) -> None:
             wallet.api.set_voting_proxy(f"account-{num}", f"account-{num + 1}")
 
     node.wait_for_irreversible_block()
-    node.restart(time_offset="+25h")
+    node.restart(time_control="+25h")
 
     vesting_shares = []
     for account_number in range(len(accounts) - 1):

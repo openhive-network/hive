@@ -42,7 +42,7 @@ def test_transfer_to_savings_account(
     wallet.api.transfer_to_savings("alice", receiver, currency(amount=5), "transfer to savings")
     prepared_node.wait_for_irreversible_block()
 
-    prepared_node.restart(time_offset="+45d")
+    prepared_node.restart(time_control="+45d")
     prepared_node.wait_number_of_blocks(21)
     # Give blockchain chance to trigger interest_operation. There have to be change in savings balance
     # (at first transfer there were no interests to pay out - savings balance was 0)

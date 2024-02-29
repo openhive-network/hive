@@ -59,7 +59,7 @@ def test_transfer_from_savings_account(
     ), f"{currency.token()} savings balance wasn't decreased after withdrawal"
     prepared_node.wait_for_irreversible_block()
     prepared_node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             prepared_node.get_head_block_time() + tt.Time.days(3), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
         )
     )
@@ -136,7 +136,7 @@ def test_transfer_from_savings_during_few_days(
             ), f"fill_transfer_from_savings from transfer with id:{completed_transfer_id} wasn't generated"
 
         prepared_node.restart(
-            time_offset=tt.Time.serialize(
+            time_control=tt.Time.serialize(
                 prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
             )
         )

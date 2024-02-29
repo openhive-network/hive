@@ -186,7 +186,7 @@ def test_account_witness_proxy_after_expiration(
 
     # Shift the time by an HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
     node.restart(
-        time_offset=tt.Time.serialize(
+        time_control=tt.Time.serialize(
             node.get_head_block_time() + tt.Time.seconds(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
@@ -227,5 +227,5 @@ def get_witness_votes(node: tt.InitNode, witness_name: str) -> tt.Asset.Vest:
 
 def move_to_next_maintenance_time(node: tt.InitNode) -> None:
     next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
-    node.restart(time_offset=tt.Time.serialize(next_maintenance_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+    node.restart(time_control=tt.Time.serialize(next_maintenance_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
     assert node.get_head_block_time() >= next_maintenance_time

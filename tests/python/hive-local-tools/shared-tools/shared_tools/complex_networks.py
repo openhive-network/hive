@@ -182,7 +182,7 @@ def run_networks(
                     executor.submit(
                         partial(
                             lambda _node, _node_num: _node.run(
-                                time_offset=(
+                                time_control=(
                                     modify_time_offset(timestamp, time_offsets[_node_num])
                                     if allow_external_time_offsets
                                     else tt.Time.serialize(timestamp, format_="@%Y-%m-%d %H:%M:%S")

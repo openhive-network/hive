@@ -14,7 +14,7 @@ def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     node.config.plugin.append("reputation_api")
-    node.run(time_offset="+0h x5")
+    node.run(time_control="+0h x5")
     return node
 
 
@@ -47,8 +47,8 @@ def test_downvote_by_account_with_higher_reputation(
 
     if wait_for_payout:
         # waiting for cashout 60 minutes
-        time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
-        prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
+        start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+        prepared_node.restart(time_control=tt.Time.serialize(start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     # Account with higher reputation downvote account with lower reputation
     vote3 = Vote(comment2, voter=comment1.author_obj)

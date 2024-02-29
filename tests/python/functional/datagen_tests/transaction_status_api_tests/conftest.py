@@ -32,6 +32,6 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
     api_node.run(
         replay_from=block_log,
         wait_for_live=False,
-        time_offset=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
+        time_control=block_log.get_head_block_time(serialize=True, serialize_format=tt.TimeFormats.TIME_OFFSET_FORMAT),
     )
     return api_node
