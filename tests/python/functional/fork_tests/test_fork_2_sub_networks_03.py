@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 import shared_tools.complex_networks_helper_functions as sh
@@ -76,9 +74,10 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     sh.connect_sub_networks(networks_builder.networks)
 
     sleep_seconds = 20
-    tt.logger.info(f"Before sleep {sleep_seconds}")
-    sleep(sleep_seconds)
-    tt.logger.info(f"After sleep {sleep_seconds}")
+    tt.logger.info(f"Wait {sleep_seconds} seconds")
+    for _cnt in range(sleep_seconds):
+        sh.wait(1, logs, minority_api_node, False)
+    tt.logger.info(f"{sleep_seconds} seconds passed")
 
     tt.logger.info(f"Enable {len(witness_details_part)} witnesses")
     sh.enable_witnesses(majority_witness_wallet, witness_details_part)

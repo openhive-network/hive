@@ -130,13 +130,15 @@ class NodeLog:
         self.collector.append(info(self.name, self.wallet))
 
 
-def wait(blocks, log: list[NodeLog], api_node):
+def wait(blocks, log: list[NodeLog], api_node, allow_wait: bool = True):
     for i in range(blocks):
+        tt.logger.info(f"{i + 1}/{blocks} blocks")
+
         for current in log:
             current.append()
 
-        api_node.wait_number_of_blocks(1)
-        tt.logger.info(f"{i + 1}/{blocks} blocks")
+        if allow_wait:
+            api_node.wait_number_of_blocks(1)
 
 
 def final_block_the_same(method, data: list):
