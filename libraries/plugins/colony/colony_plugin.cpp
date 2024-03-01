@@ -18,6 +18,9 @@
   // no other source of default nor explicit value - the value is split between threads
 #define COLONY_WAIT_FOR_WORK fc::milliseconds( 50 ) // time to wait before next check if block was made when there
   // is nothing to produce for current block
+#define COLONY_OVERFLOW_TOLERANCE_MIN 100 // minimum margin of overflowing transactions
+#define COLONY_OVERFLOW_TOLERANCE_MAX 500 // maximum margin of overflowing transactions
+#define COLONY_OVERFLOW_TOLERANCE_RATE 500 // percentage rate of allowed overflowing transactions (in BP)
 
 namespace hive { namespace plugins { namespace colony {
 
@@ -144,8 +147,9 @@ class colony_plugin_impl
     std::list< transaction_builder >                     _threads;
     uint32_t                                             _total_weight = 0;
     uint32_t                                             _max_tx_per_block = -1;
-    uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
+    uint32_t                                             _dynamic_tx_per_block = -1;
     uint32_t                                             _overflowing_tx = 0;
+    uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
 };
 
 void transaction_builder::print_stats() const
@@ -269,9 +273,18 @@ void transaction_builder::build_transaction()
       _tx.set_expiration( _common._db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       _block_num = _common._db.head_block_num();
       if( _common._max_tx_per_block == 0 ) // no limit
+      {
         _tx_to_produce = -1;
+      }
       else
-        _tx_to_produce = ( std::max( 0l, (int64_t)_common._max_tx_per_block - _common._overflowing_tx + _common._max_threads - 1 ) / _common._max_threads );
+      {
+        uint32_t effective_total;
+        if( _common._overflowing_tx == 0 ) // transactions didn't overflow - go with given max
+          effective_total = _common._max_tx_per_block;
+        else // use adjusted rate
+          effective_total = std::max( 0l, (int64_t)_common._dynamic_tx_per_block - _common._overflowing_tx );
+        _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
+      }
       dlog( "Scheduling production of ${x} transactions in ${t}", ( "x", _tx_to_produce )( "t", _worker.name() ) );
       _tx_needs_update.store( false, std::memory_order_relaxed );
     } );
@@ -504,6 +517,15 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
   // much work is done for each block
   for( auto& thread : _threads )
     thread._tx_needs_update.store( true, std::memory_order_relaxed );
+  uint32_t fit_in_block = note.full_block->get_full_transactions().size();
+  uint32_t margin = ( (uint64_t)fit_in_block * COLONY_OVERFLOW_TOLERANCE_RATE ) / HIVE_100_PERCENT;
+  if( margin < COLONY_OVERFLOW_TOLERANCE_MIN )
+    margin = COLONY_OVERFLOW_TOLERANCE_MIN;
+  else if( margin > COLONY_OVERFLOW_TOLERANCE_MAX )
+    margin = COLONY_OVERFLOW_TOLERANCE_MAX;
+  _dynamic_tx_per_block = std::min( fit_in_block + margin, _max_tx_per_block );
+  // we can't compute final rate per thread because we don't know yet how many transactions will
+  // remain in pending after reapplication
   _overflowing_tx = 0;
 }
 
@@ -609,9 +631,9 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
     my->_total_weight = total_weight;
 
     if( options.count( "colony-transactions-per-block" ) )
-      my->_max_tx_per_block = options.at( "colony-transactions-per-block" ).as<std::uint32_t>();
+      my->_max_tx_per_block = my->_dynamic_tx_per_block = options.at( "colony-transactions-per-block" ).as<std::uint32_t>();
     else
-      my->_max_tx_per_block = my->_total_weight;
+      my->_max_tx_per_block = my->_dynamic_tx_per_block = my->_total_weight;
   }
   FC_CAPTURE_AND_RETHROW()
 }
