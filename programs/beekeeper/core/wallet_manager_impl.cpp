@@ -93,21 +93,13 @@ void wallet_manager_impl::close( const std::string& name )
   wallets.erase( name );
 }
 
-fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_opened_wallets( const public_key_type& public_key )
+fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name )
 {
-  auto _wallets = list_wallets_impl( std::vector< std::string >() );
-
-  for( auto& wallet : _wallets )
+  std::map<public_key_type, private_key_type> _keys = list_keys_impl( wallet_name, std::string(), false/*password_is_required*/ );
+  for( auto& key : _keys )
   {
-    if( wallet.unlocked )
-    {
-      std::map<public_key_type, private_key_type> _keys = list_keys_impl( wallet.name, std::string(), false/*password_is_required*/ );
-      for( auto& key : _keys )
-      {
-        if( key.first == public_key )
-          return key.second;
-      }
-    }
+    if( key.first == public_key )
+      return key.second;
   }
 
   return fc::optional<private_key_type>();
@@ -334,26 +326,26 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& name, con
   return w->has_matching_private_key( public_key );
 }
 
-std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& content )
+std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content )
 {
   fc::crypto_data _cd;
 
-  auto _private_key = find_private_key_in_opened_wallets( from_public_key );
+  auto _private_key = find_private_key_in_given_wallet( from_public_key, wallet_name );
   if( !_private_key )
-    FC_ASSERT( false, "Public key ${public_key} not found in unlocked wallets", ("public_key", utility::public_key::to_string( from_public_key )));
+    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", wallet_name)("public_key", utility::public_key::to_string( from_public_key )));
 
   return _cd.encrypt( _private_key.value(), to_public_key, content );
 }
 
-std::string wallet_manager_impl::decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& encrypted_content )
+std::string wallet_manager_impl::decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content )
 {
   fc::crypto_data _cd;
 
   return _cd.decrypt
   (
-    [this]( const public_key_type& key )
+    [&wallet_name, this]( const public_key_type& key )
     {
-      return find_private_key_in_opened_wallets( key );
+      return find_private_key_in_given_wallet( key, wallet_name );
     },
     from_public_key, to_public_key,
     encrypted_content

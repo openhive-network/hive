@@ -1603,11 +1603,11 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     const string _empty_content = "";
     const string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
-    auto _encrypt = [&_token, &_beekeeper, &_keys]( const std::string& content, uint32_t nr_from_public_key, uint32_t nr_to_public_key )
+    auto _encrypt = [&_token, &_beekeeper, &_keys]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
       auto __encrypt = [&]()
       {
-        return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, content );
+        return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content );
       };
 
       std::string _encrypted_content = __encrypt();
@@ -1618,9 +1618,9 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       return std::make_pair( _encrypted_content, _encrypted_content_2 );
     };
 
-    auto _decrypt = [&_token, &_beekeeper, &_keys]( const std::string& pattern, uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& content )
+    auto _decrypt = [&_token, &_beekeeper, &_keys]( const std::string& pattern, uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
-      std::string _encrypted_content = _beekeeper.decrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, content );
+      std::string _encrypted_content = _beekeeper.decrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content );
       BOOST_REQUIRE_EQUAL( _encrypted_content, pattern );
     };
 
@@ -1666,35 +1666,35 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
 
     {
       //lack of unlocked wallets
-      BOOST_REQUIRE_THROW( _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
-      BOOST_REQUIRE_THROW( _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _empty_content ), fc::exception );
     }
     {
       //unlock wallet "0"
       _beekeeper.unlock( _token, _wallets[0].name, _wallets[0].password );
 
-      auto _encrypted_content = _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second );
+      auto _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.second );
 
-      auto _encrypted_content_2 = _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content_2.first );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content_2.second );
+      auto _encrypted_content_2 = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _empty_content );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content_2.first );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content_2.second );
 
       _beekeeper.lock_all( _token );
 
-      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first ), fc::exception );
-      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second ), fc::exception );
+      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first ), fc::exception );
+      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.second ), fc::exception );
 
-      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content_2.first ), fc::exception );
-      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content_2.second ), fc::exception );
+      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content_2.first ), fc::exception );
+      BOOST_REQUIRE_THROW( _decrypt( _dummy_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content_2.second ), fc::exception );
     }
     {
       //unlock wallet "1"
       _beekeeper.unlock( _token, _wallets[1].name, _wallets[1].password );
 
-      BOOST_REQUIRE_THROW( _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
-      BOOST_REQUIRE_THROW( _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[1].name, _fruits_content ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[1].name, _empty_content ), fc::exception );
 
       _beekeeper.lock_all( _token );
     }
@@ -1702,13 +1702,13 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       //unlock wallet "2"
       _beekeeper.unlock( _token, _wallets[2].name, _wallets[2].password );
 
-      auto _encrypted_content = _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second );
+      auto _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _fruits_content );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.first );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
 
-      _encrypted_content = _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second );
+      _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _empty_content );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.first );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
 
       _beekeeper.lock_all( _token );
     }
@@ -1716,8 +1716,8 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       //unlock wallet "3"
       _beekeeper.unlock( _token, _wallets[3].name, _wallets[3].password );
 
-      BOOST_REQUIRE_THROW( _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
-      BOOST_REQUIRE_THROW( _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[3].name, _fruits_content ), fc::exception );
+      BOOST_REQUIRE_THROW( _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[3].name, _empty_content ), fc::exception );
 
       _beekeeper.lock_all( _token );
     }
@@ -1726,18 +1726,18 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       for( auto& wallet : _wallets )
         _beekeeper.unlock( _token, wallet.name, wallet.password );
 
-      auto _encrypted_content = _encrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second );
+      auto _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.first );
+      _decrypt( _fruits_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.second );
 
-      _encrypted_content = _encrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/ );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _encrypted_content.second );
+      _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _empty_content );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.first );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.second );
 
       //`from` key == `to` key
-      _encrypted_content = _encrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/ );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _encrypted_content.first );
-      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _encrypted_content.second );
+      _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _empty_content );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first );
+      _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
     }
 
   } FC_LOG_AND_RETHROW()
