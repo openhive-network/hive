@@ -43,6 +43,7 @@ public:
   virtual ~transaction_status_impl() {}
 
   void on_post_apply_transaction( const transaction_notification& note );
+  void on_pre_apply_block( const block_notification& note );
   void on_post_apply_block( const block_notification& note );
 
   plugins::chain::chain_plugin& _chain_plugin;
@@ -52,6 +53,7 @@ public:
   fc::time_point_sec            estimated_starting_timestamp;
   bool                          tracking = false;
   boost::signals2::connection   post_apply_transaction_connection;
+  boost::signals2::connection   pre_apply_block_connection;
   boost::signals2::connection   post_apply_block_connection;
   fc::time_point_sec            estimate_starting_timestamp();
 };
@@ -69,7 +71,7 @@ void transaction_status_impl::on_post_apply_transaction( const transaction_notif
   }
 }
 
-void transaction_status_impl::on_post_apply_block( const block_notification& note )
+void transaction_status_impl::on_pre_apply_block( const block_notification& note )
 {
   fc::time_point_sec block_timestamp = note.get_block_timestamp();
   if ( not tracking && estimated_starting_timestamp <= block_timestamp )
@@ -84,7 +86,10 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
       tracking = true;
     }
   }
+}
 
+void transaction_status_impl::on_post_apply_block( const block_notification& note )
+{
   if ( tracking )
   {
     // Update all status objects with the transaction current block number
@@ -198,6 +203,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
     get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     my->post_apply_transaction_connection = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note ) { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->pre_apply_block_connection = my->_db.add_pre_apply_block_handler( [&]( const block_notification& note ) { try { my->on_pre_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->post_apply_block_connection = my->_db.add_post_apply_block_handler( [&]( const block_notification& note ) { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
 
     ilog( "transaction_status: plugin_initialize() end" );
@@ -220,6 +226,7 @@ void transaction_status_plugin::plugin_startup()
 void transaction_status_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->post_apply_transaction_connection );
+  chain::util::disconnect_signal( my->pre_apply_block_connection );
   chain::util::disconnect_signal( my->post_apply_block_connection );
 }
 
