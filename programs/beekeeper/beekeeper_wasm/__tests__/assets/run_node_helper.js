@@ -169,8 +169,8 @@ export class BeekeeperInstanceHelper {
     }
   };
 
-  encryptData(sessionToken, fromPublicKey, toPublicKey, content) {
-    const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, content);
+  encryptData(sessionToken, fromPublicKey, toPublicKey, walletName, content) {
+    const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, walletName, content);
 
     if( this.#acceptError )
     {
@@ -184,8 +184,8 @@ export class BeekeeperInstanceHelper {
     }
   };
 
-  decryptData(sessionToken, fromPublicKey, toPublicKey, encrypted_content) {
-    const returnedValue = this.instance.decrypt_data(sessionToken, fromPublicKey, toPublicKey, encrypted_content);
+  decryptData(sessionToken, fromPublicKey, toPublicKey, walletName, encryptedContent) {
+    const returnedValue = this.instance.decrypt_data(sessionToken, fromPublicKey, toPublicKey, walletName, encryptedContent);
 
     if( this.#acceptError )
     {

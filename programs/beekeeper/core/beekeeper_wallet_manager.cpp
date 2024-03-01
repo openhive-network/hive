@@ -151,16 +151,16 @@ public_key_type beekeeper_wallet_manager::create_public_key( const std::string& 
   return utility::public_key::create( public_key );
 }
 
-std::string beekeeper_wallet_manager::encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& content )
+std::string beekeeper_wallet_manager::encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->encrypt_data( create_public_key( from_public_key ), create_public_key( to_public_key ), content );
+  return sessions->get_wallet_manager( token )->encrypt_data( create_public_key( from_public_key ), create_public_key( to_public_key ), wallet_name, content );
 }
 
-std::string beekeeper_wallet_manager::decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& encrypted_content )
+std::string beekeeper_wallet_manager::decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& encrypted_content )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->decrypt_data( create_public_key( from_public_key ), create_public_key( to_public_key ), encrypted_content );
+  return sessions->get_wallet_manager( token )->decrypt_data( create_public_key( from_public_key ), create_public_key( to_public_key ), wallet_name, encrypted_content );
 }
 
 } //beekeeper

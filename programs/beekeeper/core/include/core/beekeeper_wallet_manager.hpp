@@ -145,20 +145,22 @@ public:
    * Using private key of creator and public key of receiver, content is encrypted.
    * @param from_private_key a public key of creator
    * @param to_public_key a public key of receiver
+   * @param name the name of the wallet to find the key corresponding to `from_public_key`.
    * @param content a string to encrypt
    * @returns encrypted string
    */
-  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& content );
+  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content );
 
   /** Decrypts given content.
    *
    * When private keys are accessible (exist in unlocked wallets) content is decrypted.
    * @param from_private_key a public key of creator
    * @param to_public_key a public key of receiver
+   * @param name the name of the wallet to find the key corresponding to `from_public_key` or `to_public_key`. Only one private key is necessary.
    * @param encrypted_content a string to decrypt
    * @returns decrypted string
    */
-  std::string decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& encrypted_content );
+  std::string decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
 
 private:
 
