@@ -625,7 +625,7 @@ void colony_plugin::plugin_startup()
   for( const auto& key : my->_sign_with )
     common_keys.insert( key.get_public_key() );
 
-  const auto& accounts = my->_db.get_index< account_index, by_id >();
+  const auto& accounts = my->_db.get_index< account_index, by_name >();
   const auto& comments = my->_db.get_index< comment_cashout_index, by_id >();
   bool fill_comment_buffers = my->_params[ REPLY ].weight > 0 || my->_params[ VOTE ].weight > 0;
   if( fill_comment_buffers )
