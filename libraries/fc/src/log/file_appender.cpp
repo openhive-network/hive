@@ -12,14 +12,17 @@
 #include <sstream>
 #include <iostream>
 
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 namespace fc {
 
    class file_appender::impl : public fc::retainable
    {
       public:
-         config                     cfg;
-         ofstream                   out;
-         boost::mutex               slock;
+         config                      cfg;
+         boost::filesystem::ofstream out;
+         boost::mutex                slock;
 
          fc::optional<time_point>   last_log_message_timestamp;
       private:
@@ -85,10 +88,10 @@ namespace fc {
                    out.close();
                }
                remove_all(link_filename);  // on windows, you can't delete the link while the underlying file is opened for writing
-               if( fc::exists( log_filename ) )
-                  out.open( log_filename, std::ios_base::out | std::ios_base::app );
+               if (cfg.truncate)
+                  out.open( log_filename, std::ios_base::out | std::ios_base::trunc );
                else
-                  out.open( log_filename, std::ios_base::out | std::ios_base::app);
+                  out.open( log_filename, std::ios_base::out | std::ios_base::app );
 
                create_hard_link(log_filename, link_filename);
              }
@@ -137,7 +140,8 @@ namespace fc {
      format( "${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
      filename(p),
      flush(true),
-     rotate(false)
+     rotate(false),
+     truncate(true)
    {}
 
    file_appender::file_appender( const variant& args ) :
@@ -147,8 +151,11 @@ namespace fc {
       {
          fc::create_directories(my->cfg.filename.parent_path());
 
-         if(!my->cfg.rotate)
-            my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::app);
+         if(!my->cfg.rotate) 
+            if (my->cfg.truncate)
+               my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::trunc);
+            else
+               my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::app);
 
       }
       catch( ... )

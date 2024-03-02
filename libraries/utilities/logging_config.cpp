@@ -50,6 +50,7 @@ void set_logging_program_options( boost::program_options::options_description& o
       "Optional attributes (applicable to file appender only):\n"
       "\"delta_times\" - whether times should be printed as deltas since previous message (default: false)\n"
       "\"flush\" - whether each log write should end with flush (default: true)\n"
+      "\"truncate\" - whether to truncate the log file at startup (default: true)\n"
       "\"rotate\" - whether the log files should be rotated (default: true)\n"
       "\"rotation_interval\" - seconds between file rotation (default: 3600)\n"
       "\"rotation_limit\" - seconds before rotated file is removed (default: 86400)"
@@ -130,6 +131,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           fc::file_appender::config file_appender_config;
           file_appender_config.filename = file_name;
           file_appender_config.flush = appender.flush.value_or( true );
+          file_appender_config.truncate = appender.truncate.value_or( true );
           file_appender_config.rotate = appender.rotate.value_or( true );
           file_appender_config.rotation_interval = 
             fc::seconds(
