@@ -3,18 +3,19 @@ from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from threading import Event
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import helpy
-from schemas.notifications import (
-    AttemptClosingWallets,
-    Error,
-    Notification,
-    OpeningBeekeeperFailed,
-    Status,
-    WebserverListening,
-)
 
+if TYPE_CHECKING:
+    from schemas.notifications import (
+        AttemptClosingWallets,
+        Error,
+        Notification,
+        OpeningBeekeeperFailed,
+        Status,
+        WebserverListening,
+    )
 
 class NotificationCallback(Protocol):
     def __call__(self, notification: Notification[Any]) -> None:
@@ -40,35 +41,14 @@ class CallbackCollection:
 
 
 class BeekeeperCallbacks:
-    SUPPORTED_NOTIFICATIONS = type[AttemptClosingWallets] | type[OpeningBeekeeperFailed] | type[Error]
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.__callbacks: dict[Any, CallbackCollection] = {}
-        self._http_listening_event = Event()
-        self._http_endpoint: helpy.HttpUrl | None = None
+        self._http_endpoint_from_event: helpy.HttpUrl | None = None
+        self._already_working_beekeeper_http_address: helpy.HttpUrl | None = None
         super().__init__(*args, **kwargs)
 
-    def register_callback(self, on: SUPPORTED_NOTIFICATIONS, callback: NotificationCallback) -> int:
-        return self.__callbacks[on].add(callback)
-
-    def unregister_callback(self, on: SUPPORTED_NOTIFICATIONS, callback_id: int) -> None:
-        if on in self.__callbacks:
-            self.__callbacks[on].remove(callback_id)
-
-    def _call(
-        self,
-        notification_type: SUPPORTED_NOTIFICATIONS,
-        notification: Notification[Any],
-    ) -> None:
-        if notification_type in self.__callbacks:
-            self.__callbacks[notification_type].call(notification)
-
+    @abstractmethod
     def _http_webserver_ready(self, notification: Notification[WebserverListening]) -> None:
-        self._http_endpoint = helpy.HttpUrl(self.__combine_url_string_from_notification(notification), protocol="http")
-        self._http_listening_event.set()
-
-    def __combine_url_string_from_notification(self, notification: Notification[WebserverListening]) -> str:
-        return f"{notification.value.address}:{notification.value.port}"
+        ...
 
     @abstractmethod
     def _handle_error(self, error: Error) -> None:
@@ -76,4 +56,12 @@ class BeekeeperCallbacks:
 
     @abstractmethod
     def _handle_status_change(self, status: Status) -> None:
+        ...
+
+    @abstractmethod
+    def _handle_wallets_closed(self, note: AttemptClosingWallets) -> None:
+        ...
+
+    @abstractmethod
+    def _handle_opening_beekeeper_failed(self, info: OpeningBeekeeperFailed) -> None:
         ...

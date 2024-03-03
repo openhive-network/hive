@@ -1,4 +1,5 @@
 from __future__ import annotations
+from threading import Event
 
 from typing import TYPE_CHECKING, Any
 
@@ -24,11 +25,21 @@ class NotificationHandler(helpy.BeekeeperNotificationHandler):
         super().__init__(*args, **kwargs)
         self.__owner = owner
 
+        self._http_listening_event = Event()
+        self._http_endpoint_from_event: helpy.HttpUrl | None = None
+
+        self._already_working_beekeeper_event = Event()
+        self._already_working_beekeeper_http_address: helpy.HttpUrl | None = None
+
     async def on_attempt_of_closing_wallets(self, notification: Notification[AttemptClosingWallets]) -> None:
-        self.__owner._call(AttemptClosingWallets, notification)
+        self.__owner._handle_wallets_closed(notification.value)
 
     async def on_opening_beekeeper_failed(self, notification: Notification[OpeningBeekeeperFailed]) -> None:
-        self.__owner._call(OpeningBeekeeperFailed, notification)
+        self._already_working_beekeeper_http_address = helpy.HttpUrl(
+            self.__combine_url_string(notification.value.connection.address, notification.value.connection.port), protocol="http"
+        )
+        self._already_working_beekeeper_event.set()
+        self.__owner._handle_opening_beekeeper_failed(notification.value)
 
     async def on_error(self, notification: Notification[Error]) -> None:
         self.__owner._handle_error(notification.value)
@@ -37,8 +48,15 @@ class NotificationHandler(helpy.BeekeeperNotificationHandler):
         self.__owner._handle_status_change(notification.value)
 
     async def on_http_webserver_bind(self, notification: Notification[WebserverListening]) -> None:
+        self._http_endpoint_from_event = helpy.HttpUrl(
+            self.__combine_url_string(notification.value.address, notification.value.port), protocol="http"
+        )
+        self._http_listening_event.set()
         self.__owner._http_webserver_ready(notification)
 
     async def handle_notification(self, notification: Notification[KnownNotificationT]) -> None:
         tt.logger.info(f"got notification: {notification.json()}")
         return await super().handle_notification(notification)
+
+    def __combine_url_string(self, address: str, port: int) -> str:
+        return f"{address}:{port}"

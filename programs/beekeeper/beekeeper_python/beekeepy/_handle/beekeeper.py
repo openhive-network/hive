@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
     from schemas.notifications import (
         Error,
+        OpeningBeekeeperFailed,
         Status,
     )
 
@@ -39,7 +40,11 @@ class BeekeeperCommon(BeekeeperCallbacks):
     def _handle_status_change(self, status: Status) -> None:
         pass
 
-    def run(self) -> None:
+    def _handle_opening_beekeeper_failed(self, info: OpeningBeekeeperFailed) -> None:
+        return super()._handle_opening_beekeeper_failed(info)
+
+    def run(self) -> helpy.HttpUrl | None:
+        self._reset_notification_events()
         self.__notification = self.__create_notification_server()
         self.__notification.run()
         self.__exec.run(
@@ -53,7 +58,15 @@ class BeekeeperCommon(BeekeeperCallbacks):
                 self.__exec.woring_dir.as_posix(),
             ],
         )
-        self.__wait_till_ready()
+        try:
+            self.__wait_till_ready()
+        except TimeoutError:
+            self._already_working_beekeeper_event.wait(1.0)
+            return self._already_working_beekeeper_http_address
+        finally:
+            self.close()
+
+
 
     def close(self) -> None:
         assert self.__notification is not None
@@ -73,8 +86,8 @@ class Beekeeper(BeekeeperCommon, helpy.Beekeeper):
 
     def run(self) -> None:
         super().run()
-        assert self._http_endpoint is not None
-        self.http_endpoint = self._http_endpoint
+        assert self._http_endpoint_from_event is not None
+        self.http_endpoint = self._http_endpoint_from_event
 
     def _get_notification_endpoint(self) -> str:
         return self.notification_endpoint
@@ -86,8 +99,8 @@ class AsyncBeekeeper(BeekeeperCommon, helpy.AsyncBeekeeper):
 
     def run(self) -> None:
         super().run()
-        assert self._http_endpoint is not None
-        self.http_endpoint = self._http_endpoint
+        assert self._http_endpoint_from_event is not None
+        self.http_endpoint = self._http_endpoint_from_event
 
     def _get_notification_endpoint(self) -> str:
         return self.notification_endpoint
