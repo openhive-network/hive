@@ -16,7 +16,7 @@ test_generate_artifacts_from_scratch_by_hived() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_generate_artifacts_override_old_file_by_hived() {
@@ -27,7 +27,7 @@ test_generate_artifacts_override_old_file_by_hived() {
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_0_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
   "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_resume_artifacts_generating_process_by_hived() {
@@ -38,7 +38,7 @@ test_resume_artifacts_generating_process_by_hived() {
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_1_INTERRUPTED_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
   "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_generate_artifacts_from_scratch_by_block_log_util() {
@@ -46,8 +46,8 @@ test_generate_artifacts_from_scratch_by_block_log_util() {
   local TEST_BLOCKCHAIN_DIR="generate_from_scratch/by_block_log_util/blockchain"
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_generate_artifacts_override_old_file_by_block_log_util() {
@@ -56,8 +56,8 @@ test_generate_artifacts_override_old_file_by_block_log_util() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_0_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_resume_artifacts_generating_process_by_block_log_util() {
@@ -66,8 +66,8 @@ test_resume_artifacts_generating_process_by_block_log_util() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_1_INTERRUPTED_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
-  "$BLOCK_LOG_UTIL_BINARY_PATH" get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --generate-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
 test_generate_artifacts_from_scratch_by_hived
