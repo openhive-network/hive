@@ -587,7 +587,7 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
-    std::cout << "head block number: " << head_block_num << "\n";
+    std::cout << head_block_num << "\n";
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -950,6 +950,7 @@ int main(int argc, char** argv)
       }
 
       const fc::path block_log_path = options_map["block-log"].as<boost::filesystem::path>();
+
       options_map.erase("block-log");
 
       auto get_first_and_last_block_from_options = [&options_map]() -> std::pair<int32_t, int32_t>
