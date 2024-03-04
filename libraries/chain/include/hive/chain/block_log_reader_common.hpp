@@ -33,6 +33,7 @@ namespace hive { namespace chain {
 
     virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
 
+    // The only method of block_read_i left to be implemented by subclasses.
     //virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
     //                             block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool ) const override;
 
