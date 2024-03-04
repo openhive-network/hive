@@ -12,6 +12,7 @@
 #include <fc/crypto/elliptic.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
+#include <fc/crypto/crypto_data.hpp>
 
 #include <core/beekeeper_wallet.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
@@ -1739,6 +1740,85 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first );
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
     }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
+{
+  try
+  {
+      const string _fruits_content  = "avocado-banana-cherry-durian";
+      const string _hex_content     = "0123456789ABCDEFabcdef";
+      const string _empty_content   = "";
+
+      auto _different_keys = []( const std::string& content )
+      {
+        //Using the `crypto_data` class do encryption/decryption for many `from`, `to` keys.
+        fc::crypto_data _cd;
+
+        for( auto i = 0; i < 1000; ++i )
+        {
+          auto _private_from  = fc::ecc::private_key::generate();
+          auto _private_to    = fc::ecc::private_key::generate();
+
+          auto _public_from   = _private_from.get_public_key();
+          auto _public_to     = _private_to.get_public_key();
+
+          std::string _encrypted_content = _cd.encrypt( _private_from, _public_to, content );
+
+          auto _private_key_finder_from = [&_public_from, &_private_from]( const fc::crypto_data::public_key_type& public_key )
+          {
+            if( public_key == _public_from )
+              return fc::optional<fc::crypto_data::private_key_type>( _private_from );
+            return fc::optional<fc::crypto_data::private_key_type>();
+          };
+
+          auto _private_key_finder_to = [&_public_to, &_private_to]( const fc::crypto_data::public_key_type& public_key )
+          {
+            if( public_key == _public_to )
+              return fc::optional<fc::crypto_data::private_key_type>( _private_to );
+            return fc::optional<fc::crypto_data::private_key_type>();
+          };
+
+          auto _result_00 = _cd.decrypt( _private_key_finder_from, _public_from, _public_to, _encrypted_content );
+          BOOST_REQUIRE_EQUAL( _result_00, content );
+
+          auto _result_01 = _cd.decrypt( _private_key_finder_to, _public_from, _public_to, _encrypted_content );
+          BOOST_REQUIRE_EQUAL( _result_01, content );
+        }
+      };
+
+      auto _the_same_keys = []( const std::string& content )
+      {
+        //Using the `crypto_data` class do encryption/decryption for many `from`, `to` keys.
+        //`from` == `to`
+        fc::crypto_data _cd;
+
+        for( auto i = 0; i < 1000; ++i )
+        {
+          auto _private = fc::ecc::private_key::generate();
+          auto _public  = _private.get_public_key();
+
+          std::string _encrypted_content = _cd.encrypt( _private, _public, content );
+
+          auto _private_key_finder = [&_private]( const fc::crypto_data::public_key_type& public_key )
+          {
+              return fc::optional<fc::crypto_data::private_key_type>( _private );
+          };
+
+          auto _result = _cd.decrypt( _private_key_finder, _public, _public, _encrypted_content );
+          BOOST_REQUIRE_EQUAL( _result, content );
+        }
+      };
+
+      _different_keys( _fruits_content );
+      _different_keys( _hex_content );
+      _different_keys( _empty_content );
+
+      _the_same_keys( _fruits_content );
+      _the_same_keys( _hex_content );
+      _the_same_keys( _empty_content );
 
   } FC_LOG_AND_RETHROW()
 }
