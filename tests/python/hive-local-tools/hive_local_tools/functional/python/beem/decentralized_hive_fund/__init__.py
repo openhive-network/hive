@@ -25,8 +25,8 @@ def node() -> tt.InitNode:
         '{"name":"default","level":"error","appender":"stderr"} '
         '{"name":"user","level":"debug","appender":"stderr"} '
         '{"name":"chainlock","level":"error","appender":"p2p"} '
-        '{"name":"sync","level":"debug","appender":"p2p"} '
-        '{"name":"p2p","level":"debug","appender":"p2p"}'
+        '{"name":"sync","level":"warn","appender":"p2p"} '
+        '{"name":"p2p","level":"warn","appender":"p2p"}'
     )
     node.run()
     return node

@@ -161,7 +161,7 @@ def run_networks(
         if blocklog_directory is not None:
             node.config.shared_file_size = "1G"
             node.config.log_logger = (
-                '{"name":"default","level":"info","appender":"stderr"}{"name":"p2p","level":"info","appender":"p2p"}'
+                '{"name":"default","level":"info","appender":"stderr"}{"name":"p2p","level":"warn","appender":"p2p"}'
             )
             node.run(
                 replay_from=block_log,
