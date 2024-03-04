@@ -29,7 +29,7 @@ namespace fc {
 
    void ofstream::open( const fc::path& file, int m ) {
      const boost::filesystem::path& bfp = file; 
-     my->ofs.open( bfp, std::ios::binary | (std::ios::openmode)m);
+     my->ofs.open( bfp, std::ios::binary );
    }
    size_t ofstream::writesome( const char* buf, size_t len ) {
         my->ofs.write(buf,len);
