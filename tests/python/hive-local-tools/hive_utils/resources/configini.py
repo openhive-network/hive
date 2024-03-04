@@ -11,7 +11,7 @@ class config:  # noqa: N801
             ' {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
         )
         self.log_logger = (
-            '{"name":"default","level":"all","appenders":["stderr"]} {"name":"p2p","level":"all","appenders":["p2p"]}'
+            '{"name":"default","level":"all","appenders":["stderr"]} {"name":"p2p","level":"warn","appenders":["p2p"]}'
         )
         self.backtrace = "yes"
         self.plugin = (
