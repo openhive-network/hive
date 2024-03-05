@@ -7,7 +7,6 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/stdio.hpp>
-#include <iostream>
 
 namespace fc {
    extern std::unordered_map<std::string,logger>& get_logger_map();
@@ -30,7 +29,6 @@ namespace fc {
         // TODO... process enabled
       }
       for( size_t i = 0; i < cfg.loggers.size(); ++i ) {
-        std::cerr << "call logger get" << std::endl;
          auto lgr = logger::get( cfg.loggers[i].name );
 
          // TODO: finish configure logger here...
