@@ -104,7 +104,7 @@ fc::optional< fc::logging_config > application::load_logging_config()
   }).wait();
   std::cerr << "Logging thread started" << std::endl;
   ilog("Logging thread started");
-  my->_dumb_thread.async( [] (){ std::cerr << "I am dumb" << std::endl; fc::schedule( [](){}, fc::time_point::now()+fc::seconds(3600), "dummy"); } ).wait();
+  //my->_dumb_thread.async( [] (){ std::cerr << "I am dumb" << std::endl; fc::schedule( [](){}, fc::time_point::now()+fc::seconds(3600), "dummy"); } ).wait();
   return logging_config;
 }
 
