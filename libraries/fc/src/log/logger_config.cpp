@@ -7,6 +7,7 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/stdio.hpp>
+#include <iostream>
 
 namespace fc {
    extern std::unordered_map<std::string,logger>& get_logger_map();
