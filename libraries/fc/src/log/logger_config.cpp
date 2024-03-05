@@ -29,6 +29,7 @@ namespace fc {
         // TODO... process enabled
       }
       for( size_t i = 0; i < cfg.loggers.size(); ++i ) {
+        std::cerr << "call logger get" << std::endl;
          auto lgr = logger::get( cfg.loggers[i].name );
 
          // TODO: finish configure logger here...

@@ -43,7 +43,8 @@ class application_impl {
   public:
     application_impl() :
       _app_options("Application Options"),
-      _logging_thread("logging_thread")
+      _logging_thread("logging_thread"),
+      _dumb_thread("dumb_thread")
     {}
     const variables_map*    _options = nullptr;
     options_description_ex  _app_options;
@@ -53,6 +54,7 @@ class application_impl {
     bfs::path               _data_dir;
 
     fc::thread              _logging_thread;
+    fc::thread              _dumb_thread;
 };
 
 application::application()
@@ -83,6 +85,7 @@ void application::generate_interrupt_request()
 
 fc::optional< fc::logging_config > application::load_logging_config()
 {
+  std::cerr << "load_logging_config" << std::endl;
   fc::optional< fc::logging_config > logging_config;
   const variables_map& args = get_args();
   my->_logging_thread.async( [this, args, &logging_config]{
@@ -101,6 +104,7 @@ fc::optional< fc::logging_config > application::load_logging_config()
   }).wait();
   std::cerr << "Logging thread started" << std::endl;
   ilog("Logging thread started");
+  my->_dumb_thread.async( [] (){ std::cerr << "I am dumb" << std::endl; fc::schedule( [](){}, fc::time_point::now()+fc::seconds(3600), "dummy"); } ).wait();
   return logging_config;
 }
 
