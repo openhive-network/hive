@@ -95,9 +95,11 @@ fc::optional< fc::logging_config > application::load_logging_config()
     }
     catch( const fc::exception& e )
     {
-      wlog( "Error parsing logging config. ${e}", ("e", e.to_string()) );
+      std::cerr << "Error parsing the damn logging config" << std::endl;
+      //wlog( "Error parsing logging config. ${e}", ("e", e.to_string()) );
     }
   }).wait();
+  std::cerr << "Logging thread started" << std::endl;
   ilog("Logging thread started");
   return logging_config;
 }

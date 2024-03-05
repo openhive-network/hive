@@ -39,8 +39,10 @@ namespace fc {
       public:
          impl( const config& c) : cfg( c )
          {
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
              if( cfg.rotate )
              {
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
                  FC_ASSERT( cfg.rotation_interval >= seconds( 1 ) );
                  FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
 
@@ -53,6 +55,7 @@ namespace fc {
 
          ~impl()
          {
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
             try
             {
               _rotation_task.cancel_and_wait("file_appender is destructing");
@@ -64,6 +67,7 @@ namespace fc {
 
          void rotate_files( bool initializing = false )
          {
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
              FC_ASSERT( cfg.rotate );
              fc::time_point now = time_point::now();
              fc::time_point_sec start_time = get_file_start_time( now, cfg.rotation_interval );
@@ -73,6 +77,7 @@ namespace fc {
 
              {
                fc::scoped_lock<boost::mutex> lock( slock );
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
 
                if( !initializing )
                {
@@ -87,6 +92,7 @@ namespace fc {
                    out.flush();
                    out.close();
                }
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
                remove_all(link_filename);  // on windows, you can't delete the link while the underlying file is opened for writing
                if (cfg.truncate)
                   out.open( log_filename, std::ios_base::out | std::ios_base::trunc );
@@ -102,6 +108,7 @@ namespace fc {
              directory_iterator itr(link_filename.parent_path());
              for( ; itr != directory_iterator(); itr++ )
              {
+             std::cerr << __FILE__ << ":" << __LINE__ << "we are in a loop" << std::endl;
                  try
                  {
                      string current_filename = itr->filename().string();
@@ -128,6 +135,7 @@ namespace fc {
                  {
                  }
              }
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
 
              _current_file_start_time = start_time;
              _rotation_task = schedule( [this]() { rotate_files(); },
@@ -147,6 +155,7 @@ namespace fc {
    file_appender::file_appender( const variant& args ) :
      my( new impl( args.as<config>() ) )
    {
+             std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
       try
       {
          fc::create_directories(my->cfg.filename.parent_path());
