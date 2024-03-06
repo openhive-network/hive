@@ -34,7 +34,7 @@ ruff = "0.0.277"
 types-python-dateutil = "2.8.19.14"
 types-pyyaml = "6.0.12.11"
 types-requests = "2.31.0.2"
-hive_local_tools = { path = "../../../tests/python/hive-local-tools/", develop = true }
+# hive_local_tools = { path = "../../../tests/python/hive-local-tools/", develop = true }
 
 [tool.poetry-dynamic-versioning]
 enable = true
