@@ -18,4 +18,8 @@ class Beekeeper(ABC):
         return self
 
     def __exit__(self, _: type[BaseException] | None, ex: BaseException | None, __: TracebackType | None) -> bool:
+        self.delete()
         return ex is None
+
+    def delete(self) -> None:
+        pass
