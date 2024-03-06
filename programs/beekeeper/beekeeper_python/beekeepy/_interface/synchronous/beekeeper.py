@@ -28,7 +28,6 @@ class Beekeeper(BeekeeperInterface):
     def _get_instance(self) -> helpy.Beekeeper:
         return self.__instance
 
-    def __exit__(self, _: type[BaseException] | None, ex: BaseException | None, __: TracebackType | None) -> TYPE_CHECKING:
+    def delete(self) -> None:
         if isinstance(self.__instance, SynchronousBeekeeperHandle):
             self.__instance.close()
-        return super().__exit__(_, ex, __)
