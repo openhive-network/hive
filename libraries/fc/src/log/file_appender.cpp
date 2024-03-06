@@ -140,8 +140,8 @@ namespace fc {
      format( "${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
      filename(p),
      flush(true),
-     rotate(false),
-     truncate(true)
+     truncate(true),
+     rotate(false)
    {}
 
    file_appender::file_appender( const variant& args ) :
@@ -154,10 +154,12 @@ namespace fc {
           fc::create_directories(parent_path);
 
          if(!my->cfg.rotate) 
+         {
             if (my->cfg.truncate)
                my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::trunc);
             else
                my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::app);
+         }
 
       }
       catch(const fc::exception &e)
