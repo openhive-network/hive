@@ -130,6 +130,7 @@ void checksum_block_log(const fc::path& block_log, fc::optional<uint32_t> checkp
         {
           fc::sha256::encoder block_log_encoder_up_to_this_block(block_log_sha256_encoder);
           ilog("${result} ${block_log}@${block_num}", ("result", block_log_encoder_up_to_this_block.result().str())(block_log)("block_num", full_block->get_block_num()));
+          std::cout << block_log_encoder_up_to_this_block.result().str() << " " << block_log.generic_string() << "@" << full_block->get_block_num() << "\n";
         }
 
         return true;
@@ -139,9 +140,15 @@ void checksum_block_log(const fc::path& block_log, fc::optional<uint32_t> checkp
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
     if (checkpoint_every_n_blocks)
+    {
       ilog("Final hash: ${final_hash} ${block_log} @${head_block_num}", ("final_hash", final_hash.str())(block_log)(head_block_num));
+      std::cout << final_hash.str() << " " << block_log.generic_string() << "@" << head_block_num << "\n";
+    }
     else
+    {
       ilog("Final hash: ${final_hash} ${block_log}", ("final_hash", final_hash.str())(block_log));
+      std::cout << final_hash.str() << " " << block_log.generic_string() << "\n";
+    }
   }
   FC_LOG_AND_RETHROW()
 }
