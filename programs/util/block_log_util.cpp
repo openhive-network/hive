@@ -776,7 +776,7 @@ int main(int argc, char** argv)
   minor_options.add_options()("log-path,l", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->default_value("./block_log_util.log"),"Path to log file. All logs are saved into this file.");
 
   boost::program_options::options_description block_log_operations("block_log operations");
-  block_log_operations.add_options()("block-log,i", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->required(), "Path to input block-log for processing, depending on the operation opening in read only (RO) or read & write (RW) mode.");
+  block_log_operations.add_options()("block-log,i", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Path to input block-log for processing, depending on the operation opening in read only (RO) or read & write (RW) mode.");
   block_log_operations.add_options()("compare", "Compare input block_log with another block_log. (Both block_logs opened in RO mode)");
   block_log_operations.add_options()("find-end","Check if input block_log is not corrupted. Finds out place where last full block is successfully stored in block_log and proposes block_log truncation if recommended.");
   block_log_operations.add_options()("generate-artifacts", "Open input block_log in read & write mode and generate artifacts file if necessary.");
@@ -788,7 +788,7 @@ int main(int argc, char** argv)
   block_log_operations.add_options()("truncate", "Truncate block log to given block number.");
 
   boost::program_options::options_description additional_operations("additional operations");
-  additional_operations.add_options()("sha256sum-from-file", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Verify sha256 from text file.");
+  additional_operations.add_options()("verify-checksums-from-file", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Verify sha256 from text file.");
 
   // args for sha256sum subcommand
   boost::program_options::options_description sha256sum_options("sha256sum options");
@@ -919,11 +919,11 @@ int main(int argc, char** argv)
     fc::configure_logging(logging_config);
 
     // that's additional available operation, which doesn't request block_log file
-    if (options_map.count("sha256sum-from-file"))
+    if (options_map.count("verify-checksums-from-file"))
     {
-      const fc::path path_to_file = options_map["sha256sum-from-file"].as<boost::filesystem::path>();
+      const fc::path path_to_file = options_map["verify-checksums-from-file"].as<boost::filesystem::path>();
 
-      options_map.erase("sha256sum-from-file");
+      options_map.erase("verify-checksums-from-file");
       if (!options_map.empty())
       {
         std::cerr << "You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " << get_arguments_as_string(options_map) << "\n";
@@ -936,7 +936,7 @@ int main(int argc, char** argv)
       thread_pool.set_thread_pool_size(threads_num);
       BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
 
-      dlog("block_log_util will perform sha256sum-from-file operation on file: ${path_to_file}", (path_to_file));
+      dlog("block_log_util will perform verify-checksums-from-file operation on file: ${path_to_file}", (path_to_file));
       return validate_block_log_checksums_from_file(path_to_file, theApp, thread_pool) ? 0 : 1;
     }
     // we should handle operation which request block_log file
