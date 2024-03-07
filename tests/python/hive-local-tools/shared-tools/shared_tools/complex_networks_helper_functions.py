@@ -102,6 +102,11 @@ def get_last_irreversible_block_num(blocks: list):
     return blocks[len(blocks) - 1][1]
 
 
+def get_blocks_history(blocks: list[list]):
+    for item in blocks:
+        tt.logger.info(item)
+
+
 def get_part_of_witness_details(witness_details: list, start, length: int):
     assert start >= 0
     assert start + length <= len(witness_details)

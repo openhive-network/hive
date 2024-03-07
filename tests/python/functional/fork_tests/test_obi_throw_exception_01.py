@@ -7,6 +7,7 @@ import pytest
 import test_tools as tt
 from shared_tools.complex_networks_helper_functions import (
     NodeLog,
+    get_blocks_history,
     get_last_head_block_number,
     get_last_irreversible_block_num,
     wait,
@@ -75,14 +76,14 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     _a0 = logs[0].collector
 
     tt.logger.info("Before an exception - waiting for specific witnesses")
-    wait_for_specific_witnesses(
-        witness_node_0, logs, [["witness-0"], ["witness-1", "initminer"], ["witness-1", "initminer"]]
-    )
+    wait_for_specific_witnesses(witness_node_0, logs, [["witness-0", "initminer"], ["witness-1"]])
 
     tt.logger.info(f"Artificial exception is thrown during {delay_seconds} seconds")
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception=True)
 
     time.sleep(delay_seconds)
+
+    wait_for_specific_witnesses(witness_node_1, logs, [["witness-1"]])
 
     tt.logger.info("Artificial exception is disabled")
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception=False)
@@ -93,6 +94,8 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     _w0 = logs[1].collector
     _a1 = logs[2].collector
     _w1 = logs[3].collector
+
+    get_blocks_history([_a0, _a1, _w0, _w1])
 
     assert get_last_head_block_number(_a0) == get_last_head_block_number(_a1)
     assert get_last_head_block_number(_w0) < get_last_head_block_number(_w1)
