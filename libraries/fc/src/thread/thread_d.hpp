@@ -3,7 +3,7 @@
 #include <fc/time.hpp>
 #include <boost/thread.hpp>
 #include "context.hpp"
-#include <boost/thread/condition_variable.hpp>
+#include <condition_variable>
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 #include <vector>
@@ -75,8 +75,8 @@ namespace fc {
            fc::thread&             self;
            boost::thread* boost_thread;
            stack_allocator                  stack_alloc;
-           boost::condition_variable        task_ready;
-           boost::mutex                     task_ready_mutex;
+           std::condition_variable          task_ready;
+           std::mutex                       task_ready_mutex;
 
            boost::atomic<task_base*>       task_in_queue;
            std::vector<task_base*>         task_pqueue;    // heap of tasks that have never started, ordered by proirity & scheduling time
@@ -582,7 +582,7 @@ namespace fc {
                 clear_free_list();
 
                 { // lock scope
-                  boost::unique_lock<boost::mutex> lock(task_ready_mutex);
+                  std::unique_lock<std::mutex> lock(task_ready_mutex);
                   if( has_next_task() )
                     continue;
                   time_point timeout_time = check_for_timeouts();
@@ -613,8 +613,8 @@ namespace fc {
                      * that takes an absolute time like fc::promise::wait_until(), so we can't always
                      * do the right thing here.
                      */
-                    task_ready.wait_until( lock, boost::chrono::steady_clock::now() +
-                                                 boost::chrono::microseconds(timeout_time.time_since_epoch().count() - time_point::now().time_since_epoch().count()) );
+                    task_ready.wait_until( lock, std::chrono::steady_clock::now() +
+                                                 std::chrono::microseconds(timeout_time.time_since_epoch().count() - time_point::now().time_since_epoch().count()) );
                   }
                 }
               }
