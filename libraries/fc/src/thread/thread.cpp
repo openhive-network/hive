@@ -347,7 +347,7 @@ namespace fc {
    }
 
    void thread::poke() {
-     boost::unique_lock<boost::mutex> lock(my->task_ready_mutex);
+     std::unique_lock<std::mutex> lock(my->task_ready_mutex);
      my->task_ready.notify_one();
    }
 
@@ -364,7 +364,7 @@ namespace fc {
       // to aquire the lock and therefore there should be no contention on this lock except
       // when *this thread is about to block on a wait condition.
       if( this != &current() &&  !stale_head ) {
-          boost::unique_lock<boost::mutex> lock(my->task_ready_mutex);
+          std::unique_lock<std::mutex> lock(my->task_ready_mutex);
           my->task_ready.notify_one();
       }
    }
