@@ -115,6 +115,32 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   signDigest(publicKey: TPublicKey, sigDigest: string): TSignature;
 
   /**
+   * Encrypts given data for a specific entity and returns the encrypted message
+   *
+   * @param {string} content Content to be encrypted
+   * @param {TPublicKey} key public key to find the private key in the wallet and encrypt the data
+   * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else)
+   *
+   * @returns {string} base58 encrypted buffer
+   *
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  encryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string;
+
+  /**
+   * Decrypts given data from a specific entity and returns the decrypted message
+   *
+   * @param {string} content Base58 content to be decrypted
+   * @param {TPublicKey} key public key to find the private key in the wallet and decrypt the data
+   * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and decrypt the data (optional - use if the message was encrypted for somebody else)
+   *
+   * @returns {string} decrypted buffer
+   *
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  decryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string;
+
+  /**
    * Lists all of the public keys
    *
    * @returns {TPublicKey[]} a set of all keys for all unlocked wallets
