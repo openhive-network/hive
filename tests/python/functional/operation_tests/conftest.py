@@ -640,6 +640,10 @@ def hive_fund(
 @pytest.fixture()
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
+    node.config.log_appender = (
+        '{"appender":"stderr","stream":"std_error"}'
+        ' {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds","rotate":false}'
+    )
     node.config.plugin.append("account_history_api")
     node.run(time_offset="+0h x5")
     return node
