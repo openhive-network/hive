@@ -115,4 +115,23 @@ test.describe('Beekeeper factory tests for Node.js', () => {
 
     expect(info).toStrictEqual(['w0','w1','w2']);
   });
+
+  test('Shold be able to encrypt and decrypt messages', async () => {
+    const input = "Big Brother is Watching You";
+
+    const beekeeper = await beekeeperFactory({ storageRoot: STORAGE_ROOT_NODE });
+
+    const session = beekeeper.createSession("my.salt");
+
+    const { wallet } = await session.createWallet('w0', 'mypassword');
+
+    const inputKey = await wallet.importKey('5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw');
+    const outputKey = await wallet.importKey('5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG');
+
+    const encrypted = wallet.encryptData(input, inputKey, outputKey);
+
+    const retVal = wallet.decryptData(encrypted, inputKey, outputKey);
+
+    expect(retVal).toBe(input);
+  });
 });

@@ -136,7 +136,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:235
+src/interfaces.ts:261
 
 ___
 
@@ -156,7 +156,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:242
+src/interfaces.ts:268
 
 
 <a name="interfacesibeekeeperoptionsmd"></a>
@@ -240,7 +240,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:222
+src/interfaces.ts:248
 
 ___
 
@@ -269,7 +269,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:193
+src/interfaces.ts:219
 
 ___
 
@@ -291,7 +291,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:172
+src/interfaces.ts:198
 
 ___
 
@@ -313,7 +313,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:181
+src/interfaces.ts:207
 
 ___
 
@@ -335,7 +335,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:213
+src/interfaces.ts:239
 
 ___
 
@@ -363,7 +363,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:204
+src/interfaces.ts:230
 
 
 <a name="interfacesibeekeeperunlockedwalletmd"></a>
@@ -420,6 +420,66 @@ src/interfaces.ts:15
 
 ___
 
+### decryptData
+
+▸ **decryptData**(`content`, `key`, `anotherKey?`): `string`
+
+Decrypts given data from a specific entity and returns the decrypted message
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `content` | `string` | Base58 content to be decrypted |
+| `key` | `string` | public key to find the private key in the wallet and decrypt the data |
+| `anotherKey?` | `string` | other public key to find the private key in the wallet and decrypt the data (optional - use if the message was encrypted for somebody else) |
+
+#### Returns
+
+`string`
+
+decrypted buffer
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
+#### Defined in
+
+src/interfaces.ts:141
+
+___
+
+### encryptData
+
+▸ **encryptData**(`content`, `key`, `anotherKey?`): `string`
+
+Encrypts given data for a specific entity and returns the encrypted message
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `content` | `string` | Content to be encrypted |
+| `key` | `string` | public key to find the private key in the wallet and encrypt the data |
+| `anotherKey?` | `string` | other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else) |
+
+#### Returns
+
+`string`
+
+base58 encrypted buffer
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
+#### Defined in
+
+src/interfaces.ts:128
+
+___
+
 ### getPublicKeys
 
 ▸ **getPublicKeys**(): `string`[]
@@ -438,7 +498,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:124
+src/interfaces.ts:150
 
 ___
 
@@ -583,7 +643,7 @@ Indicates if the wallet is unlocked. If the wallet is locked, this property will
 
 #### Defined in
 
-src/interfaces.ts:145
+src/interfaces.ts:171
 
 ## Methods
 
@@ -637,7 +697,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:137
+src/interfaces.ts:163
 
 
 <a name="interfacesiwalletmd"></a>
@@ -701,7 +761,7 @@ Password used for unlocking your wallet
 
 #### Defined in
 
-src/interfaces.ts:161
+src/interfaces.ts:187
 
 ___
 
@@ -713,4 +773,4 @@ Unlocked, ready to use wallet
 
 #### Defined in
 
-src/interfaces.ts:154
+src/interfaces.ts:180

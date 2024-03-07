@@ -16,6 +16,14 @@ interface IBeekeeperKeys {
   }>;
 }
 
+interface IEncryptData {
+  encrypted_content: string;
+}
+
+interface IDecryptData {
+  decrypted_content: string;
+}
+
 export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   public constructor(
     private readonly api: BeekeeperApi,
@@ -58,6 +66,18 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     const result = this.api.extract(this.api.api.get_public_keys(this.session.token) as string) as IBeekeeperKeys;
 
     return result.keys.map(value => value.public_key);
+  }
+
+  public encryptData(content: string, key: TPublicKey, anotherKey: TPublicKey): string {
+    const result = this.api.extract(this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content)) as IEncryptData;
+
+    return result.encrypted_content;
+  }
+
+  public decryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string {
+    const result = this.api.extract(this.api.api.decrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content)) as IDecryptData;
+
+    return result.decrypted_content;
   }
 
   public close(): IBeekeeperSession {

@@ -919,6 +919,44 @@ test.describe('WASM beekeeper_api tests', () => {
     }, WALLET_OPTIONS);
   });
 
+  test('Check `encrypt_data`, `decrypt data` endpoints', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      const walletNo = 9;
+      const from_key_number = 8;
+      const to_key_number = 9;
+      const content = 'peach-pear-plum';
+
+      {
+        (api.setAcceptError as unknown as boolean) = true;
+
+        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+        assert.equal(error_message.includes("Wallet not found: w9"), true);
+      }
+
+      (api.setAcceptError as unknown as boolean) = false;
+
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+
+      {
+        (api.setAcceptError as unknown as boolean) = true;
+
+        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+        assert.equal(error_message.includes("Public key 6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet"), true);
+      }
+
+      (api.setAcceptError as unknown as boolean) = false;
+
+      api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[from_key_number][0]);
+
+      const encrypted_content = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+      const decrypted_content = api.decryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], encrypted_content);
+      assert.equal(decrypted_content, content);
+    }, WALLET_OPTIONS);
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });
