@@ -5,6 +5,7 @@ import pytest
 import test_tools as tt
 from shared_tools.complex_networks_helper_functions import (
     NodeLog,
+    get_blocks_history,
     get_last_head_block_number,
     get_last_irreversible_block_num,
     wait,
@@ -62,6 +63,8 @@ def test_obi_throw_exception_00(prepare_obi_throw_exception_00):
     _w0 = logs[1].collector
     _a1 = logs[2].collector
     _w1 = logs[3].collector
+
+    get_blocks_history([_a0, _a1, _w0, _w1])
 
     assert get_last_head_block_number(_a0) > last_lib_01
 
