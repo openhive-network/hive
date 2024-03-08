@@ -135,7 +135,7 @@ struct full_transaction_type
 
     /// Allows to sign transaction and append signature to the underlying signed_transaction::signatures container;
     void sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
-      fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type);
+      fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type, bool cache = false);
 
     static full_transaction_ptr create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, uint32_t index_in_block,
                                                   const serialized_transaction_data& serialized_transaction, bool use_transaction_cache);
