@@ -110,8 +110,9 @@ struct transaction_builder
   void print_stats() const;
 
   void init(); // first task of worker thread
-  void accept_transaction( full_transaction_ptr full_tx );
-  void push_transaction( kind_of_operation kind );
+  bool accept_transaction( full_transaction_ptr full_tx );
+  template< typename post_action >
+  void push_transaction( kind_of_operation kind, post_action action );
   void build_transaction();
   void fill_string( std::string& str, size_t size );
   void remember_comment( const account_name_type& author, const std::string& permlink );
@@ -205,13 +206,15 @@ void transaction_builder::init()
   } );
 }
 
-void transaction_builder::accept_transaction( full_transaction_ptr full_tx )
+bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
 {
+  bool result = false;
   try
   {
     ++_concurrent_tx_count;
     _common._chain.accept_transaction( full_tx, chain::chain_plugin::lock_type::fc );
     --_concurrent_tx_count;
+    result = true;
   }
   catch( const fc::canceled_exception& ex )
   {
@@ -229,6 +232,18 @@ void transaction_builder::accept_transaction( full_transaction_ptr full_tx )
   }
   catch( const fc::exception& ex )
   {
+    //depending on amount of colony workers and transaction frequency parameters,
+    //especially votes which are hard to make unique, one of the way transaction can
+    //fail (but has no specialized exception) is duplicate transaction check; it can
+    //happen in course of normal work, but when RC on workers starts to end, worker
+    //rotation increases making it more likely to run into duplicates;
+    //for similar reasons witness limit on custom ops might be another "typical"
+    //exception that might happen with too few workers and increases in frequency with
+    //lack of RC;
+    //last one that would be nice to catch is boost::interprocess::bad_alloc;
+    //it has separate exception class, but before it could be caught here, it is translated to
+    //generic fc::exception in one of many FC_CAPTURE_AND_RETHROW calls; too bad, because
+    //it would be nice if it triggered app.kill(), because at that point all you get is log spam
     elog( "Exception during accepting transaction: ${d} transaction: ${t}",
       ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
     ++_failed_transactions;
@@ -238,9 +253,11 @@ void transaction_builder::accept_transaction( full_transaction_ptr full_tx )
     elog( "Unknown exception during accepting transaction ${t}", ( "t", full_tx->get_transaction() ) );
     ++_failed_transactions;
   }
+  return result;
 }
 
-void transaction_builder::push_transaction( kind_of_operation kind )
+template< typename post_action >
+void transaction_builder::push_transaction( kind_of_operation kind, post_action action )
 {
   full_transaction_ptr full_tx = full_transaction_type::create_from_signed_transaction( _tx, serialization_type::hf26, false );
   _tx.clear();
@@ -250,7 +267,8 @@ void transaction_builder::push_transaction( kind_of_operation kind )
   {
     // when there is too many concurrent transactions next one becomes blocking which should
     // act as "cool down" and let other threads (like witness) process their requests
-    accept_transaction( full_tx );
+    if( accept_transaction( full_tx ) )
+      action();
     // since all previously sent transactions are earlier in queue than this one, once it
     // returns here all transacions should already be processed (taken out of writer queue);
     // _concurrent_tx_count might still be > 0 because, while transactions were already processed,
@@ -258,7 +276,11 @@ void transaction_builder::push_transaction( kind_of_operation kind )
   }
   else
   {
-    _worker.async( [this,full_tx]() { accept_transaction( full_tx ); } );
+    _worker.async( [ this, full_tx = std::move(full_tx), action = std::move(action) ]()
+    {
+      if( accept_transaction( full_tx ) )
+        action();
+    } );
   }
 }
 
@@ -408,9 +430,10 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
     options.extensions.emplace( extension );
     _tx.operations.emplace_back( options );
   }
-  push_transaction( ARTICLE );
-  // even though the article that was just built is not yet processed, we can already use it as target
-  remember_comment( article.author, article.permlink );
+  push_transaction( ARTICLE, [ this, author = article.author, permlink = article.permlink ]()
+  {
+    remember_comment( author, permlink );
+  } );
 }
 
 void transaction_builder::build_reply( const account_name_type& actor, uint64_t nonce )
@@ -435,9 +458,10 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
   _stats[ REPLY ].extra_size += extra_size;
   fill_string( reply.body, extra_size );
   _tx.operations.emplace_back( reply );
-  push_transaction( REPLY );
-  // even though the reply that was just built is not yet processed, we can already use it as target
-  remember_comment( reply.author, reply.permlink );
+  push_transaction( REPLY, [ this, author = reply.author, permlink = reply.permlink ]()
+  {
+    remember_comment( author, permlink );
+  } );
 }
 
 void transaction_builder::build_vote( const account_name_type& actor, uint64_t nonce )
@@ -460,7 +484,7 @@ void transaction_builder::build_vote( const account_name_type& actor, uint64_t n
   nonce >>= 8; // but remove id part for better uniqueness
   vote.weight = ( std::rand() > 0 ? 1 : -1 ) * ( ( nonce % HIVE_100_PERCENT ) + 1 );
   _tx.operations.emplace_back( vote );
-  push_transaction( VOTE );
+  push_transaction( VOTE, [](){} );
 }
 
 void transaction_builder::build_transfer( const account_name_type& actor, uint64_t nonce )
@@ -482,7 +506,7 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
     transfer.memo = transfer.memo + ":" + fill;
   }
   _tx.operations.emplace_back( transfer );
-  push_transaction( TRANSFER );
+  push_transaction( TRANSFER, [](){} );
 }
 
 void transaction_builder::build_custom( const account_name_type& actor, uint64_t nonce )
@@ -498,7 +522,7 @@ void transaction_builder::build_custom( const account_name_type& actor, uint64_t
   fill_string( fill, extra_size );
   custom.json = "{\"v\":\"" + fill + "\"}";
   _tx.operations.emplace_back( custom );
-  push_transaction( CUSTOM_JSON );
+  push_transaction( CUSTOM_JSON, [](){} );
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
