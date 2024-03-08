@@ -1832,7 +1832,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
     HIVE_ASSERT(
       sig_keys.insert( fc::ecc::public_key( sig, args.hash ) ).second,
       protocol::tx_duplicate_sig,
-      "Duplicate Signature detected" );
+      "Duplicate signature detected" );
   }
 
   verify_signatures_return result;

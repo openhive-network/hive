@@ -106,7 +106,7 @@ flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id
     HIVE_ASSERT(
       result.insert( fc::ecc::public_key( sig, d ) ).second,
       tx_duplicate_sig,
-      "Duplicate Signature detected" );
+      "Duplicate signature detected" );
   }
   return result;
 } FC_CAPTURE_AND_RETHROW() }
