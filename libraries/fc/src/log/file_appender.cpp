@@ -136,22 +136,22 @@ namespace fc {
          }
    };
 
-   file_appender::config::config(const fc::path& p) :
-     format( "${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
-     filename(p),
-     flush(true),
-     truncate(true),
-     rotate(false)
+   file_appender::config::config( const fc::path& p ) :
+      format( "${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
+      filename( p ),
+      flush( true ),
+      truncate( true ),
+      rotate( false )
    {}
 
    file_appender::file_appender( const variant& args ) :
-     my( new impl( args.as<config>() ) )
+      my( new impl( args.as<config>() ) )
    {
       try
       {
-        const fc::path parent_path = my->cfg.filename.parent_path();
-        if (parent_path != fc::path() && !fc::exists(parent_path))
-          fc::create_directories(parent_path);
+         const fc::path parent_path = my->cfg.filename.parent_path();
+         if (parent_path != fc::path() && !fc::exists(parent_path))
+            fc::create_directories(parent_path);
 
          if(!my->cfg.rotate) 
          {
@@ -164,11 +164,11 @@ namespace fc {
       }
       catch(const fc::exception &e)
       {
-        std::cerr << "error opening log file: " << e.to_detail_string() << "\n";
+         std::cerr << "error opening log file: " << e.to_detail_string() << "\n";
       }
       catch(const std::exception &e)
       {
-        std::cerr << "error opening log file: " << e.what() << "\n";
+         std::cerr << "error opening log file: " << e.what() << "\n";
       }
       catch( ... )
       {
