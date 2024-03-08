@@ -144,7 +144,7 @@ void full_transaction_type::compute_signature_keys() const
         for (const hive::protocol::signature_type& signature : get_transaction().signatures)
           HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest)).second,
                       hive::protocol::tx_duplicate_sig,
-                      "Duplicate Signature detected");
+                      "Duplicate signature detected");
       }
       FC_RETHROW_EXCEPTIONS(error, "")
     }
@@ -303,7 +303,8 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return transaction_id;
 }
 
-void full_transaction_type::sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id, hive::protocol::pack_type serialization_type)
+void full_transaction_type::sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
+  hive::protocol::pack_type serialization_type, bool cache)
 {
   FC_ASSERT(std::holds_alternative<standalone_transaction_info>(storage), "Only standalone transactions can be signed");
 
@@ -313,17 +314,29 @@ void full_transaction_type::sign_transaction(const std::vector<hive::protocol::p
   /// Update serialization buffer to reflect requested serialization_type
   serialized_transaction = fill_serialization_buffer(tx, serialization_type, &standalone_transaction.serialization_buffer);
 
-  auto sig_digest = compute_sig_digest(chain_id);
+  signature_info_type new_signature_info;
+  new_signature_info.sig_digest = compute_sig_digest( chain_id );
 
   for(const auto& key : keys)
   {
-    auto signature = key.sign_compact(sig_digest);
+    auto signature = key.sign_compact(new_signature_info.sig_digest);
 
     tx.signatures.emplace_back(signature);
+
+    if( cache )
+    {
+      HIVE_ASSERT( new_signature_info.signature_keys.insert( key.get_public_key() ).second,
+        hive::protocol::tx_duplicate_sig, "Duplicate signature detected" );
+    }
   }
 
   /// Now serialized buffer must be updated, since new signatures has been added.
   serialized_transaction = fill_serialization_buffer(tx, serialization_type, &standalone_transaction.serialization_buffer);
+  if( cache )
+  {
+    signature_info = std::move( new_signature_info );
+    has_signature_info.store( true, std::memory_order_release );
+  }
 }
 
 /* static */ full_transaction_ptr full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
