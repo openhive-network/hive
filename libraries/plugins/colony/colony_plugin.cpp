@@ -12,7 +12,7 @@
 #include <fc/thread/thread.hpp>
 
 #define COLONY_COMMENT_BUFFER 5000 // number of recent comments kept as targets for replies/votes
-#define COLONY_MAX_CONCURRENT_TRANSACTIONS 500 // number of transactions per thread that can be sent with no wait
+#define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // number of transactions per thread that can be sent with no wait
 #define COLONY_DEFAULT_THREADS 4 // number of working threads used by default (threads have separate pools of users)
 #define COLONY_DEFAULT_MAX_TRANSACTIONS 1000 // number of max transactions per block used by default when there is
   // no other source of default nor explicit value - the value is split between threads
@@ -286,7 +286,13 @@ void transaction_builder::push_transaction( kind_of_operation kind, post_action 
 
 void transaction_builder::build_transaction()
 {
-  if( _tx_needs_update.load( std::memory_order_relaxed ) )
+  if( _common.theApp.is_interrupt_request() )
+  {
+    ilog( "Thread ${t} stopped building new transactions (${p} pending).",
+      ( "t", _worker.name() )( "p", _concurrent_tx_count ) );
+    _worker.quit();
+  }
+  else if( _tx_needs_update.load( std::memory_order_relaxed ) )
   {
     // block was produced since last transaction (or we just started)
     _common._db.with_read_lock( [&]()
@@ -306,13 +312,15 @@ void transaction_builder::build_transaction()
         else // use adjusted rate
           effective_total = std::max( 0l, (int64_t)_common._dynamic_tx_per_block - _common._overflowing_tx );
         _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
+        dlog( "Scheduling production of ${x} transactions in ${t}, previous overflow was ${o}",
+          ( "x", _tx_to_produce )( "t", _worker.name() )( "o", _common._overflowing_tx ) );
       }
-      dlog( "Scheduling production of ${x} transactions in ${t}", ( "x", _tx_to_produce )( "t", _worker.name() ) );
       _tx_needs_update.store( false, std::memory_order_relaxed );
     } );
   }
   else if( _tx_to_produce == 0 )
   {
+    dlog( "Thread ${t} has nothing to do. Waiting...", ( "t", _worker.name() ) );
     _worker.schedule( [this]() { build_transaction(); }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
     return;
   }
@@ -376,8 +384,7 @@ void transaction_builder::build_transaction()
   }
   while( false );
 
-  if( !_common.theApp.is_interrupt_request() )
-    _worker.async( [this]() { build_transaction(); } );
+  _worker.async( [this]() { build_transaction(); } );
 }
 
 void transaction_builder::fill_string( std::string& str, size_t size )
