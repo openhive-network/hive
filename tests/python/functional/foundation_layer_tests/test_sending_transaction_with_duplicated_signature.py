@@ -14,4 +14,4 @@ def test_sending_transaction_with_duplicated_signature(node: tt.InitNode | tt.Re
 
     response = error.value.error
     assert "duplicate signature included:" in response
-    assert "Duplicate Signature detected" in response
+    assert "Duplicate signature detected" in response
