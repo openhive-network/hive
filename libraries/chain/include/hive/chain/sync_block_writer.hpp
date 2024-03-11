@@ -9,17 +9,17 @@
 
 namespace hive { namespace chain {
 
-  class block_log;
+  class block_log_writer_common;
   class fork_database;
   using appbase::application;
 
   class sync_block_writer : public block_write_chain_i
   {
   public:
-    sync_block_writer( block_log& bl, fork_database& fdb, database& db, application& app );
+    sync_block_writer( block_log_writer_common& blw, fork_database& fdb, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
-    virtual block_read_i& get_block_reader() override;
+    virtual const block_read_i& get_block_reader() override;
 
     virtual void store_block( uint32_t current_irreversible_block_num,
                               uint32_t state_head_block_number ) override;
@@ -76,12 +76,12 @@ namespace hive { namespace chain {
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
   private:
-    block_log&            _block_log;
-    fork_database&        _fork_db;
-    fork_db_block_reader  _reader;
-    bool                  _is_at_live_sync = false;
-    database&             _db; /// Needed only for notification purposes.
-    application&          _app; /// Needed only for notification purposes.
+    block_log_writer_common&  _log_writer;
+    fork_database&            _fork_db;
+    fork_db_block_reader      _reader;
+    bool                      _is_at_live_sync = false;
+    database&                 _db; /// Needed only for notification purposes.
+    application&              _app; /// Needed only for notification purposes.
   };
 
 } }

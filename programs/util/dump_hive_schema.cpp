@@ -20,7 +20,6 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
-#include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 using hive::schema::abstract_schema;

@@ -1,15 +1,15 @@
 #pragma once
 
-#include <hive/chain/block_log_reader.hpp>
+#include <hive/chain/block_log_reader_common.hpp>
 
 namespace hive { namespace chain {
 
   class fork_database;
 
-  class fork_db_block_reader : public block_log_reader
+  class fork_db_block_reader : public block_read_i
   {
   public:
-    fork_db_block_reader( fork_database& fork_db, block_log& block_log );
+    fork_db_block_reader( fork_database& fork_db, const block_log_reader_common& log_reader );
     virtual ~fork_db_block_reader() = default;
 
     virtual std::shared_ptr<full_block_type> head_block() const override;
@@ -18,6 +18,11 @@ namespace hive { namespace chain {
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual block_id_type head_block_id( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
+
+    virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
+
+    virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
+                                 block_processor_t processor, blockchain_worker_thread_pool& thread_pool ) const override;
 
     virtual std::shared_ptr<full_block_type> fetch_block_by_id( 
       const block_id_type& id ) const override;
@@ -55,7 +60,8 @@ namespace hive { namespace chain {
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
   private:
-    fork_database& _fork_db;
+    fork_database&                  _fork_db;
+    const block_log_reader_common&  _log_reader;
   };
 
 } }
