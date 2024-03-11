@@ -6,8 +6,7 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
-#include <hive/chain/irreversible_block_writer.hpp>
-#include <hive/chain/sync_block_writer.hpp>
+#include <hive/chain/hive_objects.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -148,7 +147,7 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing( std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+    bool start_replay_processing( std::shared_ptr< block_write_i > reindex_block_writer,
                                   hive::chain::blockchain_worker_thread_pool& thread_pool );
 
     void initial_settings();
@@ -684,7 +683,7 @@ void chain_plugin_impl::stop_write_processing()
 }
 
 bool chain_plugin_impl::start_replay_processing( 
-  std::shared_ptr< irreversible_block_writer > reindex_block_writer,
+  std::shared_ptr< block_write_i > reindex_block_writer,
   hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   db.set_block_writer( reindex_block_writer.get() );
@@ -1668,7 +1667,7 @@ void chain_plugin::plugin_startup()
 
   if( my->replay )
   {
-    std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+    std::shared_ptr< block_write_i > reindex_block_writer =
       my->block_storage_mgr.get_reindex_block_writer();
     ilog("Replaying...");
     if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
@@ -1684,7 +1683,7 @@ void chain_plugin::plugin_startup()
     {
       if( my->db.get_snapshot_loaded() )
       {
-        std::shared_ptr< irreversible_block_writer > reindex_block_writer =
+        std::shared_ptr< block_write_i > reindex_block_writer =
           my->block_storage_mgr.get_reindex_block_writer();
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
