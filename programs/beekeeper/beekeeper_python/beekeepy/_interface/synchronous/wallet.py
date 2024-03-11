@@ -13,6 +13,7 @@ from beekeepy._interface.abc.synchronous.wallet import (
 if TYPE_CHECKING:
     import helpy
     from schemas.fields.basic import PublicKey
+    from schemas.fields.hex import Signature
 
 
 class Wallet(WalletInterface):
@@ -73,3 +74,6 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     def lock(self) -> None:
         self.__beekeeper.api.beekeeper.lock(wallet_name=self.name)
+
+    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
+        return self.__beekeeper.api.beekeeper.sign_digest(sig_digest=sig_digest, public_key=key).signature

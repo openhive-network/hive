@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from schemas.fields.basic import PublicKey
+    from schemas.fields.hex import Signature
 
 class Wallet(ABC):
     @property
@@ -41,6 +42,10 @@ class UnlockedWallet(Wallet, ABC):
 
     @abstractmethod
     def lock(self) -> None:
+        ...
+
+    @abstractmethod
+    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         ...
 
     def __enter__(self) -> Self:
