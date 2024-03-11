@@ -5,7 +5,7 @@
 #include <hive/chain/full_transaction.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
-#include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/crypto_memo.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
@@ -680,7 +680,7 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
         transfer.amount = asset( transfer_count % 999 + 1, HBD_SYMBOL );
         ++transfer_count;
         if( add_memo )
-          transfer.memo = hive::protocol::encrypt_memo( init_account_priv_key, init_account_pub_key, "#memo" );
+          transfer.memo = hive::protocol::crypto_memo().encrypt( init_account_priv_key, init_account_pub_key, "#memo" );
         schedule_transaction( transfer );
       };
       auto generate_custom = [&]( const account_name_type& account, size_t count )
