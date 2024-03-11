@@ -159,6 +159,12 @@ namespace detail {
     using generate_block_flow_control::generate_block_flow_control;
     virtual ~queen_generate_block_flow_control() = default;
 
+    virtual void on_worker_done( appbase::application& app ) const override
+    {
+      stats.recalculate_times( get_block_timestamp() );
+      generate_block_flow_control::on_worker_done( app );
+    }
+
   private:
     virtual const char* buffer_type() const override { return "queen"; }
   };
