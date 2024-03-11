@@ -34,7 +34,7 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
-#include <queue>
+#include <deque>
 #include <algorithm>
 
 namespace hive { namespace plugins { namespace chain {
@@ -211,7 +211,7 @@ class chain_plugin_impl
     // `writequeue` and `running` are guarded by the queue_mutex
     std::mutex                       queue_mutex;
     std::condition_variable          queue_condition_variable;
-    std::queue<write_context*>       write_queue;
+    std::deque<write_context*>       write_queue;
     bool                             running = true;
 
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
@@ -517,7 +517,7 @@ void chain_plugin_impl::start_write_processing()
             continue;
           // otherwise, we woke because the write_queue is non-empty
           cxt = write_queue.front();
-          write_queue.pop();
+          write_queue.pop_front();
         }
 
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
@@ -591,7 +591,7 @@ void chain_plugin_impl::start_write_processing()
                 break;
               }
               cxt = write_queue.front();
-              write_queue.pop();
+              write_queue.pop_front();
             }
 
             last_popped_item_time = fc::time_point::now();
@@ -1774,7 +1774,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   block_ctrl->attach_promise( accept_block_promise );
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->write_queue.push(&cxt);
+    my->write_queue.push_back(&cxt);
   }
   my->queue_condition_variable.notify_one();
   accept_block_future.wait();
@@ -1804,7 +1804,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     tx_ctrl.attach_promise( accept_transaction_promise );
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
+      my->write_queue.push_back(&cxt);
     }
     my->queue_condition_variable.notify_one();
     accept_transaction_future.get();
@@ -1817,7 +1817,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     tx_ctrl.attach_promise( accept_transaction_promise );
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
+      my->write_queue.push_back(&cxt);
     }
     my->queue_condition_variable.notify_one();
     accept_transaction_future.wait();
@@ -1881,7 +1881,7 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->write_queue.push(&cxt);
+    my->write_queue.push_front(&cxt);
   }
   my->queue_condition_variable.notify_one();
 
