@@ -13,6 +13,7 @@ from beekeepy._interface.abc.asynchronous.wallet import (
 if TYPE_CHECKING:
     import helpy
     from schemas.fields.basic import PublicKey
+    from schemas.fields.hex import Signature
 
 
 class Wallet(WalletInterface):
@@ -23,7 +24,7 @@ class Wallet(WalletInterface):
 
     @property
     async def public_keys(self) -> list[PublicKey]:
-        return (await self.__beekeeper.api.beekeeper.get_public_keys()).keys
+        return [key.public_key for key in (await self.__beekeeper.api.beekeeper.get_public_keys()).keys]
 
     @property
     async def unlocked(self) -> UnlockedWallet | None:
@@ -73,3 +74,6 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     async def lock(self) -> None:
         await self.__beekeeper.api.beekeeper.lock(wallet_name=self.__name)
+
+    async def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
+        return (await self.__beekeeper.api.beekeeper.sign_digest(sig_digest=sig_digest, public_key=key)).signature
