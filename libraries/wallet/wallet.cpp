@@ -2178,6 +2178,7 @@ wallet_signed_transaction wallet_api::escrow_approve(
   op.agent = agent;
   op.who = who;
   op.escrow_id = escrow_id;
+  op.approve = approve;
 
   signed_transaction tx;
   tx.operations.push_back( op );
