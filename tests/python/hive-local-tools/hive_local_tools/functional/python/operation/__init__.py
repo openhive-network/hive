@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,6 +17,7 @@ from schemas.fields.compound import Manabar
 from schemas.filter import (
     build_vop_filter,
 )
+from schemas.operations import CustomJsonOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation,
@@ -333,7 +335,14 @@ def create_transaction_with_any_operation(
 ) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
     transaction = get_transaction_model()
-    transaction.operations = [(op.get_name(), op) for op in operations]
+
+    ops = []
+    for op in operations:
+        if isinstance(op, CustomJsonOperation):
+            op.json_ = json.dumps(op.json_)
+        ops.append((op.get_name(), op))
+    transaction.operations = ops
+
     return wallet.api.sign_transaction(transaction, only_result=only_result)
 
 
