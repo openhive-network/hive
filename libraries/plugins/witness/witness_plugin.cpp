@@ -66,6 +66,7 @@ namespace detail {
       {}
 
     void on_post_apply_block( const chain::block_notification& note );
+    void on_fail_apply_block( const chain::block_notification& note );
     void on_post_apply_transaction( const chain::transaction_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
@@ -88,6 +89,7 @@ namespace detail {
     chain::database&              _db;
     const chain::block_read_i&    _block_reader;
     boost::signals2::connection   _post_apply_block_conn;
+    boost::signals2::connection   _fail_apply_block_conn;
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;
@@ -319,6 +321,14 @@ namespace detail {
   {
     //note that we can't use clear on mutable version of this index because it bypasses undo sessions
     const auto& idx = _db.get_index<witness_custom_op_index>().indices().get<by_id>();
+    // this clearing of custom op index is actually never needed;
+    // it is because index only accumulates data when new transactions are put to pending
+    // (which is cleared through undo at the start of production of new block or when block
+    // is pushed from p2p) and also when new block is being produced (which is cleared right
+    // after the block is formed); it is not accumulated from operations within applied block
+    // nor when pending transactions are reapplied
+    //TODO: remove all this unnecessary code
+    //FC_ASSERT( idx.empty() );
     while (true)
     {
       auto it = idx.begin();
@@ -326,6 +336,12 @@ namespace detail {
         break;
       _db.remove(*it);
     }
+  }
+
+  void witness_plugin_impl::on_fail_apply_block( const chain::block_notification& note )
+  {
+    // this signal is only active in queen mode
+    _queen_mode->on_new_block( _db );
   }
 
   void witness_plugin_impl::on_finish_push_block( const block_notification& note )
@@ -769,6 +785,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
   if( my->_queen_mode )
   {
+    my->_fail_apply_block_conn = my->_db.add_fail_apply_block_handler(
+      [&]( const chain::block_notification& note ) { my->on_fail_apply_block( note ); }, *this, 0 );
     my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler(
       [&]( const chain::transaction_notification& note ) { my->on_post_apply_transaction( note ); }, *this, 0 );
   }
@@ -834,6 +852,7 @@ void witness_plugin::plugin_shutdown()
     }
 
     chain::util::disconnect_signal( my->_post_apply_block_conn );
+    chain::util::disconnect_signal( my->_fail_apply_block_conn );
     chain::util::disconnect_signal( my->_post_apply_transaction_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
     chain::util::disconnect_signal( my->_finish_push_block_conn );
