@@ -32,6 +32,17 @@ block_log& single_file_block_log_writer::get_log_for_new_block()
   return _block_log;
 }
 
+void single_file_block_log_writer::open_and_init( const block_log_open_args& bl_open_args,
+  blockchain_worker_thread_pool& thread_pool )
+{
+  _block_log.open_and_init( bl_open_args.data_dir / "block_log",
+                            false /*read_only*/,
+                            bl_open_args.enable_block_log_compression,
+                            bl_open_args.block_log_compression_level,
+                            bl_open_args.enable_block_log_auto_fixing,
+                            thread_pool );
+}
+
 void single_file_block_log_writer::process_blocks(uint32_t starting_block_number,
   uint32_t ending_block_number, block_processor_t processor,
   hive::chain::blockchain_worker_thread_pool& thread_pool) const

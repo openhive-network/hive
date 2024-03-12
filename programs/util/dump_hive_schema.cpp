@@ -86,14 +86,17 @@ int main( int argc, char** argv, char** envp )
   db.set_block_writer( bsm.init_storage( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
 
   hive::chain::open_args db_args;
+  hive::chain::block_storage_manager_t::block_log_open_args bl_args;
 
   db_args.data_dir = "tempdata";
   db_args.shared_mem_dir = "tempdata/blockchain";
   db_args.shared_file_size = 1024*1024*8;
 
+  bl_args.data_dir = db_args.data_dir;
+
   std::map< std::string, schema_info > schema_map;
 
-  bsm.open_storage( db_args, thread_pool );
+  bsm.open_storage( bl_args, thread_pool );
   db.open( db_args );
 
   hive_schema ss;

@@ -171,6 +171,8 @@ class chain_plugin_impl
 
     void finish_request();
 
+    using block_log_open_args=block_storage_manager_t::block_log_open_args;
+
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
     uint16_t                         shared_file_scale_rate = 0;
@@ -231,6 +233,7 @@ class chain_plugin_impl
 
     hive::utilities::benchmark_dumper   dumper;
     hive::chain::open_args              db_open_args;
+    block_log_open_args                 bl_open_args;
     get_indexes_memory_details_type     get_indexes_memory_details;
     boost::signals2::connection         dumper_post_apply_block;
 
@@ -777,10 +780,12 @@ void chain_plugin_impl::initial_settings()
   db_open_args.database_cfg = database_config;
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
-  db_open_args.enable_block_log_compression = enable_block_log_compression;
-  db_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
-  db_open_args.block_log_compression_level = block_log_compression_level;
   db_open_args.load_snapshot = load_snapshot;
+
+  bl_open_args.data_dir = db_open_args.data_dir;
+  bl_open_args.enable_block_log_compression = enable_block_log_compression;
+  bl_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
+  bl_open_args.block_log_compression_level = block_log_compression_level;
 }
 
 bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
@@ -819,7 +824,7 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    block_storage_mgr.open_storage( db_open_args, thread_pool );
+    block_storage_mgr.open_storage( bl_open_args, thread_pool );
     db.open( db_open_args );
 
     if( dump_memory_details )

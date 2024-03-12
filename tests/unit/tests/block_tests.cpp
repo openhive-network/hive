@@ -106,13 +106,15 @@ void open_test_database( database& db, block_storage_manager_t& bsm,
 {
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
   hive::chain::open_args args;
+  hive::chain::block_storage_manager_t::block_log_open_args bl_args;
   args.data_dir = dir;
   args.shared_mem_dir = dir;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
-  bsm.open_storage( args, thread_pool );
+  bl_args.data_dir = dir;
+  bsm.open_storage( bl_args, thread_pool );
   db.open( args );
 }
 

@@ -527,11 +527,11 @@ namespace hive { namespace chain {
     return my->head;
   }
 
-  void block_log::open_and_init( const fc::path& file, bool enable_compression,
+  void block_log::open_and_init( const fc::path& file, bool read_only, bool enable_compression,
     int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool )
   {
     my->auto_fixing_enabled = enable_block_log_auto_fixing;
-    open( file, thread_pool );
+    open( file, thread_pool, read_only );
     my->compression_enabled = enable_compression;
     my->zstd_level = compression_level;
   }
