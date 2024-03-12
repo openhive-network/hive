@@ -99,7 +99,6 @@ namespace detail {
 
     struct queen_mode_data
     {
-      uint32_t postponed_tx_count = 0;
       uint32_t desired_block_size = 0;
       uint32_t remaining_block_size = 0;
       fc::time_point_sec next_block_time = HIVE_GENESIS_TIME;
@@ -108,7 +107,7 @@ namespace detail {
 
       bool can_produce_full_block() const
       {
-        return postponed_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT;
+        return remaining_block_size == 0;
       }
 
       void on_new_transaction( const size_t tx_size )
@@ -116,7 +115,7 @@ namespace detail {
         if( remaining_block_size >= tx_size )
           remaining_block_size -= (uint32_t)tx_size;
         else
-          postponed_tx_count += 1;
+          remaining_block_size = 0;
       }
 
       void on_new_block( const chain::database& _db )
@@ -127,7 +126,6 @@ namespace detail {
           remaining_block_size = std::min( desired_block_size, max_block_size );
         else
           remaining_block_size = max_block_size;
-        postponed_tx_count = 0;
         next_block_time = _db.get_slot_time( 1 );
       }
     };
