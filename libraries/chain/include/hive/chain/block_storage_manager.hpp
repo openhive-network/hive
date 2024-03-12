@@ -23,6 +23,8 @@ using appbase::application;
 class block_storage_manager_t final
 {
 public:
+  using block_log_open_args=block_log_writer_common::block_log_open_args;
+
   block_storage_manager_t( database& db, appbase::application& app );
 
   block_write_chain_i* get_block_writer();
@@ -33,8 +35,8 @@ public:
   void on_reindex_start();
   void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
 
-  void open_storage( const hive::chain::open_args& db_open_args,
-             hive::chain::blockchain_worker_thread_pool& thread_pool );
+  void open_storage( const block_log_open_args& open_args,
+    hive::chain::blockchain_worker_thread_pool& thread_pool );
 
   void close_storage();
 
