@@ -100,8 +100,11 @@ namespace detail {
     struct queen_mode_data
     {
       uint32_t postponed_tx_count = 0;
+      uint32_t desired_block_size = 0;
       uint32_t remaining_block_size = 0;
       fc::time_point_sec next_block_time = HIVE_GENESIS_TIME;
+
+      queen_mode_data( uint32_t block_size ) : desired_block_size( block_size ) {}
 
       bool can_produce_full_block() const
       {
@@ -119,12 +122,12 @@ namespace detail {
       void on_new_block( const chain::database& _db )
       {
         const auto& dgpo = _db.get_dynamic_global_properties();
-        uint32_t max_block_size = dgpo.maximum_block_size;
-
-        ilog( "QUEEN MODE block generated with ${s} bytes remaining and ${p} count; new will be ${n}",
-          ( "s", remaining_block_size )( "p", postponed_tx_count )( "n", max_block_size - 256 ) );
+        uint32_t max_block_size = dgpo.maximum_block_size - 256; // 256 taken from trx_size_limit check in database.cpp
+        if( desired_block_size )
+          remaining_block_size = std::min( desired_block_size, max_block_size );
+        else
+          remaining_block_size = max_block_size;
         postponed_tx_count = 0;
-        remaining_block_size = max_block_size - 256; // 256 taken from trx_size_limit check in database.cpp
         next_block_time = _db.get_slot_time( 1 );
       }
     };
@@ -711,7 +714,7 @@ void witness_plugin::set_program_options(
       ( "name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
     ( "private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
 #ifdef IS_TEST_NET
-    ( "queen-mode", bpo::value<bool>()->default_value( false ), "Enable special mode of block production for filling up blocks to max." )
+    ( "queen-mode", bpo::value<uint32_t>(), "Enable special mode of block production for filling up blocks to given value (or max allowed by witnesses). Value 0 means max blocks" )
 #endif
     ;
   cli.add_options()
@@ -751,8 +754,17 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
     wlog( "warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION) );
 
 #ifdef IS_TEST_NET
-  if( options.at( "queen-mode" ).as< bool >() )
-    my->_queen_mode = std::make_unique< detail::witness_plugin_impl::queen_mode_data >();
+  if( options.count( "queen-mode" ) )
+  {
+    uint32_t max_size = options.at( "queen-mode" ).as<uint32_t>();
+    FC_ASSERT( max_size <= HIVE_MAX_BLOCK_SIZE - 256, "Queen mode block size cannot exceed ${s}",
+      ( "s", HIVE_MAX_BLOCK_SIZE - 256 ) ); // 256 taken from trx_size_limit check in database.cpp
+    if( max_size == 0 )
+      ilog( "QUEEN MODE enabled targeting full blocks (max allowed by witnesses)" );
+    else
+      ilog( "QUEEN MODE enabled targeting blocks of size ${max_size}", (max_size) );
+    my->_queen_mode = std::make_unique< detail::witness_plugin_impl::queen_mode_data >( max_size );
+  }
 #endif
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
