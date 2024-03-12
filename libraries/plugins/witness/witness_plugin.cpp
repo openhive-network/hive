@@ -555,14 +555,14 @@ namespace detail {
       }
       catch( const fc::exception& e )
       {
-        elog( "Got exception while generating block:\n${e}", ( "e", e.to_detail_string() ) );
+        elog( "Got exception while generating block in queen mode:\n${e}", ( "e", e.to_detail_string() ) );
         result = block_production_condition::exception_producing_block;
       }
 
       switch( result )
       {
       case block_production_condition::produced:
-        ilog( "Generated block #${n} with timestamp ${t} at time ${c}", ( "n", capture[ "n" ] )( "t", capture[ "t" ] )( "c", capture[ "c" ] ) );
+        //ilog( "Generated block #${n} with timestamp ${t} at time ${c}", ( "n", capture[ "n" ] )( "t", capture[ "t" ] )( "c", capture[ "c" ] ) );
         try_to_produce_next = true;
         break;
       case block_production_condition::not_my_turn:
@@ -578,6 +578,7 @@ namespace detail {
         try_to_produce_next = true;
         break;
       case block_production_condition::exception_producing_block:
+        theApp.kill();
         break;
       case block_production_condition::not_time_yet:
       case block_production_condition::not_synced:
@@ -586,7 +587,7 @@ namespace detail {
       case block_production_condition::consecutive:
       case block_production_condition::wait_for_genesis:
         elog( "returned ${x} in queen mode", ( "x", (int)result ) );
-        theApp.generate_interrupt_request();
+        theApp.kill();
         break;
       }
     }
