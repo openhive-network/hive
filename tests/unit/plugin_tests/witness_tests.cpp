@@ -21,7 +21,10 @@ using namespace hive::plugins::witness;
 struct witness_fixture : public hived_fixture
 {
   witness_fixture() : hived_fixture( true, false ) {}
-  virtual ~witness_fixture() {}
+  virtual ~witness_fixture()
+  {
+    configuration_data = configuration(); // reset whole configuration to default values
+  }
 
   void initialize( const config_arg_override_t& extra_config_arg_overrides = config_arg_override_t(),
     const std::string& shared_file_size = "1G" )
@@ -511,7 +514,7 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
     postponed_init(
       {
         config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
-        config_line_t( { "queen-mode", { "1" } } ),
+        config_line_t( { "queen-mode", { "1000000" } } ),
         config_line_t( { "shared-file-size", { "8G" } } ),
         config_line_t( { "witness", {
           "\"initminer\"", "\"initminer1\"", "\"initminer2\"", "\"initminer3\"", "\"initminer4\"",
@@ -715,7 +718,7 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
               tx.set_reference_block( db->head_block_id() );
             } );
             ilog( "Generating... ${i}", (i) );
-            // switch to 1M blocks after 40k transactions
+            // switch to 1.5M blocks after 40k transactions - since queen is set to produce 1M blocks, the blocks won't be full
             if( i == 40000 )
             {
               witness_set_properties_operation witness_props;
@@ -786,10 +789,8 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
             continue;
           }
         }
-        ilog( "Finished generating transactions - wait 10s to allow witness to clear queue" );
-        sleep( 10 );
-        theApp.generate_interrupt_request();
-        sleep( 1 );
+        ilog( "Finished generating transactions - wait 3s to allow writer to clear queue" );
+        sleep( 3 );
         ilog( "Generate one more block that might be not entirely filled" );
         generate_block();
       }
