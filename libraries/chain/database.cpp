@@ -4316,6 +4316,9 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   if( _current_tx_status == TX_STATUS_NONE )
   {
     wlog( "Missing tx processing indicator" );
+#ifdef IS_TEST_NET
+    FC_ASSERT( false, "Missing tx processing indicator" );
+#endif
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
