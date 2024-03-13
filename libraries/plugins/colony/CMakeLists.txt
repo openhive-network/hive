@@ -5,7 +5,7 @@ add_library( colony_plugin
              ${HEADERS}
            )
 
-target_link_libraries( colony_plugin chain_plugin )
+target_link_libraries( colony_plugin p2p_plugin chain_plugin )
 target_include_directories( colony_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
