@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/colony/colony_plugin.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -136,6 +137,7 @@ class colony_plugin_impl
     void post_apply_block( const block_notification& note );
 
     chain::chain_plugin&          _chain;
+    plugins::p2p::p2p_plugin*     _p2p_ptr = nullptr;
     chain::database&              _db;
     colony_plugin&                _self;
     appbase::application&         theApp;
@@ -213,6 +215,8 @@ bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
   {
     ++_concurrent_tx_count;
     _common._chain.accept_transaction( full_tx, chain::chain_plugin::lock_type::fc );
+    if( _common._p2p_ptr )
+      _common._p2p_ptr->broadcast_transaction( full_tx );
     --_concurrent_tx_count;
     result = true;
   }
@@ -771,6 +775,14 @@ void colony_plugin::plugin_startup()
     { my->post_apply_transaction( note ); }, *this, 0 );
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler( [&]( const block_notification& note )
     { my->post_apply_block( note ); }, *this, 0 );
+
+  auto* _p2p_plugin = get_app().find_plugin< hive::plugins::p2p::p2p_plugin >();
+  if( _p2p_plugin == nullptr )
+    wlog( "P2P plugin not present - transactions produced by colony won't be broadcast" );
+  else if( my->_chain.is_p2p_enabled() == false )
+    wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
+  else
+    my->_p2p_ptr = _p2p_plugin;
 
   for( auto& thread : my->_threads )
     thread.init();
