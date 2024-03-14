@@ -589,6 +589,9 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
     }
     post_comment( "account0", "test", "test", "I have a cat", "testing", init_account_priv_key );
     generate_block();
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), 203 );
+      // all the blocks before this point are made manually, so the number must not change unless the test is changed;
+      // in latter case remember to update check at the end as well
 
     fc::thread test_thread;
     fc::thread sender_thread;
@@ -795,7 +798,10 @@ BOOST_AUTO_TEST_CASE( queen_mode_test )
         generate_block();
       }
       CATCH( "TEST" )
-      
+
+      BOOST_REQUIRE_LT( db->head_block_num(), 465 );
+        // while there might be some variations in transaction sizes and also moment of transition between 128k and 2M blocks,
+        // we should fit within block 460, so 465 is with wide margin
       ilog( "Forcefully finish application" );
       theApp.kill( true );
     } );
