@@ -32,8 +32,9 @@ namespace beekeeper {
 
   void beekeeper_instance::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
   {
-    t->async_wait([t, this](const boost::system::error_code& /*ec*/)
+    t->async_wait([t, this](const boost::system::error_code& e)
     {
+        if (e) return;
         boost::system::error_code ec;
         auto rc = bfs::status( lock_path_file, ec );
         if( ec != boost::system::error_code() )
