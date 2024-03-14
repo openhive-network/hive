@@ -20,7 +20,7 @@ source = [
 version = "0.0.0"
 
 [tool.poetry.dependencies]
-helpy = "0.0.1.dev156+41ae90d"
+helpy = "0.0.1.dev160+fadd255"
 python = "^3.10"
 
 [tool.poetry.group.dev.dependencies]
