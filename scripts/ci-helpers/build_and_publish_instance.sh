@@ -102,12 +102,15 @@ docker login -u "$BLOG_REGISTRY_USER" --password-stdin "registry.hive.blog" <<< 
 echo "Building an instance image in the source directory $SRC_DIR"
 "$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
 
+echo "Tagging the image built in the previous step as ${CI_REGISTRY_IMAGE}"
+docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+
 HIVEIO_IMG="hiveio/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
 
 echo "Tagging the image built in the previous step as ${HIVEIO_IMG}"
 docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "${HIVEIO_IMG}"
 
-HIVEBLOG_IMG="registry.hive.blog/hive/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
+HIVEBLOG_IMG="registry.hive.blog/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
 
 echo "Tagging the image built in the previous step as ${HIVEBLOG_IMG}"
 docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "${HIVEBLOG_IMG}"
@@ -116,6 +119,6 @@ docker images
 
 echo "Pushing instance images"
 docker push "$CI_REGISTRY_IMAGE/instance:$CI_COMMIT_TAG"
-docker push "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG"
+docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
 docker push "${HIVEIO_IMG}"
 docker push "${HIVEBLOG_IMG}"
