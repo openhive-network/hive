@@ -23,13 +23,13 @@ namespace fc {
    ofstream::ofstream()
    :my( new impl() ){}
 
-   ofstream::ofstream( const fc::path& file, int m )
+   ofstream::ofstream( const fc::path& file, std::ios_base::openmode m )
    :my( new impl() ) { this->open( file, m ); }
    ofstream::~ofstream(){}
 
-   void ofstream::open( const fc::path& file, int m ) {
+   void ofstream::open( const fc::path& file, std::ios_base::openmode m ) {
      const boost::filesystem::path& bfp = file; 
-     my->ofs.open( bfp, std::ios::binary );
+     my->ofs.open( bfp, m );
    }
    size_t ofstream::writesome( const char* buf, size_t len ) {
         my->ofs.write(buf,len);
@@ -52,16 +52,16 @@ namespace fc {
 
    ifstream::ifstream()
    :my(new impl()){}
-   ifstream::ifstream( const fc::path& file, int m )
+   ifstream::ifstream( const fc::path& file, std::ios_base::openmode m )
    :my(new impl())
    {
       this->open( file, m );
    }
    ifstream::~ifstream(){}
 
-   void ifstream::open( const fc::path& file, int m ) {
+   void ifstream::open( const fc::path& file, std::ios_base::openmode m ) {
      const boost::filesystem::path& bfp = file; 
-      my->ifs.open( bfp, std::ios::binary);
+      my->ifs.open( bfp, m );
    }
    size_t ifstream::readsome( char* buf, size_t len ) {
       auto s = size_t(my->ifs.readsome( buf, len ));
@@ -84,12 +84,8 @@ namespace fc {
         FC_THROW_EXCEPTION( eof_exception , "");
       return *this;
    }
-   ifstream& ifstream::seekg( size_t p, seekdir d ) {
-      switch( d ) {
-        case beg: my->ifs.seekg( p, std::ios_base::beg ); return *this;
-        case cur: my->ifs.seekg( p, std::ios_base::cur ); return *this;
-        case end: my->ifs.seekg( p, std::ios_base::end ); return *this;
-      }
+   ifstream& ifstream::seekg( size_t p, std::ios_base::seekdir d ) {
+      my->ifs.seekg( p, d ); return *this;
       return *this;
    }
    void   ifstream::close() { return my->ifs.close(); }

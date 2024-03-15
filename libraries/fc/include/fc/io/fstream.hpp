@@ -7,12 +7,11 @@ namespace fc {
   class path;
   class ofstream : virtual public ostream {
     public:
-      enum mode { out, binary };
       ofstream();
-      ofstream( const fc::path& file, int m = binary );
+      ofstream( const fc::path& file, std::ios_base::openmode m = std::ios_base::out | std::ios_base::binary );
       ~ofstream();
 
-      void open( const fc::path& file, int m = binary );
+      void open( const fc::path& file, std::ios_base::openmode m = std::ios_base::out | std::ios_base::binary );
       size_t writesome( const char* buf, size_t len );
       size_t writesome(const std::shared_ptr<const char>& buffer, size_t len, size_t offset);
       void   put( char c );
@@ -26,18 +25,16 @@ namespace fc {
 
   class ifstream : virtual public istream {
     public:
-      enum mode { in, binary };
-      enum seekdir { beg, cur, end };
 
       ifstream();
-      ifstream( const fc::path& file, int m = binary);
+      ifstream( const fc::path& file, std::ios_base::openmode = std::ios_base::in | std::ios_base::binary );
       ~ifstream();
 
-      void      open( const fc::path& file, int m );
+      void      open( const fc::path& file, std::ios_base::openmode = std::ios_base::in | std::ios_base::binary );
       size_t    readsome( char* buf, size_t len );
       size_t    readsome(const std::shared_ptr<char>& buffer, size_t max, size_t offset);
       ifstream& read( char* buf, size_t len );
-      ifstream& seekg( size_t p, seekdir d = beg );
+      ifstream& seekg( size_t p, std::ios_base::seekdir d = std::ios_base::beg );
       using istream::get;
       void      get( char& c ) { read( &c, 1 ); }
       void      close();
