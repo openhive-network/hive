@@ -366,7 +366,7 @@ std::vector<char> aes_load( const fc::path& file, const fc::sha512& key )
 { try {
    FC_ASSERT( fc::exists( file ) );
 
-   fc::ifstream in( file, fc::ifstream::binary );
+   fc::ifstream in( file, std::ios_base::binary );
    fc::sha512 check;
    std::vector<char> cipher;
 
