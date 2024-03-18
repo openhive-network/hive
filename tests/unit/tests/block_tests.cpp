@@ -25,7 +25,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/block_storage_manager.hpp>
-#include <hive/chain/block_write_chain_interface.hpp>
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database_exceptions.hpp>
 
@@ -104,7 +103,6 @@ BOOST_AUTO_TEST_SUITE(block_tests)
 void open_test_database( database& db, block_storage_manager_t& bsm,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
-  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
   hive::chain::open_args args;
   hive::chain::block_storage_manager_t::block_log_open_args bl_args;
   args.data_dir = dir;
@@ -114,7 +112,7 @@ void open_test_database( database& db, block_storage_manager_t& bsm,
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
   bl_args.data_dir = dir;
-  bsm.open_storage( bl_args, thread_pool );
+  bsm.open_storage( bl_args );
   db.open( args );
 }
 
@@ -1353,10 +1351,10 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
   FC_LOG_AND_RETHROW()
 }
 
-#define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
+#define SET_UP_DATABASE( NAME, THREAD_POOL, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
   database NAME( APP ); \
   { \
-  block_storage_manager_t bsm_ ## NAME ( NAME, APP ); \
+  block_storage_manager_t bsm_ ## NAME ( THREAD_POOL, NAME, APP ); \
   NAME.set_block_writer( bsm_ ## NAME .init_storage( LEGACY_SINGLE_FILE_BLOCK_LOG ) ); \
   open_test_database( NAME, bsm_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
   }
@@ -1365,8 +1363,9 @@ BOOST_AUTO_TEST_CASE( safe_closing_database )
 {
   try {
     appbase::application app;
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, app, data_dir.path(), true )
+    SET_UP_DATABASE( db, thread_pool, app, data_dir.path(), true )
   }
   FC_LOG_AND_RETHROW()
 }

@@ -122,7 +122,7 @@ class chain_plugin_impl
     chain_plugin_impl( appbase::application& app ):
       thread_pool( app ),
       db( app ),
-      block_storage_mgr( db, app ),
+      block_storage_mgr( thread_pool, db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {}
@@ -824,7 +824,7 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    block_storage_mgr.open_storage( bl_open_args, thread_pool );
+    block_storage_mgr.open_storage( bl_open_args );
     db.open( db_open_args );
 
     if( dump_memory_details )

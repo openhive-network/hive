@@ -81,7 +81,7 @@ int main( int argc, char** argv, char** envp )
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 
   hive::chain::database db( app );
-  hive::chain::block_storage_manager_t bsm( db, app );
+  hive::chain::block_storage_manager_t bsm( thread_pool, db, app );
 
   db.set_block_writer( bsm.init_storage( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
 
@@ -96,7 +96,7 @@ int main( int argc, char** argv, char** envp )
 
   std::map< std::string, schema_info > schema_map;
 
-  bsm.open_storage( bl_args, thread_pool );
+  bsm.open_storage( bl_args );
   db.open( db_args );
 
   hive_schema ss;
