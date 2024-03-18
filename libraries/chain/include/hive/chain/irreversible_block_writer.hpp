@@ -4,7 +4,6 @@
 
 namespace hive { namespace chain {
 
-  class block_log;
   class block_log_writer_common;
 
   class irreversible_block_writer : public block_write_i

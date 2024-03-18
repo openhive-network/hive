@@ -6,7 +6,9 @@
 
 namespace hive { namespace chain {
 
-block_storage_manager_t::block_storage_manager_t( database& db, appbase::application& app ) :
+block_storage_manager_t::block_storage_manager_t( blockchain_worker_thread_pool& thread_pool,
+  database& db, appbase::application& app ) :
+  _thread_pool( thread_pool ),
   _app( app ),
   _db( db )
 {}
@@ -32,7 +34,7 @@ block_write_chain_i* block_storage_manager_t::init_storage( int block_log_split 
     case LEGACY_SINGLE_FILE_BLOCK_LOG:
       {
       _log_writer =
-        std::make_unique< single_file_block_log_writer >( _app );
+        std::make_unique< single_file_block_log_writer >( _app, _thread_pool );
       _current_block_writer = 
         std::make_unique< sync_block_writer >( *( _log_writer.get() ), _fork_db, _db, _app );
       }
@@ -59,15 +61,13 @@ std::shared_ptr< block_write_i > block_storage_manager_t::get_reindex_block_writ
   return std::make_shared< irreversible_block_writer >( *( _log_writer.get() ) );
 }
 
-void block_storage_manager_t::open_storage( 
-  const block_log_open_args& bl_open_args,
-  hive::chain::blockchain_worker_thread_pool& thread_pool )
+void block_storage_manager_t::open_storage( const block_log_open_args& bl_open_args )
 {
   FC_ASSERT( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG, "Not implemented block log split value" );
 
   _db.with_write_lock([&]()
   {
-    _log_writer->open_and_init( bl_open_args, thread_pool );
+    _log_writer->open_and_init( bl_open_args );
   });
 
   // Get fork db in sync with block log.
@@ -79,7 +79,7 @@ void block_storage_manager_t::open_storage(
 void block_storage_manager_t::close_storage()
 {
   _fork_db.reset();
-  _log_writer->close();
+  _log_writer->close_log();
 }
 
 void block_storage_manager_t::on_reindex_start()

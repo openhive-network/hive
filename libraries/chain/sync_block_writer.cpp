@@ -48,7 +48,7 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
     for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
       _log_writer.append( block_itr->get()->full_block, _is_at_live_sync );
 
-    _log_writer.flush();
+    _log_writer.flush_head_log();
   }
 
   // This deletes blocks from the fork db
