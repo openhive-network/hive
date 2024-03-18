@@ -274,7 +274,7 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
     std::vector<key_t> genesis_key_types = {key_t::OWNER, key_t::ACTIVE, key_t::POSTING, key_t::MEMO};
 
     // 'steem' account
-    auto STEEM_PUBLIC_KEY = public_key_type(HIVE_STEEM_PUBLIC_KEY_STR);
+    auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
     collected_keyauth_t steem_item {"steem", key_t::OWNER, 1, true, STEEM_PUBLIC_KEY, {}, 1};
     add_key_authorizations(collector, steem_item, genesis_key_types);
 

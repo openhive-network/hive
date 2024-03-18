@@ -8,6 +8,8 @@
 
 namespace hive { namespace protocol {
 
+#define HIVE_STEEM_PUBLIC_KEY_STR "STM65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G"
+
 enum curve_id
 {
   quadratic,
