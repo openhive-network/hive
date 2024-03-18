@@ -6,6 +6,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
+from hive_local_tools.functional.python.operation import Account
 
 
 @pytest.fixture()
@@ -18,10 +19,6 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
 
     # price stabilization prevents zero payout for comment votes.
     node.set_vest_price(tt.Asset.Vest(1800))
-
-    wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
-    wallet.create_account(PROXY_ACCOUNT)
-
     return node, wallet
 
 
@@ -41,6 +38,19 @@ def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wal
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
     wallet.create_account(PROXY_ACCOUNT)
-
     assert node.api.wallet_bridge.get_hardfork_version() == "1.27.0"
     return node, wallet
+
+
+@pytest.fixture()
+def voter(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> Account:
+    node, wallet = prepare_environment
+    wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
+    return Account(VOTER_ACCOUNT, node, wallet)
+
+
+@pytest.fixture()
+def proxy(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> Account:
+    node, wallet = prepare_environment
+    wallet.create_account(PROXY_ACCOUNT)
+    return Account(PROXY_ACCOUNT, node, wallet)
