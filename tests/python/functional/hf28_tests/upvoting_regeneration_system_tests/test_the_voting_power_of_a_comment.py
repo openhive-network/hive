@@ -48,8 +48,9 @@ def test_voting_power_of_a_comment_on_hf27(
 
 @pytest.mark.parametrize("hardfork_version", ["current"])
 @pytest.mark.parametrize("weight", [100, -100])
+@pytest.mark.parametrize("bonus_iteration", list(range(100)))
 def test_voting_power_of_a_comment_on_current_hardfork(
-    prepare_environment: tuple[tt.InitNode, tt.Wallet], hardfork_version: str, weight: int
+    prepare_environment: tuple[tt.InitNode, tt.Wallet], hardfork_version: str, weight: int, bonus_iteration: int
 ) -> None:
     """
     Behavior on hardfork 28+:
