@@ -8,27 +8,43 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
-from hive_local_tools.functional.python.operation import get_virtual_operations
-from schemas.operations.virtual import CurationRewardOperation, DeclinedVotingRightsOperation
+from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
+from schemas.operations.virtual import (
+    CurationRewardOperation,
+    DeclinedVotingRightsOperation,
+    EffectiveCommentVoteOperation,
+)
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
 
 
 @run_for("testnet")
-def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node)
+def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
+    node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
+    alice = Account("alice", node, wallet)
     post_comment(wallet, number_of_comments=2)
 
-    wallet.api.decline_voting_rights("alice", True)
+    transaction = wallet.api.decline_voting_rights("alice", True)
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(
+        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
+    )
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
+
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+
+    assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
 
-    assert "Voter has declined their voting rights." in exception.value.error
+    assert "Voter has declined their voting rights." in exception.value.error, "Error message other than expected"
 
 
 @run_for("testnet")
@@ -38,15 +54,33 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
+    alice = Account("alice", node, wallet)
     post_comment(wallet, number_of_comments=2)
+    old_voting_power_value = alice.vote_manabar.current_mana
+    transaction = wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(
+        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
+    )
+    assert len(get_virtual_operations(node, EffectiveCommentVoteOperation)) == 1
+    alice.update_account_info()
+    assert (
+        old_voting_power_value > alice.vote_manabar.current_mana
+    ), "Voting power wasn't decreased after broadcasting vote."
+    transaction = wallet.api.decline_voting_rights("alice", True)
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(
+        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
+    )
 
-    wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
 
-    wallet.api.decline_voting_rights("alice", True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     # The account voted for the comment before declining vote rights the rights. This is correct behavior.
-    assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
+    assert node.api.database.find_comments(comments=[["creator-0", "comment-of-creator-0"]]).comments[0].net_votes == 1
+
+    assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     node.wait_for_irreversible_block()
     node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
@@ -63,19 +97,35 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
-
+    alice = Account("alice", node, wallet)
     post_comment(wallet, number_of_comments=2)
 
     # decline voting rights -> vote for comment (before approving the decline of voting rights) -> wait remaining time
-    head_block_number = wallet.api.decline_voting_rights("alice", True)["block_num"]
-    node.wait_for_block_with_number(head_block_number + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
-    wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
-    node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+    transaction = wallet.api.decline_voting_rights("alice", True)
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(
+        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
+    )
+    alice.rc_manabar.update()
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
 
-    assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
+    node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
+    transaction = wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(
+        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
+    )
+    assert len(get_virtual_operations(node, EffectiveCommentVoteOperation)) == 1
+    old_voting_power_value = alice.vote_manabar.current_mana
+    alice.update_account_info()
+    assert old_voting_power_value > alice.vote_manabar.current_mana, "voting power wasn't decreasted after casting vote"
+
+    node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+    assert node.api.database.find_comments(comments=[["creator-0", "comment-of-creator-0"]]).comments[0].net_votes == 1
 
     node.wait_for_irreversible_block()
     node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
+    assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     assert len(get_virtual_operations(node, CurationRewardOperation)) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
