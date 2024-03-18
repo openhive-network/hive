@@ -65,7 +65,9 @@ def test_voting_power_of_a_comment_on_current_hardfork(
     maximum_vote_power = None
     for comment_num in range(NUMBER_OF_REPLIES_TO_POST):
         try:
-            wallet.api.vote("alice", "bob", f"comment-{comment_num}", weight)
+            vote = wallet.api.vote("alice", "bob", f"comment-{comment_num}", weight)
+            tt.logger.info(f"Vote-{comment_num} - entered the block: {vote} ")
+            get_vote_from_account_history_api(node, comment_num)
         except tt.exceptions.CommunicationError as error:
             message = str(error)
             assert "Account does not have enough mana" in message, "Not found expected error message."
@@ -99,6 +101,15 @@ def logging_comment_manabar(node: tt.InitNode, name: str) -> None:
         f"Voting mana: {voting_current_mana} ( {voting_current_mana / post_voting_power * 100}% ), "
         f"Downvote mana: {downvote_current_mana} ( {downvote_current_mana / downvote_max_mana * 100}% )."
     )
+
+
+def get_vote_from_account_history_api(node: tt.InitNode, comment_num):
+    vote = node.api.account_history.get_account_history(
+        account="alice", include_reversible=True, start=-1, limit=1000, operation_filter_low=1
+    )
+    assert vote.history[-1][1].op.value.permlink == f"comment-{comment_num}"
+    assert len(vote.history) == comment_num + 1
+    tt.logger.info(f"Comment-{comment_num} are located in account history.")
 
 
 def get_rshares(node: tt.InitNode, permlink: str) -> int:
