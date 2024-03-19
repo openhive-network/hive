@@ -103,6 +103,8 @@ fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_
     for( int i = 0; i < HIVE_RC_NUM_PAYER_RANKS; ++i )
     {
       const auto& payer_stats = stats.get_payer_stats(i);
+      if( payer_stats.count == 0 )
+        continue;
       fc::variant_object_builder payer;
       payer
         ( "rank", i )
