@@ -1,6 +1,7 @@
 #include <hive/chain/block_storage_manager.hpp>
 
 #include <hive/chain/single_file_block_log_writer.hpp>
+#include <hive/chain/split_file_block_log_writer.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
@@ -40,7 +41,12 @@ block_write_chain_i* block_storage_manager_t::init_storage( int block_log_split 
       }
       break;
     case MULTIPLE_FILES_FULL_BLOCK_LOG:
-       FC_THROW_EXCEPTION( fc::parse_error_exception, "Not implemented block log split value" );
+      {
+      _log_writer =
+        std::make_unique< split_file_block_log_writer >( _app, _thread_pool );
+      _current_block_writer = 
+        std::make_unique< sync_block_writer >( *( _log_writer.get() ), _fork_db, _db, _app );
+      }
       break;
     default: 
       {
@@ -57,14 +63,11 @@ block_write_chain_i* block_storage_manager_t::init_storage( int block_log_split 
 
 std::shared_ptr< block_write_i > block_storage_manager_t::get_reindex_block_writer()
 {
-  FC_ASSERT( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG, "Not implemented block log split value" );
   return std::make_shared< irreversible_block_writer >( *( _log_writer.get() ) );
 }
 
 void block_storage_manager_t::open_storage( const block_log_open_args& bl_open_args )
 {
-  FC_ASSERT( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG, "Not implemented block log split value" );
-
   _db.with_write_lock([&]()
   {
     _log_writer->open_and_init( bl_open_args );
