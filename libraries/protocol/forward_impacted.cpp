@@ -899,11 +899,17 @@ struct impacted_balance_collector
 
 struct metadata_collector
 {
+  private:
+
+    const bool is_hardfork_21        = false;
+
+  public:
+
   collected_metadata_collection_t collected_metadata;
 
   typedef void result_type;
 
-  public:
+  metadata_collector( const bool is_hardfork_21 = false ): is_hardfork_21( is_hardfork_21 ){}
 
   void collect_one(
     std::string _account_name,
@@ -929,7 +935,10 @@ struct metadata_collector
 
   result_type operator()( const account_update_operation& op )
   {
-    collect_one(op.account, op.json_metadata, "");
+    if( is_hardfork_21 )
+      collect_one(op.account, op.json_metadata, "");
+    else
+      collect_one(op.account, op.json_metadata, op.json_metadata);
   }
 
   result_type operator()( const create_claimed_account_operation& op )
@@ -975,11 +984,9 @@ stringset get_operations_used_in_get_balance_impacting_operations()
   return used_operations;
 }
 
-
-
-collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op)
+collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op, const bool is_hardfork_21)
 {
-  metadata_collector collector;
+  metadata_collector collector( is_hardfork_21 );
 
   op.visit(collector);
 
