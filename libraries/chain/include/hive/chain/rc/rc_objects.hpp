@@ -124,7 +124,7 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 };
 
 /**
-  * Collects statistics to generate daily report.
+  * Collects statistics to generate daily report (reports have different span in testnet).
   * Second instance keeps data from previous day and is used for API calls.
   */
 class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >

@@ -172,9 +172,9 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_stats )
 {
   get_rc_stats_return result;
 
-  // stats won't be enabled until RC starts working (plus they are not enabled in testnet)
+  // stats won't be enabled until RC starts working
   const auto* rc_stats = _db.find< rc_stats_object >( RC_ARCHIVE_STATS_ID );
-  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled." );
+  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled yet." );
   // FULL report would not be useful in itself - it'd have to be supplemented like in get_rc_operation_stats
   result.rc_stats = resource_credits::get_report( resource_credits::report_type::REGULAR, *rc_stats );
 
@@ -185,9 +185,9 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
 {
   get_rc_operation_stats_return result;
 
-  // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
+  // stats won't be enabled until RC plugin starts working
   const auto* rc_stats = _db.find< rc_stats_object >( RC_ARCHIVE_STATS_ID );
-  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled." );
+  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled yet." );
 
   //compare with from_string defined in FC_REFLECT_ENUM - we don't have enum here but situation is similar
   int op_id = 0;

@@ -6084,11 +6084,9 @@ void database::apply_hardfork( uint32_t hardfork )
 
         const auto& rc_pool = create< rc_pool_object >( rc_params, resource_count_type() );
         ilog( "Initial RC pools: ${o}", ( "o", rc_pool.get_pool() ) );
-#ifndef IS_TEST_NET
-        // testnet rarely has enough useful RC data to collect and report
+
         create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
         create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
-#endif
 
         const auto& idx = get_index< account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )
