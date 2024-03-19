@@ -505,7 +505,12 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_RC_BUCKET_TIME_LENGTH                     (60*60) //1 hour
 #define HIVE_RC_WINDOW_BUCKET_COUNT                    24
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_RC_STATS_REPORT_FREQUENCY                 (configuration_data.rc_stats_report_frequency)
+#else
 #define HIVE_RC_STATS_REPORT_FREQUENCY                 HIVE_BLOCKS_PER_DAY //one report per day
+#endif
 
 #define HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT 2020748973 // 2020.748973 VESTS == 1.000 HIVE when HF20 occurred on mainnet
 

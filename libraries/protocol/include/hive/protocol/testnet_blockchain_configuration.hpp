@@ -275,6 +275,12 @@ class configuration
     uint64_t         witness_custom_op_block_limit = 5;
 
     bool allow_not_enough_rc = false;
+    uint32_t rc_stats_report_frequency = // in blocks
+#ifdef IS_TEST_NET
+      400; // HIVE_BLOCKS_PER_HOUR/3 - three reports per hour for testnet
+#else
+      28800; // HIVE_BLOCKS_PER_DAY - one report per day for mirrornet (like in mainnet)
+#endif
 };
 
 extern configuration configuration_data;

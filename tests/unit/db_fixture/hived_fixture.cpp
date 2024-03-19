@@ -72,7 +72,10 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
       // Register every plugin existing in repository as hived does.
       hive::plugins::register_plugins( app );
 
-      config_arg_override_t default_overrides = {};
+      config_arg_override_t default_overrides = {
+        // turn off RC stats reports by default - specific tests/fixtures can turn it on later
+        { "rc-stats-report-type", { "NONE" } }
+      };
 
       if( not config_arg_overrides.empty() )
         std::copy_if( config_arg_overrides.begin(),

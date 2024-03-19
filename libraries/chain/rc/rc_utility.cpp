@@ -521,11 +521,7 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   if( ( block_num % HIVE_RC_STATS_REPORT_FREQUENCY ) != 0 )
     return;
 
-  const rc_stats_object* rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID );
-  if( rc_stats == nullptr )
-    return;
-
-  const auto& new_stats_obj = *rc_stats;
+  const auto& new_stats_obj = db.get< rc_stats_object >( RC_PENDING_STATS_ID );
   if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
   {
     fc::variant_object report = get_report( auto_report_type, new_stats_obj );
@@ -683,14 +679,11 @@ void resource_credits::finalize_transaction( const full_transaction_type& full_t
   {
     block_info.add( tx_info );
 
-    const auto* rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID );
-    if( rc_stats != nullptr )
+    const auto& rc_stats = db.get< rc_stats_object >( RC_PENDING_STATS_ID );
+    db.modify( rc_stats, [&]( rc_stats_object& stats_obj )
     {
-      db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
-      {
-        stats_obj.add_stats( tx_info );
-      } );
-    }
+      stats_obj.add_stats( tx_info );
+    } );
   }
 }
 
