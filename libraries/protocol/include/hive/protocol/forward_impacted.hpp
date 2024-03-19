@@ -24,8 +24,7 @@ struct collected_metadata_t
 };
 
 typedef std::vector<collected_metadata_t> collected_metadata_collection_t;
-collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op);
-
+collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op, const bool is_hardfork_21);
 
 typedef std::vector<std::pair<protocol::account_name_type, protocol::asset>> impacted_balance_data;
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hf01);
