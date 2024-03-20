@@ -639,6 +639,8 @@ void resource_credits::finalize_block() const
           new_pool = new_consensus_pool;
         }
       }
+      if( new_pool < 0 )
+        new_pool = 0;
 
       pool_obj.set_pool( i, new_pool );
     }
