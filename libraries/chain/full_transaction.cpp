@@ -503,7 +503,7 @@ full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction
     {
       my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
       // TODO: disable this warning before release, this is expected right at the transition between sync & live mode
-      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
+      dlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used",
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 
     }
