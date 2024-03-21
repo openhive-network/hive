@@ -36,7 +36,8 @@ class NotificationHandler(helpy.BeekeeperNotificationHandler):
 
     async def on_opening_beekeeper_failed(self, notification: Notification[OpeningBeekeeperFailed]) -> None:
         self.already_working_beekeeper_http_address = helpy.HttpUrl(
-            self.__combine_url_string(notification.value.connection.address, notification.value.connection.port), protocol="http"
+            self.__combine_url_string(notification.value.connection.address, notification.value.connection.port),
+            protocol="http",
         )
         self.already_working_beekeeper_event.set()
         self.__owner._handle_opening_beekeeper_failed(notification.value)

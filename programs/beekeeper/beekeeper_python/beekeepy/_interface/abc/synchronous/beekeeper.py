@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from types import TracebackType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from beekeepy._interface.abc.synchronous.session import Session
+    from types import TracebackType
+
     from typing_extensions import Self
+
+    from beekeepy._interface.abc.synchronous.session import Session
 
 
 class Beekeeper(ABC):
     @abstractmethod
-    def create_session(self, *, salt: str | None = None) -> Session:
-        ...
+    def create_session(self, *, salt: str | None = None) -> Session: ...
 
     def __enter__(self) -> Self:
         return self

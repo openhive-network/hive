@@ -7,10 +7,6 @@ from beekeepy._interface.abc.synchronous.beekeeper import Beekeeper as Beekeeper
 from beekeepy._interface.synchronous.session import Session
 
 if TYPE_CHECKING:
-    from types import TracebackType
-
-    from typing_extensions import Self
-
     import helpy
     from beekeepy._interface.abc.synchronous.session import (
         Session as SessionInterface,

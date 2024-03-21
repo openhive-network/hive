@@ -8,8 +8,8 @@ from beekeepy._interface.synchronous.wallet import (
     Wallet,
 )
 from helpy import (
-        Beekeeper as SynchronousBeekeeperHandle,
-    )
+    Beekeeper as SynchronousBeekeeperHandle,
+)
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.wallet import (
@@ -45,7 +45,10 @@ class Session(SessionInterface):
 
     @property
     def wallets(self) -> list[WalletInterface]:
-        return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.beekeeper.list_wallets().wallets]
+        return [
+            self.__construct_wallet(name=wallet.name)
+            for wallet in self.__beekeeper.api.beekeeper.list_wallets().wallets
+        ]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper)

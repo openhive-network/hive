@@ -68,9 +68,7 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         return self.__beekeeper.api.beekeeper.import_key(wallet_name=self.name, wif_key=private_key).public_key
 
     def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
-        self.__beekeeper.api.beekeeper.remove_key(
-            wallet_name=self.name, password=confirmation_password, public_key=key
-        )
+        self.__beekeeper.api.beekeeper.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
 
     def lock(self) -> None:
         self.__beekeeper.api.beekeeper.lock(wallet_name=self.name)

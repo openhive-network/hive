@@ -57,9 +57,7 @@ class BeekeeperCommon(BeekeeperCallbacks):
             self.__notification_event_handler.http_listening_event.wait(timeout=5)
         except TimeoutError as err:
             if self.__notification_event_handler.already_working_beekeeper_event.is_set():
-                assert (
-                    addr := self.__notification_event_handler.already_working_beekeeper_http_address  # noqa: RUF018
-                ) is not None
+                assert (addr := self.__notification_event_handler.already_working_beekeeper_http_address) is not None
                 raise BeekeeperAlreadyRunningError(address=addr) from err
 
     def _handle_error(self, error: Error) -> None:
@@ -98,7 +96,7 @@ class BeekeeperCommon(BeekeeperCallbacks):
 
     def _get_http_endpoint_from_event(self) -> helpy.HttpUrl:
         assert self.__notification_event_handler is not None
-        assert (addr := self.__notification_event_handler.http_endpoint_from_event) is not None  # noqa: RUF018
+        assert (addr := self.__notification_event_handler.http_endpoint_from_event) is not None
         return addr
 
     @property

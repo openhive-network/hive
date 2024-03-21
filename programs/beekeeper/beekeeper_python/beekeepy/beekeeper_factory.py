@@ -26,7 +26,7 @@ def _get_logger() -> Logger:
 
 
 def _get_working_directory() -> Path:
-    return Path(tempfile.mkdtemp(dir=Path(".").absolute()))
+    return Path(tempfile.mkdtemp(dir=Path().absolute()))
 
 
 def beekeeper_factory() -> SynchronousBeekeeperInterface:

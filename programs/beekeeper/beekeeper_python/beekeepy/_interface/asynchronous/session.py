@@ -46,7 +46,10 @@ class Session(SessionInterface):
 
     @property
     async def wallets(self) -> list[WalletInterface]:
-        return [self.__construct_wallet(name=wallet.name) for wallet in (await self.__beekeeper.api.beekeeper.list_wallets()).wallets]
+        return [
+            self.__construct_wallet(name=wallet.name)
+            for wallet in (await self.__beekeeper.api.beekeeper.list_wallets()).wallets
+        ]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper)
