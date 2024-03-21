@@ -440,12 +440,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev160+57e9594"
+version = "0.0.1.dev161+cb9a77e"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev160+57e9594-py3-none-any.whl", hash = "sha256:e511c0e1b4aecea4cdf32c28bfe85f4aa1cd7e919cc2dc76b7db37d257d8bef9"},
+    {file = "helpy-0.0.1.dev161+cb9a77e-py3-none-any.whl", hash = "sha256:7ecbea582f60e6c082bf7b25dff1a18f5618c578a24b76486e82da8aa575afb3"},
 ]
 
 [package.dependencies]
@@ -1407,4 +1407,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4f7bb0fb86eb87ef1bc33c91a34fa47ca509c1098ef093d99081ad98208875fa"
+content-hash = "8f9ae9ef9dc477a7fe49763fbbd7360038a4e9e7a2c74476c30617d3f0f75264"
