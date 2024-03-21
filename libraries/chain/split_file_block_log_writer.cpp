@@ -41,9 +41,21 @@ split_file_block_log_writer::split_file_block_log_writer( appbase::application& 
   : _app( app ), _thread_pool( thread_pool )
 {}
 
-const block_log& split_file_block_log_writer::get_head_block_log() const
+const std::shared_ptr<full_block_type> split_file_block_log_writer::get_head_block() const
 {
-  return *( _logs.back() );
+  return _logs.back()->head();
+}
+
+block_id_type split_file_block_log_writer::read_block_id_by_num( uint32_t block_num ) const
+{
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  return log == nullptr ? block_id_type() : log->read_block_id_by_num( block_num );
+}
+
+std::shared_ptr<full_block_type> split_file_block_log_writer::read_block_by_num( uint32_t block_num ) const
+{
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  return log == nullptr ? std::shared_ptr<full_block_type>() : log->read_block_by_num( block_num );
 }
 
 const block_log* split_file_block_log_writer::get_block_log_corresponding_to( uint32_t block_num ) const
@@ -180,7 +192,7 @@ void split_file_block_log_writer::process_blocks(uint32_t starting_block_number,
   hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {
   const block_log* current_log = nullptr;
-  const block_log& head_log = get_head_block_log();
+  const block_log* head_log = _logs.back();
   do
   {
     current_log = get_block_log_corresponding_to( starting_block_number );
@@ -193,7 +205,7 @@ void split_file_block_log_writer::process_blocks(uint32_t starting_block_number,
 
     starting_block_number = current_log->head()->get_block_num() + 1;
   }
-  while( starting_block_number < ending_block_number && current_log != &head_log );
+  while( starting_block_number < ending_block_number && current_log != head_log );
 }
 
 } } //hive::chain

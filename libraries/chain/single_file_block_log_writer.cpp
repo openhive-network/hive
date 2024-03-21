@@ -7,14 +7,19 @@ single_file_block_log_writer::single_file_block_log_writer( appbase::application
   : _thread_pool( thread_pool ), _block_log( app )
 {}
 
-const block_log& single_file_block_log_writer::get_head_block_log() const
+const std::shared_ptr<full_block_type> single_file_block_log_writer::get_head_block() const
 {
-  return _block_log;
+  return _block_log.head();
 }
 
-const block_log* single_file_block_log_writer::get_block_log_corresponding_to( uint32_t block_num ) const
+block_id_type single_file_block_log_writer::read_block_id_by_num( uint32_t block_num ) const
 {
-  return &_block_log;
+  return _block_log.read_block_id_by_num( block_num );
+}
+
+std::shared_ptr<full_block_type> single_file_block_log_writer::read_block_by_num( uint32_t block_num ) const
+{
+  return _block_log.read_block_by_num( block_num );
 }
 
 block_log_reader_common::block_range_t single_file_block_log_writer::read_block_range_by_num(

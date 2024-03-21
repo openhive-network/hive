@@ -6,36 +6,23 @@ namespace hive { namespace chain {
 
 std::shared_ptr<full_block_type> block_log_reader_common::head_block() const
 {
-  return get_head_block_log().head();
+  return get_head_block();
 }
 
 uint32_t block_log_reader_common::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  const block_log& bl = get_head_block_log();
-  return bl.head() ? bl.head()->get_block_num() : 0;
+  const auto hb = get_head_block();
+  return hb ? hb->get_block_num() : 0;
 }
 
 block_id_type block_log_reader_common::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  const block_log& bl = get_head_block_log();
-  return bl.head() ? bl.head()->get_block_id() : block_id_type();
+  const auto hb = get_head_block();
+  return hb ? hb->get_block_id() : block_id_type();
 }
 
-std::shared_ptr<full_block_type> block_log_reader_common::read_block_by_num( uint32_t block_num ) const
-{
-  const block_log* bl = get_block_log_corresponding_to( block_num );
-  return bl ? bl->read_block_by_num( block_num ) : std::shared_ptr<full_block_type>();
-}
-
-/*void block_log_reader_common::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
-  block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool) const
-{
-  _block_log.for_each_block( starting_block_number, ending_block_number, processor, 
-                             block_log::for_each_purpose::replay, thread_pool );
-}
-*/
 std::shared_ptr<full_block_type> block_log_reader_common::fetch_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
@@ -60,11 +47,7 @@ bool block_log_reader_common::is_known_block(const block_id_type& id) const
 {
   try {
     auto requested_block_num = protocol::block_header::num_from_id(id);
-    const block_log* bl = get_block_log_corresponding_to( requested_block_num );
-    if( bl == nullptr )
-      return false;
-
-    auto read_block_id = bl->read_block_id_by_num(requested_block_num);
+    block_id_type read_block_id = read_block_id_by_num( requested_block_num );
     return read_block_id != block_id_type() && read_block_id == id;
   } FC_CAPTURE_AND_RETHROW()
 }
@@ -85,8 +68,7 @@ block_id_type block_log_reader_common::find_block_id_for_num( uint32_t block_num
   {
     if( block_num != 0 )
     {
-      const block_log* bl = get_block_log_corresponding_to( block_num );
-      result = bl ? bl->read_block_id_by_num(block_num) : block_id_type();
+      result = read_block_id_by_num( block_num );
     }
   }
   FC_CAPTURE_AND_RETHROW( (block_num) )
@@ -129,8 +111,7 @@ std::vector<block_id_type> block_log_reader_common::get_blockchain_synopsis(
   {
     uint32_t block_number_needed_from_block_log = reference_point_block_num;
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
-    const block_log* bl = get_block_log_corresponding_to( block_number_needed_from_block_log );
-    auto read_block_id = bl ? bl->read_block_id_by_num(block_number_needed_from_block_log) : block_id_type();
+    auto read_block_id = read_block_id_by_num( block_number_needed_from_block_log );
 
     if (reference_point_block_num == block_number_needed_from_block_log)
     {
