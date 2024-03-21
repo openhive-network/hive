@@ -153,6 +153,7 @@ class colony_plugin_impl
     uint32_t                                             _dynamic_tx_per_block = -1;
     uint32_t                                             _overflowing_tx = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
+    uint32_t                                             _start_at_block = 0;
 };
 
 void transaction_builder::print_stats() const
@@ -304,7 +305,11 @@ void transaction_builder::build_transaction()
       _tx.set_reference_block( _common._db.head_block_id() );
       _tx.set_expiration( _common._db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       _block_num = _common._db.head_block_num();
-      if( _common._max_tx_per_block == 0 ) // no limit
+      if( _block_num < _common._start_at_block )
+      {
+        _tx_to_produce = 0;
+      }
+      else if( _common._max_tx_per_block == 0 ) // no limit
       {
         _tx_to_produce = -1;
       }
@@ -316,13 +321,13 @@ void transaction_builder::build_transaction()
         else // use adjusted rate
           effective_total = std::max( 0l, (int64_t)_common._dynamic_tx_per_block - _common._overflowing_tx );
         _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
-        dlog( "Scheduling production of ${x} transactions in ${t}, previous overflow was ${o}",
+        ilog( "Scheduling production of ${x} transactions in ${t}, previous overflow was ${o}",
           ( "x", _tx_to_produce )( "t", _worker.name() )( "o", _common._overflowing_tx ) );
       }
       _tx_needs_update.store( false, std::memory_order_relaxed );
     } );
   }
-  else if( _tx_to_produce == 0 )
+  if( _tx_to_produce == 0 )
   {
     dlog( "Thread ${t} has nothing to do. Waiting...", ( "t", _worker.name() ) );
     _worker.schedule( [this]() { build_transaction(); }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
@@ -585,6 +590,7 @@ void colony_plugin::set_program_options(
     ( "colony-transfer", bpo::value<std::string>(), "Size and frequency parameters of transfer transactions." )
     ( "colony-custom", bpo::value<std::string>(), "Size and frequency parameters of custom_json transactions. "
       "If no other transaction type is requested, minimal custom jsons will be produced." )
+    ( "colony-start-at-block", bpo::value<std::uint32_t>(), "tutaj dopisać." ) // tutaj dopiesakf
     ;
 }
 
@@ -669,6 +675,9 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
       my->_max_tx_per_block = my->_dynamic_tx_per_block = options.at( "colony-transactions-per-block" ).as<std::uint32_t>();
     else
       my->_max_tx_per_block = my->_dynamic_tx_per_block = my->_total_weight;
+
+    if( options.count( "colony-start-at-block" ) )
+      my->_start_at_block = my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
   }
   FC_CAPTURE_AND_RETHROW()
 }
