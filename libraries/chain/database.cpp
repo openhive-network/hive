@@ -3517,7 +3517,21 @@ void database::init_genesis()
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >([&](account_authority_object& auth)
+    {
+      auth.account = OBSOLETE_TREASURY_ACCOUNT;
+      auth.owner.weight_threshold = 1;
+      auth.active.weight_threshold = 1;
+      auth.posting.weight_threshold = 1;
+    } );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >([&](account_authority_object& auth)
+    {
+      auth.account = NEW_HIVE_TREASURY_ACCOUNT;
+      auth.owner.weight_threshold = 1;
+      auth.active.weight_threshold = 1;
+      auth.posting.weight_threshold = 1;
+    } );
 #endif
 
     create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
