@@ -44,6 +44,58 @@
 
 namespace hive { namespace chain {
 
+  const std::string block_log_file_name_info::_legacy_file_name = "block_log";
+  const std::string block_log_file_name_info::_split_file_name_core = "block_log_part";
+
+  std::string block_log_file_name_info::get_extension( const fc::path& path )
+  {
+    std::string extension(path.extension().string());
+    if(extension.empty())
+      return extension;
+
+    // Note that fc::path::extension() contains leading dot.
+    return extension.substr(1);
+  }
+
+  bool block_log_file_name_info::is_part_file_name( const std::string& stem, const std::string& extension )
+  {
+    // "^block_log_part\\.\\d{4}$"
+    return stem == _split_file_name_core &&
+      extension.size() == _split_file_name_extension_length && 
+      std::all_of( extension.begin(), extension.end(), [](unsigned char ch){ return std::isdigit(ch); } );
+  }
+
+  uint32_t block_log_file_name_info::get_first_block_num_for_file_name( const fc::path& block_log_path )
+  {
+    std::string stem(block_log_path.stem().string());
+    if(stem == _legacy_file_name)
+    {
+      return 1; // First block number in legacy single file block log is obviously 1.
+    }
+
+    std::string extension(get_extension(block_log_path));
+    FC_ASSERT(is_part_file_name(stem, extension), "${stem} ${extension}", (stem)(extension));
+
+    // First block number in split block log part file is 1 plus all blocks in previous files.
+    // Note that part files are numbered beginning with 0001.
+    return 1 + ((std::stoul(extension) -1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
+  }
+
+  std::string block_log_file_name_info::get_nth_part_file_name( uint32_t part_number )
+  {
+    // "^block_log_part\\.\\d{4}$"
+    size_t padding = _split_file_name_extension_length;
+    std::string part_number_str = std::to_string( part_number );
+    std::string result = _split_file_name_core + "." + 
+      std::string(padding - std::min(padding, part_number_str.length()), '0') + part_number_str;
+    return result;
+  }
+
+  bool block_log_file_name_info::is_part_file( const fc::path& file )
+  {
+    return is_part_file_name(file.stem().string(), get_extension(file));
+  }
+
   typedef boost::interprocess::scoped_lock< boost::mutex > scoped_lock;
 
   boost::interprocess::defer_lock_type defer_lock;
@@ -214,7 +266,7 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false, theApp, thread_pool );
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false, theApp, thread_pool);
   }
 
   void block_log::close()

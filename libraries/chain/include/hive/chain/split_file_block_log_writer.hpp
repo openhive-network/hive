@@ -1,15 +1,13 @@
 #pragma once
 
+#include <hive/chain/block_log.hpp>
 #include <hive/chain/block_log_writer_common.hpp>
-
-#define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
 
 namespace appbase {
   class application;
 }
 
 namespace hive { namespace chain {
-  class block_log;
 
   /// Multiple file implementation of block_log_writer_common.
   class split_file_block_log_writer : public block_log_writer_common
@@ -19,8 +17,6 @@ namespace hive { namespace chain {
     virtual const std::shared_ptr<full_block_type> get_head_block() const;
     /// Required by block_log_reader_common.
     virtual block_id_type read_block_id_by_num( uint32_t block_num ) const override;
-    /// Required by block_log_reader_common.
-    virtual std::shared_ptr<full_block_type> read_block( uint32_t block_num ) const override;
     /// Required by block_log_reader_common.
     virtual block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
