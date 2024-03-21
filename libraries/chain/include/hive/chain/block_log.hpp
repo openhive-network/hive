@@ -5,6 +5,8 @@
 #include <hive/chain/detail/block_attributes.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
 
+#define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
+
 extern "C"
 {
   struct ZSTD_CCtx_s;
@@ -14,6 +16,39 @@ extern "C"
 }
 
 namespace hive { namespace chain {
+
+  /**
+   * @brief Utility class facilitating block log (artifacts) configuration based on file paths.
+   * 
+   */
+  class block_log_file_name_info
+  {
+  public:
+    static uint32_t get_first_block_num_for_file_name(const fc::path& block_log_path );
+
+    /**
+     * @brief Get the block log file name of nth part file.
+     *        Useful for multi-part split log only.     * 
+     * @return string combining filename and its extension 
+     */
+    static std::string get_nth_part_file_name(uint32_t part_number);
+
+    /**
+     * @brief Match path to split block log name pattern.
+     */
+    static bool is_part_file( const fc::path& file );
+
+  private:
+    static std::string get_extension(const fc::path& path);
+    static bool is_part_file_name(const std::string& stem, const std::string& extension);
+
+  public:
+    static const std::string _legacy_file_name;
+
+  private:
+    static const std::string _split_file_name_core;
+    static const size_t _split_file_name_extension_length = 4;
+  }; // block_log_file_name_info
 
   // struct serialized_block_data
   // {

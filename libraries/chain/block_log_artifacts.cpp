@@ -235,6 +235,12 @@ public:
 
   void flush_header() const;
 
+  void set_block_num_to_file_pos_offset(uint32_t block_num_to_file_pos_offset)
+  {
+    ilog("Setting _block_num_to_file_pos_offset to ${block_num_to_file_pos_offset}", (block_num_to_file_pos_offset));
+    _block_num_to_file_pos_offset = block_num_to_file_pos_offset;
+  }
+
 private:
   bool load_header();
 
@@ -270,9 +276,9 @@ private:
     FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
   }
 
-  size_t calculate_offset(uint32_t block_num) const
+  size_t calculate_offset(uint32_t block_num, uint32_t block_num_to_file_pos_offset) const
   {
-    return header_pack_size + artifact_chunk_size*(block_num - 1);
+    return header_pack_size + artifact_chunk_size*(block_num - 1 - block_num_to_file_pos_offset);
   }
 
   uint64_t timestamp_ms() const
@@ -286,6 +292,7 @@ private:
   artifact_file_header _header;
   const size_t header_pack_size = sizeof(_header);
   const size_t artifact_chunk_size = sizeof(artifact_file_chunk);
+  uint32_t _block_num_to_file_pos_offset = 0; /// Zero when given block log file starts with block #1.
   bool _is_writable = false;
 
   appbase::application& theApp;
@@ -299,6 +306,9 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try {
+  set_block_num_to_file_pos_offset(
+    block_log_file_name_info::get_first_block_num_for_file_name(block_log_file_path)-1
+  );
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
   _is_writable = !read_only;
 
@@ -346,7 +356,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         /// Generate artifacts file only if some blocks are present in pointed block_log.
         if (block_log_head_block_num > 0)
         {
-          _header.tail_block_num = 1;
+          _header.tail_block_num = _block_num_to_file_pos_offset +1;
           _header.head_block_num = block_log_head_block_num;
           flush_header();
           generate_artifacts_file(source_block_provider, thread_pool);
@@ -389,7 +399,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
             wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${block_log_head_block_num}.",
                 ("header_head_block_num", _header.head_block_num)(block_log_head_block_num));
 
-            _header.tail_block_num = _header.head_block_num ? _header.head_block_num : 1;
+            _header.tail_block_num = _header.head_block_num ? _header.head_block_num : _block_num_to_file_pos_offset +1;
             _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider, thread_pool);
@@ -413,7 +423,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
 
           if (block_log_head_block_num)
           {
-            _header.tail_block_num = 1;
+            _header.tail_block_num = _block_num_to_file_pos_offset +1;
             _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider, thread_pool);
@@ -567,7 +577,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
   if (!generating_interrupted)
   {
     _header.generating_interrupted_at_block = 0;
-    _header.tail_block_num = 1;
+    _header.tail_block_num = _block_num_to_file_pos_offset +1;
     flush_header();
   }
 
@@ -655,7 +665,7 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 {
   FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
-  auto last_chunk_position = calculate_offset(last_block);
+  auto last_chunk_position = calculate_offset(last_block, _block_num_to_file_pos_offset);
   /// File truncate should be done just after last data chunk stored.
   auto truncate_position = last_chunk_position + artifact_chunk_size;
 
@@ -674,7 +684,7 @@ void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint
 {
   FC_ASSERT(block_num != _header.head_block_num, "It's not possible to read head block artifacts.");
 
-  auto chunk_position = calculate_offset(block_num);
+  auto chunk_position = calculate_offset(block_num, _block_num_to_file_pos_offset);
 
   std::vector<artifact_file_chunk> chunk_buffer;
 
@@ -694,15 +704,15 @@ void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64
 
   if (_header.generating_interrupted_at_block && (block_num > _header.head_block_num))
     FC_THROW("Cannot store new artifacts if generating process isn't finished.");
-  // Update tail_block_num to 1 when artifacts was not generated and from beggining we store artifacts.
+  // Update tail_block_num to _block_num_to_file_pos_offset +1 when artifacts was not generated and from beggining we store artifacts.
   if (!_header.tail_block_num)
-    _header.tail_block_num = 1;
+    _header.tail_block_num = _block_num_to_file_pos_offset +1;
 
   artifact_file_chunk data_chunk;
   data_chunk.pack_data(block_log_file_pos, block_attrs);
   data_chunk.pack_block_id(block_num, block_id);
 
-  auto write_position = calculate_offset(block_num);
+  auto write_position = calculate_offset(block_num, _block_num_to_file_pos_offset);
   write_data(data_chunk, write_position, "Wrting the artifact file datachunk");
 }
 
