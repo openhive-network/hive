@@ -4,7 +4,6 @@
 
 namespace hive { namespace chain {
 
-  class block_log;
   class blockchain_worker_thread_pool;
   struct open_args;
 

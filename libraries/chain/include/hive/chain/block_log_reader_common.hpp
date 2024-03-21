@@ -4,8 +4,6 @@
 
 namespace hive { namespace chain {
 
-  class block_log;
-
   /**
    * Abstract class containing common part of all block-log-based implementations
    * of block read interface
@@ -14,10 +12,10 @@ namespace hive { namespace chain {
   {
   protected:
     /// To be implemented by subclasses.
-    virtual const block_log& get_head_block_log() const = 0;
+    virtual const std::shared_ptr<full_block_type> get_head_block() const = 0;
 
     /// To be implemented by subclasses.
-    virtual const block_log* get_block_log_corresponding_to( uint32_t block_num ) const = 0;
+    virtual block_id_type read_block_id_by_num( uint32_t block_num ) const = 0;
 
     using block_range_t = std::vector<std::shared_ptr<full_block_type>>;
     /// To be implemented by subclasses.
@@ -31,9 +29,10 @@ namespace hive { namespace chain {
     virtual block_id_type head_block_id( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
 
-    virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
-
-    // The only method of block_read_i left to be implemented by subclasses.
+    // The two methods of block_read_i left to be implemented by subclasses:
+    //
+    //virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
+    //
     //virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
     //                             block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool ) const override;
 
