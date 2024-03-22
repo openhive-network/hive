@@ -322,7 +322,8 @@ void transaction_builder::build_transaction()
       _tx_needs_update.store( false, std::memory_order_relaxed );
     } );
   }
-  else if( _tx_to_produce == 0 )
+
+  if( _tx_to_produce == 0 )
   {
     dlog( "Thread ${t} has nothing to do. Waiting...", ( "t", _worker.name() ) );
     _worker.schedule( [this]() { build_transaction(); }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
