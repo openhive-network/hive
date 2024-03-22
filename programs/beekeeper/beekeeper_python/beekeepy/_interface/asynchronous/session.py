@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import helpy
 from beekeepy._interface.abc.asynchronous.session import Session as SessionInterface
 from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 class Session(SessionInterface):
     def __init__(self, *args: Any, beekeeper: AsynchronousBeekeeperHandle, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__beekeeper = helpy.AsyncBeekeeper(http_url=beekeeper.http_endpoint)
+        self.__beekeeper = beekeeper
 
     async def get_info(self) -> GetInfo:
         return await self.__beekeeper.api.beekeeper.get_info()

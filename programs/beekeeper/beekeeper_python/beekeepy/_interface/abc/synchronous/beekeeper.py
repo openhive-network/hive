@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from beekeepy._interface.abc.packed_object import Packed
+
 if TYPE_CHECKING:
     from types import TracebackType
 
@@ -12,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class Beekeeper(ABC):
+
     @abstractmethod
     def create_session(self, *, salt: str | None = None) -> Session: ...
 
@@ -24,3 +27,6 @@ class Beekeeper(ABC):
 
     def delete(self) -> None:
         pass
+
+    @abstractmethod
+    def pack(self) -> Packed[Beekeeper]: ...

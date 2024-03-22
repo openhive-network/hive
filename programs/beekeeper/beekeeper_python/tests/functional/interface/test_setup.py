@@ -7,3 +7,12 @@ def test_smoke_interface() -> None:
     with beekeeper_factory() as bk, bk.create_session() as session, session.create_wallet(name="test", password="password") as wallet:
         pub_key = wallet.generate_key()
         assert pub_key in wallet.public_keys
+
+
+def test_closing_with_delete() -> None:
+    bk = beekeeper_factory()
+    bk.delete()
+
+def test_closing_with_with() -> None:
+    with beekeeper_factory():
+        pass

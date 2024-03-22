@@ -3,6 +3,8 @@ from __future__ import annotations
 from threading import Event
 from typing import TYPE_CHECKING, Any
 
+from loguru import logger
+
 import helpy
 
 if TYPE_CHECKING:
@@ -16,8 +18,6 @@ if TYPE_CHECKING:
         Status,
         WebserverListening,
     )
-
-import test_tools as tt
 
 
 class NotificationHandler(helpy.BeekeeperNotificationHandler):
@@ -36,7 +36,10 @@ class NotificationHandler(helpy.BeekeeperNotificationHandler):
 
     async def on_opening_beekeeper_failed(self, notification: Notification[OpeningBeekeeperFailed]) -> None:
         self.already_working_beekeeper_http_address = helpy.HttpUrl(
-            self.__combine_url_string(notification.value.connection.address, notification.value.connection.port),
+            self.__combine_url_string(
+                notification.value.connection.address,
+                notification.value.connection.port,
+            ),
             protocol="http",
         )
         self.already_working_beekeeper_event.set()
@@ -50,13 +53,14 @@ class NotificationHandler(helpy.BeekeeperNotificationHandler):
 
     async def on_http_webserver_bind(self, notification: Notification[WebserverListening]) -> None:
         self.http_endpoint_from_event = helpy.HttpUrl(
-            self.__combine_url_string(notification.value.address, notification.value.port), protocol="http"
+            self.__combine_url_string(notification.value.address, notification.value.port),
+            protocol="http",
         )
         self.http_listening_event.set()
         self.__owner._http_webserver_ready(notification)
 
     async def handle_notification(self, notification: Notification[KnownNotificationT]) -> None:
-        tt.logger.info(f"got notification: {notification.json()}")
+        logger.debug(f"got notification: {notification.json()}")
         return await super().handle_notification(notification)
 
     def __combine_url_string(self, address: str, port: int) -> str:

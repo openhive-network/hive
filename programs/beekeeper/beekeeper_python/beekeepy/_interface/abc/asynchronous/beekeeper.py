@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from beekeepy._interface.abc.asynchronous.session import Session
+    from beekeepy._interface.abc.packed_object import Packed
 
 
 class Beekeeper(ABC):
@@ -24,3 +25,6 @@ class Beekeeper(ABC):
 
     def delete(self) -> None:
         pass
+
+    @abstractmethod
+    def pack(self) -> Packed[Beekeeper]: ...

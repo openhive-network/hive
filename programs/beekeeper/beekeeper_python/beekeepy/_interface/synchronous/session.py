@@ -7,9 +7,6 @@ from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from helpy import (
-    Beekeeper as SynchronousBeekeeperHandle,
-)
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.wallet import (
@@ -18,13 +15,16 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.wallet import (
         Wallet as WalletInterface,
     )
+    from helpy import (
+        Beekeeper as SynchronousBeekeeperHandle,
+    )
     from schemas.apis.beekeeper_api import GetInfo
 
 
 class Session(SessionInterface):
     def __init__(self, *args: Any, beekeeper: SynchronousBeekeeperHandle, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__beekeeper = SynchronousBeekeeperHandle(http_url=beekeeper.http_endpoint)
+        self.__beekeeper = beekeeper
 
     def get_info(self) -> GetInfo:
         return self.__beekeeper.api.beekeeper.get_info()
