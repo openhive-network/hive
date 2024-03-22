@@ -20,8 +20,8 @@ def simultaneous_node_startup(
     nodes: list[tt.InitNode | tt.ApiNode],
     timeout: int,
     alternate_chain_specs: tt.AlternateChainSpecs,
-    arguments: list,
     wait_for_live: bool,
+    arguments: list | None = None,
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
