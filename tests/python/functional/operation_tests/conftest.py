@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
 import test_tools as tt
-from hive_local_tools.constants import HIVE_100_PERCENT, HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_TREASURY_FEE
+from hive_local_tools.constants import (
+    HIVE_100_PERCENT,
+    HIVE_COLLATERALIZED_CONVERSION_FEE,
+    HIVE_TREASURY_FEE,
+)
 from hive_local_tools.functional.python.operation import (
     Account,
     create_transaction_with_any_operation,
@@ -28,6 +34,8 @@ from schemas.operations.virtual.fill_collateralized_convert_request_operation im
     FillCollateralizedConvertRequestOperation,
 )
 from schemas.operations.virtual.fill_convert_request_operation import FillConvertRequestOperation
+from schemas.operations.witness_block_approve_operation import WitnessBlockApproveOperation
+from schemas.operations.witness_set_properties_operation import WitnessSetPropertiesOperation
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
@@ -614,6 +622,135 @@ class UpdateAccount(Account):
 
     def use_authority(self, authority_type: str):
         self._wallet.api.use_authority(authority_type, self._name)
+
+
+class WitnessAccount(Account):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.update_account_info()
+
+    def assert_if_feed_publish_operation_was_generated(self, transaction: dict) -> None:
+        operations = self._node.api.account_history.get_transaction(
+            id=transaction["transaction_id"], include_reversible=True
+        ).operations
+        for operation in operations:
+            if operation.type == "feed_publish_operation" and operation.value.publisher == self._name:
+                return
+        raise AssertionError("Feed_publish operation wasn't found.")
+
+    def assert_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+        self.rc_manabar.update()
+
+    def assert_rc_current_mana_was_unchanged(self) -> None:
+        self.rc_manabar.assert_current_mana_is_unchanged()
+
+    def become_witness(
+        self, url: str, account_creation_fee: tt.Asset.Test, maximum_block_size: int, hbd_interest_rate: int
+    ) -> dict:
+        self._url = url
+        self._account_creation_fee = account_creation_fee
+        self._maximum_block_size = maximum_block_size
+        self._hbd_interest_rate = hbd_interest_rate
+        return self._wallet.api.update_witness(
+            self._name,
+            self._url,
+            tt.Account(self._name).public_key,
+            {
+                "account_creation_fee": self._account_creation_fee,
+                "maximum_block_size": self._maximum_block_size,
+                "hbd_interest_rate": self._hbd_interest_rate,
+            },
+        )
+
+    def check_if_account_has_witness_role(self, expected_witness_role: bool) -> None:
+        # block signing key equal to STM1111111111111111111111111111111114T1Anm means that the key is empty - witness
+        # is deactivated
+        # related issue: https://gitlab.syncad.com/hive/hive/-/issues/681
+        empty_key = "STM1111111111111111111111111111111114T1Anm"
+        witnesses = self._node.api.database.list_witnesses(start="", limit=100, order="by_name").witnesses
+        for witness in witnesses:
+            if witness.owner == self._name and witness.signing_key != empty_key:
+                found_as_witness = True
+
+        if "found_as_witness" in locals():
+            if expected_witness_role:
+                return
+            raise AssertionError("Witness is listed in list_witnesses, but it shouldn't be.")
+        if expected_witness_role:
+            raise AssertionError("Witness isn't listed in list_witnesses, but it should be.")
+
+    def feed_publish(self, *, base: int, quote: int, broadcast: bool = True) -> dict:
+        exchange_rate = HbdExchangeRate(base=tt.Asset.Tbd(base), quote=tt.Asset.Test(quote))
+        return self._wallet.api.publish_feed(self._name, exchange_rate, broadcast=broadcast)
+
+    def resign_from_witness_role(self) -> dict:
+        return self._wallet.api.update_witness(
+            self._name,
+            "http://url.html",
+            "STM1111111111111111111111111111111114T1Anm",
+            {
+                "account_creation_fee": tt.Asset.Test(28),
+                "maximum_block_size": 131072,
+                "hbd_interest_rate": 1000,
+            },
+        )
+
+    def update_witness_properties(
+        self,
+        *,
+        new_maximum_block_size: int | None = None,
+        new_hbd_interest_rate: int | None = None,
+        new_block_signing_key: str | None = None,
+        new_url: str | None = None,
+        new_account_creation_fee: tt.Asset.TestT = None,
+    ) -> dict:
+        return self._wallet.api.update_witness(
+            self._name,
+            self._url if new_url is None else new_url,
+            tt.Account(self._name).public_key if new_block_signing_key is None else new_block_signing_key,
+            {
+                "account_creation_fee": (
+                    self._account_creation_fee if new_account_creation_fee is None else new_account_creation_fee
+                ),
+                "maximum_block_size": (
+                    self._maximum_block_size if new_maximum_block_size is None else new_maximum_block_size
+                ),
+                "hbd_interest_rate": (
+                    self._hbd_interest_rate if new_hbd_interest_rate is None else new_hbd_interest_rate
+                ),
+            },
+        )
+
+    def witness_set_properties(self, props_to_serialize: dict) -> dict:
+        """
+        Following properties can be set in props:
+          - account_creation_fee
+          - account_subsidy_budget
+          - account_subsidy_decay
+          - maximum_block_size
+          - hbd_interest_rate
+          - hbd_exchange_rate
+          - url
+          - signing_key
+          Additionally public key (mandatory for changing any property)
+          More details: https://gitlab.syncad.com/hive/hive/-/blob/master/doc/witness_parameters.md?ref_type=heads
+        """
+        serialized_props = json.loads(
+            subprocess.check_output(
+                [os.environ["SERIALIZE_SET_PROPERTIES_PATH"]], input=f"{json.dumps(props_to_serialize)}".encode()
+            ).decode("utf-8")
+        )
+        return create_transaction_with_any_operation(
+            self._wallet, WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)
+        )
+
+    def witness_block_approve(self, *, block_id: int) -> dict:
+        return create_transaction_with_any_operation(
+            self._wallet, WitnessBlockApproveOperation(witness=self._name, block_id=block_id)
+        )
 
 
 @pytest.fixture()
