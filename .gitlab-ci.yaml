@@ -1008,7 +1008,8 @@ operation_tests:
                      transfer_from_savings_tests,
                      transfer_tests,
                      transfer_to_savings_tests,
-                     update_proposal_votes_tests ]
+                     update_proposal_votes_tests,
+                     witness_ops_tests ]
   tags:
     - public-runner-docker
 
