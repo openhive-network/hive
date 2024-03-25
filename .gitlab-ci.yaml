@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b4cd2f1f5b8eec2a9bfb2d5b950e0f63953d10a5
+    ref: f1d9fdaeaca069203c7c2c9fdeb0be507cd116a0
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -52,6 +52,8 @@ include:
     FF_NETWORK_PER_BUILD: 1
 
   before_script:
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - nvm use "${NODEJS_VERSION}"
     - cd programs/beekeeper/beekeeper_wasm
     - pnpm install --frozen-lockfile
 
@@ -123,6 +125,8 @@ beekeeper_tsc_build:
   # emscripten image can be used as it contains all needed tools.
   image: ${EMSCRIPTEN_IMAGE}
   script:
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - nvm use "${NODEJS_VERSION}"
     - cd programs/beekeeper/beekeeper_wasm
     - pnpm install
     - npm run build
@@ -208,7 +212,6 @@ test_beekeeper_wasm:
       artifacts: true
 
   script:
-    - . "$NVM_DIR/nvm.sh"  # This loads nvm
     - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper-*.tgz --strip-components=1
     - npm run test
 
@@ -915,10 +918,13 @@ functional_api_tests:
 publish_docker_image:
   stage: publish
   extends: .publish_docker_image_template
+  before_script:
+    - !reference [.publish_docker_image_template, before_script]
   script:
     - scripts/ci-helpers/build_and_publish_instance.sh
   tags:
     - public-runner-docker
+    - hived-for-tests
 
 hardfork_schedule_tests:
   stage: test
