@@ -14,9 +14,6 @@ class crypto_memo: public crypto_data
     {
       public_key_type   from;
       public_key_type   to;
-
-      memo_content(){}
-      memo_content( content&& obj ): content( std::move( obj ) ){}
     };
 
   private:

@@ -20,9 +20,6 @@ class crypto_data
       uint64_t          nonce = 0;
       uint32_t          check = 0;
       std::vector<char> encrypted;
-
-      content(){}
-      content( content&& obj ) : nonce( obj.nonce ), check( obj.check ), encrypted( std::move( obj.encrypted ) ){}
     };
 
   private:

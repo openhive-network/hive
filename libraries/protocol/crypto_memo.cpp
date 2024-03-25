@@ -4,7 +4,7 @@ namespace hive { namespace protocol {
 
 crypto_memo::memo_content crypto_memo::build_from_encrypted_content( const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, crypto_data::content&& content )
 {
-  memo_content _result( std::move( content ) );
+  memo_content _result{ content.nonce, content.check, std::move( content.encrypted ) };
   _result.from = from;
   _result.to = to;
 
