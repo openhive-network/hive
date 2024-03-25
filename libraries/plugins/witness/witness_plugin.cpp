@@ -55,7 +55,7 @@ void new_chain_banner( const chain::database& db )
 namespace detail {
 
   struct produce_block_data_t {
-    produce_block_data_t() : m(), next_slot(0), next_slot_time(HIVE_GENESIS_TIME), scheduled_witness(""), private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::produced), produce_in_next_slot(false)
+    produce_block_data_t() : m(), next_slot(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
     {}
 
     std::mutex m;
@@ -82,7 +82,7 @@ namespace detail {
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
 
-    void schedule_production_loop();
+    int64_t schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop(const boost::system::error_code&);
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
@@ -364,8 +364,7 @@ namespace detail {
       _last_fast_confirmation_block_number = note.block_num;
     }
     {
-      const auto head_block_time = _db.head_block_time();
-      const auto slot = _db.get_slot_at_time( head_block_time );
+      const auto slot = _db.head_block_num();
       const auto next_block_time = _db.get_slot_time( slot+1 );
       block_production_condition::block_production_condition_enum condition = block_production_condition::block_production_condition_enum::produced;
       chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot+1 );
@@ -380,10 +379,10 @@ namespace detail {
       }
       // is anyone scheduled to produce now or one second in the future?
       // uint32_t slot = _db.get_slot_at_time( now );
-      if( slot == 0 )
+      // if( slot == 0 )
       {
         // capture("next_time", _db.get_slot_time(1));
-        condition = block_production_condition::not_time_yet;
+        // condition = block_production_condition::not_time_yet;
       }
       // chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
       // we must control the witness scheduled to produce the next block.
@@ -423,7 +422,7 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::schedule_production_loop()
+  int64_t witness_plugin_impl::schedule_production_loop()
   {
     // Sleep for 200ms, before checking the block production
     fc::time_point now = fc::time_point::now();
@@ -434,6 +433,7 @@ namespace detail {
     using boost::placeholders::_1;
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this, _1 ) );
+    return time_to_sleep;
   }
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop(const boost::system::error_code& e)
@@ -635,7 +635,27 @@ void witness_plugin::plugin_startup()
         new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
-    my->schedule_production_loop();
+    fc::time_point now = fc::time_point::now();
+    const auto time_to_sleep = fc::microseconds(my->schedule_production_loop());
+    my->produce_block_data.produce_in_next_slot = true;
+    my->produce_block_data.next_slot_time = now + fc::seconds(HIVE_BLOCK_INTERVAL) + time_to_sleep;
+    const auto head_block_num = my->_db.head_block_num();
+    if( head_block_num == 0 )
+    {
+      my->produce_block_data.scheduled_witness = "initminer";
+      auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>("initminer").signing_key;
+      auto private_key_itr = my->_private_keys.find(scheduled_key);
+      my->produce_block_data.private_key = private_key_itr->second;
+    }
+    else
+    {
+      chain::account_name_type scheduled_witness = my->_db.get_scheduled_witness( head_block_num+1 );
+      my->produce_block_data.scheduled_witness = scheduled_witness;
+      auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
+      auto private_key_itr = my->_private_keys.find(scheduled_key);
+      my->produce_block_data.private_key = private_key_itr->second;
+      my->produce_block_data.next_slot = head_block_num+1;
+    }
   }
   else
   {
