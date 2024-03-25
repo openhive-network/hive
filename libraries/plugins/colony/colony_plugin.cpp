@@ -133,6 +133,8 @@ class colony_plugin_impl
       _self( _plugin ), theApp( app ) {}
     ~colony_plugin_impl() {}
 
+    void start();
+
     void post_apply_transaction( const transaction_notification& note );
     void post_apply_block( const block_notification& note );
 
@@ -152,6 +154,7 @@ class colony_plugin_impl
     uint32_t                                             _max_tx_per_block = -1;
     uint32_t                                             _dynamic_tx_per_block = -1;
     uint32_t                                             _overflowing_tx = 0;
+    uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
 };
 
@@ -537,6 +540,110 @@ void transaction_builder::build_custom( const account_name_type& actor, uint64_t
   push_transaction( CUSTOM_JSON, [](){} );
 }
 
+void colony_plugin_impl::start()
+{
+  if( _start_at_block == (uint32_t)-1 )
+    return;
+  // make sure the initialization code won't be run for the second time)
+  _start_at_block = -1;
+
+  // scan existing accounts to extract those for which you can effectively use _sign_with keys
+  flat_set<public_key_type> common_keys;
+  for( const auto& key : _sign_with )
+    common_keys.insert( key.get_public_key() );
+
+  const auto& accounts = _db.get_index< account_index, by_name >();
+  const auto& comments = _db.get_index< comment_cashout_index, by_id >();
+  bool fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
+  if( fill_comment_buffers )
+  {
+    bool shortfall = comments.size() < COLONY_COMMENT_BUFFER;
+    if( comments.size() == 0 )
+      fill_comment_buffers = false;
+    if( shortfall )
+    {
+      wlog( "Not enough initial comments to act as targets for replies/votes (${s} short). "
+        "When nonexistent comment is selected as target, the reply/vote will be replaced with article.",
+        ( "s", COLONY_COMMENT_BUFFER - comments.size() ) );
+      auto paid_comment_count = _db.get_index< comment_index, by_id >().size() - comments.size();
+      if( paid_comment_count > 0 )
+      {
+        wlog( "Note: there are ${c} additional comments in the state, but they were paid out, so "
+          "node has no data on their permlinks.", ( "c", paid_comment_count ) );
+      }
+    }
+  }
+  decltype( _threads )::iterator threadI;
+  int i = 0;
+  int not_matching_accounts = 0;
+  for( const auto& account : accounts )
+  {
+    auto get_active = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).posting ); };
+    auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+    required_authorities_type required_authorities;
+    required_authorities.required_active.insert( account.get_name() );
+
+    try
+    {
+      hive::protocol::verify_authority( required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key );
+      if( i < _max_threads )
+      {
+        threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
+        // get some initial comments to be used as targets for replies/votes;
+        // note that in case there is not enough or no comments, generation of replies/votes will
+        // be initially replaced with generation of articles
+        if( fill_comment_buffers )
+        {
+          for( const auto& comment : comments )
+          {
+            auto& comment_data = threadI->_comments[ threadI->_last_comment ];
+            comment_data.first = _db.get_account( comment.get_author_id() ).get_name();
+            comment_data.second = comment.get_permlink();
+            ++threadI->_last_comment;
+            if( threadI->_last_comment >= COLONY_COMMENT_BUFFER )
+            {
+              threadI->_last_comment = 0;
+              break;
+            }
+          }
+        }
+      }
+      threadI->_accounts.insert( account.get_name() );
+      ++i;
+      ++threadI;
+      if( threadI == _threads.end() )
+        threadI = _threads.begin();
+    }
+    catch( const hive::protocol::transaction_exception& ex )
+    {
+      dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
+      ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+    }
+  }
+
+  if( not_matching_accounts > 0 )
+  {
+    ilog( "Found ${a} accounts, ${f} have active authorities that don't match given set of private keys.",
+      ( "a", accounts.size() )( "f", not_matching_accounts ) );
+  }
+  if( _threads.empty() )
+  {
+    elog( "No accounts suitable for use as colony workers! Shutting down." );
+    theApp.kill();
+  }
+  else if( i < _max_threads )
+  {
+    wlog( "Not enough accounts suitable for use as colony workers (${i}) to share between ${n} threads.", ( i )( "n", _max_threads ) );
+    _max_threads = i;
+  }
+
+  for( auto& thread : _threads )
+    thread.init();
+}
+
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
   if( _db.is_reapplying_one_tx() )
@@ -545,6 +652,12 @@ void colony_plugin_impl::post_apply_transaction( const transaction_notification&
 
 void colony_plugin_impl::post_apply_block( const block_notification& note )
 {
+  if( _start_at_block <= note.block_num )
+  {
+    start();
+    return;
+  }
+
   // it used to be done once every couple hundred blocks for the purpose of updating
   // expiration/TaPoS, but it turned out colony tends to build too many transactions
   // which leads to overflow of postponed transactions and related problems (f.e.
@@ -580,6 +693,7 @@ void colony_plugin::set_program_options(
     ( "colony-sign-with", bpo::value<vector<std::string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used to sign each transaction." )
     ( "colony-threads", bpo::value<std::uint32_t>()->default_value( COLONY_DEFAULT_THREADS ), ( "Number of worker threads. Default is " + std::to_string( COLONY_DEFAULT_THREADS ) ).c_str() )
     ( "colony-transactions-per-block", bpo::value<std::uint32_t>(), "Max number of transactions produced per block. When not set it will be sum of weights of individual types." )
+    ( "colony-start-at-block", bpo::value<std::uint32_t>()->default_value( 0 ), "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed)." )
     ( "colony-article", bpo::value<std::string>(), "Size and frequency parameters of article transactions." )
     ( "colony-reply", bpo::value<std::string>(), "Size and frequency parameters of reply transactions." )
     ( "colony-vote", bpo::value<std::string>(), "Size and frequency parameters of vote transactions." )
@@ -599,8 +713,6 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
 #endif
 
     my = std::make_unique< detail::colony_plugin_impl >( *this, get_app() );
-
-    fc::mutable_variant_object state_opts;
 
     if( options.count( "colony-sign-with" ) )
     {
@@ -670,6 +782,8 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
       my->_max_tx_per_block = my->_dynamic_tx_per_block = options.at( "colony-transactions-per-block" ).as<std::uint32_t>();
     else
       my->_max_tx_per_block = my->_dynamic_tx_per_block = my->_total_weight;
+
+    my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -678,99 +792,8 @@ void colony_plugin::plugin_startup()
 { try {
   ilog( "colony plugin:  plugin_startup() begin" );
 
-  // scan existing accounts to extract those for which you can effectively use _sign_with keys
-  flat_set<public_key_type> common_keys;
-  for( const auto& key : my->_sign_with )
-    common_keys.insert( key.get_public_key() );
-
-  const auto& accounts = my->_db.get_index< account_index, by_name >();
-  const auto& comments = my->_db.get_index< comment_cashout_index, by_id >();
-  bool fill_comment_buffers = my->_params[ REPLY ].weight > 0 || my->_params[ VOTE ].weight > 0;
-  if( fill_comment_buffers )
-  {
-    bool shortfall = comments.size() < COLONY_COMMENT_BUFFER;
-    if( comments.size() == 0 )
-      fill_comment_buffers = false;
-    if( shortfall )
-    {
-      wlog( "Not enough initial comments to act as targets for replies/votes (${s} short).",
-        ( "s", COLONY_COMMENT_BUFFER - comments.size() ) );
-      wlog( "When nonexistent comment is selected as target, the reply/vote will be replaced with article." );
-      auto paid_comment_count = my->_db.get_index< comment_index, by_id >().size() - comments.size();
-      if( paid_comment_count > 0 )
-      {
-        wlog( "Note: there are ${c} additional comments in the state, but they were paid out, so "
-          "node has no data on their permlinks.", ( "c", paid_comment_count ) );
-      }
-    }
-  }
-  decltype( my->_threads )::iterator threadI;
-  int i = 0;
-  int not_matching_accounts = 0;
-  for( const auto& account : accounts )
-  {
-    auto get_active = [&]( const std::string& name ) { return authority( my->_db.get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( my->_db.get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( my->_db.get< account_authority_object, by_account >( name ).posting ); };
-    auto get_witness_key = [&]( const std::string& name ) { try { return my->_db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
-
-    required_authorities_type required_authorities;
-    required_authorities.required_active.insert( account.get_name() );
-
-    try
-    {
-      hive::protocol::verify_authority( required_authorities, common_keys,
-        get_active, get_owner, get_posting, get_witness_key );
-      if( i < my->_max_threads )
-      {
-        threadI = my->_threads.emplace( my->_threads.end(), *my, (uint8_t)i );
-        // get some initial comments to be used as targets for replies/votes;
-        // note that in case there is not enough or no comments, generation of replies/votes will
-        // be initially replaced with generation of articles
-        if( fill_comment_buffers )
-        {
-          for( const auto& comment : comments )
-          {
-            auto& comment_data = threadI->_comments[ threadI->_last_comment ];
-            comment_data.first = my->_db.get_account( comment.get_author_id() ).get_name();
-            comment_data.second = comment.get_permlink();
-            ++threadI->_last_comment;
-            if( threadI->_last_comment >= COLONY_COMMENT_BUFFER )
-            {
-              threadI->_last_comment = 0;
-              break;
-            }
-          }
-        }
-      }
-      threadI->_accounts.insert( account.get_name() );
-      ++i;
-      ++threadI;
-      if( threadI == my->_threads.end() )
-        threadI = my->_threads.begin();
-    }
-    catch( const hive::protocol::transaction_exception& ex )
-    {
-      //ilog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
-      ++not_matching_accounts; // expected to have at least built-in accounts as not matching
-    }
-  }
-
-  if( not_matching_accounts > 0 )
-  {
-    ilog( "Found ${a} accounts, ${f} have active authorities that don't match given set of private keys.",
-      ( "a", accounts.size() )( "f", not_matching_accounts ) );
-  }
-  if( my->_threads.empty() )
-  {
-    elog( "No accounts suitable for use as colony workers! Replay with use of block_log containing accounts that match given private keys." );
-    get_app().kill();
-  }
-  else if( i < my->_max_threads )
-  {
-    wlog( "Not enough accounts suitable for use as colony workers (${i}) to share between ${n} threads.", ( i )( "n", my->_max_threads ) );
-    my->_max_threads = i;
-  }
+  if( my->_start_at_block <= my->_db.head_block_num() )
+    my->start();
 
   my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
     { my->post_apply_transaction( note ); }, *this, 0 );
@@ -784,9 +807,6 @@ void colony_plugin::plugin_startup()
     wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
   else
     my->_p2p_ptr = _p2p_plugin;
-
-  for( auto& thread : my->_threads )
-    thread.init();
 
   ilog( "colony plugin:  plugin_startup() end" );
 } FC_CAPTURE_AND_RETHROW() }
