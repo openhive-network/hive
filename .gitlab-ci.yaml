@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 7ea99b10bbf0f9b1fbb88f52a78ead4c82f15d75
+    ref: 39ffa61f5f853d8f847f11dfffdbe9185e9b9775
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -914,10 +914,13 @@ functional_api_tests:
 publish_docker_image:
   stage: publish
   extends: .publish_docker_image_template
+  before_script:
+    - !reference [.publish_docker_image_template, before_script]
   script:
     - scripts/ci-helpers/build_and_publish_instance.sh
   tags:
     - public-runner-docker
+    - hived-for-tests
 
 hardfork_schedule_tests:
   stage: test
