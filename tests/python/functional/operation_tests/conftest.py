@@ -15,7 +15,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.fields.compound import Authority, HbdExchangeRate
+from schemas.fields.compound import Authority, HbdExchangeRate, Props
 from schemas.operations.account_update2_operation import AccountUpdate2Operation
 from schemas.operations.account_update_operation import AccountUpdateOperation
 from schemas.operations.limit_order_create2_operation import (
@@ -28,6 +28,8 @@ from schemas.operations.virtual.fill_collateralized_convert_request_operation im
     FillCollateralizedConvertRequestOperation,
 )
 from schemas.operations.virtual.fill_convert_request_operation import FillConvertRequestOperation
+from schemas.operations.witness_block_approve_operation import WitnessBlockApproveOperation
+from schemas.operations.witness_set_properties_operation import WitnessSetPropertiesOperation
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
@@ -628,6 +630,134 @@ class UpdateAccount(Account):
 
     def use_authority(self, authority_type: str):
         self._wallet.api.use_authority(authority_type, self._name)
+
+
+class WitnessAccount(Account):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.update_account_info()
+
+    def assert_if_feed_publish_operation_was_generated(self, transaction: dict):
+        operations = self._node.api.account_history.get_transaction(
+            id=transaction["transaction_id"], include_reversible=True
+        ).operations
+        for operation in operations:
+            if operation.type == "feed_publish_operation" and operation.value.publisher == self._name:
+                return
+        raise AssertionError("Feed_publish operation wasn't found.")
+
+    def assert_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+        self.rc_manabar.update()
+
+    def assert_rc_current_mana_was_unchanged(self) -> None:
+        self.rc_manabar.assert_current_mana_is_unchanged()
+
+    def become_witness(
+        self, url: str, account_creation_fee: tt.Asset.Test, maximum_block_size: int, hbd_interest_rate: int
+    ) -> dict:
+        self._url = url
+        self._account_creation_fee = account_creation_fee
+        self._maximum_block_size = maximum_block_size
+        self._hbd_interest_rate = hbd_interest_rate
+        return self._wallet.api.update_witness(
+            self._name,
+            self._url,
+            tt.Account(self._name).public_key,
+            {
+                "account_creation_fee": self._account_creation_fee,
+                "maximum_block_size": self._maximum_block_size,
+                "hbd_interest_rate": self._hbd_interest_rate,
+            },
+        )
+
+    def check_if_account_has_witness_role(self, expected_witness_role: bool):
+        witnesses = self._node.api.database.list_witnesses(start="", limit=100, order="by_name").witnesses
+        for witness in witnesses:
+            if witness.owner == self._name:
+                found_as_witness = True
+
+        if "found_as_witness" in locals():
+            if expected_witness_role:
+                return
+            raise AssertionError("New witness is listed in list_witnesses, but it shouldn't be.")
+        if expected_witness_role:
+            raise AssertionError("New witness isn't listed in list_witnesses, but it should be.")
+
+    def feed_publish(self, *, base: int, quote: int, broadcast: bool = True) -> dict:
+        exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
+        return self._wallet.api.publish_feed(self._name, exchange_rate, broadcast=broadcast)
+
+    def resign_from_witness_role(self) -> dict:
+        return self._wallet.api.update_witness(
+            self._name,
+            "http://url.html",
+            None,
+            {
+                "account_creation_fee": tt.Asset.Test(28),
+                "maximum_block_size": 131072,
+                "hbd_interest_rate": 1000,
+            },
+        )
+
+    def update_witness_properties(
+        self,
+        *,
+        new_maximum_block_size: int | None = None,
+        new_hbd_interest_rate: int | None = None,
+        new_block_signing_key: str | None = None,
+        new_url: str | None = None,
+        new_account_creation_fee: tt.Asset.TestT = None,
+    ) -> dict:
+        return self._wallet.api.update_witness(
+            self._name,
+            self._url if new_url is None else new_url,
+            tt.Account(self._name).public_key if new_block_signing_key is None else new_block_signing_key,
+            {
+                "account_creation_fee": (
+                    self._account_creation_fee if new_account_creation_fee is None else new_account_creation_fee
+                ),
+                "maximum_block_size": (
+                    self._maximum_block_size if new_maximum_block_size is None else new_maximum_block_size
+                ),
+                "hbd_interest_rate": (
+                    self._hbd_interest_rate if new_hbd_interest_rate is None else new_hbd_interest_rate
+                ),
+            },
+        )
+
+    def witness_set_properties(
+        self,
+        *,
+        new_account_creation_fee: tt.Asset.TestT,
+        new_account_subsidy_budget: int,
+        new_account_subsidy_decay: int,
+        new_maximum_block_size: int,
+        new_hbd_interest_rate: int,
+        new_base: int,
+        new_quote: int,
+        new_url: str,
+        new_new_signing_key: str,
+    ) -> dict:
+        {"base": tt.Asset.Tbd(new_base), "quote": tt.Asset.Test(new_quote)}
+        props = Props(
+            account_creation_fee=(
+                self._account_creation_fee if new_account_creation_fee is None else new_account_creation_fee
+            ),
+            maximum_block_size=self._maximum_block_size if new_maximum_block_size is None else new_maximum_block_size,
+            hbd_interest_rate=self._hbd_interest_rate if new_hbd_interest_rate is None else new_hbd_interest_rate,
+            account_subsidy_budget=new_account_subsidy_budget,
+        )
+        return create_transaction_with_any_operation(
+            self._wallet, WitnessSetPropertiesOperation(owner=self._name, props=props)
+        )
+
+    def witness_block_approve(self, *, block_id: int) -> dict:
+        return create_transaction_with_any_operation(
+            self._wallet, WitnessBlockApproveOperation(witness=self._name, block_id=block_id)
+        )
 
 
 @pytest.fixture()
