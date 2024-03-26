@@ -156,6 +156,7 @@ class colony_plugin_impl
     uint32_t                                             _overflowing_tx = 0;
     uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
+    bool                                                 _disable_broadcast = false;
 };
 
 void transaction_builder::print_stats() const
@@ -694,6 +695,7 @@ void colony_plugin::set_program_options(
     ( "colony-threads", bpo::value<std::uint32_t>()->default_value( COLONY_DEFAULT_THREADS ), ( "Number of worker threads. Default is " + std::to_string( COLONY_DEFAULT_THREADS ) ).c_str() )
     ( "colony-transactions-per-block", bpo::value<std::uint32_t>(), "Max number of transactions produced per block. When not set it will be sum of weights of individual types." )
     ( "colony-start-at-block", bpo::value<std::uint32_t>()->default_value( 0 ), "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed)." )
+    ( "colony-no-broadcast", bpo::value<bool>()->default_value( false ), "Disables broadcasting of produced transactions - only local witness will include them in block." )
     ( "colony-article", bpo::value<std::string>(), "Size and frequency parameters of article transactions." )
     ( "colony-reply", bpo::value<std::string>(), "Size and frequency parameters of reply transactions." )
     ( "colony-vote", bpo::value<std::string>(), "Size and frequency parameters of vote transactions." )
@@ -784,6 +786,7 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
       my->_max_tx_per_block = my->_dynamic_tx_per_block = my->_total_weight;
 
     my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
+    my->_disable_broadcast = options.at( "colony-no-broadcast" ).as<bool>();
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -800,13 +803,16 @@ void colony_plugin::plugin_startup()
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler( [&]( const block_notification& note )
     { my->post_apply_block( note ); }, *this, 0 );
 
-  auto* _p2p_plugin = get_app().find_plugin< hive::plugins::p2p::p2p_plugin >();
-  if( _p2p_plugin == nullptr )
-    wlog( "P2P plugin not present - transactions produced by colony won't be broadcast" );
-  else if( my->_chain.is_p2p_enabled() == false )
-    wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
-  else
-    my->_p2p_ptr = _p2p_plugin;
+  if( not my->_disable_broadcast )
+  {
+    auto* _p2p_plugin = get_app().find_plugin< hive::plugins::p2p::p2p_plugin >();
+    if( _p2p_plugin == nullptr )
+      wlog( "P2P plugin not present - transactions produced by colony won't be broadcast" );
+    else if( my->_chain.is_p2p_enabled() == false )
+      wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
+    else
+      my->_p2p_ptr = _p2p_plugin;
+  }
 
   ilog( "colony plugin:  plugin_startup() end" );
 } FC_CAPTURE_AND_RETHROW() }
