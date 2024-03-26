@@ -406,11 +406,11 @@ namespace detail {
         // capture("pct", uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT));
         condition = block_production_condition::low_participation;
       }
-      if( llabs((scheduled_time - next_block_time).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
-      {
-        // capture("scheduled_time", scheduled_time)("now", next_block_time);
-        condition = block_production_condition::lag;
-      }
+      // if( llabs((scheduled_time - next_block_time).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
+      // {
+        // // capture("scheduled_time", scheduled_time)("now", next_block_time);
+        // condition = block_production_condition::lag;
+      // }
 
       std::lock_guard g(produce_block_data.m);
       produce_block_data.next_slot = 1;
@@ -518,6 +518,12 @@ namespace detail {
 
     std::lock_guard g(produce_block_data.m);
     if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
+
+    if( llabs((produce_block_data.next_slot_time - now).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
+    {
+      capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
+      return block_production_condition::lag;
+    }
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
       produce_block_data.scheduled_witness, produce_block_data.private_key, _production_skip_flags, theApp );
