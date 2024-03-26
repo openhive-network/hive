@@ -269,7 +269,7 @@ void transaction_builder::push_transaction( kind_of_operation kind, post_action 
 {
   full_transaction_ptr full_tx = full_transaction_type::create_from_signed_transaction( _tx, serialization_type::hf26, false );
   _tx.clear();
-  full_tx->sign_transaction( _common._sign_with, _common._db.get_chain_id(), fc::ecc::fc_canonical, serialization_type::hf26, true );
+  full_tx->sign_transaction( _common._sign_with, _common._db.get_chain_id(), serialization_type::hf26, true );
   _stats[ kind ].real_size += full_tx->get_transaction_size();
   if( _concurrent_tx_count >= COLONY_MAX_CONCURRENT_TRANSACTIONS )
   {
