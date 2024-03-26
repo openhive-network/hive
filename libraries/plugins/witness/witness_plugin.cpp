@@ -365,9 +365,9 @@ namespace detail {
     }
     {
       const auto slot = _db.head_block_num();
-      const auto next_block_time = _db.get_slot_time( slot+1 );
+      const auto next_block_time = _db.get_slot_time( 1 );
       block_production_condition::block_production_condition_enum condition = block_production_condition::block_production_condition_enum::produced;
-      chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot+1 );
+      chain::account_name_type scheduled_witness = _db.get_scheduled_witness( 1 );
       if( !_production_enabled )
       {
         if( _db.get_slot_time(1) >= next_block_time )
@@ -391,7 +391,7 @@ namespace detail {
         // capture("scheduled_witness", scheduled_witness);
         condition = block_production_condition::not_my_turn;
       }
-      fc::time_point_sec scheduled_time = _db.get_slot_time( slot+1 );
+      fc::time_point_sec scheduled_time = _db.get_slot_time( 1 );
       chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
@@ -413,7 +413,7 @@ namespace detail {
       }
 
       std::lock_guard g(produce_block_data.m);
-      produce_block_data.next_slot = slot+1;
+      produce_block_data.next_slot = 1;
       produce_block_data.next_slot_time = next_block_time;
       produce_block_data.scheduled_witness = std::move(scheduled_witness);
       produce_block_data.private_key = private_key_itr->second;
@@ -642,6 +642,7 @@ void witness_plugin::plugin_startup()
     const auto head_block_num = my->_db.head_block_num();
     if( head_block_num == 0 )
     {
+      my->produce_block_data.next_slot = 1;
       my->produce_block_data.scheduled_witness = "initminer";
       auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>("initminer").signing_key;
       auto private_key_itr = my->_private_keys.find(scheduled_key);
@@ -649,12 +650,14 @@ void witness_plugin::plugin_startup()
     }
     else
     {
-      chain::account_name_type scheduled_witness = my->_db.get_scheduled_witness( head_block_num+1 );
+      uint32_t slot_num = my->_db.get_slot_at_time( my->produce_block_data.next_slot_time );
+      my->produce_block_data.next_slot = slot_num;
+      chain::account_name_type scheduled_witness = my->_db.get_scheduled_witness( slot_num );
+      ilog("scheduled_witness=${scheduled_witness}", (scheduled_witness));
       my->produce_block_data.scheduled_witness = scheduled_witness;
       auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
       auto private_key_itr = my->_private_keys.find(scheduled_key);
       my->produce_block_data.private_key = private_key_itr->second;
-      my->produce_block_data.next_slot = head_block_num+1;
     }
   }
   else
