@@ -9,6 +9,7 @@
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/colony/colony_plugin.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -55,6 +56,28 @@ struct witness_fixture : public hived_fixture
     return num;
   }
 
+  template< typename ACTION >
+  uint32_t wait_for_block_change( uint32_t block_num, ACTION&& action )
+  {
+    bool stop = false;
+    do
+    {
+      fc::usleep( fc::seconds( 1 ) );
+      db->with_read_lock( [&]()
+      {
+        uint32_t new_block = db->head_block_num();
+        if( new_block > block_num )
+        {
+          block_num = new_block;
+          action();
+          stop = true;
+        }
+      } );
+    }
+    while( !stop );
+    return block_num;
+  }
+
   void schedule_transaction( const operation& op ) const
   {
     signed_transaction tx;
@@ -64,8 +87,12 @@ struct witness_fixture : public hived_fixture
       tx.set_reference_block( db->head_block_id() );
     } );
     tx.operations.emplace_back( op );
+    schedule_transaction( tx );
+  }
+
+  void schedule_transaction( const signed_transaction& tx ) const
+  {
     full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
-    tx.clear();
     _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), fc::ecc::fc_canonical, serialization_type::hf26 );
     get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
@@ -136,16 +163,16 @@ catch( const fc::exception& ex )                                              \
 {                                                                             \
   elog( "Unhandled fc::exception thrown from '" thread_name "' thread: ${r}", \
     ( "r", ex.to_detail_string() ) );                                         \
+  BOOST_CHECK( false && "Unhandled fc::exception" );                          \
 }                                                                             \
 catch( ... )                                                                  \
 {                                                                             \
   elog( "Unhandled exception thrown from '" thread_name "' thread" );         \
+  BOOST_CHECK( false && "Unhandled exception" );                              \
 }
 
 BOOST_AUTO_TEST_CASE( witness_basic_test )
 {
-  using namespace hive::plugins::witness;
-
   try
   {
     initialize();
@@ -219,8 +246,6 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
 
 BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 {
-  using namespace hive::plugins::witness;
-
   try
   {
     configuration_data.min_root_comment_interval = fc::seconds( 3 * HIVE_BLOCK_INTERVAL );
@@ -486,6 +511,252 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
       CATCH( "DAN" )
       --active_feeders;
       ilog( "'DAN' thread finished" );
+    } );
+
+    theApp.wait();
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( colony_basic_test )
+{
+  try
+  {
+    configuration_data.min_root_comment_interval = fc::seconds( 3 );
+    const uint32_t COLONY_START = 16;
+
+    initialize( {
+      config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
+      config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
+      config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
+      config_line_t( { "colony-transactions-per-block", { "5000" } } ),
+      config_line_t( { "colony-no-broadcast", { "1" } } ),
+      config_line_t( { "colony-article", { R"~({"min":100,"max":5000,"weight":16,"exponent":4})~" } } ),
+      config_line_t( { "colony-reply", { R"~({"min":30,"max":1000,"weight":110,"exponent":5})~" } } ),
+      config_line_t( { "colony-vote", { R"~({"weight":2070})~" } } ),
+      config_line_t( { "colony-transfer", { R"~({"min":0,"max":350,"weight":87,"exponent":4})~" } } ),
+      config_line_t( { "colony-custom", { R"~({"min":20,"max":400,"weight":6006,"exponent":1})~" } } )
+    }, "8G" );
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.kill( true ); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        db->_log_hardforks = true;
+
+        ilog( "Starting 'API' thread that will be sending transactions" );
+
+        // now we have up to block 'colony_start' to add users and some initial comments
+        const int ACCOUNTS = 20000;
+        signed_transaction tx; // building multiop transaction to speed up the process
+        uint32_t block_num = 0;
+        db->with_read_lock( [&]()
+        {
+          tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+          tx.set_reference_block( db->head_block_id() );
+          block_num = db->head_block_num();
+        } );
+
+        // start with setting block size to 2MB (otherwise it will change to default 128kB on first schedule)
+        {
+          witness_set_properties_operation witness_props;
+          witness_props.owner = "initminer";
+          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
+          tx.operations.emplace_back( witness_props );
+          schedule_transaction( tx );
+          tx.clear();
+        }
+
+        for( size_t i = 0; i < ACCOUNTS; ++i )
+        {
+          auto account_name = "account" + std::to_string( i );
+
+          account_create_operation create;
+          create.new_account_name = account_name;
+          create.creator = HIVE_INIT_MINER_NAME;
+          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+          create.owner = authority( 1, init_account_pub_key, 1 );
+          create.active = create.owner;
+          create.posting = create.owner;
+          create.memo_key = init_account_pub_key;
+          tx.operations.emplace_back( create );
+
+          transfer_to_vesting_operation vest;
+          vest.from = HIVE_INIT_MINER_NAME;
+          vest.to = account_name;
+          vest.amount = ASSET( "1000.000 TESTS" );
+          tx.operations.emplace_back( vest );
+
+          transfer_operation fund;
+          fund.from = HIVE_INIT_MINER_NAME;
+          fund.to = account_name;
+          fund.amount = ASSET( "10.000 TBD" );
+          tx.operations.emplace_back( fund );
+
+          schedule_transaction( tx );
+          tx.clear();
+
+          comment_operation comment;
+          comment.parent_permlink = "hello";
+          comment.author = account_name;
+          comment.permlink = "hello";
+          comment.title = "hello";
+          comment.body = "Hi. I'm " + std::string( account_name );
+          tx.operations.emplace_back( comment );
+          schedule_transaction( comment );
+          tx.clear();
+
+          if( i % 2000 == 0 )
+          {
+            ilog( "Adding users... ${i}", ( i ) );
+            block_num = wait_for_block_change( block_num, [](){} );
+          }
+        }
+
+        block_num = get_block_num();
+        BOOST_REQUIRE_LT( block_num, COLONY_START ); // check that we've managed to prepare before activation of colony
+        ilog( "Sleeping until block #${b}", ( "b", COLONY_START ) );
+        fc::sleep_until( get_genesis_time() + COLONY_START * HIVE_BLOCK_INTERVAL );
+        block_num = get_block_num();
+
+        const auto& block_reader = get_chain_plugin().block_reader();
+
+        const uint32_t FULL_RATE_BLOCKS = ( COLONY_START + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        uint32_t start = block_num + 5; // 5 blocks of margin
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t tx_count = block->get_full_transactions().size();
+            ilog( "Tx count for block #${b} is ${tx_count}", ( "b", block->get_block_num() )( tx_count ) );
+            if( block->get_block_num() >= start )
+            {
+              BOOST_CHECK_LT( tx_count, 5200 );
+              BOOST_CHECK_GT( tx_count, 4800 );
+            }
+          } );
+        }
+        while( block_num < FULL_RATE_BLOCKS );
+
+        // reduce block size to 1MB so colony is forced to adjust production rate
+        {
+          witness_set_properties_operation witness_props;
+          witness_props.owner = "initminer";
+          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE / 2 );
+          tx.operations.emplace_back( witness_props );
+          schedule_transaction( tx );
+          tx.clear();
+          ilog( "Changing block size to 1MB - colony production rate should be reduced" );
+        }
+
+        // rate adjustment should happen next block after start of schedule (should be future
+        // schedule, but there is currently a bug where such change activates when future schedule
+        // is formed, not when it is activated) - increase number of blocks produced accordingly
+        // in case that bug is fixed;
+        // the question is, how do we actually test it? it shows in block stats, but that's it;
+        // above all 5000 produced transactions should fit in each block, after change in block
+        // size first block should have many pending transactions to apply, however next and
+        // further blocks there should be just around 200 pending transactions after each block
+        // despite only ~3800 transactions fitting in smaller blocks
+        const uint32_t REDUCED_RATE_BLOCKS = ( FULL_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        start = block_num + 5; // 5 blocks of margin
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t tx_count = block->get_full_transactions().size();
+            ilog( "Tx count for block #${b} is ${tx_count}", ( "b", block->get_block_num() )( tx_count ) );
+            if( block->get_block_num() >= start )
+            {
+              BOOST_CHECK_LT( tx_count, 4000 );
+              BOOST_CHECK_GT( tx_count, 3600 );
+            }
+          } );
+        }
+        while( block_num < REDUCED_RATE_BLOCKS );
+
+        // reduce block size to 64kB so colony is forced to drastically adjust production rate,
+        // even stop producing for a while; block stats should show a lot of pending transactions
+        // and no new incoming until almost all the pending are exhausted
+        {
+          witness_set_properties_operation witness_props;
+          witness_props.owner = "initminer";
+          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT );
+          tx.operations.emplace_back( witness_props );
+          schedule_transaction( tx );
+          tx.clear();
+          ilog( "Changing block size to 64kB - colony production rate should be drastically reduced" );
+        }
+
+        const uint32_t MINIMAL_RATE_BLOCKS = ( REDUCED_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        start = block_num + 5; // 5 blocks of margin
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t tx_count = block->get_full_transactions().size();
+            ilog( "Tx count for block #${b} is ${tx_count}", ( "b", block->get_block_num() )( tx_count ) );
+            if( block->get_block_num() >= start )
+            {
+              BOOST_CHECK_LT( tx_count, 300 );
+              BOOST_CHECK_GT( tx_count, 200 );
+            }
+          } );
+        }
+        while( block_num < MINIMAL_RATE_BLOCKS );
+
+        // increase block size back to 2MB, so colony can ramp up production again
+        {
+          witness_set_properties_operation witness_props;
+          witness_props.owner = "initminer";
+          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
+          tx.operations.emplace_back( witness_props );
+          // we need to change at least expiration time, or this transaction would be a duplicate
+          // of the one we made previously when setting 2MB blocks
+          tx.set_expiration( tx.expiration + HIVE_BLOCK_INTERVAL );
+          schedule_transaction( tx );
+          tx.clear();
+          ilog( "Changing block size back to 2MB - colony production rate should return to full" );
+        }
+
+        const uint32_t FULL2_RATE_BLOCKS = ( MINIMAL_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21;
+        start = block_num + 5; // 5 blocks of margin
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t tx_count = block->get_full_transactions().size();
+            ilog( "Tx count for block #${b} is ${tx_count}", ( "b", block->get_block_num() )( tx_count ) );
+            if( block->get_block_num() >= start )
+            {
+              BOOST_CHECK_LT( tx_count, 5200 );
+              BOOST_CHECK_GT( tx_count, 4800 );
+            }
+          } );
+        }
+        while( block_num < FULL2_RATE_BLOCKS );
+
+        ilog( "'API' thread finished" );
+      }
+      CATCH( "API" )
     } );
 
     theApp.wait();
