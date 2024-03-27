@@ -364,7 +364,7 @@ namespace detail {
       _last_fast_confirmation_block_number = note.block_num;
     }
     {
-      const auto slot = _db.head_block_num();
+      const auto head_block_num = _db.head_block_num();
       const auto next_block_time = _db.get_slot_time( 1 );
       block_production_condition::block_production_condition_enum condition = block_production_condition::block_production_condition_enum::produced;
       chain::account_name_type scheduled_witness = _db.get_scheduled_witness( 1 );
@@ -391,7 +391,6 @@ namespace detail {
         // capture("scheduled_witness", scheduled_witness);
         condition = block_production_condition::not_my_turn;
       }
-      fc::time_point_sec scheduled_time = _db.get_slot_time( 1 );
       chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
@@ -513,12 +512,18 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
+    std::lock_guard g(produce_block_data.m);
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
-    std::lock_guard g(produce_block_data.m);
     if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
 
+    const uint32_t slot = _db.get_slot_at_time( now );
+    if( slot == 0 )
+    {
+      // capture("next_time", _db.get_slot_time(1));
+      return block_production_condition::not_time_yet;
+    }
     if( llabs((produce_block_data.next_slot_time - now).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
