@@ -335,6 +335,28 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
     return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
 
 
+def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, creator: str) -> None:
+    wallet.api.create_account_with_keys(
+        creator,
+        account_name,
+        "{}",
+        tt.Account(account_name, secret="owner_key").public_key,
+        tt.Account(account_name, secret="active_key").public_key,
+        tt.Account(account_name, secret="posting_key").public_key,
+        tt.Account(account_name, secret="memo_key").public_key,
+        broadcast=True,
+    )
+
+    wallet.api.import_keys(
+        [
+            tt.Account(account_name, secret="owner_key").private_key,
+            tt.Account(account_name, secret="active_key").private_key,
+            tt.Account(account_name, secret="posting_key").private_key,
+            tt.Account(account_name, secret="memo_key").private_key,
+        ]
+    )
+
+
 def create_transaction_with_any_operation(
     wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True
 ) -> dict[str, Any]:
