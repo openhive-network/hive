@@ -524,9 +524,19 @@ namespace detail {
       // capture("next_time", _db.get_slot_time(1));
       return block_production_condition::not_time_yet;
     }
-    if( llabs((produce_block_data.next_slot_time - now).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
+    const fc::microseconds lag = produce_block_data.next_slot_time - now;
+    if( llabs(lag.count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
+      if (lag.count() < 0)
+      {
+        produce_block_data.next_slot_time = _db.get_slot_time(slot);
+        chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+        produce_block_data.scheduled_witness = scheduled_witness;
+        auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
+        auto private_key_itr = _private_keys.find(scheduled_key);
+        produce_block_data.private_key = private_key_itr->second;
+      }
       return block_production_condition::lag;
     }
 
