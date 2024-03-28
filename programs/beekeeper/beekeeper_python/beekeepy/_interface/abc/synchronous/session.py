@@ -32,6 +32,10 @@ class Session(ABC):
     @abstractmethod
     def wallets(self) -> list[Wallet]: ...
 
+    @property
+    @abstractmethod
+    def token(self) -> str: ...
+
     def __enter__(self) -> Self:
         return self
 

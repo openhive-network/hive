@@ -16,3 +16,8 @@ def test_closing_with_delete() -> None:
 def test_closing_with_with() -> None:
     with beekeeper_factory():
         pass
+
+def test_session_tokens() -> None:
+    with beekeeper_factory() as bk:
+        with bk.create_session() as s1, bk.create_session() as s2:
+            assert s1.token != s2.token

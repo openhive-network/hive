@@ -7,6 +7,12 @@ from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
+from helpy import (
+    AsyncBeekeeper as AsynchronousBeekeeperHandle,
+)
+from helpy import (
+    HttpUrl,
+)
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.wallet import (
@@ -15,16 +21,15 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.wallet import (
         Wallet as WalletInterface,
     )
-    from helpy import (
-        AsyncBeekeeper as AsynchronousBeekeeperHandle,
-    )
     from schemas.apis.beekeeper_api import GetInfo
 
 
 class Session(SessionInterface):
     def __init__(self, *args: Any, beekeeper: AsynchronousBeekeeperHandle, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__beekeeper = beekeeper
+        self.__beekeeper = AsynchronousBeekeeperHandle(
+            settings=beekeeper.settings.copy(update={"notification_endpoint": HttpUrl("127.0.0.1:0")})
+        )
 
     async def get_info(self) -> GetInfo:
         return await self.__beekeeper.api.beekeeper.get_info()
@@ -42,6 +47,10 @@ class Session(SessionInterface):
     async def lock_all(self) -> list[WalletInterface]:
         await self.__beekeeper.api.beekeeper.lock_all()
         return await self.wallets
+
+    @property
+    def token(self) -> str:
+        return self.__beekeeper.session_token
 
     @property
     async def wallets(self) -> list[WalletInterface]:
