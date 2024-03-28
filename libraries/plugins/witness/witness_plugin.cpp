@@ -654,7 +654,7 @@ void witness_plugin::plugin_startup()
     fc::time_point now = fc::time_point::now();
     const auto time_to_sleep = fc::microseconds(my->schedule_production_loop());
     my->produce_block_data.produce_in_next_slot = true;
-    my->produce_block_data.next_slot_time = now + fc::seconds(HIVE_BLOCK_INTERVAL) + time_to_sleep;
+    my->produce_block_data.next_slot_time = my->_db.get_slot_time(1);
     const auto head_block_num = my->_db.head_block_num();
     if( head_block_num == 0 )
     {
