@@ -196,6 +196,13 @@ class Account:
         assert len(self._node.api.database.find_accounts(accounts=[self.name]).accounts[0].delayed_votes) == 0
         self._acc_info.delayed_votes.clear()
 
+    def check_if_current_rc_mana_was_reduced(self, trx) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(trx["rc_cost"], get_transaction_timestamp(self._node, trx))
+        self.rc_manabar.update()
+
+    def check_if_rc_mana_was_unchanged(self) -> None:
+        self.rc_manabar.assert_current_mana_is_unchanged()
+
 
 class _BaseManabar(ABC):
     def __init__(self, node: tt.InitNode, name: str):
