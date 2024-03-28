@@ -75,9 +75,9 @@ private:
       collect_account_auths(*_authority, _account_name, _key_kind, _weight_threshold);
   }
 
-  void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item) 
+  void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item, bool allow_empty_key) 
   {
-    if( memo_key != public_key_type() )
+    if( allow_empty_key || memo_key != public_key_type() )
     {
       collected_item.key_auth = memo_key;
       collected_keyauths.emplace_back(collected_item);
@@ -85,10 +85,10 @@ private:
   }
 
 
-  void collect_memo_key(optional< public_key_type > memo_key, collected_keyauth_t& collected_item) 
+  void collect_memo_key(optional< public_key_type > memo_key, collected_keyauth_t& collected_item, bool allow_empty_key) 
   {
     if(memo_key)
-      collect_memo_key(*memo_key, collected_item);
+      collect_memo_key(*memo_key, collected_item, allow_empty_key);
   }
 
 
@@ -110,13 +110,13 @@ private:
   }
 
   template<typename T>
-  void collect_memo(const T& op, std::string _account_name)
+  void collect_memo(const T& op, std::string _account_name, bool allow_empty_key)
   {
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
     collected_item.key_kind = hive::app::key_t::MEMO;
 
-    collect_memo_key(op.memo_key, collected_item);
+    collect_memo_key(op.memo_key, collected_item, allow_empty_key);
   }
 
 
@@ -180,7 +180,7 @@ private:
     collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
     collect_one(op, op.active,  hive::app::key_t::ACTIVE,  op.new_account_name);
     collect_one(op, op.posting, hive::app::key_t::POSTING, op.new_account_name);
-    collect_memo(op, op.new_account_name);
+    collect_memo(op, op.new_account_name, true/*allow_empty_key*/);
   }
 
   result_type operator()( const account_create_with_delegation_operation& op )
@@ -188,7 +188,7 @@ private:
     collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
     collect_one(op, op.active,  hive::app::key_t::ACTIVE,  op.new_account_name);
     collect_one(op, op.posting, hive::app::key_t::POSTING, op.new_account_name);
-    collect_memo(op, op.new_account_name);
+    collect_memo(op, op.new_account_name, true/*allow_empty_key*/);
   }
 
   result_type operator()( const account_update_operation& op )
@@ -196,7 +196,7 @@ private:
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
     collect_one(op, op.active, hive::app::key_t::ACTIVE, op.account);
     collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
-    collect_memo(op, op.account);
+    collect_memo(op, op.account, false/*allow_empty_key*/);
   }
 
   result_type operator()( const account_update2_operation& op )
@@ -204,7 +204,7 @@ private:
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
     collect_one(op, op.active, hive::app::key_t::ACTIVE, op.account);
     collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
-    collect_memo(op, op.account);
+    collect_memo(op, op.account, false/*allow_empty_key*/);
   }
 
   result_type operator()( const create_claimed_account_operation& op )
@@ -212,7 +212,7 @@ private:
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.new_account_name);
     collect_one(op, op.active, hive::app::key_t::ACTIVE, op.new_account_name);
     collect_one(op, op.posting,hive::app::key_t::POSTING, op.new_account_name);
-    collect_memo(op, op.new_account_name);
+    collect_memo(op, op.new_account_name, true/*allow_empty_key*/);
   }
 
   result_type operator()( const recover_account_operation& op)
