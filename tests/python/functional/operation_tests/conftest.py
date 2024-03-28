@@ -110,11 +110,6 @@ class ConvertAccount(Account):
     def convert_hives(self, amount: tt.Asset.Test, broadcast: bool = True) -> dict:
         return self._wallet.api.convert_hive_with_collateral(self._name, amount, broadcast=broadcast)
 
-    def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
-        self.rc_manabar.assert_rc_current_mana_is_reduced(
-            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
-        )
-
     def check_if_right_amount_was_converted_and_added_to_balance(self, transaction: dict) -> None:
         old_hive_balance = self.hive
         self.update_account_info()
@@ -240,10 +235,6 @@ class EscrowAccount(Account):
         self.update_account_info()
         assert old_hbd_balance + fee == self.hbd, f"Fee ({fee}) wasn't added to agent's balance after escrow approvals."
 
-    def check_if_current_rc_mana_was_reduced(self, trx) -> None:
-        self.rc_manabar.assert_rc_current_mana_is_reduced(trx["rc_cost"], get_transaction_timestamp(self._node, trx))
-        self.rc_manabar.update()
-
     @staticmethod
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
         ops = trx["operations"]
@@ -306,11 +297,6 @@ class LimitOrderAccount(Account):
 
     def cancel_order(self, *, order_id: int = 0):
         return self._wallet.api.cancel_order(self._name, order_id)
-
-    def assert_rc_current_mana_was_reduced(self, transaction):
-        self.rc_manabar.assert_rc_current_mana_is_reduced(
-            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
-        )
 
     def create_order(
         self,

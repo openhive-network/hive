@@ -32,7 +32,7 @@ def test_convert_hbd_to_hive(create_node_and_wallet_for_convert_tests: tuple, al
         edit_if_needed=True,
     )
     transaction = alice.convert_hbd(tt.Asset.Tbd(50))
-    alice.check_if_rc_current_mana_was_reduced(transaction)
+    alice.check_if_current_rc_mana_was_reduced(transaction)
     alice.check_if_funds_to_convert_were_subtracted(transaction)
     # generate enough block to jump HIVE_COLLATERALIZED_CONVERSION_DELAY interval
     node.api.debug_node.debug_generate_blocks(
@@ -117,7 +117,7 @@ def test_convert_hive_to_hbd(create_node_and_wallet_for_convert_tests: tuple, al
     transaction = alice.convert_hives(tt.Asset.Test(200))
 
     alice.assert_collateralized_convert_immediate_conversion_operation(expected_amount=1)
-    alice.check_if_rc_current_mana_was_reduced(transaction)
+    alice.check_if_current_rc_mana_was_reduced(transaction)
 
     alice.assert_account_balance_after_creating_collateral_conversion_request(transaction)
     alice.assert_collateralized_conversion_requests(trx=transaction, state="create")
@@ -234,7 +234,7 @@ def test_convert_hive_into_hbd_with_changing_median_current_price_during_convers
         debug_key=tt.Account("initminer").private_key, count=200, skip=0, miss_blocks=0, edit_if_needed=True
     )
     transaction = alice.convert_hives(tt.Asset.Test(200))
-    alice.check_if_rc_current_mana_was_reduced(transaction)
+    alice.check_if_current_rc_mana_was_reduced(transaction)
     alice.assert_account_balance_after_creating_collateral_conversion_request(transaction)
     alice.assert_collateralized_convert_immediate_conversion_operation(expected_amount=1)
     alice.assert_collateralized_conversion_requests(trx=transaction, state="create")
