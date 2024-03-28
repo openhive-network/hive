@@ -27,11 +27,24 @@ struct collected_keyauth_t
   std::string account_auth;
   hive::protocol::weight_type w = 0;
 
+  bool lock_account_mode = false;
+
+  bool allow_null_in_key_auth() const
+  {
+    return lock_account_mode || !keyauth_variant;
+  }
+
+  bool allow_null_in_account_auth() const
+  {
+    return lock_account_mode || keyauth_variant;
+  }
 };
 
 typedef std::vector<collected_keyauth_t> collected_keyauth_collection_t;
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op);
 collected_keyauth_collection_t operation_get_genesis_keyauths();
 collected_keyauth_collection_t operation_get_hf09_keyauths();
+collected_keyauth_collection_t operation_get_hf21_keyauths();
+collected_keyauth_collection_t operation_get_hf24_keyauths();
 
 } // namespace hive::app
