@@ -134,7 +134,6 @@ using unlock_return = void_type;
 struct remove_key_args: public session_token_type
 {
   std::string wallet_name;
-  std::string password;
   std::string public_key;
 };
 using remove_key_return = void_type;
@@ -287,7 +286,7 @@ FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::session_token_type), (wa
 FC_REFLECT( beekeeper::create_return, (password) )
 FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
 FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )
-FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(password)(public_key) )
+FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(public_key) )
 FC_REFLECT( beekeeper::import_key_return, (public_key) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )

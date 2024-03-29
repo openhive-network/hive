@@ -59,7 +59,7 @@ class beekeeper_api final
     std::string lock( const std::string& token, const std::string& wallet_name );
 
     std::string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key );
-    std::string remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key );
+    std::string remove_key( const std::string& token, const std::string& wallet_name, const std::string& public_key );
 
     std::string list_wallets( const std::string& token );
 

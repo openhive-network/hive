@@ -36,7 +36,6 @@ namespace detail
       {
         methods.insert( std::make_pair( "beekeeper_api.unlock",     "password" ) );
         methods.insert( std::make_pair( "beekeeper_api.import_key", "wif_key" ) );
-        methods.insert( std::make_pair( "beekeeper_api.remove_key", "password" ) );
       }
 
     public:

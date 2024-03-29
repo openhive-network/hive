@@ -554,7 +554,7 @@ ___
 
 ### removeKey
 
-▸ **removeKey**(`password`, `publicKey`): `Promise`\<`void`\>
+▸ **removeKey**(`publicKey`): `Promise`\<`void`\>
 
 Removes given key from this wallet
 
@@ -562,7 +562,6 @@ Removes given key from this wallet
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `password` | `string` | password to the wallet |
 | `publicKey` | `string` | public key in WIF format to match the private key in the wallet to remove |
 
 #### Returns

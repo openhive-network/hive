@@ -50,8 +50,8 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     return public_key;
   }
 
-  public async removeKey(password: string, publicKey: TPublicKey): Promise<void> {
-    this.api.extract(this.api.api.remove_key(this.session.token, this.locked.name, password, publicKey) as string);
+  public async removeKey(publicKey: TPublicKey): Promise<void> {
+    this.api.extract(this.api.api.remove_key(this.session.token, this.locked.name, publicKey) as string);
 
     await this.api.fs.sync();
   }

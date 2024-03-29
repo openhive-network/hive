@@ -218,11 +218,11 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key )
+  std::string beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& public_key )
   {
     auto _method = [&, this]()
     {
-      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
+      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, public_key );
       return to_string( empty_response );
     };
     return exception_handler( _method );

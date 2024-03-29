@@ -132,7 +132,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, remove_key )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  _wallet_mgr->remove_key( args.token, args.wallet_name, args.password, args.public_key );
+  _wallet_mgr->remove_key( args.token, args.wallet_name, args.public_key );
   return remove_key_return();
 }
 

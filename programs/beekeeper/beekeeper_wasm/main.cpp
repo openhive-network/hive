@@ -150,12 +150,11 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
-        password:     a wallet's password
         public_key:   a public key corresponding to a private key that is stored in a wallet
       RESULT:
         nothing
     */
-    .function("remove_key(token, wallet_name, password, public_key)", &beekeeper_api::remove_key)
+    .function("remove_key(token, wallet_name, public_key)", &beekeeper_api::remove_key)
 
     /*
       ****listing of all opened wallets****

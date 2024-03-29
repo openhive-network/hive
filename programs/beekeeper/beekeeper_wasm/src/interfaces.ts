@@ -95,12 +95,11 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   /**
    * Removes given key from this wallet
    *
-   * @param {string} password password to the wallet
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet to remove
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  removeKey(password: string, publicKey: TPublicKey): Promise<void>;
+  removeKey(publicKey: TPublicKey): Promise<void>;
 
   /**
    * Signs a transaction by signing a digest of the transaction

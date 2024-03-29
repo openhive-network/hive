@@ -111,10 +111,9 @@ public:
   /// Removes a key from the specified wallet.
   /// Wallet must be opened and unlocked.
   /// @param name the name of the wallet to remove the key from.
-  /// @param password the plaintext password returned from ::create.
   /// @param public_key the Public Key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm
   /// @throws fc::exception if wallet not found or locked or key is not removed.
-  void remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& public_key );
+  void remove_key( const std::string& token, const std::string& name, const std::string& public_key );
 
   /// @return Current time and timeout time
   info get_info( const std::string& token );

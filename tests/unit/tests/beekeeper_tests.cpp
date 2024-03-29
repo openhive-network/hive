@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   // key3 was not automatically imported
   BOOST_REQUIRE( cmp_keys( key3, keys ) == keys.end() );
 
-  wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) );
+  wm.remove_key(_token, "test", beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) );
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
@@ -201,9 +201,10 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key3).first ) ), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", beekeeper::utility::public_key::to_string( pub_pri_pair(key3).first ) ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) ), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test_xyz", beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) ), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "this-is-not-key" ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
 
   wm.lock(_token, "test");
@@ -731,7 +732,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       BOOST_REQUIRE_EQUAL( _keys_wallet_1.size(), 2 );
     }
 
-    _obj.remove_key( _token, "wallet_1", _password_1, "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" );
+    _obj.remove_key( _token, "wallet_1", "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" );
 
     auto _public_keys = extract_json( _obj.get_public_keys( _token ) );
     BOOST_TEST_MESSAGE( _public_keys );
