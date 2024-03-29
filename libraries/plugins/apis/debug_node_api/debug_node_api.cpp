@@ -5,7 +5,6 @@
 #include <fc/optional.hpp>
 #include <fc/variant_object.hpp>
 
-#include <hive/chain/block_log.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -25,7 +24,6 @@ class debug_node_api_impl
       theApp( app ) {}
 
     DECLARE_API_IMPL(
-      (debug_push_blocks)
       (debug_generate_blocks)
       (debug_generate_blocks_until)
       (debug_get_head_block)
@@ -46,61 +44,6 @@ class debug_node_api_impl
 
     appbase::application&             theApp;
 };
-
-DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
-{
-  auto& src_filename = args.src_filename;
-  auto count = args.count;
-  auto skip_validate_invariants = args.skip_validate_invariants;
-
-  if( count == 0 )
-    return { 0 };
-
-  fc::path src_path = fc::path( src_filename );
-  fc::path index_path = fc::path( src_filename + ".index" );
-  if( fc::exists(src_path) && fc::exists(index_path) &&
-    !fc::is_directory(src_path) && !fc::is_directory(index_path)
-    )
-  {
-    ilog( "Loading ${n} from block_log ${fn}", ("n", count)("fn", src_filename) );
-    idump( (src_filename)(count)(skip_validate_invariants) );
-    chain::block_log log( theApp );
-    log.open( src_path, theApp.get_plugin< chain::chain_plugin >().get_thread_pool() );
-    uint32_t first_block = _db.head_block_num()+1;
-    uint32_t skip_flags = chain::database::skip_nothing;
-    if( skip_validate_invariants )
-      skip_flags = skip_flags | chain::database::skip_validate_invariants;
-    for( uint32_t i=0; i<count; i++ )
-    {
-      std::shared_ptr<hive::chain::full_block_type> full_block;
-      try
-      {
-        full_block = log.read_block_by_num( first_block + i );
-        if (!full_block)
-          FC_THROW("Unable to read block ${block_num}", ("block_num", first_block + i));
-      }
-      catch( const fc::exception& e )
-      {
-        elog("Could not read block ${i} of ${count}", (i)(count));
-        continue;
-      }
-
-      try
-      {
-        hive::chain::existing_block_flow_control block_ctrl( full_block );
-        _chain.push_block( block_ctrl, skip_flags );
-      }
-      catch (const fc::exception& e)
-      {
-        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", full_block->get_block_num())("bid", full_block->get_block_id())("i", i)("n", count) );
-        elog( "Exception backtrace: ${bt}", ("bt", e.to_detail_string()) );
-      }
-    }
-    ilog( "Completed loading block_database successfully" );
-    return { count };
-  }
-  return { 0 };
-}
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 {
@@ -183,7 +126,6 @@ debug_node_api::debug_node_api( appbase::application& app): my( new detail::debu
 debug_node_api::~debug_node_api() {}
 
 DEFINE_WRITE_APIS( debug_node_api,
-  (debug_push_blocks)
   (debug_generate_blocks)
   (debug_generate_blocks_until)
   (debug_set_hardfork)

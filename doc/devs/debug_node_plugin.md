@@ -76,33 +76,20 @@ The API provides the following methods
 (see `libraries/plugins/debug_node/include/hive/plugins/debug_node/debug_node_api.hpp`
 for these definitions):
 
-    void debug_push_blocks( std::string src_filename, uint32_t count );
     void debug_generate_blocks( std::string debug_key, uint32_t count );
     void debug_update_object( fc::variant_object update );
     void debug_stream_json_objects( std::string filename );
     void debug_stream_json_objects_flush();
 
-Okay, let's run `hived`.  It should start immediately with no blocks.  We can ask it to read blocks from the directory we saved earlier:
+Okay, let's run `hived`.  It should start immediately with no blocks. Let's generate some blocks:
 
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_push_blocks",["/mydir/myblocks", 1000]], "id": 1}' http://127.0.0.1:8090/rpc
-
-As expected we now have 1000 blocks:
-
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_dynamic_global_properties",[]], "id": 2}' http://127.0.0.1:8090/rpc
-
-It queries the directory for blocks after the current head block, so we can subsequently load 500 more:
-
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_push_blocks",["/mydir/myblocks", 500]], "id": 3}' http://127.0.0.1:8090/rpc
-
-Let's generate some blocks:
-
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_generate_blocks",["5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3",5]], "id": 4}' http://127.0.0.1:8090/rpc
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_generate_blocks",["5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3",5]], "id": 1}' http://127.0.0.1:8090/rpc
 
 As you can see, the `debug_node` performs a local edit of each witness's public key:
 
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_witness_by_account",["dantheman4"]], "id": 5}' http://127.0.0.1:8990/rpc
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_witness_by_account",["thisisnice4"]], "id": 6}' http://127.0.0.1:8990/rpc
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_dynamic_global_properties",[]], "id": 7}' http://127.0.0.1:8090/rpc
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_witness_by_account",["dantheman4"]], "id": 2}' http://127.0.0.1:8990/rpc
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_witness_by_account",["thisisnice4"]], "id": 3}' http://127.0.0.1:8990/rpc
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"get_dynamic_global_properties",[]], "id": 4}' http://127.0.0.1:8090/rpc
 
 The important information in the above is:
 
@@ -113,8 +100,8 @@ which demonstrates the witness keys have been reset and the head block number ha
 
 If we want to take control of an account we can do so by editing its key with `debug_update_object` command like this:
 
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"lookup_account_names",[["steemit"]]], "id": 8}' http://127.0.0.1:8090/rpc    # find out ID of account we want is 2.2.28
-    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_update_object",[{"_action":"update","id":"2.2.28","active":{"weight_threshold":1,"key_auths":[["STM6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV",1]]}}]], "id": 9}]' http://127.0.0.1:8090/rpc
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [0,"lookup_account_names",[["steemit"]]], "id": 5}' http://127.0.0.1:8090/rpc    # find out ID of account we want is 2.2.28
+    curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_update_object",[{"_action":"update","id":"2.2.28","active":{"weight_threshold":1,"key_auths":[["STM6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV",1]]}}]], "id": 6}]' http://127.0.0.1:8090/rpc
 
 Now that we've reset its key, we can take control of it in the wallet:
     programs/cli_wallet/cli_wallet -w debug_wallet.json -s ws://127.0.0.1:8090
