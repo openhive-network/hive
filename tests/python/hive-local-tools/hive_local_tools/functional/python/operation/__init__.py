@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
+from schemas.operations.custom_json_operation import CustomJsonOperation
 
 
 @dataclass
@@ -358,12 +360,18 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True
+    wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True, broadcast: bool = True
 ) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
     transaction = get_transaction_model()
+    ops = []
+    for op in operations:
+        if isinstance(op, CustomJsonOperation):
+            op.json_ = json.dumps(op.json_)
+        ops.append((op.get_name(), op))
+    transaction.operations = ops
     transaction.operations = [(op.get_name(), op) for op in operations]
-    return wallet.api.sign_transaction(transaction, only_result=only_result)
+    return wallet.api.sign_transaction(transaction, only_result=only_result, broadcast=broadcast)
 
 
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
