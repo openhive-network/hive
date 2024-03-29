@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
           {
             try
             {
-              _api.remove_key( beekeeper::remove_key_args{ _token, _wallet_name, _password, _public_key } );
+              _api.remove_key( beekeeper::remove_key_args{ _token, _wallet_name, _public_key } );
             }
             catch( const fc::exception& e )
             {

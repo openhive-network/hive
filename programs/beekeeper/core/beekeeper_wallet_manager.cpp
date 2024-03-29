@@ -95,10 +95,10 @@ string beekeeper_wallet_manager::import_key( const std::string& token, const std
   return sessions->get_wallet_manager( token )->import_key( name, wif_key );
 }
 
-void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& public_key )
+void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& public_key )
 {
   sessions->check_timeout( token );
-  sessions->get_wallet_manager( token )->remove_key( name, password, public_key );
+  sessions->get_wallet_manager( token )->remove_key( name, public_key );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name )

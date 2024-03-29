@@ -220,7 +220,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         const wallets = api.listWallets(sessionToken);
         requireWalletsIn(wallets, 3, 1, true, 2, false);
 
-        api.removeKey(sessionToken, walletNames[1], keys[2][1], null);
+        api.removeKey(sessionToken, walletNames[1], keys[2][1]);
 
         const publicKeys = api.getPublicKeys(sessionToken);
         requireKeysIn(publicKeys, 1, 3);
@@ -783,7 +783,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       const walletNo = 1;
 
       (api.setAcceptError as unknown as boolean) = true;
-      let error_message = api.removeKey(api.implicitSessionToken!, "nonexsiting-wallet", "", "");
+      let error_message = api.removeKey(api.implicitSessionToken!, "nonexsiting-wallet", "");
       console.log(error_message);
       assert.equal(error_message.includes("Wallet not found: nonexsiting-wallet"), true, "NEGATIVE TESTCASE 6 FAILED");
 
@@ -791,7 +791,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
 
       (api.setAcceptError as unknown as boolean) = true;
-      error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "", "");
+      error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "");
       console.log(error_message);
       assert.equal(error_message.includes("Wallet is locked: w1"), true, "NEGATIVE TESTCASE 6a FAILED");
 
@@ -799,25 +799,17 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       error_message = api.unlock(api.implicitSessionToken!, walletNames[walletNo]);
 
       (api.setAcceptError as unknown as boolean) = true;
-      error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "", "");
-      console.log(error_message);
-      assert.equal(error_message.includes("password.size() > 0"), true, "NEGATIVE TESTCASE 6b FAILED");
-
-      error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "", "xxxxx");
-      console.log(error_message);
-      assert.equal(error_message.includes("Invalid password for wallet:"), true, "NEGATIVE TESTCASE 6c FAILED");
-
       error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "");
       console.log(error_message);
       assert.equal(error_message.includes("public_key.size() > 0"), true);
 
       error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "currant");
       console.log(error_message);
-      assert.equal(error_message.includes("s == sizeof(data)"), true, "NEGATIVE TESTCASE 6d FAILED");
+      assert.equal(error_message.includes("s == sizeof(data)"), true, "NEGATIVE TESTCASE 6b FAILED");
 
       error_message = api.removeKey(api.implicitSessionToken!, walletNames[walletNo], "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
       console.log(error_message);
-      assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6e FAILED");
+      assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6c FAILED");
     }
     {
       (api.setAcceptError as unknown as boolean) = true;
