@@ -278,7 +278,7 @@ class Comment:
                 only_result=False,
             )
             if comment_options != {}:
-                self.__options(**comment_options)
+                self.__options(broadcast=False, **comment_options)
 
         self.__comment_transaction = CommentTransaction(**self.__comment_transaction.get_response())
 
@@ -380,7 +380,7 @@ class Comment:
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
-    def __options(self, **comment_options: Any) -> CommentOptionsTransaction:
+    def __options(self, broadcast: bool = True, **comment_options: Any) -> CommentOptionsTransaction:
         """
         Private function for modifying a comment options.
 
@@ -416,9 +416,7 @@ class Comment:
         return get_response_model(
             CommentOptionsTransaction,
             **create_transaction_with_any_operation(
-                self.__wallet,
-                comment_options_operation,
-                only_result=False,
+                self.__wallet, comment_options_operation, only_result=False, broadcast=broadcast
             ),
         ).result
 
