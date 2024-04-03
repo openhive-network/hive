@@ -80,7 +80,7 @@ namespace detail {
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
-    produce_block_data_t get_produce_block_data();
+    produce_block_data_t get_produce_block_data(uint32_t slot);
 
     int64_t schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop(const boost::system::error_code&);
@@ -365,17 +365,17 @@ namespace detail {
       _last_fast_confirmation_block_number = note.block_num;
     }
     {
-      produce_block_data_t data = get_produce_block_data();
+      produce_block_data_t data = get_produce_block_data(1);
       std::lock_guard g(should_produce_block_mutex);
       produce_block_data = std::move(data);
     }
   }
 
-  produce_block_data_t witness_plugin_impl::get_produce_block_data()
+  produce_block_data_t witness_plugin_impl::get_produce_block_data(uint32_t slot)
   {
     const auto head_block_num = _db.head_block_num();
-    const auto next_block_time = _db.get_slot_time( 1 );
-    chain::account_name_type scheduled_witness = _db.get_scheduled_witness( 1 );
+    const auto next_block_time = _db.get_slot_time( slot );
+    chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
     fc::ecc::private_key private_key;
 
     // immediately invoked lambda returning block_production_condition
@@ -427,7 +427,7 @@ namespace detail {
     }();
 
     produce_block_data_t produce_block_data;
-    produce_block_data.next_slot = 1;
+    produce_block_data.next_slot = slot;
     produce_block_data.next_slot_time = next_block_time;
     produce_block_data.scheduled_witness = std::move(scheduled_witness);
     produce_block_data.private_key = private_key;
@@ -541,14 +541,7 @@ namespace detail {
 
     if (produce_block_data.block_production_condition == block_production_condition::not_my_turn)
     {
-      produce_block_data.next_slot_time = _db.get_slot_time(slot);
-      chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
-      produce_block_data.scheduled_witness = scheduled_witness;
-      auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
-      auto private_key_itr = _private_keys.find(scheduled_key);
-      produce_block_data.private_key = private_key_itr->second;
-      produce_block_data.produce_in_next_slot = _witnesses.find( scheduled_witness ) != _witnesses.end();
-      produce_block_data.block_production_condition = produce_block_data.produce_in_next_slot ? block_production_condition::produced : block_production_condition::not_my_turn;
+      produce_block_data = get_produce_block_data(slot);
       return block_production_condition::not_my_turn;
     }
     else if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
