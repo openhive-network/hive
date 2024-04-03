@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/block_log_manager.hpp>
 #include <hive/chain/block_storage_manager.hpp>
 #include <hive/chain/block_write_chain_interface.hpp>
 #include <hive/chain/hive_objects.hpp>

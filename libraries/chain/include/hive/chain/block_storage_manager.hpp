@@ -8,7 +8,6 @@
 
 #define LEGACY_SINGLE_FILE_BLOCK_LOG -1
 #define MULTIPLE_FILES_FULL_BLOCK_LOG 0
-
 namespace hive { namespace chain {
 
 class block_write_chain_i;
@@ -36,11 +35,10 @@ public:
   void close_storage();
 
 private:
-  int                                         _block_log_split = -1;
   blockchain_worker_thread_pool&              _thread_pool;
   appbase::application&                       _app;
   database&                                   _db;
-  std::unique_ptr< block_log_writer_common >  _log_writer;
+  std::shared_ptr< block_log_writer_common >  _log_writer;
   fork_database                               _fork_db;
   std::unique_ptr< block_write_chain_i >      _current_block_writer;
 };
