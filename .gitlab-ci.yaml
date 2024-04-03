@@ -987,6 +987,7 @@ operation_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
+    SERIALIZE_SET_PROPERTIES_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/serialize_set_properties"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
   script:
     - cd tests/python/functional/operation_tests/$OPERATION
