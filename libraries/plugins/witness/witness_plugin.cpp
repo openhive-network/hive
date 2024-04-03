@@ -55,10 +55,9 @@ void new_chain_banner( const chain::database& db )
 namespace detail {
 
   struct produce_block_data_t {
-    produce_block_data_t() : m(), next_slot(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
+    produce_block_data_t() : next_slot(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
     {}
 
-    std::mutex m;
     uint32_t next_slot;
     fc::time_point_sec next_slot_time;
     chain::account_name_type scheduled_witness;
@@ -81,6 +80,7 @@ namespace detail {
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
+    produce_block_data_t get_produce_block_data();
 
     int64_t schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop(const boost::system::error_code&);
@@ -106,6 +106,7 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     produce_block_data_t produce_block_data = {};
+    std::mutex should_produce_block_mutex = {};
 
     std::atomic<bool> _enable_fast_confirm = true;
 
@@ -364,32 +365,43 @@ namespace detail {
       _last_fast_confirmation_block_number = note.block_num;
     }
     {
-      const auto head_block_num = _db.head_block_num();
-      const auto next_block_time = _db.get_slot_time( 1 );
-      block_production_condition::block_production_condition_enum condition = block_production_condition::block_production_condition_enum::produced;
-      chain::account_name_type scheduled_witness = _db.get_scheduled_witness( 1 );
+      produce_block_data_t data = get_produce_block_data();
+      std::lock_guard g(should_produce_block_mutex);
+      produce_block_data = std::move(data);
+    }
+  }
+
+  produce_block_data_t witness_plugin_impl::get_produce_block_data()
+  {
+    const auto head_block_num = _db.head_block_num();
+    const auto next_block_time = _db.get_slot_time( 1 );
+    chain::account_name_type scheduled_witness = _db.get_scheduled_witness( 1 );
+    fc::ecc::private_key private_key;
+
+    // immediately invoked lambda returning block_production_condition
+    block_production_condition::block_production_condition_enum condition = [&](){
       if( !_production_enabled )
       {
         if( _db.get_slot_time(1) >= next_block_time )
           _production_enabled = true;
         else
         {
-          condition = block_production_condition::not_synced;
+          return block_production_condition::not_synced;
         }
       }
       // is anyone scheduled to produce now or one second in the future?
       // uint32_t slot = _db.get_slot_at_time( now );
       // if( slot == 0 )
-      {
-        // capture("next_time", _db.get_slot_time(1));
-        // condition = block_production_condition::not_time_yet;
-      }
-      // chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+      // {
+        // // capture("next_time", _db.get_slot_time(1));
+        // return block_production_condition::not_time_yet;
+      // }
+
       // we must control the witness scheduled to produce the next block.
       if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
       {
         // capture("scheduled_witness", scheduled_witness);
-        condition = block_production_condition::not_my_turn;
+        return block_production_condition::not_my_turn;
       }
       chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
@@ -397,28 +409,31 @@ namespace detail {
       {
         // capture("scheduled_witness", scheduled_witness);
         // capture("scheduled_key", scheduled_key);
-        condition = block_production_condition::no_private_key;
+        return block_production_condition::no_private_key;
       }
+      private_key = private_key_itr->second;
       uint32_t prate = _db.witness_participation_rate();
       if( prate < _required_witness_participation )
       {
         // capture("pct", uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT));
-        condition = block_production_condition::low_participation;
+        return block_production_condition::low_participation;
       }
       // if( llabs((scheduled_time - next_block_time).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
       // {
         // // capture("scheduled_time", scheduled_time)("now", next_block_time);
-        // condition = block_production_condition::lag;
+        // return block_production_condition::lag;
       // }
+      return block_production_condition::block_production_condition_enum::produced;
+    }();
 
-      std::lock_guard g(produce_block_data.m);
-      produce_block_data.next_slot = 1;
-      produce_block_data.next_slot_time = next_block_time;
-      produce_block_data.scheduled_witness = std::move(scheduled_witness);
-      produce_block_data.private_key = private_key_itr->second;
-      produce_block_data.block_production_condition = condition;
-      produce_block_data.produce_in_next_slot = condition == block_production_condition::block_production_condition_enum::produced;
-    }
+    produce_block_data_t produce_block_data;
+    produce_block_data.next_slot = 1;
+    produce_block_data.next_slot_time = next_block_time;
+    produce_block_data.scheduled_witness = std::move(scheduled_witness);
+    produce_block_data.private_key = private_key;
+    produce_block_data.block_production_condition = condition;
+    produce_block_data.produce_in_next_slot = condition == block_production_condition::block_production_condition_enum::produced;
+    return produce_block_data;
   }
 
   int64_t witness_plugin_impl::schedule_production_loop()
@@ -512,7 +527,7 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    std::lock_guard g(produce_block_data.m);
+    std::lock_guard g(should_produce_block_mutex);
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
