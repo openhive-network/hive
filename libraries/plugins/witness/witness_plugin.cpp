@@ -531,7 +531,6 @@ namespace detail {
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
-    if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
 
     const uint32_t slot = _db.get_slot_at_time( now );
     if( slot == 0 )
@@ -539,6 +538,21 @@ namespace detail {
       // capture("next_time", _db.get_slot_time(1));
       return block_production_condition::not_time_yet;
     }
+
+    if (produce_block_data.block_production_condition == block_production_condition::not_my_turn)
+    {
+      produce_block_data.next_slot_time = _db.get_slot_time(slot);
+      chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+      produce_block_data.scheduled_witness = scheduled_witness;
+      auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
+      auto private_key_itr = _private_keys.find(scheduled_key);
+      produce_block_data.private_key = private_key_itr->second;
+      produce_block_data.produce_in_next_slot = _witnesses.find( scheduled_witness ) != _witnesses.end();
+      produce_block_data.block_production_condition = produce_block_data.produce_in_next_slot ? block_production_condition::produced : block_production_condition::not_my_turn;
+      return block_production_condition::not_my_turn;
+    }
+    else if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
+
     const fc::microseconds lag = produce_block_data.next_slot_time - now;
     if( llabs(lag.count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
@@ -680,6 +694,7 @@ void witness_plugin::plugin_startup()
     const auto time_to_sleep = fc::microseconds(my->schedule_production_loop());
     my->produce_block_data.produce_in_next_slot = true;
     my->produce_block_data.next_slot_time = my->_db.get_slot_time(1);
+    my->produce_block_data.block_production_condition = block_production_condition::produced;
     const auto head_block_num = my->_db.head_block_num();
     if( head_block_num == 0 )
     {
