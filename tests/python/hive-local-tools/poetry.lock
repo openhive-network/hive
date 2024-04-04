@@ -475,7 +475,7 @@ pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 schemas = "0.0.1.dev291+af0fba1"
-wax = "0.0.3a2.dev187+207f9b4"
+wax = "0.0.3a2.dev39+44db07f"
 
 [package.source]
 type = "legacy"
@@ -1703,12 +1703,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.0.3a2.dev187+207f9b4"
+version = "0.0.3a2.dev39+44db07f"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.0.3a2.dev187+207f9b4-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:e9ee806749736fd29d0c792763728f72daec8d66cae34b5bec5263cab6a36396"},
+    {file = "wax-0.0.3a2.dev39+44db07f-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:37fa7413cca20fd933e9a142bf3c13dcab05a1be3e42c784a8f61c40b17d53d5"},
 ]
 
 [package.dependencies]
