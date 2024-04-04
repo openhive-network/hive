@@ -279,6 +279,14 @@ void beekeeper_wallet::lock()
   } FC_CAPTURE_AND_RETHROW()
 }
 
+bool beekeeper_wallet::is_checksum_valid( const fc::sha512& old_checksum, const vector<char>& content )
+{
+  fc::sha512 _new_checksum;
+  fc::raw::unpack_from_vector<fc::sha512>( content, _new_checksum );
+
+  return old_checksum == _new_checksum;
+}
+
 void beekeeper_wallet::unlock(string password)
 {
   try
@@ -286,11 +294,19 @@ void beekeeper_wallet::unlock(string password)
     FC_ASSERT(password.size() > 0);
     auto pw = fc::sha512::hash(password.c_str(), password.size());
     vector<char> decrypted = fc::aes_decrypt(pw, my->_wallet.cipher_keys);
-    plain_keys pk;
-    fc::raw::unpack_from_vector<plain_keys>( decrypted, pk );
-    FC_ASSERT(pk.checksum == pw);
-    my->_keys = std::move(pk.keys);
-    my->_checksum = pk.checksum;
+
+    /*
+      Details why a checksum should be calculated first are in:
+        PROJECT_DIR/programs/beekeeper/beekeeper/documentation/wallet-example
+    */
+    FC_ASSERT( is_checksum_valid( pw, decrypted ), "error during aes 256 checksum is incorrect" );
+
+    plain_keys _pk;
+    fc::raw::unpack_from_vector<plain_keys>( decrypted, _pk );
+
+    my->_keys     = std::move( _pk.keys );
+    my->_checksum = _pk.checksum;
+
   }FC_CAPTURE_AND_RETHROW( ("Invalid password for wallet: ")(get_wallet_filename()) )
 }
 
@@ -301,9 +317,9 @@ void beekeeper_wallet::check_password(string password)
     FC_ASSERT(password.size() > 0);
     auto pw = fc::sha512::hash(password.c_str(), password.size());
     vector<char> decrypted = fc::aes_decrypt(pw, my->_wallet.cipher_keys);
-    plain_keys pk;
-    fc::raw::unpack_from_vector<plain_keys>( decrypted, pk );
-    FC_ASSERT(pk.checksum == pw);
+
+    FC_ASSERT( is_checksum_valid( pw, decrypted ), "error during aes 256 checksum is incorrect" );
+
   }FC_CAPTURE_AND_RETHROW( ("Invalid password for wallet: ")(get_wallet_filename()) )
 }
 
