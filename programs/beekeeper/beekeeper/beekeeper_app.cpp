@@ -18,7 +18,7 @@ beekeeper_app::beekeeper_app()
 
 beekeeper_app::~beekeeper_app()
 {
-  if( app.quit() )
+  if( app.quit() && start_loop )
     ilog("exited cleanly");
 }
 
@@ -189,7 +189,6 @@ void beekeeper_app::start()
   app.notify_status( "beekeeper is ready" );
 
   app.wait();
-  ilog("exited cleanly");
 }
 
 const boost::program_options::variables_map& beekeeper_app::get_args() const
