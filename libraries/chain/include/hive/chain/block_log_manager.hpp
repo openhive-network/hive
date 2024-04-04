@@ -22,6 +22,10 @@ class block_log_manager_t final
 public:
   static std::shared_ptr< block_log_writer_common > create_writer( int block_log_split,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool );
+
+  static std::shared_ptr< block_log_reader_common > create_opened_reader(
+    const fc::path& input_path,
+    appbase::application& app, blockchain_worker_thread_pool& thread_pool );
 };
 
 } }

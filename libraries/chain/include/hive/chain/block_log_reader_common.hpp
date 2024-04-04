@@ -22,6 +22,9 @@ namespace hive { namespace chain {
     virtual block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const = 0;
 
   public:
+    /// To be implemented by subclasses.
+    virtual void close_log() = 0;
+
     virtual std::shared_ptr<full_block_type> head_block() const override;
 
     virtual uint32_t head_block_num( 

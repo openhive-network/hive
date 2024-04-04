@@ -1,7 +1,5 @@
 #include <hive/chain/split_file_block_log_writer.hpp>
 
-#include <hive/chain/block_log.hpp>
-
 //#include <regex>
 
 namespace hive { namespace chain {
@@ -61,7 +59,8 @@ block_log_reader_common::block_range_t split_file_block_log_writer::read_block_r
   return result;
 }
 
-void split_file_block_log_writer::open_and_init( block_log* the_log, const fc::path& path, bool read_only )
+void split_file_block_log_writer::internal_open_and_init( block_log* the_log, const fc::path& path,
+                                                          bool read_only )
 {
   the_log->open_and_init( path,
                           read_only,
@@ -71,10 +70,8 @@ void split_file_block_log_writer::open_and_init( block_log* the_log, const fc::p
                           _thread_pool );
 }
 
-void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_open_args )
+void split_file_block_log_writer::common_open_and_init( std::optional< bool > read_only )
 {
-  _open_args = bl_open_args;
-
   // Any log file created on previous run?
   std::set< std::string > part_file_names;
   if( exists( _open_args.data_dir ) )
@@ -97,7 +94,7 @@ void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_o
     fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
 
     block_log* first_part_log = new block_log( _app );
-    open_and_init( first_part_log, part_file_path, false /*read_only*/ );
+    internal_open_and_init( first_part_log, part_file_path, read_only ? *read_only : false );
     _logs.push_back( first_part_log );
     return;
   }
@@ -119,9 +116,24 @@ void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_o
     std::string nth_part_file_name = block_log_file_name_info::get_nth_part_file_name( part_number );
     fc::path nth_part_file_path( _open_args.data_dir / nth_part_file_name.c_str() );
     block_log* nth_part_log = new block_log( _app );
-    open_and_init( nth_part_log, nth_part_file_path, part_number < number_of_parts /*read_only*/ );
+    internal_open_and_init( nth_part_log, nth_part_file_path,
+                            read_only ? *read_only : part_number < number_of_parts );
     _logs.push_back( nth_part_log );
   }
+}
+
+void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_open_args )
+{
+  _open_args = bl_open_args;
+  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/);
+}
+
+void split_file_block_log_writer::open_and_init( const fc::path& path, bool read_only )
+{
+  FC_ASSERT( block_log_file_name_info::is_part_file( path ),
+             "${path} is NOT a path to split block log part file.", (path) );
+  _open_args.data_dir = path.parent_path();
+  common_open_and_init( std::optional< bool >( read_only ) );
 }
 
 void split_file_block_log_writer::close_log()
@@ -141,7 +153,7 @@ void split_file_block_log_writer::append( const std::shared_ptr<full_block_type>
     uint32_t new_part_number = get_part_number_for_block( head_block_num + 1);
     fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( new_part_number ).c_str();
     block_log* new_part_log = new block_log( _app );
-    open_and_init( new_part_log, new_path, false /*read_only*/ );
+    internal_open_and_init( new_part_log, new_path, false /*read_only*/ );
     // Top log must keep valid head block. Append first, add on top later.
     new_part_log->append( full_block, is_at_live_sync );
     _logs.push_back( new_part_log );

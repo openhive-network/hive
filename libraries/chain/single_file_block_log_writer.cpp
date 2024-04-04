@@ -30,13 +30,17 @@ block_log_reader_common::block_range_t single_file_block_log_writer::read_block_
 
 void single_file_block_log_writer::open_and_init( const block_log_open_args& bl_open_args )
 {
-  // Use offset 0 as block log starts with block 1.
   _block_log.open_and_init( bl_open_args.data_dir / block_log_file_name_info::_legacy_file_name,
                             false /*read_only*/,
                             bl_open_args.enable_block_log_compression,
                             bl_open_args.block_log_compression_level,
                             bl_open_args.enable_block_log_auto_fixing,
                             _thread_pool );
+}
+
+void single_file_block_log_writer::open_and_init( const fc::path& path, bool read_only )
+{
+  _block_log.open( path, _thread_pool, read_only );
 }
 
 void single_file_block_log_writer::close_log()

@@ -11,7 +11,7 @@
 #include <fc/network/url.hpp>
 #include <fc/thread/thread.hpp>
 
-#include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_manager.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
@@ -46,16 +46,16 @@ namespace hive {namespace converter { namespace plugins { namespace iceberg_gene
 
 namespace detail {
 
-  using hive::chain::block_log;
+  using hive::chain::block_log_reader_common;
 
   class iceberg_generate_plugin_impl final : public conversion_plugin_impl {
   public:
-    block_log log_in;
     std::vector< fc::url > output_urls;
     bool enable_op_content_strip;
     appbase::application& theApp;
     hive::chain::blockchain_worker_thread_pool thread_pool;
     fc::optional<hp::transaction_id_type> last_init_tx_id;
+    std::shared_ptr< block_log_reader_common > log_reader;
 
     iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
         const hp::chain_id_type& chain_id, appbase::application& app, bool enable_op_content_strip = false, size_t signers_size = 1 );
@@ -85,8 +85,8 @@ namespace detail {
 
   iceberg_generate_plugin_impl::iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
       const hp::chain_id_type& chain_id, appbase::application& app, bool enable_op_content_strip, size_t signers_size )
-    :  conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), log_in( app ), enable_op_content_strip( enable_op_content_strip ),
-       theApp( app ), thread_pool( hive::chain::blockchain_worker_thread_pool( app ) )
+    :  conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), enable_op_content_strip( enable_op_content_strip ), theApp( app ),
+       thread_pool( hive::chain::blockchain_worker_thread_pool( app ) )
   {
     for( const auto& url : output_urls )
       check_url( this->output_urls.emplace_back(url) );
@@ -98,7 +98,7 @@ namespace detail {
   {
     try
     {
-      log_in.open( input, thread_pool, true );
+      log_reader = hive::chain::block_log_manager_t::create_opened_reader( input, theApp, thread_pool );
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
@@ -302,7 +302,7 @@ namespace detail {
           last_witness_schedule_block_check = lib_num;
         }
 
-        std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+        std::shared_ptr<hive::chain::full_block_type> _full_block = log_reader->read_block_by_num( start_block_num );
         FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
         hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
@@ -434,14 +434,14 @@ namespace detail {
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
-    FC_ASSERT( log_in.head(), "Your input block log is empty" );
+    FC_ASSERT( log_reader, "Input block log should be opened before the conversion" );
+    FC_ASSERT( log_reader->head_block(), "Your input block log is empty" );
 
     FC_ASSERT( start_block_num,
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
 
-    if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
-      stop_block_num = log_in.head()->get_block_num();
+    if( !stop_block_num || stop_block_num > log_reader->head_block()->get_block_num() )
+      stop_block_num = log_reader->head_block()->get_block_num();
 
     auto gpo = get_dynamic_global_properties( output_urls.at(0) );
     // Last irreversible block number and id for tapos generation
@@ -505,7 +505,7 @@ namespace detail {
           last_witness_schedule_block_check = lib_num;
         }
 
-        std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+        std::shared_ptr<hive::chain::full_block_type> _full_block = log_reader->read_block_by_num( start_block_num );
         FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
         hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
@@ -557,8 +557,8 @@ namespace detail {
 
   void iceberg_generate_plugin_impl::close()
   {
-    if( log_in.is_open() )
-      log_in.close();
+    if( log_reader )
+      log_reader->close_log();
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");

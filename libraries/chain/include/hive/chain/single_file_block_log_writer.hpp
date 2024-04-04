@@ -25,11 +25,14 @@ namespace hive { namespace chain {
     single_file_block_log_writer( appbase::application& app, blockchain_worker_thread_pool& thread_pool );
     virtual ~single_file_block_log_writer() = default;
 
+    /// Required by block_log_reader_common.
+    virtual void close_log() override;
+
     /// Required by block_log_writer_common.
     virtual void open_and_init( const block_log_open_args& bl_open_args ) override;
 
     /// Required by block_log_writer_common.
-    virtual void close_log() override;
+    virtual void open_and_init( const fc::path& path, bool read_only ) override;
 
     /// block_read_i method not implemented by block_log_reader_common.
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,

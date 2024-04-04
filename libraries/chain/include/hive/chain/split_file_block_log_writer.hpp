@@ -24,10 +24,13 @@ namespace hive { namespace chain {
     split_file_block_log_writer( appbase::application& app, blockchain_worker_thread_pool& thread_pool );
     virtual ~split_file_block_log_writer() = default;
 
+    /// Required by block_log_reader_common.
+    virtual void close_log() override;
+
     /// Required by block_log_writer_common.
     virtual void open_and_init( const block_log_open_args& bl_open_args ) override;
     /// Required by block_log_writer_common.
-    virtual void close_log() override;
+    virtual void open_and_init( const fc::path& path, bool read_only ) override;
     /// Required by block_log_writer_common.
     virtual void append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync ) override;
     /// Required by block_log_writer_common.
@@ -41,7 +44,8 @@ namespace hive { namespace chain {
                                  block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool ) const override;
 
   private:
-    void open_and_init( block_log* the_log, const fc::path& path, bool read_only );
+    void common_open_and_init( std::optional< bool > read_only );
+    void internal_open_and_init( block_log* the_log, const fc::path& path, bool read_only );
 
     bool is_last_number_of_the_file( uint32_t block_num ) const
     {

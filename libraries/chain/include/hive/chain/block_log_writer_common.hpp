@@ -24,7 +24,7 @@ namespace hive { namespace chain {
     /// To be implemented by subclasses.
     virtual void open_and_init( const block_log_open_args& bl_open_args ) = 0;
     /// To be implemented by subclasses.
-    virtual void close_log() = 0;
+    virtual void open_and_init( const fc::path& path, bool read_only ) = 0;
     /// To be implemented by subclasses.
     virtual void append(const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync) = 0;
     /// To be implemented by subclasses.
