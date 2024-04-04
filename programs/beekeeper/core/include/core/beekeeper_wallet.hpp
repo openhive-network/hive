@@ -23,6 +23,8 @@ class beekeeper_impl;
  */
 class beekeeper_wallet final : public beekeeper_wallet_base
 {
+   bool is_checksum_valid( const fc::sha512& old_checksum, const vector<char>& content );
+
    public:
       beekeeper_wallet();
 
