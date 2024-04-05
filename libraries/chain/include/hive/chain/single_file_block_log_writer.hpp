@@ -28,6 +28,12 @@ namespace hive { namespace chain {
     /// Required by block_log_reader_common.
     virtual void close_log() override;
 
+    /// Required by block_log_reader_common.
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const override;
+
+    /// Required by block_log_reader_common.
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const override;
+
     /// Required by block_log_writer_common.
     virtual void open_and_init( const block_log_open_args& bl_open_args ) override;
 
@@ -46,6 +52,10 @@ namespace hive { namespace chain {
 
     /// Required by block_log_writer_common.
     virtual void flush_head_log() override;
+
+    /// Required by block_log_writer_common.
+    virtual uint64_t append_raw( uint32_t block_num, const char* raw_block_data, size_t raw_block_size,
+                                 const block_attributes_t& flags, const bool is_at_live_sync ) override;
 
   private:
     blockchain_worker_thread_pool&  _thread_pool;

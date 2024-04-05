@@ -1,6 +1,8 @@
 #pragma once
 
+#include <hive/chain/block_log_artifacts.hpp>
 #include <hive/chain/block_read_interface.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
 
 namespace hive { namespace chain {
 
@@ -64,6 +66,12 @@ namespace hive { namespace chain {
       const std::vector<block_id_type>& blockchain_synopsis,
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
+
+    /// Additional low-level access method to be implemented by subclasses.
+    using block_attributes_t=hive::chain::detail::block_attributes_t;
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const = 0;
+    /// Additional low-level access method to be implemented by subclasses.
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const = 0;
   };
 
 } }

@@ -26,6 +26,10 @@ namespace hive { namespace chain {
 
     /// Required by block_log_reader_common.
     virtual void close_log() override;
+    /// Required by block_log_reader_common.
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const override;
+    /// Required by block_log_reader_common.
+    virtual std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const override;
 
     /// Required by block_log_writer_common.
     virtual void open_and_init( const block_log_open_args& bl_open_args ) override;
@@ -35,6 +39,9 @@ namespace hive { namespace chain {
     virtual void append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync ) override;
     /// Required by block_log_writer_common.
     virtual void flush_head_log() override;
+    /// Required by block_log_writer_common.
+    virtual uint64_t append_raw( uint32_t block_num, const char* raw_block_data, size_t raw_block_size,
+                                 const block_attributes_t& flags, const bool is_at_live_sync ) override;
 
     /// block_read_i method not implemented by block_log_reader_common.
     virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
@@ -64,6 +71,9 @@ namespace hive { namespace chain {
     }
 
     const block_log* get_block_log_corresponding_to( uint32_t block_num ) const;
+
+    using append_t = std::function< void( block_log* log ) >;
+    void internal_append( uint32_t block_num, append_t do_appending);
 
   private:
     appbase::application&           _app;

@@ -142,31 +142,64 @@ void split_file_block_log_writer::close_log()
   _logs.clear();
 }
 
-void split_file_block_log_writer::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
+std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> split_file_block_log_writer::read_raw_head_block() const
 {
-  std::shared_ptr<full_block_type> head_block = _logs.back()->head();
-  uint32_t head_block_num = head_block == nullptr ? 0 : head_block->get_block_num();
+  return _logs.back()->read_raw_head_block();
+}
+
+std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> split_file_block_log_writer::read_raw_block_data_by_num(uint32_t block_num) const
+{
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  FC_ASSERT( log != nullptr, 
+             "Unable to find block log corresponding to block number ${block_num}", (block_num));
+  return log->read_raw_block_data_by_num( block_num );
+}
+
+void split_file_block_log_writer::internal_append( uint32_t block_num, append_t do_appending)
+{
+  FC_ASSERT( block_num > 0 );
+
+  // Note that we use provided block_num here instead of checking top log's head, as the latter
+  // may not be updated when low-level appending using append_raw.
 
   // Is it time to switch to a new file?
-  if( is_last_number_of_the_file( head_block_num ) )
+  if( is_last_number_of_the_file( block_num -1 ) )
   {
-    uint32_t new_part_number = get_part_number_for_block( head_block_num + 1);
+    uint32_t new_part_number = get_part_number_for_block( block_num );
     fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( new_part_number ).c_str();
     block_log* new_part_log = new block_log( _app );
     internal_open_and_init( new_part_log, new_path, false /*read_only*/ );
     // Top log must keep valid head block. Append first, add on top later.
-    new_part_log->append( full_block, is_at_live_sync );
+    do_appending( new_part_log );
     _logs.push_back( new_part_log );
   }
   else
   {
-    _logs.back()->append( full_block, is_at_live_sync );
+    do_appending( _logs.back() );
   }
+}
+
+void split_file_block_log_writer::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
+{
+  internal_append( full_block->get_block_num(), [&]( block_log* log ){ 
+    log->append( full_block, is_at_live_sync );
+  });
 }
 
 void split_file_block_log_writer::flush_head_log()
 {
+  //ilog( "Flushing head log" );
   return _logs.back()->flush();
+}
+
+uint64_t split_file_block_log_writer::append_raw( uint32_t block_num, const char* raw_block_data,
+  size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
+{
+  uint64_t result = 0;
+  internal_append( block_num, [&]( block_log* log ){ 
+    result = log->append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
+  });
+  return result;
 }
 
 void split_file_block_log_writer::process_blocks(uint32_t starting_block_number,

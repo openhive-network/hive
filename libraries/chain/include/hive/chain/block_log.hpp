@@ -38,6 +38,12 @@ namespace hive { namespace chain {
      */
     static bool is_part_file( const fc::path& file );
 
+    static bool is_block_log_file_name( const fc::path& file )
+    {
+      return file.filename().string() == _legacy_file_name ||
+             is_part_file( file );
+    }
+
   private:
     static std::string get_extension(const fc::path& path);
     static bool is_part_file_name(const std::string& stem, const std::string& extension);

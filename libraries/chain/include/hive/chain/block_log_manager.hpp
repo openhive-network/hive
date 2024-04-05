@@ -20,11 +20,17 @@ using appbase::application;
 class block_log_manager_t final
 {
 public:
-  static std::shared_ptr< block_log_writer_common > create_writer( int block_log_split,
+  using block_log_reader_t = std::shared_ptr< block_log_reader_common >;
+  using block_log_writer_t = std::shared_ptr< block_log_writer_common >;
+
+  static block_log_writer_t create_writer( int block_log_split,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool );
 
-  static std::shared_ptr< block_log_reader_common > create_opened_reader(
-    const fc::path& input_path,
+  static block_log_reader_t create_opened_reader( const fc::path& input_path,
+    appbase::application& app, blockchain_worker_thread_pool& thread_pool,
+    bool recreate_artifacts_if_needed = true );
+
+  static block_log_writer_t create_opened_writer( const fc::path& output_path,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool );
 };
 

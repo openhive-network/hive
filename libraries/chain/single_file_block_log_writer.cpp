@@ -48,6 +48,16 @@ void single_file_block_log_writer::close_log()
   _block_log.close();
 }
 
+std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> single_file_block_log_writer::read_raw_head_block() const
+{
+  return _block_log.read_raw_head_block();
+}
+
+std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> single_file_block_log_writer::read_raw_block_data_by_num(uint32_t block_num) const
+{
+  return _block_log.read_raw_block_data_by_num( block_num );
+}
+
 void single_file_block_log_writer::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
   _block_log.append( full_block, is_at_live_sync );
@@ -56,6 +66,12 @@ void single_file_block_log_writer::append( const std::shared_ptr<full_block_type
 void single_file_block_log_writer::flush_head_log()
 {
   _block_log.flush();
+}
+
+uint64_t single_file_block_log_writer::append_raw( uint32_t block_num, const char* raw_block_data,
+  size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
+{
+  return _block_log.append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
 }
 
 void single_file_block_log_writer::process_blocks(uint32_t starting_block_number,
