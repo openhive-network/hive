@@ -69,7 +69,11 @@ namespace hive { namespace chain {
 
   namespace detail { class block_log_impl; }
 
-  /* The block log is an external append only log of the blocks. Blocks should only be written
+  /* WARNING - use directly only when you know what you're doing (see e.g. block_log_util.cpp),
+    *          otherwise use reader/writer wrappers that encapsulate all problems related to 
+    *          multi-file block logs etc. See block_log_manager_t.
+    *
+    * The block log is an external append only log of the blocks. Blocks should only be written
     * to the log after they irreverisble as the log is append only. The log is a doubly linked
     * list of blocks. There is a secondary index file of only block positions that enables O(1)
     * random access lookup by block number.

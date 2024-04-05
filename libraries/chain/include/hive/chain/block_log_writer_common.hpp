@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 
   /**
    * Abstract class containing common part of all block-log-based implementations
-   * of block writing functionality.
+   * of block writing functionality. Use instead of block_log class to make your life easier.
    */
   class block_log_writer_common : public block_log_reader_common
   {

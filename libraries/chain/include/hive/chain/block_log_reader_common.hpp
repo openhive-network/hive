@@ -8,7 +8,7 @@ namespace hive { namespace chain {
 
   /**
    * Abstract class containing common part of all block-log-based implementations
-   * of block read interface
+   * of block read interface. Use instead of block_log class to make your life easier.
    */
   class block_log_reader_common : public block_read_i
   {

@@ -17,6 +17,10 @@ namespace hive { namespace chain {
 class blockchain_worker_thread_pool;
 using appbase::application;
 
+/**
+ * @brief Use to acquire block log reader/writer wrappers that hide problems related
+ *        to single/multi-file access etc.
+ */
 class block_log_manager_t final
 {
 public:

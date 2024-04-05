@@ -1383,8 +1383,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  my->block_storage_mgr.init_storage( 
-    options.count( "block-log-split" ) ? options.at( "block-log-split" ).as< int >() : -1 );
+  my->block_storage_mgr.init_storage( options.at( "block-log-split" ).as< int >() );
 
   get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
