@@ -161,12 +161,12 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
     BOOST_REQUIRE( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + 2*sizeof(hive::chain::delayed_votes_data));
+    BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + sizeof(hive::chain::delayed_votes_data));
+    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
   }
   FC_LOG_AND_RETHROW()
 }

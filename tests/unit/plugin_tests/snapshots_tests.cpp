@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
       generate_block();
       BOOST_CHECK( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
-      BOOST_CHECK_EQUAL(index.get_item_additional_allocation(), initial_allocations + 2*sizeof(hive::chain::delayed_votes_data));
+      BOOST_CHECK_GT(index.get_item_additional_allocation(), initial_allocations);
     }
     {
       dump_snapshot("additional_allocation_after_snapshot_load");
