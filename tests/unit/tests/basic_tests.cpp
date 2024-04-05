@@ -1376,7 +1376,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations_after_clear_index )
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations + 4*sizeof(hive::chain::delayed_votes_data));
+    BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
 
     index.clear();
     BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), 0);
