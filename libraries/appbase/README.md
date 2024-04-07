@@ -8,7 +8,7 @@ plugins are configured, initialized, started, and shutdown in the proper order.
 ## Key Features
 
 - Dynamically Specify Plugins to Load
-- Automaticly Load Dependent Plugins in Order
+- Automatically Load Dependent Plugins in Order
 - Plugins can specify commandline arguments and configuration file options
 - Program gracefully exits from SIGINT and SIGTERM
 - Minimal Dependencies (Boost 1.58, c++14)
