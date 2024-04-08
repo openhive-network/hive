@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
         catch( const fc::exception& e )
         {
           BOOST_TEST_MESSAGE( e.to_string() );
-          BOOST_REQUIRE( e.to_string().find( "AES error:error during aes" ) != std::string::npos );
+          BOOST_REQUIRE( e.to_string().find( "Invalid password for wallet:" ) != std::string::npos );
         }
         _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
       }
