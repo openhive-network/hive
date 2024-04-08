@@ -30,15 +30,15 @@ void wallet_manager_impl::valid_filename( const string& name )
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );
 }
 
-std::string wallet_manager_impl::create( const std::string& name, const std::optional<std::string>& password )
+std::string wallet_manager_impl::create( const std::string& wallet_name, const std::optional<std::string>& password )
 {
   FC_ASSERT( !password || password->size() < max_password_length,
             "Got ${password_size} bytes, but a password limit has ${max_password_length} bytes", ("password_size", password->size())(max_password_length) );
 
-  valid_filename(name);
+  valid_filename( wallet_name );
 
-  auto wallet_filename = create_wallet_filename( name );
-  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path", fc::path(wallet_filename)) );
+  auto wallet_filename = create_wallet_filename( wallet_name );
+  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path(wallet_filename)) );
 
   std::string _password = password ? ( *password ) : gen_password();
 
@@ -54,43 +54,43 @@ std::string wallet_manager_impl::create( const std::string& name, const std::opt
 
   // If we have name in our map then remove it since we want the emplace below to replace.
   // This can happen if the wallet file is removed while a wallet is running.
-  auto it = wallets.find(name);
+  auto it = wallets.find( wallet_name );
   if (it != wallets.end())
   {
     wallets.erase(it);
   }
-  wallets.emplace(name, std::move(wallet));
+  wallets.emplace( wallet_name, std::move(wallet) );
 
   return _password;
 }
 
-void wallet_manager_impl::open( const std::string& name )
+void wallet_manager_impl::open( const std::string& wallet_name )
 {
-  valid_filename(name);
+  valid_filename( wallet_name );
 
   auto wallet = std::make_unique<beekeeper_wallet>();
-  auto wallet_filename = create_wallet_filename( name );
+  auto wallet_filename = create_wallet_filename( wallet_name );
   wallet->set_wallet_filename(wallet_filename.string());
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
 
   // If we have name in our map then remove it since we want the emplace below to replace.
   // This can happen if the wallet file is added while a wallet is running.
-  auto it = wallets.find(name);
+  auto it = wallets.find( wallet_name );
   if (it != wallets.end())
   {
     wallets.erase(it);
   }
-  wallets.emplace(name, std::move(wallet));
+  wallets.emplace( wallet_name, std::move(wallet) );
 }
 
-void wallet_manager_impl::close( const std::string& name )
+void wallet_manager_impl::close( const std::string& wallet_name )
 {
-  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+  FC_ASSERT( wallets.count( wallet_name ), "Wallet not found: ${w}", ("w", wallet_name));
 
-  if( !is_locked( name ) )
-    lock( name );
+  if( !is_locked( wallet_name ) )
+    lock( wallet_name );
 
-  wallets.erase( name );
+  wallets.erase( wallet_name );
 }
 
 fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name )
@@ -161,19 +161,19 @@ std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
   return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
 
-std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys_impl( const string& name, const string& pw, bool password_is_required )
+std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys_impl( const string& name, const string& password, bool password_is_required )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
   if( password_is_required )
-    w->check_password(pw); //throws if bad password
+    w->check_password( password ); //throws if bad password
   return w->list_keys();
 }
 
-std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
+std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& password )
 {
-  return list_keys_impl( name, pw, true/*password_is_required*/ );
+  return list_keys_impl( name, password, true/*password_is_required*/ );
 }
 
 flat_set<public_key_type> wallet_manager_impl::get_public_keys( const std::optional<std::string>& wallet_name )
@@ -232,24 +232,24 @@ bool wallet_manager_impl::is_locked( const string& name )
   return w->is_locked();
 }
 
-void wallet_manager_impl::lock( const std::string& name )
+void wallet_manager_impl::lock( const std::string& wallet_name )
 {
-  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-  auto& w = wallets.at(name);
+  FC_ASSERT( wallets.count( wallet_name ), "Wallet not found: ${w}", ("w", wallet_name));
+  auto& w = wallets.at( wallet_name );
 
   w->lock();
 }
 
-void wallet_manager_impl::unlock( const std::string& name, const std::string& password )
+void wallet_manager_impl::unlock( const std::string& wallet_name, const std::string& password )
 {
-  if (wallets.count(name) == 0)
+  if( wallets.count( wallet_name ) == 0 )
   {
-    open( name );
+    open( wallet_name );
   }
-  auto& w = wallets.at(name);
-  FC_ASSERT( w->is_locked(), "Wallet is already unlocked: ${w}", ("w", name));
+  auto& w = wallets.at( wallet_name );
+  FC_ASSERT( w->is_locked(), "Wallet is already unlocked: ${w}", ("w", wallet_name));
 
-  w->unlock(password);
+  w->unlock( password );
 }
 
 string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key )
@@ -315,12 +315,12 @@ signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, 
   return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, public_key, wallet_name );
 }
 
-bool wallet_manager_impl::has_matching_private_key( const std::string& name, const public_key_type& public_key )
+bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )
 {
-  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+  FC_ASSERT( wallets.count( wallet_name ), "Wallet not found: ${w}", ("w", wallet_name));
 
-  auto& w = wallets.at(name);
-  FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
+  auto& w = wallets.at( wallet_name );
+  FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", wallet_name));
 
   return w->has_matching_private_key( public_key );
 }
