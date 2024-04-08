@@ -539,10 +539,10 @@ namespace detail {
       return block_production_condition::not_time_yet;
     }
 
-    if (produce_block_data.block_production_condition == block_production_condition::not_my_turn)
+    if (produce_block_data.block_production_condition == block_production_condition::not_my_turn || produce_block_data.block_production_condition == block_production_condition::no_private_key)
     {
       produce_block_data = get_produce_block_data(slot);
-      return block_production_condition::not_my_turn;
+      return produce_block_data.block_production_condition;
     }
     else if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
 
