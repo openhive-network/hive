@@ -22,20 +22,20 @@ class wallet_manager_impl {
 
     wallet_manager_impl( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory ){}
 
-    std::string create( const std::string& name, const std::optional<std::string>& password );
-    void open( const std::string& name );
-    void close( const std::string& name );
+    std::string create( const std::string& wallet_name, const std::optional<std::string>& password );
+    void open( const std::string& wallet_name );
+    void close( const std::string& wallet_name );
     std::vector<wallet_details> list_wallets();
     std::vector<wallet_details> list_created_wallets();
-    std::map<public_key_type, private_key_type> list_keys( const string& name, const string& pw );
+    std::map<public_key_type, private_key_type> list_keys( const string& name, const string& password );
     flat_set<public_key_type> get_public_keys( const std::optional<std::string>& wallet_name );
     void lock_all();
-    void lock( const std::string& name );
-    void unlock( const std::string& name, const std::string& password );
+    void lock( const std::string& wallet_name );
+    void unlock( const std::string& wallet_name, const std::string& password );
     string import_key( const std::string& name, const std::string& wif_key );
     void remove_key( const std::string& name, const std::string& public_key );
     signature_type sign_digest( const digest_type& sig_digest, const public_key_type& public_key, const std::optional<std::string>& wallet_name );
-    bool has_matching_private_key( const std::string& name, const public_key_type& public_key );
+    bool has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key );
     std::string encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
     std::string decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
 

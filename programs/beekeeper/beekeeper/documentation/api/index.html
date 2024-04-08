@@ -1,0 +1,40 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="description" content="SwaggerUI" />
+      <title>SwaggerUI</title>
+      <link rel="stylesheet" href="./swagger-ui.css" />
+    </head>
+    <body>
+    <div id="swagger-ui"></div>
+    <script src="./swagger-ui-bundle.js" crossorigin></script>
+    <script>
+      window.onload = () => {
+        window.ui = SwaggerUIBundle({
+          url: 'openapi.json',
+          dom_id: '#swagger-ui',
+          requestInterceptor: function(request) {
+            if (request.loadSpec) {
+                return request;
+            }
+            const index = request.url.indexOf('beekeeper_api')
+            const request_url = request.url.substring(0, index);
+            const method = request.url.substring(index);
+
+            request.url = request_url;
+            const jsonBody = {
+              jsonrpc: "2.0",
+              method,
+              id: 1,
+              params: JSON.parse(request.body)
+            }
+            request.body = JSON.stringify(jsonBody);
+            return request;
+        }
+        });
+      };
+    </script>
+    </body>
+    </html>
