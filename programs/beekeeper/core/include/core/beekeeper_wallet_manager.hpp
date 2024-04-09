@@ -148,7 +148,7 @@ public:
    * @param content a string to encrypt
    * @returns encrypted string
    */
-  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content );
+  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content, const std::string& seed );
 
   /** Decrypts given content.
    *

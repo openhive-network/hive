@@ -196,6 +196,7 @@ set( fc_minimal_sources
      src/crypto/city.cpp
      src/crypto/crc.cpp
      src/crypto/crypto_data.cpp
+     src/crypto/token_generator.cpp
      src/io/json.cpp
      src/io/datastream.cpp
      src/io/sstream.cpp

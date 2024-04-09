@@ -138,8 +138,10 @@ test.describe('Beekeeper factory tests', () => {
 
   test('Shold be able to encrypt and decrypt messages', async ({ page }) => {
     const input = "Big Brother is Watching You";
+    const seed = "seed, so nothing special";
+    const test_object = { input, seed };
 
-    const retVal = await page.evaluate(async (input) => {
+    const retVal = await page.evaluate(async (test_object) => {
       const beekeeper = await factory();
 
       const session = beekeeper.createSession("my.salt");
@@ -149,10 +151,10 @@ test.describe('Beekeeper factory tests', () => {
       const inputKey = await wallet.importKey('5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw');
       const outputKey = await wallet.importKey('5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG');
 
-      const encrypted = wallet.encryptData(input, inputKey, outputKey);
+      const encrypted = wallet.encryptData(test_object.input, test_object.seed, inputKey, outputKey);
 
       return wallet.decryptData(encrypted, inputKey, outputKey);
-    }, input);
+    }, test_object);
 
     expect(retVal).toBe(input);
   });

@@ -49,7 +49,7 @@ class crypto_data
       return fc::to_base58( fc::raw::pack_to_vector( data ) );
     }
 
-    content encrypt_impl( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data );
+    content encrypt_impl( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data, const std::string& seed );
     std::optional<std::string> decrypt_impl( key_finder_type key_finder, const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, const content& encrypted_content );
 
   public:
@@ -59,7 +59,7 @@ class crypto_data
     /**
      * Encrypts given data
      */
-    std::string encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data );
+    std::string encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data, const std::string& seed );
 
     /**
      * Decrypts given data.

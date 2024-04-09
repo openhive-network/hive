@@ -206,6 +206,7 @@ struct encrypt_data_args : public wallet_args
   std::string from_public_key;
   std::string to_public_key;
   std::string content;
+  std::string seed;
 };
 struct encrypt_data_return
 {
@@ -296,7 +297,7 @@ FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
 FC_REFLECT_DERIVED( beekeeper::get_public_keys_args, (beekeeper::session_token_type), (wallet_name) )
 FC_REFLECT_DERIVED( beekeeper::has_matching_private_key_args, (beekeeper::wallet_args), (public_key) )
 FC_REFLECT( beekeeper::has_matching_private_key_return, (exists) )
-FC_REFLECT_DERIVED( beekeeper::encrypt_data_args, (beekeeper::wallet_args), (from_public_key)(to_public_key)(content) )
+FC_REFLECT_DERIVED( beekeeper::encrypt_data_args, (beekeeper::wallet_args), (from_public_key)(to_public_key)(content)(seed) )
 FC_REFLECT( beekeeper::encrypt_data_return, (encrypted_content) )
 FC_REFLECT_DERIVED( beekeeper::decrypt_data_args, (beekeeper::wallet_args), (from_public_key)(to_public_key)(encrypted_content) )
 FC_REFLECT( beekeeper::decrypt_data_return, (decrypted_content) )

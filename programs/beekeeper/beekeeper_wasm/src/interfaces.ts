@@ -117,6 +117,7 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * Encrypts given data for a specific entity and returns the encrypted message
    *
    * @param {string} content Content to be encrypted
+   * @param {string} seed a seed used for data encryption. If it's empty, current time is used as a seed.
    * @param {TPublicKey} key public key to find the private key in the wallet and encrypt the data
    * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else)
    *
@@ -124,7 +125,7 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  encryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string;
+  encryptData(content: string, seed: string, key: TPublicKey, anotherKey?: TPublicKey): string;
 
   /**
    * Decrypts given data from a specific entity and returns the decrypted message

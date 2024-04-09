@@ -1604,12 +1604,18 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     const string _fruits_content = "avocado-banana-cherry-durian";
     const string _empty_content = "";
     const string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
+    const string _seed = "";
 
-    auto _encrypt = [&_token, &_beekeeper, &_keys]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
+    auto _encrypt_with_seed = [&_token, &_beekeeper, &_keys ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::string& seed)
+    {
+      return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, seed );
+    };
+
+    auto _encrypt = [&_token, &_beekeeper, &_keys, &_seed]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
       auto __encrypt = [&]()
       {
-        return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content );
+        return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, _seed );
       };
 
       std::string _encrypted_content = __encrypt();
@@ -1741,6 +1747,20 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first );
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
     }
+    {
+      //test with different seeds
+      auto _a = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "a" );
+      auto _a2 = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "a" );
+      auto _b = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "b" );
+      auto _c = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "c" );
+      auto _empty_0 = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "" );
+      auto _empty_1 = _encrypt_with_seed( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, "" );
+
+      BOOST_REQUIRE( _a == _a2 );
+      BOOST_REQUIRE( _a != _b );
+      BOOST_REQUIRE( _b != _c );
+      BOOST_REQUIRE( _empty_0 != _empty_1 );
+    }
 
   } FC_LOG_AND_RETHROW()
 }
@@ -1752,8 +1772,9 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
       const string _fruits_content  = "avocado-banana-cherry-durian";
       const string _hex_content     = "0123456789ABCDEFabcdef";
       const string _empty_content   = "";
+      const string _seed            = "my-seed";
 
-      auto _different_keys = []( const std::string& content )
+      auto _different_keys = [&_seed]( const std::string& content )
       {
         //Using the `crypto_data` class do encryption/decryption for many `from`, `to` keys.
         fc::crypto_data _cd;
@@ -1766,7 +1787,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
           auto _public_from   = _private_from.get_public_key();
           auto _public_to     = _private_to.get_public_key();
 
-          std::string _encrypted_content = _cd.encrypt( _private_from, _public_to, content );
+          std::string _encrypted_content = _cd.encrypt( _private_from, _public_to, content, _seed );
 
           auto _private_key_finder_from = [&_public_from, &_private_from]( const fc::crypto_data::public_key_type& public_key )
           {
@@ -1790,7 +1811,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
         }
       };
 
-      auto _the_same_keys = []( const std::string& content )
+      auto _the_same_keys = [&_seed]( const std::string& content )
       {
         //Using the `crypto_data` class do encryption/decryption for many `from`, `to` keys.
         //`from` == `to`
@@ -1801,7 +1822,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
           auto _private = fc::ecc::private_key::generate();
           auto _public  = _private.get_public_key();
 
-          std::string _encrypted_content = _cd.encrypt( _private, _public, content );
+          std::string _encrypted_content = _cd.encrypt( _private, _public, content, _seed );
 
           auto _private_key_finder = [&_private]( const fc::crypto_data::public_key_type& public_key )
           {

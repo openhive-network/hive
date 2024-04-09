@@ -20,7 +20,6 @@ set(BEEKEEPER_SOURCES
 
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet_manager.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/token_generator.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_base.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_manager_base.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/time_manager_base.cpp

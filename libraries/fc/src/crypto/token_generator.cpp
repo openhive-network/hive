@@ -1,9 +1,9 @@
-#include <core/token_generator.hpp>
+#include <fc/crypto/token_generator.hpp>
 
 #include <random>
 #include <sstream>
 
-namespace beekeeper {
+namespace fc {
 
 std::string token_generator::generate_token( const std::string& salt, unsigned int length )
 {
@@ -27,6 +27,16 @@ std::string token_generator::generate_token( const std::string& salt, unsigned i
         ss << (hex.length() < 2 ? '0' + hex : hex);
     }
     return ss.str();
+}
+
+uint32_t token_generator::generate_nonce( const std::string& seed )
+{
+  std::seed_seq _seq( seed.begin(), seed.end() );
+  std::vector<uint32_t> _result( 1 );
+
+  _seq.generate( _result.begin(), _result.end() );
+
+  return *( _result.begin() );
 }
 
 };

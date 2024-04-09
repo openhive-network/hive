@@ -118,6 +118,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
 
   test('Shold be able to encrypt and decrypt messages', async () => {
     const input = "Big Brother is Watching You";
+    const seed = "seed, so nothing special";
 
     const beekeeper = await beekeeperFactory({ storageRoot: STORAGE_ROOT_NODE });
 
@@ -128,7 +129,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     const inputKey = await wallet.importKey('5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw');
     const outputKey = await wallet.importKey('5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG');
 
-    const encrypted = wallet.encryptData(input, inputKey, outputKey);
+    const encrypted = wallet.encryptData(input, seed, inputKey, outputKey);
 
     const retVal = wallet.decryptData(encrypted, inputKey, outputKey);
 

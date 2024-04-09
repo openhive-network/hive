@@ -169,8 +169,8 @@ export class BeekeeperInstanceHelper {
     }
   };
 
-  encryptData(sessionToken, fromPublicKey, toPublicKey, walletName, content) {
-    const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, walletName, content);
+  encryptData(sessionToken, fromPublicKey, toPublicKey, walletName, content, seed) {
+    const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, walletName, content, seed);
 
     if( this.#acceptError )
     {

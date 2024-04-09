@@ -34,7 +34,7 @@ std::string crypto_memo::dump_to_string( const memo_content& content )
 std::string crypto_memo::encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& memo )
 {
   FC_ASSERT( memo.size() > 0 && memo[0] == marker );
-  return dump_to_string( build_from_encrypted_content( from.get_public_key(), to, encrypt_impl( from, to, memo.substr(1) ) ) );
+  return dump_to_string( build_from_encrypted_content( from.get_public_key(), to, encrypt_impl( from, to, memo.substr(1), std::string() ) ) );
 }
 
 std::string crypto_memo::decrypt( key_finder_type key_finder, const std::string& encrypted_memo )

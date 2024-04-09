@@ -298,11 +298,11 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content )
+  std::string beekeeper_api::encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content, const std::string& seed )
   {
     auto _method = [&, this]()
     {
-      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, from_public_key, to_public_key, wallet_name, content ) };
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, from_public_key, to_public_key, wallet_name, content, seed ) };
       return to_string( _result );
     };
     return exception_handler( _method );

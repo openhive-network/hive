@@ -232,11 +232,12 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         to_public_key:    a receiver's public key
         wallet_name:      a name of wallet
         content:          a string to encrypt
+        seed:             a seed used for data encryption. If it's empty, current time is used as a seed.
       RESULT:
         {"encrypted_content":"12796218200812abcd032de"}
         encrypted_content: an encrypted string
     */
-    .function("encrypt_data(token, from_public_key, to_public_key, wallet_name, content)", &beekeeper_api::encrypt_data)
+    .function("encrypt_data(token, from_public_key, to_public_key, wallet_name, content, seed)", &beekeeper_api::encrypt_data)
 
     /*
       ****Decrypting given content represented by a string. Private keys for a receiver and a creator must be accessible in unlocked wallets****

@@ -68,8 +68,8 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     return result.keys.map(value => value.public_key);
   }
 
-  public encryptData(content: string, key: TPublicKey, anotherKey: TPublicKey): string {
-    const result = this.api.extract(this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content)) as IEncryptData;
+  public encryptData(content: string, seed: string, key: TPublicKey, anotherKey: TPublicKey): string {
+    const result = this.api.extract(this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content, seed)) as IEncryptData;
 
     return result.encrypted_content;
   }

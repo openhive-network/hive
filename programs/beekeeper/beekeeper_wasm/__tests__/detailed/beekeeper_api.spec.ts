@@ -920,11 +920,12 @@ test.describe('WASM beekeeper_api tests', () => {
       const from_key_number = 8;
       const to_key_number = 9;
       const content = 'peach-pear-plum';
+      const seed = 'my-seed';
 
       {
         (api.setAcceptError as unknown as boolean) = true;
 
-        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content, seed);
         assert.equal(error_message.includes("Wallet not found: w9"), true);
       }
 
@@ -935,7 +936,7 @@ test.describe('WASM beekeeper_api tests', () => {
       {
         (api.setAcceptError as unknown as boolean) = true;
 
-        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+        const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content, seed);
         assert.equal(error_message.includes("Public key 6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet"), true);
       }
 
@@ -943,7 +944,7 @@ test.describe('WASM beekeeper_api tests', () => {
 
       api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[from_key_number][0]);
 
-      const encrypted_content = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
+      const encrypted_content = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content, seed);
       const decrypted_content = api.decryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], encrypted_content);
       assert.equal(decrypted_content, content);
     }, WALLET_OPTIONS);

@@ -452,7 +452,7 @@ ___
 
 ### encryptData
 
-▸ **encryptData**(`content`, `key`, `anotherKey?`): `string`
+▸ **encryptData**(`content`, `seed`, `key`, `anotherKey?`): `string`
 
 Encrypts given data for a specific entity and returns the encrypted message
 
@@ -461,6 +461,7 @@ Encrypts given data for a specific entity and returns the encrypted message
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `content` | `string` | Content to be encrypted |
+| `seed` | `string` | a seed used for data encryption. If it's empty, current time is used as a seed |
 | `key` | `string` | public key to find the private key in the wallet and encrypt the data |
 | `anotherKey?` | `string` | other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else) |
 
@@ -574,7 +575,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:103
+src/interfaces.ts:102
 
 ___
 
@@ -603,7 +604,7 @@ on any beekeeper API-related error (error parsing response, invalid input, timeo
 
 #### Defined in
 
-src/interfaces.ts:115
+src/interfaces.ts:114
 
 
 <a name="interfacesibeekeeperwalletmd"></a>

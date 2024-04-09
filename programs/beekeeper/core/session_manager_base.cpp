@@ -3,7 +3,7 @@
 
 #include <core/time_manager_base.hpp>
 
-#include <core/token_generator.hpp>
+#include <fc/crypto/token_generator.hpp>
 
 namespace beekeeper {
 
@@ -27,7 +27,7 @@ std::shared_ptr<session_base> session_manager_base::create_session( const std::s
 
 std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& wallet_directory )
 {
-  auto _token = token_generator::generate_token( salt, token_length );
+  auto _token = fc::token_generator::generate_token( salt, token_length );
 
   std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time, wallet_directory );
   sessions.emplace( _token, _session );
