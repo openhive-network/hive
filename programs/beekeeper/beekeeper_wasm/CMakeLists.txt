@@ -31,6 +31,13 @@ set(HIVE_BUILD_ON_MINIMAL_FC ON)
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../core beekeeper_core )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/fc build_fc_minimal )
 
+# Override common options specific to exception handling for **WHOLE SET OF HIVE SPECIFIC MODULES**
+TARGET_COMPILE_OPTIONS( CommonBuildOptions INTERFACE -fwasm-exceptions )
+TARGET_LINK_OPTIONS( CommonBuildOptions INTERFACE -fwasm-exceptions
+  -sEXPORT_EXCEPTION_HANDLING_HELPERS=1
+  -sEXCEPTION_STACK_TRACES=1
+ )
+
 set( SOURCES
       main.cpp
       beekeeper_wasm_app.cpp
