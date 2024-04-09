@@ -146,9 +146,10 @@ public:
    * @param to_public_key a public key of receiver
    * @param name the name of the wallet to find the key corresponding to `from_public_key`.
    * @param content a string to encrypt
+   * @param nonce optional nonce to be used for encryption (otherwise current time is used).
    * @returns encrypted string
    */
-  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content );
+  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
 
   /** Decrypts given content.
    *

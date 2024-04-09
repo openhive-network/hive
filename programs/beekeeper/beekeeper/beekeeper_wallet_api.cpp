@@ -199,7 +199,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, encrypt_data )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->encrypt_data( args.token, args.from_public_key, args.to_public_key, args.wallet_name, args.content ) };
+  return { _wallet_mgr->encrypt_data( args.token, args.from_public_key, args.to_public_key, args.wallet_name, args.content, args.nonce ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, decrypt_data )
