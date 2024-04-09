@@ -232,11 +232,30 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         to_public_key:    a receiver's public key
         wallet_name:      a name of wallet
         content:          a string to encrypt
+
+      WARNING: Current time is used as implcit nonce, so subsequent calls to this version can result in different results. 
+
       RESULT:
         {"encrypted_content":"12796218200812abcd032de"}
         encrypted_content: an encrypted string
     */
-    .function("encrypt_data(token, from_public_key, to_public_key, wallet_name, content)", &beekeeper_api::encrypt_data)
+    .function("encrypt_data(token, from_public_key, to_public_key, wallet_name, content)", select_overload<std::string(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&)>(&beekeeper_api::encrypt_data))
+
+    /*
+      ****Encrypting given content represented by a string****
+      PARAMS:
+        token:            a token representing a session
+        from_public_key:  a creator's public key
+        to_public_key:    a receiver's public key
+        wallet_name:      a name of wallet
+        content:          a string to encrypt
+        nonce:            an explicit nonce to be used for encryption process
+      RESULT:
+        {"encrypted_content":"12796218200812abcd032de"}
+        encrypted_content: an encrypted string
+    */
+
+    .function("encrypt_data(token, from_public_key, to_public_key, wallet_name, content, nonce)", select_overload<std::string(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&, unsigned int)>(&beekeeper_api::encrypt_data))
 
     /*
       ****Decrypting given content represented by a string. Private keys for a receiver and a creator must be accessible in unlocked wallets****
