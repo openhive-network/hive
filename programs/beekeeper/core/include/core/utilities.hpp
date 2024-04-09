@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <string>
+#include <optional>
 #include <chrono>
 
 #include <boost/exception/diagnostic_information.hpp>
@@ -206,6 +207,7 @@ struct encrypt_data_args : public wallet_args
   std::string from_public_key;
   std::string to_public_key;
   std::string content;
+  std::optional<unsigned int> nonce;
 };
 struct encrypt_data_return
 {

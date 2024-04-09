@@ -325,7 +325,7 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& name, con
   return w->has_matching_private_key( public_key );
 }
 
-std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content )
+std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce )
 {
   fc::crypto_data _cd;
 
@@ -333,7 +333,7 @@ std::string wallet_manager_impl::encrypt_data( const public_key_type& from_publi
   if( !_private_key )
     FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", wallet_name)("public_key", utility::public_key::to_string( from_public_key )));
 
-  return _cd.encrypt( _private_key.value(), to_public_key, content );
+  return _cd.encrypt( _private_key.value(), to_public_key, content, nonce );
 }
 
 std::string wallet_manager_impl::decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content )
