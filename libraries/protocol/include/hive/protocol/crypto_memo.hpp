@@ -35,7 +35,7 @@ class crypto_memo: public crypto_data
     /**
      * Encrypts given memo
      */
-    std::string encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data );
+    std::string encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data, std::optional<uint64_t> nonce = std::optional<uint64_t>() );
 
     /**
      * Decrypts given memo (it has to start with #).
