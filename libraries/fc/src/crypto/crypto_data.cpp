@@ -12,11 +12,11 @@ fc::sha512 crypto_data::generate_encrypted_key( uint64_t nonce, const fc::sha512
   return enc.result();
 }
 
-crypto_data::content crypto_data::encrypt_impl( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data )
+crypto_data::content crypto_data::encrypt_impl( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data, std::optional<uint64_t> nonce /*= std::optional<uint64_t>()*/)
 {
   content _c;
 
-  _c.nonce = fc::time_point::now().time_since_epoch().count();
+  _c.nonce = nonce.value_or(fc::time_point::now().time_since_epoch().count());
 
   auto shared_secret = from.get_shared_secret( to );
 
@@ -28,9 +28,9 @@ crypto_data::content crypto_data::encrypt_impl( const crypto_data::private_key_t
   return _c;
 }
 
-std::string crypto_data::encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data )
+std::string crypto_data::encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& data, std::optional<uint64_t> nonce /*= std::optional<uint64_t>()*/ )
 {
-  content _result = encrypt_impl( from, to, data );
+  content _result = encrypt_impl( from, to, data, nonce );
   return to_string_impl( _result );
 }
 
