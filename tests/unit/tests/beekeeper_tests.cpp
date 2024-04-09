@@ -1609,7 +1609,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     {
       auto __encrypt = [&]()
       {
-        return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content );
+          return _beekeeper.encrypt_data(_token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, std::optional<unsigned int>() );
       };
 
       std::string _encrypted_content = __encrypt();
