@@ -119,12 +119,12 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * @param {string} content Content to be encrypted
    * @param {TPublicKey} key public key to find the private key in the wallet and encrypt the data
    * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else)
-   *
+   * @param {?number} nonce optional nonce to be explicitly specified for encryption
    * @returns {string} base58 encrypted buffer
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  encryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string;
+  encryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey, nonce?: number): string;
 
   /**
    * Decrypts given data from a specific entity and returns the decrypted message
