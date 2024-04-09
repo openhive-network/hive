@@ -26,7 +26,7 @@ if [ ${DIRECT_EXECUTION} -eq 0 ]; then
     -it --rm \
     -v "${PROJECT_DIR}/":"${EXECUTION_PATH}" \
     -u $(id -u):$(id -g) \
-  registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.51@sha256:cfb5f84348f27ffecf705641894286a45c9226b7d2943ca2937a04946e966662 \
+  registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.56@sha256:fe304a0e6ad68e930bdc82503c25edd3230842ad333c2d1001ca7a79109db0b3 \
   /bin/bash /src/scripts/build_wasm_beekeeper.sh 1 "${EXECUTION_PATH}"
 else
   echo "Performing a build..."
