@@ -44,6 +44,7 @@ include:
     - '/templates/python_projects.gitlab-ci.yml'
 
 .wasm_beekeeper_test_base:
+  extends: .job-defaults
   stage: test
   # emscripten image can be used as it contains all needed tools (node and npm).
   image: ${EMSCRIPTEN_IMAGE}
@@ -52,7 +53,7 @@ include:
 
   before_script:
     - cd programs/beekeeper/beekeeper_wasm
-    - pnpm install
+    - pnpm install --frozen-lockfile
 
   tags:
     - public-runner-docker
@@ -196,8 +197,7 @@ mirrornet_node_build:
     - hived-for-tests
 
 test_beekeeper_wasm:
-  extends:
-    - .wasm_beekeeper_test_base
+  extends: .wasm_beekeeper_test_base
 
   needs:
     - job: beekeeper_wasm_build
@@ -208,6 +208,7 @@ test_beekeeper_wasm:
       artifacts: true
 
   script:
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
     - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper-*.tgz --strip-components=1
     - npm run test
 
