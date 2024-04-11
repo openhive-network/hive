@@ -167,6 +167,9 @@ ENV DATADIR=/home/hived/datadir
 # Use default location (inside datadir) of shm file. If SHM should be placed on some different device, then set it to mapped volume `/home/hived/shm_dir` and map it in docker run
 ENV SHM_DIR=${DATADIR}/blockchain
 
+ENV OVERRIDE_LD_PRELOAD=""
+RUN echo 'Defaults env_keep += "LD_PRELOAD"' | sudo tee -a /etc/sudoers > /dev/null
+
 STOPSIGNAL SIGINT
 
 # JSON rpc service
