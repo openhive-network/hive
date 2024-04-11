@@ -106,7 +106,7 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     produce_block_data_t produce_block_data = {};
-    std::mutex should_produce_block_mutex = {};
+    std::timed_mutex should_produce_block_mutex = {};
 
     std::atomic<bool> _enable_fast_confirm = true;
 
@@ -366,8 +366,11 @@ namespace detail {
     }
     {
       produce_block_data_t data = get_produce_block_data(1);
-      std::lock_guard g(should_produce_block_mutex);
-      produce_block_data = std::move(data);
+      std::unique_lock g(should_produce_block_mutex, std::defer_lock_t{});
+      if (g.try_lock_for(std::chrono::milliseconds(200)))
+      {
+        produce_block_data = std::move(data);
+      }
     }
   }
 
