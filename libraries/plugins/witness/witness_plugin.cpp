@@ -539,12 +539,13 @@ namespace detail {
       return block_production_condition::not_time_yet;
     }
 
-    if (produce_block_data.block_production_condition == block_production_condition::not_my_turn || produce_block_data.block_production_condition == block_production_condition::no_private_key)
+    if (!produce_block_data.produce_in_next_slot)
     {
-      produce_block_data = get_produce_block_data(slot);
-      return produce_block_data.block_production_condition;
+      block_production_condition::block_production_condition_enum cond = produce_block_data.block_production_condition;
+      const uint32_t slot2 = _db.get_slot_at_time( now + fc::microseconds(200000) );
+      produce_block_data = get_produce_block_data(slot2);
+      return cond;
     }
-    else if (!produce_block_data.produce_in_next_slot) return produce_block_data.block_production_condition;
 
     const fc::microseconds lag = produce_block_data.next_slot_time - now;
     if( llabs(lag.count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
