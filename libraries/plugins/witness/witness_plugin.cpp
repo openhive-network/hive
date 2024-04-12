@@ -535,7 +535,9 @@ namespace detail {
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
 
-    const uint32_t slot = _db.get_slot_at_time( now );
+    const uint32_t slot = _db.with_read_lock([&](){
+      return _db.get_slot_at_time( now );
+    });
     if( slot == 0 )
     {
       // capture("next_time", _db.get_slot_time(1));
@@ -545,8 +547,10 @@ namespace detail {
     if (!produce_block_data.produce_in_next_slot)
     {
       block_production_condition::block_production_condition_enum cond = produce_block_data.block_production_condition;
-      const uint32_t slot2 = _db.get_slot_at_time( now + fc::microseconds(200000) );
-      produce_block_data = get_produce_block_data(slot2);
+      _db.with_read_lock([&](){
+        const uint32_t slot2 = _db.get_slot_at_time( now + fc::microseconds(200000) );
+        produce_block_data = get_produce_block_data(slot2);
+      });
       return cond;
     }
 
@@ -556,12 +560,14 @@ namespace detail {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
       if (lag.count() < 0)
       {
-        produce_block_data.next_slot_time = _db.get_slot_time(slot);
-        chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
-        produce_block_data.scheduled_witness = scheduled_witness;
-        auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
-        auto private_key_itr = _private_keys.find(scheduled_key);
-        produce_block_data.private_key = private_key_itr->second;
+        _db.with_read_lock([&](){
+          produce_block_data.next_slot_time = _db.get_slot_time(slot);
+          chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+          produce_block_data.scheduled_witness = scheduled_witness;
+          auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
+          auto private_key_itr = _private_keys.find(scheduled_key);
+          produce_block_data.private_key = private_key_itr->second;
+        });
       }
       return block_production_condition::lag;
     }
