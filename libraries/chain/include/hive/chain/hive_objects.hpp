@@ -156,6 +156,13 @@ namespace hive { namespace chain {
       asset             amount; //can be expressed in HIVE or HBD
       time_point_sec    complete;
 
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += memo.capacity() * sizeof( decltype( memo )::value_type );
+        return size;
+      }
+
     CHAINBASE_UNPACK_CONSTRUCTOR(savings_withdraw_object, (memo));
   };
 
@@ -228,6 +235,13 @@ namespace hive { namespace chain {
       using t_price_history = t_deque< price >;
 
       t_deque< price > price_history; ///< tracks this last week of median_feed one per hour
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += price_history.size() * sizeof( decltype( price_history )::value_type );
+        return size;
+      }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(feed_history_object, (price_history));
   };
@@ -386,6 +400,13 @@ namespace hive { namespace chain {
       /// How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
       uint8_t           consecutive_failures = 0;
       uint8_t           pair_id = 0;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += memo.capacity() * sizeof( decltype( memo )::value_type );
+        return size;
+      }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object, (memo));
   };

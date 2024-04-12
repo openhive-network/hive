@@ -53,6 +53,14 @@ class proposal_object : public object< proposal_object_type, proposal_object, st
       return ret;
     }
 
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += subject.capacity() * sizeof( decltype( subject )::value_type );
+      size += permlink.capacity() * sizeof( decltype( permlink )::value_type );
+      return size;
+    }
+
   CHAINBASE_UNPACK_CONSTRUCTOR(proposal_object, (subject)(permlink));
 };
 

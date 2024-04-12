@@ -59,6 +59,13 @@ class feed_object : public object< feed_object_type, feed_object, std::true_type
     time_point_sec             first_reblogged_on;
     comment_id_type            comment;
     uint32_t                   account_feed_id = 0;
+
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += reblogged_by.capacity() * sizeof( decltype( reblogged_by )::value_type );
+      return size;
+    }
 };
 
 typedef oid_ref< feed_object > feed_id_type;
@@ -280,13 +287,10 @@ namespace helpers
   {
   public:
     typedef hive::plugins::follow::feed_index IndexType;
-    typedef typename hive::plugins::follow::feed_object::t_reblogged_by_container t_reblogged_by_container;
 
     size_t get_item_additional_allocation(const hive::plugins::follow::feed_object& o) const
     {
-      size_t size = 0;
-      size += o.reblogged_by.capacity()*sizeof(t_reblogged_by_container::value_type);
-      return size;
+      return o.get_dynamic_alloc();
     }
 
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const

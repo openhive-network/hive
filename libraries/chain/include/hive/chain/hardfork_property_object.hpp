@@ -35,6 +35,14 @@ namespace hive { namespace chain {
       //Here are saved balances for given accounts, that were cleared during HF23
       t_hf23_items                h23_balances;
 
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += processed_hardforks.capacity() * sizeof( decltype( processed_hardforks )::value_type );
+        size += h23_balances.capacity() * sizeof( decltype( h23_balances )::value_type );
+        return size;
+      }
+
     CHAINBASE_UNPACK_CONSTRUCTOR(hardfork_property_object, (processed_hardforks)(h23_balances));
   };
 
