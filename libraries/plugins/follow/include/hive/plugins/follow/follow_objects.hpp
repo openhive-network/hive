@@ -45,7 +45,7 @@ class follow_object : public object< follow_object_type, follow_object >
 typedef oid_ref< follow_object > follow_id_type;
 
 
-class feed_object : public object< feed_object_type, feed_object >
+class feed_object : public object< feed_object_type, feed_object, std::true_type >
 {
   CHAINBASE_OBJECT( feed_object );
   public:

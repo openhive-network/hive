@@ -30,7 +30,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       comment_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _author, const std::string& _permlink,
-       const comment_object* _parent_comment );
+        const comment_object* _parent_comment );
 
       //returns comment identification hash
       const author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
@@ -89,7 +89,7 @@ namespace hive { namespace chain {
 
     After HF19 objects of this class are removed at the end of comment cashout process.
   */
-  class comment_cashout_object : public object< comment_cashout_object_type, comment_cashout_object >
+  class comment_cashout_object : public object< comment_cashout_object_type, comment_cashout_object, std::true_type >
   {
     CHAINBASE_OBJECT( comment_cashout_object );
     public:

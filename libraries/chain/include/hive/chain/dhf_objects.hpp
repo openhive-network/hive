@@ -10,7 +10,7 @@ namespace hive { namespace chain {
 
 using hive::protocol::asset;
 
-class proposal_object : public object< proposal_object_type, proposal_object >
+class proposal_object : public object< proposal_object_type, proposal_object, std::true_type >
 {
   CHAINBASE_OBJECT( proposal_object );
   public:

@@ -21,7 +21,7 @@ namespace hive { namespace chain {
   using chainbase::t_vector;
   using hive::protocol::authority;
 
-  class account_object : public object< account_object_type, account_object >
+  class account_object : public object< account_object_type, account_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_object );
     public:
@@ -310,7 +310,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
   };
 
-  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >
+  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_metadata_object );
     public:
@@ -323,7 +323,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
   };
 
-  class account_authority_object : public object< account_authority_object_type, account_authority_object >
+  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_authority_object );
     public:
@@ -402,7 +402,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_expiration_object);
   };
 
-  class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object >
+  class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object, std::true_type >
   {
     CHAINBASE_OBJECT( owner_authority_history_object );
     public:
@@ -421,7 +421,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(owner_authority_history_object, (previous_owner_authority));
   };
 
-  class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object >
+  class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_recovery_request_object );
     public:

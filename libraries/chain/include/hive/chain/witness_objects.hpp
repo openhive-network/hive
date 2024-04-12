@@ -65,7 +65,7 @@ namespace hive { namespace chain {
     *  at least 2 weeks old are able to participate in block
     *  production.
     */
-  class witness_object : public object< witness_object_type, witness_object >
+  class witness_object : public object< witness_object_type, witness_object, std::true_type >
   {
     CHAINBASE_OBJECT( witness_object );
     public:
