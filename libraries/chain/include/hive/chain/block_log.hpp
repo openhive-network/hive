@@ -34,19 +34,16 @@ namespace hive { namespace chain {
     static std::string get_nth_part_file_name(uint32_t part_number);
 
     /**
-     * @brief Match path to split block log name pattern.
+     * @brief Match path to split block log name pattern to deduct part number.
+     * @return part number or 0 (when not part file).
      */
-    static bool is_part_file( const fc::path& file );
+    static uint32_t is_part_file( const fc::path& file );
 
     static bool is_block_log_file_name( const fc::path& file )
     {
       return file.filename().string() == _legacy_file_name ||
              is_part_file( file );
     }
-
-  private:
-    static std::string get_extension(const fc::path& path);
-    static bool is_part_file_name(const std::string& stem, const std::string& extension);
 
   public:
     static const std::string _legacy_file_name;
@@ -117,6 +114,9 @@ namespace hive { namespace chain {
                           hive::chain::blockchain_worker_thread_pool& thread_pool );
       void close();
       bool is_open()const;
+
+      fc::path get_log_file() const;
+      fc::path get_artifacts_file() const;
 
       uint64_t append(const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync);
       uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync);

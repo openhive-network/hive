@@ -47,24 +47,6 @@ namespace hive { namespace chain {
   const std::string block_log_file_name_info::_legacy_file_name = "block_log";
   const std::string block_log_file_name_info::_split_file_name_core = "block_log_part";
 
-  std::string block_log_file_name_info::get_extension( const fc::path& path )
-  {
-    std::string extension(path.extension().string());
-    if(extension.empty())
-      return extension;
-
-    // Note that fc::path::extension() contains leading dot.
-    return extension.substr(1);
-  }
-
-  bool block_log_file_name_info::is_part_file_name( const std::string& stem, const std::string& extension )
-  {
-    // "^block_log_part\\.\\d{4}$"
-    return stem == _split_file_name_core &&
-      extension.size() == _split_file_name_extension_length && 
-      std::all_of( extension.begin(), extension.end(), [](unsigned char ch){ return std::isdigit(ch); } );
-  }
-
   uint32_t block_log_file_name_info::get_first_block_num_for_file_name( const fc::path& block_log_path )
   {
     std::string stem(block_log_path.stem().string());
@@ -73,12 +55,12 @@ namespace hive { namespace chain {
       return 1; // First block number in legacy single file block log is obviously 1.
     }
 
-    std::string extension(get_extension(block_log_path));
-    FC_ASSERT(is_part_file_name(stem, extension), "${stem} ${extension}", (stem)(extension));
+    uint32_t part_number = is_part_file(block_log_path);
+    FC_ASSERT(part_number > 0);
 
     // First block number in split block log part file is 1 plus all blocks in previous files.
     // Note that part files are numbered beginning with 0001.
-    return 1 + ((std::stoul(extension) -1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
+    return 1 + ((part_number -1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
   }
 
   std::string block_log_file_name_info::get_nth_part_file_name( uint32_t part_number )
@@ -91,9 +73,22 @@ namespace hive { namespace chain {
     return result;
   }
 
-  bool block_log_file_name_info::is_part_file( const fc::path& file )
+  uint32_t block_log_file_name_info::is_part_file( const fc::path& file )
   {
-    return is_part_file_name(file.stem().string(), get_extension(file));
+    std::string extension(file.extension().string());
+    if(extension.empty())
+      return 0;
+
+    // Note that fc::path::extension() contains leading dot.
+    extension = extension.substr(1);
+
+    // "^block_log_part\\.\\d{4}$"
+    if (file.stem().string() != _split_file_name_core ||
+        extension.size() != _split_file_name_extension_length ||
+        not std::all_of( extension.begin(), extension.end(), [](unsigned char ch){ return std::isdigit(ch); } ))
+      return 0;
+
+    return std::stoul(extension);
   }
 
   typedef boost::interprocess::scoped_lock< boost::mutex > scoped_lock;
@@ -283,6 +278,16 @@ namespace hive { namespace chain {
   bool block_log::is_open()const
   {
     return my->block_log_fd != -1;
+  }
+
+  fc::path block_log::get_log_file() const
+  {
+    return my->block_file;
+  }
+
+  fc::path block_log::get_artifacts_file() const
+  {
+    return my->_artifacts->get_artifacts_file();
   }
   
   uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)

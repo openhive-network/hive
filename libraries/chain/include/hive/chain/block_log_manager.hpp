@@ -30,10 +30,12 @@ public:
   static block_log_writer_t create_writer( int block_log_split,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool );
 
+  /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
   static block_log_reader_t create_opened_reader( const fc::path& input_path,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool,
     bool recreate_artifacts_if_needed = true );
 
+  /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
   static block_log_writer_t create_opened_writer( const fc::path& output_path,
     appbase::application& app, blockchain_worker_thread_pool& thread_pool );
 };

@@ -70,19 +70,39 @@ void split_file_block_log_writer::internal_open_and_init( block_log* the_log, co
                           _thread_pool );
 }
 
+uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_part_number, 
+  uint32_t head_part_number ) const
+{
+  // Expected tail part is obviously 1 - we need each part.
+  if( tail_part_number > 1 )
+    throw std::runtime_error( 
+      "Missing block log part file(s), beginning with file #" + std::to_string( tail_part_number-1 ) );
+
+  return 1;
+}
+
 void split_file_block_log_writer::common_open_and_init( std::optional< bool > read_only )
 {
   // Any log file created on previous run?
-  std::set< std::string > part_file_names;
+  struct part_file_info_t {
+    uint32_t part_number = 0;
+    fc::path part_file;
+
+    bool operator<(const part_file_info_t& o) const { return part_number < o.part_number; }
+  };
+  std::set< part_file_info_t > part_file_names;
   if( exists( _open_args.data_dir ) )
   {
     fc::directory_iterator it( _open_args.data_dir );
     fc::directory_iterator end_it;
     for( ; it != end_it; it++ )
     {
-      if( fc::is_regular_file( *it ) && block_log_file_name_info::is_part_file( *it ) )
+      uint32_t part_number = 0;
+      if( fc::is_regular_file( *it ) && 
+          ( part_number = block_log_file_name_info::is_part_file( *it ) ) > 0 )
       {
-        part_file_names.insert( it->filename().string() );
+        // Part numbers are always positive.
+        part_file_names.insert( { part_number, *it } );
       }
     }
   }
@@ -101,24 +121,37 @@ void split_file_block_log_writer::common_open_and_init( std::optional< bool > re
 
   const size_t number_of_parts = part_file_names.size();
   // Check integrity of found part file names.
-  for( size_t part_number = 1; part_number <= number_of_parts; ++part_number )
+  uint32_t head_part_number = part_file_names.crbegin()->part_number;
+  uint32_t tail_part_number = part_file_names.cbegin()->part_number;
+  // Implementation-dependent check:
+  uint32_t actual_tail_needed = validate_tail_part_number( tail_part_number, head_part_number );
+  // Shrink the names pool if needed.
+  if( actual_tail_needed > tail_part_number )
   {
-    std::string nth_part_file_name = block_log_file_name_info::get_nth_part_file_name( part_number );
-    if( part_file_names.find( nth_part_file_name ) == part_file_names.end() )
+    auto it = part_file_names.begin();
+    std::advance( it, actual_tail_needed - tail_part_number );
+    part_file_names.erase( part_file_names.begin(), it );
+  }
+  // Common check:
+  auto crit = part_file_names.crbegin();
+  for( uint32_t prev_number = head_part_number +1; crit != part_file_names.crend(); ++crit )
+  {
+    if( crit->part_number != prev_number -1 )
     {
-      throw std::runtime_error( "Broken integrity of block log files: missing file " + nth_part_file_name );
+      throw std::runtime_error( "Broken integrity of block log files: missing file #" + std::to_string( prev_number-1 ) );
     }
+    --prev_number;
   }
 
   // Open them all.
-  for( size_t part_number = 1; part_number <= number_of_parts; ++part_number )
+  _logs.resize( head_part_number, nullptr );
+  for( auto cit = part_file_names.cbegin(); cit != part_file_names.cend(); ++cit )
   {
-    std::string nth_part_file_name = block_log_file_name_info::get_nth_part_file_name( part_number );
-    fc::path nth_part_file_path( _open_args.data_dir / nth_part_file_name.c_str() );
     block_log* nth_part_log = new block_log( _app );
-    internal_open_and_init( nth_part_log, nth_part_file_path,
-                            read_only ? *read_only : part_number < number_of_parts );
-    _logs.push_back( nth_part_log );
+    uint32_t part_number = cit->part_number;
+    internal_open_and_init( nth_part_log, cit->part_file, read_only ? *read_only : false );
+    // Part numbers are always positive.
+    _logs[ part_number-1 ] = nth_part_log;
   }
 }
 
@@ -138,7 +171,13 @@ void split_file_block_log_writer::open_and_init( const fc::path& path, bool read
 
 void split_file_block_log_writer::close_log()
 {
-  std::for_each( _logs.begin(), _logs.end(), [&]( block_log* log ){ log->close(); delete log; } );
+  std::for_each( _logs.begin(), _logs.end(), [&]( block_log* log ){ 
+    if( log )
+    { 
+      log->close();
+      delete log;
+    }
+  } );
   _logs.clear();
 }
 
@@ -172,6 +211,7 @@ void split_file_block_log_writer::internal_append( uint32_t block_num, append_t 
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );
+    rotate_part_files( new_part_number );
   }
   else
   {

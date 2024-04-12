@@ -182,6 +182,11 @@ public:
 
   void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool);
 
+  fc::path get_artifacts_file() const
+  {
+    return _artifact_file_name;
+  }
+
   uint32_t read_head_block_num() const
   {
     return _header.head_block_num;
@@ -778,6 +783,11 @@ block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const f
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
   block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification, thread_pool );
   return block_artifacts;
+}
+
+fc::path block_log_artifacts::get_artifacts_file() const
+{
+  return _impl->get_artifacts_file();
 }
 
 /// Allows to read a number of last block the artifacts are stored for.
