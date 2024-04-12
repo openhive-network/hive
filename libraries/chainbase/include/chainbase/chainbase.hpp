@@ -920,8 +920,15 @@ namespace chainbase {
       {
         typedef typename BaseIndex::index_type index_type;
         helpers::index_statistic_provider<index_type> provider;
-        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), /* onlyStaticInfo */ true);
+        //* For testing:
+        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), false); //static and additional
+        FC_ASSERT( stats._item_additional_allocation == _base.get_item_additional_allocation(),
+          "Wrong value calculated for additional item allocation (${c} vs actual ${a})",
+          ( "c", _base.get_item_additional_allocation() )( "a", stats._item_additional_allocation ) );
+        /*/
+        helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), true); //only static
         stats._item_additional_allocation = _base.get_item_additional_allocation();
+        //*/
         return stats;
       }
 
