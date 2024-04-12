@@ -132,7 +132,7 @@ namespace hive { namespace chain {
   };
 
 
-  class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object >
+  class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object, std::true_type >
   {
     CHAINBASE_OBJECT( savings_withdraw_object );
     public:
@@ -214,7 +214,7 @@ namespace hive { namespace chain {
     *  This object gets updated once per hour, on the hour. Tracks price of HIVE (technically in HBD, but
     *  the meaning is in dollars).
     */
-  class feed_history_object : public object< feed_history_object_type, feed_history_object >
+  class feed_history_object : public object< feed_history_object_type, feed_history_object, std::true_type >
   {
     CHAINBASE_OBJECT( feed_history_object );
     public:
@@ -332,7 +332,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(reward_fund_object);
   };
 
-  class recurrent_transfer_object : public object< recurrent_transfer_object_type, recurrent_transfer_object >
+  class recurrent_transfer_object : public object< recurrent_transfer_object_type, recurrent_transfer_object, std::true_type >
   {
     CHAINBASE_OBJECT( recurrent_transfer_object );
     public:

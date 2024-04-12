@@ -154,13 +154,13 @@ namespace chainbase {
       }
   };
 
-  template<uint16_t TypeNumber, typename Derived>
+  template<uint16_t TypeNumber, typename Derived, typename HasDynamicAlloc = std::false_type>
   struct object
   {
     typedef oid<Derived> id_type;
     typedef oid_ref<Derived> id_ref_type;
-    static const uint16_t type_id = TypeNumber;
-
+    enum { type_id = TypeNumber };
+    typedef HasDynamicAlloc has_dynamic_alloc_t;
   };
 
   /** this class is ment to be specified to enable lookup of index type by object type using

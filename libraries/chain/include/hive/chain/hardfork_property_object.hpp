@@ -12,7 +12,7 @@ namespace hive { namespace chain {
   using chainbase::t_vector;
   using chainbase::t_flat_map;
 
-  class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object >
+  class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object, std::true_type >
   {
     CHAINBASE_OBJECT( hardfork_property_object );
     public:
