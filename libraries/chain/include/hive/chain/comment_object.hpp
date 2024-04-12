@@ -248,8 +248,19 @@ namespace hive { namespace chain {
 
       t_beneficiaries   beneficiaries;
 
-#ifdef HIVE_ENABLE_SMT
     public:
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += permlink.capacity() * sizeof( decltype( permlink )::value_type );
+        size += beneficiaries.capacity() * sizeof( decltype( beneficiaries )::value_type );
+#ifdef HIVE_ENABLE_SMT
+        size += allowed_vote_assets.capacity() * sizeof( decltype( allowed_vote_assets )::value_type );
+#endif
+        return size;
+      }
+
+#ifdef HIVE_ENABLE_SMT
       t_votable_assets  allowed_vote_assets;
 
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_object, (permlink)(beneficiaries)(allowed_vote_assets));
@@ -527,27 +538,15 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_vote_object, hive::chain::comment
 
 namespace helpers
 {
-  using hive::chain::shared_string;
-
   template <>
   class index_statistic_provider<hive::chain::comment_cashout_index>
   {
   public:
     typedef hive::chain::comment_cashout_index IndexType;
-    typedef typename hive::chain::comment_cashout_object::t_beneficiaries t_beneficiaries;
-#ifdef HIVE_ENABLE_SMT
-    typedef typename hive::chain::comment_cashout_object::t_votable_assets t_votable_assets;
-#endif
 
     size_t get_item_additional_allocation(const hive::chain::comment_cashout_object& o) const
     {
-      size_t size = 0;
-      size += o.get_permlink().capacity()*sizeof(shared_string::value_type);
-      size += o.get_beneficiaries().capacity()*sizeof(t_beneficiaries::value_type);
-#ifdef HIVE_ENABLE_SMT
-      size += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);
-#endif
-      return size;
+      return o.get_dynamic_alloc();
     }
 
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const

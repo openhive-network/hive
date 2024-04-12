@@ -81,6 +81,14 @@ namespace hive { namespace chain {
     void     clear();
     void     validate()const;
 
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += account_auths.capacity() * sizeof( decltype( account_auths )::value_type );
+      size += key_auths.capacity() * sizeof( decltype( key_auths )::value_type );
+      return size;
+    }
+
     using account_pair_allocator_type = t_allocator_pair< account_name_type, weight_type >;
     using key_pair_allocator_type = t_allocator_pair< public_key_type, weight_type >;
 

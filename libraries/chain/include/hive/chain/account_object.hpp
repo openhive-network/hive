@@ -307,6 +307,13 @@ namespace hive { namespace chain {
       void set_name( const account_name_type& new_name ) { name = new_name; }
 #endif
 
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+        return size;
+      }
+
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
   };
 
@@ -319,6 +326,14 @@ namespace hive { namespace chain {
       account_id_type   account;
       shared_string     json_metadata;
       shared_string     posting_json_metadata;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += json_metadata.capacity() * sizeof( decltype( json_metadata )::value_type );
+        size += posting_json_metadata.capacity() * sizeof( decltype( posting_json_metadata )::value_type );
+        return size;
+      }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
   };
@@ -337,6 +352,15 @@ namespace hive { namespace chain {
 
       time_point_sec    previous_owner_update;
       time_point_sec    last_owner_update;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += owner.get_dynamic_alloc();
+        size += active.get_dynamic_alloc();
+        size += posting.get_dynamic_alloc();
+        return size;
+      }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(account_authority_object, (owner)(active)(posting));
   };
@@ -418,6 +442,14 @@ namespace hive { namespace chain {
       account_name_type account;
       shared_authority  previous_owner_authority;
       time_point_sec    last_valid_time;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += previous_owner_authority.get_dynamic_alloc();
+        return size;
+      }
+
     CHAINBASE_UNPACK_CONSTRUCTOR(owner_authority_history_object, (previous_owner_authority));
   };
 
@@ -453,6 +485,14 @@ namespace hive { namespace chain {
       time_point_sec    expires;
       account_name_type account_to_recover;
       shared_authority  new_owner_authority;
+
+    public:
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += new_owner_authority.get_dynamic_alloc();
+        return size;
+      }
       
     CHAINBASE_UNPACK_CONSTRUCTOR(account_recovery_request_object, (new_owner_authority));
   };
@@ -733,13 +773,10 @@ namespace helpers
   {
   public:
     typedef hive::chain::account_index IndexType;
-    typedef typename hive::chain::account_object::t_delayed_votes t_delayed_votes;
 
     size_t get_item_additional_allocation(const hive::chain::account_object& o) const
     {
-      size_t size = 0;
-      size += o.delayed_votes.capacity()*sizeof(t_delayed_votes::value_type);
-      return size;
+      return o.get_dynamic_alloc();
     }
 
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const

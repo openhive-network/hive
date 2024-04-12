@@ -157,6 +157,13 @@ namespace hive { namespace chain {
       time_point_sec    hardfork_time_vote = HIVE_GENESIS_TIME;
 
       int64_t           available_witness_account_subsidies = 0;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += url.capacity() * sizeof( decltype( url )::value_type );
+        return size;
+      }
   };
 
 

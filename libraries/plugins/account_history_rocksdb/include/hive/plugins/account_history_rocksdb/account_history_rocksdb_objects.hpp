@@ -38,6 +38,14 @@ class volatile_operation_object : public object< volatile_operation_object_type,
     chainbase::t_vector< account_name_type > impacted;
     bool                                     is_virtual = false;
     uint8_t                                  transaction_status = 0;
+
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += serialized_op.capacity() * sizeof( decltype( serialized_op )::value_type );
+      size += impacted.capacity() * sizeof( decltype( impacted )::value_type );
+      return size;
+    }
 };
 
 typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
