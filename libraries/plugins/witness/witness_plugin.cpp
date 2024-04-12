@@ -55,13 +55,15 @@ void new_chain_banner( const chain::database& db )
 namespace detail {
 
   struct produce_block_data_t {
-    produce_block_data_t() : next_slot(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
+    produce_block_data_t() : next_slot(0), pct(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), scheduled_public_key{}, scheduled_private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
     {}
 
     uint32_t next_slot;
+    uint32_t pct;
     fc::time_point_sec next_slot_time;
     chain::account_name_type scheduled_witness;
-    fc::ecc::private_key private_key;
+    fc::ecc::public_key scheduled_public_key;
+    fc::ecc::private_key scheduled_private_key;
     block_production_condition::block_production_condition_enum block_production_condition;
     bool produce_in_next_slot;
   };
@@ -379,7 +381,9 @@ namespace detail {
     const auto head_block_num = _db.head_block_num();
     const auto next_block_time = _db.get_slot_time( slot );
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+    chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
     fc::ecc::private_key private_key;
+    uint32_t pct = 0;
 
     // immediately invoked lambda returning block_production_condition
     block_production_condition::block_production_condition_enum condition = [&](){
@@ -406,7 +410,6 @@ namespace detail {
         // capture("scheduled_witness", scheduled_witness);
         return block_production_condition::not_my_turn;
       }
-      chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
       {
@@ -419,6 +422,7 @@ namespace detail {
       if( prate < _required_witness_participation )
       {
         // capture("pct", uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT));
+        pct = uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT);
         return block_production_condition::low_participation;
       }
       // if( llabs((scheduled_time - next_block_time).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
@@ -431,9 +435,11 @@ namespace detail {
 
     produce_block_data_t produce_block_data;
     produce_block_data.next_slot = slot;
+    produce_block_data.pct = pct;
     produce_block_data.next_slot_time = next_block_time;
     produce_block_data.scheduled_witness = std::move(scheduled_witness);
-    produce_block_data.private_key = private_key;
+    produce_block_data.scheduled_public_key = scheduled_key;
+    produce_block_data.scheduled_private_key = private_key;
     produce_block_data.block_production_condition = condition;
     produce_block_data.produce_in_next_slot = condition == block_production_condition::block_production_condition_enum::produced;
     return produce_block_data;
@@ -540,7 +546,10 @@ namespace detail {
     });
     if( slot == 0 )
     {
-      // capture("next_time", _db.get_slot_time(1));
+      const uint32_t slot1 = _db.with_read_lock([&](){
+        return _db.get_slot_at_time( now );
+      });
+      capture("next_time", slot1);
       return block_production_condition::not_time_yet;
     }
 
@@ -551,6 +560,9 @@ namespace detail {
         const uint32_t slot2 = _db.get_slot_at_time( now + fc::microseconds(200000) );
         produce_block_data = get_produce_block_data(slot2);
       });
+      capture("scheduled_witness", produce_block_data.scheduled_witness);
+      capture("scheduled_key", produce_block_data.scheduled_public_key);
+      capture("pct", produce_block_data.pct);
       return cond;
     }
 
@@ -566,14 +578,14 @@ namespace detail {
           produce_block_data.scheduled_witness = scheduled_witness;
           auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
           auto private_key_itr = _private_keys.find(scheduled_key);
-          produce_block_data.private_key = private_key_itr->second;
+          produce_block_data.scheduled_private_key = private_key_itr->second;
         });
       }
       return block_production_condition::lag;
     }
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
-      produce_block_data.scheduled_witness, produce_block_data.private_key, _production_skip_flags, theApp );
+      produce_block_data.scheduled_witness, produce_block_data.scheduled_private_key, _production_skip_flags, theApp );
     _chain_plugin.generate_block( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
@@ -705,7 +717,8 @@ void witness_plugin::plugin_startup()
       my->produce_block_data.scheduled_witness = "initminer";
       auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>("initminer").signing_key;
       auto private_key_itr = my->_private_keys.find(scheduled_key);
-      my->produce_block_data.private_key = private_key_itr->second;
+      my->produce_block_data.scheduled_public_key = scheduled_key;
+      my->produce_block_data.scheduled_private_key = private_key_itr->second;
     }
     else
     {
@@ -716,7 +729,8 @@ void witness_plugin::plugin_startup()
       my->produce_block_data.scheduled_witness = scheduled_witness;
       auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
       auto private_key_itr = my->_private_keys.find(scheduled_key);
-      my->produce_block_data.private_key = private_key_itr->second;
+      my->produce_block_data.scheduled_public_key = scheduled_key;
+      my->produce_block_data.scheduled_private_key = private_key_itr->second;
     }
   }
   else
