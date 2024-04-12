@@ -288,11 +288,6 @@ namespace helpers
   public:
     typedef hive::plugins::follow::feed_index IndexType;
 
-    size_t get_item_additional_allocation(const hive::plugins::follow::feed_object& o) const
-    {
-      return o.get_dynamic_alloc();
-    }
-
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -302,7 +297,7 @@ namespace helpers
       {
         for(const auto& o : index)
         {
-          info._item_additional_allocation += get_item_additional_allocation(o);
+          info._item_additional_allocation += o.get_dynamic_alloc();
         }
       }
 

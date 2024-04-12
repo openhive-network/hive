@@ -51,26 +51,3 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::transaction_object, (id)(trx_id)(expiration) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::transaction_object, hive::chain::transaction_index )
-
-namespace helpers
-{
-  template <>
-  class index_statistic_provider<hive::chain::transaction_index>
-  {
-  public:
-    typedef hive::chain::transaction_index IndexType;
-
-    size_t get_item_additional_allocation(const hive::chain::transaction_object& o) const
-    {
-      return 0;
-    }
-
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-      return info;
-    }
-  };
-
-} /// namespace helpers

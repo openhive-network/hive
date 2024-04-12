@@ -107,11 +107,6 @@ namespace helpers
   class index_statistic_provider
   {
   public:
-    size_t get_item_additional_allocation(const typename IndexType::value_type&) const
-    {
-      return 0;
-    }
-
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
@@ -359,8 +354,8 @@ namespace chainbase {
 
         ++_next_id;
         on_create( *insert_result.first );
-        helpers::index_statistic_provider<index_type> provider;
-        _item_additional_allocation += provider.get_item_additional_allocation(*insert_result.first);
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation += insert_result.first->get_dynamic_alloc();
         return *insert_result.first;
       }
 
@@ -414,10 +409,12 @@ namespace chainbase {
 
         auto itr = _indices.iterator_to( obj );
 
-        helpers::index_statistic_provider<index_type> provider;
-        const auto old_size = provider.get_item_additional_allocation(obj);
+        size_t old_size = 0, new_size = 0;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          old_size = obj.get_dynamic_alloc();
         auto ok = _indices.modify( itr, safe_modifier);
-        const auto new_size = provider.get_item_additional_allocation(obj);
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          new_size = obj.get_dynamic_alloc();
 
         if(fc_exception_ptr)
           fc_exception_ptr->dynamic_rethrow_exception();
@@ -430,25 +427,30 @@ namespace chainbase {
             "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
 
-        _item_additional_allocation -= old_size;
-        _item_additional_allocation += new_size;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation += new_size - old_size;
       }
 
       void remove( const value_type& obj ) {
-        helpers::index_statistic_provider<index_type> provider;
-        const auto size = provider.get_item_additional_allocation(obj);
+        size_t size = 0;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          size = obj.get_dynamic_alloc();
         on_remove( obj );
         _indices.erase( _indices.iterator_to( obj ) );
-        _item_additional_allocation -= size;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation -= size;
       }
 
       template< typename ByIndex >
       typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI) {
         auto& idx = _indices.template get< ByIndex >();
+        size_t size = 0;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          size = objI->get_dynamic_alloc();
         on_remove( *objI );
         const auto ret = idx.erase(objI);
-        helpers::index_statistic_provider<index_type> provider;
-        _item_additional_allocation -= provider.get_item_additional_allocation(*objI);
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation -= size;
         return ret;
       }
 
@@ -572,7 +574,6 @@ namespace chainbase {
       void undo() {
         if( !enabled() ) return;
 
-        helpers::index_statistic_provider<index_type> provider;
         auto& head = _stack.back();
 
         for( auto& item : head.old_values ) {
@@ -582,15 +583,19 @@ namespace chainbase {
           auto itr = _indices.find( item.second.get_id() );
           if( itr != _indices.end() )
           {
-            old_size = provider.get_item_additional_allocation(*itr);
-            new_size = provider.get_item_additional_allocation(item.second);
+            if constexpr( value_type::has_dynamic_alloc_t::value )
+            {
+              old_size = itr->get_dynamic_alloc();
+              new_size = item.second.get_dynamic_alloc();
+            }
             ok = _indices.modify( itr, [&]( value_type& v ) {
               v = std::move( item.second );
             });
           }
           else
           {
-            new_size = provider.get_item_additional_allocation(item.second);
+            if constexpr( value_type::has_dynamic_alloc_t::value )
+              new_size = item.second.get_dynamic_alloc();
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
@@ -600,8 +605,8 @@ namespace chainbase {
               "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: "
                 + get_type_name()));
           }
-          _item_additional_allocation -= old_size;
-          _item_additional_allocation += new_size;
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            _item_additional_allocation += new_size - old_size;
         }
 
         for( const auto& id : head.new_ids )
@@ -614,21 +619,27 @@ namespace chainbase {
               std::to_string(id) + "in the index holding types: " + get_type_name()));
           }
 
-          const auto size = provider.get_item_additional_allocation(*position);
+          size_t size = 0;
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            size = position->get_dynamic_alloc();
           _indices.erase( position );
-          _item_additional_allocation -= size;
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            _item_additional_allocation -= size;
         }
         _next_id = head.old_next_id;
 
         for( auto& item : head.removed_values ) {
-          const auto new_size = provider.get_item_additional_allocation(item.second);
+          size_t new_size = 0;
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            new_size = item.second.get_dynamic_alloc();
           bool ok = _indices.emplace( std::move( item.second ) ).second;
           if( !ok )
           {
             CHAINBASE_THROW_EXCEPTION(std::logic_error(
               "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
           }
-          _item_additional_allocation += new_size;
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            _item_additional_allocation += new_size;
         }
 
         _stack.pop_back();
