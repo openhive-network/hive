@@ -535,30 +535,3 @@ FC_REFLECT( hive::chain::comment_vote_object,
           (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
         )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_vote_object, hive::chain::comment_vote_index )
-
-namespace helpers
-{
-  template <>
-  class index_statistic_provider<hive::chain::comment_cashout_index>
-  {
-  public:
-    typedef hive::chain::comment_cashout_index IndexType;
-
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-
-      if(onlyStaticInfo == false)
-      {
-        for(const auto& o : index)
-        {
-          info._item_additional_allocation += o.get_dynamic_alloc();
-        }
-      }
-
-      return info;
-    }
-  };
-
-} /// namespace helpers

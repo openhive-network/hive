@@ -279,30 +279,3 @@ CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::follow_count_object, hive::plug
 
 FC_REFLECT( hive::plugins::follow::blog_author_stats_object, (id)(blogger)(guest)(count) )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::blog_author_stats_object, hive::plugins::follow::blog_author_stats_index );
-
-namespace helpers
-{
-  template <>
-  class index_statistic_provider<hive::plugins::follow::feed_index>
-  {
-  public:
-    typedef hive::plugins::follow::feed_index IndexType;
-
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-
-      if(onlyStaticInfo == false)
-      {
-        for(const auto& o : index)
-        {
-          info._item_additional_allocation += o.get_dynamic_alloc();
-        }
-      }
-
-      return info;
-    }
-  };
-
-} /// namespace helpers

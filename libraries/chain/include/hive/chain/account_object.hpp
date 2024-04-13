@@ -765,30 +765,3 @@ FC_REFLECT( hive::chain::change_recovery_account_request_object,
           (id)(account_to_recover)(recovery_account)(effective_on)
         )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::change_recovery_account_request_object, hive::chain::change_recovery_account_request_index )
-
-namespace helpers
-{
-  template <>
-  class index_statistic_provider<hive::chain::account_index>
-  {
-  public:
-    typedef hive::chain::account_index IndexType;
-
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-
-      if(onlyStaticInfo == false)
-      {
-        for(const auto& o : index)
-        {
-          info._item_additional_allocation += o.get_dynamic_alloc();
-        }
-      }
-
-      return info;
-    }
-  };
-
-} /// namespace helpers
