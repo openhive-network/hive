@@ -400,7 +400,8 @@ namespace chainbase {
         ++_next_id;
 
         on_create(*insert_result.first);
-        }
+        // no need to correct _item_additional_allocation here - whole value is recalculated at the end of load
+      }
 
       template<typename Modifier>
       void modify( const value_type& obj, Modifier&& m ) {
@@ -484,8 +485,13 @@ namespace chainbase {
           ++nextI;
           if(allow_removal)
           {
+            size_t size = 0;
+            if constexpr( value_type::has_dynamic_alloc_t::value )
+              size = objectI->get_dynamic_alloc();
             auto successor = idx.erase(objectI);
             FC_ASSERT(successor == nextI);
+            if constexpr( value_type::has_dynamic_alloc_t::value )
+              _item_additional_allocation -= size;
             objectI = successor;
           }
           else

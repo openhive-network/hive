@@ -1357,29 +1357,53 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
   }
 }
 
-BOOST_AUTO_TEST_CASE( additional_allocations_after_clear_index )
+BOOST_AUTO_TEST_CASE( additional_allocations )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "--- Testing: additional_allocations_after_clear_index" );
+    BOOST_TEST_MESSAGE( "--- Testing: additional_allocations" );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    auto& index = db->get_mutable_index<account_index>();
-    const size_t initial_allocations = index.get_item_additional_allocation();
+    auto get_all_dynamic_alloc = [this]() -> size_t
+    {
+      size_t result = 0;
+      const auto& abstract_index_cntr = db->get_abstract_index_cntr();
+      for( const auto* idx : abstract_index_cntr )
+        result += idx->get_statistics()._item_additional_allocation;
+      return result;
+    };
+
+    auto& accountIdx = db->get_mutable_index<account_index>();
+    const size_t initial_account_allocations = accountIdx.get_item_additional_allocation();
+    const size_t all_initial_allocations = get_all_dynamic_alloc();
 
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
     ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+    BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), initial_account_allocations );
+    size_t all_allocations = get_all_dynamic_alloc();
+    BOOST_REQUIRE_GT( all_allocations, all_initial_allocations );
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
-    BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
+    BOOST_REQUIRE_GT( accountIdx.get_item_additional_allocation(), initial_account_allocations );
+    {
+      size_t current_allocations = get_all_dynamic_alloc();
+      BOOST_REQUIRE_GT( current_allocations, all_allocations );
+      all_allocations = current_allocations;
+    }
 
-    index.clear();
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), 0);
+    // wait one schedule for all above operations to become irreversible - AH volatile operation objects should be removed
+    generate_blocks( 21 );
+    {
+      size_t current_allocations = get_all_dynamic_alloc();
+      BOOST_REQUIRE_LT( current_allocations, all_allocations );
+    }
+
+    accountIdx.clear();
+    BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), 0 );
   }
   FC_LOG_AND_RETHROW()
 }
