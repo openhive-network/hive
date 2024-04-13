@@ -103,17 +103,34 @@ namespace helpers
     info->_additional_container_allocation = info->_item_count*pureNodeSize;
   }
 
-  template <class IndexType>
   class index_statistic_provider
   {
   public:
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
+
+    template < class IndexType >
+    index_statistic_info gather_statistics( const IndexType& index, bool onlyStaticInfo,
+      typename std::enable_if_t< not IndexType::value_type::has_dynamic_alloc_t::value >* = nullptr ) const
     {
       index_statistic_info info;
-      gather_index_static_data(index, &info);
+      gather_index_static_data( index, &info );
+      return info;
+    }
+
+    template < class IndexType >
+    index_statistic_info gather_statistics( const IndexType& index, bool onlyStaticInfo,
+      typename std::enable_if_t< IndexType::value_type::has_dynamic_alloc_t::value >* = nullptr ) const
+    {
+      index_statistic_info info;
+      gather_index_static_data( index, &info );
+
+      if( not onlyStaticInfo )
+        for( const auto& o : index )
+          info._item_additional_allocation += o.get_dynamic_alloc();
+
       return info;
     }
   };
+
 } /// namespace helpers
 
 namespace chainbase {
@@ -332,7 +349,7 @@ namespace chainbase {
       }
 
       void recalculate_additional_allocation() {
-        helpers::index_statistic_provider<index_type> provider;
+        helpers::index_statistic_provider provider;
         helpers::index_statistic_info stats = provider.gather_statistics(_indices, /* onlyStaticInfo */ false);
         _item_additional_allocation = stats._item_additional_allocation;
       }
@@ -929,8 +946,7 @@ namespace chainbase {
 
       virtual statistic_info get_statistics() const override final
       {
-        typedef typename BaseIndex::index_type index_type;
-        helpers::index_statistic_provider<index_type> provider;
+        helpers::index_statistic_provider provider;
         //* For testing:
         helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), false); //static and additional
         FC_ASSERT( stats._item_additional_allocation == _base.get_item_additional_allocation(),
