@@ -953,7 +953,7 @@ namespace chainbase {
       virtual statistic_info get_statistics() const override final
       {
         helpers::index_statistic_provider provider;
-        //* For testing:
+        /* For testing:
         helpers::index_statistic_info stats = provider.gather_statistics(_base.indices(), false); //static and additional
         FC_ASSERT( stats._item_additional_allocation == _base.get_item_additional_allocation(),
           "Wrong value calculated for additional item allocation (${c} vs actual ${a})",
