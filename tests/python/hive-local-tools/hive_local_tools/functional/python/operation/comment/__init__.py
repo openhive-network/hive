@@ -547,8 +547,11 @@ class Comment:
         vesting_payout_as_hive = convert_vesting_to_hive(self.__node, vesting_payout)
         assert (
             abs(hbd_reward_as_hive.as_float() * vesting_percentage - vesting_payout_as_hive.as_float() * hbd_percentage)
-            <= 100
-        ), "Resources percentage in reward are incorrect"
+            <= 1
+        ), (
+            f"Resources percentage in reward are incorrect. HBD_reward_as_hive = {hbd_reward_as_hive},"
+            f" VESTING_reward_as_hive = {vesting_payout_as_hive}"
+        )
 
     def verify_balances(self):
         self.__author.assert_reward_balance(self.node, "hbd")
