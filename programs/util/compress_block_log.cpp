@@ -4,6 +4,7 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_compression.hpp>
 #include <hive/chain/block_log_manager.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
@@ -129,13 +130,19 @@ void compress_blocks(uint32_t& current_block_num)
       compressed_data zstd_compressed_data;
       fc::time_point before = fc::time_point::now();
       //idump((uncompressed->block_number)(uncompressed->uncompressed_block_size));
-      std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = hive::chain::block_log::compress_block_zstd(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, dictionary_number_to_use, zstd_level, zstd_compression_context);
+      std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = 
+        hive::chain::block_log_compression::compress_block_zstd(
+          uncompressed->uncompressed_block_data.get(),
+          uncompressed->uncompressed_block_size,
+          dictionary_number_to_use, zstd_level,
+          zstd_compression_context);
       //idump((fc::to_hex(zstd_compressed_data.data.get(), zstd_compressed_data.size))(uncompressed->uncompressed_block_size)(zstd_compressed_data.size));
       //idump((zstd_compressed_data.size));
 
       fc::time_point after_compress = fc::time_point::now();
       if (benchmark_decompression)
-        hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
+        hive::chain::block_log_compression::decompress_block_zstd(zstd_compressed_data.data.get(),
+          zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
       fc::time_point after_decompress = fc::time_point::now();
       zstd_compressed_data.method = hive::chain::block_log::block_flags::zstd;
       zstd_compressed_data.dictionary_number = dictionary_number_to_use;
@@ -317,7 +324,8 @@ void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32
         log_reader->read_raw_block_data_by_num(current_block_number);
       raw_compressed_block_data = std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
     }
-    std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = hive::chain::block_log::decompress_raw_block(std::move(raw_compressed_block_data));
+    std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = 
+      hive::chain::block_log_compression::decompress_raw_block(std::move(raw_compressed_block_data));
 
     uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
     uncompressed_block->uncompressed_block_data = std::get<0>(std::move(raw_block_data));

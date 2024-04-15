@@ -49,6 +49,7 @@ add_library( hive_chain
              block_flow_control.cpp
              block_log.cpp
              block_log_artifacts.cpp
+             block_log_compression.cpp
              block_log_manager.cpp
              block_log_reader_common.cpp
              block_storage_manager.cpp

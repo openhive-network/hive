@@ -7,14 +7,6 @@
 
 #define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
 
-extern "C"
-{
-  struct ZSTD_CCtx_s;
-  typedef struct ZSTD_CCtx_s ZSTD_CCtx;
-  struct ZSTD_DCtx_s;
-  typedef struct ZSTD_DCtx_s ZSTD_DCtx;
-}
-
 namespace hive { namespace chain {
 
   /**
@@ -124,8 +116,6 @@ namespace hive { namespace chain {
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const;
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>&& raw_block_data_tuple);
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
       /** Allows to read just block_id for block identified by given block number. 
       *   \warning Can return empty `block_id_type` if block_num is out of valid range.
@@ -138,13 +128,6 @@ namespace hive { namespace chain {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
       std::shared_ptr<full_block_type> read_head() const;
       std::shared_ptr<full_block_type> head() const;
-
-      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, std::optional<uint8_t> dictionary_number, 
-                                                                             fc::optional<int> compression_level = fc::optional<int>(), 
-                                                                             fc::optional<ZSTD_CCtx*> compression_context = fc::optional<ZSTD_CCtx*>());
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
-                                                                               std::optional<uint8_t> dictionary_number = std::optional<int>(), 
-                                                                               fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
 
       /// Functor takes: block_num, serialized_block_data_size, block_log_file_offset, block_attributes. 
       /// It should return true to continue processing, false to stop iteration.
