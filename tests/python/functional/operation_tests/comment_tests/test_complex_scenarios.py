@@ -99,7 +99,9 @@ def test_1_1_case(prepared_node, posts, comments):
     ), "Incorrect value of vesting_payout in curation reward"  # 7.
 
 
-def test_1_2_case(prepared_node, posts, comments):
+@pytest.mark.parametrize("post_options", [{"percent_hbd": 50}])
+@pytest.mark.parametrize("comment_options", [{"percent_hbd": 50}])
+def test_1_2_case(prepared_node, posts, comments, post_options, comment_options):
     post_1, post_2, post_3 = posts
     comment_1, comment_2, comment_3 = comments
     votes(posts, comments)
