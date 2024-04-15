@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
 import test_tools as tt
+import wax
 from hive_local_tools.functional.python.operation import (
     Account,
     convert_from_mainnet_to_testnet_asset,
@@ -14,6 +15,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
+from schemas.fields.assets.hive import AssetHiveHF26
 from schemas.jsonrpc import get_response_model
 from schemas.operations import (
     ClaimRewardBalanceOperationLegacy,
@@ -74,16 +76,28 @@ def get_reward_operations(node, mode: Literal["author", "curation", "comment_ben
 
 def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
     hbd_to_hive_feed = node.api.database.get_current_price_feed()
-    hbd_to_hive_feed = hbd_to_hive_feed["base"].as_float() / hbd_to_hive_feed["quote"].as_float()
-    return tt.Asset.Hive(hbd.as_float() / 1000 * hbd_to_hive_feed)
+    calculated_hive = wax.calculate_hbd_to_hive(
+        wax.hbd(int(hbd.amount)),
+        wax.hbd(int(hbd_to_hive_feed.base.amount)),
+        wax.hive(int(hbd_to_hive_feed.quote.amount)),
+    )
+    return AssetHiveHF26(
+        amount=calculated_hive.amount.decode(), precision=calculated_hive.precision, nai=calculated_hive.nai.decode()
+    )
 
 
 def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
     gdgp = node.api.database.get_dynamic_global_properties()
-    total_vesting_shares = gdgp.total_vesting_shares
     total_vesting_fund_hive = gdgp.total_vesting_fund_hive
-    vesting_to_hive_feed = (total_vesting_shares.as_float() / 1000000) / (total_vesting_fund_hive.as_float() / 1000)
-    return tt.Asset.Hive(vesting.as_float() / 1000000 / vesting_to_hive_feed)
+    total_vesting_shares = gdgp.total_vesting_shares
+    calculated_hp = wax.calculate_vests_to_hp(
+        wax.vests(int(vesting.amount)),
+        wax.hive(int(total_vesting_fund_hive.amount)),
+        wax.vests(int(total_vesting_shares.amount)),
+    )
+    return AssetHiveHF26(
+        amount=calculated_hp.amount.decode(), precision=calculated_hp.precision, nai=calculated_hp.nai.decode()
+    )
 
 
 class Comment:
