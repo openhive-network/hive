@@ -1604,6 +1604,12 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     const string _fruits_content = "avocado-banana-cherry-durian";
     const string _empty_content = "";
     const string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
+    const std::optional<uint64_t> _nonce;
+
+    auto _encrypt_with_nonce = [&_token, &_beekeeper, &_keys ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<uint64_t>& nonce )
+    {
+      return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, nonce );
+    };
 
     auto _encrypt = [&_token, &_beekeeper, &_keys]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
@@ -1740,6 +1746,20 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       _encrypted_content = _encrypt( 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _empty_content );
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[0].name, _encrypted_content.first );
       _decrypt( _empty_content, 0 /*nr_from_public_key*/, 0 /*nr_to_public_key*/, _wallets[2].name, _encrypted_content.second );
+    }
+    {
+      //test with different nonce
+      auto _777 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, 777 );
+      auto _777_2 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, 777 );
+      auto _888 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, 888 );
+      auto _999 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, 999 );
+      auto _empty_0 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, std::optional<uint64_t>() );
+      auto _empty_1 = _encrypt_with_nonce( 0 /*nr_from_public_key*/, 1 /*nr_to_public_key*/, _wallets[0].name, _fruits_content, std::optional<uint64_t>() );
+
+      BOOST_REQUIRE( _777 == _777_2 );
+      BOOST_REQUIRE( _777 != _888 );
+      BOOST_REQUIRE( _888 != _999 );
+      BOOST_REQUIRE( _empty_0 != _empty_1 );
     }
 
   } FC_LOG_AND_RETHROW()
