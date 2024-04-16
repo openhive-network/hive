@@ -24,14 +24,14 @@ class session_manager_base
 
     std::shared_ptr<time_manager_base> time;
 
-    virtual std::shared_ptr<session_base> create_session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory );
+    virtual std::shared_ptr<session_base> create_session( const std::optional<std::string>& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory );
 
   public:
 
     session_manager_base();
     virtual ~session_manager_base(){}
 
-    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& wallet_directory );
+    std::string create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint, const boost::filesystem::path& wallet_directory );
     void close_session( const std::string& token );
     bool empty() const;
 

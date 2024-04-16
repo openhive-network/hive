@@ -185,8 +185,8 @@ using get_info_return = info;
 
 struct create_session_args
 {
-  std::string salt;
-  std::string notifications_endpoint;
+  std::optional<std::string> salt;
+  std::optional<std::string> notifications_endpoint;
 };
 using create_session_return = session_token_type;
 using close_session_args = session_token_type;
