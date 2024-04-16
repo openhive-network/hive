@@ -10,7 +10,7 @@ class session_manager: public session_manager_base
 {
   protected:
 
-    std::shared_ptr<session_base> create_session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> not_used_time, const boost::filesystem::path& wallet_directory ) override;
+    std::shared_ptr<session_base> create_session( const std::optional<std::string>& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> not_used_time, const boost::filesystem::path& wallet_directory ) override;
 
   public:
 

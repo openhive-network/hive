@@ -108,7 +108,7 @@ namespace beekeeper {
     return exception_handler( _method, [this]( bool result ){ initialized = result; } );
   }
 
-  std::string beekeeper_api::create_session( const std::string& salt )
+  std::string beekeeper_api::create_session_impl( const std::optional<std::string>& salt )
   {
     auto _method = [&, this]()
     {
@@ -116,6 +116,16 @@ namespace beekeeper {
       return to_string( _result );
     };
     return exception_handler( _method );
+  }
+
+  std::string beekeeper_api::create_session()
+  {
+    return create_session_impl( std::optional<std::string>() );
+  }
+
+  std::string beekeeper_api::create_session( const std::string& salt )
+  {
+    return create_session_impl( std::optional<std::string>( salt ) );
   }
 
   std::string beekeeper_api::close_session( const std::string& token )

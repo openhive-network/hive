@@ -5,10 +5,10 @@
 
 namespace beekeeper {
 
-std::string token_generator::generate_token( const std::string& salt, unsigned int length )
+std::string token_generator::generate_token( const std::optional<std::string>& salt, unsigned int length )
 {
     std::random_device rd;
-    std::string _str_seed = salt + std::to_string( rd() );
+    std::string _str_seed = salt.value_or("") + std::to_string( rd() );
     std::seed_seq seq( _str_seed.begin(), _str_seed.end() );
 
     std::mt19937 gen;

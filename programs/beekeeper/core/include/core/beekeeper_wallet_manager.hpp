@@ -193,11 +193,11 @@ public:
 
   /** Create a session by a token's generating. That token is used in every endpoint that requires an unlocking wallet.
    *
-   * @param salt                    Random data that is used as an additional input so as to create a token. Can be empty.
-   * @param notifications_endpoint  A server attached to given session. It's used to receive notifications. Can be empty.
+   * @param salt                    Random data that is used as an additional input so as to create a token. Optional.
+   * @param notifications_endpoint  A server attached to given session. It's used to receive notifications. Optional.
    * @returns                       A token that is attached to newly created session.
    */
-  string create_session( const string& salt, const string& notifications_endpoint );
+  string create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint );
 
   /** Close a session according to given token.
    * After closing the session expires.

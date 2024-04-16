@@ -33,6 +33,8 @@ class beekeeper_api final
 
     std::string exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_init_method = std::function<void(bool)>() );
 
+    std::string create_session_impl( const std::optional<std::string>& salt );
+
     std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password );
     std::string get_public_keys_impl( const std::string& token, const std::optional<std::string>& wallet_name );
     std::string sign_digest_impl( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name );
@@ -43,6 +45,7 @@ class beekeeper_api final
 
     std::string init();
 
+    std::string create_session();
     std::string create_session( const std::string& salt );
     std::string close_session( const std::string& token );
 

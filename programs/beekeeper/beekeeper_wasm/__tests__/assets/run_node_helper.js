@@ -97,13 +97,21 @@ export class BeekeeperInstanceHelper {
 
     const initResult = this.instance.init();
     this.#version = this.#extract(initResult).version;
-    this.#implicitSessionToken = this.createSession("this.is.salt");
+    this.#implicitSessionToken = this.createSessionWithoutSalt();
   }
 
   // Public helper methods:
 
   createSession(salt) {
     const returnedValue = this.instance.create_session(salt);
+
+    const value = this.#extract(returnedValue);
+
+    return value.token;
+  }
+
+  createSessionWithoutSalt() {
+    const returnedValue = this.instance.create_session();
 
     const value = this.#extract(returnedValue);
 

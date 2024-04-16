@@ -84,7 +84,7 @@ info:
     password of the wallet is required. This option should be used only for
     backup creating.
 servers:
-  - url: http://127.0.0.1:7777
+  - url: http://192.168.6.150:7777
 tags:
   - name: sessions
     description: Creating and closing sessions.
@@ -523,18 +523,16 @@ components:
   schemas:
     create_session:
       required:
-        - salt
-        - notifications_endpoint
       type: object
       properties:
         salt:
           type: string
           example: avocado-12345
-          description: Random data that is used as an additional input so as to create a token. Can be empty
+          description: Random data that is used as an additional input so as to create a token. Optional.
         notifications_endpoint:
           type: string
           example: 127.0.0.1:8001
-          description: A server attached to given session. It's used to receive notifications. Can be empty.
+          description: A server attached to given session. It's used to receive notifications. Optional.
     create_session_response:
       type: object
       properties:

@@ -41,12 +41,16 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     /*
       ****creation of a session****
       PARAMS:
-        salt: a salt used for creation of a token
+        salt: a salt used for creation of a token. Not required.
+              If the salt is:
+                - not given, chosen is a version (1)
+                -     given, chosen is a version (2)
       RESULT:
         {"token":"440c44f01dde9ef65e7b88c6d44f3a929bbf0ff993c06efa6d942d40b08567f3"}
         token: a token of a session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
     */
-    .function("create_session(salt)", &beekeeper_api::create_session)
+    .function("create_session()", select_overload<std::string()>(&beekeeper_api::create_session))                       //(1)
+    .function("create_session(salt)", select_overload<std::string(const std::string&)>(&beekeeper_api::create_session)) //(2)
 
     /*
       ****closing of a session****

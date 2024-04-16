@@ -114,7 +114,7 @@ info beekeeper_wallet_manager::get_info( const std::string& token )
   return sessions->get_info( token );
 }
 
-string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
+string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint )
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
