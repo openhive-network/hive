@@ -691,33 +691,10 @@ void witness_plugin::plugin_startup()
         new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
+    my->schedule_production_loop();
     fc::time_point now = fc::time_point::now();
-    const auto time_to_sleep = fc::microseconds(my->schedule_production_loop());
-    my->produce_block_data.produce_in_next_slot = true;
-    my->produce_block_data.next_slot_time = my->_db.get_slot_time(1);
-    my->produce_block_data.block_production_condition = block_production_condition::produced;
-    const auto head_block_num = my->_db.head_block_num();
-    if( head_block_num == 0 )
-    {
-      my->produce_block_data.next_slot = 1;
-      my->produce_block_data.scheduled_witness = "initminer";
-      auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>("initminer").signing_key;
-      auto private_key_itr = my->_private_keys.find(scheduled_key);
-      my->produce_block_data.scheduled_public_key = scheduled_key;
-      my->produce_block_data.scheduled_private_key = private_key_itr->second;
-    }
-    else
-    {
-      uint32_t slot_num = my->_db.get_slot_at_time( my->produce_block_data.next_slot_time );
-      my->produce_block_data.next_slot = slot_num;
-      chain::account_name_type scheduled_witness = my->_db.get_scheduled_witness( slot_num );
-      ilog("scheduled_witness=${scheduled_witness}", (scheduled_witness));
-      my->produce_block_data.scheduled_witness = scheduled_witness;
-      auto scheduled_key = my->_db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
-      auto private_key_itr = my->_private_keys.find(scheduled_key);
-      my->produce_block_data.scheduled_public_key = scheduled_key;
-      my->produce_block_data.scheduled_private_key = private_key_itr->second;
-    }
+    const uint32_t slot = my->_db.get_slot_at_time(now);
+    my->produce_block_data = my->get_produce_block_data(slot);
   }
   else
   {
