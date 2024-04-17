@@ -4,9 +4,9 @@
 
 namespace hive { namespace chain {
 
-split_file_block_log_writer::split_file_block_log_writer( appbase::application& app, 
-  blockchain_worker_thread_pool& thread_pool )
-  : _app( app ), _thread_pool( thread_pool )
+split_file_block_log_writer::split_file_block_log_writer( uint32_t split_file_kept,
+  appbase::application& app, blockchain_worker_thread_pool& thread_pool )
+  : _app( app ), _thread_pool( thread_pool ), _split_file_kept( split_file_kept )
 {}
 
 const std::shared_ptr<full_block_type> split_file_block_log_writer::get_head_block() const
@@ -73,12 +73,47 @@ void split_file_block_log_writer::internal_open_and_init( block_log* the_log, co
 uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_part_number, 
   uint32_t head_part_number ) const
 {
-  // Expected tail part is obviously 1 - we need each part.
-  if( tail_part_number > 1 )
-    throw std::runtime_error( 
-      "Missing block log part file(s), beginning with file #" + std::to_string( tail_part_number-1 ) );
+  if( _split_file_kept == 0 )
+  {
+    // Expected tail part is obviously 1 - we need each part.
+    if( tail_part_number > 1 )
+      throw std::runtime_error( 
+        "Missing block log part file(s), beginning with file #" + std::to_string( tail_part_number-1 ) );
 
-  return 1;
+    return 1;
+  }
+
+  FC_ASSERT( head_part_number >= tail_part_number );
+
+  // Require configured number of log file parts, unless we're only starting.
+  if( tail_part_number > 1 &&
+      head_part_number - tail_part_number < _split_file_kept )
+    throw std::runtime_error( 
+      "Too few block log part files found (" + std::to_string( head_part_number - tail_part_number ) +
+      "), " + std::to_string( _split_file_kept ) + " required." );
+
+  return head_part_number > _split_file_kept ?
+          head_part_number - _split_file_kept :
+          1;
+}
+
+void split_file_block_log_writer::rotate_part_files( uint32_t new_part_number )
+{
+  FC_ASSERT( new_part_number > 1 ); // Initial part number is 1, new one must be at least 2.
+
+  if( new_part_number -1 > _split_file_kept )
+  {
+    uint32_t removed_part_number = new_part_number -1 -_split_file_kept; // is > 0
+    block_log* removed_log = _logs[ removed_part_number -1 ];
+    _logs[ removed_part_number -1 ] = nullptr;
+    FC_ASSERT( removed_log != nullptr );
+    fc::path log_file = removed_log->get_log_file();
+    fc::path artifacts_file = removed_log->get_artifacts_file();
+    removed_log->close();
+    delete removed_log;
+    fc::remove( log_file );
+    fc::remove( artifacts_file );
+  }
 }
 
 void split_file_block_log_writer::common_open_and_init( std::optional< bool > read_only )
@@ -211,7 +246,8 @@ void split_file_block_log_writer::internal_append( uint32_t block_num, append_t 
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );
-    rotate_part_files( new_part_number );
+    if( _split_file_kept > 0 )
+      rotate_part_files( new_part_number );
   }
   else
   {

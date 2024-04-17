@@ -1,7 +1,6 @@
 #include <hive/chain/block_log_manager.hpp>
 
 #include <hive/chain/block_log.hpp>
-#include <hive/chain/pruned_block_log_writer.hpp>
 #include <hive/chain/single_file_block_log_writer.hpp>
 #include <hive/chain/split_file_block_log_writer.hpp>
 
@@ -27,7 +26,7 @@ namespace detail {
     {
       FC_ASSERT( part_number == 1,
                 "Expected 1st part file name, not following one (${path})", ("path", the_path) );
-      auto writer = std::make_shared< split_file_block_log_writer >( app, thread_pool );
+      auto writer = std::make_shared< split_file_block_log_writer >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
       writer->open_and_init( the_path, read_only );
       return writer;
     }
@@ -47,24 +46,12 @@ std::shared_ptr< block_log_writer_common > block_log_manager_t::create_writer( i
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported block log split value" );
   }
 
-  switch( block_log_split )
+  if( block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
-    case LEGACY_SINGLE_FILE_BLOCK_LOG:
-      {
-      return std::make_shared< single_file_block_log_writer >( app, thread_pool );
-      }
-      break;
-    case MULTIPLE_FILES_FULL_BLOCK_LOG:
-      {
-      return std::make_shared< split_file_block_log_writer >( app, thread_pool );
-      }
-      break;
-    default: 
-      {
-      return std::make_shared< pruned_block_log_writer >( block_log_split, app, thread_pool );
-      }
-      break;
+    return std::make_shared< single_file_block_log_writer >( app, thread_pool );
   }
+
+  return std::make_shared< split_file_block_log_writer >( block_log_split, app, thread_pool );
 }
 
 std::shared_ptr< block_log_reader_common > block_log_manager_t::create_opened_reader( 

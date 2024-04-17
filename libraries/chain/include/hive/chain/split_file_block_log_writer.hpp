@@ -21,7 +21,8 @@ namespace hive { namespace chain {
     virtual block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
   public:
-    split_file_block_log_writer( appbase::application& app, blockchain_worker_thread_pool& thread_pool );
+    split_file_block_log_writer( uint32_t split_file_kept, appbase::application& app,
+                                 blockchain_worker_thread_pool& thread_pool );
     virtual ~split_file_block_log_writer() = default;
 
     /// Required by block_log_reader_common.
@@ -50,15 +51,6 @@ namespace hive { namespace chain {
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
                                  block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool ) const override;
 
-  protected:
-    /**
-     * Throw if the value of lowest part file number is wrong in given implementation.
-     * @return actual needed tail part number.
-     */
-    virtual uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
-    /// Called when a new log object (corresponding to a new part file) was pushed to their container.
-    virtual void rotate_part_files( uint32_t new_part_number ) {};
-
   private:
     void common_open_and_init( std::optional< bool > read_only );
     void internal_open_and_init( block_log* the_log, const fc::path& path, bool read_only );
@@ -84,9 +76,18 @@ namespace hive { namespace chain {
     using append_t = std::function< void( block_log* log ) >;
     void internal_append( uint32_t block_num, append_t do_appending);
 
+    /**
+     * Throw if the value of lowest part file number is wrong in given implementation.
+     * @return actual needed tail part number.
+     */
+    uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
+    /// Called when a new log object (corresponding to a new part file) was pushed to their container.
+    void rotate_part_files( uint32_t new_part_number );
+
   protected:
     appbase::application&           _app;
     blockchain_worker_thread_pool&  _thread_pool;
+    uint32_t                        _split_file_kept = 0;
     block_log_open_args             _open_args;
     std::deque< block_log* >        _logs;
   };
