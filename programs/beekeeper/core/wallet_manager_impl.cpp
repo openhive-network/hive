@@ -24,7 +24,7 @@ void wallet_manager_impl::valid_filename( const string& name )
   FC_ASSERT( !name.empty(), "Name of wallet is incorrect. Is empty.");
 
   FC_ASSERT( std::find_if(name.begin(), name.end(), !boost::algorithm::is_alnum() && !boost::algorithm::is_any_of("._-@")) == name.end(),
-        "Name of wallet is incorrect. Name: ${name}. Only alphanumeric and '._-' chars are allowed", (name) );
+        "Name of wallet is incorrect. Name: ${name}. Only alphanumeric and '._-@' chars are allowed", (name) );
 
   FC_ASSERT( bfs::path(name).filename().string() == name,
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );

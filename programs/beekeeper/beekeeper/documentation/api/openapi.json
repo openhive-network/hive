@@ -3,7 +3,7 @@
   "info": {
     "title": "Network beekeeper",
     "version": "1.2.1",
-    "description": "Beekeeper is a tool that stores private keys. Communication with the beekeeper takes place by API endpoints.\n**Important!** It is highly recommended to backup private keys. When a wallet file with private keys is removed then it is impossible to recover these keys.\n\n_**API details**_\n\n**Sessions:**\n  Creating a session at the beginning of work with beekeeper is required. Without a session it is impossible to do anything. We can create many sessions at the same time, but concurrent sessions are limited. Maximum number of sessions is `64`. When a limit is reached it is necessary to close previous session so as to open the new one. API endpoint `create_session` generates a token that is used by rest of all API endpoints.\n\n**Wallets:**\nEvery wallet is connected with a file. A name of wallet is equals to a name of file + `.wallet` extension. There is not any API endpoint that can remove a wallet. It is possible only by physically removing a file.\n\n**Keys:**\nEvery wallet contains set of private keys. These keys are encrypted. A number of private keys stored in wallet is not limited. Keys can be added or removed.\n\n**Signatures:**\nBeekeeper can sign given transaction by using a private key stored in a wallet. Transaction should be given as a sig_digest.\n\n**Encryption:**\nBeekeeper can sign encrypt or decrypt custom data, for example a memo in a transfer operation.\n\n**Timeout:**\nIt is possible to set timeout. When inactivity lasts longer than given timeout all unlocked wallets are locked.\n\n_**Wallet details**_\n\n**Explanation lock/unlock/open/close**\n\nA procedure of interaction with beekeeper would look like this:\n\n- open (open wallet file / mount hardware key (in the future))\n- unlock (pass password so private keys are available for signing)\n- ... some operations ...\n- lock (wallet still can be unlocked again and is visible, but private keys are secure)\n- close (wallet file has been closed / hardware key has been unmounted, other app can access it now)\n\nClose can be called without lock, which is done implicitly, same as unlock an be called without open.\n\n**Retrieving private keys**\n\nIt is possible to read private keys stored in wallets. There is no API endpoint that allows to do it, but an internal command line option `export-keys-wallet` exists that allows to get keys from any wallet. A password of the wallet is required. This option should be used only for backup creating."
+    "description": "Beekeeper is a tool that stores private keys. Communication with the beekeeper takes place by API endpoints.\n**Important!** It is highly recommended to backup private keys. When a wallet file with private keys is removed then it is impossible to recover these keys.\n\n_**API details**_\n\nAll API endpoints are processed according to JSON-RPC protocol.\n\n_Example:_\n\nA body of `beekeeper_api.get_info` is given as:\n- `{ \"token\": \"c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913\" }`\n\nbut is finally transformed to:\n- `{\"jsonrpc\":\"2.0\",\"method\":\"beekeeper_api.get_info\",\"id\":1,\"params\":{\"token\":\"c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913\"}}`\n\n**Sessions:**\n  Creating a session at the beginning of work with beekeeper is required. Without the session it is impossible to do anything. We can create many sessions at the same time, but concurrent sessions are limited. Maximum number of sessions is `64`. When a limit is reached it is necessary to close previous session so as to open the new one. API endpoint `create_session` generates a token that is used by rest of all API endpoints.\n\n**Wallets:**\nEvery wallet is connected with a file. A name of wallet is equals to a name of file + `.wallet` extension. There is not any API endpoint that can remove a wallet. It is possible only by physically removing a file.\n\n**Keys:**\nEvery wallet contains set of private keys. These keys are encrypted. A number of private keys stored in wallet is not limited. Keys can be added or removed.\n\n**Signatures:**\nBeekeeper can sign given transaction by using a private key stored in a wallet. Transaction should be given as a `sig_digest`.\n\n**Encryption:**\nBeekeeper can sign encrypt or decrypt custom data, for example a memo in a transfer operation.\n\n**Timeout:**\nIt is possible to set timeout. When inactivity lasts longer than given timeout all unlocked wallets are locked. There are 2 options:\n- A config option `unlock-timeout` that defines timeout for unlocked wallets. It is set once when the beekeeper starts. By default is `900s` (`15 minutes`). \n- An API endpoint `beekeeper_api.set_timeout` that sets timeout according to `seconds` value in a request body. Every new call of this endpoint covers old timeout and time starts from zero.\n\n_**Wallet details**_\n\n**Explanation lock/unlock/open/close**\n\nA procedure of interaction with beekeeper would look like this:\n\n- open (open wallet file / mount hardware key (in the future))\n- unlock (pass password so private keys are available for signing)\n- ... some operations ...\n- lock (wallet still can be unlocked again and is visible, but private keys are secure)\n- close (wallet file has been closed / hardware key has been unmounted, other app can access it now)\n\nClose can be called without lock, which is done implicitly, same as unlock an be called without open. Open is implicitly done as well.\n\n**Retrieving private keys**\n\nIt is possible to read private keys stored in wallets. There is no API endpoint that allows to do it, but an internal command line option `export-keys-wallet` exists that allows to get keys from any wallet. A password of the wallet is required. This option should be used only for backup creating."
   },
   "servers": [
     {
@@ -42,11 +42,10 @@
         "tags": [
           "sessions"
         ],
-        "summary": "Create a session by a token's generating",
-        "description": "Create a session by a token's generating. That token is used in every endpoint that requires an unlocking wallet",
+        "summary": "Create a session",
+        "description": "An unique token is generated. The token represents current session.",
         "operationId": "create_session",
         "requestBody": {
-          "description": "Create a session",
           "content": {
             "application/json": {
               "schema": {
@@ -76,10 +75,9 @@
           "sessions"
         ],
         "summary": "Close a session",
-        "description": "Close a session according to given token",
+        "description": "In case when all sessions are closed, the beekeeper is closed as well",
         "operationId": "close_session",
         "requestBody": {
-          "description": "Close a session",
           "content": {
             "application/json": {
               "schema": {
@@ -109,10 +107,9 @@
           "wallets"
         ],
         "summary": "Create a wallet",
-        "description": "A new wallet is created in file dir/{wallet_name}.wallet. The new wallet is unlocked after creation",
+        "description": "A new wallet is created in file dir/{wallet_name}.wallet. The new wallet is unlocked after creation and is implictly opened",
         "operationId": "create",
         "requestBody": {
-          "description": "Create a wallet",
           "content": {
             "application/json": {
               "schema": {
@@ -145,7 +142,6 @@
         "description": "Open an existing wallet. Opening does not unlock the wallet",
         "operationId": "open",
         "requestBody": {
-          "description": "Open a wallet",
           "content": {
             "application/json": {
               "schema": {
@@ -175,10 +171,9 @@
           "wallets"
         ],
         "summary": "Close a wallet",
-        "description": "Close an existing wallet. It locks the wallet",
+        "description": "Closing implicitly locks the wallet",
         "operationId": "close",
         "requestBody": {
-          "description": "Close a wallet",
           "content": {
             "application/json": {
               "schema": {
@@ -208,10 +203,9 @@
           "wallets"
         ],
         "summary": "Unlock a wallet",
-        "description": "A wallet is unlocked and it is possible to execute some operations related to the wallet including a transaction signing",
+        "description": "A wallet is unlocked and it is possible to execute some operations related to the wallet including a transaction signing. Unlocking implicitly opens the wallet",
         "operationId": "unlock",
         "requestBody": {
-          "description": "Unlock a wallet",
           "content": {
             "application/json": {
               "schema": {
@@ -244,7 +238,6 @@
         "description": "A wallet is locked and it is not possible to execute any operations related to the wallet. Signing a transaction is blocked",
         "operationId": "lock",
         "requestBody": {
-          "description": "Lock a wallet",
           "content": {
             "application/json": {
               "schema": {
@@ -274,10 +267,9 @@
           "wallets"
         ],
         "summary": "Lock all wallets",
-        "description": "Locks all the unlocked wallets",
+        "description": "All unlocked wallets are locked and implicitly closed",
         "operationId": "lock_all",
         "requestBody": {
-          "description": "Lock all wallets",
           "content": {
             "application/json": {
               "schema": {
@@ -307,10 +299,9 @@
           "wallets"
         ],
         "summary": "List all opened wallets",
-        "description": "List all opened wallets",
+        "description": "List all opened wallets with information if given wallet is locked or not",
         "operationId": "list_wallets",
         "requestBody": {
-          "description": "List all opened wallets",
           "content": {
             "application/json": {
               "schema": {
@@ -326,10 +317,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/wallet_item"
-                  }
+                  "$ref": "#/components/schemas/list_wallets_response"
                 }
               }
             }
@@ -343,10 +331,9 @@
           "wallets"
         ],
         "summary": "List all created wallets",
-        "description": "List all created wallets",
+        "description": "List all created wallets stored physically in a directory pointed by the beekeeper. It doesn't matter if these wallets are opened/unlocked",
         "operationId": "list_created_wallets",
         "requestBody": {
-          "description": "List all created wallets",
           "content": {
             "application/json": {
               "schema": {
@@ -362,10 +349,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/wallet_item"
-                  }
+                  "$ref": "#/components/schemas/list_created_wallets_response"
                 }
               }
             }
@@ -382,7 +366,6 @@
         "description": "Import a private key into specified wallet",
         "operationId": "import_key",
         "requestBody": {
-          "description": "Import a private key",
           "content": {
             "application/json": {
               "schema": {
@@ -412,10 +395,9 @@
           "keys"
         ],
         "summary": "Remove a private key.",
-        "description": "Remove a private key from specified wallet",
+        "description": "Remove a private key. Important! It is highly recommended to backup the key earlier. This operation can be reverted.",
         "operationId": "remove_key",
         "requestBody": {
-          "description": "Remove a private key",
           "content": {
             "application/json": {
               "schema": {
@@ -448,7 +430,6 @@
         "description": "List all public keys from one wallet if a wallet_name is given otherwise all public keys from all unlocked wallets.",
         "operationId": "get_public_keys",
         "requestBody": {
-          "description": "Get public keys",
           "content": {
             "application/json": {
               "schema": {
@@ -464,10 +445,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/public_key_item"
-                  }
+                  "$ref": "#/components/schemas/get_public_keys_response"
                 }
               }
             }
@@ -484,7 +462,6 @@
         "description": "Tests if a private key corresponding to a public key exists in a wallet",
         "operationId": "has_matching_private_key",
         "requestBody": {
-          "description": "Check if a private key exists",
           "content": {
             "application/json": {
               "schema": {
@@ -517,7 +494,6 @@
         "description": "Sign a transaction presented as a sig_digest using a private key corresponding to a public key",
         "operationId": "sign_digest",
         "requestBody": {
-          "description": "Sign a transaction",
           "content": {
             "application/json": {
               "schema": {
@@ -547,10 +523,9 @@
           "encryption"
         ],
         "summary": "Encrypt given content",
-        "description": "Encrypt given content. Using private key of creator and public key of receiver, content is encrypted",
+        "description": "Encrypt given content. Using creator's and receivers's public keys, content is encrypted",
         "operationId": "encrypt_data",
         "requestBody": {
-          "description": "Encrypt given content",
           "content": {
             "application/json": {
               "schema": {
@@ -580,10 +555,9 @@
           "encryption"
         ],
         "summary": "Decrypt given content",
-        "description": "Decrypt given content. When private keys are accessible (exist in unlocked wallets) content is decrypted",
+        "description": "Decrypt given content. Using creator's and receivers's public keys, content is decrypted. Private keys must exist in given wallet",
         "operationId": "decrypt_data",
         "requestBody": {
-          "description": "Decrypts given content",
           "content": {
             "application/json": {
               "schema": {
@@ -613,10 +587,9 @@
           "timeout"
         ],
         "summary": "Set a timeout",
-        "description": "Set a timeout in order to lock all wallets when time pass",
+        "description": "Set a timeout in order to lock all wallets when time passes",
         "operationId": "set_timeout",
         "requestBody": {
-          "description": "Set a timeout",
           "content": {
             "application/json": {
               "schema": {
@@ -645,11 +618,10 @@
         "tags": [
           "timeout"
         ],
-        "summary": "Get current time and timeout time",
-        "description": "Get current time and timeout time",
+        "summary": "Get information about time",
+        "description": "Get current and timeout time connected with current session",
         "operationId": "get_info",
         "requestBody": {
-          "description": "Get current time and timeout time",
           "content": {
             "application/json": {
               "schema": {
@@ -677,7 +649,6 @@
   "components": {
     "schemas": {
       "create_session": {
-        "required": null,
         "type": "object",
         "properties": {
           "salt": {
@@ -733,12 +704,12 @@
           "wallet_name": {
             "type": "string",
             "example": "my_second_wallet",
-            "description": "A name of a wallet"
+            "description": "A name of a wallet. Only alphanumeric and '._-@' chars are allowed. A maximum length depends on a maximum length of a file name in given OS."
           },
           "password": {
             "type": "string",
             "example": "this_my_password",
-            "description": "A password for a wallet, if not given will be automatically generated"
+            "description": "A password for a wallet, if not given will be automatically generated. Maximum length 128."
           }
         }
       },
@@ -875,6 +846,23 @@
           }
         }
       },
+      "list_wallets_response": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "example": "my_second_wallet",
+              "description": "A name of a wallet"
+            },
+            "unlocked": {
+              "type": "boolean",
+              "description": "Status of a wallet"
+            }
+          }
+        }
+      },
       "list_created_wallets": {
         "required": [
           "token"
@@ -884,6 +872,23 @@
           "token": {
             "type": "string",
             "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+          }
+        }
+      },
+      "list_created_wallets_response": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "example": "my_second_wallet",
+              "description": "A name of a wallet"
+            },
+            "unlocked": {
+              "type": "boolean",
+              "description": "Status of a wallet"
+            }
           }
         }
       },
@@ -907,7 +912,7 @@
           },
           "wif_key": {
             "type": "string",
-            "example": "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78",
+            "example": "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
             "description": "The WIF Private Key to import, e.g. 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
           }
         }
@@ -917,7 +922,7 @@
         "properties": {
           "public_key": {
             "type": "string",
-            "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
+            "example": "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "description": "A public key corresponding to WIF key"
           }
         }
@@ -943,8 +948,8 @@
           },
           "public_key": {
             "type": "string",
-            "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
-            "description": "The public key to find corresponding a private key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm"
+            "example": "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
+            "description": "The public key to find corresponding a private key to remove."
           }
         }
       },
@@ -969,6 +974,19 @@
           }
         }
       },
+      "get_public_keys_response": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "public_key": {
+              "type": "string",
+              "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
+              "description": "A public key"
+            }
+          }
+        }
+      },
       "has_matching_private_key": {
         "required": [
           "token",
@@ -989,7 +1007,7 @@
           },
           "public_key": {
             "type": "string",
-            "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
+            "example": "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "description": "A public key corresponding to a private key that is stored in a wallet"
           }
         }
@@ -1023,7 +1041,7 @@
           },
           "public_key": {
             "type": "string",
-            "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
+            "example": "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "description": "A public key corresponding to a private key that is stored in a wallet"
           },
           "wallet_name": {
@@ -1191,30 +1209,6 @@
             "type": "string",
             "example": "2024-04-11T12:35:34.000Z",
             "description": "Timeout time"
-          }
-        }
-      },
-      "wallet_item": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "my_second_wallet",
-            "description": "A name of a wallet"
-          },
-          "unlocked": {
-            "type": "boolean",
-            "description": "Status of a wallet"
-          }
-        }
-      },
-      "public_key_item": {
-        "type": "object",
-        "properties": {
-          "public_key": {
-            "type": "string",
-            "example": "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
-            "description": "A public key"
           }
         }
       }
