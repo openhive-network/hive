@@ -541,25 +541,16 @@ namespace detail {
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
 
-    const uint32_t slot = _db.with_read_lock([&](){
-      return _db.get_slot_at_time( now );
-    });
-    if( slot == 0 )
+    if( produce_block_data.next_slot_time > now)
     {
-      const uint32_t slot1 = _db.with_read_lock([&](){
-        return _db.get_slot_at_time( now );
-      });
-      capture("next_time", slot1);
+      capture("next_time", produce_block_data.next_slot);
       return block_production_condition::not_time_yet;
     }
 
     if (!produce_block_data.produce_in_next_slot)
     {
       block_production_condition::block_production_condition_enum cond = produce_block_data.block_production_condition;
-      _db.with_read_lock([&](){
-        const uint32_t slot2 = _db.get_slot_at_time( now + fc::microseconds(200000) );
-        produce_block_data = get_produce_block_data(slot2);
-      });
+      produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
       capture("scheduled_witness", produce_block_data.scheduled_witness);
       capture("scheduled_key", produce_block_data.scheduled_public_key);
       capture("pct", produce_block_data.pct);
@@ -572,14 +563,7 @@ namespace detail {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
       if (lag.count() < 0)
       {
-        _db.with_read_lock([&](){
-          produce_block_data.next_slot_time = _db.get_slot_time(slot);
-          chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
-          produce_block_data.scheduled_witness = scheduled_witness;
-          auto scheduled_key = _db.get<chain::witness_object, chain::by_name>(scheduled_witness).signing_key;
-          auto private_key_itr = _private_keys.find(scheduled_key);
-          produce_block_data.scheduled_private_key = private_key_itr->second;
-        });
+        produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
       }
       return block_production_condition::lag;
     }
@@ -589,6 +573,8 @@ namespace detail {
     _chain_plugin.generate_block( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
+
+    produce_block_data.produce_in_next_slot = false;
 
     //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting
