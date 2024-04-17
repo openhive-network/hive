@@ -3,6 +3,7 @@
 #include <hive/chain/block_write_chain_interface.hpp>
 
 #include <hive/chain/fork_db_block_reader.hpp>
+#include <hive/chain/fork_database.hpp>
 
 #include <hive/chain/database.hpp>
 #include <appbase/application.hpp>
@@ -16,7 +17,7 @@ namespace hive { namespace chain {
   class sync_block_writer : public block_write_chain_i
   {
   public:
-    sync_block_writer( block_log_writer_common& blw, fork_database& fdb, database& db, application& app );
+    sync_block_writer( block_log_writer_common& blw, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
     virtual const block_read_i& get_block_reader() override;
@@ -33,6 +34,10 @@ namespace hive { namespace chain {
       const uint32_t old_last_irreversible ) const override;
 
     void set_is_at_live_sync() { _is_at_live_sync = true; }
+    void on_reindex_start();
+    void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
+    void open();
+    void close();
 
     using apply_block_t = std::function<
       void ( const std::shared_ptr< full_block_type >& full_block,
@@ -77,8 +82,8 @@ namespace hive { namespace chain {
 
   private:
     block_log_writer_common&  _log_writer;
-    fork_database&            _fork_db;
     fork_db_block_reader      _reader;
+    fork_database             _fork_db;
     bool                      _is_at_live_sync = false;
     database&                 _db; /// Needed only for notification purposes.
     application&              _app; /// Needed only for notification purposes.

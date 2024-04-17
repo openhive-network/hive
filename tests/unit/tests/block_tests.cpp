@@ -25,9 +25,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/block_log_manager.hpp>
-#include <hive/chain/block_storage_manager.hpp>
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 
@@ -101,11 +101,12 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
-void open_test_database( database& db, block_storage_manager_t& bsm,
-  const fc::path& dir, appbase::application& app, bool log_hardforks = false )
+void open_test_database( database& db, sync_block_writer& sbw,
+  block_log_writer_common& log_writer, const fc::path& dir, appbase::application& app,
+  bool log_hardforks = false )
 {
   hive::chain::open_args args;
-  hive::chain::block_storage_manager_t::block_log_open_args bl_args;
+  hive::chain::block_log_writer_common::block_log_open_args bl_args;
   args.data_dir = dir;
   args.shared_mem_dir = dir;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
@@ -113,7 +114,11 @@ void open_test_database( database& db, block_storage_manager_t& bsm,
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
   bl_args.data_dir = dir;
-  bsm.open_storage( bl_args );
+  db.with_write_lock([&]()
+  {
+    log_writer.open_and_init( bl_args );
+  });
+  sbw.open();
   db.open( args );
 }
 
@@ -1355,9 +1360,11 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
 #define SET_UP_DATABASE( NAME, THREAD_POOL, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
   database NAME( APP ); \
   { \
-  block_storage_manager_t bsm_ ## NAME ( THREAD_POOL, NAME, APP ); \
-  NAME.set_block_writer( bsm_ ## NAME .init_storage( LEGACY_SINGLE_FILE_BLOCK_LOG ) ); \
-  open_test_database( NAME, bsm_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
+  std::shared_ptr< hive::chain::block_log_writer_common > log_writer_ ## NAME = \
+    hive::chain::block_log_manager_t::create_writer( LEGACY_SINGLE_FILE_BLOCK_LOG, APP, THREAD_POOL ); \
+  sync_block_writer sbw_ ## NAME ( *(log_writer_ ## NAME . get()), NAME, APP ); \
+  NAME.set_block_writer( &sbw_ ## NAME ); \
+  open_test_database( NAME, sbw_ ## NAME, *(log_writer_ ## NAME .get()), DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
   }
   
 BOOST_AUTO_TEST_CASE( safe_closing_database )

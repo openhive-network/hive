@@ -10,9 +10,9 @@
 
 namespace hive { namespace chain {
 
-sync_block_writer::sync_block_writer( block_log_writer_common& blw, fork_database& fdb,
+sync_block_writer::sync_block_writer( block_log_writer_common& blw,
                                       database& db, application& app )
-  : _log_writer( blw ), _fork_db( fdb ), _reader( _fork_db, _log_writer ), _db( db ), _app( app )
+  : _log_writer( blw ), _reader( _fork_db, _log_writer ), _db( db ), _app( app )
 {}
 
 const block_read_i& sync_block_writer::get_block_reader()
@@ -362,5 +362,28 @@ sync_block_writer::find_new_last_irreversible_block(
 
   return std::optional< new_last_irreversible_block_t >( result );
 } // find_new_last_irreversible_block
+
+void sync_block_writer::on_reindex_start()
+{
+  _fork_db.reset(); // override effect of fork_db.start_block() call in open()
+}
+
+void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& end_block )
+{
+  _fork_db.start_block( end_block );
+}
+
+void sync_block_writer::open()
+{
+  // Get fork db in sync with block log.
+  auto head = _log_writer.head_block();
+  if( head )
+    _fork_db.start_block( head );
+}
+
+void sync_block_writer::close()
+{
+  _fork_db.reset();
+}
 
 } } //hive::chain

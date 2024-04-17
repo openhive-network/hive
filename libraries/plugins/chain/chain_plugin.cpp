@@ -2,11 +2,13 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/chain/block_storage_manager.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <hive/chain/block_log_manager.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/irreversible_block_writer.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -122,7 +124,6 @@ class chain_plugin_impl
     chain_plugin_impl( appbase::application& app ):
       thread_pool( app ),
       db( app ),
-      block_storage_mgr( thread_pool, db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {}
@@ -171,7 +172,7 @@ class chain_plugin_impl
 
     void finish_request();
 
-    using block_log_open_args=block_storage_manager_t::block_log_open_args;
+    using block_log_open_args=block_log_writer_common::block_log_open_args;
 
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
@@ -225,8 +226,9 @@ class chain_plugin_impl
 
     hive::chain::blockchain_worker_thread_pool thread_pool;
 
-    database                         db;
-    block_storage_manager_t          block_storage_mgr;
+    database                                    db;
+    std::shared_ptr< block_log_writer_common >  log_writer;
+    std::unique_ptr<sync_block_writer>          default_block_writer;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -612,7 +614,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          block_storage_mgr.get_block_writer()->set_is_at_live_sync();
+          default_block_writer->set_is_at_live_sync();
           theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
@@ -692,7 +694,7 @@ bool chain_plugin_impl::start_replay_processing(
   db.set_block_writer( reindex_block_writer.get() );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( this_->block_storage_mgr.get_block_writer() );
+    this_->db.set_block_writer( this_->default_block_writer.get() );
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
@@ -726,7 +728,7 @@ bool chain_plugin_impl::start_replay_processing(
 
 void chain_plugin_impl::initial_settings()
 {
-  db.set_block_writer( block_storage_mgr.get_block_writer() );
+  db.set_block_writer( default_block_writer.get() );
 
   if( statsd_on_replay )
   {
@@ -743,7 +745,8 @@ void chain_plugin_impl::initial_settings()
   {
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( theApp.data_dir() / "blockchain", shared_memory_dir, true );
-    block_storage_mgr.close_storage();
+    default_block_writer->close();
+    log_writer->close_log();
   }
 
   db.set_flush_interval( flush_interval );
@@ -824,7 +827,11 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    block_storage_mgr.open_storage( bl_open_args );
+    db.with_write_lock([&]()
+    {
+      log_writer->open_and_init( bl_open_args );
+    });
+    default_block_writer->open();
     db.open( db_open_args );
 
     if( dump_memory_details )
@@ -869,7 +876,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              block_storage_mgr.get_block_writer()->switch_forks( 
+              default_block_writer->switch_forks( 
                 new_head_block_id,
                 new_head_block_num,
                 skip,
@@ -993,7 +1000,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const uint32_t skip = db.get_node_skip_flags();
 
-  return block_storage_mgr.get_block_writer()->push_block(
+  return default_block_writer->push_block(
     full_block,
     block_ctrl,
     db.head_block_num(),
@@ -1041,7 +1048,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
 
-    block_storage_mgr.on_reindex_start();
+    default_block_writer->on_reindex_start();
 
     auto start_time = fc::time_point::now();
     HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
@@ -1091,7 +1098,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     });
 
     FC_ASSERT( block_reader.head_block()->get_block_num(), "this should never happen" );
-    block_storage_mgr.on_reindex_end( block_reader.head_block() );
+    default_block_writer->on_reindex_end( block_reader.head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1306,7 +1313,7 @@ const block_read_i& chain_plugin::block_reader() const
 {
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
-  return my->block_storage_mgr.get_block_writer()->get_block_reader();
+  return my->default_block_writer->get_block_reader();
 }
 
 fc::microseconds chain_plugin::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
@@ -1383,7 +1390,10 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  my->block_storage_mgr.init_storage( options.at( "block-log-split" ).as< int >() );
+  my->log_writer = block_log_manager_t::create_writer( options.at( "block-log-split" ).as< int >(), get_app(), my->thread_pool );
+  my->default_block_writer = 
+    std::make_unique< sync_block_writer >( *( my->log_writer.get() ), my->db, get_app() );
+
 
   get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
@@ -1672,7 +1682,7 @@ void chain_plugin::plugin_startup()
   if( my->replay )
   {
     std::shared_ptr< block_write_i > reindex_block_writer =
-      my->block_storage_mgr.get_reindex_block_writer();
+      std::make_shared< irreversible_block_writer >( *( my->log_writer.get() ) );
     ilog("Replaying...");
     if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
     {
@@ -1683,12 +1693,12 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->block_storage_mgr.get_block_writer()->get_block_reader() ) )
+    if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
     {
       if( my->db.get_snapshot_loaded() )
       {
         std::shared_ptr< block_write_i > reindex_block_writer =
-          my->block_storage_mgr.get_reindex_block_writer();
+          std::make_shared< irreversible_block_writer >( *( my->log_writer.get() ) );
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
         if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
@@ -1723,7 +1733,9 @@ void chain_plugin::plugin_shutdown()
   get_thread_pool().shutdown();
   my->stop_write_processing();
   my->db.close();
-  my->block_storage_mgr.close_storage();
+  my->default_block_writer->close();
+  my->log_writer->close_log();
+
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }

@@ -16,8 +16,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_log_manager.hpp>
-#include <hive/chain/block_storage_manager.hpp>
-#include <hive/chain/block_write_chain_interface.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
@@ -82,12 +81,14 @@ int main( int argc, char** argv, char** envp )
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 
   hive::chain::database db( app );
-  hive::chain::block_storage_manager_t bsm( thread_pool, db, app );
 
-  db.set_block_writer( bsm.init_storage( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
+  std::shared_ptr< hive::chain::block_log_writer_common > log_writer =
+    hive::chain::block_log_manager_t::create_writer( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
+  hive::chain::sync_block_writer block_writer( *(log_writer.get()), db, app );
+  db.set_block_writer( &block_writer );
 
   hive::chain::open_args db_args;
-  hive::chain::block_storage_manager_t::block_log_open_args bl_args;
+  hive::chain::block_log_writer_common::block_log_open_args bl_args;
 
   db_args.data_dir = "tempdata";
   db_args.shared_mem_dir = "tempdata/blockchain";
@@ -97,7 +98,12 @@ int main( int argc, char** argv, char** envp )
 
   std::map< std::string, schema_info > schema_map;
 
-  bsm.open_storage( bl_args );
+  db.with_write_lock([&]()
+  {
+    log_writer->open_and_init( bl_args );
+  });
+  block_writer.open();
+
   db.open( db_args );
 
   hive_schema ss;
@@ -120,7 +126,9 @@ int main( int argc, char** argv, char** envp )
   std::cout << fc::json::to_string( ss ) << std::endl;
 
   db.close();
-  bsm.close_storage();
+  block_writer.close();
+  log_writer->close_log();
+
 
   return 0;
 }
