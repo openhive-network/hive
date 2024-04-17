@@ -14,8 +14,24 @@ info:
     _**API details**_
 
 
+    All API endpoints are processed according to JSON-RPC protocol.
+
+
+    _Example:_
+    
+    
+    A body of `beekeeper_api.get_info` is given as:
+    
+    - `{ "token": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913" }`
+    
+    
+    but is finally transformed to:
+    
+    - `{"jsonrpc":"2.0","method":"beekeeper_api.get_info","id":1,"params":{"token":"c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"}}`
+
+
     **Sessions:**
-      Creating a session at the beginning of work with beekeeper is required. Without a session it is impossible to do anything. We can create many sessions at the same time, but concurrent sessions are limited. Maximum number of sessions is `64`. When a limit is reached it is necessary to close previous session so as to open the new one. API endpoint `create_session` generates a token that is used by rest of all API endpoints.
+      Creating a session at the beginning of work with beekeeper is required. Without the session it is impossible to do anything. We can create many sessions at the same time, but concurrent sessions are limited. Maximum number of sessions is `64`. When a limit is reached it is necessary to close previous session so as to open the new one. API endpoint `create_session` generates a token that is used by rest of all API endpoints.
 
     **Wallets:**
 
@@ -34,7 +50,7 @@ info:
     **Signatures:**
 
     Beekeeper can sign given transaction by using a private key stored in a
-    wallet. Transaction should be given as a sig_digest.
+    wallet. Transaction should be given as a `sig_digest`.
 
 
     **Encryption:**
@@ -46,7 +62,11 @@ info:
     **Timeout:**
 
     It is possible to set timeout. When inactivity lasts longer than given
-    timeout all unlocked wallets are locked.
+    timeout all unlocked wallets are locked. There are 2 options:
+
+    - A config option `unlock-timeout` that defines timeout for unlocked wallets. It is set once when the beekeeper starts. By default is `900s` (`15 minutes`). 
+
+    - An API endpoint `beekeeper_api.set_timeout` that sets timeout according to `seconds` value in a request body. Every new call of this endpoint covers old timeout and time starts from zero.
 
 
     _**Wallet details**_
@@ -72,7 +92,7 @@ info:
 
 
     Close can be called without lock, which is done implicitly, same as unlock
-    an be called without open.
+    an be called without open. Open is implicitly done as well.
 
 
     **Retrieving private keys**
@@ -103,13 +123,11 @@ paths:
     post:
       tags:
         - sessions
-      summary: Create a session by a token's generating
+      summary: Create a session
       description: >-
-        Create a session by a token's generating. That token is used in every
-        endpoint that requires an unlocking wallet
+        An unique token is generated. The token represents current session.
       operationId: create_session
       requestBody:
-        description: Create a session
         content:
           application/json:
             schema:
@@ -127,10 +145,9 @@ paths:
       tags:
         - sessions
       summary: Close a session
-      description: Close a session according to given token
+      description: In case when all sessions are closed, the beekeeper is closed as well
       operationId: close_session
       requestBody:
-        description: Close a session
         content:
           application/json:
             schema:
@@ -150,10 +167,9 @@ paths:
       summary: Create a wallet
       description: >-
         A new wallet is created in file dir/{wallet_name}.wallet. The new wallet
-        is unlocked after creation
+        is unlocked after creation and is implictly opened
       operationId: create
       requestBody:
-        description: Create a wallet
         content:
           application/json:
             schema:
@@ -174,7 +190,6 @@ paths:
       description: Open an existing wallet. Opening does not unlock the wallet
       operationId: open
       requestBody:
-        description: Open a wallet
         content:
           application/json:
             schema:
@@ -192,10 +207,9 @@ paths:
       tags:
         - wallets
       summary: Close a wallet
-      description: Close an existing wallet. It locks the wallet
+      description: Closing implicitly locks the wallet
       operationId: close
       requestBody:
-        description: Close a wallet
         content:
           application/json:
             schema:
@@ -215,10 +229,9 @@ paths:
       summary: Unlock a wallet
       description: >-
         A wallet is unlocked and it is possible to execute some operations
-        related to the wallet including a transaction signing
+        related to the wallet including a transaction signing. Unlocking implicitly opens the wallet
       operationId: unlock
       requestBody:
-        description: Unlock a wallet
         content:
           application/json:
             schema:
@@ -241,7 +254,6 @@ paths:
         related to the wallet. Signing a transaction is blocked
       operationId: lock
       requestBody:
-        description: Lock a wallet
         content:
           application/json:
             schema:
@@ -259,10 +271,9 @@ paths:
       tags:
         - wallets
       summary: Lock all wallets
-      description: Locks all the unlocked wallets
+      description: All unlocked wallets are locked and implicitly closed
       operationId: lock_all
       requestBody:
-        description: Lock all wallets
         content:
           application/json:
             schema:
@@ -280,10 +291,9 @@ paths:
       tags:
         - wallets
       summary: List all opened wallets
-      description: List all opened wallets
+      description: List all opened wallets with information if given wallet is locked or not
       operationId: list_wallets
       requestBody:
-        description: List all opened wallets
         content:
           application/json:
             schema:
@@ -295,18 +305,15 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/wallet_item'
+                $ref: '#/components/schemas/list_wallets_response'
   beekeeper_api.list_created_wallets:
     post:
       tags:
         - wallets
       summary: List all created wallets
-      description: List all created wallets
+      description: List all created wallets stored physically in a directory pointed by the beekeeper. It doesn't matter if these wallets are opened/unlocked
       operationId: list_created_wallets
       requestBody:
-        description: List all created wallets
         content:
           application/json:
             schema:
@@ -318,9 +325,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/wallet_item'
+                $ref: '#/components/schemas/list_created_wallets_response'
   beekeeper_api.import_key:
     post:
       tags:
@@ -329,7 +334,6 @@ paths:
       description: Import a private key into specified wallet
       operationId: import_key
       requestBody:
-        description: Import a private key
         content:
           application/json:
             schema:
@@ -347,10 +351,9 @@ paths:
       tags:
         - keys
       summary: Remove a private key.
-      description: Remove a private key from specified wallet
+      description: Remove a private key. Important! It is highly recommended to backup the key earlier. This operation can be reverted.
       operationId: remove_key
       requestBody:
-        description: Remove a private key
         content:
           application/json:
             schema:
@@ -372,7 +375,6 @@ paths:
         all public keys from all unlocked wallets.
       operationId: get_public_keys
       requestBody:
-        description: Get public keys
         content:
           application/json:
             schema:
@@ -384,9 +386,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/public_key_item'
+                $ref: '#/components/schemas/get_public_keys_response'
   beekeeper_api.has_matching_private_key:
     post:
       tags:
@@ -395,7 +395,6 @@ paths:
       description: Tests if a private key corresponding to a public key exists in a wallet
       operationId: has_matching_private_key
       requestBody:
-        description: Check if a private key exists
         content:
           application/json:
             schema:
@@ -418,7 +417,6 @@ paths:
         corresponding to a public key
       operationId: sign_digest
       requestBody:
-        description: Sign a transaction
         content:
           application/json:
             schema:
@@ -437,11 +435,9 @@ paths:
         - encryption
       summary: Encrypt given content
       description: >-
-        Encrypt given content. Using private key of creator and public key of
-        receiver, content is encrypted
+        Encrypt given content. Using creator's and receivers's public keys, content is encrypted
       operationId: encrypt_data
       requestBody:
-        description: Encrypt given content
         content:
           application/json:
             schema:
@@ -460,11 +456,9 @@ paths:
         - encryption
       summary: Decrypt given content
       description: >-
-        Decrypt given content. When private keys are accessible (exist in
-        unlocked wallets) content is decrypted
+        Decrypt given content. Using creator's and receivers's public keys, content is decrypted. Private keys must exist in given wallet
       operationId: decrypt_data
       requestBody:
-        description: Decrypts given content
         content:
           application/json:
             schema:
@@ -482,10 +476,9 @@ paths:
       tags:
         - timeout
       summary: Set a timeout
-      description: Set a timeout in order to lock all wallets when time pass
+      description: Set a timeout in order to lock all wallets when time passes
       operationId: set_timeout
       requestBody:
-        description: Set a timeout
         content:
           application/json:
             schema:
@@ -502,11 +495,10 @@ paths:
     post:
       tags:
         - timeout
-      summary: Get current time and timeout time
-      description: Get current time and timeout time
+      summary: Get information about time
+      description: Get current and timeout time connected with current session
       operationId: get_info
       requestBody:
-        description: Get current time and timeout time
         content:
           application/json:
             schema:
@@ -522,7 +514,6 @@ paths:
 components:
   schemas:
     create_session:
-      required:
       type: object
       properties:
         salt:
@@ -564,11 +555,11 @@ components:
         wallet_name:
           type: string
           example: my_second_wallet
-          description: A name of a wallet
+          description: A name of a wallet. Only alphanumeric and '._-@' chars are allowed. A maximum length depends on a maximum length of a file name in given OS.
         password:
           type: string
           example: this_my_password
-          description: A password for a wallet, if not given will be automatically generated
+          description: A password for a wallet, if not given will be automatically generated. Maximum length 128.
     create_response:
       type: object
       properties:
@@ -665,6 +656,18 @@ components:
           type: string
           example: c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913
           description: Session's identifier
+    list_wallets_response:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            example: my_second_wallet
+            description: A name of a wallet
+          unlocked:
+            type: boolean
+            description: Status of a wallet
     list_created_wallets:
       required:
         - token
@@ -673,6 +676,18 @@ components:
         token:
           type: string
           example: c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913
+    list_created_wallets_response:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            example: my_second_wallet
+            description: A name of a wallet
+          unlocked:
+            type: boolean
+            description: Status of a wallet
     import_key:
       required:
         - token
@@ -690,14 +705,14 @@ components:
           description: A name of a wallet to import into
         wif_key:
           type: string
-          example: 5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78
+          example: 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
           description: The WIF Private Key to import, e.g. 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
     import_key_response:
       type: object
       properties:
         public_key:
           type: string
-          example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
+          example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
           description: A public key corresponding to WIF key
     remove_key:
       required:
@@ -717,8 +732,8 @@ components:
           description: A name of a wallet to remove a private key from
         public_key:
           type: string
-          example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
-          description: The public key to find corresponding a private key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm
+          example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
+          description: The public key to find corresponding a private key to remove.
     remove_key_response:
       type: object
     get_public_keys:
@@ -734,6 +749,15 @@ components:
           type: string
           example: my_second_wallet
           description: If a wallet_name is given public keys are searched in a specific wallet otherwise in every unlocked wallet
+    get_public_keys_response:
+      type: array
+      items:
+        type: object
+        properties:
+          public_key:
+            type: string
+            example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
+            description: A public key
     has_matching_private_key:
       required:
         - token
@@ -751,7 +775,7 @@ components:
           description: A name of a wallet
         public_key:
           type: string
-          example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
+          example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
           description: A public key corresponding to a private key that is stored in a wallet
     has_matching_private_key_response:
       type: object
@@ -776,7 +800,7 @@ components:
           description: A signature digest. Represents a whole transaction
         public_key:
           type: string
-          example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
+          example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
           description: A public key corresponding to a private key that is stored in a wallet
         wallet_name:
           type: string
@@ -904,21 +928,4 @@ components:
           type: string
           example: '2024-04-11T12:35:34.000Z'
           description: Timeout time
-    wallet_item:
-      type: object
-      properties:
-        name:
-          type: string
-          example: my_second_wallet
-          description: A name of a wallet
-        unlocked:
-          type: boolean
-          description: Status of a wallet
-    public_key_item:
-      type: object
-      properties:
-        public_key:
-          type: string
-          example: 6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa
-          description: A public key
 x-envelope: jsonrpc-2.0

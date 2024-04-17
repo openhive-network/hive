@@ -659,7 +659,7 @@ test.describe('WASM beekeeper_api tests', () => {
 
         error_message = api.open(api.implicitSessionToken, "%$%$");
         console.log(error_message);
-        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-@' chars are allowed"), true);
 
         error_message = api.open(api.implicitSessionToken, "abc");
         console.log(error_message);
@@ -675,7 +675,7 @@ test.describe('WASM beekeeper_api tests', () => {
 
         error_message = api.create_with_password(api.implicitSessionToken, "%$%$", "cherry-password");
         console.log(error_message);
-        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-@' chars are allowed"), true);
 
         const walletNo = 9;
         error_message = api.create_with_password(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
