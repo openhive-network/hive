@@ -380,6 +380,37 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(wallet_manager_wallets_with_dots)
+{
+  try {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const std::string _host = "";
+    const uint64_t _timeout = 90;
+    const uint32_t _limit = 3;
+
+    appbase::application app;
+    {
+      bool _checker = false;
+      beekeeper_wallet_manager wm = b_mgr.create_wallet( app, _timeout, _limit, [&_checker](){ _checker = true; } );
+      BOOST_REQUIRE( wm.start() );
+
+      auto _token = wm.create_session( "aaaa", _host );
+
+      wm.create(_token, "...watermelon", std::optional<std::string>());
+      wm.create(_token, ".lemon", std::optional<std::string>());
+      wm.create(_token, ".peach.pear", std::optional<std::string>());
+      wm.create(_token, ".plum.", std::optional<std::string>());
+      wm.create(_token, "avocado.banana", std::optional<std::string>());
+
+      BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 5 );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 5 );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE(wallet_manager_info)
 {
   try {

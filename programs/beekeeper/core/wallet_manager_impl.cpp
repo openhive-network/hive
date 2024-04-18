@@ -140,10 +140,10 @@ std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const
         boost::split( _path_parts, itr->path().c_str(), boost::is_any_of("/") );
         if( !_path_parts.empty() )
         {
-          std::vector<std::string> _file_parts;
-          boost::split( _file_parts, *_path_parts.rbegin(), boost::is_any_of(".") );
-          if( !_file_parts.empty() )
-            _result.emplace_back( *_file_parts.begin() );
+          auto _end = *_path_parts.rbegin();
+          auto _found = _end.find( extension );
+          if( _found != std::string::npos ) 
+              _result.emplace_back( _end.substr( 0, _found ) );
         }
       }
     }
