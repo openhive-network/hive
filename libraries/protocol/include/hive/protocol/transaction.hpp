@@ -8,8 +8,6 @@
 
 namespace hive { namespace protocol {
 
-using fc::ecc::canonical_signature_type;
-
   struct transaction
   {
     uint16_t           ref_block_num    = 0;
@@ -58,9 +56,9 @@ using fc::ecc::canonical_signature_type;
     signed_transaction( const transaction& trx = transaction() )
       : transaction(trx){}
 
-    //const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
+    //const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id );
 
-    //signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
+    //signature_type sign( const private_key_type& key, const chain_id_type& chain_id )const;
 
     set<public_key_type> get_required_signatures(
       const chain_id_type& chain_id,
@@ -71,8 +69,7 @@ using fc::ecc::canonical_signature_type;
       const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      canonical_signature_type canon_type = fc::ecc::fc_canonical
+      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS
       )const;
 
     void verify_authority(
@@ -84,8 +81,7 @@ using fc::ecc::canonical_signature_type;
       hive::protocol::pack_type pack,
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      canonical_signature_type canon_type = fc::ecc::fc_canonical
+      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS
       )const;
 
     set<public_key_type> minimize_required_signatures(
@@ -97,11 +93,10 @@ using fc::ecc::canonical_signature_type;
       const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      canonical_signature_type canon_type = fc::ecc::fc_canonical
+      uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS
       ) const;
 
-    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, hive::protocol::pack_type pack )const;
+    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, hive::protocol::pack_type pack )const;
 
     vector<signature_type> signatures;
     digest_type merkle_digest(hive::protocol::pack_type pack)const;

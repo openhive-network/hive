@@ -325,7 +325,7 @@ namespace detail {
                 full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction( tx, hive::protocol::pack_type::hf26 );
                 std::vector< hive::protocol::private_key_type > keys;
                 keys.emplace_back( private_key_itr->second );
-                full_transaction->sign_transaction( keys, _db.get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::hf26 );
+                full_transaction->sign_transaction( keys, _db.get_chain_id(), hive::protocol::pack_type::hf26 );
 
                 //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
                 uint32_t skip = _db.get_node_skip_flags();

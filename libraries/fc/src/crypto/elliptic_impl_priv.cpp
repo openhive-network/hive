@@ -94,7 +94,7 @@ namespace fc { namespace ecc {
     }
 
 
-    compact_signature private_key::sign_compact( const fc::sha256& digest, canonical_signature_type canon_type )const
+    compact_signature private_key::sign_compact( const fc::sha256& digest )const
     {
       FC_ASSERT( my->_key != empty_priv );
       compact_signature result;
@@ -113,7 +113,7 @@ namespace fc { namespace ecc {
                                                                           &recid, &sig));
         FC_ASSERT(recid != -1);
       } 
-      while (!public_key::is_canonical(result, canon_type));
+      while (!public_key::is_canonical( result ));
       result.begin()[0] = 27 + 4 + recid;
       return result;
     }

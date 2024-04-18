@@ -1323,10 +1323,10 @@ BOOST_AUTO_TEST_CASE( signature_stripping )
 
     auto& cp = get_chain_plugin();
     full_transaction_ptr _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
-    _ftx->sign_transaction( {alice_private_key}, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::legacy );
+    _ftx->sign_transaction( {alice_private_key}, db->get_chain_id(), hive::protocol::pack_type::legacy );
     HIVE_REQUIRE_THROW( cp.push_transaction( _ftx, 0 ), tx_missing_active_auth );
     _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
-    _ftx->sign_transaction( { alice_private_key, bob_private_key, sam_private_key }, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::legacy );
+    _ftx->sign_transaction( { alice_private_key, bob_private_key, sam_private_key }, db->get_chain_id(), hive::protocol::pack_type::legacy );
     tx = _ftx->get_transaction();
     signature_type alice_sig = tx.signatures[0];
     signature_type bob_sig = tx.signatures[1];

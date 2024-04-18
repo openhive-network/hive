@@ -855,8 +855,7 @@ public:
         },
         HIVE_MAX_SIG_CHECK_DEPTH,
         HIVE_MAX_AUTHORITY_MEMBERSHIP,
-        HIVE_MAX_SIG_CHECK_ACCOUNTS,
-        fc::ecc::fc_canonical
+        HIVE_MAX_SIG_CHECK_ACCOUNTS
         );
 
       for( const public_key_type& k : minimal_signing_keys )
@@ -878,7 +877,7 @@ public:
       }
     }
 
-    new_tx->sign_transaction(keys_to_sign, _hive_chain_id, fc::ecc::fc_canonical, _chosen_transaction_serialization);
+    new_tx->sign_transaction(keys_to_sign, _hive_chain_id, _chosen_transaction_serialization);
 
     dump_transaction(*new_tx);
 

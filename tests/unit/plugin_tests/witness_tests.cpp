@@ -64,7 +64,7 @@ struct witness_fixture : public hived_fixture
     tx.operations.emplace_back( op );
     full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
     tx.clear();
-    _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), fc::ecc::fc_canonical, serialization_type::hf26 );
+    _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), serialization_type::hf26 );
     get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
 

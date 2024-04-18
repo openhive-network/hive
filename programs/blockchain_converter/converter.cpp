@@ -518,7 +518,6 @@ namespace hive { namespace converter {
     trx.sign_transaction(
       transaction_signing_keys,
       chain_id,
-      has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
       has_hardfork( HIVE_HARDFORK_1_26 ) ? hp::pack_type::hf26 : hp::pack_type::legacy
     );
   }

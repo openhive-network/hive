@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
 
       // sign transaction outside of time measurement
       full_transaction_ptr _ftx = full_transaction_type::create_from_signed_transaction( tx, pack_type::hf26, false );
-      _ftx->sign_transaction( _keys, db->get_chain_id(), fc::ecc::fc_canonical, pack_type::hf26 );
+      _ftx->sign_transaction( _keys, db->get_chain_id(), pack_type::hf26 );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       get_chain_plugin().push_transaction( _ftx, 0 );

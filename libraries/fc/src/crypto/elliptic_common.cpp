@@ -226,19 +226,9 @@ namespace fc { namespace ecc {
     }
 
 
-    bool public_key::is_canonical( const compact_signature& c, canonical_signature_type canon_type )
+    bool public_key::is_canonical( const compact_signature& c )
     {
-      switch( canon_type )
-      {
-        case bip_0062:
-          return is_bip_0062_canonical( c );
-        case fc_canonical:
-          return is_fc_canonical( c );
-        case non_canonical:
-          return true;
-        default:
-          return false;
-      }
+      return is_bip_0062_canonical( c );
     }
 
     private_key private_key::generate_from_seed( const fc::sha256& seed, const fc::sha256& offset )

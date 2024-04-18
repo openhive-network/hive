@@ -185,18 +185,16 @@ public:
     return fixture->push_transaction(op, key);
   }
   full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(),
-    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
-    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical )
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() )
   {
     FC_ASSERT(fixture);
-    return fixture->push_transaction(tx, key, skip_flags, pack_type, _sig_type);
+    return fixture->push_transaction(tx, key, skip_flags, pack_type);
   }
   full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
-    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
-    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical )
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() )
   {
     FC_ASSERT(fixture);
-    return fixture->push_transaction(tx, keys, skip_flags, pack_type, _sig_type);
+    return fixture->push_transaction(tx, keys, skip_flags, pack_type);
   }
 
   void fund( const fc::string& account_name, const asset& amount )

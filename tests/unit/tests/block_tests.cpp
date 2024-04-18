@@ -1629,8 +1629,7 @@ BOOST_AUTO_TEST_CASE( block_flow_control_p2p )
       tx.operations.push_back( op );
       auto pack = serialization_mode_controller::get_current_pack();
       full_transaction_ptr ftx = full_transaction_type::create_from_signed_transaction( tx, pack, false );
-      ftx->sign_transaction( std::vector<fc::ecc::private_key>{ init_account_priv_key }, db_bp1.get_chain_id(),
-        fc::ecc::fc_canonical, pack );
+      ftx->sign_transaction( std::vector<fc::ecc::private_key>{ init_account_priv_key }, db_bp1.get_chain_id(), pack );
       // push transaction only to one database, so other one can produce different block
       chain_plugin_bp1.push_transaction( ftx, database::skip_nothing );
     }
