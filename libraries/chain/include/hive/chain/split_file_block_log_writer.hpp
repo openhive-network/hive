@@ -21,7 +21,7 @@ namespace hive { namespace chain {
     virtual block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
   public:
-    split_file_block_log_writer( uint32_t split_file_kept, appbase::application& app,
+    split_file_block_log_writer( int block_log_split, appbase::application& app,
                                  blockchain_worker_thread_pool& thread_pool );
     virtual ~split_file_block_log_writer() = default;
 
@@ -58,17 +58,17 @@ namespace hive { namespace chain {
     bool is_last_number_of_the_file( uint32_t block_num ) const
     {
       return block_num > 0 && 
-            ( block_num % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0 );
+            ( block_num % _max_blocks_in_log_file == 0 );
     }
 
     /** Returns 1 for 0,
-     *  1 for [1 .. BLOCKS_IN_SPLIT_BLOCK_LOG_FILE] &
-     *  N for [1+(N-1)*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE .. N*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE]
+     *  1 for [1 .. _max_blocks_in_log_file] &
+     *  N for [1+(N-1)*_max_blocks_in_log_file .. N*_max_blocks_in_log_file]
      */
     uint32_t get_part_number_for_block( uint32_t block_num ) const
     {
       return block_num == 0 ? 1 :
-        ( block_num + BLOCKS_IN_SPLIT_BLOCK_LOG_FILE -1 ) / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+        ( (uint64_t)block_num + (uint64_t)_max_blocks_in_log_file -1 ) / _max_blocks_in_log_file;
     }
 
     const block_log* get_block_log_corresponding_to( uint32_t block_num ) const;
@@ -87,7 +87,8 @@ namespace hive { namespace chain {
   protected:
     appbase::application&           _app;
     blockchain_worker_thread_pool&  _thread_pool;
-    uint32_t                        _split_file_kept = 0;
+    const uint32_t                  _max_blocks_in_log_file = 0;
+    const int                       _block_log_split = 0;
     block_log_open_args             _open_args;
     std::deque< block_log* >        _logs;
   };

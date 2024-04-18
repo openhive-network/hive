@@ -1,12 +1,17 @@
 #include <hive/chain/split_file_block_log_writer.hpp>
 
+#include <hive/chain/block_log_manager.hpp>
 //#include <regex>
 
 namespace hive { namespace chain {
 
-split_file_block_log_writer::split_file_block_log_writer( uint32_t split_file_kept,
+split_file_block_log_writer::split_file_block_log_writer( int block_log_split,
   appbase::application& app, blockchain_worker_thread_pool& thread_pool )
-  : _app( app ), _thread_pool( thread_pool ), _split_file_kept( split_file_kept )
+  : _app( app ), _thread_pool( thread_pool ), 
+    _max_blocks_in_log_file( block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ?
+                              std::numeric_limits<uint32_t>::max() :
+                              BLOCKS_IN_SPLIT_BLOCK_LOG_FILE),
+    _block_log_split( block_log_split )
 {}
 
 const std::shared_ptr<full_block_type> split_file_block_log_writer::get_head_block() const
@@ -73,7 +78,9 @@ void split_file_block_log_writer::internal_open_and_init( block_log* the_log, co
 uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_part_number, 
   uint32_t head_part_number ) const
 {
-  if( _split_file_kept == 0 )
+  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
+
+  if( _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG )
   {
     // Expected tail part is obviously 1 - we need each part.
     if( tail_part_number > 1 )
@@ -87,23 +94,24 @@ uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_p
 
   // Require configured number of log file parts, unless we're only starting.
   if( tail_part_number > 1 &&
-      head_part_number - tail_part_number < _split_file_kept )
+      head_part_number - tail_part_number < (unsigned int)_block_log_split )
     throw std::runtime_error( 
       "Too few block log part files found (" + std::to_string( head_part_number - tail_part_number ) +
-      "), " + std::to_string( _split_file_kept ) + " required." );
+      "), " + std::to_string( _block_log_split ) + " required." );
 
-  return head_part_number > _split_file_kept ?
-          head_part_number - _split_file_kept :
+  return head_part_number > (unsigned int)_block_log_split ?
+          head_part_number - _block_log_split :
           1;
 }
 
 void split_file_block_log_writer::rotate_part_files( uint32_t new_part_number )
 {
   FC_ASSERT( new_part_number > 1 ); // Initial part number is 1, new one must be at least 2.
+  FC_ASSERT( _block_log_split > 0 ); // Otherwise no rotation needed.
 
-  if( new_part_number -1 > _split_file_kept )
+  if( new_part_number -1 > (unsigned int)_block_log_split )
   {
-    uint32_t removed_part_number = new_part_number -1 -_split_file_kept; // is > 0
+    uint32_t removed_part_number = new_part_number -1 -(unsigned int)_block_log_split; // is > 0
     block_log* removed_log = _logs[ removed_part_number -1 ];
     _logs[ removed_part_number -1 ] = nullptr;
     FC_ASSERT( removed_log != nullptr );
@@ -118,6 +126,16 @@ void split_file_block_log_writer::rotate_part_files( uint32_t new_part_number )
 
 void split_file_block_log_writer::common_open_and_init( std::optional< bool > read_only )
 {
+  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
+  {
+    block_log* single_part_log = new block_log( _app );
+    internal_open_and_init( single_part_log, 
+                            _open_args.data_dir / block_log_file_name_info::_legacy_file_name,
+                            read_only ? *read_only : false );
+    _logs.push_back( single_part_log );
+    return;
+  }
+
   // Any log file created on previous run?
   struct part_file_info_t {
     uint32_t part_number = 0;
@@ -154,7 +172,6 @@ void split_file_block_log_writer::common_open_and_init( std::optional< bool > re
     return;
   }
 
-  const size_t number_of_parts = part_file_names.size();
   // Check integrity of found part file names.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
   uint32_t tail_part_number = part_file_names.cbegin()->part_number;
@@ -198,8 +215,6 @@ void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_o
 
 void split_file_block_log_writer::open_and_init( const fc::path& path, bool read_only )
 {
-  FC_ASSERT( block_log_file_name_info::is_part_file( path ),
-             "${path} is NOT a path to split block log part file.", (path) );
   _open_args.data_dir = path.parent_path();
   common_open_and_init( std::optional< bool >( read_only ) );
 }
@@ -246,7 +261,7 @@ void split_file_block_log_writer::internal_append( uint32_t block_num, append_t 
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );
-    if( _split_file_kept > 0 )
+    if( _block_log_split > 0 )
       rotate_part_files( new_part_number );
   }
   else
@@ -265,7 +280,7 @@ void split_file_block_log_writer::append( const std::shared_ptr<full_block_type>
 void split_file_block_log_writer::flush_head_log()
 {
   //ilog( "Flushing head log" );
-  return _logs.back()->flush();
+  _logs.back()->flush();
 }
 
 uint64_t split_file_block_log_writer::append_raw( uint32_t block_num, const char* raw_block_data,
@@ -290,7 +305,7 @@ void split_file_block_log_writer::process_blocks(uint32_t starting_block_number,
     if( current_log == nullptr )
       return;
 
-    uint32_t last_block_of_part = get_part_number_for_block( starting_block_number ) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+    uint32_t last_block_of_part = get_part_number_for_block( starting_block_number ) * _max_blocks_in_log_file;
     current_log->for_each_block(  starting_block_number, std::min( last_block_of_part, ending_block_number ),
                                   processor, block_log::for_each_purpose::replay, thread_pool );
     
