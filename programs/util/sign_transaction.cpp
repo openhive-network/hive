@@ -141,7 +141,7 @@ int main(int argc, char** argv, char** envp)
 
       if(priv_key)
       {
-        full_transaction->sign_transaction( { *priv_key } , chainId, fc::ecc::fc_canonical, sreq.serialization_type );
+        full_transaction->sign_transaction( { *priv_key } , chainId, sreq.serialization_type );
         sres.sig = full_transaction->get_transaction().signatures.back();
         sres.key = hive::protocol::public_key_type( priv_key->get_public_key() );
         std::string sres_str = fc::json::to_string( sres );

@@ -142,8 +142,7 @@ full_block_type::~full_block_type()
   // now that we've serialized the data used in computing the digest, use that to sign the block
   if (signer)
   {
-    const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(header.timestamp);
-    new_block.witness_signature = signer->sign_compact(full_block->digest, validation_rules.signature_type);
+    new_block.witness_signature = signer->sign_compact(full_block->digest);
     full_block->block_signing_key = signer->get_public_key();
   }
   // and serialize the signature
@@ -515,8 +514,7 @@ void full_block_type::compute_signing_key() const
   {
     decode_block_header();
     fc::time_point compute_begin = fc::time_point::now();
-    const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(decoded_block_storage->block->timestamp);
-    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, digest, validation_rules.signature_type);
+    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, digest);
     fc::time_point compute_end = fc::time_point::now();
     compute_block_signing_key_time = compute_end - compute_begin;
   }

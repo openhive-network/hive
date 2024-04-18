@@ -63,17 +63,17 @@ transaction_id_type transaction::id(hive::protocol::pack_type pack) const
   return result;
 }
 /*
-const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
+const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id )
 {
   digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
-  signatures.push_back( key.sign_compact( h, canon_type ) );
+  signatures.push_back( key.sign_compact( h ) );
   return signatures.back();
 }
 
-signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
+signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id )const
 {
   digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
-  return key.sign_compact( h, canon_type );
+  return key.sign_compact( h );
 }
 */
 void transaction::set_expiration( fc::time_point_sec expiration_time )
@@ -97,14 +97,14 @@ void transaction::get_required_authorities( flat_set< account_name_type >& activ
     operation_get_required_authorities( op, active, owner, posting, witness, other );
 }
 
-flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, hive::protocol::pack_type pack )const
+flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, hive::protocol::pack_type pack )const
 { try {
   auto d = sig_digest( chain_id, pack );
   flat_set<public_key_type> result;
   for( const auto&  sig : signatures )
   {
     HIVE_ASSERT(
-      result.insert( fc::ecc::public_key( sig, d, canon_type ) ).second,
+      result.insert( fc::ecc::public_key( sig, d ) ).second,
       tx_duplicate_sig,
       "Duplicate Signature detected" );
   }
@@ -122,8 +122,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   const witness_public_key_getter& get_witness_key,
   uint32_t max_recursion_depth,
   uint32_t max_membership,
-  uint32_t max_account_auths,
-  canonical_signature_type canon_type )const
+  uint32_t max_account_auths )const
 {
   flat_set< account_name_type > required_active;
   flat_set< account_name_type > required_owner;
@@ -134,7 +133,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys );
+    sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
@@ -156,7 +155,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active, available_keys );
+  sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active, available_keys );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;
@@ -188,11 +187,10 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   const witness_public_key_getter& get_witness_key,
   uint32_t max_recursion,
   uint32_t max_membership,
-  uint32_t max_account_auths,
-  canonical_signature_type canon_type
+  uint32_t max_account_auths
   ) const
 {
-  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths, canon_type );
+  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
@@ -233,11 +231,10 @@ void signed_transaction::verify_authority(const chain_id_type& chain_id,
                                           hive::protocol::pack_type pack,
                                           uint32_t max_recursion,
                                           uint32_t max_membership,
-                                          uint32_t max_account_auths,
-                                          canonical_signature_type canon_type) const
+                                          uint32_t max_account_auths) const
 { try {
   hive::protocol::verify_authority(operations,
-                                   get_signature_keys(chain_id, canon_type, pack),
+                                   get_signature_keys(chain_id, pack),
                                    get_active,
                                    get_owner,
                                    get_posting,

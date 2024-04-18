@@ -26,24 +26,24 @@ namespace hive { namespace protocol {
     return result;
   }
 
-  /* static */ fc::ecc::public_key signed_block_header::signee( const signature_type& witness_signature, const digest_type& digest, fc::ecc::canonical_signature_type canon_type )
+  /* static */ fc::ecc::public_key signed_block_header::signee( const signature_type& witness_signature, const digest_type& digest )
   {
-    return fc::ecc::public_key( witness_signature, digest, canon_type );
+    return fc::ecc::public_key( witness_signature, digest );
   }
 
-  fc::ecc::public_key signed_block_header::legacy_signee( fc::ecc::canonical_signature_type canon_type )const
+  fc::ecc::public_key signed_block_header::legacy_signee()const
   {
-    return signee(witness_signature, legacy_digest(), canon_type);
+    return signee(witness_signature, legacy_digest());
   }
 
-  bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee, const digest_type& digest, fc::ecc::canonical_signature_type canon_type )const
+  bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee, const digest_type& digest )const
   {
-    return signee(witness_signature, digest, canon_type) == expected_signee;
+    return signee( witness_signature, digest ) == expected_signee;
   }
 
-  void signed_block_header::legacy_sign( const fc::ecc::private_key& signer, fc::ecc::canonical_signature_type canon_type )
+  void signed_block_header::legacy_sign( const fc::ecc::private_key& signer )
   {
-    witness_signature = signer.sign_compact( legacy_digest(), canon_type );
+    witness_signature = signer.sign_compact( legacy_digest() );
   }
   // just here for unit tests, actual function is in full_block
   checksum_type signed_block::legacy_calculate_merkle_root()const

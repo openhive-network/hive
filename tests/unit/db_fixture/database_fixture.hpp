@@ -246,7 +246,6 @@ struct database_fixture {
   string debug_key = init_account_priv_key.key_to_wif();
   public_key_type init_account_pub_key = init_account_priv_key.get_public_key();
   uint32_t default_skip = 0 | database::skip_undo_history_check | database::skip_authority_check;
-  fc::ecc::canonical_signature_type default_sig_canon = fc::ecc::fc_canonical;
 
   typedef plugins::account_history_rocksdb::account_history_rocksdb_plugin ah_plugin_type;
   ah_plugin_type* ah_plugin = nullptr;
@@ -347,11 +346,9 @@ struct database_fixture {
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
   full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(),
-    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
-    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
   full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
-    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
-    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 
   void fund( const string& account_name, const asset& amount ); //transfer from initminer
   void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
@@ -519,8 +516,7 @@ namespace test
     const fc::ecc::private_key& _key, uint32_t _skip = 0 );
   void _push_transaction( hive::plugins::chain::chain_plugin& cp, const signed_transaction& tx,
     const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
-    hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
-    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+    hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 }
 
 namespace performance

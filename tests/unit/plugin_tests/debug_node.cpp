@@ -19,8 +19,7 @@ full_transaction_ptr make_transfer( const account_name_type& from, const account
   tx.operations.push_back( op );
   auto pack_type = serialization_mode_controller::get_current_pack();
   full_transaction_ptr ftx = full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
-  ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db.get_chain_id(),
-    fc::ecc::fc_canonical, pack_type );
+  ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db.get_chain_id(), pack_type );
   return ftx;
 };
 

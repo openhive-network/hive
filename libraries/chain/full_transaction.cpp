@@ -142,7 +142,7 @@ void full_transaction_type::compute_signature_keys() const
       try
       {
         for (const hive::protocol::signature_type& signature : get_transaction().signatures)
-          HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest, validation_rules->signature_type)).second,
+          HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest)).second,
                       hive::protocol::tx_duplicate_sig,
                       "Duplicate Signature detected");
       }
@@ -303,8 +303,7 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return transaction_id;
 }
 
-void full_transaction_type::sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
-  fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type)
+void full_transaction_type::sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id, hive::protocol::pack_type serialization_type)
 {
   FC_ASSERT(std::holds_alternative<standalone_transaction_info>(storage), "Only standalone transactions can be signed");
 
@@ -318,7 +317,7 @@ void full_transaction_type::sign_transaction(const std::vector<hive::protocol::p
 
   for(const auto& key : keys)
   {
-    auto signature = key.sign_compact(sig_digest, canon_type);
+    auto signature = key.sign_compact(sig_digest);
 
     tx.signatures.emplace_back(signature);
   }
@@ -433,10 +432,10 @@ void full_transaction_type::sign_transaction(const std::vector<hive::protocol::p
 // part of the block, we know we must use the post hardfork 1.24 rules.
 namespace
 {
-  transaction_signature_validation_rules_type pre_hf_0_20_rules = {OLD_CHAIN_ID, fc::ecc::fc_canonical};
-  transaction_signature_validation_rules_type post_hf_0_20_rules = {OLD_CHAIN_ID, fc::ecc::bip_0062};
+  transaction_signature_validation_rules_type pre_hf_0_20_rules = {OLD_CHAIN_ID};
+  transaction_signature_validation_rules_type post_hf_0_20_rules = {OLD_CHAIN_ID};
 #ifndef USE_ALTERNATE_CHAIN_ID
-  transaction_signature_validation_rules_type post_hf_1_24_rules = {HIVE_CHAIN_ID, fc::ecc::bip_0062};
+  transaction_signature_validation_rules_type post_hf_1_24_rules = {HIVE_CHAIN_ID};
 #endif
 }
 
