@@ -547,16 +547,6 @@ namespace detail {
       return block_production_condition::not_time_yet;
     }
 
-    if (!produce_block_data.produce_in_next_slot)
-    {
-      block_production_condition::block_production_condition_enum cond = produce_block_data.block_production_condition;
-      produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
-      capture("scheduled_witness", produce_block_data.scheduled_witness);
-      capture("scheduled_key", produce_block_data.scheduled_public_key);
-      capture("pct", produce_block_data.pct);
-      return cond;
-    }
-
     const fc::microseconds lag = produce_block_data.next_slot_time - now;
     if( llabs(lag.count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
@@ -567,6 +557,9 @@ namespace detail {
       }
       return block_production_condition::lag;
     }
+
+    if (!produce_block_data.produce_in_next_slot)
+      return produce_block_data.block_production_condition;
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
       produce_block_data.scheduled_witness, produce_block_data.scheduled_private_key, _production_skip_flags, theApp );
