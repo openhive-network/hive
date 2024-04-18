@@ -1,12 +1,12 @@
-#include <hive/chain/split_file_block_log_writer.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 
 #include <hive/chain/block_log_manager.hpp>
 //#include <regex>
 
 namespace hive { namespace chain {
 
-split_file_block_log_writer::split_file_block_log_writer( int block_log_split,
-  appbase::application& app, blockchain_worker_thread_pool& thread_pool )
+block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application& app,
+                                      blockchain_worker_thread_pool& thread_pool )
   : _app( app ), _thread_pool( thread_pool ), 
     _max_blocks_in_log_file( block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ?
                               std::numeric_limits<uint32_t>::max() :
@@ -14,24 +14,24 @@ split_file_block_log_writer::split_file_block_log_writer( int block_log_split,
     _block_log_split( block_log_split )
 {}
 
-const std::shared_ptr<full_block_type> split_file_block_log_writer::get_head_block() const
+const std::shared_ptr<full_block_type> block_log_wrapper::get_head_block() const
 {
   return _logs.back()->head();
 }
 
-block_id_type split_file_block_log_writer::read_block_id_by_num( uint32_t block_num ) const
+block_id_type block_log_wrapper::read_block_id_by_num( uint32_t block_num ) const
 {
   const block_log* log = get_block_log_corresponding_to( block_num );
   return log == nullptr ? block_id_type() : log->read_block_id_by_num( block_num );
 }
 
-std::shared_ptr<full_block_type> split_file_block_log_writer::read_block_by_num( uint32_t block_num ) const
+std::shared_ptr<full_block_type> block_log_wrapper::read_block_by_num( uint32_t block_num ) const
 {
   const block_log* log = get_block_log_corresponding_to( block_num );
   return log == nullptr ? std::shared_ptr<full_block_type>() : log->read_block_by_num( block_num );
 }
 
-const block_log* split_file_block_log_writer::get_block_log_corresponding_to( uint32_t block_num ) const
+const block_log* block_log_wrapper::get_block_log_corresponding_to( uint32_t block_num ) const
 {
   uint32_t request_part_number = get_part_number_for_block( block_num );
   if( request_part_number > _logs.size() )
@@ -40,7 +40,7 @@ const block_log* split_file_block_log_writer::get_block_log_corresponding_to( ui
   return _logs[ request_part_number-1 ];
 }
 
-block_log_reader_common::block_range_t split_file_block_log_writer::read_block_range_by_num(
+block_log_reader_common::block_range_t block_log_wrapper::read_block_range_by_num(
   uint32_t starting_block_num, uint32_t count ) const
 {
   block_range_t result;
@@ -64,7 +64,7 @@ block_log_reader_common::block_range_t split_file_block_log_writer::read_block_r
   return result;
 }
 
-void split_file_block_log_writer::internal_open_and_init( block_log* the_log, const fc::path& path,
+void block_log_wrapper::internal_open_and_init( block_log* the_log, const fc::path& path,
                                                           bool read_only )
 {
   the_log->open_and_init( path,
@@ -75,7 +75,7 @@ void split_file_block_log_writer::internal_open_and_init( block_log* the_log, co
                           _thread_pool );
 }
 
-uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_part_number, 
+uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number, 
   uint32_t head_part_number ) const
 {
   FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
@@ -104,7 +104,7 @@ uint32_t split_file_block_log_writer::validate_tail_part_number( uint32_t tail_p
           1;
 }
 
-void split_file_block_log_writer::rotate_part_files( uint32_t new_part_number )
+void block_log_wrapper::rotate_part_files( uint32_t new_part_number )
 {
   FC_ASSERT( new_part_number > 1 ); // Initial part number is 1, new one must be at least 2.
   FC_ASSERT( _block_log_split > 0 ); // Otherwise no rotation needed.
@@ -124,7 +124,7 @@ void split_file_block_log_writer::rotate_part_files( uint32_t new_part_number )
   }
 }
 
-void split_file_block_log_writer::common_open_and_init( std::optional< bool > read_only )
+void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
 {
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
@@ -207,19 +207,19 @@ void split_file_block_log_writer::common_open_and_init( std::optional< bool > re
   }
 }
 
-void split_file_block_log_writer::open_and_init( const block_log_open_args& bl_open_args )
+void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args )
 {
   _open_args = bl_open_args;
   common_open_and_init( std::optional< bool >() /*set read_only where feasible*/);
 }
 
-void split_file_block_log_writer::open_and_init( const fc::path& path, bool read_only )
+void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
 {
   _open_args.data_dir = path.parent_path();
   common_open_and_init( std::optional< bool >( read_only ) );
 }
 
-void split_file_block_log_writer::close_log()
+void block_log_wrapper::close_log()
 {
   std::for_each( _logs.begin(), _logs.end(), [&]( block_log* log ){ 
     if( log )
@@ -231,12 +231,12 @@ void split_file_block_log_writer::close_log()
   _logs.clear();
 }
 
-std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> split_file_block_log_writer::read_raw_head_block() const
+std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> block_log_wrapper::read_raw_head_block() const
 {
   return _logs.back()->read_raw_head_block();
 }
 
-std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> split_file_block_log_writer::read_raw_block_data_by_num(uint32_t block_num) const
+std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log_wrapper::read_raw_block_data_by_num(uint32_t block_num) const
 {
   const block_log* log = get_block_log_corresponding_to( block_num );
   FC_ASSERT( log != nullptr, 
@@ -244,7 +244,7 @@ std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> sp
   return log->read_raw_block_data_by_num( block_num );
 }
 
-void split_file_block_log_writer::internal_append( uint32_t block_num, append_t do_appending)
+void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appending)
 {
   FC_ASSERT( block_num > 0 );
 
@@ -270,20 +270,19 @@ void split_file_block_log_writer::internal_append( uint32_t block_num, append_t 
   }
 }
 
-void split_file_block_log_writer::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
+void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
   internal_append( full_block->get_block_num(), [&]( block_log* log ){ 
     log->append( full_block, is_at_live_sync );
   });
 }
 
-void split_file_block_log_writer::flush_head_log()
+void block_log_wrapper::flush_head_log()
 {
-  //ilog( "Flushing head log" );
   _logs.back()->flush();
 }
 
-uint64_t split_file_block_log_writer::append_raw( uint32_t block_num, const char* raw_block_data,
+uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_block_data,
   size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
 {
   uint64_t result = 0;
@@ -293,7 +292,7 @@ uint64_t split_file_block_log_writer::append_raw( uint32_t block_num, const char
   return result;
 }
 
-void split_file_block_log_writer::process_blocks(uint32_t starting_block_number,
+void block_log_wrapper::process_blocks(uint32_t starting_block_number,
   uint32_t ending_block_number, block_processor_t processor,
   hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {

@@ -10,7 +10,7 @@ namespace appbase {
 namespace hive { namespace chain {
 
   /// Multiple file implementation of block_log_writer_common.
-  class split_file_block_log_writer : public block_log_writer_common
+  class block_log_wrapper : public block_log_writer_common
   {
   protected:
     /// Required by block_log_reader_common.
@@ -21,9 +21,9 @@ namespace hive { namespace chain {
     virtual block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
   public:
-    split_file_block_log_writer( int block_log_split, appbase::application& app,
+    block_log_wrapper( int block_log_split, appbase::application& app,
                                  blockchain_worker_thread_pool& thread_pool );
-    virtual ~split_file_block_log_writer() = default;
+    virtual ~block_log_wrapper() = default;
 
     /// Required by block_log_reader_common.
     virtual void close_log() override;
