@@ -1000,6 +1000,7 @@ operation_tests:
                      cancel_transfer_from_savings,
                      comment_tests,
                      convert_tests,
+                     custom_and_custom_json_tests,
                      escrow_tests,
                      limit_order_tests,
                      proposal_tests,
