@@ -415,9 +415,11 @@ void application::wait4interrupt_request()
   }
 }
 
-void application::wait()
+void application::wait( bool log )
 {
+  if( log ) ilog("Wait for interrupt request");
   wait4interrupt_request();
+  if( log ) ilog("Interrupt request has been generated");
 
   if( finish_request )
   {
@@ -426,9 +428,11 @@ void application::wait()
     ilog("Request for application shutdown processed.");
   }
 
+  if( log ) ilog("Wait for finishing plugins");
   finish();
+  if( log ) ilog("Plugins have been finished");
 
-  handler_wrapper.wait4stop();
+  handler_wrapper.wait4stop( log );
 }
 
 bool application::is_thread_closed()
@@ -646,13 +650,17 @@ void application::kill( bool direct_stop )
     ::kill(getpid(), SIGINT);
 }
 
-bool application::quit()
+bool application::quit( bool log )
 {
   auto _is_thread_closed = is_thread_closed();
   if( !_is_thread_closed )
+  {
+    if( log ) ilog("Kill application");
     kill();
+    if( log ) ilog("Application has been killed");
+  }
 
-  wait();
+  wait( log );
 
   return is_thread_closed();
 }
