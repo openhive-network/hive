@@ -135,4 +135,4 @@ def test_try_to_update_proposal_from_unauthorised_account(
     bob.create_proposal("alice", tt.Time.now(), end_date)
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         alice.update_proposal(proposal_to_update_details=bob.proposal_parameters, **update_proposal_args)
-    assert "Cannot edit a proposal you are not the creator of " in exception.value.error
+    assert "Cannot edit a proposal you are not the creator of" in exception.value.error
