@@ -110,7 +110,7 @@ def test_update_comment_with_replies_votes_and_downvotes(
 
     reward_hbd_balances = []
     for comment in comments:
-        reward_hbd_balances.append(tt.Asset.from_legacy(wallet.api.get_account(comment.author)["reward_hbd_balance"]))
+        reward_hbd_balances.append(wallet.api.get_account(comment.author).reward_hbd_balance)
 
     assert (
         reward_hbd_balances[2] < reward_hbd_balances[3]
