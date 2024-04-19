@@ -79,6 +79,7 @@ def test_incorrect_custom_json(
     ]
     trx["operations"].append(operation)
 
+    wallet = tt.OldWallet(attach_to=prepared_node)
     wallet.api.use_authority(authority_type, alice.name)
     signed_trx = wallet.api.sign_transaction(trx, broadcast=False)
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -86,6 +87,7 @@ def test_incorrect_custom_json(
     alice.check_if_rc_mana_was_unchanged()
 
 
+#  hasz13
 @pytest.mark.parametrize(
     ("required_auths", "required_posting_auths"),
     [
