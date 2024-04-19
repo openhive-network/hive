@@ -10,7 +10,6 @@ import test_tools as tt
 import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
-    get_transaction_model,
 )
 from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
 from schemas.fields.compound import Manabar
@@ -24,7 +23,7 @@ from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
-    from schemas.operations import AnyLegacyOperation
+    from schemas.operations import AnyOperation
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
@@ -360,18 +359,20 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True, broadcast: bool = True
+    wallet: tt.Wallet, *operations: AnyOperation, only_result: bool = True, broadcast: bool = True
 ) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
-    transaction = get_transaction_model()
+    # transaction = get_transaction_model()
     ops = []
     for op in operations:
         if isinstance(op, CustomJsonOperation):
             op.json_ = json.dumps(op.json_)
-        ops.append((op.get_name(), op))
-    transaction.operations = ops
-    transaction.operations = [(op.get_name(), op) for op in operations]
-    return wallet.api.sign_transaction(transaction, only_result=only_result, broadcast=broadcast)
+        ops.append(op)
+
+    return wallet.send(operations=ops, blocking=True, broadcast=broadcast)
+    # transaction.operations = ops
+    # transaction.operations = [(op.get_name(), op) for op in operations]
+    # return wallet.api.sign_transaction(transaction, only_result=only_result, broadcast=broadcast)
 
 
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
@@ -544,10 +545,10 @@ def get_vote_manabar(
     wallet: tt.Wallet, account_name: str, bar_type: Literal["voting_manabar", "downvote_manabar"]
 ) -> ExtendedManabar:
     response = wallet.api.get_account(account_name)
-    max_mana = int(tt.Asset.from_legacy(response["post_voting_power"]).amount)
+    max_mana = int(response.post_voting_power.amount)
     return ExtendedManabar(
-        current_mana=int(response[bar_type]["current_mana"]),
-        last_update_time=response[bar_type]["last_update_time"],
+        current_mana=int(getattr(response, bar_type).current_mana),
+        last_update_time=getattr(response, bar_type).last_update_time,
         maximum=max_mana if bar_type == "voting_manabar" else int(0.25 * max_mana),
     )
 
