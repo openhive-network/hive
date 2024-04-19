@@ -112,16 +112,23 @@ void signals_handler_wrapper::init()
   initialized = true;
 }
 
-void signals_handler_wrapper::wait4stop()
+void signals_handler_wrapper::wait4stop( bool log )
 {
   if( initialized )
   {
     if( handler_thread->joinable() )
     {
+      if( log ) ilog("Clearing signals");
       handler.clear_signals();
-      get_io_service().stop();
+      if( log ) ilog("Signals have been cleared");
 
+      if( log ) ilog("Stopping IO service");
+      get_io_service().stop();
+      if( log ) ilog("IO service has been stopped");
+
+      if( log ) ilog("Joining handler's thread");
       handler_thread->join();
+      if( log ) ilog("Handler's thread has been joined");
     }
   }
   thread_closed = true;

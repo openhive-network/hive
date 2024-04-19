@@ -64,7 +64,7 @@ namespace appbase {
       signals_handler_wrapper( signals_handler::interrupt_request_generation_type&& _interrupt_request_generation );
 
       void init();
-      void wait4stop();
+      void wait4stop( bool log = false );
       void force_stop();
       bool is_thread_closed();
 
