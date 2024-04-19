@@ -14,7 +14,7 @@ class UpdateProposalVotes(Operation):
         self._voter = voter
         self._proposal_id = proposal_id
         self._transaction = wallet.api.update_proposal_votes(voter=voter, proposals=[proposal_id], approve=approve)
-        self._rc_cost = self._transaction["rc_cost"]
+        self._rc_cost = self._transaction.rc_cost
 
     @property
     def rc_cost(self):
