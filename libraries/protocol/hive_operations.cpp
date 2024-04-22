@@ -427,10 +427,10 @@ namespace hive { namespace protocol {
   void pow::create( const fc::ecc::private_key& w, const digest_type& i )
   {
     input  = i;
-    signature = w.sign_compact( input );
+    signature = w.sign_compact( input, fc::ecc::non_canonical );
 
     auto sig_hash            = fc::sha256::hash( signature );
-    public_key_type recover  = fc::ecc::public_key( signature, sig_hash );
+    public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical );
 
     work = fc::sha256::hash(recover);
   }
@@ -443,7 +443,7 @@ namespace hive { namespace protocol {
 
     auto prv_key = fc::sha256::hash( input );
     auto input = fc::sha256::hash( prv_key );
-    auto signature = fc::ecc::private_key::regenerate( prv_key ).sign_compact( input );
+    auto signature = fc::ecc::private_key::regenerate( prv_key ).sign_compact( input, fc::ecc::fc_canonical );
 
     auto sig_hash            = fc::sha256::hash( signature );
     public_key_type recover  = fc::ecc::public_key( signature, sig_hash );
@@ -466,9 +466,9 @@ namespace hive { namespace protocol {
   void pow::validate()const
   {
     FC_ASSERT( work != fc::sha256() );
-    FC_ASSERT( public_key_type(fc::ecc::public_key( signature, input ) ) == worker );
+    FC_ASSERT( public_key_type(fc::ecc::public_key( signature, input, fc::ecc::non_canonical ) ) == worker );
     auto sig_hash = fc::sha256::hash( signature );
-    public_key_type recover  = fc::ecc::public_key( signature, sig_hash );
+    public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical );
     FC_ASSERT( work == fc::sha256::hash(recover) );
   }
 
