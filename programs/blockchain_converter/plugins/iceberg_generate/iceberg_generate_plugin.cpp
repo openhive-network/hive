@@ -11,7 +11,7 @@
 #include <fc/network/url.hpp>
 #include <fc/thread/thread.hpp>
 
-#include <hive/chain/block_log_manager.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
@@ -46,7 +46,7 @@ namespace hive {namespace converter { namespace plugins { namespace iceberg_gene
 
 namespace detail {
 
-  using hive::chain::block_log_reader_common;
+  using hive::chain::block_log_wrapper;
 
   class iceberg_generate_plugin_impl final : public conversion_plugin_impl {
   public:
@@ -55,7 +55,7 @@ namespace detail {
     appbase::application& theApp;
     hive::chain::blockchain_worker_thread_pool thread_pool;
     fc::optional<hp::transaction_id_type> last_init_tx_id;
-    std::shared_ptr< block_log_reader_common > log_reader;
+    std::shared_ptr< block_log_wrapper > log_reader;
 
     iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
         const hp::chain_id_type& chain_id, appbase::application& app, bool enable_op_content_strip = false, size_t signers_size = 1 );
@@ -98,7 +98,7 @@ namespace detail {
   {
     try
     {
-      log_reader = hive::chain::block_log_manager_t::create_opened_reader( input, theApp, thread_pool );
+      log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input, theApp, thread_pool );
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 

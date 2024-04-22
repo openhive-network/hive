@@ -8,7 +8,7 @@
 namespace hive { namespace chain {
 
 fork_db_block_reader::fork_db_block_reader( fork_database& fork_db, 
-                                            const block_log_reader_common& log_reader )
+                                            const block_log_wrapper& log_reader )
   : _fork_db( fork_db ), _log_reader( log_reader )
 {}
 

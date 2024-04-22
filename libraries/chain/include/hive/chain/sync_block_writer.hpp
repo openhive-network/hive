@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/block_write_chain_interface.hpp>
+#include <hive/chain/block_write_interface.hpp>
 
 #include <hive/chain/fork_db_block_reader.hpp>
 #include <hive/chain/fork_database.hpp>
@@ -10,14 +10,14 @@
 
 namespace hive { namespace chain {
 
-  class block_log_writer_common;
+  class block_log_wrapper;
   class fork_database;
   using appbase::application;
 
-  class sync_block_writer : public block_write_chain_i
+  class sync_block_writer : public block_write_i
   {
   public:
-    sync_block_writer( block_log_writer_common& blw, database& db, application& app );
+    sync_block_writer( block_log_wrapper& blw, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
     virtual const block_read_i& get_block_reader() override;
@@ -81,12 +81,12 @@ namespace hive { namespace chain {
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
   private:
-    block_log_writer_common&  _log_writer;
-    fork_db_block_reader      _reader;
-    fork_database             _fork_db;
-    bool                      _is_at_live_sync = false;
-    database&                 _db; /// Needed only for notification purposes.
-    application&              _app; /// Needed only for notification purposes.
+    block_log_wrapper&    _block_log_wrapper;
+    fork_db_block_reader  _reader;
+    fork_database         _fork_db;
+    bool                  _is_at_live_sync = false;
+    database&             _db; /// Needed only for notification purposes.
+    application&          _app; /// Needed only for notification purposes.
   };
 
 } }

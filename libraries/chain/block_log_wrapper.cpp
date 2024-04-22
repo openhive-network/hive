@@ -1,9 +1,52 @@
 #include <hive/chain/block_log_wrapper.hpp>
 
-#include <hive/chain/block_log_manager.hpp>
+#include <hive/chain/block_log.hpp>
 //#include <regex>
 
 namespace hive { namespace chain {
+
+/*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_wrapper( int block_log_split,
+  appbase::application& app, blockchain_worker_thread_pool& thread_pool )
+{
+  // Allowed values are -1, 0 and positive.
+  if( block_log_split < LEGACY_SINGLE_FILE_BLOCK_LOG )
+  {
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported block log split value" );
+  }
+
+  return std::make_shared< block_log_wrapper >( block_log_split, app, thread_pool );
+}
+
+/*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
+  const fc::path& the_path, appbase::application& app,
+  blockchain_worker_thread_pool& thread_pool, bool recreate_artifacts_if_needed /*= true*/ )
+{
+  FC_ASSERT( not fc::exists( the_path ) || fc::is_regular_file( the_path ),
+    "Path ${p} does NOT point to regular file.", ("p", the_path) );
+
+  bool read_only = not recreate_artifacts_if_needed;
+
+  if( the_path.filename().string() == block_log_file_name_info::_legacy_file_name )
+  {
+    auto writer = std::make_shared< block_log_wrapper >( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
+    writer->open_and_init( the_path, read_only );
+    return writer;
+  }
+
+  uint32_t part_number = block_log_file_name_info::is_part_file( the_path );
+  if( part_number > 0 )
+  {
+    FC_ASSERT( part_number == 1,
+              "Expected 1st part file name, not following one (${path})", ("path", the_path) );
+    auto writer = std::make_shared< block_log_wrapper >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
+    writer->open_and_init( the_path, read_only );
+    return writer;
+  }
+
+  FC_THROW_EXCEPTION( fc::parse_error_exception, 
+    "Provided block log path ${path} matches neither legacy single file name nor split log part file name pattern.",
+    ("path", the_path) );
+}
 
 block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application& app,
                                       blockchain_worker_thread_pool& thread_pool )
@@ -13,6 +56,235 @@ block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application&
                               BLOCKS_IN_SPLIT_BLOCK_LOG_FILE),
     _block_log_split( block_log_split )
 {}
+
+void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args )
+{
+  _open_args = bl_open_args;
+  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/);
+}
+
+void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
+{
+  _open_args.data_dir = path.parent_path();
+  common_open_and_init( std::optional< bool >( read_only ) );
+}
+
+void block_log_wrapper::close_log()
+{
+  std::for_each( _logs.begin(), _logs.end(), [&]( block_log* log ){ 
+    if( log )
+    { 
+      log->close();
+      delete log;
+    }
+  } );
+  _logs.clear();
+}
+
+std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> block_log_wrapper::read_raw_head_block() const
+{
+  return _logs.back()->read_raw_head_block();
+}
+
+std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log_wrapper::read_raw_block_data_by_num(uint32_t block_num) const
+{
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  FC_ASSERT( log != nullptr, 
+             "Unable to find block log corresponding to block number ${block_num}", (block_num));
+  return log->read_raw_block_data_by_num( block_num );
+}
+
+void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
+{
+  internal_append( full_block->get_block_num(), [&]( block_log* log ){ 
+    log->append( full_block, is_at_live_sync );
+  });
+}
+
+uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_block_data,
+  size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
+{
+  uint64_t result = 0;
+  internal_append( block_num, [&]( block_log* log ){ 
+    result = log->append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
+  });
+  return result;
+}
+
+void block_log_wrapper::flush_head_log()
+{
+  _logs.back()->flush();
+}
+
+std::shared_ptr<full_block_type> block_log_wrapper::head_block() const
+{
+  return get_head_block();
+}
+
+uint32_t block_log_wrapper::head_block_num( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  const auto hb = get_head_block();
+  return hb ? hb->get_block_num() : 0;
+}
+
+block_id_type block_log_wrapper::head_block_id( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  const auto hb = get_head_block();
+  return hb ? hb->get_block_id() : block_id_type();
+}
+
+std::shared_ptr<full_block_type> block_log_wrapper::read_block_by_num( uint32_t block_num ) const
+{
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  return log == nullptr ? std::shared_ptr<full_block_type>() : log->read_block_by_num( block_num );
+}
+
+void block_log_wrapper::process_blocks(uint32_t starting_block_number,
+  uint32_t ending_block_number, block_processor_t processor,
+  hive::chain::blockchain_worker_thread_pool& thread_pool) const
+{
+  const block_log* current_log = nullptr;
+  const block_log* head_log = _logs.back();
+  do
+  {
+    current_log = get_block_log_corresponding_to( starting_block_number );
+    if( current_log == nullptr )
+      return;
+
+    uint32_t last_block_of_part = get_part_number_for_block( starting_block_number ) * _max_blocks_in_log_file;
+    current_log->for_each_block(  starting_block_number, std::min( last_block_of_part, ending_block_number ),
+                                  processor, block_log::for_each_purpose::replay, thread_pool );
+    
+    starting_block_number = last_block_of_part + 1;
+  }
+  while( starting_block_number < ending_block_number && current_log != head_log );
+}
+
+std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id( 
+  const block_id_type& id ) const
+{
+  try {
+    std::shared_ptr<full_block_type> block = 
+      read_block_by_num( protocol::block_header::num_from_id( id ) );
+    if( block && block->get_block_id() == id )
+      return block;
+    return std::shared_ptr<full_block_type>();
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    return read_block_by_num(block_num);
+  } FC_LOG_AND_RETHROW()
+}
+
+std::vector<std::shared_ptr<full_block_type>> block_log_wrapper::fetch_block_range( 
+  const uint32_t starting_block_num, const uint32_t count, 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
+    FC_ASSERT(count > 0, "Why ask for zero blocks?");
+    FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+    idump((starting_block_num)(count));
+
+    std::vector<std::shared_ptr<full_block_type>> result;
+    result = read_block_range_by_num(starting_block_num, count);
+
+    idump((result.size()));
+    if (!result.empty())
+      idump((result.front()->get_block_num())(result.back()->get_block_num()));
+
+    return result;
+  } FC_LOG_AND_RETHROW()
+}
+
+bool block_log_wrapper::is_known_block(const block_id_type& id) const
+{
+  try {
+    auto requested_block_num = protocol::block_header::num_from_id(id);
+    block_id_type read_block_id = read_block_id_by_num( requested_block_num );
+    return read_block_id != block_id_type() && read_block_id == id;
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+std::deque<block_id_type>::const_iterator block_log_wrapper::find_first_item_not_in_blockchain(
+  const std::deque<block_id_type>& item_hashes_received ) const
+{
+  return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
+    return is_known_block(block_id);
+  });
+}
+
+block_id_type block_log_wrapper::find_block_id_for_num( uint32_t block_num ) const
+{
+  block_id_type result;
+
+  try
+  {
+    if( block_num != 0 )
+    {
+      result = read_block_id_by_num( block_num );
+    }
+  }
+  FC_CAPTURE_AND_RETHROW( (block_num) )
+
+  if( result == block_id_type() )
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
+
+  return result;
+}
+
+std::vector<block_id_type> block_log_wrapper::get_blockchain_synopsis( 
+  const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
+{
+  //std::vector<block_id_type> synopsis = _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point, block_number_needed_from_block_log);
+  std::vector<block_id_type> synopsis;
+  uint32_t last_irreversible_block_num = head_block()->get_block_num();
+  uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
+  if (reference_point_block_num < last_irreversible_block_num)
+  {
+    uint32_t block_number_needed_from_block_log = reference_point_block_num;
+    uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
+    auto read_block_id = read_block_id_by_num( block_number_needed_from_block_log );
+
+    if (reference_point_block_num == block_number_needed_from_block_log)
+    {
+      // we're getting this block from the database because it's the reference point,
+      // not because it's the last irreversible.
+      // We can only do this if the reference point really is in the blockchain
+      if (read_block_id == reference_point)
+        synopsis.insert(synopsis.begin(), reference_point);
+      else
+      {
+        // TODO: Update the comment below with the possibility of block_number_needed_from_block_log having been pruned.
+        wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
+             "(our chains diverge before block #${reference_point_block_num}",
+             (reference_point_block_num));
+        // TODO: get the right type of exception here
+        //FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Peer is on a fork I'm unable to switch to");
+        FC_THROW("Peer is on a fork I'm unable to switch to");
+      }
+    }
+    else
+    {
+      synopsis.insert(synopsis.begin(), read_block_id);
+    }
+  }
+  return synopsis;
+}
+
+std::vector<block_id_type> block_log_wrapper::get_block_ids(
+  const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
+  uint32_t limit) const
+{
+  remaining_item_count = 0;
+  return vector<block_id_type>();
+}
 
 const std::shared_ptr<full_block_type> block_log_wrapper::get_head_block() const
 {
@@ -25,12 +297,6 @@ block_id_type block_log_wrapper::read_block_id_by_num( uint32_t block_num ) cons
   return log == nullptr ? block_id_type() : log->read_block_id_by_num( block_num );
 }
 
-std::shared_ptr<full_block_type> block_log_wrapper::read_block_by_num( uint32_t block_num ) const
-{
-  const block_log* log = get_block_log_corresponding_to( block_num );
-  return log == nullptr ? std::shared_ptr<full_block_type>() : log->read_block_by_num( block_num );
-}
-
 const block_log* block_log_wrapper::get_block_log_corresponding_to( uint32_t block_num ) const
 {
   uint32_t request_part_number = get_part_number_for_block( block_num );
@@ -40,10 +306,10 @@ const block_log* block_log_wrapper::get_block_log_corresponding_to( uint32_t blo
   return _logs[ request_part_number-1 ];
 }
 
-block_log_reader_common::block_range_t block_log_wrapper::read_block_range_by_num(
+block_log_wrapper::full_block_range_t block_log_wrapper::read_block_range_by_num(
   uint32_t starting_block_num, uint32_t count ) const
 {
-  block_range_t result;
+  full_block_range_t result;
   const block_log* current_log = nullptr;
   while( count > 0 )
   {
@@ -104,26 +370,6 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
           1;
 }
 
-void block_log_wrapper::rotate_part_files( uint32_t new_part_number )
-{
-  FC_ASSERT( new_part_number > 1 ); // Initial part number is 1, new one must be at least 2.
-  FC_ASSERT( _block_log_split > 0 ); // Otherwise no rotation needed.
-
-  if( new_part_number -1 > (unsigned int)_block_log_split )
-  {
-    uint32_t removed_part_number = new_part_number -1 -(unsigned int)_block_log_split; // is > 0
-    block_log* removed_log = _logs[ removed_part_number -1 ];
-    _logs[ removed_part_number -1 ] = nullptr;
-    FC_ASSERT( removed_log != nullptr );
-    fc::path log_file = removed_log->get_log_file();
-    fc::path artifacts_file = removed_log->get_artifacts_file();
-    removed_log->close();
-    delete removed_log;
-    fc::remove( log_file );
-    fc::remove( artifacts_file );
-  }
-}
-
 void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
 {
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
@@ -175,7 +421,7 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
   // Check integrity of found part file names.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
   uint32_t tail_part_number = part_file_names.cbegin()->part_number;
-  // Implementation-dependent check:
+  // Verify tail part number against configuration (may throw):
   uint32_t actual_tail_needed = validate_tail_part_number( tail_part_number, head_part_number );
   // Shrink the names pool if needed.
   if( actual_tail_needed > tail_part_number )
@@ -207,43 +453,6 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
   }
 }
 
-void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args )
-{
-  _open_args = bl_open_args;
-  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/);
-}
-
-void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
-{
-  _open_args.data_dir = path.parent_path();
-  common_open_and_init( std::optional< bool >( read_only ) );
-}
-
-void block_log_wrapper::close_log()
-{
-  std::for_each( _logs.begin(), _logs.end(), [&]( block_log* log ){ 
-    if( log )
-    { 
-      log->close();
-      delete log;
-    }
-  } );
-  _logs.clear();
-}
-
-std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> block_log_wrapper::read_raw_head_block() const
-{
-  return _logs.back()->read_raw_head_block();
-}
-
-std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log_wrapper::read_raw_block_data_by_num(uint32_t block_num) const
-{
-  const block_log* log = get_block_log_corresponding_to( block_num );
-  FC_ASSERT( log != nullptr, 
-             "Unable to find block log corresponding to block number ${block_num}", (block_num));
-  return log->read_raw_block_data_by_num( block_num );
-}
-
 void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appending)
 {
   FC_ASSERT( block_num > 0 );
@@ -251,7 +460,7 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
   // Note that we use provided block_num here instead of checking top log's head, as the latter
   // may not be updated when low-level appending using append_raw.
 
-  // Is it time to switch to a new file?
+  // Is it time to switch to a new file & append there?
   if( is_last_number_of_the_file( block_num -1 ) )
   {
     uint32_t new_part_number = get_part_number_for_block( block_num );
@@ -261,56 +470,27 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );
-    if( _block_log_split > 0 )
-      rotate_part_files( new_part_number );
+    // Shall we delete old file (rotation)?
+    // Note that initial part number is 1, new one must be at least 2.
+    if( _block_log_split > 0 &&
+        new_part_number -1 > (unsigned int)_block_log_split )
+      {
+        uint32_t removed_part_number = new_part_number -1 -(unsigned int)_block_log_split; // is > 0
+        block_log* removed_log = _logs[ removed_part_number -1 ];
+        _logs[ removed_part_number -1 ] = nullptr;
+        FC_ASSERT( removed_log != nullptr );
+        fc::path log_file = removed_log->get_log_file();
+        fc::path artifacts_file = removed_log->get_artifacts_file();
+        removed_log->close();
+        delete removed_log;
+        fc::remove( log_file );
+        fc::remove( artifacts_file );
+      }
   }
-  else
+  else // Simply append to existing file.
   {
     do_appending( _logs.back() );
   }
-}
-
-void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
-{
-  internal_append( full_block->get_block_num(), [&]( block_log* log ){ 
-    log->append( full_block, is_at_live_sync );
-  });
-}
-
-void block_log_wrapper::flush_head_log()
-{
-  _logs.back()->flush();
-}
-
-uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_block_data,
-  size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
-{
-  uint64_t result = 0;
-  internal_append( block_num, [&]( block_log* log ){ 
-    result = log->append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
-  });
-  return result;
-}
-
-void block_log_wrapper::process_blocks(uint32_t starting_block_number,
-  uint32_t ending_block_number, block_processor_t processor,
-  hive::chain::blockchain_worker_thread_pool& thread_pool) const
-{
-  const block_log* current_log = nullptr;
-  const block_log* head_log = _logs.back();
-  do
-  {
-    current_log = get_block_log_corresponding_to( starting_block_number );
-    if( current_log == nullptr )
-      return;
-
-    uint32_t last_block_of_part = get_part_number_for_block( starting_block_number ) * _max_blocks_in_log_file;
-    current_log->for_each_block(  starting_block_number, std::min( last_block_of_part, ending_block_number ),
-                                  processor, block_log::for_each_purpose::replay, thread_pool );
-    
-    starting_block_number = last_block_of_part + 1;
-  }
-  while( starting_block_number < ending_block_number && current_log != head_log );
 }
 
 } } //hive::chain

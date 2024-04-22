@@ -15,7 +15,7 @@
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/block_log_manager.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
@@ -82,13 +82,13 @@ int main( int argc, char** argv, char** envp )
 
   hive::chain::database db( app );
 
-  std::shared_ptr< hive::chain::block_log_writer_common > log_writer =
-    hive::chain::block_log_manager_t::create_writer( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
-  hive::chain::sync_block_writer block_writer( *(log_writer.get()), db, app );
+  std::shared_ptr< hive::chain::block_log_wrapper > log_wrapper =
+    hive::chain::block_log_wrapper::create_wrapper( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
+  hive::chain::sync_block_writer block_writer( *(log_wrapper.get()), db, app );
   db.set_block_writer( &block_writer );
 
   hive::chain::open_args db_args;
-  hive::chain::block_log_writer_common::block_log_open_args bl_args;
+  hive::chain::block_log_wrapper::block_log_open_args bl_args;
 
   db_args.data_dir = "tempdata";
   db_args.shared_mem_dir = "tempdata/blockchain";
@@ -100,7 +100,7 @@ int main( int argc, char** argv, char** envp )
 
   db.with_write_lock([&]()
   {
-    log_writer->open_and_init( bl_args );
+    log_wrapper->open_and_init( bl_args );
   });
   block_writer.open();
 
@@ -127,7 +127,7 @@ int main( int argc, char** argv, char** envp )
 
   db.close();
   block_writer.close();
-  log_writer->close_log();
+  log_wrapper->close_log();
 
 
   return 0;
