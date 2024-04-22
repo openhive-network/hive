@@ -553,7 +553,9 @@ namespace detail {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
       if (lag.count() < 0)
       {
-        produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
+        _db.with_read_lock([&](){
+          produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
+        });
       }
       return block_production_condition::lag;
     }
