@@ -27,11 +27,11 @@ def sign_transaction(transaction: dict, private_key: str, serialization_type: st
     [
         (
             None,
-            "1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411",
+            "20cc21e806aac0ca3eca78d2dbbf1768fc3a3ae593c1808193a358c1513dfbcb4b0a8fdff87521d6d3985ad46130bc443fa7d8cc84a166ca4ac0fb346c2e59d431",
         ),
         (
             "legacy",
-            "1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411",
+            "20cc21e806aac0ca3eca78d2dbbf1768fc3a3ae593c1808193a358c1513dfbcb4b0a8fdff87521d6d3985ad46130bc443fa7d8cc84a166ca4ac0fb346c2e59d431",
         ),
         (
             "hf26",
