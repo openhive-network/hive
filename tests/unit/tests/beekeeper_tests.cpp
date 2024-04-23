@@ -385,7 +385,6 @@ BOOST_AUTO_TEST_CASE(wallet_manager_wallets_with_dots)
     test_utils::beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    const std::string _host = "";
     const uint64_t _timeout = 90;
     const uint32_t _limit = 3;
 
@@ -395,7 +394,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_wallets_with_dots)
       beekeeper_wallet_manager wm = b_mgr.create_wallet( app, _timeout, _limit, [&_checker](){ _checker = true; } );
       BOOST_REQUIRE( wm.start() );
 
-      auto _token = wm.create_session( "aaaa", _host );
+      auto _token = wm.create_session( "aaaa", std::optional<std::string>() );
 
       wm.create(_token, "...watermelon", std::optional<std::string>());
       wm.create(_token, ".lemon", std::optional<std::string>());
