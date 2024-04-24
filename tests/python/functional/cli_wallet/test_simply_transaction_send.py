@@ -18,8 +18,7 @@ def test_first():
     node = tt.InitNode()
     node.run()
 
-    b_wallet = tt.BeekeeperWallet()
-
+    b_wallet = tt.Wallet()
     node.api.database.get_dynamic_global_properties()
     node_config = node.api.database.get_config()
     account = tt.Account("initminer")
@@ -36,8 +35,8 @@ def test_first():
     sig_digest = wax_result.result.decode("ascii")
     signature = b_wallet.beekeeper_wallet.sign_digest(sig_digest=sig_digest, key=__normalize_key(account.public_key))
     signature = transaction.signatures.append(signature)  # dorzucamy sygnaturę
-    node.api.wallet_bridge.broadcast_transaction(transaction)
-    b_wallet.beekeeper_wallet.generate_key()
+    # node.api.wallet_bridge.broadcast_transaction(transaction)
+    # b_wallet.beekeeper_wallet.generate_key()
 
 
 class SimpleTransaction(Transaction):

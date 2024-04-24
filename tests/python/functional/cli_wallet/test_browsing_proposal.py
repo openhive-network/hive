@@ -77,6 +77,6 @@ def test_find_proposals(wallet: tt.Wallet, creator: tt.Account) -> None:
 
     for proposal_test_case in proposal_id_test_scheme:
         result = wallet.api.find_proposals(proposal_ids=proposal_test_case)
-        assert len(result) == len(proposal_test_case), f"result: {result}"
-        result_ids = [item["id"] for item in result]
+        assert len(result.proposals) == len(proposal_test_case), f"result: {result}"
+        result_ids = [item["id"] for item in result.proposals]
         assert proposal_test_case == result_ids, f"expected: {proposal_test_case}\ngiven:{result_ids}"

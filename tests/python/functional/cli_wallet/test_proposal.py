@@ -72,16 +72,15 @@ def test_create_proposal_fail_negative_payment(
     prepared_proposal = prepare_proposal(funded_account)
     # create asset with negative value manually - pydantic doesn't allow to do it via constructor
     negative_value = tt.Asset.Tbd(1)
-    negative_value.amount = -1000
+    negative_value.amount = "-1000"
     prepared_proposal.create_proposal_arguments["daily_pay"] = negative_value  # "-1.000 TBD"
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
+    with pytest.raises(tt.exceptions.WaxRequestError) as exception:
+        wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)  # hasz16
 
     response = exception.value.error
-    assert "daily_pay.amount >= 0" in response
-    assert "Daily pay can't be negative value" in response
+    assert "Asset amount cannot be negative" in response
 
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
@@ -104,14 +103,14 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
 
         for bn in range(block_number, block_number + 5):
             tt.logger.info(f"checking block: {bn}")
-            response = wallet.api.get_ops_in_block(block_num=bn, only_virtual=False)
+            response = wallet.api.get_ops_in_block(block_num=bn, only_virtual=False).ops
             if len(response) > 0:
                 tt.logger.info(f"got_ops_in_block response: {response}")
                 break
 
         op = response[0]["op"]
         extensions = op[1]["extensions"][0]
-        return extensions[0] == "update_proposal_end_date" and extensions[1]["end_date"] == end_date
+        return extensions["type"] == "update_proposal_end_date" and extensions["value"]["end_date"] == end_date
 
     author = funded_account.account
     current_daily_pay = tt.Asset.Tbd(10)
@@ -138,12 +137,12 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
     block = wallet.api.update_proposal(**update_args)["ref_block_num"] + 1
     assert check_is_proposal_update_exists(block, update_args["end_date"])
 
-    proposal = wallet.api.find_proposals([proposal_id])[0]
+    proposal = wallet.api.find_proposals([proposal_id], True)[0]
 
-    assert proposal["daily_pay"] == current_daily_pay.as_legacy()
+    assert proposal["daily_pay"] == current_daily_pay
     assert proposal["subject"] == update_args["subject"]
     assert proposal["permlink"] == prepared_proposal.permlink
-    assert proposal["end_date"] == update_args["end_date"]
+    assert proposal["end_date"] == tt.Time.parse(update_args["end_date"])
 
     tt.logger.info("testing updating the proposal without the end date")
     from copy import deepcopy
@@ -157,9 +156,9 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
     update_args["end_date"] = None
 
     wallet.api.update_proposal(**update_args)
-    proposal = wallet.api.find_proposals([proposal_id])[0]
+    proposal = wallet.api.find_proposals([proposal_id], True)[0]
 
-    assert proposal["daily_pay"] == current_daily_pay.as_legacy()
+    assert proposal["daily_pay"] == current_daily_pay
     assert proposal["subject"] == update_args["subject"]
     assert proposal["permlink"] == prepared_proposal.permlink
-    assert proposal["end_date"] == last_date
+    assert proposal["end_date"] == tt.Time.parse(last_date)

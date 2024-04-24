@@ -17,6 +17,11 @@ def wallet(node) -> tt.Wallet:
 
 
 @pytest.fixture()
+def old_wallet(node) -> tt.Wallet:
+    return tt.OldWallet(attach_to=node)
+
+
+@pytest.fixture()
 def creator(node) -> tt.Account:
     return tt.Account("initminer")
 
@@ -33,7 +38,7 @@ def create_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo, creato
     response = wallet.api.list_proposals(
         start=[""], limit=50, order_by="by_creator", order_type="ascending", status="all"
     )
-    for prop in response:
+    for prop in response.proposals:
         if prop["permlink"] == prepared_proposal.permlink:
             return PreparedProposalDataWithId(base=prepared_proposal, id=prop["id"])
 
