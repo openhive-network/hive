@@ -54,7 +54,7 @@ message account_update2 {
   optional authority         owner = 2;
   optional authority         active = 3;
   optional authority         posting = 4;
-  optional string            memo_key = 5 [json_name = "memo_key"];
+  optional string            memo_key = 5 [default = "STM1111111111111111111111111111111114T1Anm", json_name = "memo_key"];
   required string            json_metadata = 6 [json_name = "json_metadata"];
   required string            posting_json_metadata = 7 [json_name = "posting_json_metadata"];
   repeated future_extensions extensions = 8;
