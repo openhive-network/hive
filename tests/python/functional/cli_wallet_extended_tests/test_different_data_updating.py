@@ -23,14 +23,13 @@ def test_update(wallet: tt.Wallet) -> None:
     assert len(__account_auths) == 2
     assert __account_auths[0] == "initminer"
     assert __account_auths[1] == 2
-
     wallet.api.update_account_auth_key("alice", "posting", "STM8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f", 3)
 
     response = wallet.api.get_account("alice")
 
     _posting = response["posting"]
     _key_auths = _posting["key_auths"]
-    assert len(_key_auths) == 2
+    assert len(_key_auths) == 2  # hasz9
     __key_auths = _key_auths[1]
     assert len(__key_auths) == 2
     assert __key_auths[0] == "STM8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
@@ -65,6 +64,5 @@ def test_update(wallet: tt.Wallet) -> None:
     check_keys(wallet.api.get_account("alice"), key, key, key, key)
 
     _result = wallet.api.get_owner_history("alice")
-    assert len(_result) == 1
-    assert "account" in _result[0]
-    assert _result[0]["account"] == "alice"
+    assert len(_result.owner_auths) == 1
+    assert _result.owner_auths[0].account == "alice"

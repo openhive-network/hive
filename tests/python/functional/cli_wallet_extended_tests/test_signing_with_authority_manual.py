@@ -24,37 +24,44 @@ def test_signing_with_authority(node: tt.InitNode) -> None:
             account.public_key,
             account.public_key,
         )
-        wallet.api.transfer("initminer", account.name, "1.000 TESTS", "test transfer")
-        wallet.api.transfer_to_vesting("initminer", account.name, "1.000 TESTS")
+        wallet.api.transfer("initminer", account.name, tt.Asset.from_legacy("1.000 TESTS"), "test transfer")
+        wallet.api.transfer_to_vesting("initminer", account.name, tt.Asset.from_legacy("1.000 TESTS"))
 
     wallet.api.import_key(alice.private_key)
     wallet1.api.import_key(auth1.private_key)
     wallet2.api.import_key(auth2.private_key)
 
     # TRIGGER and VERIFY
-    wallet.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will work")
+    wallet.api.transfer(alice.name, "initminer", tt.Asset.from_legacy("0.001 TESTS"), "this will work")
 
     wallet.api.update_account_auth_account(alice.name, "active", auth1.name, 1)
     wallet1.api.update_account_auth_account(auth1.name, "active", auth2.name, 1)
     # create circular authority dependency and test wallet behaves correctly, i.e. no duplicate signatures
-    wallet1.api.update_account_auth_account(auth1.name, "active", alice.name, 1)
+    wallet1.api.update_account_auth_account(auth1.name, "active", alice.name, 1)  # hasz11
 
     tt.logger.info("sign with own account keys")
-    wallet.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will work and does not print warnings")
+    wallet.api.transfer(
+        alice.name, "initminer", tt.Asset.from_legacy("0.001 TESTS"), "this will work and does not print warnings"
+    )
 
     # wallet1 and wallet2 can sign only with account authority
     tt.logger.info("sign with account authority, manual selection")
     wallet1.api.use_authority("active", "tst-auth1")
-    wallet1.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will work")
+    wallet1.api.transfer(alice.name, "initminer", tt.Asset.from_legacy("0.001 TESTS"), "this will work")
 
     tt.logger.info("sign with authority of account authority, automatic selection")
     wallet2.api.use_automatic_authority()
-    wallet2.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will choose authorities automatically and work")
+    wallet2.api.transfer(
+        alice.name,
+        "initminer",
+        tt.Asset.from_legacy("0.001 TESTS"),
+        "this will choose authorities automatically and work",
+    )
     tt.logger.info("successfully signed and broadcasted transactions with account authority")
 
     tt.logger.info("try signing with not available keys")
     wallet2.api.use_authority("active", "tst-alice")
 
     # negative test
-    with pytest.raises(tt.exceptions.CommunicationError, match="Missing Active Authority"):
-        wallet2.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will NOT work")
+    with pytest.raises(tt.exceptions.CommunicationError, match="Missing Active Authority"):  # hasz13
+        wallet2.api.transfer(alice.name, "initminer", tt.Asset.from_legacy("0.001 TESTS"), "this will NOT work")

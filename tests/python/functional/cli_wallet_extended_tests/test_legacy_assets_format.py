@@ -7,16 +7,16 @@ from __future__ import annotations
 import test_tools as tt
 
 
-def test_format_in_list_my_accounts(wallet: tt.Wallet) -> None:
-    response = wallet.api.create_account("initminer", "alice", "{}")
+def test_format_in_list_my_accounts(old_wallet: tt.OldWallet) -> None:
+    response = old_wallet.api.create_account("initminer", "alice", "{}")
 
-    response = wallet.api.list_my_accounts()
+    response = old_wallet.api.list_my_accounts()
     assert tt.Asset.from_legacy(response[0]["balance"]) == tt.Asset.Test(0)
     assert tt.Asset.from_legacy(response[0]["savings_balance"]) == tt.Asset.Test(0)
 
 
-def test_format_in_get_account(wallet: tt.Wallet) -> None:
-    wallet.api.create_account("initminer", "alice", "{}")
+def test_format_in_get_account(old_wallet: tt.OldWallet) -> None:
+    old_wallet.api.create_account("initminer", "alice", "{}")
 
-    response = wallet.api.get_account("alice")
+    response = old_wallet.api.get_account("alice")
     assert tt.Asset.from_legacy(response["hbd_balance"]) == tt.Asset.Tbd(0)

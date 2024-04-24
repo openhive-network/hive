@@ -17,12 +17,10 @@ def test_order(wallet: tt.Wallet) -> None:
     response = wallet.api.create_order("alice", 666, tt.Asset.Test(7), tt.Asset.Tbd(1), False, 3600)
 
     _ops = response["operations"]
-    assert tt.Asset.from_legacy(_ops[0][1]["amount_to_sell"]) == tt.Asset.Test(7)
-    assert tt.Asset.from_legacy(_ops[0][1]["min_to_receive"]) == tt.Asset.Tbd(1)
+    assert _ops[0][1]["amount_to_sell"] == tt.Asset.Test(7)
+    assert _ops[0][1]["min_to_receive"] == tt.Asset.Tbd(1)
 
-    response = wallet.api.create_order("alice", 667, tt.Asset.Test(8), tt.Asset.Tbd(2), False, 3600)
-
-    assert "operations" in response
+    wallet.api.create_order("alice", 667, tt.Asset.Test(8), tt.Asset.Tbd(2), False, 3600)
 
     response = wallet.api.get_order_book(5)
 
