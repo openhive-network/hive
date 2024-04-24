@@ -19,8 +19,8 @@ def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.Wallet
 
     response = wallet.api.create_account_with_keys("initminer", "alice1", "{}", key, key, key, key)
 
-    _operations = response["operations"]
-    check_keys(_operations[0][1], key, key, key, key)
+    _operations = response.operations
+    check_keys(_operations[0].value, key, key, key, key)
 
     response = wallet.api.get_account("alice1")
 

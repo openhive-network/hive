@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
 import test_tools as tt
+from test_tools.__private.exceptions import AccountNotExistError, WeightOutOfRangeError
 
 from .utilities import check_keys, create_accounts
 
@@ -21,11 +24,8 @@ key2 = "STM7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
 
 
 def test_different_false_cases(wallet: tt.Wallet) -> None:
-    try:
+    with pytest.raises(AccountNotExistError):
         wallet.api.get_account("not-exists")
-    except Exception as e:
-        message = str(e)
-        assert message.find("Account does not exist") != -1
 
     try:
         wallet.api.create_account("initminer")
@@ -76,11 +76,8 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
         message = str(e)
         assert message.find("Account bob does not have sufficient funds for balance adjustment") != -1
 
-    try:
+    with pytest.raises(WeightOutOfRangeError):
         wallet.api.vote("bob", "bob", "hello-world", 101)
-    except Exception as e:
-        message = str(e)
-        assert message.find("Weight must be between -100 and 100 and not 0") != -1
 
     try:
         wallet.api.vote("alice", "bob", "hello-world", 99)
@@ -150,7 +147,7 @@ def test_complex(wallet: tt.Wallet) -> None:
 
     assert len(trx_response["operations"]) == 10
 
-    with wallet.in_single_transaction() as transaction:
+    with wallet.in_single_transaction() as transaction:  # hasz7
         wallet.api.update_account("alice", "{}", key2, key, key, key)
         wallet.api.update_account("bob", "{}", key, key2, key, key)
         wallet.api.update_account("carol", "{}", key, key, key2, key)

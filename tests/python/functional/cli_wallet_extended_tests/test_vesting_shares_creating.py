@@ -23,26 +23,26 @@ def test_delegate(node: tt.InitNode, wallet: tt.Wallet):
     wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(1.123456))
 
     _result = wallet.api.get_account("alice")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(100)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(1.123456)
+    assert _result["balance"] == tt.Asset.Test(125)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(100)
 
     _result = wallet.api.get_account("bob")
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(0)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(1.123456)
+    assert _result["balance"] == tt.Asset.Test(50)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(0)
 
     wallet.api.delegate_vesting_shares_and_transfer("alice", "bob", tt.Asset.Vest(1), tt.Asset.Tbd(6.666), "watermelon")
 
     _result = wallet.api.get_account("alice")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(93.334)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(1.123456)
+    assert _result["balance"] == tt.Asset.Test(125)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(93.334)
 
     _result = wallet.api.get_account("bob")
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(6.666)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(1)
+    assert _result["balance"] == tt.Asset.Test(50)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(6.666)
 
     wallet.api.delegate_vesting_shares_nonblocking("bob", "alice", tt.Asset.Vest(0.1))
 
@@ -50,16 +50,16 @@ def test_delegate(node: tt.InitNode, wallet: tt.Wallet):
     node.wait_number_of_blocks(1)
 
     _result = wallet.api.get_account("alice")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(93.334)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(1.123456)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(0.1)
+    assert _result["balance"] == tt.Asset.Test(125)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(93.334)
 
     _result = wallet.api.get_account("bob")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(6.666)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(0.1)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(1)
+    assert _result["balance"] == tt.Asset.Test(50)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(6.666)
 
     wallet.api.delegate_vesting_shares_and_transfer_nonblocking(
         "bob", "alice", tt.Asset.Vest(0.1), tt.Asset.Tbd(6.555), "pear"
@@ -69,16 +69,16 @@ def test_delegate(node: tt.InitNode, wallet: tt.Wallet):
     node.wait_number_of_blocks(1)
 
     _result = wallet.api.get_account("alice")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(99.889)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(1.123456)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(0.1)
+    assert _result["balance"] == tt.Asset.Test(125)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(99.889)
 
     _result = wallet.api.get_account("bob")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
-    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(0.111)
+    assert _result["delegated_vesting_shares"] == tt.Asset.Vest(0.1)
+    assert _result["received_vesting_shares"] == tt.Asset.Vest(1)
+    assert _result["balance"] == tt.Asset.Test(50)
+    assert _result["hbd_balance"] == tt.Asset.Tbd(0.111)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.claim_reward_balance("initminer", tt.Asset.Test(0), tt.Asset.Tbd(0), tt.Asset.Vest(0.000001))

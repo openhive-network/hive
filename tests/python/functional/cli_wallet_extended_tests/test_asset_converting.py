@@ -5,7 +5,8 @@ import re
 import test_tools as tt
 
 
-def test_conversion(wallet: tt.Wallet) -> None:
+def test_conversion(node: tt.InitNode) -> None:
+    wallet = tt.OldWallet(attach_to=node)
     response = wallet.api.create_account("initminer", "alice", "{}")
 
     response = wallet.api.transfer("initminer", "alice", tt.Asset.Test(200), "avocado")
