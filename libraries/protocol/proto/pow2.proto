@@ -38,6 +38,6 @@ message pow2_work {
 
 message pow2 {
   required pow2_work               work = 1;
-  optional string                  new_owner_key = 2 [json_name = "new_owner_key"];
+  optional string                  new_owner_key = 2 [default = "STM1111111111111111111111111111111114T1Anm", json_name = "new_owner_key"];
   required legacy_chain_properties props = 3;
 }
