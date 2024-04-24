@@ -6,5 +6,5 @@ if TYPE_CHECKING:
     import test_tools as tt
 
 
-def test_info_function(wallet: tt.Wallet) -> None:
-    assert len(wallet.api.info()) == 53, "Info have incorrect data set"
+def test_info_function(old_wallet: tt.OldWallet) -> None:
+    assert len(old_wallet.api.info()) == 53, "Info have incorrect data set"
