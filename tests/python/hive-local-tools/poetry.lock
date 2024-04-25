@@ -172,6 +172,22 @@ tests = ["attrs[tests-no-zope]", "zope-interface"]
 tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "beekeepy"
+version = "0.0.0"
+description = ""
+optional = false
+python-versions = "^3.10"
+files = []
+develop = true
+
+[package.dependencies]
+helpy = "0.0.1.dev207+0bfbc31"
+
+[package.source]
+type = "directory"
+url = "../../../programs/beekeeper/beekeeper_python"
+
+[[package]]
 name = "black"
 version = "23.9.1"
 description = "The uncompromising code formatter."
@@ -459,12 +475,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev208+9592696"
+version = "0.0.1.dev207+0bfbc31"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev208+9592696-py3-none-any.whl", hash = "sha256:e84e50c76a147c781b54ea27f86cd1b6d0f20aa77c6a31e2f5448f6ea6dbf96c"},
+    {file = "helpy-0.0.1.dev207+0bfbc31-py3-none-any.whl", hash = "sha256:eb12cd507dd187b901ae955ee917880d5f4bf28fb4123c6636b7dde5384244fc"},
 ]
 
 [package.dependencies]
@@ -475,7 +491,7 @@ pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 schemas = "0.0.1.dev305+31029b3"
-wax = "0.3.10.dev25+8044195"
+wax = "0.0.3a2.dev255+edfd911"
 
 [package.source]
 type = "legacy"
@@ -1579,7 +1595,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-helpy = "0.0.1.dev208+9592696"
+beekeepy = {path = "/workspace/hive/hive/programs/beekeeper/beekeeper_python", develop = true}
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
@@ -1703,12 +1719,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev25+8044195"
+version = "0.0.3a2.dev255+edfd911"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.3.10.dev25+8044195-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:a5ff06bd8f982aaafcd9adb358834138293e220cd3b9e05289a2cf5ea3f829fb"},
+    {file = "wax-0.0.3a2.dev255+edfd911-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:b9bddc10a690e8523cfc4d87ec78f74872f2b4ce231a736356742c65ad25568e"},
 ]
 
 [package.dependencies]
@@ -1834,4 +1850,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "fd8b89f1b40a04b88bf00d9326fd5fdffe0ac215989be2575661055fa3f53334"
+content-hash = "620c8fc9a3623a7c80eb80f1da7e15b94b707b4e8b89fc86cdd43b79004c7be3"
