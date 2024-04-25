@@ -1819,7 +1819,7 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
 
   /// reuse trx.verify_authority by creating a dummy transfer
   verify_authority_args vap;
-  transfer_operation op;
+  hive::protocol::transfer_operation op;
   op.from = account->get_name();
   vap.trx.operations.emplace_back( op );
 

@@ -3,16 +3,16 @@
 ## compress_block_log: compresses/decompresses block_log files
 ### Example usage for compress_block_log
 Create compressed version of blocklog in blockchain dir in blockchain2 dir:
-`compress_block_log ./datadir/blockchain ./datadir/blockchain2`
+`compress_block_log ./datadir/blockchain/block_log ./datadir/blockchain2/block_log`
 
 Same as above, with explicitly specified arguments (non-positional):
-`compress_block_log -i ./datadir/blockchain -o ./datadir/blockchain2`
+`compress_block_log -i ./datadir/blockchain/block_log -o ./datadir/blockchain2/block_log`
 
 Created compressed blocklog with 5000 blocks  using 8 threads:
-`compress_block_log -j8 -n5000 ./datadir/blockchain ./datadir/blockchain2`
+`compress_block_log -j8 -n5000 ./datadir/blockchain/block_log ./datadir/blockchain2/block_log`
 
 Decompress blocklog in blockchain dir to blockchain2 dir:
-`compress_block_log --decompress ./datadir/blockchain ./datadir/blockchain2`
+`compress_block_log --decompress ./datadir/blockchain/block_log ./datadir/blockchain2/block_log`
 
 
 ### Allowed options for compress_block_log
@@ -25,9 +25,9 @@ Decompress blocklog in blockchain dir to blockchain2 dir:
                                         decompression times at the end
   -j [ --jobs ] arg (=1)                The number of threads to use for
                                         compression/decompression
-  -i [ --input-block-log ] arg          The directory containing the input
+  -i [ --input-block-log ] arg          The file containing the input
                                         block log (required)
-  -o [ --output-block-log ] arg         The directory to contain the compressed
+  -o [ --output-block-log ] arg         The file to contain the compressed
                                         block log (required)
   --dump-raw-blocks arg                 A directory in which to dump raw,
                                         uncompressed blocks (one block per

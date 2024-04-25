@@ -4,6 +4,8 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_compression.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
@@ -128,13 +130,19 @@ void compress_blocks(uint32_t& current_block_num)
       compressed_data zstd_compressed_data;
       fc::time_point before = fc::time_point::now();
       //idump((uncompressed->block_number)(uncompressed->uncompressed_block_size));
-      std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = hive::chain::block_log::compress_block_zstd(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, dictionary_number_to_use, zstd_level, zstd_compression_context);
+      std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = 
+        hive::chain::block_log_compression::compress_block_zstd(
+          uncompressed->uncompressed_block_data.get(),
+          uncompressed->uncompressed_block_size,
+          dictionary_number_to_use, zstd_level,
+          zstd_compression_context);
       //idump((fc::to_hex(zstd_compressed_data.data.get(), zstd_compressed_data.size))(uncompressed->uncompressed_block_size)(zstd_compressed_data.size));
       //idump((zstd_compressed_data.size));
 
       fc::time_point after_compress = fc::time_point::now();
       if (benchmark_decompression)
-        hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
+        hive::chain::block_log_compression::decompress_block_zstd(zstd_compressed_data.data.get(),
+          zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
       fc::time_point after_decompress = fc::time_point::now();
       zstd_compressed_data.method = hive::chain::block_log::block_flags::zstd;
       zstd_compressed_data.dictionary_number = dictionary_number_to_use;
@@ -197,12 +205,11 @@ void compress_blocks(uint32_t& current_block_num)
   }
 }
 
-void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+void drain_completed_queue(const fc::path &output_path, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
-  hive::chain::block_log log( app );
-  log.open(block_log, thread_pool);
+  auto log_writer = hive::chain::block_log_wrapper::create_opened_wrapper( output_path, app, thread_pool );
   ilog("Opened output block log");
-  if (log.head())
+  if (log_writer->head_block())
     FC_THROW("output block log is not empty");
 
   while (true)
@@ -252,7 +259,7 @@ void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_nu
     dlog("writer thread writing compressed block ${block_number} to the compressed block log", ("block_number", compressed->block_number));
 
     // write it out
-    log.append_raw(compressed->block_number, compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes, false);
+    log_writer->append_raw(compressed->block_number, compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes, false);
 
     if (compressed->block_number % 100000 == 0)
     {
@@ -267,25 +274,22 @@ void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_nu
     delete compressed;
   }
   if (!error_detected.load())
-    ilog("Writer thread done writing compressed blocks to ${block_log}, compressed ${input_size} to ${output_size}",
-        (block_log)("input_size", total_uncompressed_size + size_of_start_positions)("output_size", total_compressed_size + size_of_start_positions));
+    ilog("Writer thread done writing compressed blocks to ${output_path}, compressed ${input_size} to ${output_size}",
+        (output_path)("input_size", total_uncompressed_size + size_of_start_positions)("output_size", total_compressed_size + size_of_start_positions));
 
-  log.close();
+  log_writer->close_log();
 }
 
-void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   ilog("Starting fill_pending_queue");
-  hive::chain::block_log log( app );
-
-  log.open(block_log, thread_pool, read_only);
-
+  auto log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input_path, app, thread_pool, not read_only );
   ilog("Opened source block log. Readonly: ${read_only}", (read_only));
 
-  if (!log.head())
+  if (!log_reader->head_block())
     FC_THROW("input block log is empty");
 
-  uint32_t head_block_num = log.head()->get_block_num();
+  uint32_t head_block_num = log_reader->head_block_num();
   idump((head_block_num));
   if (blocks_to_compress && *blocks_to_compress > head_block_num)
     FC_THROW("input block log does not contain ${blocks_to_compress} blocks (it's head block number is ${head_block_num})", (blocks_to_compress)(head_block_num));
@@ -313,13 +317,15 @@ void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_
 
     std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data;
     if (current_block_number == head_block_num)
-      raw_compressed_block_data = log.read_raw_head_block();
+      raw_compressed_block_data = log_reader->read_raw_head_block();
     else
     {
-      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = log.read_raw_block_data_by_num(current_block_number);
+      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = 
+        log_reader->read_raw_block_data_by_num(current_block_number);
       raw_compressed_block_data = std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
     }
-    std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = hive::chain::block_log::decompress_raw_block(std::move(raw_compressed_block_data));
+    std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = 
+      hive::chain::block_log_compression::decompress_raw_block(std::move(raw_compressed_block_data));
 
     uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
     uncompressed_block->uncompressed_block_data = std::get<0>(std::move(raw_block_data));
@@ -356,7 +362,7 @@ void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_
     }
 
     queue_condition_variable.notify_all();
-    log.close();
+    log_reader->close_log();
   }
 }
 
@@ -401,8 +407,8 @@ void do_job(const fc::path& input_block_log_path, const fc::path& output_block_l
 {
   FC_ASSERT(compress_jobs);
 
-  auto fpq = [&input_block_log_path, input_read_only, &app, &thread_pool](uint32_t& block_number) {fill_pending_queue((input_block_log_path / "block_log"), input_read_only, block_number, app, thread_pool);};
-  auto dcq = [&output_block_log_path, &app, &thread_pool](uint32_t& block_number) { drain_completed_queue((output_block_log_path / "block_log"), block_number, app, thread_pool); };
+  auto fpq = [&input_block_log_path, input_read_only, &app, &thread_pool](uint32_t& block_number) {fill_pending_queue((input_block_log_path), input_read_only, block_number, app, thread_pool);};
+  auto dcq = [&output_block_log_path, &app, &thread_pool](uint32_t& block_number) { drain_completed_queue((output_block_log_path), block_number, app, thread_pool); };
   auto cb = [](uint32_t& block_number) {compress_blocks(block_number);};
 
   std::vector<std::thread> workers;
@@ -437,9 +443,9 @@ int main(int argc, char** argv)
     options.add_options()("zstd-level", boost::program_options::value<int>()->default_value(15), zstd_levels_description.c_str());
     options.add_options()("benchmark-decompression", "decompress each block and report the decompression times at the end");
     options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(1), "The number of threads to use for compression");
-    options.add_options()("input-block-log,i", boost::program_options::value<std::string>(), "The directory containing the input block log. Has rights to read and write.");
-    options.add_options()("input-read-only-block-log", boost::program_options::value<std::string>(), "The directory containing the input block log. Read only mode.");
-    options.add_options()("output-block-log,o", boost::program_options::value<std::string>()->required(), "The directory to contain the compressed block log");
+    options.add_options()("input-block-log,i", boost::program_options::value<std::string>(), "The file (or 1st file when split) containing the input block log. Has rights to read and write.");
+    options.add_options()("input-read-only-block-log", boost::program_options::value<std::string>(), "The file (or 1st file when split) containing the input block log. Read only mode.");
+    options.add_options()("output-block-log,o", boost::program_options::value<std::string>()->required(), "The file (or 1st file when split) to contain the compressed block log");
     options.add_options()("dump-raw-blocks", boost::program_options::value<std::string>(), "A directory in which to dump raw, uncompressed blocks (one block per file)");
     options.add_options()("starting-block-number,s", boost::program_options::value<uint32_t>()->default_value(1), "Start at the given block number (for benchmarking only, values > 1 will generate an unusable block log)");
     options.add_options()("block-count,n", boost::program_options::value<uint32_t>(), "Stop after this many blocks");
@@ -475,6 +481,15 @@ int main(int argc, char** argv)
       return 1;
     }
 
+    fc::path output_block_log_path = options_map["output-block-log"].as<std::string>();
+    if (fc::exists(output_block_log_path) &&
+        (not fc::is_regular_file(output_block_log_path) ||
+         not hive::chain::block_log_file_name_info::is_block_log_file_name(output_block_log_path)))
+    {
+      std::cerr << "Error: parameter output-block-log is not a block log file name (single or split)\n";
+      return 1;
+    }
+
     if (!options_map.count("input-block-log") && !options_map.count("input-read-only-block-log"))
     {
       std::cerr << "Error: missing parameter for input block_log (input-block-log or input-read-only-block-log)\n";
@@ -497,9 +512,14 @@ int main(int argc, char** argv)
       input_block_log_path = options_map["input-read-only-block-log"].as<std::string>();
     }
 
-    fc::path output_block_log_path;
-    if (options_map.count("output-block-log"))
-      output_block_log_path = options_map["output-block-log"].as<std::string>();
+    if (not fc::exists(input_block_log_path) ||
+        not fc::is_regular_file(input_block_log_path) ||
+        not hive::chain::block_log_file_name_info::is_block_log_file_name(input_block_log_path))
+    {
+      std::cerr << "Error: parameter input-[read-only-]block-log is not a block log file name (single or split)\n";
+      return 1;
+    }
+
     if (options_map.count("dump-raw-blocks"))
       raw_block_output_path = options_map["dump-raw-blocks"].as<std::string>();
 

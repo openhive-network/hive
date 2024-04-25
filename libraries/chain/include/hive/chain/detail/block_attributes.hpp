@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fc/reflect/reflect.hpp>
+
+#include <cstdint>
 #include <optional>
 
 namespace hive { namespace chain { namespace detail {

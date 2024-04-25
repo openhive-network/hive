@@ -6,7 +6,6 @@
 
 namespace hive { namespace chain {
 
-  class block_flow_control;
   class witness_object;
 
   using hive::protocol::account_name_type;
@@ -17,7 +16,7 @@ namespace hive { namespace chain {
     virtual ~block_write_i() = default;
 
   public:
-    virtual block_read_i& get_block_reader() = 0;
+    virtual const block_read_i& get_block_reader() = 0;
 
     /**
      * Check that fork head (head block of the longest fork) matches state head.

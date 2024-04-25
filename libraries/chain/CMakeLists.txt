@@ -45,11 +45,12 @@ add_library( hive_chain
              fork_database.cpp
 
              shared_authority.cpp
+             block_compression_dictionaries.cpp
              block_flow_control.cpp
              block_log.cpp
              block_log_artifacts.cpp
-             block_compression_dictionaries.cpp
-             block_log_reader.cpp
+             block_log_compression.cpp
+             block_log_wrapper.cpp
              fork_db_block_reader.cpp
              irreversible_block_writer.cpp
              sync_block_writer.cpp

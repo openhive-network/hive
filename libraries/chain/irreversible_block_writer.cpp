@@ -1,17 +1,16 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 
-//#include <hive/chain/block_log.hpp>
-//#include <hive/chain/full_block.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 
 namespace hive { namespace chain {
 
-irreversible_block_writer::irreversible_block_writer( const block_log& block_log )
-  : _reader( block_log )
+irreversible_block_writer::irreversible_block_writer( const block_log_wrapper& log_wrapper )
+  : _block_log_wrapper( log_wrapper )
 {}
 
-block_read_i& irreversible_block_writer::get_block_reader()
+const block_read_i& irreversible_block_writer::get_block_reader()
 {
-  return _reader;
+  return _block_log_wrapper;
 }
 
 void irreversible_block_writer::store_block( uint32_t current_irreversible_block_num,

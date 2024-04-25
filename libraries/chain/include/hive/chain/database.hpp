@@ -3,8 +3,6 @@
   */
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
-#include <hive/chain/block_log.hpp>
-#include <hive/chain/fork_database.hpp>
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
@@ -47,6 +45,7 @@ namespace chain {
   using hive::protocol::authority;
   using hive::protocol::asset;
   using hive::protocol::asset_symbol_type;
+  using hive::protocol::custom_id_type;
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
 
@@ -93,9 +92,6 @@ namespace chain {
     fc::variant database_cfg;
     bool replay_in_memory = false;
     std::vector< std::string > replay_memory_indices{};
-    bool enable_block_log_compression = true;
-    bool enable_block_log_auto_fixing = true;
-    int block_log_compression_level = 15;
     bool load_snapshot = false;
 
     // The following fields are only used on reindexing

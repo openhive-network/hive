@@ -128,7 +128,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
   if( dgpo.maximum_block_size != median_maximum_block_size )
   {
-    db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+    db.push_virtual_operation( hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
       "Changing maximum block size from ${old} to ${new}", ( "old", dgpo.maximum_block_size )( "new", median_maximum_block_size ) ).get_message() ) );
   }
   db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
