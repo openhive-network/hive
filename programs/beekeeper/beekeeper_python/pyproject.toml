@@ -1,0 +1,132 @@
+[build-system]
+build-backend = "poetry_dynamic_versioning.backend"
+requires = [
+  "poetry-core>=1.1.0",
+  "setuptools>=67.8.0",
+  "poetry-dynamic-versioning>=0.22.0",
+]
+
+[tool.poetry]
+authors = []
+description = ""
+name = "beekeepy"
+repository = "https://gitlab.syncad.com/hive/hive"
+source = [
+  {name = "PyPI", priority = "primary"},
+  {name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental"},
+  {name = "gitlab-wax", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental"},
+  {name = "gitlab-helpy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental"},
+  { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple", priority = "supplemental" },
+]
+version = "0.0.0"
+
+[tool.poetry.dependencies]
+helpy = "0.0.1.dev207+0bfbc31"
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+black = "23.3.0"
+mypy = "1.4.1"
+pre-commit = "2.21.0"
+pytest = "7.2.2"
+pytest-asyncio = "0.21.0"
+pytest-xdist = "3.2.0"
+ruff = "0.0.277"
+types-python-dateutil = "2.8.19.14"
+types-pyyaml = "6.0.12.11"
+types-requests = "2.31.0.2"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+format-jinja = """
+    {%- set dirty_postfix = '.dirty' if dirty else '' -%}
+    {%- if distance == 0 and not dirty -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}
+    {%- endif -%}
+"""
+
+[tool.poetry-dynamic-versioning.substitution]
+files = [
+  "beekeepy/__init__.py",
+]
+
+[tool.black]
+line-length = 120
+preview = true
+
+[tool.mypy]
+disallow_untyped_decorators = false
+plugins = "pydantic.mypy"
+strict = true
+
+[tool.ruff]
+ignore = [
+  "E501", # line too long, handled by black
+  "D203", # 1 blank line required before class docstring; because we re using D211
+  "D212", # Multi-line docstring summary should start at the first line; because we re using D213
+  "D401", # first line should be in imperative mood
+  "PT004", # fixture does not return anything, add leading underscore;  issue: pytest seems to ignore (not launch) auto-use fixtures with leading underscode
+  "TRY003", # too restrictive
+  "PLR0913", # too restrictive, too many arguments to function call
+  "D104", # missing docstring in public package
+  "D100", # missing docstring in public module
+]
+line-length = 120
+select = [
+  # https://beta.ruff.rs/docs/rules/
+  "F",
+  "E",
+  "W",
+  "C",
+  "I",
+  "N",
+  "D",
+  "UP",
+  "YTT",
+  "ASYNC",
+  "BLE",
+  "B",
+  "A",
+  "C4",
+  "INP",
+  "PIE",
+  "T20",
+  "PYI",
+  "PT",
+  "RSE",
+  "RET",
+  "SIM",
+  "TID",
+  "TCH",
+  "ARG",
+  "PTH",
+  "ERA",
+  "PL",
+  "TRY",
+  "FLY",
+  "RUF",
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**" = [
+  # no need for docstrings in tests
+  "D100", # missing docstring in public module
+  "D101", # missing docstring in public class
+  "D102", # missing docstring in public method
+  "D103", # missing docstring in public function
+  "D104", # missing docstring in public package
+  "D105", # missing docstring in magic method
+  "D106", # missing docstring in public nested class
+  "D107", # missing docstring in __init__
+]
+
+[tool.ruff.isort]
+known-first-party = ["helpy", "schemas", "wax"]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.pydocstyle]
+convention = "pep257"
