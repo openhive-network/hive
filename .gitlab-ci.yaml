@@ -20,6 +20,7 @@ variables:
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
+  BEEKEEPY_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_python"
   DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
@@ -40,7 +41,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b815ab817eed8e640e206a97f704aa7d56d6ef50
+    ref: 132e915dbe0a03df0f14e4b741d50476509ab045
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
@@ -498,6 +499,44 @@ formatting_with_black_check:
     - job: testnet_node_build
       artifacts: true
 
+build_beekeepy_wheel:
+  stage: build
+  extends: .build_wheel_template
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  variables:
+    PYPROJECT_DIR: "$BEEKEEPY_DIR"
+  before_script:
+    - cp $CI_PROJECT_DIR/hived-binaries/beekeeper $BEEKEEPY_DIR/beekeepy/beekeeper
+  tags:
+    - public-runner-docker
+
+deploy_beekeepy_wheel_to_gitlab:
+  stage: publish
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "$BEEKEEPY_DIR"
+  needs:
+    - job: pre_commit_checks
+    - job: beekeepy_tests
+    - job: build_beekeepy_wheel
+      artifacts: true
+  when: on_success
+  tags:
+    - public-runner-docker
+
+.beekeepy_based:
+  extends: .test_tools_based
+  needs:
+    - job: build_beekeepy_wheel
+      artifacts: true
+  before_script:
+    - !reference [.python_based, before_script]
+    # beekeepy is installed from whl so beekeeper is included in package
+    - cd "$BEEKEEPY_DIR" && poetry install --no-root
+    - pip install $(find "$CI_PROJECT_DIR/dist" -name *.whl)
+
 .beem_tests_base:
   stage: test
   extends: .test_tools_based
@@ -510,6 +549,21 @@ formatting_with_black_check:
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
+    - !reference [.run-pytest, script]
+  tags:
+    - public-runner-docker
+
+beekeepy_tests:
+  extends: .beekeepy_based
+  needs:
+    - !reference [.beekeepy_based, needs]
+    - job: testnet_node_build
+      artifacts: true
+  variables:
+    JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/beekeepy/report.xml"
+    PYTEST_TIMEOUT_MINUTES: 5
+  script:
+    - cd "$CI_PROJECT_DIR/tests/python/functional/beekeepy"
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
