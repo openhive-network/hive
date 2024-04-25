@@ -6,6 +6,7 @@ exclude_pattern_files_regex: &exclude_pattern_files_regex
   ^tests/python/api_tests/pattern_tests/tavern|\
   ^tests/python/api_tests/python_patterns_tests/cli_wallet_tests/response_pattern_tests/response_patterns|\
   ^tests/python/api_tests/python_patterns_tests/cli_wallet_tests/output_formatter_tests/response_patterns|\
+  ^tests/python/functional/beekeepy/handle/commandline/application_command_line_options/patterns/help_pattern.txt|\
   transaction_pattern_tests/dumped_files_legacy_wallet|\
   transaction_pattern_tests/dumped_files_hf26|\
   timestamp\
