@@ -21,7 +21,7 @@ source = [
 version = "0.0.0"
 
 [tool.poetry.dependencies]
-helpy = "0.0.1.dev178+7689aa9"
+helpy = "0.0.1.dev203+464843c"
 python = "^3.10"
 
 [tool.poetry.group.dev.dependencies]
