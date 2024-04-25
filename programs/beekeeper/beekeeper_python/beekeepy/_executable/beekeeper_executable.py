@@ -8,6 +8,7 @@ from beekeepy._executable.beekeeper_config import BeekeeperConfig
 from beekeepy._executable.beekeeper_executable_discovery import get_beekeeper_binary_path
 from beekeepy._executable.executable import Executable
 from beekeepy.settings import Settings
+
 from helpy import KeyPair
 
 if TYPE_CHECKING:
