@@ -24,7 +24,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/sync_block_writer.hpp>
@@ -102,21 +102,23 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 BOOST_AUTO_TEST_SUITE(block_tests)
 
 void open_test_database( database& db, sync_block_writer& sbw,
-  const fc::path& dir, appbase::application& app, bool log_hardforks = false )
+  block_log_wrapper& log_wrapper, const fc::path& dir, appbase::application& app,
+  bool log_hardforks = false )
 {
-  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
   hive::chain::open_args args;
+  hive::chain::block_log_wrapper::block_log_open_args bl_args;
   args.data_dir = dir;
   args.shared_mem_dir = dir;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
-  sbw.open( args.data_dir / "block_log",
-            args.enable_block_log_compression,
-            args.block_log_compression_level,
-            args.enable_block_log_auto_fixing,
-            thread_pool );
+  bl_args.data_dir = dir;
+  db.with_write_lock([&]()
+  {
+    log_wrapper.open_and_init( bl_args );
+  });
+  sbw.open();
   db.open( args );
 }
 
@@ -1355,18 +1357,23 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
   FC_LOG_AND_RETHROW()
 }
 
-#define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
+#define SET_UP_DATABASE( NAME, THREAD_POOL, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
   database NAME( APP ); \
-  sync_block_writer sbw_ ## NAME ( NAME, APP ); \
+  { \
+  std::shared_ptr< hive::chain::block_log_wrapper > log_wrapper_ ## NAME = \
+    hive::chain::block_log_wrapper::create_wrapper( LEGACY_SINGLE_FILE_BLOCK_LOG, APP, THREAD_POOL ); \
+  sync_block_writer sbw_ ## NAME ( *(log_wrapper_ ## NAME . get()), NAME, APP ); \
   NAME.set_block_writer( &sbw_ ## NAME ); \
-  open_test_database( NAME, sbw_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS );
+  open_test_database( NAME, sbw_ ## NAME, *(log_wrapper_ ## NAME .get()), DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
+  }
   
 BOOST_AUTO_TEST_CASE( safe_closing_database )
 {
   try {
     appbase::application app;
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, app, data_dir.path(), true )
+    SET_UP_DATABASE( db, thread_pool, app, data_dir.path(), true )
   }
   FC_LOG_AND_RETHROW()
 }

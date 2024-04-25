@@ -251,8 +251,8 @@ mirrornet_replay_test:
       -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
     - time ./compress_block_log
-      -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
-      -o "$MAINNET_TRUNCATED_DIR"
+      -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/block_log"
+      -o "$MAINNET_TRUNCATED_DIR/block_log"
       --decompress
       -n $NUMBER_OF_BLOCKS
       --jobs $NUMBER_OF_PROCESSES

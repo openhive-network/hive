@@ -1,7 +1,7 @@
 #include <hive/chain/sync_block_writer.hpp>
 
 #include <hive/chain/block_flow_control.hpp>
-#include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -10,11 +10,12 @@
 
 namespace hive { namespace chain {
 
-sync_block_writer::sync_block_writer( database& db, application& app )
-  : _block_log( app ), _reader( _fork_db, _block_log ), _db(db), _app(app)
+sync_block_writer::sync_block_writer( block_log_wrapper& blw,
+                                      database& db, application& app )
+  : _block_log_wrapper( blw ), _reader( _fork_db, _block_log_wrapper ), _db( db ), _app( app )
 {}
 
-block_read_i& sync_block_writer::get_block_reader()
+const block_read_i& sync_block_writer::get_block_reader()
 {
   return _reader;
 }
@@ -29,10 +30,9 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
               ("fork_head", fork_head->get_block_num())("chain_head", state_head_block_number));
 
   // output to block log based on new last irreverisible block num
-  std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+  std::shared_ptr<full_block_type> tmp_head = _block_log_wrapper.head_block();
   uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
   vector<item_ptr> blocks_to_write;
-
   if( blocklog_head_num < current_irreversible_block_num )
   {
     // Check for all blocks that we want to write out to the block log but don't write any
@@ -46,9 +46,9 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
     }
 
     for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-      _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
+      _block_log_wrapper.append( block_itr->get()->full_block, _is_at_live_sync );
 
-    _block_log.flush();
+    _block_log_wrapper.flush_head_log();
   }
 
   // This deletes blocks from the fork db
@@ -373,20 +373,10 @@ void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& 
   _fork_db.start_block( end_block );
 }
 
-void sync_block_writer::open( const fc::path& file, bool enable_compression,
-  int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool )
+void sync_block_writer::open()
 {
-  _db.with_write_lock([&]()
-  {
-    _block_log.open_and_init( file,
-                              enable_compression,
-                              compression_level,
-                              enable_block_log_auto_fixing,
-                              thread_pool );
-  });
-  
   // Get fork db in sync with block log.
-  auto head = _block_log.head();
+  auto head = _block_log_wrapper.head_block();
   if( head )
     _fork_db.start_block( head );
 }
@@ -394,7 +384,6 @@ void sync_block_writer::open( const fc::path& file, bool enable_compression,
 void sync_block_writer::close()
 {
   _fork_db.reset();
-  _block_log.close();
 }
 
 } } //hive::chain

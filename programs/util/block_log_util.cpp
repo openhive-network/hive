@@ -36,6 +36,8 @@
 #include <atomic>
 #include <algorithm>
 
+using block_log_info=hive::chain::block_log_file_name_info;
+
 void print_version()
 {
   std::stringstream ss;
@@ -77,28 +79,30 @@ struct block_log_hashes
 };
 typedef std::map<fc::path, block_log_hashes> block_logs_and_hashes_type;
 
-std::pair<uint32_t, uint32_t> get_effective_range_of_blocks(const int32_t given_first_block, const int32_t given_last_block, const uint32_t given_head_block)
+std::pair<uint32_t, uint32_t> get_effective_range_of_blocks(const int32_t given_first_block, const int32_t given_last_block, const uint32_t given_head_block, const uint32_t given_tail_block)
 {
   FC_ASSERT(given_head_block <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), "given_head_block: ${given_head_block} reached max int32_t value", (given_head_block));
   const int32_t head_block = static_cast<int32_t>(given_head_block);
+  FC_ASSERT(given_tail_block <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), "given_head_block: ${given_head_block} reached max int32_t value", (given_tail_block));
+  const int32_t tail_block = static_cast<int32_t>(given_tail_block);
 
   uint32_t first_block, last_block;
   if( given_first_block >= 0 )
-    first_block = std::max( 1, given_first_block );
+    first_block = std::max( tail_block, given_first_block );
   else
-    first_block = std::max( 1, head_block + given_first_block + 1);
+    first_block = std::max( tail_block, head_block + given_first_block + 1);
   if( given_last_block >= 0 )
     last_block = std::min( head_block, given_last_block);
   else
     last_block = std::min( head_block, head_block + given_last_block + 1);
 
-  FC_ASSERT( first_block <= last_block, "Calculated effective range is: [${first_block}:${last_block}] which is wrong. Parameters: given_first_block: ${given_first_block}, given_last_block:${given_last_block}, head_block: ${head_block}",
-    (first_block)(last_block)(given_first_block)(given_last_block)(head_block) );
+  FC_ASSERT( first_block <= last_block, "Calculated effective range is: [${first_block}:${last_block}] which is wrong. Parameters: given_first_block: ${given_first_block}, given_last_block:${given_last_block}, head_block: ${head_block}, tail_block: ${tail_block}",
+    (first_block)(last_block)(given_first_block)(given_last_block)(head_block)(tail_block) );
 
   return std::make_pair(first_block, last_block);
 }
 
-void append_full_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, uint64_t& start_offset, fc::sha256::encoder& encoder)
+void append_full_block_data(const std::shared_ptr<hive::chain::full_block_type>& full_block, uint64_t& start_offset, fc::sha256::encoder& encoder)
 {
   const hive::chain::uncompressed_block_data& uncompressed = full_block->get_uncompressed_block();
   // the block log gets the block's raw data followed by the 8-byte offset of the start of the block
@@ -124,7 +128,7 @@ void checksum_block_log(const fc::path& block_log, fc::optional<uint32_t> checkp
         if (full_block->get_block_num() % 1000000 == 0)
           dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
 
-        append_full_block(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
+        append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
 
         if (checkpoint_every_n_blocks && full_block->get_block_num() % *checkpoint_every_n_blocks == 0 && full_block->get_block_num() != head_block_num)
         {
@@ -135,7 +139,9 @@ void checksum_block_log(const fc::path& block_log, fc::optional<uint32_t> checkp
 
         return true;
       };
-      log.for_each_block(1, head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
+      log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
+        head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
+        thread_pool);
     }
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
@@ -174,7 +180,7 @@ bool validate_block_log_checksum(const fc::path& block_log, const block_log_hash
         if (full_block->get_block_num() % 1000000 == 0)
           dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
 
-        append_full_block(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
+        append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
 
         if (next_checkpoint_iter != hashes_to_validate.checkpoints.end())
         {
@@ -207,7 +213,9 @@ bool validate_block_log_checksum(const fc::path& block_log, const block_log_hash
 
         return true;
       };
-      log.for_each_block(1, head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
+      log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
+        head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
+        thread_pool);
     }
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
@@ -312,6 +320,22 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
 {
   try
   {
+    uint32_t first_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(first_filename);
+    uint32_t second_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
+
+    const uint32_t min_block_num = std::max(first_log_1st_block_num, second_log_1st_block_num);
+
+    if(start_at_block && *start_at_block < min_block_num)
+    {
+      elog("Can't start at block ${sb}.", ("sb", *start_at_block));
+      const char* msg = "Log ${l} starts at block {lb}.";
+      if(*start_at_block < first_log_1st_block_num)
+        elog(msg, ("l", first_filename)("lb", first_log_1st_block_num));
+      if(*start_at_block < second_log_1st_block_num)
+        elog(msg, ("l", second_filename)("lb", second_log_1st_block_num));
+      return false;
+    }
+
     // open both block log files
     hive::chain::block_log first_block_log( app );
     first_block_log.open(first_filename, thread_pool, true);
@@ -321,15 +345,16 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
     second_block_log.open(second_filename, thread_pool, true);
     const uint32_t second_head_block_num = second_block_log.head() ? second_block_log.head()->get_block_num() : 0;
 
-    const uint32_t number_of_blocks_in_common = std::min(first_head_block_num, second_head_block_num);
+    const uint32_t max_block_num = std::min(first_head_block_num, second_head_block_num);
 
-    if (start_at_block && number_of_blocks_in_common < *start_at_block)
+    if (start_at_block && max_block_num < *start_at_block)
     {
-      elog("can't start at block ${block_num}", (start_at_block));
+      elog("Can't start at block ${block_num}", (start_at_block));
+      const char* msg = "Head block of ${l} is ${hbn}";
       if (first_head_block_num < *start_at_block)
-        elog("${first_filename} only has ${first_head_block_num} blocks", (first_filename)(first_head_block_num));
+        elog(msg, ("l", first_filename)("hbn", first_head_block_num));
       if (second_head_block_num < *start_at_block)
-        elog("${second_filename} only has ${second_head_block_num} blocks", (second_filename)(second_head_block_num));
+        elog(msg, ("l", second_filename)("hbn", second_head_block_num));
       return false;
     }
 
@@ -367,17 +392,18 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
       };
     };
 
+    uint32_t start_block = start_at_block.value_or( min_block_num );
     // walk through the blocks, comparing as we go
     std::thread first_enumerator_thread([&]() {
       fc::set_thread_name("compare_1"); // tells the OS the thread's name
       fc::thread::current().set_name("compare_1"); // tells fc the thread's name for logging
-      first_block_log.for_each_block(start_at_block.value_or(1), number_of_blocks_in_common, generate_block_processor(first_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
+      first_block_log.for_each_block(start_block, max_block_num, generate_block_processor(first_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
     });
 
     std::thread second_enumerator_thread([&]() {
       fc::set_thread_name("compare_2"); // tells the OS the thread's name
       fc::thread::current().set_name("compare_2"); // tells fc the thread's name for logging
-      second_block_log.for_each_block(start_at_block.value_or(1), number_of_blocks_in_common, generate_block_processor(second_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
+      second_block_log.for_each_block(start_block, max_block_num, generate_block_processor(second_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool);
     });
 
     first_enumerator_thread.join();
@@ -435,6 +461,7 @@ bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_bl
     log.open(block_log_filename, thread_pool, false);
     const uint32_t head_block_num = log.read_head()->get_block_num();
     FC_ASSERT(head_block_num > new_head_block_num);
+    FC_ASSERT(block_log_info::get_first_block_num_for_file_name(block_log_filename) <= new_head_block_num);
     ilog("Original block_log head_block_num: ${head_block_num}", (head_block_num));
     log.truncate(new_head_block_num);
     ilog("Truncating finished.");
@@ -595,6 +622,7 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
     std::cout << head_block_num << "\n";
+    log.close();
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -604,9 +632,10 @@ bool get_block_ids(const fc::path& block_log_filename, const int32_t first_block
   try
   {
     hive::chain::block_log log( app );
+    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num);
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
 
     for (unsigned i = first_block; i <= last_block; ++i)
     {
@@ -632,12 +661,13 @@ bool get_block_range( const fc::path& block_log_filename, const int32_t first_bl
 
   try
   {
+    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     FC_ASSERT(head_block_num, "block_log is empty");
 
-    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num);
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
 
     std::stringstream ss;
     std::fstream fs;
@@ -739,6 +769,7 @@ bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_blo
 {
   try
   {
+    uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_path);
     hive::chain::block_log block_log( app );
     block_log.open(block_log_path, thread_pool, true, false);
     if (full_match_verification)
@@ -752,7 +783,7 @@ bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_blo
     const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
     FC_ASSERT(artifacts_block_head_num, "block_log.artifacts is empty");
 
-    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's is not possible to read head block artifacts*/);
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's not possible to read head block artifacts*/, tail_block_num);
 
     block_log.close();
     std::cout << artifacts->get_artifacts_contents(first_block, last_block, header_only) << "\n";

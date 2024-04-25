@@ -15,10 +15,11 @@
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
-#include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 using hive::schema::abstract_schema;
@@ -80,22 +81,29 @@ int main( int argc, char** argv, char** envp )
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 
   hive::chain::database db( app );
-  hive::chain::sync_block_writer block_writer( db, app );
+
+  std::shared_ptr< hive::chain::block_log_wrapper > log_wrapper =
+    hive::chain::block_log_wrapper::create_wrapper( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
+  hive::chain::sync_block_writer block_writer( *(log_wrapper.get()), db, app );
   db.set_block_writer( &block_writer );
 
   hive::chain::open_args db_args;
+  hive::chain::block_log_wrapper::block_log_open_args bl_args;
 
   db_args.data_dir = "tempdata";
   db_args.shared_mem_dir = "tempdata/blockchain";
   db_args.shared_file_size = 1024*1024*8;
 
+  bl_args.data_dir = db_args.data_dir;
+
   std::map< std::string, schema_info > schema_map;
 
-  block_writer.open(  db_args.data_dir / "block_log",
-                      db_args.enable_block_log_compression,
-                      db_args.block_log_compression_level,
-                      db_args.enable_block_log_auto_fixing,
-                      thread_pool );
+  db.with_write_lock([&]()
+  {
+    log_wrapper->open_and_init( bl_args );
+  });
+  block_writer.open();
+
   db.open( db_args );
 
   hive_schema ss;
@@ -119,6 +127,8 @@ int main( int argc, char** argv, char** envp )
 
   db.close();
   block_writer.close();
+  log_wrapper->close_log();
+
 
   return 0;
 }

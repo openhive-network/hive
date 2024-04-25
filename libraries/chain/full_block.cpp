@@ -1,5 +1,6 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
+#include <hive/chain/block_log_compression.hpp>
 #include <fc/bitutil.hpp>
 
 #include <fc/io/json.hpp>
@@ -42,7 +43,7 @@ full_block_type::~full_block_type()
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
                                                                                                  size_t compressed_size,
-                                                                                                 const block_log::block_attributes_t& compression_attributes,
+                                                                                                 const block_attributes_t& compression_attributes,
                                                                                                  const std::optional<block_id_type> block_id /* = std::optional<block_id_type>() */)
 {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
@@ -187,9 +188,9 @@ void full_block_type::decompress_block() const
 
     decoded_block_storage = std::make_shared<decoded_block_storage_type>();
     std::tie(decoded_block_storage->uncompressed_block.raw_bytes, decoded_block_storage->uncompressed_block.raw_size) = 
-      block_log::decompress_raw_block(compressed_block.compressed_bytes.get(), 
-                                      compressed_block.compressed_size, 
-                                      compressed_block.compression_attributes);
+      block_log_compression::decompress_raw_block(compressed_block.compressed_bytes.get(), 
+                                                  compressed_block.compressed_size, 
+                                                  compressed_block.compression_attributes);
 
     has_uncompressed_block.store(true, std::memory_order_release);
   }
@@ -230,8 +231,10 @@ void full_block_type::compress_block() const
 
     std::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number();
     std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
-      block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
-    compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+      block_log_compression::compress_block_zstd(
+        decoded_block_storage->uncompressed_block.raw_bytes.get(),
+        decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
+    compressed_block.compression_attributes.flags = hive::chain::block_flags::zstd;
     compressed_block.compression_attributes.dictionary_number = dictionary_number_to_use;
 
     compression_time = fc::time_point::now() - start;
@@ -250,8 +253,10 @@ void full_block_type::alternate_compress_block() const
 
     fc::time_point start = fc::time_point::now();
     std::tie(alternate_compressed_block.compressed_bytes, alternate_compressed_block.compressed_size) = 
-      block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, std::optional<uint8_t>());
-    alternate_compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+      block_log_compression::compress_block_zstd(
+        decoded_block_storage->uncompressed_block.raw_bytes.get(),
+        decoded_block_storage->uncompressed_block.raw_size, std::optional<uint8_t>());
+    alternate_compressed_block.compression_attributes.flags = hive::chain::block_flags::zstd;
     alternate_compressed_block.compression_attributes.dictionary_number = std::optional<uint8_t>();
     alternate_compression_time = fc::time_point::now() - start;
     has_alternate_compressed_block.store(true, std::memory_order_release);
@@ -409,7 +414,7 @@ void full_block_type::decode_block() const
       // transaction in parts and record off the start/end points
       serialized_transaction_data serialized_transaction;
       serialized_transaction.begin = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
-      fc::raw::unpack(datastream, (transaction&)decoded_block_storage->block->transactions[i]);
+      fc::raw::unpack(datastream, (hive::protocol::transaction&)decoded_block_storage->block->transactions[i]);
       serialized_transaction.transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
       fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
       serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
