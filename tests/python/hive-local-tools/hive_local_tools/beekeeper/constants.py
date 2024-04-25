@@ -1,0 +1,6 @@
+from __future__ import annotations
+
+from typing import Final
+
+MAX_BEEKEEPER_SESSION_AMOUNT: Final[int] = 64
+DIGEST_TO_SIGN: Final[str] = "9B29BA0710AF3918E81D7B935556D7AB205D8A8F5CA2E2427535980C2E8BDAFF"
