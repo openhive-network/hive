@@ -738,7 +738,7 @@ namespace hive { namespace protocol {
     signature_type  signature;
     digest_type     work;
 
-    void create( const fc::ecc::private_key& w, const digest_type& i );
+    void create(const fc::ecc::private_key& w, const digest_type& i);
     void validate()const;
   };
 
@@ -774,7 +774,7 @@ namespace hive { namespace protocol {
     pow2_input        input;
     uint32_t          pow_summary = 0;
 
-    void create( const block_id_type& prev_block, const account_name_type& account_name, uint64_t nonce );
+    void create(const block_id_type& prev_block, const account_name_type& account_name, uint64_t nonce);
     void validate()const;
   };
 

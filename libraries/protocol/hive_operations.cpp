@@ -424,33 +424,34 @@ namespace hive { namespace protocol {
     }
   }
 
-  void pow::create( const fc::ecc::private_key& w, const digest_type& i )
+  void pow::create(const fc::ecc::private_key& w, const digest_type& i)
   {
-    input  = i;
-    signature = w.sign_compact( input, fc::ecc::non_canonical );
+    input = i;
+    signature = w.sign_compact(input, fc::ecc::non_canonical);
 
-    auto sig_hash            = fc::sha256::hash( signature );
-    public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical );
+    auto sig_hash = fc::sha256::hash(signature);
+    public_key_type recover = fc::ecc::public_key(signature, sig_hash);
 
     work = fc::sha256::hash(recover);
   }
 
-  void pow2::create( const block_id_type& prev, const account_name_type& account_name, uint64_t n )
+void pow2::create(const block_id_type & prev, const account_name_type & account_name, uint64_t n)
   {
-    input.worker_account = account_name;
-    input.prev_block     = prev;
-    input.nonce          = n;
+  input.worker_account = account_name;
+  input.prev_block = prev;
+  input.nonce = n;
 
-    auto prv_key = fc::sha256::hash( input );
-    auto input = fc::sha256::hash( prv_key );
-    auto signature = fc::ecc::private_key::regenerate( prv_key ).sign_compact( input, fc::ecc::fc_canonical );
+  auto prv_key = fc::sha256::hash(input);
+  auto input = fc::sha256::hash(prv_key);
+  auto signature = fc::ecc::private_key::regenerate(prv_key).sign_compact(input);
 
-    auto sig_hash            = fc::sha256::hash( signature );
-    public_key_type recover  = fc::ecc::public_key( signature, sig_hash );
+  auto sig_hash = fc::sha256::hash(signature);
+  public_key_type recover = fc::ecc::public_key(signature, sig_hash);
 
-    fc::sha256 work = fc::sha256::hash(std::make_pair(input,recover));
-    pow_summary = work.approx_log_32();
+  fc::sha256 work = fc::sha256::hash(std::make_pair(input, recover));
+  pow_summary = work.approx_log_32();
   }
+
 
   void equihash_pow::create( const block_id_type& recent_block, const account_name_type& account_name, uint32_t nonce )
   {
@@ -466,17 +467,19 @@ namespace hive { namespace protocol {
   void pow::validate()const
   {
     FC_ASSERT( work != fc::sha256() );
-    FC_ASSERT( public_key_type(fc::ecc::public_key( signature, input, fc::ecc::non_canonical ) ) == worker );
-    auto sig_hash = fc::sha256::hash( signature );
-    public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical );
-    FC_ASSERT( work == fc::sha256::hash(recover) );
+    /// Code eliminated due to hard switch to only bip0062 working mode - all such operations are VALID since they are already in blocks. Creation of new ops is disallowed.
+    //FC_ASSERT( public_key_type(fc::ecc::public_key( signature, input, fc::ecc::non_canonical) ) == worker );
+    //auto sig_hash = fc::sha256::hash( signature );
+    //public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical);
+    //FC_ASSERT( work == fc::sha256::hash(recover) );
   }
 
   void pow2::validate()const
   {
     validate_account_name( input.worker_account );
-    pow2 tmp; tmp.create( input.prev_block, input.worker_account, input.nonce );
-    FC_ASSERT( pow_summary == tmp.pow_summary, "reported work does not match calculated work" );
+    /// Code eliminated due to hard switch to only bip0062 working mode - all such operations are VALID since they are already in blocks. Creation of new ops is disallowed.
+    //pow2 tmp; tmp.create( input.prev_block, input.worker_account, input.nonce );
+    //FC_ASSERT( pow_summary == tmp.pow_summary, "reported work does not match calculated work" );
   }
 
   void equihash_pow::validate() const
