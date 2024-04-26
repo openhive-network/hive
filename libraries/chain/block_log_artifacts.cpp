@@ -292,7 +292,7 @@ private:
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   }
 
-  uint32_t calculate_tail_block_num(uint32_t new_tail)
+  uint32_t calculate_tail_block_num(uint32_t new_tail) const
   {
     return _block_num_to_file_pos_offset + new_tail;
   }
@@ -425,7 +425,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
             wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${block_log_head_block_num}.",
                 ("header_head_block_num", _header.head_block_num)(block_log_head_block_num));
 
-            _header.tail_block_num = _header.head_block_num ? _header.head_block_num : calculate_tail_block_num(1);;
+            _header.tail_block_num = _header.head_block_num ? _header.head_block_num : calculate_tail_block_num(1);
             _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider, thread_pool);
@@ -449,7 +449,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
 
           if (block_log_head_block_num)
           {
-            _header.tail_block_num = calculate_tail_block_num(1);;
+            _header.tail_block_num = calculate_tail_block_num(1);
             _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider, thread_pool);
@@ -603,7 +603,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
   if (!generating_interrupted)
   {
     _header.generating_interrupted_at_block = 0;
-    _header.tail_block_num = calculate_tail_block_num(1);;
+    _header.tail_block_num = calculate_tail_block_num(1);
     flush_header();
   }
 
@@ -623,12 +623,12 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
   if (full_match_verification)
   {
     first_block_to_verify = _header.head_block_num - 1;
-    last_block_num_to_verify = 1;
+    last_block_num_to_verify = calculate_tail_block_num(1);
   }
   else
   {
     first_block_to_verify = use_block_log_head_num ? source_block_provider.head()->get_block_num() - 1 : _header.head_block_num - 1;
-    last_block_num_to_verify = first_block_to_verify - BLOCKS_SAMPLE_AMOUNT;
+    last_block_num_to_verify = std::max<uint32_t>(first_block_to_verify - BLOCKS_SAMPLE_AMOUNT, calculate_tail_block_num(1));
   }
 
   FC_ASSERT(last_block_num_to_verify > _header.generating_interrupted_at_block, "block_log.artifacts and block_log files do not match, since artifacts are generated for shorter block range than present in block_log file.");
