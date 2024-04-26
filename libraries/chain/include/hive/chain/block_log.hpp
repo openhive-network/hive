@@ -5,7 +5,13 @@
 #include <hive/chain/detail/block_attributes.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
 
-#define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
+#ifdef IS_TEST_NET
+  // Note: the lower the number the more part files are generated but
+  //       there can be only 9999 of them as there are 4 digits in their names.
+  #define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE     400
+#else // is live HIVE network
+  #define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
+#endif
 
 namespace hive { namespace chain {
 
