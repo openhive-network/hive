@@ -9,15 +9,15 @@
   <script type="importmap">
     {
       "imports": {
-        "@hive/beekeeper": "/build/beekeeper_wasm.web.js",
-        "@hive/beekeeperfactory": "/dist/bundle/web.js",
+        "@hiveio/beekeeper": "/build/beekeeper_wasm.web.js",
+        "@hiveio/beekeeperfactory": "/dist/bundle/web.js",
         "helper": "/__tests__/assets/run_node_helper.js"
       }
     }
   </script>
   <script type="module">
-    import BeekeeperModule from '@hive/beekeeper';
-    import beekeeperFactory from '@hive/beekeeperfactory';
+    import BeekeeperModule from '@hiveio/beekeeper';
+    import beekeeperFactory from '@hiveio/beekeeperfactory';
     import { ExtractError, BeekeeperInstanceHelper } from 'helper';
 
     Object.defineProperties(window, {

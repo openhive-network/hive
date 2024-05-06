@@ -3,11 +3,10 @@
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 PROJECT_DIR="${SCRIPTPATH}/../../programs/beekeeper/beekeeper_wasm"
 
-PUBLISH_TOKEN="${1}"
-# @hive
-SCOPE="${2:-@hiveio}"
-# gitlab.syncad.com/api/v4/projects/419/packages/npm/
-REGISTRY_URL="${3:-registry.npmjs.org/}"
+# registry.npmjs.org/
+REGISTRY_URL="${1:-gitlab.syncad.com/api/v4/packages/npm/}"
+PUBLISH_TOKEN="${2:-}"
+SCOPE="${3:-@hiveio}"
 
 PROJECT_NAME="beekeeper"
 
