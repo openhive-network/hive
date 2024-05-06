@@ -383,8 +383,6 @@ formatting_with_black_check:
 
 .pytest_based:
   extends: .python_based
-  variables:
-    JUNIT_REPORT: "report.xml" # should be overriden by derived jobs
   after_script:
     - |
       shopt -s globstar
@@ -392,7 +390,7 @@ formatting_with_black_check:
       tar -cf - **/generated_by_package_fixtures | 7z a -si generated_by_package_fixtures.tar.7z
   artifacts:
     reports:
-      junit: $JUNIT_REPORT
+      junit: $PYTEST_JUNIT_REPORT
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
       - "generated_during.tar.7z"
@@ -436,7 +434,7 @@ beem_testnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 18
     PYTEST_ARGS: "-m not mirrornet"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
 beem_mirrornet_tests:
   extends: .beem_tests_base
@@ -449,7 +447,7 @@ beem_mirrornet_tests:
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
     BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/block_log_util"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
   before_script:
     - !reference [.beem_tests_base, before_script]
@@ -460,7 +458,7 @@ cli_wallet_tests:
   extends: .test_tools_based
 
   variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
 
   script:
@@ -474,7 +472,7 @@ hived_tests:
   extends: .test_tools_based
 
   variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
 
   script:
@@ -489,7 +487,7 @@ cli_wallet_extended_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 14
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
 
   script:
     - cd tests/python/functional/cli_wallet_extended_tests
@@ -516,19 +514,19 @@ fork_tests_1_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_1"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_1.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_1.xml
 
 fork_tests_2_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_2"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_2.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_2.xml
 
 fork_tests_3_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_3"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_3.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_3.xml
 
 
 hf26_tests:
@@ -538,7 +536,7 @@ hf26_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
 
   script:
     - cd tests/python/functional/hf26_tests
@@ -552,7 +550,7 @@ live_sync_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
 
   script:
     - cd tests/python/functional/live_sync_tests
@@ -566,7 +564,7 @@ broadcast_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
 
   script:
     - cd tests/python/functional/broadcast_tests
@@ -580,7 +578,7 @@ test_tools_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
 
   script:
     - cd tests/python/hive-local-tools/test-tools/tests
@@ -595,7 +593,7 @@ rc_direct_delegations_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
 
   script:
     - cd tests/python/functional/direct_rc_delegations_tests
@@ -610,7 +608,7 @@ message_format_testnet_tests:
     PYTEST_TIMEOUT_MINUTES: 25
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     NODE_TYPE: "testnet"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
   script:
     - cd tests/python/api_tests/message_format_tests/$API
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
@@ -640,7 +638,7 @@ datagen_api_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 25
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
 
   script:
     - cd tests/python/functional/datagen_tests/
@@ -693,7 +691,7 @@ transaction_serialization_testnet_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests/report.xml
 
   script:
     - cd $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests
@@ -709,7 +707,7 @@ python_pattern_mainnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
@@ -752,7 +750,7 @@ python_pattern_testnet_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
   script:
     - cd tests/python/api_tests/python_patterns_tests/
     - export PYTEST_ARGS=(-m "not testnet and not mainnet_5m and not live_mainnet")
@@ -765,7 +763,7 @@ python_pattern_testnet_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
 
   script:
     - cd tests/python/api_tests/message_format_tests/$API
@@ -837,7 +835,7 @@ foundation_layer_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
 
   script:
     - cd tests/python/functional/foundation_layer_tests
@@ -856,7 +854,7 @@ witness_tests:
   variables:
     NODE_ADDRESS: "hived-instance:8091"
     PYTEST_TIMEOUT_MINUTES: 5
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
     HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   script:
@@ -873,7 +871,7 @@ hf28_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
 
   script:
     - cd tests/python/functional/hf28_tests
@@ -887,7 +885,7 @@ functional_api_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
 
   script:
     - cd tests/python/functional/api_tests/
@@ -912,7 +910,7 @@ hardfork_schedule_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
 
   script:
     - cd tests/python/functional/hardfork_schedule_tests
@@ -961,7 +959,7 @@ recovery_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
   script:
     - cd tests/python/functional/recovery_tests
     - !reference [.run-pytest, script]
@@ -974,7 +972,7 @@ operation_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
     SERIALIZE_SET_PROPERTIES_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/serialize_set_properties"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
   script:
     - cd tests/python/functional/operation_tests/$OPERATION
     - !reference [.run-pytest, script]
@@ -1007,7 +1005,7 @@ comment_cashout_tests:
   variables:
     PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
   script:
     - cd tests/python/functional/comment_cashout_tests
     - !reference [.run-pytest, script]
