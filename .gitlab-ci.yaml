@@ -31,8 +31,6 @@ variables:
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
-  NPM_TOKEN: $CI_JOB_TOKEN
-
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
@@ -135,7 +133,7 @@ beekeeper_tsc_build:
     - npm pack --pack-destination "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
   artifacts:
     paths:
-      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper-*.tgz" # Packed package tests
+      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper-*.tgz" # Packed package tests
 
     when: always
 
@@ -151,12 +149,8 @@ beekeeper_wasm_package_generation:
   stage: build
   # emscripten image can be used as it contains all needed tools.
   image: ${EMSCRIPTEN_IMAGE}
-  variables:
-    PUBLISH_TOKEN: "$NPM_TOKEN"
-    NPM_SCOPE: "@hive"
-    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
   script:
-    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - scripts/ci-helpers/bump_npm_version.sh
   artifacts:
     paths:
       - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/package.json"
@@ -212,7 +206,9 @@ test_beekeeper_wasm:
       artifacts: true
 
   script:
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper-*.tgz --strip-components=1
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - nvm use "${NODEJS_VERSION}"
+    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper-*.tgz --strip-components=1
     - npm run test
 
   artifacts:
@@ -1038,13 +1034,13 @@ deploy_beekeeper_wasm_dev_package:
   # emscripten image can be used as it contains all needed tools.
   image: ${EMSCRIPTEN_IMAGE}
   variables:
-    PUBLISH_TOKEN: "$NPM_TOKEN"
-    NPM_SCOPE: "@hive"
+    PUBLISH_TOKEN: "$HIVE_GROUP_NPM_REGISTRY_TOKEN"
+    NPM_SCOPE: "@hiveio"
     NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
 
   script:
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
-    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
+    - scripts/ci-helpers/bump_npm_version.sh "$NPM_REGISTRY" "$PUBLISH_TOKEN" "$NPM_SCOPE"
     - scripts/ci-helpers/npm_publish.sh
   needs:
     - job: test_beekeeper_wasm
@@ -1060,12 +1056,12 @@ deploy_beekeeper_wasm_production_public_npm:
   # emscripten image can be used as it contains all needed tools.
   image: ${EMSCRIPTEN_IMAGE}
   variables:
-    PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN" # Add token variable here
+    PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_SCOPE: "@hiveio"
     NPM_REGISTRY: "registry.npmjs.org/"
   script:
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hive-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
-    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
+    - scripts/ci-helpers/bump_npm_version.sh "$NPM_REGISTRY" "$PUBLISH_TOKEN" "$NPM_SCOPE"
     - scripts/ci-helpers/npm_publish.sh
   needs:
     - job: beekeeper_wasm_build

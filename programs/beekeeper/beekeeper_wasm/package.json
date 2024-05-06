@@ -1,5 +1,5 @@
 {
-  "name": "@hive/beekeeper",
+  "name": "@hiveio/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Hive Beekeeper functionality exposed to TypeScript/JavaScript environments",
   "main": "dist/bundle/web.js",
