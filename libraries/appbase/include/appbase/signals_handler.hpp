@@ -65,7 +65,6 @@ namespace appbase {
 
       void init();
       void wait4stop( bool log = false );
-      void force_stop();
       bool is_thread_closed();
 
       boost::asio::io_service& get_io_service();

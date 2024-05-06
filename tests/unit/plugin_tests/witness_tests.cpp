@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
     fc::thread api_thread;
     api_thread.async( [&]()
     { 
-      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.kill( true ); } BOOST_SCOPE_EXIT_END
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
       try
       {
         ilog( "Wait for first block after genesis" );
@@ -209,7 +209,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
       CATCH( "API" )
     } );
 
-    theApp.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
     ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
@@ -229,7 +230,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     fc::thread sync_thread;
     sync_thread.async( [&]()
     {
-      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.kill( true ); } BOOST_SCOPE_EXIT_END
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
       try
       {
         ilog( "Wait for first block after genesis" );
@@ -486,7 +487,8 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
       ilog( "'DAN' thread finished" );
     } );
 
-    theApp.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
     ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()

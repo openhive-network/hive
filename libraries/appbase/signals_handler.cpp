@@ -134,17 +134,6 @@ void signals_handler_wrapper::wait4stop( bool log )
   thread_closed = true;
 }
 
-void signals_handler_wrapper::force_stop()
-{
-  /*
-    when application gets SIGINT, it won't be processed correctly, so it is only viable
-    for unit tests, where signals are captured by boost anyway;
-  */
-  handler.generate_interrupt_request();
-
-  wait4stop();
-}
-
 bool signals_handler_wrapper::is_thread_closed()
 {
   return thread_closed;

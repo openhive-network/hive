@@ -642,12 +642,9 @@ void application::setup_notifications(const boost::program_options::variables_ma
   notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
-void application::kill( bool direct_stop )
+void application::kill()
 {
-  if( direct_stop )
-    handler_wrapper.force_stop();
-  else
-    ::kill(getpid(), SIGINT);
+  ::kill(getpid(), SIGINT);
 }
 
 bool application::quit( bool log )
