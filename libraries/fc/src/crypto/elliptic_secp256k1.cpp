@@ -171,13 +171,13 @@ namespace fc { namespace ecc {
         my->_key = dat;
     }
 
-    void public_key::create_impl( const compact_signature& c, const fc::sha256& digest, canonical_signature_type canon_type )
+    public_key::public_key(const compact_signature& c, const fc::sha256& digest )
     {
       int nV = c.data[0];
       if (nV < 27 || nV >= 35)
         FC_THROW_EXCEPTION(exception, "unable to reconstruct public key from signature");
 
-      FC_ASSERT(is_canonical(c, canon_type), "signature is not canonical");
+      FC_ASSERT(is_canonical(c), "signature is not canonical");
 
       secp256k1_ecdsa_recoverable_signature sig;
       FC_ASSERT(secp256k1_ecdsa_recoverable_signature_parse_compact(detail::_get_context(), &sig, (const unsigned char*)c.begin() + 1, (*c.begin() - 27) & 3));
@@ -188,16 +188,6 @@ namespace fc { namespace ecc {
       size_t pk_len = my->_key.size();
       FC_ASSERT(secp256k1_ec_pubkey_serialize(detail::_get_context(), (unsigned char*)my->_key.begin(), &pk_len, &recovered_key, SECP256K1_EC_COMPRESSED));
       FC_ASSERT(pk_len == my->_key.size());
-    }
-
-    public_key::public_key(const compact_signature& c, const fc::sha256& digest, canonical_signature_type canon_type)
-    {
-      create_impl( c, digest, canon_type );
-    }
-
-    public_key::public_key(const compact_signature& c, const fc::sha256& digest )
-    {
-      create_impl( c, digest, canonical_signature_type::bip_0062 );
     }
 
     extended_public_key::extended_public_key(const public_key& k, const fc::sha256& c, int child, int parent, uint8_t depth) :

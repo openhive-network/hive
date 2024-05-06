@@ -28,13 +28,6 @@ namespace fc {
     typedef fc::sha256                  blinded_hash;
     typedef fc::sha256                  blind_signature;
 
-    enum canonical_signature_type
-    {
-      non_canonical,
-      bip_0062,
-      fc_canonical
-    };
-
     /**
      *  @class public_key
      *  @brief contains only the public point of an elliptic curve key.
@@ -55,7 +48,6 @@ namespace fc {
 
            public_key( const public_key_data& v );
            public_key( const public_key_point_data& v );
-           public_key( const compact_signature& c, const fc::sha256& digest, canonical_signature_type canon_type );
            public_key( const compact_signature& c, const fc::sha256& digest );
 
            public_key child( const fc::sha256& offset )const;
@@ -94,13 +86,11 @@ namespace fc {
 
            unsigned int fingerprint() const;
 
-           static bool is_canonical( const compact_signature& c, canonical_signature_type canon_type );
+           static bool is_canonical( const compact_signature& c );
 
         private:
           friend class private_key;
           static public_key from_key_data( const public_key_data& v );
-
-          void create_impl( const compact_signature& c, const fc::sha256& digest, canonical_signature_type canon_type );
 
           fc::fwd<detail::public_key_impl,33> my;
     };
@@ -148,7 +138,7 @@ namespace fc {
            fc::sha512 get_shared_secret( const public_key& pub )const;
 
 //           signature         sign( const fc::sha256& digest )const;
-           compact_signature sign_compact( const fc::sha256& digest, canonical_signature_type canon_type )const;
+
            compact_signature sign_compact( const fc::sha256& digest )const;
 //           bool              verify( const fc::sha256& digest, const signature& sig );
 

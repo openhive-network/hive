@@ -427,7 +427,7 @@ namespace hive { namespace protocol {
   void pow::create(const fc::ecc::private_key& w, const digest_type& i)
   {
     input = i;
-    signature = w.sign_compact(input, fc::ecc::non_canonical);
+    signature = w.sign_compact(input);
 
     auto sig_hash = fc::sha256::hash(signature);
     public_key_type recover = fc::ecc::public_key(signature, sig_hash);
