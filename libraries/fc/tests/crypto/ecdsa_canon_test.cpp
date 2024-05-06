@@ -44,23 +44,11 @@ int main( int argc, char** argv )
       fc::ecc::compact_signature non_canon_sig;
       memcpy( non_canon_sig.data, non_canon, sizeof( unsigned char ) * 65 );
 
-      ilog( "Testing non-canonical validation" );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( non_canon_sig,         fc::ecc::canonical_signature_type::non_canonical ) );
-
       ilog( "Testing bip_0062 canonical validation" );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::bip_0062 ) );
-
-      ilog( "Testing fc canonical validation" );
-      FC_ASSERT(  fc::ecc::public_key::is_canonical( fc_canon_sig,         fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( bip_0062_canon_sig,   fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT(  fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,  fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::fc_canonical ) );
+      FC_ASSERT( fc::ecc::public_key::is_canonical( fc_canon_sig ) );
+      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon_sig ) );
+      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig ) );
+      FC_ASSERT( !fc::ecc::public_key::is_canonical( non_canon_sig ) );
    }
    catch( fc::exception& e )
    {

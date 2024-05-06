@@ -206,14 +206,6 @@ namespace fc { namespace ecc {
         return (fp[0] << 24) | (fp[1] << 16) | (fp[2] << 8) | fp[3];
     }
 
-    bool is_fc_canonical( const compact_signature& c )
-    {
-      return !(c.data[1] & 0x80)
-          && !(c.data[1] == 0 && !(c.data[2] & 0x80))
-          && !(c.data[33] & 0x80)
-          && !(c.data[33] == 0 && !(c.data[34] & 0x80));
-    }
-
     bool is_bip_0062_canonical( const compact_signature& c )
     {
        using boost::multiprecision::uint256_t;
@@ -226,19 +218,9 @@ namespace fc { namespace ecc {
     }
 
 
-    bool public_key::is_canonical( const compact_signature& c, canonical_signature_type canon_type )
+    bool public_key::is_canonical( const compact_signature& c )
     {
-      switch( canon_type )
-      {
-        case bip_0062:
-          return is_bip_0062_canonical( c );
-        case fc_canonical:
-          return is_fc_canonical( c );
-        case non_canonical:
-          return true;
-        default:
-          return false;
-      }
+      return is_bip_0062_canonical( c );
     }
 
     private_key private_key::generate_from_seed( const fc::sha256& seed, const fc::sha256& offset )
