@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: f1d9fdaeaca069203c7c2c9fdeb0be507cd116a0
+    ref: b2ff9f5a48bc8fb379c66ec4e7907ea1e796ff1b
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -331,26 +331,6 @@ plugin_test:
       LOG_FILE: $CI_JOB_NAME.log
     command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
 
-.run-pytest: &run-pytest
-  # Usage:
-  # 1. Add - *run-pytest to your script section.
-  # 2. Set the appropriate values for:
-  #    - PYTEST_TIMEOUT_MINUTES (required)
-  #    - PYTEST_NUMBER_OF_PROCESSES (default: defined via global CI variable)
-  #    - PYTEST_LOG_DURATIONS (default: 0 - disabled)
-  #    - PYTEST_ARGS (default: "" - empty)
-  #      Best to export PYTEST_ARGS as array (e.g. `export PYTEST_ARGS=(-m testnet)`. In some cases setting PYTEST_ARGS as string will fail.
-  - if [ -z "$PYTEST_TIMEOUT_MINUTES" ]; then echo "Required variable PYTEST_TIMEOUT_MINUTES was not set!"; exit 22; fi
-  - if [ $PYTEST_NUMBER_OF_PROCESSES -gt 1 ]; then PROCESSES="-n ${PYTEST_NUMBER_OF_PROCESSES}";  fi
-  - if [ ${PYTEST_LOG_DURATIONS:=0} -ge 1 ]; then DURATIONS="--durations 0";  fi
-  - |
-    echo "Launching pytest
-     - timeout (minutes): ${PYTEST_TIMEOUT_MINUTES}
-     - processes: ${PYTEST_NUMBER_OF_PROCESSES}
-     - log durations: ${PYTEST_LOG_DURATIONS}
-     - additional arguments: ${PYTEST_ARGS[@]}"
-  - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="$JUNIT_REPORT" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
-
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends:
@@ -444,7 +424,7 @@ formatting_with_black_check:
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -485,7 +465,7 @@ cli_wallet_tests:
 
   script:
     - cd tests/python/functional/cli_wallet
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -499,7 +479,7 @@ hived_tests:
 
   script:
     - cd tests/python/functional/hived
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -513,7 +493,7 @@ cli_wallet_extended_tests:
 
   script:
     - cd tests/python/functional/cli_wallet_extended_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -526,7 +506,7 @@ cli_wallet_extended_tests:
     PYTEST_NUMBER_OF_PROCESSES: 3
   script:
     - cd tests/python/functional/fork_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
   artifacts:
@@ -562,7 +542,7 @@ hf26_tests:
 
   script:
     - cd tests/python/functional/hf26_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -576,7 +556,7 @@ live_sync_tests:
 
   script:
     - cd tests/python/functional/live_sync_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -590,7 +570,7 @@ broadcast_tests:
 
   script:
     - cd tests/python/functional/broadcast_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -605,7 +585,7 @@ test_tools_tests:
   script:
     - cd tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -619,7 +599,7 @@ rc_direct_delegations_tests:
 
   script:
     - cd tests/python/functional/direct_rc_delegations_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -634,7 +614,7 @@ message_format_testnet_tests:
   script:
     - cd tests/python/api_tests/message_format_tests/$API
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
-    - *run-pytest
+    - !reference [.run-pytest, script]
   parallel:
     matrix:
       - API: [ account_by_key_api_tests,
@@ -664,7 +644,7 @@ datagen_api_tests:
 
   script:
     - cd tests/python/functional/datagen_tests/
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -718,7 +698,7 @@ transaction_serialization_testnet_tests:
   script:
     - cd $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests
     - export PYTEST_ARGS=(-m testnet)
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -749,7 +729,7 @@ python_pattern_mainnet_tests:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
-    - *run-pytest
+    - !reference [.run-pytest, script]
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -776,7 +756,7 @@ python_pattern_testnet_tests:
   script:
     - cd tests/python/api_tests/python_patterns_tests/
     - export PYTEST_ARGS=(-m "not testnet and not mainnet_5m and not live_mainnet")
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -790,7 +770,7 @@ python_pattern_testnet_tests:
   script:
     - cd tests/python/api_tests/message_format_tests/$API
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
-    - *run-pytest
+    - !reference [.run-pytest, script]
   parallel:
     matrix:
       - API: [ account_by_key_api_tests,
@@ -861,7 +841,7 @@ foundation_layer_tests:
 
   script:
     - cd tests/python/functional/foundation_layer_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -883,7 +863,7 @@ witness_tests:
     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
     - cd tests/python/functional/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
 
@@ -897,7 +877,7 @@ hf28_tests:
 
   script:
     - cd tests/python/functional/hf28_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -911,7 +891,7 @@ functional_api_tests:
 
   script:
     - cd tests/python/functional/api_tests/
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -936,7 +916,7 @@ hardfork_schedule_tests:
 
   script:
     - cd tests/python/functional/hardfork_schedule_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -984,7 +964,7 @@ recovery_tests:
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
   script:
     - cd tests/python/functional/recovery_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
@@ -997,7 +977,7 @@ operation_tests:
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
   script:
     - cd tests/python/functional/operation_tests/$OPERATION
-    - *run-pytest
+    - !reference [.run-pytest, script]
   parallel:
     matrix:
       - OPERATION: [ account_update_tests,
@@ -1030,7 +1010,7 @@ comment_cashout_tests:
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
   script:
     - cd tests/python/functional/comment_cashout_tests
-    - *run-pytest
+    - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
 
