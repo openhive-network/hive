@@ -41,6 +41,7 @@ namespace hive { namespace chain {
 
   const std::string block_log_file_name_info::_legacy_file_name = "block_log";
   const std::string block_log_file_name_info::_split_file_name_core = "block_log_part";
+  const std::string block_log_file_name_info::_artifacts_extension = ".artifacts";
 
   uint32_t block_log_file_name_info::get_first_block_num_for_file_name( const fc::path& block_log_path )
   {

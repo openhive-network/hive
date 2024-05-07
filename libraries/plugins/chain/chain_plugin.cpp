@@ -744,9 +744,10 @@ void chain_plugin_impl::initial_settings()
   if(resync)
   {
     wlog("resync requested: deleting block log and shared memory");
-    db.wipe( theApp.data_dir() / "blockchain", shared_memory_dir, true );
+    db.wipe( shared_memory_dir );
     default_block_writer->close();
     log_wrapper->close_log();
+    log_wrapper->wipe_files( theApp.data_dir() / "blockchain" );
   }
 
   db.set_flush_interval( flush_interval );

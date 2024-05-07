@@ -106,7 +106,8 @@ Stop the docker container, remove the existing container, clear out your blockch
 ```
 docker stop hived-exchange
 docker rm hived-exchange
-rm -rf datadir/blockchain/account-history-rocksdb-storage datadir/blockchain/block_log.index datadir/blockchain/shared_memory.bin
+# block_log.index is an obsolete legacy file that may have been removed earlier
+rm -rf datadir/blockchain/account-history-rocksdb-storage datadir/blockchain/block_log.index datadir/blockchain/block_log.artifacts datadir/blockchain/shared_memory.bin
 touch datadir/blockchain/force_replay 
 docker pull hiveio/hive
 run_hived_img.sh hiveio/hive --name=hived-exchange --docker-option="-p 8093:8093" --data-dir=$(pwd)/datadir --shared-file-dir=/dev/shm/hived/consensus_node --webserver-http-endpoint=0.0.0.0:8091 --webserver-ws-endpoint=0.0.0.0:8090 --p2p-endpoint=0.0.0.0:2001 --force-replay

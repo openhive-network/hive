@@ -453,6 +453,41 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
   }
 }
 
+void block_log_wrapper::wipe_files( const fc::path& dir )
+{
+  if( not exists( dir ) )
+    return;
+
+  auto remove_artifacts = [&]( const fc::path& block_file ) {
+    fc::path artifacts_file( block_file.generic_string() +
+                             block_log_file_name_info::_artifacts_extension.c_str() );
+    if( exists( artifacts_file ) )
+      fc::remove( artifacts_file );
+  };
+
+  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
+  {
+    fc::path legacy_file( dir / block_log_file_name_info::_legacy_file_name );
+    if( exists( legacy_file ) )
+      fc::remove( legacy_file );
+
+    remove_artifacts( legacy_file );      
+    return;
+  }
+
+  fc::directory_iterator it( dir );
+  fc::directory_iterator end_it;
+  for( ; it != end_it; it++ )
+  {
+    if( fc::is_regular_file( *it ) && 
+        block_log_file_name_info::is_part_file( *it ) > 0 )
+    {
+      fc::remove( *it );
+      remove_artifacts( *it );
+    }
+  }
+}
+
 void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appending)
 {
   FC_ASSERT( block_num > 0 );
