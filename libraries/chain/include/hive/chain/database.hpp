@@ -212,12 +212,11 @@ namespace chain {
       void load_state_initial_data(const open_args& args);
 
       /**
-        * @brief wipe Delete database from disk, and potentially the raw chain as well.
-        * @param include_blocks If true, delete the raw chain as well as the database.
+        * @brief wipe Delete database from disk.
         *
         * Will close the database before wiping. Database will be closed when this function returns.
         */
-      void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
+      void wipe(const fc::path& shared_mem_dir);
        /// Watch out for superclass' variant of close.
       void close() /*override*/;
 

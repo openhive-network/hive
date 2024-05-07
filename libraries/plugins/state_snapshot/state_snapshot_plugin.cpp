@@ -1651,7 +1651,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   wlog("Snapshot state definitions matches current app version - wiping DB.");
   _mainDb.close();
-  _mainDb.wipe(openArgs.data_dir, openArgs.shared_mem_dir, false);
+  _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.open(openArgs);
   dlog("Updating DB decoded state objects data and blockchain config with data from snapshot.");
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
