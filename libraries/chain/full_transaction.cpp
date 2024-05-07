@@ -430,10 +430,15 @@ void full_transaction_type::sign_transaction(const std::vector<hive::protocol::p
 // So when validating transactions that come in from a block, we'll call this function to find
 // out what rules to use.  When validating transactions coming in from the p2p network that aren't
 // part of the block, we know we must use the post hardfork 1.24 rules.
+
+/*
+  Update:
+  Between HF27 and HF28 a decision has been made that there is only one mode (bip_0062) in a whole source code
+  so `pre_hf_0_20_rules` and `post_hf_0_20_rules` can be simplified into `pre_hf_1_24_rules`.
+*/
 namespace
 {
-  transaction_signature_validation_rules_type pre_hf_0_20_rules = {OLD_CHAIN_ID};
-  transaction_signature_validation_rules_type post_hf_0_20_rules = {OLD_CHAIN_ID};
+  transaction_signature_validation_rules_type pre_hf_1_24_rules = {OLD_CHAIN_ID};
 #ifndef USE_ALTERNATE_CHAIN_ID
   transaction_signature_validation_rules_type post_hf_1_24_rules = {HIVE_CHAIN_ID};
 #endif
@@ -443,8 +448,7 @@ namespace
 // on testnets, chain_id is passed on the command line, so we can't hard-code it
 void set_chain_id_for_transaction_signature_validation(const chain_id_type& chain_id)
 {
-  pre_hf_0_20_rules.chain_id = chain_id;
-  post_hf_0_20_rules.chain_id = chain_id;
+  pre_hf_1_24_rules.chain_id = chain_id;
 }
 #endif
 
@@ -452,24 +456,23 @@ const transaction_signature_validation_rules_type& get_transaction_signature_val
 {
 #ifdef IS_TEST_NET
   // testnet -- we can't rely on time because in unit tests it will be close to genesis, but also hardforks are activated at different times manually
-  return post_hf_0_20_rules; //this is bad but better than rules for mirrornet
+  return pre_hf_1_24_rules; //this is bad but better than rules for mirrornet
 #elif USE_ALTERNATE_CHAIN_ID
   // mirrornet -- always uses the same chain_id, so no change of behavior at hf 1.24
-  return time.sec_since_epoch() > HIVE_HARDFORK_0_20_ACTUAL_TIME ? post_hf_0_20_rules : pre_hf_0_20_rules;
+  return pre_hf_1_24_rules;
 #else
   // mainnet rules
   if (time.sec_since_epoch() > HIVE_HARDFORK_1_24_ACTUAL_TIME)
     return post_hf_1_24_rules;
-  if (time.sec_since_epoch() > HIVE_HARDFORK_0_20_ACTUAL_TIME)
-    return post_hf_0_20_rules;
-  return pre_hf_0_20_rules;
+  else
+    return pre_hf_1_24_rules;
 #endif
 }
 
 const transaction_signature_validation_rules_type& get_signature_validation_for_new_transactions()
 {
 #ifdef USE_ALTERNATE_CHAIN_ID
-  return post_hf_0_20_rules;
+  return pre_hf_1_24_rules;
 #else
   return post_hf_1_24_rules;
 #endif
