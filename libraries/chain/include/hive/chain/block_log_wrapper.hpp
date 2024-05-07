@@ -80,6 +80,12 @@ namespace hive { namespace chain {
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
 
+    /** @brief Deletes block log file(s). Use carefully, getting them back takes time.
+     *  @param dir Where the file(s) should be deleted.
+     *  Note that only files matching block_log_split configuration will be removed.
+     */
+    void wipe_files( const fc::path& dir );
+
   private:
     // Common helpers
     void common_open_and_init( std::optional< bool > read_only );

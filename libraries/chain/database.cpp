@@ -282,16 +282,11 @@ void database::load_state_initial_data(const open_args& args)
 #endif /// IS_TEST_NET
 }
 
-void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
+void database::wipe(const fc::path& shared_mem_dir)
 {
   if( get_is_open() )
     close();
   chainbase::database::wipe( shared_mem_dir );
-  if( include_blocks )
-  {
-    fc::remove_all( data_dir / "block_log" );
-    fc::remove_all( data_dir / "block_log.index" );
-  }
 }
 
 void database::close()

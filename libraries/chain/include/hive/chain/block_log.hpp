@@ -45,6 +45,7 @@ namespace hive { namespace chain {
 
   public:
     static const std::string _legacy_file_name;
+    static const std::string _artifacts_extension; /// includes leading dot
 
   private:
     static const std::string _split_file_name_core;

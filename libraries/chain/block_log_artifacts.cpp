@@ -321,7 +321,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
   set_block_num_to_file_pos_offset(
     block_log_file_name_info::get_first_block_num_for_file_name(block_log_file_path)-1
   );
-  _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
+  _artifact_file_name = fc::path(block_log_file_path.generic_string() + block_log_file_name_info::_artifacts_extension.c_str());
   FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to block_log.artifacts file, not directory", (_artifact_file_name));
   _is_writable = !read_only;
 
