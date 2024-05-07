@@ -13,7 +13,7 @@ def test_recurrence_time_is_less_than_24h(node: tt.InitNode) -> None:
     wallet.create_account("receiver")
     wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(tt.exceptions.WaxRequestError) as exception:
         wallet.api.recurrent_transfer(
             "sender",
             "receiver",
@@ -24,4 +24,4 @@ def test_recurrence_time_is_less_than_24h(node: tt.InitNode) -> None:
         )
 
     expected_error_message = "Cannot set a transfer recurrence that is less than 24 hours"
-    assert expected_error_message in str(exception.value)
+    assert expected_error_message in exception.value.error
