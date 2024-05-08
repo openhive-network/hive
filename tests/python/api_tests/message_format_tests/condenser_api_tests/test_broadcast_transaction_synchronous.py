@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 
 @run_for("testnet")
 def test_broadcast_transaction_synchronous(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node)
+    wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
     node.api.condenser.broadcast_transaction_synchronous(transaction)
 
@@ -23,7 +23,8 @@ def test_broadcast_transaction_synchronous_with_incorrect_type_of_argument(
 
 
 @run_for("testnet")
-def test_broadcast_transaction_synchronous_with_additional_argument(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_broadcast_transaction_synchronous_with_additional_argument(node: tt.InitNode) -> None:
+    wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
 
     with pytest.raises(tt.exceptions.CommunicationError):

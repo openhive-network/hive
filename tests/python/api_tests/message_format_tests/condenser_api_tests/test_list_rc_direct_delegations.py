@@ -18,6 +18,7 @@ CORRECT_VALUES = [
 ]
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -34,6 +35,7 @@ def test_list_rc_direct_delegations_with_correct_value(
     node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -60,6 +62,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(
         node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @run_for("testnet")
 def test_list_rc_direct_delegations_with_additional_argument(node: tt.InitNode, wallet: tt.Wallet) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
@@ -68,6 +71,7 @@ def test_list_rc_direct_delegations_with_additional_argument(node: tt.InitNode, 
         node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]], 100, "additional-argument")
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -98,6 +102,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
         node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @run_for("testnet")
 def test_list_rc_direct_delegations_with_missing_argument(node: tt.InitNode, wallet: tt.Wallet) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
