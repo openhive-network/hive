@@ -188,3 +188,19 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+add_executable( verify_authority verify_authority.cpp )
+
+# needed to correctly print crash stacktrace
+set_target_properties(verify_authority PROPERTIES ENABLE_EXPORTS true)
+
+target_link_libraries( verify_authority
+                       PRIVATE hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+
+install( TARGETS
+   verify_authority
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
