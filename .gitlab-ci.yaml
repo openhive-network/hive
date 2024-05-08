@@ -1016,18 +1016,14 @@ Trigger-full-mirrornet-conversion:
       - local: scripts/ci-helpers/full-mirrornet-conversion.yml
 
 deploy_beekeeper_wasm_dev_package:
+  extends: .npm_deploy_package_template
   stage: publish
-  # emscripten image can be used as it contains all needed tools.
-  image: ${EMSCRIPTEN_IMAGE}
-  variables:
-    PUBLISH_TOKEN: "$HIVE_GROUP_NPM_REGISTRY_TOKEN"
-    NPM_SCOPE: "@hiveio"
-    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
 
-  script:
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
-    - scripts/ci-helpers/bump_npm_version.sh "$NPM_REGISTRY" "$PUBLISH_TOKEN" "$NPM_SCOPE"
-    - scripts/ci-helpers/npm_publish.sh
+  variables:
+    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+    NPM_PACKAGE_SCOPE: "@hiveio"
+
   needs:
     - job: test_beekeeper_wasm
     - job: beekeeper_wasm_build
