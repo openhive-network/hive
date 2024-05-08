@@ -15,36 +15,6 @@ namespace hive { namespace protocol {
     return fc::endian_reverse_u32(id._hash[0]);
   }
 
-  block_id_type signed_block_header::legacy_id()const
-  {
-    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
-    auto tmp = fc::sha224::hash( *this );
-    tmp._hash[0] = fc::endian_reverse_u32(block_num()); // store the block num in the ID, 160 bits is plenty for the hash
-    static_assert( sizeof(tmp._hash[0]) == 4, "should be 4 bytes" );
-    block_id_type result;
-    memcpy(result._hash, tmp._hash, std::min(sizeof(result), sizeof(tmp)));
-    return result;
-  }
-
-  /* static */ fc::ecc::public_key signed_block_header::signee( const signature_type& witness_signature, const digest_type& digest )
-  {
-    return fc::ecc::public_key( witness_signature, digest );
-  }
-
-  fc::ecc::public_key signed_block_header::legacy_signee()const
-  {
-    return signee(witness_signature, legacy_digest());
-  }
-
-  bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee, const digest_type& digest )const
-  {
-    return signee( witness_signature, digest ) == expected_signee;
-  }
-
-  void signed_block_header::legacy_sign( const fc::ecc::private_key& signer )
-  {
-    witness_signature = signer.sign_compact( legacy_digest() );
-  }
   // just here for unit tests, actual function is in full_block
   checksum_type signed_block::legacy_calculate_merkle_root()const
   {

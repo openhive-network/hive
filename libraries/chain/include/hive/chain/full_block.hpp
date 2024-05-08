@@ -17,6 +17,7 @@ using hive::protocol::checksum_type;
 using hive::protocol::digest_type;
 using hive::protocol::signed_block;
 using hive::protocol::signed_block_header;
+using hive::protocol::signature_type;
 
 // stores a compressed block and the information about how it was compressed
 // (the attributes are needed to correctly decompress it & to tell what peers
@@ -103,6 +104,9 @@ class full_block_type
     static std::atomic<uint32_t> number_of_instances_destroyed;
 
     static block_id_type construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num);
+
+    fc::ecc::public_key signee(const signature_type& witness_signature, const digest_type& digest) const;
+
   public:
     full_block_type();
     ~full_block_type();

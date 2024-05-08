@@ -310,6 +310,11 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
   return block_id;
 }
 
+fc::ecc::public_key full_block_type::signee( const signature_type& witness_signature, const digest_type& digest ) const
+{
+  return fc::ecc::public_key( witness_signature, digest );
+}
+
 void full_block_type::decode_block_header() const
 {
   std::lock_guard<std::mutex> guard(unpacked_block_header_mutex);
@@ -514,7 +519,7 @@ void full_block_type::compute_signing_key() const
   {
     decode_block_header();
     fc::time_point compute_begin = fc::time_point::now();
-    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, digest);
+    block_signing_key = signee(decoded_block_storage->block->witness_signature, digest);
     fc::time_point compute_end = fc::time_point::now();
     compute_block_signing_key_time = compute_end - compute_begin;
   }
