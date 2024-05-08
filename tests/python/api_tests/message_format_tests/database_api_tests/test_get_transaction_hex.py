@@ -6,7 +6,7 @@ from hive_local_tools import run_for
 
 @run_for("testnet")
 def test_get_transaction_hex_in_testnet(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     output_hex = node.api.database.get_transaction_hex(trx=transaction).hex_
     assert len(output_hex) != 0

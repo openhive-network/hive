@@ -6,7 +6,7 @@ from hive_local_tools import run_for
 
 @run_for("testnet")
 def test_verify_authority_in_testnet(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     node.api.database.verify_authority(trx=transaction, pack="hf26")
 
