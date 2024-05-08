@@ -12,12 +12,6 @@ namespace hive { namespace protocol {
 
   typedef flat_set<block_header_extensions > block_header_extensions_type;
 
-  // note: the functions that had to compute the block digest have been deprecated -- 
-  // as of hf26, there can be multiple valid serializations for transactions, and
-  // you can't tell which is correct just by looking the in-memory structures.
-  // The legacy versions of digest(), id(), signee() have been preserved mostly to
-  // support report_over_production_operation (no longer in use)
-
   struct block_header
   {
     digest_type                   legacy_digest()const; // was: digest, use instead full_block_type::get_digest()
@@ -33,13 +27,6 @@ namespace hive { namespace protocol {
 
   struct signed_block_header : public block_header
   {
-    block_id_type              legacy_id()const; // was: id(), use instead full_block_type::get_block_id()
-    static fc::ecc::public_key signee(const signature_type& witness_signature, const digest_type& digest);
-    fc::ecc::public_key        legacy_signee()const;// was: signee(), use instead full_block_type::get_signing_key()
-    void                       legacy_sign( const fc::ecc::private_key& signer );
-
-    bool                       validate_signee( const fc::ecc::public_key& expected_signee, const digest_type& digest )const;
-
     signature_type             witness_signature;
   };
 
