@@ -119,24 +119,15 @@ beekeeper_wasm_build:
     - public-runner-docker
 
 beekeeper_tsc_build:
-  extends: .job-defaults
+  extends: .npm_build_template
   stage: build
-  # emscripten image can be used as it contains all needed tools.
-  image: ${EMSCRIPTEN_IMAGE}
-  script:
-    - . "$NVM_DIR/nvm.sh"  # This loads nvm
-    - nvm use "${NODEJS_VERSION}"
-    - cd programs/beekeeper/beekeeper_wasm
-    - pnpm install
-    - npm run build
-  after_script:
-    - cd programs/beekeeper/beekeeper_wasm
-    - npm pack --pack-destination "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
-  artifacts:
-    paths:
-      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper-*.tgz" # Packed package tests
 
-    when: always
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    DIST_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/dist"
+
+    NPM_PACKAGE_SCOPE: "@hiveio"
+    NPM_PACKAGE_NAME: "beekeeper"
 
   needs:
     - job: beekeeper_wasm_build
