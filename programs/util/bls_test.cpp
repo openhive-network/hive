@@ -143,18 +143,18 @@ int main(int argc, char* argv[])
 
     auto _start = std::chrono::high_resolution_clock::now();
     obj_00.sign_content();
-    auto _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"signing: "<<" time: "<<_interval<<std::endl;
+    auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"signing: "<<" time: "<<_interval<<"[us]"<<std::endl;
 
     _start = std::chrono::high_resolution_clock::now();
     obj_00.aggregate_signatures();
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"aggregating: "<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"aggregating: "<<" time: "<<_interval<<"[us]"<<std::endl;
 
     _start = std::chrono::high_resolution_clock::now();
     bool _result = obj_00.verify();
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"XX: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"XX: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_00( obj_00.public_keys.begin(), obj_00.public_keys.end() );
@@ -163,8 +163,8 @@ int main(int argc, char* argv[])
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_00.verify( _public_keys_00 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"00: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"00: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_01( obj_00.public_keys.begin(), obj_00.public_keys.end() );
@@ -175,16 +175,16 @@ int main(int argc, char* argv[])
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_00.verify( _public_keys_01 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"01: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"01: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_02( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_00.verify( _public_keys_02 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"02: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"02: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_03( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
@@ -198,8 +198,8 @@ int main(int argc, char* argv[])
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_00.verify( _public_keys_03 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"03: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"03: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_04( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
@@ -211,21 +211,21 @@ int main(int argc, char* argv[])
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_00.verify( _public_keys_04 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"04: verifying: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"04: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     mario_test obj_01( options_map["nr-signatures-2"].as<uint32_t>() );
 
     _start = std::chrono::high_resolution_clock::now();
     obj_01.sign_content();
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"signing2: "<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"signing2: "<<" time: "<<_interval<<"[us]"<<std::endl;
 
     _start = std::chrono::high_resolution_clock::now();
     obj_01.aggregate_signatures( { obj_00.aggregated_signature }, obj_01.signatures );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"aggregating2: "<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"aggregating2: "<<" time: "<<_interval<<"[us]"<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_06( obj_00.public_keys.begin(), obj_00.public_keys.end() );
@@ -233,8 +233,8 @@ int main(int argc, char* argv[])
 
     _start = std::chrono::high_resolution_clock::now();
     _result = obj_01.verify( _public_keys_06 );
-    _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"06: verifying2: "<<_result<<" time: "<<_interval<<std::endl;
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"06: verifying2: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
 
   }
 }
