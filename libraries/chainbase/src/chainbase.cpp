@@ -432,6 +432,22 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     assert(env);
     return std::string(env->blockchain_config_json.c_str());
   }
+
+  std::string database:: get_plugins_from_shm() const
+  {
+    assert(_is_open);
+    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    assert(env);
+    std::vector<std::string> db_plugins;
+    db_plugins.reserve(env->plugins.size());
+
+    for (const auto& p : env->plugins)
+      db_plugins.push_back(std::string(p));
+
+    fc::variant db_plugins_v;
+    fc::to_variant(db_plugins, db_plugins_v);
+    return std::string(fc::json::to_string(db_plugins_v));
+  }
 }  // namespace chainbase
 
 
