@@ -36,10 +36,11 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b2ff9f5a48bc8fb379c66ec4e7907ea1e796ff1b
+    ref: 39a4bcaaa59bc364807ef1e06d40f3084947bb56
     file:
-    - '/templates/wasm_build.gitlab-ci.yml'
-    - '/templates/python_projects.gitlab-ci.yml'
+      - '/templates/npm_projects.gitlab-ci.yml'
+      - '/templates/wasm_build.gitlab-ci.yml'
+      - '/templates/python_projects.gitlab-ci.yml'
 
 .wasm_beekeeper_test_base:
   extends: .job-defaults
