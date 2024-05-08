@@ -447,7 +447,14 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
   {
     block_log* nth_part_log = new block_log( _app );
     uint32_t part_number = cit->part_number;
-    internal_open_and_init( nth_part_log, cit->part_file, read_only ? *read_only : false );
+    // Read only access is preferred unless
+    // - rw is forced from outside (read_only optional parameter is set).
+    // - artifacts file corresponding to part file is missing.
+    // - part file is head one, where new blocks will be appended.
+    fc::path artifacts_file( cit->part_file.generic_string() + block_log_file_name_info::_artifacts_extension );
+    bool open_ro = read_only ? *read_only : 
+      ( fc::exists( artifacts_file ) && part_number < head_part_number ? true : false );
+    internal_open_and_init( nth_part_log, cit->part_file, open_ro );
     // Part numbers are always positive.
     _logs[ part_number-1 ] = nth_part_log;
   }
