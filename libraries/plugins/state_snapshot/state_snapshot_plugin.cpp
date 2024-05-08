@@ -941,7 +941,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1028,6 +1028,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   ::rocksdb::ColumnFamilyHandle* snapshotManifestCF = db.create_column_family("IRREVERSIBLE_STATE");
   ::rocksdb::ColumnFamilyHandle* StateDefinitionsDataCF = db.create_column_family("STATE_DEFINITIONS_DATA");
   ::rocksdb::ColumnFamilyHandle* BlockchainConfigurationCF = db.create_column_family("BLOCKCHAIN_CONFIGURATION");
+  ::rocksdb::ColumnFamilyHandle* PluginsConfigurationCF = db.create_column_family("PLUGINS");
 
   ::rocksdb::WriteOptions writeOptions;
 
@@ -1137,10 +1138,25 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     }
   }
 
+  {
+    const std::string json = _mainDb.get_plugins_from_shm();
+    Slice key("PLUGINS");
+    Slice value(json);
+    auto status = db->Put(writeOptions, PluginsConfigurationCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"PLUGINS\"");
+
+      throw std::exception();
+    }
+  }
+
   db.close();
   }
 
-std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
 {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -1170,6 +1186,10 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
 
   cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
   cfDescriptor.name = "BLOCKCHAIN_CONFIGURATION";
+  cfDescriptors.push_back(cfDescriptor);
+
+  cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
+  cfDescriptor.name = "PLUGINS";
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
@@ -1329,6 +1349,22 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
     blockchain_configuration = valueSlice.ToString();
   }
 
+  std::string plugins;
+  {
+    ::rocksdb::ReadOptions rOptions;
+
+    std::unique_ptr<::rocksdb::Iterator> pluginsDataIterator(manifestDb->NewIterator(rOptions, cfHandles[6]));
+    pluginsDataIterator->SeekToFirst();
+    FC_ASSERT(pluginsDataIterator->Valid(), "No entry for PLUGINS. Probably used old snapshot format (must be regenerated).");
+
+    Slice keySlice = pluginsDataIterator->key();
+    auto valueSlice = pluginsDataIterator->value();
+
+    std::string keyName = keySlice.ToString();
+    FC_ASSERT(keyName == "PLUGINS", "Broken snapshot - no entry for PLUGINS");
+    plugins = valueSlice.ToString();
+  }
+
   for(auto* cfh : cfHandles)
   {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
@@ -1341,7 +1377,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), lib);
+  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), lib);
 }
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
@@ -1475,6 +1511,33 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
 
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath);
+
+  bool throw_exception_if_state_definitions_mismatch = false;
+
+  {
+    const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);
+    fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
+    std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
+    bool less_current_plugins_than_plugins_in_snapshot = false;
+
+    for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
+    {
+      const std::string plugin_from_snapshot = plugin_from_snapshot_as_variant.as_string();
+      if (current_plugins.count(plugin_from_snapshot))
+        current_plugins.erase(plugin_from_snapshot);
+      else
+        less_current_plugins_than_plugins_in_snapshot = true;
+    }
+
+    if (!current_plugins.empty())
+    {
+      elog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+      throw_exception_if_state_definitions_mismatch = true;
+    }
+    else if (less_current_plugins_than_plugins_in_snapshot)
+      wlog("Snaphot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+  }
+
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
 
   {
@@ -1499,10 +1562,19 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
-      FC_THROW_EXCEPTION(chain::snapshot_state_definitions_mismatch_exception,
-        "Details:\n ${details}"
-        "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-        ("details", result.second)(current_data_filename)(loaded_data_filename));
+      if (throw_exception_if_state_definitions_mismatch)
+      {
+        FC_THROW_EXCEPTION(chain::snapshot_state_definitions_mismatch_exception,
+          "Details:\n ${details}"
+          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+          ("details", result.second)(current_data_filename)(loaded_data_filename));
+      }
+      else
+      {
+        wlog("Snapshot state definitions mismatch current hived version. Details:\n ${details}"
+          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+          ("details", result.second)(current_data_filename)(loaded_data_filename));
+      }
     }
   }
 
@@ -1629,7 +1701,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     load_snapshot_external_data(extDataIdx);
   }
 
-  auto last_irr_block = std::get<4>(snapshotManifest);
+  auto last_irr_block = std::get<5>(snapshotManifest);
   
   _mainDb.set_last_irreversible_block_num(last_irr_block);
 
