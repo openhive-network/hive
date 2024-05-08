@@ -187,27 +187,21 @@ mirrornet_node_build:
     - hived-for-tests
 
 test_beekeeper_wasm:
-  extends: .wasm_beekeeper_test_base
+  extends: .npm_test_template
 
   needs:
     - job: beekeeper_wasm_build
       artifacts: true
+
     - job: beekeeper_tsc_build
       artifacts: true
-    - job: beekeeper_wasm_package_generation
-      artifacts: true
 
-  script:
-    - . "$NVM_DIR/nvm.sh"  # This loads nvm
-    - nvm use "${NODEJS_VERSION}"
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper-*.tgz --strip-components=1
-    - npm run test
+  variables:
+    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
 
-  artifacts:
-    reports:
-      junit: programs/beekeeper/beekeeper_wasm/results.xml
-    paths:
-      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/results.json"
+  tags:
+    - public-runner-docker
 
 mirrornet_replay_test:
   extends: .job-defaults
