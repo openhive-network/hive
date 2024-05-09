@@ -244,13 +244,13 @@ test.describe('WASM storage tests', () => {
   test('Should be able to list the previously imported key from another page with the same browser context with explicitly closing the instance of beekeeper', async () => {
     const keys = await retrieveKeys(page2, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
-    expect(keys).toStrictEqual({"keys": [{"public_key": "5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
+    expect(keys).toStrictEqual({"keys": [{"public_key": "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
   });
 
   test('Should be able to list the previously imported key without explicitly closing the instance of beekeeper', async () => {
     const keys = await retrieveKeys(page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
-    expect(keys).toStrictEqual({"keys": [{"public_key": "5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
+    expect(keys).toStrictEqual({"keys": [{"public_key": "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
   });
 
   test.afterAll(async () => {

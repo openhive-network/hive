@@ -4,6 +4,14 @@
 
 namespace beekeeper {
 
+  namespace utility
+  {
+    namespace public_key
+    {
+      const char* BEEKEEPER_HIVE_ADDRESS_PREFIX = "STM";
+    }
+  }
+
   bool public_key_details::operator<( const public_key_details& obj ) const
   {
     return public_key < obj.public_key;

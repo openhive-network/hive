@@ -61,14 +61,18 @@ namespace utility
 {
   namespace public_key
   {
+    //HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined
+    extern const char* BEEKEEPER_HIVE_ADDRESS_PREFIX;
+
     inline public_key_type create( const std::string& source )
     {
-      return public_key_type::from_base58( source, false/*is_sha256*/ );
+      FC_ASSERT( source.substr( 0, strlen(BEEKEEPER_HIVE_ADDRESS_PREFIX) ) == BEEKEEPER_HIVE_ADDRESS_PREFIX, "public key requires ${prefix} prefix", ("prefix", BEEKEEPER_HIVE_ADDRESS_PREFIX) );
+      return public_key_type::from_base58( source.substr( strlen(BEEKEEPER_HIVE_ADDRESS_PREFIX) ), false/*is_sha256*/ );
     }
 
     inline std::string to_string( const public_key_type& source )
     {
-      return public_key_type::to_base58( source, false/*is_sha256*/ );
+      return BEEKEEPER_HIVE_ADDRESS_PREFIX + public_key_type::to_base58( source, false/*is_sha256*/ );
     }
   }
 
