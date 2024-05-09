@@ -64,8 +64,8 @@ namespace hive { namespace chain {
                                  block_processor_t processor,
                                  blockchain_worker_thread_pool& thread_pool ) const override;
     virtual full_block_ptr_t fetch_block_by_id( const block_id_type& id ) const override;
-    virtual full_block_ptr_t fetch_block_by_number( uint32_t block_num,
-      fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
+     virtual full_block_ptr_t get_block_by_number(
+      uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual full_block_range_t fetch_block_range( const uint32_t starting_block_num, 
       const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual bool is_known_block( const block_id_type& id ) const override;
@@ -115,6 +115,9 @@ namespace hive { namespace chain {
       return block_num == 0 ? 1 :
         ( (uint64_t)block_num + (uint64_t)_max_blocks_in_log_file -1 ) / _max_blocks_in_log_file;
     }
+
+    /// Returns the number of oldest stored block.
+    uint32_t get_tail_block_num() const;
 
   private:
     appbase::application&           _app;

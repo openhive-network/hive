@@ -820,7 +820,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     generate_block(); //t1 becomes part of block
 
     BOOST_TEST_MESSAGE( "Save aside and remove head block" );
-    auto block = get_block_reader().fetch_block_by_number( db->head_block_num() );
+    auto block = get_block_reader().get_block_by_number( db->head_block_num() );
     BOOST_REQUIRE( block );
     db->pop_block(); //t1 becomes popped
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "1000.000 TESTS" ) );
@@ -859,7 +859,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       //however it remains pending
       BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
       BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
-      block = get_block_reader().fetch_block_by_number( db->head_block_num() );
+      block = get_block_reader().get_block_by_number( db->head_block_num() );
       BOOST_REQUIRE( block );
       //check that block is indeed empty, without t2 and that tx2 waits as pending
       BOOST_REQUIRE( block->get_block().transactions.empty() && !db->_pending_tx.empty() );
