@@ -174,12 +174,34 @@ std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
-std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_number( uint32_t block_num,
-  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{ 
-  try {
-    return read_block_by_num(block_num);
-  } FC_LOG_AND_RETHROW()
+std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds ) const
+{
+  // For the time being we'll silently return empty pointer for requests of future blocks.
+  // FC_ASSERT( block_num <= head_block_num(),
+  //           "Got no block with number greater than ${num}.", ("num", head_block_num()) );
+  if( block_num > head_block_num() )
+    return std::shared_ptr<full_block_type>();
+
+  // Legacy behavior.
+  if( block_num == 0 )
+    return std::shared_ptr<full_block_type>();
+
+  const block_log* log = get_block_log_corresponding_to( block_num );
+  if( _block_log_split > MULTIPLE_FILES_FULL_BLOCK_LOG )
+  {
+    FC_ASSERT( log != nullptr,
+      "Block ${num} has been pruned (oldest stored block is ${old}). "
+      "Consider disabling pruning or increasing block-log-split value (currently ${part_count}).",
+      ("num", block_num)("old", get_tail_block_num())("part_count", _block_log_split) );
+  }
+  else
+  {
+    FC_ASSERT( log != nullptr,
+      "Internal error, block ${block_num} should have been found in block log file", (block_num) );
+  }
+
+  return log->read_block_by_num( block_num );
 }
 
 std::vector<std::shared_ptr<full_block_type>> block_log_wrapper::fetch_block_range( 
@@ -533,6 +555,18 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
   {
     do_appending( _logs.back() );
   }
+}
+
+uint32_t block_log_wrapper::get_tail_block_num() const
+{
+  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ||
+      _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG )
+  {
+    return 1;
+  }
+
+  int oldest_available_part = std::max<int>( _logs.size() - _block_log_split, 1 );
+  return (oldest_available_part -1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 1;
 }
 
 } } //hive::chain

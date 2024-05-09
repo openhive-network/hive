@@ -504,7 +504,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_TEST_MESSAGE( " -- transaction status expiration test" );
 
     // The time of our last irreversible block
-    auto lib_time = get_block_reader().fetch_block_by_number( 
+    auto lib_time = get_block_reader().get_block_by_number( 
       db->get_last_irreversible_block_num() )->get_block_header().timestamp;
     api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), .expiration = lib_time } );
     BOOST_REQUIRE( api_return.status == expired_irreversible );
@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
     // One second before our block depth
-    auto old_time = get_block_reader().fetch_block_by_number( 
+    auto old_time = get_block_reader().get_block_by_number( 
       db->head_block_num() - TRANSACTION_STATUS_TEST_BLOCK_DEPTH + 1 )->get_block_header().timestamp - fc::seconds(1);
     api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), old_time } );
     BOOST_REQUIRE( api_return.status == too_old );

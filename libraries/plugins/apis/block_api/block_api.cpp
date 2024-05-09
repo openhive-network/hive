@@ -52,8 +52,8 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
   std::shared_ptr<full_block_type> block = 
-    _block_reader.fetch_block_by_number(args.block_num, fc::seconds(1) );
-  if (block)
+    _block_reader.get_block_by_number(args.block_num, fc::seconds(1) );
+  if( block )
     result.header = block->get_block_header();
   return result;
 }
@@ -62,8 +62,8 @@ DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
   std::shared_ptr<full_block_type> full_block = 
-    _block_reader.fetch_block_by_number(args.block_num, fc::seconds(1));
-  if (full_block)
+    _block_reader.get_block_by_number(args.block_num, fc::seconds(1));
+  if( full_block )
     result.block = full_block;
   return result;
 }

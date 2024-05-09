@@ -45,17 +45,22 @@ void fork_db_block_reader::process_blocks( uint32_t starting_block_number,
                                      thread_pool );
 }
 
-std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_number( uint32_t block_num,
-  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{ 
-  try {
-    shared_ptr<fork_item> forkdb_item = 
-      _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
-    if (forkdb_item)
-      return forkdb_item->full_block;
+std::shared_ptr<full_block_type> fork_db_block_reader::get_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds ) const
+{
+  // For the time being we'll silently return empty pointer for requests of future blocks.
+  // FC_ASSERT( block_num <= head_block_num(), "Got no block with number greater than ${num}.", ("num", head_block_num()) );
 
-    return read_block_by_num(block_num);
-  } FC_LOG_AND_RETHROW()
+  std::shared_ptr<full_block_type> blk;
+
+  shared_ptr<fork_item> forkdb_item = 
+    _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
+  if (forkdb_item)
+    blk = forkdb_item->full_block;
+  else
+    blk = _log_reader.get_block_by_number(block_num);
+
+  return blk;
 }
 
 std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id( 

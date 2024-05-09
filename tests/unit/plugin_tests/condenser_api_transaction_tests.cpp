@@ -25,7 +25,7 @@ BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture
 
 void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num, const expected_t& expected_transactions )
 {
-  auto full_block_ptr = caf.get_block_reader().fetch_block_by_number( block_num );
+  auto full_block_ptr = caf.get_block_reader().get_block_by_number( block_num );
   const signed_block& block = full_block_ptr->get_block();
   ilog( "Block #${b} contains ${n1} transaction(s), ${n2} expected.",
     ("n1", block.transactions.size())("b", block_num)("n2", expected_transactions.size()) );
