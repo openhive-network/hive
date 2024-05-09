@@ -59,7 +59,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_head_block )
 {
-  return { _block_reader.fetch_block_by_number(_db.head_block_num())->get_block() }; 
+  return { _block_reader.get_block_by_number(_db.head_block_num())->get_block() };
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_witness_schedule )
