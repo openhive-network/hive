@@ -36,11 +36,29 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: d34967496fcf2bb520426aba537dcd5048ad41b2
+    ref: 91d072682e22869aea3acd7affa20db0f6a7a2c8
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
       - '/templates/python_projects.gitlab-ci.yml'
+      - '/templates/cache_cleanup.gitlab-ci.yml'
+
+.wasm_beekeeper_test_base:
+  extends: .job-defaults
+  stage: test
+  # emscripten image can be used as it contains all needed tools (node and npm).
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    FF_NETWORK_PER_BUILD: 1
+
+  before_script:
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - nvm use "${NODEJS_VERSION}"
+    - cd programs/beekeeper/beekeeper_wasm
+    - pnpm install --frozen-lockfile
+
+  tags:
+    - public-runner-docker
 
 prepare_hived_image:
   extends: .prepare_hived_image
@@ -68,7 +86,7 @@ prepare_hived_data:
     - data-cache-storage
 
 cleanup_hived_cache_manual:
-  extends: .cleanup_cache_manual
+  extends: .cleanup_cache_manual_template
   stage: cleanup
   variables:
     CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
@@ -76,7 +94,7 @@ cleanup_hived_cache_manual:
     - data-cache-storage
 
 cleanup_old_hived_cache:
-  extends: .cleanup_old_cache
+  extends: .cleanup_old_cache_template
   stage: cleanup
   variables:
     CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
