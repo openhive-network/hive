@@ -6,6 +6,8 @@ import test_tools as tt
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
 
+# hasz13
+
 
 def test_account_theft_after_user_overlooked_change_of_recovery_agent(prepare_environment: tuple) -> None:
     """
