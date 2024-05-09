@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "b2ff9f5a48bc8fb379c66ec4e7907ea1e796ff1b"
+  CI_COMMON_JOB_VERSION: "91d072682e22869aea3acd7affa20db0f6a7a2c8"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: b2ff9f5a48bc8fb379c66ec4e7907ea1e796ff1b # develop
+    ref: 91d072682e22869aea3acd7affa20db0f6a7a2c8 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -20,31 +20,6 @@ include:
 
 .docker_image_cleanup_job:
   extends: .docker_image_cleanup_job_template
-
-.cleanup_cache_manual:
-  extends: .job-defaults
-  image: alpine:3.16
-  variables:
-    CLEANUP_PATH_PATTERN: ""
-  needs: []
-  script:
-    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - du -h -d 1 /cache
-    - rm $CLEANUP_PATH_PATTERN -rf
-  when: manual
-
-.cleanup_old_cache:
-  extends: .job-defaults
-  image: alpine:3.16
-  variables:
-    CLEANUP_PATH_PATTERN: ""
-    CACHE_DAYS: 7
-  needs: []
-  script:
-    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - du -h -d 1 /cache
-    - find "/cache" -maxdepth 1 -wholename "$CLEANUP_PATH_PATTERN" -mtime "+${CACHE_DAYS}"
-    - find "/cache" -maxdepth 1 -wholename "$CLEANUP_PATH_PATTERN" -mtime "+${CACHE_DAYS}" -exec rm -rf {} \;
 
 .prepare_hived_image:
   extends: .docker_image_builder_job
