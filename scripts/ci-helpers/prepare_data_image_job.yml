@@ -33,6 +33,19 @@ include:
     - rm $CLEANUP_PATH_PATTERN -rf
   when: manual
 
+.cleanup_old_cache:
+  extends: .job-defaults
+  image: alpine:3.16
+  variables:
+    CLEANUP_PATH_PATTERN: ""
+    CACHE_DAYS: 7
+  needs: []
+  script:
+    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
+    - du -h -d 1 /cache
+    - find "/cache" -maxdepth 1 -wholename "$CLEANUP_PATH_PATTERN" -mtime "+${CACHE_DAYS}"
+    - find "/cache" -maxdepth 1 -wholename "$CLEANUP_PATH_PATTERN" -mtime "+${CACHE_DAYS}" -exec rm -rf {} \;
+
 .prepare_hived_image:
   extends: .docker_image_builder_job
 

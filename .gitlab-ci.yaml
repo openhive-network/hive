@@ -75,6 +75,15 @@ cleanup_hived_cache_manual:
   tags:
     - data-cache-storage
 
+cleanup_old_hived_cache:
+  extends: .cleanup_old_cache
+  stage: cleanup
+  variables:
+    CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
+  tags:
+    - data-cache-storage
+
+
 testnet_node_build:
   extends: .prepare_hived_image
   stage: build
