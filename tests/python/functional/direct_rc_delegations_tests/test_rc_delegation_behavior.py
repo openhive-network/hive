@@ -8,6 +8,7 @@ import pytest
 import test_tools as tt
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_delegated_rc_account_execute_operation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -16,6 +17,7 @@ def test_delegated_rc_account_execute_operation(wallet: tt.Wallet) -> None:
     wallet.api.create_account(accounts[1], "alice", "{}")
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -30,6 +32,7 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet) -> N
         wallet.api.create_account(accounts[1], "bob", "{}")
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_rc_delegation_to_same_receiver(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(3, "receiver"))
 
@@ -44,6 +47,7 @@ def test_rc_delegation_to_same_receiver(wallet: tt.Wallet) -> None:
     assert get_rc_account_info(accounts[2], wallet)["max_rc"] == 12
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_same_rc_delegation_rejection(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -55,6 +59,7 @@ def test_same_rc_delegation_rejection(wallet: tt.Wallet) -> None:
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_overwriting_of_delegated_rc_value(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -70,6 +75,7 @@ def test_overwriting_of_delegated_rc_value(wallet: tt.Wallet) -> None:
     assert get_rc_account_info(accounts[1], wallet)["max_rc"] == 7
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_large_rc_delegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
     # Wait for block is necessary because transactions must always enter the same specific blocks.
     # This way, 'cost of transaction' is always same and is possible to delegate maximal, huge amount of RC.
@@ -83,6 +89,7 @@ def test_large_rc_delegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
     assert int(get_rc_account_info(accounts[1], wallet)["max_rc"]) == rc_to_delegate
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -92,6 +99,7 @@ def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(3, "receiver"))
 
@@ -102,6 +110,7 @@ def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:
         wallet.api.delegate_rc(accounts[1], [accounts[2]], 50)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -114,6 +123,7 @@ def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
         wallet.api.sign_transaction(operation)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_minus_rc_delegation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -122,6 +132,7 @@ def test_minus_rc_delegation(wallet: tt.Wallet) -> None:
         wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_power_up_delegator(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
@@ -133,6 +144,7 @@ def test_power_up_delegator(wallet: tt.Wallet) -> None:
     assert rc0 == rc1
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.node_shared_file_size("16G")
 def test_multidelegation(wallet: tt.Wallet) -> None:
     amount_of_delegated_rc = 1
@@ -170,6 +182,7 @@ def test_multidelegation(wallet: tt.Wallet) -> None:
         assert get_rc_account_info(accounts[account_index], wallet)["received_delegated_rc"] == amount_of_delegated_rc
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_delegations_cancellation_after_rollback_vest_delegation_to_delegator(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(5, "account"))
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10000))
