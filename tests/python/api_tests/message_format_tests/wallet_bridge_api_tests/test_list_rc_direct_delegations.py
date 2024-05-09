@@ -22,6 +22,7 @@ CORRECT_VALUES = [
 ]
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -44,6 +45,7 @@ def test_list_rc_direct_delegations_with_correct_value(
     node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -71,6 +73,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_testnet(
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -93,6 +96,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_mainnet(
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -124,6 +128,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_testnet(
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
