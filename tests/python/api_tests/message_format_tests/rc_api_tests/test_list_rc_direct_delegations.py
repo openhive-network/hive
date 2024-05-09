@@ -18,6 +18,7 @@ CORRECT_VALUES = [
 ]
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.fixture()
 def ready_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> tt.InitNode | tt.RemoteNode:
     if should_prepare:
@@ -26,6 +27,7 @@ def ready_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> tt.In
     return node
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -41,6 +43,7 @@ def test_list_rc_direct_delegations_with_correct_value(
     ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -63,6 +66,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_direct_delegations_with_additional_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
     ready_node.api.rc.list_rc_direct_delegations(
@@ -72,6 +76,7 @@ def test_list_rc_direct_delegations_with_additional_argument(ready_node: tt.Init
     )
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @pytest.mark.parametrize(
     ("from_", "to", "limit"),
     [
@@ -98,6 +103,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_direct_delegations_with_missing_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
