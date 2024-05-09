@@ -1,0 +1,180 @@
+# atomic operations
+{
+   atomic_load
+   Helgrind:Race
+   fun:load
+   fun:load
+}
+{
+   atomic_exchange
+   Helgrind:Race
+   fun:exchange
+   fun:exchange
+}
+{
+   atomic_store
+   Helgrind:Race
+   fun:store
+   fun:store
+}
+# fc::logger::get is synchronised by spinlock
+{
+   fc::logger::get
+   Helgrind:Race
+   fun:_M_equals
+   fun:_M_find_before_node
+   fun:_M_find_node
+   fun:_ZNSt8__detail9_Map_baseINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS6_N2fc6loggerEESaISB_ENS_10_Select1stESt8equal_toIS6_ESt4hashIS6_ENS_18_Mod_range_hashingENS_20_Default_ranged_hashENS_20_Prime_rehash_policyENS_17_Hashtable_traitsILb1ELb0ELb1EEELb1EEixERS8_
+   fun:operator[]
+   fun:_ZN2fc6logger3getERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+}
+# fc::task dtors, synchronised by fc::promise and fc::future
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskINS_2ip8endpointELm8EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZNK8graphene3net4node29get_actual_listening_endpointEv
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm8EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN4hive7plugins3p2p10p2p_plugin14plugin_startupEv
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm16EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node9broadcastERKSt10shared_ptrIN4hive5chain15full_block_typeEE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm8EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node5closeEv
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm8EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net6detail17node_impl_deleterclEPNS1_9node_implE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm16EED0Ev
+   fun:run_next_task
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm176EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN7appbase11application19load_logging_configEv
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm16EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node18load_configurationERKN2fc4pathE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm24EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node17set_node_delegateEPNS0_13node_delegateE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm24EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node9sync_fromERKNS0_7item_idERKSt6vectorIjSaIjEE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm16EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node21listen_to_p2p_networkESt8functionIFbvEE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm8EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node22connect_to_p2p_networkEv
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Race
+   fun:_ZTv0_n24_N2fc4taskIvLm16EED0Ev
+   fun:~shared_ptr
+   fun:~future
+   fun:_ZN8graphene3net4node28set_advanced_node_parametersERKN2fc14variant_objectE
+}
+# Signaling queue_condition_variable is safe in chain_plugin::generate_block, because we push to write_queue and thgen check in chain_plugin_impl::start_write_processing for write_queue.empty()
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive7plugins5chain12chain_plugin14generate_blockERKSt10shared_ptrINS_5chain27generate_block_flow_controlEE
+}
+# Same, but in chain_plugin::accept_transaction
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive7plugins5chain12chain_plugin18accept_transactionERKSt10shared_ptrINS_5chain21full_transaction_typeEENS2_9lock_typeE
+}
+# Signaling work_queue_condition_variable in blockchain_worker_thread_pool::shutdown is safe, because we unset running and check it's set in is_running
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive5chain29blockchain_worker_thread_pool8shutdownEv
+}
+# Signaling work_queue_condition_variable in blockchain_worker_thread_pool::enqueue_work is safe, because we push to work_queues and check it's non-empty in dequeue_work
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive5chain29blockchain_worker_thread_pool12enqueue_workERKSt10shared_ptrINS0_15full_block_typeEENS1_16data_source_typeE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive5chain29blockchain_worker_thread_pool12enqueue_workERKSt10shared_ptrINS0_21full_transaction_typeEENS1_16data_source_typeE
+}
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive5chain29blockchain_worker_thread_pool12enqueue_workERKSt6vectorISt10shared_ptrINS0_21full_transaction_typeEESaIS5_EENS1_16data_source_typeESt8optionalIjE
+}
+# Signaling queue_condition_variable in chain_plugin_impl::stop_write_processing is safe, because we're unsetting running and check it's set in chain_plugin_impl::start_write_processing
+{
+   <insert_a_suppression_name_here>
+   Helgrind:Dubious
+   obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
+   fun:_ZN4hive7plugins5chain6detail17chain_plugin_impl21stop_write_processingEv
+}
