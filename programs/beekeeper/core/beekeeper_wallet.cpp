@@ -119,7 +119,7 @@ public:
   {
     FC_ASSERT( public_key.size() > 0 );
 
-    public_key_type pub( public_key_type::from_base58( public_key, false/*is_sha256*/ ) );
+    public_key_type pub( utility::public_key::create( public_key ) );
     auto itr = _keys.find(pub);
     if( itr != _keys.end() )
     {

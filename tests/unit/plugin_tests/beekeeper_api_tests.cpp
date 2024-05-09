@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
 
     std::string _wallet_name                = "w0";
     std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
-    std::string _public_key                 = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+    std::string _public_key                 = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
     hive::protocol::digest_type _sig_digest = hive::protocol::digest_type( "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff" );
 
     std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
 
     std::vector<std::shared_ptr<std::thread>> threads;
 
-    std::string _public_key                 = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+    std::string _public_key                 = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
     hive::protocol::digest_type _sig_digest = hive::protocol::digest_type( "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff" );
 
     BOOST_SCOPE_EXIT(&threads)

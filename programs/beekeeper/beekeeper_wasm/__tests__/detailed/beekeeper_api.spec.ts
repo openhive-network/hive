@@ -33,16 +33,16 @@ test.describe('WASM beekeeper_api tests', () => {
 
       window.keys =
       [
-        ['5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT', '5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh'],
-        ['5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78', '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa'],
-        ['5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS', '7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH'],
-        ['5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n', '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'],
-        ['5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn', '6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm'],
-        ['5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze', '6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW'],
-        ['5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su', '8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME'],
-        ['5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw', '8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4'],
-        ['5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG', '6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45'],
-        ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', '8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5']
+        ['5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT', 'STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh'],
+        ['5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78', 'STM6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa'],
+        ['5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS', 'STM7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH'],
+        ['5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n', 'STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'],
+        ['5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn', 'STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm'],
+        ['5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze', 'STM6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW'],
+        ['5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su', 'STM8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME'],
+        ['5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw', 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4'],
+        ['5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG', 'STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45'],
+        ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', 'STM8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5']
       ];
 
       window.signData =
@@ -850,11 +850,15 @@ test.describe('WASM beekeeper_api tests', () => {
 
         error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "currant");
         console.log(error_message);
-        assert.equal(error_message.includes("s == sizeof(data)"), true, "NEGATIVE TESTCASE 6b FAILED");
+        assert.equal(error_message.includes("public key requires STM prefix"), true, "NEGATIVE TESTCASE 6b FAILED");
 
         error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
         console.log(error_message);
-        assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6c FAILED");
+        assert.equal(error_message.includes("public key requires STM prefix"), true, "NEGATIVE TESTCASE 6c FAILED");
+
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+        console.log(error_message);
+        assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6d FAILED");
       }
       {
         api.setAcceptError = true;
@@ -867,9 +871,9 @@ test.describe('WASM beekeeper_api tests', () => {
         console.log(error_message);
         assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
 
-        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
         console.log(error_message);
-        assert.equal(error_message.includes("Public key 6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets"), true);
+        assert.equal(error_message.includes("Public key STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets"), true);
       }
     }, WALLET_OPTIONS);
   });
@@ -936,7 +940,7 @@ test.describe('WASM beekeeper_api tests', () => {
         (api.setAcceptError as unknown as boolean) = true;
 
         const error_message = api.encryptData(api.implicitSessionToken, keys[from_key_number][1], keys[to_key_number][1], walletNames[walletNo], content);
-        assert.equal(error_message.includes("Public key 6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet"), true);
+        assert.equal(error_message.includes("Public key STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet"), true);
       }
 
       (api.setAcceptError as unknown as boolean) = false;

@@ -645,7 +645,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
       auto _password = wm.create(_token, _wallet_name, std::optional<std::string>());
       auto _imported_public_key = wm.import_key( _token, _wallet_name, _private_key_str );
-      BOOST_REQUIRE( _imported_public_key == _public_key_str );
+      BOOST_REQUIRE( _imported_public_key != _public_key_str );
+      BOOST_REQUIRE( _imported_public_key == std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str );
 
       auto _calculate_signature = [&]( const std::string& json_trx, const std::string& signature_pattern )
       {
@@ -880,10 +881,15 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
         auto _signature_local = _private_key.sign_compact( _sig_digest );
 
-        auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, _public_key_str ) ), fc::json::format_validation_mode::full ).as<beekeeper::signature_return>();
+        auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str ) ), fc::json::format_validation_mode::full ).as<beekeeper::signature_return>();
+
         auto _error_message = _obj.sign_digest( _token, _sig_digest, _public_key_str, "avocado" );
+        BOOST_REQUIRE( _error_message.find( "Incorrect size of public key" ) != std::string::npos );
+
+        _error_message = _obj.sign_digest( _token, _sig_digest, std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str, "avocado" );
         BOOST_REQUIRE( _error_message.find( "not found in avocado wallet" ) != std::string::npos );
-        auto _signature_beekeeper_2 = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, _public_key_str, "wallet_0" ) ), fc::json::format_validation_mode::full ).as<beekeeper::signature_return>();
+
+        auto _signature_beekeeper_2 = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str, "wallet_0" ) ), fc::json::format_validation_mode::full ).as<beekeeper::signature_return>();
 
         auto _local = fc::json::to_string( _signature_local );
         auto _beekeeper = fc::json::to_string( _signature_beekeeper.signature );
@@ -903,7 +909,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
                             _signature_01_result );
 
-      auto _error_message = _obj.sign_digest( _token, "", _public_key_str, "avocado" );
+      auto _error_message = _obj.sign_digest( _token, "", std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str, "avocado" );
       BOOST_REQUIRE( _error_message.find( "`sig_digest` can't be empty" ) != std::string::npos );
     }
 
@@ -1402,10 +1408,10 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
 
     auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
-    auto _public_key_str  = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+    auto _public_key_str  = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
 
     auto _private_key_str_2 = "5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn";
-    auto _public_key_str_2  = "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm";
+    auto _public_key_str_2  = "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm";
 
     const std::string _host = "127.0.0.1:666";
     const uint64_t _timeout = 90;
@@ -1509,23 +1515,22 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
     struct keys
     {
       std::string private_key;
-      std::string public_key;
     };
     std::vector<keys> _keys_a =
     {
-      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
-      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
-      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
-      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"},
-      {"5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg", "8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5"}
+      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze"},
+      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su"},
+      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw"},
+      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG"},
+      {"5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg"}
     };
     std::vector<keys> _keys_b =
     {
-      {"5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT", "5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"},
-      {"5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78", "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},
-      {"5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS", "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH"},
-      {"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n", "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},
-      {"5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"}
+      {"5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT"},
+      {"5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78"},
+      {"5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS"},
+      {"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"},
+      {"5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn"}
     };
 
     struct wallet
@@ -1616,10 +1621,10 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     };
     std::vector<keys> _keys =
     {
-      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
-      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
-      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
-      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
+      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "STM6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
+      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "STM8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
+      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
+      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
     };
 
     const string _fruits_content = "avocado-banana-cherry-durian";
