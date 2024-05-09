@@ -1034,26 +1034,19 @@ deploy_beekeeper_wasm_dev_package:
     - public-runner-docker
 
 deploy_beekeeper_wasm_production_public_npm:
+  extends: .registry_npmjs_org_deploy_package_template
   stage: publish
-  # emscripten image can be used as it contains all needed tools.
-  image: ${EMSCRIPTEN_IMAGE}
   variables:
-    PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
-    NPM_SCOPE: "@hiveio"
-    NPM_REGISTRY: "registry.npmjs.org/"
-  script:
-    - tar -xf "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm/dist/hiveio-beekeeper*.tgz -C "$CI_PROJECT_DIR"/programs/beekeeper/beekeeper_wasm --strip-components=1
-    - scripts/ci-helpers/bump_npm_version.sh "$NPM_REGISTRY" "$PUBLISH_TOKEN" "$NPM_SCOPE"
-    - scripts/ci-helpers/npm_publish.sh
+    NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
+    NPM_PACKAGE_NAME: "beekeeper"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
   needs:
+    - job: test_beekeeper_wasm
     - job: beekeeper_wasm_build
       artifacts: true
     - job: beekeeper_tsc_build
       artifacts: true
+
   tags:
     - public-runner-docker
-  rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
-      when: manual
-      allow_failure: true
-
