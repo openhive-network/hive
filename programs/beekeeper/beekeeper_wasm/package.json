@@ -5,6 +5,7 @@
   "main": "dist/bundle/web.js",
   "type": "module",
   "private": false,
+  "packageManager": "pnpm@9.0.6",
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
