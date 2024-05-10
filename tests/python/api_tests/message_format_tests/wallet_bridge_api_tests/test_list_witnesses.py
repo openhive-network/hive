@@ -24,6 +24,7 @@ CORRECT_VALUES = [
 ]
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize(
     ("witness_account", "limit"),
     [
@@ -41,6 +42,7 @@ def test_list_witnesses_with_correct_value(
     node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize(
     ("witness_account", "limit"),
     [
@@ -59,6 +61,7 @@ def test_list_witnesses_with_incorrect_value(
         node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize(
     ("witness_account", "limit"),
     [

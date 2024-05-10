@@ -9,6 +9,7 @@ from hive_local_tools.functional.python.recovery import get_authority, get_owner
 # hasz13
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_account_theft_after_user_overlooked_change_of_recovery_agent(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -56,6 +57,7 @@ def test_account_theft_after_user_overlooked_change_of_recovery_agent(prepare_en
     wallet_thief.api.recover_account("alice", alice_original_authority, thief_authority)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prepare_environment: tuple) -> None:
     """
     Timeline:

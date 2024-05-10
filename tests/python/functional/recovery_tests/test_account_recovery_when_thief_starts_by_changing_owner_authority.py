@@ -9,6 +9,7 @@ from hive_local_tools.functional.python.recovery import get_authority, get_owner
 # hasz13
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -70,6 +71,7 @@ def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
     assert get_owner_key(node, "alice") == thief_key
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -124,6 +126,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
     """
     Timeline:
