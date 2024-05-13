@@ -20,6 +20,7 @@ namespace fc {
   class spin_lock {
     public:
       spin_lock();
+      ~spin_lock();
       bool try_lock();
       bool try_lock_for( const microseconds& rel_time );
       bool try_lock_until( const time_point& abs_time );

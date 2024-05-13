@@ -20,6 +20,7 @@ namespace fc {
   class spin_yield_lock {
     public:
       spin_yield_lock();
+      ~spin_yield_lock();
       bool try_lock();
       bool try_lock_for( const microseconds& rel_time );
       bool try_lock_until( const time_point& abs_time );

@@ -3,6 +3,8 @@
 #include <boost/memory_order.hpp>
 #include <assert.h>
 
+#include <valgrind/helgrind.h>
+
 namespace fc {
   retainable::retainable()
   :_ref_count(1) { 
@@ -18,9 +20,11 @@ namespace fc {
   }
 
   void retainable::release() {
-        boost::atomic_thread_fence(boost::memory_order_acquire);
+    boost::atomic_thread_fence(boost::memory_order_acquire);
+    ANNOTATE_HAPPENS_BEFORE((long)this);
     if( 1 == ((boost::atomic<int32_t>*)&_ref_count)->fetch_sub(1, boost::memory_order_release ) ) {
-        delete this;
+      ANNOTATE_HAPPENS_AFTER((long)this);
+      delete this;
     }
   }
 
