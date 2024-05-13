@@ -30,9 +30,9 @@ class smt_token_object : public object< smt_token_object_type, smt_token_object 
 public:
   struct smt_market_maker_state
   {
-    uint32_t   reserve_ratio = 0;
-    HIVE_asset hive_balance;
-    asset      token_balance;
+    uint32_t             reserve_ratio = 0;
+    protocol::HIVE_asset hive_balance;
+    protocol::asset      token_balance;
   };
 
 public:
@@ -41,26 +41,26 @@ public:
     asset_symbol_type _liquid_symbol, const account_name_type& _control_account )
     : id( _id ), liquid_symbol( _liquid_symbol ), control_account( _control_account )
   {
-    market_maker.token_balance = asset( 0, liquid_symbol );
+    market_maker.token_balance = protocol::asset( 0, liquid_symbol );
   }
 
-  price one_vesting_to_one_liquid() const
+  protocol::price one_vesting_to_one_liquid() const
   {
     int64_t one_smt = std::pow(10, liquid_symbol.decimals());
-    return price ( asset( one_smt, liquid_symbol.get_paired_symbol() ), asset( one_smt, liquid_symbol ) );
+    return protocol::price ( protocol::asset( one_smt, liquid_symbol.get_paired_symbol() ), protocol::asset( one_smt, liquid_symbol ) );
     // ^ On the assumption that liquid and vesting SMT have the same precision. See issue 2212
   }
 
-  price get_vesting_share_price() const
+  protocol::price get_vesting_share_price() const
   {
     if ( total_vesting_fund_smt == 0 || total_vesting_shares == 0 )
       return one_vesting_to_one_liquid();
       // ^ In original method of globa_property_object it was one liquid to one vesting which seems to be a bug.
 
-    return price( asset( total_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( total_vesting_fund_smt, liquid_symbol ) );
+    return protocol::price( protocol::asset( total_vesting_shares, liquid_symbol.get_paired_symbol() ), protocol::asset( total_vesting_fund_smt, liquid_symbol ) );
   }
 
-  price get_reward_vesting_share_price() const
+  protocol::price get_reward_vesting_share_price() const
   {
     share_type reward_vesting_shares = total_vesting_shares + pending_rewarded_vesting_shares;
     share_type reward_vesting_smt = total_vesting_fund_smt + pending_rewarded_vesting_smt;
@@ -69,7 +69,7 @@ public:
         return one_vesting_to_one_liquid();
     // ^ Additional check not found in original get_reward_vesting_share_price. See issue 2212
 
-    return price( asset( reward_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( reward_vesting_smt, liquid_symbol ) );
+    return protocol::price( protocol::asset( reward_vesting_shares, liquid_symbol.get_paired_symbol() ), protocol::asset( reward_vesting_smt, liquid_symbol ) );
   }
 
   /**The object represents both liquid and vesting variant of SMT
@@ -125,7 +125,7 @@ public:
   time_point_sec                launch_time;
   share_type                    hive_units_soft_cap = -1;
   share_type                    hive_units_hard_cap = -1;
-  asset                         contributed = asset( 0, HIVE_SYMBOL );
+  protocol::asset               contributed = protocol::asset( 0, HIVE_SYMBOL );
 
   CHAINBASE_UNPACK_CONSTRUCTOR(smt_ico_object);
 };
@@ -144,8 +144,8 @@ public:
   uint32_t                              interval_count = 0;
   time_point_sec                        lep_time = HIVE_GENESIS_TIME;
   time_point_sec                        rep_time = HIVE_GENESIS_TIME;
-  asset                                 lep_abs_amount = asset();
-  asset                                 rep_abs_amount = asset();
+  protocol::asset                       lep_abs_amount = protocol::asset();
+  protocol::asset                       rep_abs_amount = protocol::asset();
   uint32_t                              lep_rel_amount_numerator = 0;
   uint32_t                              rep_rel_amount_numerator = 0;
   uint8_t                               rel_amount_denom_bits = 0;
@@ -160,14 +160,14 @@ class smt_contribution_object : public object< smt_contribution_object_type, smt
 public:
   template< typename Allocator >
   smt_contribution_object( allocator< Allocator > a, uint64_t _id,
-    const account_name_type& _contributor, const asset& _contribution, const asset_symbol_type& _smt_symbol, uint32_t _contribution_id )
+    const account_name_type& _contributor, const protocol::asset& _contribution, const asset_symbol_type& _smt_symbol, uint32_t _contribution_id )
     : id( _id ), symbol( _smt_symbol ), contributor( _contributor ), contribution_id( _contribution_id ), contribution( _contribution )
   {}
 
-  asset_symbol_type symbol;
-  account_name_type contributor;
-  uint32_t          contribution_id;
-  HIVE_asset        contribution;
+  asset_symbol_type    symbol;
+  account_name_type    contributor;
+  uint32_t             contribution_id;
+  protocol::HIVE_asset contribution;
 
   CHAINBASE_UNPACK_CONSTRUCTOR(smt_contribution_object);
 };
