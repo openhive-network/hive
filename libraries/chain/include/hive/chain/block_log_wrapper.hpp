@@ -64,7 +64,7 @@ namespace hive { namespace chain {
                                  block_processor_t processor,
                                  blockchain_worker_thread_pool& thread_pool ) const override;
     virtual full_block_ptr_t fetch_block_by_id( const block_id_type& id ) const override;
-     virtual full_block_ptr_t get_block_by_number(
+    virtual full_block_ptr_t get_block_by_number(
       uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual full_block_range_t fetch_block_range( const uint32_t starting_block_num, 
       const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
@@ -89,15 +89,17 @@ namespace hive { namespace chain {
   private:
     // Common helpers
     void common_open_and_init( std::optional< bool > read_only );
-    void internal_open_and_init( block_log* the_log, const fc::path& path, bool read_only );
+    using block_log_ptr_t = std::shared_ptr<block_log>;
+    void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
 
-    const block_log* get_block_log_corresponding_to( uint32_t block_num ) const;
+    block_log_ptr_t get_head_log() const;
+    const block_log_ptr_t get_block_log_corresponding_to( uint32_t block_num ) const;
     const full_block_ptr_t get_head_block() const;
     block_id_type read_block_id_by_num( uint32_t block_num ) const;
     full_block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
-    using append_t = std::function< void( block_log* log ) >;
+    using append_t = std::function< void( block_log_ptr_t log ) >;
     void internal_append( uint32_t block_num, append_t do_appending);
 
     bool is_last_number_of_the_file( uint32_t block_num ) const
@@ -119,13 +121,16 @@ namespace hive { namespace chain {
     /// Returns the number of oldest stored block.
     uint32_t get_tail_block_num() const;
 
+    void dispose_garbage( bool closing_time );
+
   private:
     appbase::application&           _app;
     blockchain_worker_thread_pool&  _thread_pool;
     const uint32_t                  _max_blocks_in_log_file = 0;
     const int                       _block_log_split = 0;
     block_log_open_args             _open_args;
-    std::deque< block_log* >        _logs;
+    std::deque< block_log_ptr_t >   _logs;
+    std::deque< block_log_ptr_t >   _garbage_collection;
   };
 
 } }

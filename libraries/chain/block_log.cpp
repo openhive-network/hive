@@ -283,7 +283,7 @@ namespace hive { namespace chain {
 
   fc::path block_log::get_artifacts_file() const
   {
-    return my->_artifacts->get_artifacts_file();
+    return my->_artifacts ? my->_artifacts->get_artifacts_file() : fc::path();
   }
   
   uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)
