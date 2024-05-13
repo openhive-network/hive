@@ -7,7 +7,6 @@ import test_tools as tt
 import wax
 from hive_local_tools.functional.python.operation import (
     Account,
-    convert_from_mainnet_to_testnet_asset,
     create_transaction_with_any_operation,
     get_rc_current_mana,
     get_reward_hbd_balance,
@@ -763,21 +762,9 @@ class CommentAccount(Account):
         self.update_account_info()
         self.__claim_reward_transaction = self._wallet.api.claim_reward_balance(
             account=self.name,
-            reward_hive=(
-                convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hive"))
-                if reward_hive == "all"
-                else reward_hive
-            ),
-            reward_hbd=(
-                convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hbd"))
-                if reward_hbd == "all"
-                else reward_hbd
-            ),
-            reward_vests=(
-                convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_vests"))
-                if reward_vests == "all"
-                else reward_vests
-            ),
+            reward_hive=(self.get_reward_balance(mode="reward_hive") if reward_hive == "all" else reward_hive),
+            reward_hbd=(self.get_reward_balance(mode="reward_hbd") if reward_hbd == "all" else reward_hbd),
+            reward_vests=(self.get_reward_balance(mode="reward_vests") if reward_vests == "all" else reward_vests),
             only_result=False,
         )
 
