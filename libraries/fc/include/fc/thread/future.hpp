@@ -6,6 +6,8 @@
 #include <fc/thread/spin_yield_lock.hpp>
 #include <fc/optional.hpp>
 
+#include <atomic>
+
 //#define FC_TASK_NAMES_ARE_MANDATORY 1
 #ifdef FC_TASK_NAMES_ARE_MANDATORY
 # define FC_TASK_NAME_DEFAULT_ARG
@@ -89,13 +91,13 @@ namespace fc {
       friend struct context;
       friend class  thread_d;
 
-      bool                        _ready;
+      std::atomic_bool            _ready;
       mutable spin_yield_lock     _spin_yield;
       thread*                     _blocked_thread;
       unsigned                    _blocked_fiber_count;
       time_point                  _timeout;
       fc::exception_ptr           _exceptp;
-      bool                        _canceled;
+      std::atomic_bool            _canceled;
 #ifndef NDEBUG
     protected:
       const char*                 _cancellation_reason;
