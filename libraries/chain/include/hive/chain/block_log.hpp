@@ -111,6 +111,7 @@ namespace hive { namespace chain {
                           int compression_level,
                           bool enable_block_log_auto_fixing, 
                           hive::chain::blockchain_worker_thread_pool& thread_pool );
+      void set_wipe_files_on_close() { wipe_files_on_close = true; };
       void close();
       bool is_open()const;
 
@@ -165,6 +166,7 @@ namespace hive { namespace chain {
       std::unique_ptr<detail::block_log_impl> my;
 
       appbase::application& theApp;
+      bool wipe_files_on_close = false;
   };
 
 } }

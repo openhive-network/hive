@@ -262,6 +262,9 @@ namespace hive { namespace chain {
 
   void block_log::close()
   {
+    fc::path log_file = get_log_file();
+    fc::path artifacts_file = get_artifacts_file();
+
     my->_artifacts.reset(); /// Destruction also performs file close.
 
     if (my->block_log_fd != -1) {
@@ -269,6 +272,12 @@ namespace hive { namespace chain {
       my->block_log_fd = -1;
     }
     std::atomic_store(&my->head, std::shared_ptr<full_block_type>());
+
+    if( wipe_files_on_close )
+    {
+      fc::remove( log_file );
+      fc::remove( artifacts_file );
+    }
   }
 
   bool block_log::is_open()const
@@ -283,7 +292,7 @@ namespace hive { namespace chain {
 
   fc::path block_log::get_artifacts_file() const
   {
-    return my->_artifacts->get_artifacts_file();
+    return my->_artifacts ? my->_artifacts->get_artifacts_file() : fc::path();
   }
   
   uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)
