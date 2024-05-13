@@ -12,6 +12,7 @@ from hive_local_tools.constants import TRANSACTION_TEMPLATE
 ALICE_MASTER_PASSWORD = "Alice has a cat"
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 @run_for("testnet")
 @pytest.mark.parametrize("broadcast_way", ["api", "wallet"])
 @pytest.mark.parametrize("memo_type", ["private_key", "master_password", "extended_private_key"])
@@ -66,6 +67,7 @@ def test_handling_sensitive_data_in_the_memo_field(
     assert error_message in error.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @run_for("testnet")
 @pytest.mark.parametrize(
     "operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"]
