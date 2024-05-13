@@ -194,22 +194,22 @@ TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 { \
   signed_transaction tx; \
   OP2TX(OP,tx) \
-  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
+  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack() ); \
 }
 
 #define PUSH_OP_TWICE(OP,KEY) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx) \
-  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
-  push_transaction( tx, KEY, database::skip_transaction_dupe_check, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
+  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack() ); \
+  push_transaction( tx, KEY, database::skip_transaction_dupe_check, hive::protocol::serialization_mode_controller::get_current_pack() ); \
 }
 
 #define FAIL_WITH_OP(OP,KEY,EXCEPTION) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx) \
-  HIVE_REQUIRE_THROW( push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ), EXCEPTION ); \
+  HIVE_REQUIRE_THROW( push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack() ), EXCEPTION ); \
 }
 
 namespace hive { namespace chain {
