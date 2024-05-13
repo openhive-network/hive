@@ -1810,7 +1810,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      push_transaction( tx, alice_private_key, 0, hive::protocol::pack_type::hf26, fc::ecc::bip_0062 );
+      push_transaction( tx, alice_private_key, 0, hive::protocol::pack_type::hf26 );
 
       BOOST_REQUIRE( npo.num_available_nais == SMT_MAX_NAI_POOL_COUNT - i );
       BOOST_REQUIRE( npo.nais[ npo.num_available_nais ] == asset_symbol_type() );
