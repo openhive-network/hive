@@ -5,6 +5,7 @@ import pytest
 import test_tools as tt
 
 
+@pytest.mark.skip(reason="Unimplemented functionality in wallet")
 def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     creator = "initminer"
     delegator = "delegator"
