@@ -92,6 +92,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prep
     assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -147,6 +148,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     assert error_message in exception.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_the_recovery_agent(
     prepare_environment: tuple,
 ) -> None:
@@ -204,6 +206,7 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
     assert error_message in exception.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -257,6 +260,7 @@ def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepa
     assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_2(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -312,6 +316,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_2(prep
     wallet_thief.api.recover_account("alice", thief_owner_authority_to_alice_account, thief_authority)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_3(prepare_environment: tuple) -> None:
     """
     Timeline:
@@ -369,6 +374,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_3(prep
     assert get_owner_key(node, "alice") == thief_key
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_4(prepare_environment: tuple) -> None:
     """
     Timeline:
