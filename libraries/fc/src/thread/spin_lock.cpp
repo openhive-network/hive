@@ -4,13 +4,13 @@
 #include <boost/memory_order.hpp>
 #include <new>
 
-#include <valgrind/helgrind.h>
+#include <fc/valgrind.hpp>
 
 namespace fc {
   #define define_self  boost::atomic<int>* self = (boost::atomic<int>*)&_lock
   spin_lock::spin_lock() 
   {
-     ANNOTATE_RWLOCK_CREATE(this);
+     HG_ANNOTATE_RWLOCK_CREATE(this);
      define_self;
      new (self) boost::atomic<int>();
      static_assert( sizeof(boost::atomic<int>) == sizeof(_lock), "" );
@@ -19,13 +19,13 @@ namespace fc {
 
   spin_lock::~spin_lock() 
   {
-     ANNOTATE_RWLOCK_DESTROY(this);
+     HG_ANNOTATE_RWLOCK_DESTROY(this);
   }
 
   bool spin_lock::try_lock() { 
     define_self;
     const bool acquired = self->exchange(locked, boost::memory_order_acquire)!=locked;
-    if (acquired) ANNOTATE_RWLOCK_ACQUIRED(this, 1);
+    if (acquired) HG_ANNOTATE_RWLOCK_ACQUIRED(this, 1);
     return acquired;
   }
 
@@ -44,13 +44,13 @@ namespace fc {
   void spin_lock::lock() {
     define_self;
     while( self->exchange(locked, boost::memory_order_acquire)==locked) { }
-    ANNOTATE_RWLOCK_ACQUIRED(this, 1);
+    HG_ANNOTATE_RWLOCK_ACQUIRED(this, 1);
   }
 
   void spin_lock::unlock() {
      define_self;
      self->store(unlocked, boost::memory_order_release);
-    ANNOTATE_RWLOCK_RELEASED(this, 1);
+    HG_ANNOTATE_RWLOCK_RELEASED(this, 1);
   }
 
   #undef define_self
