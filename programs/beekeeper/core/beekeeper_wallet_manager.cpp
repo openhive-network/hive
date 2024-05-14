@@ -6,7 +6,7 @@ beekeeper_wallet_manager::beekeeper_wallet_manager( std::shared_ptr<session_mana
                                                     close_all_sessions_action_method&& method
                                                   )
                           : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ),
-                            public_key_size( utility::public_key::to_string( private_key_type::generate().get_public_key() ).size() ),
+                            public_key_size( utility::public_key::size() ),
                             wallet_directory( cmd_wallet_dir ),
                             close_all_sessions_action( method ),
                             sessions( sessions ), instance( instance )

@@ -88,6 +88,16 @@ namespace utility
     {
       return BEEKEEPER_HIVE_ADDRESS_PREFIX + public_key_type::to_base58( source, false/*is_sha256*/ );
     }
+
+    inline std::string to_string( const key_detail_pair& source )
+    {
+      return source.second.second + public_key_type::to_base58( source.first, false/*is_sha256*/ );
+    }
+
+    inline size_t size()
+    {
+      return to_string( private_key_type::generate().get_public_key() ).size();
+    }
   }
 
   template<typename source_type>
