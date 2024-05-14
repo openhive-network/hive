@@ -19,10 +19,10 @@ struct fill_convert_request_operation : public virtual_operation
     : owner( o ), requestid( id ), amount_in( in ), amount_out( out )
   {}
 
-  account_name_type owner; //user that requested conversion (receiver of amount_out)
-  uint32_t          requestid = 0; //id of the request
-  asset             amount_in; //(HBD) source of conversion
-  asset             amount_out; //(HIVE) effect of conversion
+  account_name_type   owner; //user that requested conversion (receiver of amount_out)
+  uint32_t            requestid = 0; //id of the request
+  HBD_asset           amount_in; //(HBD) source of conversion
+  HIVE_asset          amount_out; //(HIVE) effect of conversion
 };
 
 /**
