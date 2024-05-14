@@ -97,15 +97,15 @@ public:
     }
 
     public_key_type wif_pub_key = priv->get_public_key();
-    std::string _str_wif_pub_key = utility::public_key::to_string( wif_pub_key );
 
     auto itr = _keys.find(wif_pub_key);
     if( itr == _keys.end() )
     {
       _keys[wif_pub_key] = std::make_pair( *priv, utility::public_key::BEEKEEPER_HIVE_ADDRESS_PREFIX );
-      return { _str_wif_pub_key, true };
+      return { utility::public_key::to_string( { wif_pub_key, _keys[wif_pub_key] } ), true };
     }
 
+    std::string _str_wif_pub_key = utility::public_key::to_string( {  wif_pub_key, _keys[wif_pub_key] } );
     //An attempt of inserting again the same key shouldn't be treated as an error.
     ilog( "A key '${wif_pub_key}' is already in a wallet", ("wif_pub_key", _str_wif_pub_key) );
 
