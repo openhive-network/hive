@@ -1,0 +1,18 @@
+#pragma once
+
+#ifdef USE_VALGRIND
+#include <valgrind/helgrind.h>
+#define HG_ANNOTATE_RWLOCK_CREATE(rwlock) ANNOTATE_RWLOCK_CREATE(rwlock)
+#define HG_ANNOTATE_RWLOCK_DESTROY(rwlock) ANNOTATE_RWLOCK_DESTROY(rwlock)
+#define HG_ANNOTATE_RWLOCK_ACQUIRED(rwlock, is_w) ANNOTATE_RWLOCK_ACQUIRED(rwlock, is_w)
+#define HG_ANNOTATE_RWLOCK_RELEASED(rwlock, is_w) ANNOTATE_RWLOCK_RELEASED(rwlock, is_w)
+#define HG_ANNOTATE_HAPPENS_BEFORE(obj) ANNOTATE_HAPPENS_BEFORE(obj)
+#define HG_ANNOTATE_HAPPENS_AFTER(obj) ANNOTATE_HAPPENS_AFTER(obj)
+#else
+#define HG_ANNOTATE_RWLOCK_CREATE(rwlock)
+#define HG_ANNOTATE_RWLOCK_DESTROY(rwlock)
+#define HG_ANNOTATE_RWLOCK_ACQUIRED(rwlock, is_w)
+#define HG_ANNOTATE_RWLOCK_RELEASED(rwlock, is_w)
+#define HG_ANNOTATE_HAPPENS_BEFORE(obj)
+#define HG_ANNOTATE_HAPPENS_AFTER(obj)
+#endif
