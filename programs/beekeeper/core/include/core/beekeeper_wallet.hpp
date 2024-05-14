@@ -8,11 +8,6 @@ namespace beekeeper {
 
 typedef uint16_t transaction_handle_type;
 
-struct wallet_data
-{
-   std::vector<char>              cipher_keys; /** encrypted keys */
-};
-
 namespace detail {
 class beekeeper_impl;
 }
@@ -103,7 +98,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      map<public_key_type, private_key_type> list_keys() override;
+      keys_details list_keys() override;
 
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
@@ -178,19 +173,4 @@ class beekeeper_wallet final : public beekeeper_wallet_base
       bool has_matching_private_key( const public_key_type& public_key ) override;
 };
 
-struct plain_keys {
-   fc::sha512                            checksum;
-   map<public_key_type,private_key_type> keys;
-};
-
 } //beekeeper_wallet
-
-namespace fc
-{
-  void from_variant( const fc::variant& var, beekeeper::wallet_data& vo );
-  void to_variant( const beekeeper::wallet_data& var, fc::variant& vo );
-}
-
-FC_REFLECT( beekeeper::wallet_data, (cipher_keys) )
-
-FC_REFLECT( beekeeper::plain_keys, (checksum)(keys) )

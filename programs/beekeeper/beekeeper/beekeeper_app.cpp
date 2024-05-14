@@ -84,9 +84,9 @@ bool beekeeper_app::save_keys( const std::string& notification, const std::strin
 
     std::vector<keys_container> _v;
     std::transform( _keys.begin(), _keys.end(), std::back_inserter( _v ),
-    []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
+    []( const beekeeper::key_detail_pair& item )
     {
-      return keys_container{ beekeeper::utility::public_key::to_string( item.first ), item.second.key_to_wif() };
+      return keys_container{ beekeeper::utility::public_key::to_string( item.first ), item.second.first.key_to_wif() };
     } );
     
     ilog( "Save keys into `${_filename}` file", (_filename) );

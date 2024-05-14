@@ -95,11 +95,11 @@ void wallet_manager_impl::close( const std::string& wallet_name )
 
 fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name )
 {
-  std::map<public_key_type, private_key_type> _keys = list_keys_impl( wallet_name, std::string(), false/*password_is_required*/ );
+  keys_details _keys = list_keys_impl( wallet_name, std::string(), false/*password_is_required*/ );
   for( auto& key : _keys )
   {
     if( key.first == public_key )
-      return key.second;
+      return key.second.first;
   }
 
   return fc::optional<private_key_type>();
@@ -161,7 +161,7 @@ std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
   return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
 
-std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys_impl( const string& name, const string& password, bool password_is_required )
+keys_details wallet_manager_impl::list_keys_impl( const string& name, const string& password, bool password_is_required )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -171,7 +171,7 @@ std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys_impl(
   return w->list_keys();
 }
 
-std::map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& password )
+keys_details wallet_manager_impl::list_keys( const string& name, const string& password )
 {
   return list_keys_impl( name, password, true/*password_is_required*/ );
 }

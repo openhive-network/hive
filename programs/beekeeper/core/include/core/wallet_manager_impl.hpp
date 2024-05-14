@@ -16,7 +16,7 @@ class wallet_manager_impl {
     std::vector< std::string > list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const;
 
     fc::optional<private_key_type> find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name );
-    std::map<public_key_type, private_key_type> list_keys_impl( const string& name, const string& pw, bool password_is_required );
+    keys_details list_keys_impl( const string& name, const string& pw, bool password_is_required );
 
   public:
 
@@ -27,7 +27,7 @@ class wallet_manager_impl {
     void close( const std::string& wallet_name );
     std::vector<wallet_details> list_wallets();
     std::vector<wallet_details> list_created_wallets();
-    std::map<public_key_type, private_key_type> list_keys( const string& name, const string& password );
+    keys_details list_keys( const string& name, const string& password );
     flat_set<public_key_type> get_public_keys( const std::optional<std::string>& wallet_name );
     void lock_all();
     void lock( const std::string& wallet_name );

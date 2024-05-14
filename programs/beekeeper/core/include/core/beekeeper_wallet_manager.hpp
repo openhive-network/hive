@@ -122,7 +122,7 @@ public:
    * @param password    A password of given wallet.
    * @return            A list of private keys.
    */
-  map<public_key_type, private_key_type> list_keys( const std::string& token, const string& wallet_name, const string& password );
+  keys_details list_keys( const std::string& token, const string& wallet_name, const string& password );
 
   /**
    *

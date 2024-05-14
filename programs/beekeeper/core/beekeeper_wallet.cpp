@@ -65,7 +65,7 @@ public:
   {
     auto it = _keys.find(id);
     if( it != _keys.end() )
-    return  it->second;
+    return  it->second.first;
     return std::optional<private_key_type>();
   }
 
@@ -74,7 +74,7 @@ public:
     auto it = _keys.find(public_key);
     if( it == _keys.end() )
     return std::optional<signature_type>();
-    return it->second.sign_compact( sig_digest );
+    return it->second.first.sign_compact( sig_digest );
   }
 
   private_key_type get_private_key(const public_key_type& id)const
@@ -102,7 +102,7 @@ public:
     auto itr = _keys.find(wif_pub_key);
     if( itr == _keys.end() )
     {
-      _keys[wif_pub_key] = *priv;
+      _keys[wif_pub_key] = std::make_pair( *priv, utility::public_key::BEEKEEPER_HIVE_ADDRESS_PREFIX );
       return { _str_wif_pub_key, true };
     }
 
@@ -188,11 +188,11 @@ public:
     }
   }
 
-  string                _wallet_filename;
-  wallet_data              _wallet;
+  string        _wallet_filename;
+  wallet_data   _wallet;
 
-  map<public_key_type,private_key_type>  _keys;
-  fc::sha512              _checksum;
+  keys_details  _keys;
+  fc::sha512    _checksum;
 
 #ifdef __unix__
   mode_t        _old_umask;
@@ -269,7 +269,7 @@ void beekeeper_wallet::lock()
   encrypt_keys();
 
   for( auto key : my->_keys )
-    key.second = private_key_type();
+    key.second = std::make_pair( private_key_type(), "" );
 
   my->_keys.clear();
   my->_checksum = fc::sha512();
@@ -343,7 +343,7 @@ void beekeeper_wallet::set_password( string password )
   lock();
 }
 
-map<public_key_type, private_key_type> beekeeper_wallet::list_keys()
+keys_details beekeeper_wallet::list_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
   return my->_keys;
@@ -388,16 +388,3 @@ bool beekeeper_wallet::has_matching_private_key( const public_key_type& public_k
 }
 
 } //beekeeper_wallet
-
-namespace fc
-{
-  void from_variant( const fc::variant& var,  beekeeper::wallet_data& vo )
-  {
-   from_variant( var, vo.cipher_keys );
-  }
-
-  void to_variant( const beekeeper::wallet_data& var, fc::variant& vo )
-  {
-    to_variant( var.cipher_keys, vo );
-  }
-} // fc
