@@ -170,15 +170,16 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>( "test" )).size());
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>("avocado")), fc::exception);
   auto keys = wm.list_keys(_token, "test", pw);
+  const std::string _prefix  = "STM";
 
-  auto pub_pri_pair = []( const private_key_type& private_key ) -> auto
+  auto pub_pri_pair = [ &_prefix ]( const private_key_type& private_key ) -> auto
   {
-      return std::pair<public_key_type, private_key_type>( private_key.get_public_key(), private_key );
+      return beekeeper::key_detail_pair( private_key.get_public_key(), std::make_pair( private_key, _prefix ) );
   };
 
-  auto cmp_keys = [&]( const private_key_type& private_key, const std::map<public_key_type, private_key_type>& keys )
+  auto cmp_keys = [&]( const private_key_type& private_key, const beekeeper::keys_details& keys )
   {
-    return std::find_if( keys.begin(), keys.end(), [&]( const std::pair<public_key_type, private_key_type>& item )
+    return std::find_if( keys.begin(), keys.end(), [&]( const beekeeper::key_detail_pair& item )
     {
       return pub_pri_pair( private_key ) == item;
     });

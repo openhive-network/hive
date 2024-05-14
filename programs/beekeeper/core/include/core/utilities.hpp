@@ -57,6 +57,20 @@ namespace types
   using timepoint_t               = std::chrono::time_point<std::chrono::system_clock>;
 }
 
+struct wallet_data
+{
+   std::vector<char> cipher_keys; /** encrypted keys */
+};
+
+using data_pair = std::pair<private_key_type, std::string/*prefix of public key*/>;
+using key_detail_pair = std::pair<public_key_type, data_pair>;
+using keys_details = std::map<public_key_type, data_pair>;
+struct plain_keys {
+
+  fc::sha512    checksum;
+  keys_details  keys;
+};
+
 namespace utility
 {
   namespace public_key
@@ -276,6 +290,8 @@ namespace fc
   void to_variant( const beekeeper::has_matching_private_key_return& var, fc::variant& vo );
   void to_variant( const beekeeper::encrypt_data_return& var, fc::variant& vo );
   void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo );
+  void from_variant( const fc::variant& var, beekeeper::wallet_data& vo );
+  void to_variant( const beekeeper::wallet_data& var, fc::variant& vo );
 }
 
 FC_REFLECT( beekeeper::init_data, (status)(version) )
@@ -306,3 +322,5 @@ FC_REFLECT_DERIVED( beekeeper::encrypt_data_args, (beekeeper::wallet_args), (fro
 FC_REFLECT( beekeeper::encrypt_data_return, (encrypted_content) )
 FC_REFLECT_DERIVED( beekeeper::decrypt_data_args, (beekeeper::wallet_args), (from_public_key)(to_public_key)(encrypted_content) )
 FC_REFLECT( beekeeper::decrypt_data_return, (decrypted_content) )
+FC_REFLECT( beekeeper::wallet_data, (cipher_keys) )
+FC_REFLECT( beekeeper::plain_keys, (checksum)(keys) )

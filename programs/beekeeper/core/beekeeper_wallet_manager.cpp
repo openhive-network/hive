@@ -62,7 +62,7 @@ std::vector<wallet_details> beekeeper_wallet_manager::list_created_wallets(const
   return sessions->get_wallet_manager(token)->list_created_wallets();
 }
 
-map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( const std::string& token, const string& wallet_name, const string& password )
+keys_details beekeeper_wallet_manager::list_keys( const std::string& token, const string& wallet_name, const string& password )
 {
   sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->list_keys( wallet_name, password );
