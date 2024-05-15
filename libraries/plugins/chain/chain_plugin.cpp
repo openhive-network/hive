@@ -1847,16 +1847,16 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   transaction_flow_control tx_ctrl( full_transaction );
   write_context cxt;
   cxt.req_ptr = &tx_ctrl;
-  static int call_count = 0;
+  static std::atomic_int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
     --call_count;
-    fc_dlog(fc::logger::get("chainlock"), "<-- accept_transaction_calls_in_progress: ${call_count}", (call_count));
+    fc_dlog(fc::logger::get("chainlock"), "<-- accept_transaction_calls_in_progress: ${call_count}", (call_count.load()));
   } BOOST_SCOPE_EXIT_END
 
   if (lock == lock_type::boost)
   {
-    fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
+    fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count.load()));
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     tx_ctrl.attach_promise( accept_transaction_promise );
@@ -1869,7 +1869,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   }
   else
   {
-    fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
+    fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count.load()));
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl.attach_promise( accept_transaction_promise );
