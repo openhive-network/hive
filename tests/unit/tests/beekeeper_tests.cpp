@@ -59,7 +59,8 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   auto priv = fc::ecc::private_key::generate();
   auto pub = priv.get_public_key();
   auto wif = priv.key_to_wif();
-  wallet.import_key(wif);
+  auto _prefix = "STM";
+  wallet.import_key(wif, _prefix);
   BOOST_REQUIRE_EQUAL(1u, wallet.list_keys().size());
 
   auto privCopy = wallet.get_private_key(pub);
@@ -137,6 +138,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   const auto key2 = private_key_type::wif_to_key( key2_str ).value();
   const auto key3 = private_key_type::wif_to_key( key3_str ).value();
 
+  auto _prefix = "STM";
+
   beekeeper_wallet_manager wm = b_mgr.create_wallet( app, 900, 3 );
 
   BOOST_REQUIRE( wm.start() );
@@ -149,7 +152,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   BOOST_REQUIRE_THROW(wm.lock(_token, "test"), fc::exception);
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", "pw"), fc::exception);
-  BOOST_REQUIRE_THROW(wm.import_key(_token, "test", "pw"), fc::exception);
+  BOOST_REQUIRE_THROW(wm.import_key(_token, "test", "pw", _prefix), fc::exception);
 
   auto pw = wm.create(_token, "test", std::optional<std::string>());
   BOOST_REQUIRE(!pw.empty());
@@ -165,12 +168,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   wm.unlock(_token, "test", pw);
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", pw), fc::exception);
   BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
-  wm.import_key(_token, "test", key1_str);
+  wm.import_key(_token, "test", key1_str, _prefix);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>( "test" )).size());
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>("avocado")), fc::exception);
   auto keys = wm.list_keys(_token, "test", pw);
-  const std::string _prefix  = "STM";
 
   auto pub_pri_pair = [ &_prefix ]( const private_key_type& private_key ) -> auto
   {
@@ -187,7 +189,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   BOOST_REQUIRE( cmp_keys( key1, keys ) != keys.end() );
 
-  wm.import_key(_token, "test", key2_str);
+  wm.import_key(_token, "test", key2_str, _prefix);
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key1, keys ) != keys.end() );
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
@@ -198,7 +200,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
-  wm.import_key(_token, "test", key2_str);
+  wm.import_key(_token, "test", key2_str, _prefix);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
@@ -222,9 +224,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
-  wm.import_key(_token, "test2", key3_str);
+  wm.import_key(_token, "test2", key3_str, _prefix);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
-  wm.import_key(_token, "test2", key3_str);
+  wm.import_key(_token, "test2", key3_str, _prefix);
   keys = wm.list_keys(_token, "test2", pw2);
   BOOST_REQUIRE( cmp_keys( key1, keys ) == keys.end() );
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
@@ -271,10 +273,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
 
     BOOST_REQUIRE( wm.start() );
     std::string _token = wm.create_session( "this is salt", std::optional<std::string>() );
+    auto _prefix = "STM";
 
     wm.create(_token, "test", std::optional<std::string>());
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
-    wm.import_key(_token, "test", key1);
+    wm.import_key(_token, "test", key1, _prefix);
     BOOST_REQUIRE_THROW(wm.create(_token, "test",       std::optional<std::string>()),  fc::exception);
     BOOST_REQUIRE_THROW(wm.create(_token, "./test",     std::optional<std::string>()),  fc::exception);
     BOOST_REQUIRE_THROW(wm.create(_token, "../../test", std::optional<std::string>()),  fc::exception);
@@ -637,6 +640,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       const uint32_t _session_limit = 64;
 
       const std::string _wallet_name = "0";
+      auto _prefix = "STM";
 
       appbase::application app;
 
@@ -645,7 +649,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
 
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
       auto _password = wm.create(_token, _wallet_name, std::optional<std::string>());
-      auto _imported_public_key = wm.import_key( _token, _wallet_name, _private_key_str );
+      auto _imported_public_key = wm.import_key( _token, _wallet_name, _private_key_str, _prefix );
       BOOST_REQUIRE( _imported_public_key != _public_key_str );
       BOOST_REQUIRE( _imported_public_key == std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str );
 
@@ -1417,6 +1421,7 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     const std::string _host = "127.0.0.1:666";
     const uint64_t _timeout = 90;
     const uint32_t _session_limit = 64;
+    auto _prefix = "ABC";
 
     appbase::application app;
 
@@ -1426,7 +1431,7 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     auto _token = wm.create_session( "salt", _host );
     auto _password = wm.create( _token, "0", std::optional<std::string>() );
 
-    wm.import_key( _token, "0", _private_key_str );
+    wm.import_key( _token, "0", _private_key_str, _prefix );
 
     BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "pear", _public_key_str ), fc::exception );
     BOOST_REQUIRE_THROW( wm.has_matching_private_key( "_token", "0", _public_key_str ), fc::exception );
@@ -1434,7 +1439,7 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
     BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), false );
 
-    wm.import_key( _token, "0", _private_key_str_2 );
+    wm.import_key( _token, "0", _private_key_str_2, _prefix );
 
     BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
     BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), true );
@@ -1505,6 +1510,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
 
     const uint64_t _timeout = 90;
     const uint32_t _session_limit = 64;
+    auto _prefix = "STM";
 
     appbase::application app;
 
@@ -1546,7 +1552,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
       wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>() );
       for( auto& item : _keys_a )
       {
-        _beekeeper.import_key( _token, wallet.name, item.private_key );
+        _beekeeper.import_key( _token, wallet.name, item.private_key, _prefix );
       }
     }
 
@@ -1571,7 +1577,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
 
   {
     for( auto& item : _keys_a )
-      _beekeeper.import_key( _token, _wallets[0].name, item.private_key );
+      _beekeeper.import_key( _token, _wallets[0].name, item.private_key, _prefix );
 
     auto _public_keys_0 = _beekeeper.get_public_keys( _token, _wallets[0].name );
     auto _public_keys_2 = _beekeeper.get_public_keys( _token, _wallets[2].name );
@@ -1581,8 +1587,8 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
   {
     for( auto& item : _keys_b )
     {
-      _beekeeper.import_key( _token, _wallets[1].name, item.private_key );
-      _beekeeper.import_key( _token, _wallets[2].name, item.private_key );
+      _beekeeper.import_key( _token, _wallets[1].name, item.private_key, _prefix );
+      _beekeeper.import_key( _token, _wallets[2].name, item.private_key, _prefix );
     }
 
     auto _public_keys_1 = _beekeeper.get_public_keys( _token, _wallets[1].name );
@@ -1607,6 +1613,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
 
     const uint64_t _timeout = 90;
     const uint32_t _session_limit = 64;
+    auto _prefix = "STM";
 
     appbase::application app;
 
@@ -1680,18 +1687,18 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       switch( _cnt )
       {
         case 0:
-          _beekeeper.import_key( _token, wallet.name, _keys[0].private_key );
+          _beekeeper.import_key( _token, wallet.name, _keys[0].private_key, _prefix );
         break;
         case 1:
-          _beekeeper.import_key( _token, wallet.name, _keys[1].private_key );
+          _beekeeper.import_key( _token, wallet.name, _keys[1].private_key, _prefix );
         break;
         case 2:
-          _beekeeper.import_key( _token, wallet.name, _keys[0].private_key );
-          _beekeeper.import_key( _token, wallet.name, _keys[1].private_key );
+          _beekeeper.import_key( _token, wallet.name, _keys[0].private_key, _prefix );
+          _beekeeper.import_key( _token, wallet.name, _keys[1].private_key, _prefix );
         break;
         case 3:
-          _beekeeper.import_key( _token, wallet.name, _keys[2].private_key );
-          _beekeeper.import_key( _token, wallet.name, _keys[3].private_key );
+          _beekeeper.import_key( _token, wallet.name, _keys[2].private_key, _prefix );
+          _beekeeper.import_key( _token, wallet.name, _keys[3].private_key, _prefix );
         break;
       }
       ++_cnt;

@@ -84,11 +84,11 @@ public:
     return *has_key;
   }
 
-  // imports the private key into the wallet, and associate it in some way (?) with the
-  // given account name.
-  // @returns true if the key matches a current active/owner/memo key for the named
-  //     account, false otherwise (but it is stored either way)
-  std::pair<string, bool> import_key(string wif_key)
+  /*
+    Imports the private key into the wallet
+    @returns `true` if the key matches a current key `false` otherwise
+  */
+  std::pair<string, bool> import_key( const string& wif_key, const string& prefix )
   {
     auto priv = private_key_type::wif_to_key( wif_key );
     if( !priv.valid() )
@@ -96,18 +96,20 @@ public:
       FC_ASSERT( false, "Key can't be constructed" );
     }
 
-    public_key_type wif_pub_key = priv->get_public_key();
+    public_key_type _wif_pub_key = priv->get_public_key();
 
-    auto itr = _keys.find(wif_pub_key);
+    key_detail_pair _new_item = std::make_pair( _wif_pub_key, std::make_pair( *priv, prefix ) );
+    std::string _str_wif_pub_key = utility::public_key::to_string( _new_item );
+
+    auto itr = _keys.find( _wif_pub_key );
     if( itr == _keys.end() )
     {
-      _keys[wif_pub_key] = std::make_pair( *priv, utility::public_key::BEEKEEPER_HIVE_ADDRESS_PREFIX );
-      return { utility::public_key::to_string( { wif_pub_key, _keys[wif_pub_key] } ), true };
+      _keys.emplace( _new_item );
+      return { _str_wif_pub_key, true };
     }
 
-    std::string _str_wif_pub_key = utility::public_key::to_string( {  wif_pub_key, _keys[wif_pub_key] } );
     //An attempt of inserting again the same key shouldn't be treated as an error.
-    ilog( "A key '${wif_pub_key}' is already in a wallet", ("wif_pub_key", _str_wif_pub_key) );
+    ilog( "A key '${key}' is already in a wallet", ("key", _str_wif_pub_key) );
 
     return { _str_wif_pub_key, false };
   }
@@ -213,11 +215,11 @@ string beekeeper_wallet::get_wallet_filename() const
   return my->get_wallet_filename();
 }
 
-string beekeeper_wallet::import_key(string wif_key)
+string beekeeper_wallet::import_key( const string& wif_key, const string& prefix )
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
-  const auto _result = my->import_key( wif_key );
+  const auto _result = my->import_key( wif_key, prefix );
 
   if( _result.second )//Save a file only when a key is really imported.
     save_wallet_file();

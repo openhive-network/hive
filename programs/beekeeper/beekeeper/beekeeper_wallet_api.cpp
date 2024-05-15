@@ -2,6 +2,8 @@
 #include <beekeeper/extended_api.hpp>
 #include <core/beekeeper_wallet_base.hpp>
 
+#include <hive/protocol/config.hpp>
+
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
 #include <fc/variant_object.hpp>
@@ -125,7 +127,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, import_key )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->import_key( args.token, args.wallet_name, args.wif_key ) };
+  return { _wallet_mgr->import_key( args.token, args.wallet_name, args.wif_key, HIVE_ADDRESS_PREFIX/*At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.*/ ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, remove_key )

@@ -89,10 +89,10 @@ void beekeeper_wallet_manager::unlock( const std::string& token, const std::stri
   sessions->get_wallet_manager( token )->unlock( wallet_name, password );
 }
 
-string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key )
+string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->import_key( wallet_name, wif_key );
+  return sessions->get_wallet_manager( token )->import_key( wallet_name, wif_key, prefix );
 }
 
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& public_key )
