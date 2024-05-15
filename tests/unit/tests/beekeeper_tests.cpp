@@ -661,7 +661,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
         auto _signature_local   = _private_key.sign_compact( _sig_digest );
         auto __signature_local  = fc::json::to_string( _signature_local );
 
-        auto _signature_wallet  = wm.sign_digest( _token, _sig_digest.str(), _imported_public_key, _wallet_name );
+        auto _signature_wallet  = wm.sign_digest( _token, _wallet_name, _sig_digest.str(), beekeeper::utility::public_key::create( _imported_public_key, _prefix ), _prefix );
         auto __signature_wallet = fc::json::to_string( _signature_wallet );
 
         BOOST_TEST_MESSAGE( __signature_local );
@@ -678,7 +678,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
                             _signature_01_result );
 
-      BOOST_REQUIRE_THROW( wm.sign_digest( _token, "", _imported_public_key, _wallet_name ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.sign_digest( _token, _wallet_name, "", beekeeper::utility::public_key::create( _imported_public_key, _prefix ), _prefix ), fc::exception );
     }
 
   } FC_LOG_AND_RETHROW()
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
         auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str ) ), fc::json::format_validation_mode::full ).as<beekeeper::signature_return>();
 
         auto _error_message = _obj.sign_digest( _token, _sig_digest, _public_key_str, "avocado" );
-        BOOST_REQUIRE( _error_message.find( "Incorrect size of public key" ) != std::string::npos );
+        BOOST_REQUIRE( _error_message.find( "public key requires STM prefix" ) != std::string::npos );
 
         _error_message = _obj.sign_digest( _token, _sig_digest, std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str, "avocado" );
         BOOST_REQUIRE( _error_message.find( "not found in avocado wallet" ) != std::string::npos );

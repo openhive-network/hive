@@ -60,14 +60,14 @@ public:
    * 
    * Sign a sig_digest using a private key corresponding to a public key.
    * @param token       Session's identifier.
+   * @param wallet_name A name of a wallet where a private key is stored. Optional. If not given, then a private key is searched in all unlocked wallets.
    * @param sig_digest  A signature digest. Represents a whole transaction.
    * @param public_key  A public key corresponding to a private key that is stored in a wallet.
-   * @param wallet_name A name of a wallet where a private key is stored. Optional. If not given, then a private key is searched in all unlocked wallets.
+   * @param prefix      A prefix of a public key
    * @return            A signature of a transaction.
    * @throws            An exception `fc::exception` if a corresponding private key is not found in unlocked wallet/wallets.
    */
-  signature_type sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key,
-                              const std::optional<std::string>& wallet_name );
+  signature_type sign_digest( const std::string& token, const std::optional<std::string>& wallet_name, const std::string& sig_digest, const public_key_type& public_key, const std::string& prefix );
 
   /**
    *

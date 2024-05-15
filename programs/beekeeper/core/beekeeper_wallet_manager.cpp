@@ -101,12 +101,12 @@ void beekeeper_wallet_manager::remove_key( const std::string& token, const std::
   sessions->get_wallet_manager( token )->remove_key( name, public_key );
 }
 
-signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name )
+signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const std::optional<std::string>& wallet_name, const std::string& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
   FC_ASSERT( sig_digest.size(), "`sig_digest` can't be empty" );
 
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_digest( digest_type( sig_digest ), create_public_key( public_key ), wallet_name );
+  return sessions->get_wallet_manager( token )->sign_digest( wallet_name, digest_type( sig_digest ), public_key, prefix );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
