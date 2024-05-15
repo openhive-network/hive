@@ -9,7 +9,7 @@ def prepare_blocklog():
     node = tt.InitNode()
     node.run()
 
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=legacy"])
+    wallet = tt.OldWallet(attach_to=node, additional_arguments=["--transaction-serialization=legacy"])
 
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000), hbds=tt.Asset.Tbd(1000))
     wallet.create_account("bob", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000), hbds=tt.Asset.Tbd(1000))
