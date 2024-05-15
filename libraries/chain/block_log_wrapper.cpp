@@ -1,6 +1,7 @@
 #include <hive/chain/block_log_wrapper.hpp>
 
 #include <hive/chain/block_log.hpp>
+#include <hive/utilities/split_block_log.hpp>
 //#include <regex>
 
 namespace hive { namespace chain {
@@ -60,13 +61,15 @@ block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application&
 void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args )
 {
   _open_args = bl_open_args;
-  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/);
+  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/,
+                        true /*allow_splitting_monolithic_log*/);
 }
 
 void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
 {
   _open_args.data_dir = path.parent_path();
-  common_open_and_init( std::optional< bool >( read_only ) );
+  common_open_and_init( std::optional< bool >( read_only ),
+                        false /*allow_splitting_monolithic_log*/ );
 }
 
 void block_log_wrapper::close_log()
@@ -431,7 +434,8 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
           1;
 }
 
-void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
+void block_log_wrapper::common_open_and_init( std::optional< bool > read_only, 
+  bool allow_splitting_monolithic_log )
 {
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
@@ -469,7 +473,28 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only )
   
   if( part_file_names.empty() )
   {
-    // No part file name found. Create, open & set initial one.
+    // No part file name found. Try splitting legacy monolithic file if allowed & possible.
+    if( allow_splitting_monolithic_log )
+    {
+      fc::path monolith_path( _open_args.data_dir / block_log_file_name_info::_legacy_file_name );
+      if( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ) )
+      {
+        try
+        {
+          wlog("Trying to split legacy monolithic block log file.");
+          utilities::split_block_log( monolith_path, _app, _thread_pool );
+          wlog("Successfully split legacy monolithic block log file.");
+          // Now we can open split log file(s) as if the log was split from the beginning.
+          common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/);
+          return;
+        }
+        catch( fc::exception& e )
+        {
+          elog( "Error while trying to split legacy monolithic block log file: ${e}", (e) );
+        }
+      }
+    }
+    // Otherwise create, open & set initial one.
     uint32_t part_number = get_part_number_for_block( 0 );
     fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
 
