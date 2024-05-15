@@ -278,6 +278,15 @@ namespace fc {
 
     void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var );
     void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a );
+
+    template < uint32_t _SYMBOL >
+    void to_variant( const hive::protocol::tiny_asset<_SYMBOL>& ta, fc::variant& var )
+    {
+      if( hive::protocol::serialization_mode_controller::legacy_enabled() )
+        to_variant( hive::protocol::legacy_asset( ta.to_asset() ), var );
+      else
+        to_variant( ta.to_asset(), var );
+    }
 }
 
 FC_REFLECT( hive::protocol::asset, (amount)(symbol) )
