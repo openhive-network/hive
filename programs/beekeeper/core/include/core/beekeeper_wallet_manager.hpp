@@ -230,7 +230,7 @@ public:
    * @param nonce             Optional nonce to be used for encryption (otherwise current time is used).
    * @returns                 An encrypted string.
    */
-  std::string encrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
+  std::string encrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix );
 
   /** Decrypts given content.
    *

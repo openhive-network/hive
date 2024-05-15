@@ -201,7 +201,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, encrypt_data )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->encrypt_data( args.token, utility::public_key::create( args.from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( args.to_public_key, HIVE_ADDRESS_PREFIX ), args.wallet_name, args.content, args.nonce ) };
+  return { _wallet_mgr->encrypt_data( args.token, utility::public_key::create( args.from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( args.to_public_key, HIVE_ADDRESS_PREFIX ), args.wallet_name, args.content, args.nonce, HIVE_ADDRESS_PREFIX ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, decrypt_data )

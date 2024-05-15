@@ -1648,16 +1648,16 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     const string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
     const std::optional<uint64_t> _nonce;
 
-    auto _encrypt_with_nonce = [&_token, &_beekeeper, &_keys ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<uint64_t>& nonce )
+    auto _encrypt_with_nonce = [&_token, &_beekeeper, &_keys, &_prefix ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<uint64_t>& nonce )
     {
-      return _beekeeper.encrypt_data( _token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, nonce );
+      return _beekeeper.encrypt_data( _token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, nonce, _prefix );
     };
 
-    auto _encrypt = [&_token, &_beekeeper, &_keys]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
+    auto _encrypt = [&_token, &_beekeeper, &_keys, &_prefix]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
       auto __encrypt = [&]()
       {
-          return _beekeeper.encrypt_data(_token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, std::optional<unsigned int>() );
+          return _beekeeper.encrypt_data(_token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, std::optional<unsigned int>(), _prefix );
       };
 
       std::string _encrypted_content = __encrypt();
