@@ -1,4 +1,5 @@
 #include <hive/protocol/asset.hpp>
+
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/config.hpp>
 
@@ -604,5 +605,4 @@ namespace fc {
   {
     a = hive::protocol::legacy_asset::from_string( var.as_string() );
   }
-
 }
