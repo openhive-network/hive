@@ -15,7 +15,7 @@ def replayed_node() -> tt.ApiNode:
 
 
 @pytest.fixture()
-def wallet_with_pattern_name(replayed_node: tt.ApiNode, request: pytest.FixtureRequest) -> tuple[tt.Wallet, str]:
+def wallet_with_pattern_name(replayed_node: tt.ApiNode, request: pytest.FixtureRequest) -> tuple[tt.OldWallet, str]:
     if "cli_wallet_method" in request.fixturenames:
         pattern_name = request.getfixturevalue("cli_wallet_method")
     else:
@@ -23,7 +23,7 @@ def wallet_with_pattern_name(replayed_node: tt.ApiNode, request: pytest.FixtureR
         assert method_name.startswith("test_")
         pattern_name = method_name[len("test_") :]
 
-    wallet = tt.Wallet(
+    wallet = tt.OldWallet(
         attach_to=replayed_node,
         additional_arguments=[f"--store-transaction={pattern_name}", f"--transaction-serialization={request.param}"],
     )
