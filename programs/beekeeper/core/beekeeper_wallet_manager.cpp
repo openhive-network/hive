@@ -95,7 +95,7 @@ string beekeeper_wallet_manager::import_key( const std::string& token, const std
   return sessions->get_wallet_manager( token )->import_key( wallet_name, wif_key, prefix );
 }
 
-void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& public_key )
+void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const public_key_type& public_key )
 {
   sessions->check_timeout( token );
   sessions->get_wallet_manager( token )->remove_key( name, public_key );
