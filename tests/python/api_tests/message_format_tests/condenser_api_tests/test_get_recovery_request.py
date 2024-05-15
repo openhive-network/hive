@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 # case of most recent blocklog (current_blocklog) there is a lot of recovery requests, but they are changed after every
 # remote node update. See the readme.md file in this directory for further explanation.
 @run_for("testnet")
-def test_get_recovery_request(node: tt.InitNode, wallet) -> None:
+def test_get_recovery_request(wallet: tt.Wallet, node: tt.InitNode) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
     request_account_recovery(wallet, "alice")
     assert node.api.condenser.get_recovery_request("alice"), "There is no recovery request for alice"

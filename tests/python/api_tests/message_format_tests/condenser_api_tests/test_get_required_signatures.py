@@ -5,7 +5,8 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_get_required_signatures_in_testnet(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_get_required_signatures_in_testnet(node: tt.InitNode) -> None:
+    wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     keys = node.api.condenser.get_required_signatures(transaction, [tt.Account("initminer").public_key])
     assert len(keys) != 0

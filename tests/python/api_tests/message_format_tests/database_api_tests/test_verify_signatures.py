@@ -10,7 +10,7 @@ from hive_local_tools.api.message_format.database_api import generate_sig_digest
 # is its owner.
 @run_for("testnet")
 def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     sig_digest = generate_sig_digest(transaction, tt.Account("initminer").private_key)
     node.api.database.verify_signatures(
