@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.Wallet):
+def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.OldWallet):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_hf26_serialization.api.create_account("initminer", "bob", "{}")
@@ -27,7 +27,7 @@ def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_se
 
 
 @run_for("testnet")
-def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.Wallet):
+def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.OldWallet):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
@@ -48,7 +48,7 @@ def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_
 
 
 @run_for("testnet")
-def test_hive_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.Wallet):
+def test_hive_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.OldWallet):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_hf26_serialization.api.create_account("initminer", "bob", "{}")
@@ -68,7 +68,7 @@ def test_hive_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_s
 
 
 @run_for("testnet")
-def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.Wallet):
+def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.OldWallet):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
@@ -89,7 +89,7 @@ def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy
 
 
 @run_for("testnet")
-def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.Wallet):
+def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization: tt.OldWallet):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_hf26_serialization.api.create_account("initminer", "bob", "{}")
@@ -109,7 +109,7 @@ def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serializa
 
 
 @run_for("testnet")
-def test_fee_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.Wallet):
+def test_fee_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization: tt.OldWallet):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
