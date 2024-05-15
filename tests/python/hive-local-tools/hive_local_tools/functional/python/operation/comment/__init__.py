@@ -8,7 +8,6 @@ from helpy import wax
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
-    convert_from_mainnet_to_testnet_asset,
     create_transaction_with_any_operation,
     get_rc_current_mana,
     get_reward_hbd_balance,
@@ -17,23 +16,23 @@ from hive_local_tools.functional.python.operation import (
     get_virtual_operations,
 )
 from schemas.fields.assets.hive import AssetHiveHF26
-from schemas.jsonrpc import get_response_model
 from schemas.operations import (
-    ClaimRewardBalanceOperationLegacy,
-    CommentOperation,
-    CommentOptionsOperationLegacy,
+    CommentOptionsOperation,
     DeleteCommentOperation,
-    VoteOperation,
 )
-from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
 from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
 from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
 from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
 from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
-from schemas.transaction import TransactionLegacy
+from schemas.transaction import Transaction, TransactionLegacy
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
+    from schemas.operations.claim_reward_balance_operation import ClaimRewardBalanceOperationLegacy
+    from schemas.operations.comment_operation import CommentOperation
+    from schemas.operations.comment_options_operation import CommentOptionsOperationLegacy
+    from schemas.operations.representations.legacy_representation import LegacyRepresentation
+    from schemas.operations.vote_operation import VoteOperation
 
 
 class ClaimRewardBalanceTransaction(TransactionLegacy):
@@ -45,6 +44,11 @@ class CommentTransaction(TransactionLegacy):
     operations: tuple[LegacyRepresentation[CommentOperation]] | tuple[
         LegacyRepresentation[CommentOperation], LegacyRepresentation[CommentOptionsOperationLegacy]
     ]
+    rc_cost: int = 0
+
+
+class CommentTransactionHF26(Transaction):
+    operations: tuple[LegacyRepresentation[CommentOperation]] | tuple[CommentOperation, CommentOptionsOperationLegacy]
     rc_cost: int = 0
 
 
@@ -291,7 +295,7 @@ class Comment:
             if comment_options != {}:
                 self.__options(broadcast=False, **comment_options)
 
-        self.__comment_transaction = CommentTransaction(**self.__comment_transaction.get_response())
+        self.__comment_transaction = self.__comment_transaction.get_response()
 
     def reply(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]) -> Comment:
         self.assert_comment_exists()
@@ -315,19 +319,16 @@ class Comment:
 
     def update(self) -> None:
         self.author_obj.update_account_info()  # Refresh RC mana before update
-        self.__comment_transaction = get_response_model(
-            CommentTransaction,
-            **self.__wallet.api.post_comment(
-                author=self.author,
-                permlink=self.permlink,
-                parent_author=self.__force_get_parent().author,
-                parent_permlink=self.__force_get_parent().permlink,
-                title=f"update-title-{self.author}",
-                body=f"update-body-{self.permlink}",
-                json='{"tags":["hiveio","example","tags"]}',
-                only_result=False,
-            ),
-        ).result
+        self.__comment_transaction = self.__wallet.api.post_comment(
+            author=self.author,
+            permlink=self.permlink,
+            parent_author=self.__force_get_parent().author,
+            parent_permlink=self.__force_get_parent().permlink,
+            title=f"update-title-{self.author}",
+            body=f"update-body-{self.permlink}",
+            json='{"tags":["hiveio","example","tags"]}',
+            only_result=False,
+        )
 
     def vote(self) -> None:
         self.assert_comment_exists()
@@ -357,14 +358,10 @@ class Comment:
 
     def delete(self) -> None:
         self.author_obj.update_account_info()  # Refresh RC mana before update
-        self.__delete_transaction = get_response_model(
-            DeleteCommentTransaction,
-            **create_transaction_with_any_operation(
-                self.__wallet,
-                DeleteCommentOperation(author=self.author, permlink=self.permlink),
-                only_result=False,
-            ),
-        ).result
+        self.__delete_transaction = create_transaction_with_any_operation(
+            self.__wallet,
+            [DeleteCommentOperation(author=self.author, permlink=self.permlink)],
+        )
 
     def options(self, **comment_options: Any) -> None:
         """
@@ -404,32 +401,23 @@ class Comment:
                 beneficiary["weight"] = beneficiary["weight"] * 100
 
             self.__comment_options["extensions"] = [
-                [
-                    "comment_payout_beneficiaries",
-                    {"beneficiaries": self.__comment_options["beneficiaries"]},
-                ]
+                {
+                    "type": "comment_payout_beneficiaries",
+                    "value": {"beneficiaries": self.__comment_options["beneficiaries"]},
+                }
             ]
             self.__comment_options.pop("beneficiaries")
 
         if "percent_hbd" in self.__comment_options:
             self.__comment_options["percent_hbd"] = self.__comment_options["percent_hbd"] * 100
 
-        comment_options_operation = CommentOptionsOperationLegacy(
+        comment_options_operation = CommentOptionsOperation(
             author=self.__author.name,
             permlink=self.__permlink,
             **self.__comment_options,
         )
 
-        comment_options_operation.max_accepted_payout = convert_from_mainnet_to_testnet_asset(
-            comment_options_operation.max_accepted_payout
-        )
-
-        return get_response_model(
-            CommentOptionsTransaction,
-            **create_transaction_with_any_operation(
-                self.__wallet, comment_options_operation, only_result=False, broadcast=broadcast
-            ),
-        ).result
+        return create_transaction_with_any_operation(self.__wallet, [comment_options_operation], broadcast)
 
     def assert_options_are_applied(self) -> None:
         comment_content = self.__node.api.database.find_comments(comments=[[self.author, self.__permlink]]).comments[0]
@@ -439,9 +427,7 @@ class Comment:
                 if key != "max_accepted_payout":
                     assert self.__comment_options[key] == getattr(comment_content, key), f"{key} is not applied"
                 else:
-                    assert (
-                        tt.Asset.from_legacy(self.__comment_options[key]).amount == getattr(comment_content, key).amount
-                    )
+                    assert self.__comment_options[key].amount == getattr(comment_content, key).amount
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
@@ -590,7 +576,7 @@ class Vote:
 
     def assert_vote(self, mode: Literal["occurred", "not_occurred"]) -> None:
         if mode == "occurred":
-            vote_operation = self.__vote_transaction["operations"][0][1]
+            vote_operation = self.__vote_transaction.operations[0].value
             operation_values = []
             for i in (1, 2):
                 operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
@@ -646,16 +632,13 @@ class Vote:
 
     def __update_account_info_and_execute_vote(self, weight: int) -> None:
         self.__voter_obj.update_account_info()  # Refresh RC mana and Vote mana before vote
-        self.__vote_transaction = get_response_model(
-            VoteTransaction,
-            **self.__comment_obj.wallet.api.vote(
-                voter=self.__voter_obj.name,
-                author=self.__comment_obj.author,
-                permlink=self.__comment_obj.permlink,
-                weight=weight,
-                only_result=False,
-            ),
-        ).result
+        self.__vote_transaction = self.__comment_obj.wallet.api.vote(
+            voter=self.__voter_obj.name,
+            author=self.__comment_obj.author,
+            permlink=self.__comment_obj.permlink,
+            weight=weight,
+            only_result=False,
+        )
 
     def vote(self, weight: int) -> None:
         if not 0 <= weight <= 100:
@@ -768,28 +751,13 @@ class CommentAccount(Account):
         reward_vests: tt.Asset.VestT | Literal["all"] = tt.Asset.Vest(0),  # noqa: B008
     ) -> None:
         self.update_account_info()
-        self.__claim_reward_transaction = get_response_model(
-            ClaimRewardBalanceTransaction,
-            **self._wallet.api.claim_reward_balance(
-                account=self.name,
-                reward_hive=(
-                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hive"))
-                    if reward_hive == "all"
-                    else reward_hive
-                ),
-                reward_hbd=(
-                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hbd"))
-                    if reward_hbd == "all"
-                    else reward_hbd
-                ),
-                reward_vests=(
-                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_vests"))
-                    if reward_vests == "all"
-                    else reward_vests
-                ),
-                only_result=False,
-            ),
-        ).result
+        self.__claim_reward_transaction = self._wallet.api.claim_reward_balance(
+            account=self.name,
+            reward_hive=(self.get_reward_balance(mode="reward_hive") if reward_hive == "all" else reward_hive),
+            reward_hbd=(self.get_reward_balance(mode="reward_hbd") if reward_hbd == "all" else reward_hbd),
+            reward_vests=(self.get_reward_balance(mode="reward_vests") if reward_vests == "all" else reward_vests),
+            only_result=False,
+        )
 
     def assert_is_rc_mana_decreased_after_claiming_available_rewards(self) -> None:
         claim_reward_rc_cost = self.__claim_reward_transaction["rc_cost"]
