@@ -156,7 +156,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *
        * @param key the Public Key to remove
        */
-      bool remove_key( string key ) override;
+      bool remove_key( const public_key_type& public_key ) override;
 
       /* Attempts to sign a digest via the given public_key
       */

@@ -182,7 +182,7 @@ public:
    * @param public_key  The public key to find corresponding a private key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm.
    * @throws            An exception `fc::exception` if a wallet not found or locked or a private key is not removed.
    */
-  void remove_key( const std::string& token, const std::string& wallet_name, const std::string& public_key );
+  void remove_key( const std::string& token, const std::string& wallet_name, const public_key_type& public_key );
 
   /**
    * Gets current time and timeout time

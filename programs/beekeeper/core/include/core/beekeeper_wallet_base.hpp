@@ -84,7 +84,7 @@ class beekeeper_wallet_base
        *
        * @param key the Public Key to remove
        */
-      virtual bool remove_key( string key ) = 0;
+      virtual bool remove_key( const public_key_type& public_key ) = 0;
 
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */

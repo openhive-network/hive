@@ -117,15 +117,12 @@ public:
   // Removes a key from the wallet
   // @returns true if the key matches a current active/owner/memo key for the named
   //     account, false otherwise (but it is removed either way)
-  bool remove_key(string public_key)
+  bool remove_key( const public_key_type& public_key )
   {
-    FC_ASSERT( public_key.size() > 0 );
-
-    public_key_type pub( utility::public_key::create( public_key ) );
-    auto itr = _keys.find(pub);
+    auto itr = _keys.find( public_key );
     if( itr != _keys.end() )
     {
-      _keys.erase(pub);
+      _keys.erase( public_key );
       return true;
     }
     FC_ASSERT( false, "Key not in wallet" );
@@ -227,11 +224,11 @@ string beekeeper_wallet::import_key( const string& wif_key, const string& prefix
   return _result.first;
 }
 
-bool beekeeper_wallet::remove_key(string key)
+bool beekeeper_wallet::remove_key( const public_key_type& public_key )
 {
   FC_ASSERT( !is_locked(), "Unable to remove key from a locked wallet");
 
-  if( my->remove_key(key) )
+  if( my->remove_key( public_key ) )
   {
     save_wallet_file();
     return true;

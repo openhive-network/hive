@@ -238,7 +238,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, public_key );
+      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, utility::public_key::create( public_key, HIVE_ADDRESS_PREFIX ) );
       return to_string( empty_response );
     };
     return exception_handler( _method );

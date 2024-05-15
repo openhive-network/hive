@@ -262,14 +262,14 @@ string wallet_manager_impl::import_key( const std::string& name, const std::stri
   return w->import_key( wif_key, prefix );
 }
 
-void wallet_manager_impl::remove_key( const std::string& name, const std::string& public_key )
+void wallet_manager_impl::remove_key( const std::string& name, const public_key_type& public_key )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
   auto& w = wallets.at(name);
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-  w->remove_key(public_key);
+  w->remove_key( public_key );
 }
 
 signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
