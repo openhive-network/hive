@@ -846,7 +846,7 @@ void chain_plugin_impl::open()
     /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
     thread_pool.shutdown();
 
-    wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
+    wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
     theApp.notify_status("exitting with open database error");
 
