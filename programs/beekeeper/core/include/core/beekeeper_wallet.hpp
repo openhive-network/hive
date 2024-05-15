@@ -146,8 +146,9 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * example: import_key 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
        *
        * @param wif_key the WIF Private Key to import
+       * @param prefix a prefix of a public key
        */
-      string import_key( string wif_key ) override;
+      string import_key( const string& wif_key, const string& prefix ) override;
 
       /** Removes a key from the wallet.
        *

@@ -167,10 +167,11 @@ public:
    * @param token       Session's identifier.
    * @param wallet_name A name of a wallet to import into.
    * @param wif_key     The WIF Private Key to import, e.g. 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n.
+   * @param prefix      A prefix of a public key
    * @return            A public key corresponding to WIF key
    * @throws            An exception `fc::exception` if a wallet not found or locked.
    */
-  string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key );
+  string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix );
 
   /**
    * 

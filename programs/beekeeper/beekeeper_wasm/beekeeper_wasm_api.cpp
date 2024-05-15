@@ -220,9 +220,14 @@ namespace beekeeper {
 
   std::string beekeeper_api::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key )
   {
+    /*
+      HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined.
+      At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.
+    */
+    const char* HIVE_ADDRESS_PREFIX = "STM";
     auto _method = [&, this]()
     {
-      import_key_return _result = { _impl->app.get_wallet_manager()->import_key( token, wallet_name, wif_key ) };
+      import_key_return _result = { _impl->app.get_wallet_manager()->import_key( token, wallet_name, wif_key, HIVE_ADDRESS_PREFIX ) };
       return to_string( _result );
     };
     return exception_handler( _method );

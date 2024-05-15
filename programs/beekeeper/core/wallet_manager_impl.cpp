@@ -252,14 +252,14 @@ void wallet_manager_impl::unlock( const std::string& wallet_name, const std::str
   w->unlock( password );
 }
 
-string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key )
+string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key, const std::string& prefix )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
   auto& w = wallets.at(name);
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-  return w->import_key(wif_key);
+  return w->import_key( wif_key, prefix );
 }
 
 void wallet_manager_impl::remove_key( const std::string& name, const std::string& public_key )
