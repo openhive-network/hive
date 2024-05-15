@@ -686,10 +686,10 @@ void witness_plugin::plugin_startup()
         new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
-    my->schedule_production_loop();
     fc::time_point now = fc::time_point::now();
     const uint32_t slot = my->_db.get_slot_at_time(now);
     my->produce_block_data = my->get_produce_block_data(slot);
+    my->schedule_production_loop();
   }
   else
   {
