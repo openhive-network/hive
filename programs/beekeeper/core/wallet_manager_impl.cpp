@@ -176,18 +176,18 @@ keys_details wallet_manager_impl::list_keys( const string& name, const string& p
   return list_keys_impl( name, password, true/*password_is_required*/ );
 }
 
-flat_set<public_key_type> wallet_manager_impl::get_public_keys( const std::optional<std::string>& wallet_name )
+keys_details wallet_manager_impl::get_public_keys( const std::optional<std::string>& wallet_name )
 {
   FC_ASSERT( !wallets.empty(), "You don't have any wallet");
 
-  flat_set<public_key_type> result;
+  keys_details _result;
   bool is_all_wallet_locked = true;
 
   auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet )
   {
     if( !wallet->is_locked() )
     {
-      result.merge( wallet->list_public_keys() );
+      _result.merge( wallet->list_public_keys() );
     }
     is_all_wallet_locked &= wallet->is_locked();
   };
@@ -209,7 +209,7 @@ flat_set<public_key_type> wallet_manager_impl::get_public_keys( const std::optio
   else
     FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet");
 
-  return result;
+  return _result;
 }
 
 void wallet_manager_impl::lock_all()

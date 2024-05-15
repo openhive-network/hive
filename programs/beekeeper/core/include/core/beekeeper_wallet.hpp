@@ -103,7 +103,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      flat_set<public_key_type> list_public_keys() override;
+      keys_details list_public_keys() override;
 
       /** Loads a specified Graphene wallet.
        *

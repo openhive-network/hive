@@ -6,9 +6,6 @@
 #include <fc/crypto/aes.hpp>
 #include <fc/io/raw.hpp>
 
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm/copy.hpp>
-
 #include <sys/stat.h>
 
 namespace beekeeper {
@@ -348,13 +345,10 @@ keys_details beekeeper_wallet::list_keys()
   return my->_keys;
 }
 
-flat_set<public_key_type> beekeeper_wallet::list_public_keys()
+keys_details beekeeper_wallet::list_public_keys()
 {
-  FC_ASSERT( !is_locked(), "Unable to list private keys of a locked wallet");
-  flat_set<public_key_type> keys;
-  boost::copy( my->_keys | boost::adaptors::map_keys, std::inserter( keys, keys.end() ) );
-
-  return keys;
+  FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
+  return my->_keys;
 }
 
 private_key_type beekeeper_wallet::get_private_key( public_key_type pubkey )const

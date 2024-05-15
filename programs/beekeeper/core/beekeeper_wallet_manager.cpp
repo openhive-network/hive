@@ -68,7 +68,7 @@ keys_details beekeeper_wallet_manager::list_keys( const std::string& token, cons
   return sessions->get_wallet_manager( token )->list_keys( wallet_name, password );
 }
 
-flat_set<public_key_type> beekeeper_wallet_manager::get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name )
+keys_details beekeeper_wallet_manager::get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name )
 {
   sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->get_public_keys( wallet_name );
