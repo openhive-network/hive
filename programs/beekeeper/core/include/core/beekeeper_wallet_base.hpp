@@ -67,7 +67,7 @@ class beekeeper_wallet_base
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      virtual flat_set<public_key_type> list_public_keys() = 0;
+      virtual keys_details list_public_keys() = 0;
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *

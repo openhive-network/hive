@@ -131,7 +131,7 @@ public:
    * @param wallet_name A name of a wallet.
    * @return            A set of public keys from all unlocked wallets
    */
-  flat_set<public_key_type> get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name );
+  keys_details get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name );
 
   /**
    * 

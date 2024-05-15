@@ -79,12 +79,6 @@ namespace utility
     extern const char* BEEKEEPER_HIVE_ADDRESS_PREFIX;
     extern const size_t public_key_size;
 
-    inline public_key_type create( const std::string& source )
-    {
-      FC_ASSERT( source.substr( 0, strlen(BEEKEEPER_HIVE_ADDRESS_PREFIX) ) == BEEKEEPER_HIVE_ADDRESS_PREFIX, "public key requires ${prefix} prefix", ("prefix", BEEKEEPER_HIVE_ADDRESS_PREFIX) );
-      return public_key_type::from_base58( source.substr( strlen(BEEKEEPER_HIVE_ADDRESS_PREFIX) ), false/*is_sha256*/ );
-    }
-
     inline public_key_type create( const std::string& source, const std::string& prefix )
     {
       FC_ASSERT( source.substr( 0, prefix.size() ) == prefix, "public key requires ${prefix} prefix", (prefix) );
@@ -118,7 +112,10 @@ namespace utility
     flat_set<public_key_details> _result;
 
     std::transform( source.begin(), source.end(), std::inserter( _result, _result.end() ),
-    []( const public_key_type& public_key ){ return public_key_details{ public_key::to_string( public_key ) }; } );
+    []( const key_detail_pair& source )
+    {
+      return public_key_details{ public_key::to_string( source ) };
+    } );
 
     return _result;
   }

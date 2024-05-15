@@ -8,6 +8,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm/copy.hpp>
 
 #include <fc/crypto/elliptic.hpp>
 #include <fc/filesystem.hpp>
@@ -1559,14 +1561,20 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
   b_mgr.remove_wallet( _wallets[0].name );
   b_mgr.remove_wallet( _wallets[1].name );
 
-  auto _cmp = []( const flat_set<public_key_type>& a, const flat_set<public_key_type>& b )
+  auto _cmp = []( const beekeeper::keys_details& a, const beekeeper::keys_details& b )
   {
-    if( a.size() != b.size() )
+    flat_set<public_key_type> _a;
+    boost::copy( a | boost::adaptors::map_keys, std::inserter( _a, _a.end() ) );
+
+    flat_set<public_key_type> _b;
+    boost::copy( b | boost::adaptors::map_keys, std::inserter( _b, _b.end() ) );
+    
+    if( _a.size() != _b.size() )
       return false;
 
-    for( auto& item : a )
+    for( auto& item : _a )
     {
-      if( b.find( item ) == b.end() )
+      if( _b.find( item ) == _b.end() )
       {
         return false;
       }
