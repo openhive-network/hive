@@ -77,6 +77,7 @@ namespace utility
   {
     //HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined
     extern const char* BEEKEEPER_HIVE_ADDRESS_PREFIX;
+    extern const size_t public_key_size;
 
     inline public_key_type create( const std::string& source )
     {
@@ -84,14 +85,25 @@ namespace utility
       return public_key_type::from_base58( source.substr( strlen(BEEKEEPER_HIVE_ADDRESS_PREFIX) ), false/*is_sha256*/ );
     }
 
+    inline public_key_type create( const std::string& source, const std::string& prefix )
+    {
+      FC_ASSERT( source.substr( 0, prefix.size() ) == prefix, "public key requires ${prefix} prefix", (prefix) );
+      return public_key_type::from_base58( source.substr( prefix.size() ), false/*is_sha256*/ );
+    }
+
     inline std::string to_string( const public_key_type& source )
     {
       return BEEKEEPER_HIVE_ADDRESS_PREFIX + public_key_type::to_base58( source, false/*is_sha256*/ );
     }
 
+    inline std::string to_string( const public_key_type& source, const std::string& prefix )
+    {
+      return prefix + public_key_type::to_base58( source, false/*is_sha256*/ );
+    }
+
     inline std::string to_string( const key_detail_pair& source )
     {
-      return source.second.second + public_key_type::to_base58( source.first, false/*is_sha256*/ );
+      return to_string( source.first, source.second.second );
     }
 
     inline size_t size()

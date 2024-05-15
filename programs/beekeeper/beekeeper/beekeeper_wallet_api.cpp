@@ -165,7 +165,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
   std::lock_guard<std::mutex> guard( mtx );
 
   using namespace beekeeper;
-  return { _wallet_mgr->sign_digest( args.token, args.sig_digest, args.public_key, args.wallet_name ) };
+  return { _wallet_mgr->sign_digest( args.token, args.wallet_name, args.sig_digest, utility::public_key::create( args.public_key, HIVE_ADDRESS_PREFIX ), HIVE_ADDRESS_PREFIX/*At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.*/ ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )

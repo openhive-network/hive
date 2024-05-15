@@ -34,7 +34,7 @@ class wallet_manager_impl {
     void unlock( const std::string& wallet_name, const std::string& password );
     string import_key( const std::string& name, const std::string& wif_key, const std::string& prefix );
     void remove_key( const std::string& name, const std::string& public_key );
-    signature_type sign_digest( const digest_type& sig_digest, const public_key_type& public_key, const std::optional<std::string>& wallet_name );
+    signature_type sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix );
     bool has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key );
     std::string encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
     std::string decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
@@ -53,7 +53,7 @@ class wallet_manager_impl {
 
     bool is_locked( const string& name );
 
-    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key, const std::optional<std::string>& wallet_name );
+    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
 
     boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
     {

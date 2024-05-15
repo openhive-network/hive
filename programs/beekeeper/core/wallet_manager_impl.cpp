@@ -272,7 +272,7 @@ void wallet_manager_impl::remove_key( const std::string& name, const std::string
   w->remove_key(public_key);
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key, const std::optional<std::string>& wallet_name )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
 {
   try
   {
@@ -305,14 +305,14 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
   } FC_LOG_AND_RETHROW();
 
   if( wallet_name )
-    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", *wallet_name)("public_key", utility::public_key::to_string( public_key )));
+    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", *wallet_name)("public_key", utility::public_key::to_string( public_key, prefix )));
   else
-    FC_ASSERT( false, "Public key ${public_key} not found in unlocked wallets", ("public_key", utility::public_key::to_string( public_key )));
+    FC_ASSERT( false, "Public key ${public_key} not found in unlocked wallets", ("public_key", utility::public_key::to_string( public_key, prefix )));
 }
 
-signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, const public_key_type& public_key, const std::optional<std::string>& wallet_name )
+signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, public_key, wallet_name );
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )

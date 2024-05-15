@@ -9,6 +9,7 @@ namespace beekeeper {
     namespace public_key
     {
       const char* BEEKEEPER_HIVE_ADDRESS_PREFIX = "STM";
+      const size_t public_key_size = size();
     }
   }
 
