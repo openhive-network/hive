@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import pytest
+from helpy._interfaces.wax import WaxOperationFailedError
+from helpy.exceptions import HelpyError, RequestError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
 
 UPDATED_COMMENT_OPTIONS = {
-    "max_accepted_payout": tt.Asset.Tbd(100).as_legacy(),
+    "max_accepted_payout": tt.Asset.Tbd(100),
     "percent_hbd": 50,
     "allow_votes": False,
     "allow_curation_rewards": False,
@@ -74,7 +76,7 @@ def test_change_comment_options_operations_twice(
     comment.assert_is_comment_sent_or_update()
     comment.assert_options_are_applied()
 
-    updated_comment_options["max_accepted_payout"] = tt.Asset.Tbd(70).as_legacy()
+    updated_comment_options["max_accepted_payout"] = tt.Asset.Tbd(70)
     updated_comment_options["percent_hbd"] = 30
     updated_comment_options["allow_votes"] = False
     updated_comment_options["allow_curation_rewards"] = False
@@ -95,7 +97,7 @@ def test_change_comment_options_operations_twice(
     [
         (
             ("allow_votes", "allow_curation_rewards"),
-            ("max_accepted_payout", tt.Asset.Tbd(120).as_legacy()),
+            ("max_accepted_payout", tt.Asset.Tbd(120)),
             "A comment cannot accept a greater payout.",
         ),
         (
@@ -205,7 +207,7 @@ def test_change_percent_hbd_after_vote(prepared_node: tt.InitNode, wallet: tt.Wa
             "allow_votes": False,
         },
         {
-            "max_accepted_payout": tt.Asset.Tbd(100).as_legacy(),
+            "max_accepted_payout": tt.Asset.Tbd(100),
         },
         {
             "allow_curation_rewards": False,
@@ -281,9 +283,15 @@ def test_beneficiary_after_comment(
 
     comment.create_parent_comment()
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(HelpyError) as error:
         comment.options(beneficiaries=beneficiaries)
-    assert error_message in error.value.error, "Appropriate error message is not raise"
+
+    if isinstance(error.value, WaxOperationFailedError):
+        error_value = error.value.args[0]
+    if isinstance(error.value, RequestError):
+        error_value = error.value.error
+
+    assert error_message in error_value, "Appropriate error message is not raise"
 
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
@@ -322,8 +330,13 @@ def test_beneficiary_after_vote(
 
     comment.vote()
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(HelpyError) as error:
         comment.options(beneficiaries=beneficiaries)
 
-    assert error_message in error.value.error, "Appropriate error message is not raise"
+    if isinstance(error.value, WaxOperationFailedError):
+        error_value = error.value.args[0]
+    if isinstance(error.value, RequestError):
+        error_value = error.value.error
+
+    assert error_message in error_value, "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")

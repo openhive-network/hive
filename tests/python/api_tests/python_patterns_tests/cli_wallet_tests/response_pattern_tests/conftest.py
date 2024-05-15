@@ -13,5 +13,5 @@ def node() -> tt.InitNode:
 
 
 @pytest.fixture()
-def wallet(node) -> tt.Wallet:
-    return tt.Wallet(attach_to=node)
+def wallet(node) -> tt.OldWallet:
+    return tt.OldWallet(attach_to=node)

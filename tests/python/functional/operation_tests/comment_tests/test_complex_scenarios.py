@@ -210,16 +210,16 @@ def test_1_4_case(prepared_node, wallet):
     post_2 = Comment(prepared_node, wallet)
     post_3 = Comment(prepared_node, wallet)
 
-    post_1.send("no_reply", max_accepted_payout=(post_1_unbounded_hbd_reward / 2).as_legacy())
-    post_2.send("no_reply", max_accepted_payout=(post_2_unbounded_hbd_reward / 2).as_legacy())
+    post_1.send("no_reply", max_accepted_payout=(post_1_unbounded_hbd_reward / 2))
+    post_2.send("no_reply", max_accepted_payout=(post_2_unbounded_hbd_reward / 2))
     post_3.send("no_reply")
 
     comment_1 = Comment(prepared_node, wallet, parent=post_1, author=post_2.author_obj)
     comment_2 = Comment(prepared_node, wallet, parent=comment_1, author=post_1.author_obj)
     comment_3 = Comment(prepared_node, wallet, parent=comment_1, author=post_3.author_obj)
 
-    comment_1.send("reply_another_comment", max_accepted_payout=(comment_1_unbounded_hbd_reward / 2).as_legacy())
-    comment_2.send("reply_another_comment", max_accepted_payout=(comment_2_unbounded_hbd_reward / 2).as_legacy())
+    comment_1.send("reply_another_comment", max_accepted_payout=(comment_1_unbounded_hbd_reward / 2))
+    comment_2.send("reply_another_comment", max_accepted_payout=(comment_2_unbounded_hbd_reward / 2))
     comment_3.send("reply_another_comment")
 
     vote_1, vote_2, vote_3, vote_4, vote_5, vote_6, vote_7 = votes(
@@ -327,8 +327,8 @@ def test_1_4_case(prepared_node, wallet):
     ), "Incorrect value of vesting_payout in curation_reward"  # 9.
 
 
-@pytest.mark.parametrize("post_options", [{"max_accepted_payout": tt.Asset.Tbd(0).as_legacy()}])
-@pytest.mark.parametrize("comment_options", [{"max_accepted_payout": tt.Asset.Tbd(0).as_legacy()}])
+@pytest.mark.parametrize("post_options", [{"max_accepted_payout": tt.Asset.Tbd(0)}])
+@pytest.mark.parametrize("comment_options", [{"max_accepted_payout": tt.Asset.Tbd(0)}])
 def test_1_5_case(prepared_node, posts, comments, post_options, comment_options):
     post_1, post_2, post_3 = posts
     comment_1, comment_2, comment_3 = comments

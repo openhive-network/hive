@@ -25,7 +25,7 @@ from schemas.fields.compound import Authority, HbdExchangeRate
 from schemas.operations.account_update2_operation import AccountUpdate2Operation
 from schemas.operations.account_update_operation import AccountUpdateOperation
 from schemas.operations.limit_order_create2_operation import (
-    LimitOrderCreate2OperationLegacy,
+    LimitOrderCreate2Operation,
 )
 from schemas.operations.virtual.collateralized_convert_immediate_conversion_operation import (
     CollateralizedConvertImmediateConversionOperation,
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
+    from test_tools.__private.wallet import BeekeepyResponse
 
 
 class UnknownKeyAuthsFormatError(Exception):
@@ -66,8 +67,8 @@ class ConvertAccount(Account):
         # extract requestid from transaction
         operations_from_transaction = trx["operations"]
         for operation in operations_from_transaction:
-            if operation[0] == "collateralized_convert":
-                requestid = operation[1]["requestid"]
+            if operation.type == "collateralized_convert_operation":
+                requestid = operation.value.requestid
 
         assert "requestid" in locals(), "Provided transaction doesn't contain collateralized convert operation."
 
@@ -191,16 +192,13 @@ class ConvertAccount(Account):
         self._added_hbds_by_convert.append(hbds_after_operation - hbds_before_operation)
 
     @staticmethod
-    def extract_amount_from_convert_operation(transaction: dict) -> tt.Asset.HiveT | tt.Asset.TbdT:
+    def extract_amount_from_convert_operation(transaction: dict | BeekeepyResponse) -> tt.Asset.HiveT | tt.Asset.TbdT:
         ops_in_transaction = transaction["operations"]
         # get amount to convert from transaction
         for operation in ops_in_transaction:
-            if operation[0] == "convert" or operation[0] == "collateralized_convert":
-                to_convert = tt.Asset.from_legacy(operation[1]["amount"])
-        assert (
-            "to_convert" in locals()
-        ), "Convert or collateralized_convert operation wasn't found in given transaction."
-        return to_convert
+            if operation.type == "convert_operation" or operation.type == "collateralized_convert_operation":
+                return operation.value.amount
+        raise AssertionError("Convert or collateralized_convert operation wasn't found in given transaction.")
 
 
 @dataclass
@@ -247,11 +245,11 @@ class EscrowAccount(Account):
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
         ops = trx["operations"]
         for op in ops:
-            if op[0] == "escrow_transfer" or op[0] == "escrow_release":
-                trx_value = op[1]
-                fee = tt.Asset.from_legacy(trx_value["fee"]) if op[0] == "escrow_transfer" else tt.Asset.Tbd(0)
-                hbd_amount = tt.Asset.from_legacy(trx_value["hbd_amount"])
-                hive_amount = tt.Asset.from_legacy(trx_value["hive_amount"])
+            if op.type == "escrow_transfer_operation" or op.type == "escrow_release_operation":
+                trx_value = op.value
+                fee = trx_value.fee if op.type == "escrow_transfer_operation" else tt.Asset.Tbd(0)
+                hbd_amount = trx_value.hbd_amount
+                hive_amount = trx_value.hive_amount
                 return fee, hbd_amount, hive_amount
         return None
 
@@ -345,17 +343,19 @@ class LimitOrderAccount(Account):
 
         return create_transaction_with_any_operation(
             self._wallet,
-            LimitOrderCreate2OperationLegacy(
-                owner=self._name,
-                orderid=order_id,
-                amount_to_sell=base(amount_to_sell).as_legacy(),
-                exchange_rate=HbdExchangeRate(
-                    base=base(amount_to_sell).as_legacy(),
-                    quote=quote(min_to_receive).as_legacy(),
-                ),
-                fill_or_kill=fill_or_kill,
-                expiration=expiration_time,
-            ),
+            [
+                LimitOrderCreate2Operation(
+                    owner=self._name,
+                    orderid=order_id,
+                    amount_to_sell=base(amount_to_sell).as_nai(),
+                    exchange_rate=HbdExchangeRate(
+                        base=base(amount_to_sell).as_nai(),
+                        quote=quote(min_to_receive).as_nai(),
+                    ),
+                    fill_or_kill=fill_or_kill,
+                    expiration=expiration_time,
+                )
+            ],
         )
 
 
@@ -578,7 +578,7 @@ class UpdateAccount(Account):
             if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
         }
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
-        return create_transaction_with_any_operation(self._wallet, operation(account=self.name, **to_pass))
+        return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 
     def update_single_account_detail(
         self,
@@ -744,12 +744,12 @@ class WitnessAccount(Account):
             ).decode("utf-8")
         )
         return create_transaction_with_any_operation(
-            self._wallet, WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)
+            self._wallet, [WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)]
         )
 
     def witness_block_approve(self, *, block_id: int) -> dict:
         return create_transaction_with_any_operation(
-            self._wallet, WitnessBlockApproveOperation(witness=self._name, block_id=block_id)
+            self._wallet, [WitnessBlockApproveOperation(witness=self._name, block_id=block_id)]
         )
 
 
