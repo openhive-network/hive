@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import pytest
+from loguru import logger
 
 import shared_tools.networks_architecture as networks
 from shared_tools.complex_networks import create_block_log_directory_name, prepare_network, prepare_time_offsets
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 @pytest.fixture()
