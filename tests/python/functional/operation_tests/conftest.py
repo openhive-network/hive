@@ -343,7 +343,7 @@ class LimitOrderAccount(Account):
 
         return create_transaction_with_any_operation(
             self._wallet,
-            LimitOrderCreate2Operation(
+            [LimitOrderCreate2Operation(
                 owner=self._name,
                 orderid=order_id,
                 amount_to_sell=base(amount_to_sell).as_nai(),
@@ -353,7 +353,7 @@ class LimitOrderAccount(Account):
                 ),
                 fill_or_kill=fill_or_kill,
                 expiration=expiration_time,
-            ),
+            )],
         )
 
 
@@ -576,7 +576,7 @@ class UpdateAccount(Account):
             if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
         }
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
-        return create_transaction_with_any_operation(self._wallet, operation(account=self.name, **to_pass))
+        return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 
     def update_single_account_detail(
         self,
@@ -742,12 +742,12 @@ class WitnessAccount(Account):
             ).decode("utf-8")
         )
         return create_transaction_with_any_operation(
-            self._wallet, WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)
+            self._wallet, [WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)]
         )
 
     def witness_block_approve(self, *, block_id: int) -> dict:
         return create_transaction_with_any_operation(
-            self._wallet, WitnessBlockApproveOperation(witness=self._name, block_id=block_id)
+            self._wallet, [WitnessBlockApproveOperation(witness=self._name, block_id=block_id)]
         )
 
 
