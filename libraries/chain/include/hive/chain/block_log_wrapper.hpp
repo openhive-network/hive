@@ -43,7 +43,6 @@ namespace hive { namespace chain {
       bool      enable_block_log_auto_fixing = true;
     };
     void open_and_init( const block_log_open_args& bl_open_args );
-    void open_and_init( const fc::path& path, bool read_only );
     void close_log();
     std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
     std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t>
@@ -87,8 +86,11 @@ namespace hive { namespace chain {
     void wipe_files( const fc::path& dir );
 
   private:
+    /// @brief Used internally by create_opened_wrapper
+    void open_and_init( const fc::path& path, bool read_only );
     // Common helpers
-    void common_open_and_init( std::optional< bool > read_only );
+    void common_open_and_init( std::optional< bool > read_only,
+                               bool allow_splitting_monolithic_log );
     using block_log_ptr_t = std::shared_ptr<block_log>;
     void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
