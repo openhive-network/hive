@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+import test_tools as tt
 from hive_local_tools import run_for
-
-if TYPE_CHECKING:
-    import test_tools as tt
 
 
 @run_for("testnet")
-def test_get_potential_signatures_in_testnet(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_get_potential_signatures_in_testnet(node: tt.InitNode) -> None:
+    wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     keys = node.api.condenser.get_potential_signatures(transaction)
     assert len(keys) != 0
