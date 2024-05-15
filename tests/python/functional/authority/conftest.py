@@ -10,8 +10,6 @@ class Account:
         self.name = name
         self.node = node
         self.wallet = tt.Wallet(attach_to=node, preconfigure=False)
-        self.wallet.api.set_password(self.wallet.DEFAULT_PASSWORD)
-        self.wallet.api.unlock(self.wallet.DEFAULT_PASSWORD)
 
 
 @pytest.fixture()

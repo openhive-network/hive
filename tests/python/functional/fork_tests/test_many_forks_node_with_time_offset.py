@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 import pytest
 
@@ -11,6 +12,8 @@ memo_cnt = 0
 
 break_cnt = 0
 break_limit = 250
+
+lock = Lock()
 
 
 def generate_break(wallet: tt.Wallet, node: tt.ApiNode, identifier: int):
@@ -30,9 +33,11 @@ def trx_creator(wallet: tt.Wallet, identifier: int):
     global break_cnt
     global break_limit
 
+    lock.acquire()
     while break_cnt < break_limit:
         wallet.api.transfer_nonblocking("initminer", "null", tt.Asset.Test(1), str(memo_cnt))
         memo_cnt += 1
+    lock.release()
     return f"[break {identifier}] Creating transactions finished..."
 
 

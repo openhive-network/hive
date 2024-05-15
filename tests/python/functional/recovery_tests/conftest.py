@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import pytest
+from loguru import logger
 
 import test_tools as tt
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 @pytest.fixture()

@@ -1,3 +1,5 @@
+# ruff: noqa
+
 from __future__ import annotations
 
 from time import sleep
@@ -33,7 +35,7 @@ def test_broadcast_account_creating_with_incorrect_value(node, wallet):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_transaction(id=transaction["transaction_id"], include_reversible=True)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.AccountNotExistError):
         wallet.api.get_account(f"alice{i}")
 
 
@@ -54,7 +56,7 @@ def test_broadcast_same_transaction_twice(node, wallet):
 @pytest.mark.parametrize(
     "way_of_broadcasting",
     [
-        "node.api.condenser.broadcast_transaction(transaction)",
+        # "node.api.condenser.broadcast_transaction(transaction)",  # deprecated in new object Wallet
         "node.api.network_broadcast.broadcast_transaction(trx=transaction)",
         "node.api.wallet_bridge.broadcast_transaction(transaction)",
     ],
@@ -62,7 +64,12 @@ def test_broadcast_same_transaction_twice(node, wallet):
 @run_for("testnet")
 def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcasting):
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
-    transaction = wallet.api.sign_transaction(transaction, broadcast=False)
-
     eval(way_of_broadcasting)
     assert "alice" in wallet.list_accounts()
+
+
+@run_for("testnet")
+def test_broadcasting_manually_signed_transaction_with_condenser(node, wallet):
+    transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
+    with pytest.raises(tt.exceptions.RequestError):
+        node.api.condenser.broadcast_transaction(transaction)

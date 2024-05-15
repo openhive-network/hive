@@ -52,13 +52,13 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.InitNode:
         arguments=[f"--chain-id={CHAIN_ID}"],
     )
 
-    wallet = tt.Wallet(attach_to=node, additional_arguments=[f"--chain-id={CHAIN_ID}"])
+    wallet = tt.OldWallet(attach_to=node, additional_arguments=[f"--chain-id={CHAIN_ID}"])
     import_keys(wallet, request.param[0])
 
     return node, wallet, request.param[1]
 
 
-def import_keys(wallet: tt.Wallet, block_log_type: str) -> None:
+def import_keys(wallet: tt.OldWallet, block_log_type: str) -> None:
     match block_log_type:
         case "block_log_multi_sign":
             wallet.api.import_keys([tt.PrivateKey("account", secret=f"owner-{num}") for num in range(3)])

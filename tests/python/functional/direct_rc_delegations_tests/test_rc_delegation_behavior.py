@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import math
-from concurrent.futures import ThreadPoolExecutor
-
 import pytest
 
 import test_tools as tt
@@ -75,7 +72,7 @@ def test_large_rc_delegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
     # This way, 'cost of transaction' is always same and is possible to delegate maximal, huge amount of RC.
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
-    cost_of_transaction = 150117
+    cost_of_transaction = 150149
     node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(200000000))
     rc_to_delegate = int(get_rc_account_info(accounts[0], wallet)["rc_manabar"]["current_mana"]) - cost_of_transaction
@@ -134,37 +131,44 @@ def test_power_up_delegator(wallet: tt.Wallet) -> None:
 
 
 @pytest.mark.node_shared_file_size("16G")
-def test_multidelegation(wallet: tt.Wallet) -> None:
+def test_multidelegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
+    wallet.api.set_transaction_expiration(seconds=1800)
     amount_of_delegated_rc = 1
-    number_of_threads = 50
+    number_of_delegators = 50
+    number_of_delegations_per_operation = 100
+
+    # This is required to make possible pushing 21 trxs per block after 21'th block
+    wallet.api.update_witness(
+        witness_name="initminer",
+        url="https://initminer.com",
+        block_signing_key=tt.Account("initminer").public_key,
+        props={
+            "account_creation_fee": tt.Asset.TestT(amount=1),
+            "maximum_block_size": 2097152,
+            "hbd_interest_rate": 0,
+        },
+    )
+
+    tt.logger.info("Wait 42 blocks for change of account_creation_fee")
+    node.wait_for_block_with_number(42)
+
     tt.logger.info("Start of delegators and receivers creation")
     accounts = get_accounts_name(wallet.create_accounts(100_000, "receiver"))
-    delegators = get_accounts_name(wallet.create_accounts(number_of_threads, "delegator"))
+    delegators = get_accounts_name(wallet.create_accounts(number_of_delegators, "delegator"))
     tt.logger.info("End of delegators and receivers creation")
-    number_of_delegations_in_thread = math.ceil(len(accounts) / number_of_threads)
 
     with wallet.in_single_transaction():
-        for thread_number in range(number_of_threads):
-            wallet.api.transfer_to_vesting("initminer", delegators[thread_number], tt.Asset.Test(0.1))
+        for thread_number in range(number_of_delegators):
+            wallet.api.transfer_to_vesting("initminer", delegators[thread_number], tt.Asset.Test(100))
 
-    tasks_list = []
-    executor = ThreadPoolExecutor(max_workers=number_of_threads)
-    for thread_number in range(number_of_threads):
-        tasks_list.append(
-            executor.submit(
-                delegate_rc,
-                wallet,
-                delegators[thread_number],
-                accounts[
-                    thread_number * number_of_delegations_in_thread : thread_number * number_of_delegations_in_thread
-                    + number_of_delegations_in_thread
-                ],
-                amount_of_delegated_rc,
-            )
-        )
-
-    for thread_number in tasks_list:
-        thread_number.result()
+    accounts_splited = split_list(accounts, int(100_000 / number_of_delegators / number_of_delegations_per_operation))
+    for accounts_per_transaction in accounts_splited:
+        accounts_per_transaction_splited = split_list(accounts_per_transaction, number_of_delegators)
+        with wallet.in_single_transaction():
+            for delegator, delegatees in zip(delegators, accounts_per_transaction_splited):
+                tt.logger.info(f"Delegation accounts from range {delegatees[0]} : {delegatees[-1]}--------START")
+                wallet.api.delegate_rc(delegator, delegatees, amount_of_delegated_rc)
+                tt.logger.info(f"Delegation accounts from range {delegatees[0]} : {delegatees[-1]}--------END")
 
     for account_index in [0, int(len(accounts) / 2), -1]:
         assert get_rc_account_info(accounts[account_index], wallet)["received_delegated_rc"] == amount_of_delegated_rc
@@ -188,6 +192,11 @@ def delegate_rc(wallet: tt.Wallet, delegator: str, receivers: list, amount_of_de
     for account_number in range(0, len(receivers), 100):
         wallet.api.delegate_rc(delegator, receivers[account_number : account_number + 100], amount_of_delegated_rc)
     tt.logger.info(f"Delegation accounts from range {receivers[0]} : {receivers[-1]}--------END")
+
+
+def split_list(input_list: list, num_parts: int) -> list[list]:
+    part_size = len(input_list) // num_parts
+    return [input_list[i : i + part_size] for i in range(0, len(input_list), part_size)]
 
 
 def get_accounts_name(accounts: list) -> list:

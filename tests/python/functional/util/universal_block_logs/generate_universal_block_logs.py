@@ -91,7 +91,7 @@ def prepare_block_log(
     node.run(alternate_chain_specs=block_log_config, arguments=[f"--chain-id={CHAIN_ID}"])
     tt.logger.info(f"Price Hive/Vest: {get_vesting_price(node)}")
 
-    wallet = tt.Wallet(attach_to=node, additional_arguments=[f"--chain-id={CHAIN_ID}"])
+    wallet = tt.OldWallet(attach_to=node, additional_arguments=[f"--chain-id={CHAIN_ID}"])
     wallet.api.set_transaction_expiration(3600 - 1)
 
     witnesses = wallet.api.list_witnesses("", 100)
@@ -245,7 +245,7 @@ def __delegate_vesting_shares(account: str, _) -> list:
     ]
 
 
-def generate_authority(wallet: tt.Wallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
+def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
     match authority_type:
         case "open_sign":
             return {
@@ -347,7 +347,7 @@ def __create_post(account_name: str, _: None) -> list:
 
 
 def __generate_and_broadcast_transaction(
-    func: callable, wallet: tt.Wallet, authority: str, account_names: list[str]
+    func: callable, wallet: tt.OldWallet, authority: str, account_names: list[str]
 ) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
 

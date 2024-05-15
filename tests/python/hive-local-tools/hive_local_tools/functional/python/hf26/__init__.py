@@ -12,26 +12,26 @@ def parse_datetime(datetime_: str) -> datetime:
     return datetime.strptime(datetime_, "%Y-%m-%dT%H:%M:%S")
 
 
-def prepare_wallets(api_node: tt.ApiNode) -> tuple[tt.Wallet, tt.Wallet]:
+def prepare_wallets(api_node: tt.ApiNode) -> tuple[tt.OldWallet, tt.OldWallet]:
     tt.logger.info("Attaching legacy/hf26 wallets...")
 
-    wallet_legacy = tt.Wallet(attach_to=api_node, additional_arguments=["--transaction-serialization=legacy"])
-    wallet_hf26 = tt.Wallet(attach_to=api_node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet_legacy = tt.OldWallet(attach_to=api_node, additional_arguments=["--transaction-serialization=legacy"])
+    wallet_hf26 = tt.OldWallet(attach_to=api_node, additional_arguments=["--transaction-serialization=hf26"])
     return wallet_legacy, wallet_hf26
 
 
-def legacy_operation_passed(wallet: tt.Wallet) -> None:
+def legacy_operation_passed(wallet: tt.OldWallet) -> None:
     tt.logger.info("Creating `legacy` operations (pass expected)...")
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(10123), "memo")
 
 
-def hf26_operation_passed(wallet: tt.Wallet) -> None:
+def hf26_operation_passed(wallet: tt.OldWallet) -> None:
     tt.logger.info("Creating `hf26` operations (pass expected)...")
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(199).as_nai(), "memo")
 
 
-def hf26_operation_failed(wallet: tt.Wallet) -> None:
+def hf26_operation_failed(wallet: tt.OldWallet) -> None:
     tt.logger.info("Creating `hf26` operations (fail expected)...")
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:

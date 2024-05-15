@@ -61,7 +61,7 @@ def prepare_blocklog_with_comments_and_votes():
     init_wallet.api.set_transaction_expiration(1000)
 
     init_wallet.api.import_key(tt.Account("voter").private_key)
-    witnesses = init_wallet.api.list_witnesses("", 100)
+    witnesses = init_wallet.api.list_witnesses("", 100, True)
 
     # change block size to 2 mb
     with init_wallet.in_single_transaction():

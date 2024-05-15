@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
 import test_tools as tt
+import wax
 from hive_local_tools.constants import (
     HIVE_100_PERCENT,
     HIVE_COLLATERALIZED_CONVERSION_FEE,
@@ -564,12 +563,12 @@ class UpdateAccount(Account):
         self,
         *,
         use_account_update2: bool = False,
-        json_metadata: str | None = None,
+        json_metadata: str = "",
         owner: str | None = None,
         active: str | None = None,
         posting: str | None = None,
         memo_key: str | None = None,
-        posting_json_metadata: str | None = None,
+        posting_json_metadata: str = "",
     ) -> dict:
         arguments = locals()
         to_pass = {
@@ -577,6 +576,10 @@ class UpdateAccount(Account):
             for element in arguments
             if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
         }
+        if use_account_update2 is False:
+            to_pass.pop("posting_json_metadata")
+        if memo_key is None and posting_json_metadata == "":
+            to_pass["memo_key"] = self._wallet.api.get_account(self.name).memo_key
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
         return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 
@@ -738,13 +741,25 @@ class WitnessAccount(Account):
           Additionally public key (mandatory for changing any property)
           More details: https://gitlab.syncad.com/hive/hive/-/blob/master/doc/witness_parameters.md?ref_type=heads
         """
-        serialized_props = json.loads(
-            subprocess.check_output(
-                [os.environ["SERIALIZE_SET_PROPERTIES_PATH"]], input=f"{json.dumps(props_to_serialize)}".encode()
-            ).decode("utf-8")
+        if "account_creation_fee" in props_to_serialize:
+            props_to_serialize["account_creation_fee"] = wax.python_json_asset(
+                **props_to_serialize["account_creation_fee"]
+            )
+        if "hbd_exchange_rate" in props_to_serialize:
+            props_to_serialize["hbd_exchange_rate"] = wax.python_price(
+                base=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["base"]),
+                quote=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["quote"]),
+            )
+
+        serialized_props = wax.serialize_witness_set_properties(
+            wax.python_witness_set_properties_data(**props_to_serialize)
         )
+        wax.deserialize_witness_set_properties(serialized_props)
+        serialized_props = [[key.decode("utf-8"), value.decode("utf-8")] for key, value in serialized_props.items()]
+
         return create_transaction_with_any_operation(
-            self._wallet, [WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)]
+            wallet=self._wallet,
+            operations=[WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)],
         )
 
     def witness_block_approve(self, *, block_id: int) -> dict:

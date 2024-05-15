@@ -12,7 +12,7 @@ def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_pa
     If get_impacted_accounts_operation collect accounts from the comment_payout_beneficiaries, comment_option operations
     appear in account history of account, which was set a beneficiaries and in setter account.
     """
-    wallet = tt.Wallet(attach_to=node)
+    wallet = tt.OldWallet(attach_to=node)
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")

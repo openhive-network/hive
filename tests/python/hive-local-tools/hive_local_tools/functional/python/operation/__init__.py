@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,7 +15,6 @@ from schemas.fields.compound import Manabar
 from schemas.filter import (
     build_vop_filter,
 )
-from schemas.operations.custom_json_operation import CustomJsonOperation
 from schemas.operations.virtual.account_created_operation import AccountCreatedOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
@@ -371,13 +369,7 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 def create_transaction_with_any_operation(
     wallet: tt.Wallet, operations: list[AnyOperation], broadcast: bool = True
 ) -> dict[str, Any]:
-    ops = []
-    for op in operations:
-        if isinstance(op, CustomJsonOperation):
-            op.json_ = json.dumps(op.json_)
-        ops.append(op)
-
-    return wallet.send(operations=ops, broadcast=broadcast, blocking=True)
+    return wallet.send(operations=operations, broadcast=broadcast, blocking=True)
 
 
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:

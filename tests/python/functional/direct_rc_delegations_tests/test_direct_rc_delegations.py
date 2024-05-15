@@ -13,10 +13,10 @@ def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     wallet.api.create_account(creator, delegator, "{}")
     wallet.api.create_account(creator, receiver, "{}")
     wallet.api.create_account(creator, receiver2, "{}")
-    wallet.api.transfer(creator, receiver, "10.000 TESTS", "", "true")
-    wallet.api.transfer_to_vesting(creator, delegator, "0.010 TESTS", "true")
+    wallet.api.transfer(creator, receiver, tt.Asset.from_legacy("10.000 TESTS"), "", "true")
+    wallet.api.transfer_to_vesting(creator, delegator, tt.Asset.from_legacy("0.010 TESTS"), "true")
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet.api.transfer(receiver, receiver, "0.001 TESTS", "", "true")
+        wallet.api.transfer(receiver, receiver, tt.Asset.from_legacy("0.001 TESTS"), "", "true")
     assert "receiver has 0 RC, needs 1 RC. Please wait to transact" in exception.value.error
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]

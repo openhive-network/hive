@@ -33,13 +33,13 @@ def node_hf26() -> tt.InitNode:
 
 
 @pytest.fixture()
-def wallet_hf25(node_hf25) -> tt.Wallet:
-    return tt.Wallet(attach_to=node_hf25)
+def wallet_hf25(node_hf25) -> tt.OldWallet:
+    return tt.OldWallet(attach_to=node_hf25)
 
 
 @pytest.fixture()
-def wallet_hf26(node_hf26) -> tt.Wallet:
-    return tt.Wallet(attach_to=node_hf26)
+def wallet_hf26(node_hf26) -> tt.OldWallet:
+    return tt.OldWallet(attach_to=node_hf26)
 
 
 def prepare_network(

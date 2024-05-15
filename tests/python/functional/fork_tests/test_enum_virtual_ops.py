@@ -27,7 +27,7 @@ def test_enum_virtual_ops(prepare_with_many_witnesses):
         # tt.logger.info(f"staring block number = {starting_block_number}")
 
         wallet.api.transfer_to_vesting("initminer", account_name, tt.Asset.Test(1))
-        head_block = wallet.api.info()["head_block_number"]
+        head_block = api_node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
         # tt.logger.info(f"head block number = {head_block}")
         block_to_check = head_block - 1
 

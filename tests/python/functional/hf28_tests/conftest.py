@@ -3,10 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from loguru import logger
 
 import test_tools as tt
 from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
 from hive_local_tools.functional.python.operation import Account
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 @pytest.fixture()

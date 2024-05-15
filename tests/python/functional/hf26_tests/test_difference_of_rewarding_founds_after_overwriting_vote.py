@@ -3,7 +3,7 @@ from __future__ import annotations
 import test_tools as tt
 
 
-def test_getting_rewards_after_vote_overwriting_on_hf25(node_hf25: tt.InitNode, wallet_hf25: tt.Wallet) -> None:
+def test_getting_rewards_after_vote_overwriting_on_hf25(node_hf25: tt.InitNode, wallet_hf25: tt.OldWallet) -> None:
     perform_test_preparation(node_hf25, wallet_hf25)
 
     bob = wallet_hf25.api.get_account("bob")
@@ -12,7 +12,7 @@ def test_getting_rewards_after_vote_overwriting_on_hf25(node_hf25: tt.InitNode, 
     assert tt.Asset.from_legacy(bob["reward_vesting_hive"]) == tt.Asset.Test(0)
 
 
-def test_getting_rewards_after_vote_overwriting_on_hf26(node_hf26: tt.Wallet, wallet_hf26: tt.Wallet):
+def test_getting_rewards_after_vote_overwriting_on_hf26(node_hf26: tt.OldWallet, wallet_hf26: tt.OldWallet):
     perform_test_preparation(node_hf26, wallet_hf26)
 
     bob = wallet_hf26.api.get_account("bob")
@@ -21,7 +21,7 @@ def test_getting_rewards_after_vote_overwriting_on_hf26(node_hf26: tt.Wallet, wa
     assert bob["reward_vesting_hive"] > tt.Asset.Test(0)
 
 
-def perform_test_preparation(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def perform_test_preparation(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     """
     Prepares to receive reward balances with vote overwriting. Vote overwriting blocks receiving rewards by bob on HF25.
     On HF26 this account gets rewards.

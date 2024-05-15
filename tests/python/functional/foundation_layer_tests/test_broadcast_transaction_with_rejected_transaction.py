@@ -30,7 +30,7 @@ def broadcast_transaction_with_wallet_bridge_api(node: tt.InitNode | tt.RemoteNo
 @pytest.mark.parametrize(
     "broadcast",
     [
-        broadcast_transaction_with_condenser_api,
+        # broadcast_transaction_with_condenser_api,  # deprecated in new object Wallet
         broadcast_transaction_with_network_broadcast_api,
         broadcast_transaction_with_wallet_bridge_api,
     ],
@@ -53,7 +53,7 @@ def test_broadcast_transaction_with_rejected_transaction(
 @pytest.mark.parametrize(
     "api",
     [
-        "condenser",
+        # "condenser",  # deprecated in new object Wallet
         "wallet_bridge",
     ],
 )
