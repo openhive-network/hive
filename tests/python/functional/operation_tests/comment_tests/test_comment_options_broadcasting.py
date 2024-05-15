@@ -4,7 +4,7 @@ import test_tools as tt
 
 
 def test_nai_format_comment_options_with_beneficiaries(node):
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.OldWallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
@@ -46,7 +46,7 @@ def test_nai_format_comment_options_with_beneficiaries(node):
 
 
 def test_legacy_format_comment_options_with_beneficiaries(node):
-    wallet = tt.Wallet(attach_to=node)
+    wallet = tt.OldWallet(attach_to=node)
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
