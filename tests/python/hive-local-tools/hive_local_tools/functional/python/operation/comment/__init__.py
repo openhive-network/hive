@@ -363,7 +363,7 @@ class Comment:
         self.author_obj.update_account_info()  # Refresh RC mana before update
         self.__delete_transaction = create_transaction_with_any_operation(
             self.__wallet,
-            DeleteCommentOperation(author=self.author, permlink=self.permlink),
+            [DeleteCommentOperation(author=self.author, permlink=self.permlink)],
         )
 
     def options(self, **comment_options: Any) -> None:
@@ -420,13 +420,7 @@ class Comment:
             **self.__comment_options,
         )
 
-        # comment_options_operation.max_accepted_payout = convert_from_mainnet_to_testnet_asset(
-        #     comment_options_operation.max_accepted_payout
-        # )
-
-        return create_transaction_with_any_operation(
-            self.__wallet, comment_options_operation, only_result=False, broadcast=broadcast
-        )
+        return create_transaction_with_any_operation(self.__wallet, [comment_options_operation], broadcast)
 
     def assert_options_are_applied(self) -> None:
         comment_content = self.__node.api.database.find_comments(comments=[[self.author, self.__permlink]]).comments[0]

@@ -62,7 +62,7 @@ def test_comment(wallet: tt.Wallet) -> None:
     assert _ops[0].value.voter == "bob"
     assert _ops[0].value.author == "bob"
     assert _ops[0].value.permlink == "bob-permlink"
-    assert _ops[0].value.weight == 100
+    assert _ops[0].value.weight == 10000
 
     response = wallet.api.decline_voting_rights("alice", True)
     _ops = response.operations

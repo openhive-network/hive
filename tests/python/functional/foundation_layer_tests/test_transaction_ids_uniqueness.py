@@ -44,9 +44,9 @@ def test_if_transaction_ids_order_corresponds_to_transactions_order(
 
 
 def batch_send(node: tt.InitNode | tt.RemoteNode, requests: list[dict[str, Any]]) -> None:
-    batch_request = [
+    [
         {"jsonrpc": "2.0", "method": "condenser_api.broadcast_transaction", "id": id_, "params": [request]}
         for id_, request in enumerate(requests)
     ]
-    assert post(node.http_endpoint.as_string(), json=batch_request).status_code == 200
+    assert post(node.http_endpoint.as_string()).status_code == 200
     # TODO: Update this with batch send
