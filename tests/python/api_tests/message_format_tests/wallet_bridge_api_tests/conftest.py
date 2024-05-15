@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import pytest
+from loguru import logger
 
 import test_tools as tt
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 def pytest_configure(config):

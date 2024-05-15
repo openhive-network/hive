@@ -68,7 +68,7 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -
                 name,
                 "https://" + name,
                 tt.Account(name).public_key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "hbd_interest_rate": 0},
             )
     wallet.close()
     tt.logger.info("Waiting for next witness schedule...")
