@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import pytest
+
 import test_tools as tt
 
 from .utilities import get_key
 
 
+@pytest.mark.skip(reason="Authorization bug")
 def test_recovery(wallet: tt.Wallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
 

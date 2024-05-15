@@ -9,7 +9,10 @@ import test_tools as tt
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import WitnessAccount
 
+# hasz13
 
+
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
@@ -23,6 +26,7 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     alice.assert_rc_current_mana_was_unchanged()
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount

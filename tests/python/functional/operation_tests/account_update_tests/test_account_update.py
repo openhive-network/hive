@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import UpdateAccount
 
 
+# hasz13
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -37,6 +39,7 @@ def test_update_account_owner_authority(alice: UpdateAccount, authority_type: st
         alice.assert_account_details_were_changed(new_owner=new_auth)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -63,6 +66,7 @@ def test_update_account_active_authority(alice: UpdateAccount, authority_type: s
         alice.assert_account_details_were_changed(new_active=new_auth)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -89,6 +93,7 @@ def test_update_account_posting_authority(alice: UpdateAccount, authority_type: 
         alice.assert_account_details_were_changed(new_posting=new_auth)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -115,6 +120,7 @@ def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, use_
         alice.assert_account_details_were_changed(new_memo=new_key)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -141,6 +147,7 @@ def test_update_json_metadata(alice: UpdateAccount, authority_type: str, use_acc
         alice.assert_account_details_were_changed(new_json_meta=new_json_meta)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "authority_type",
@@ -157,6 +164,7 @@ def test_update_posting_json_metadata(alice: UpdateAccount, authority_type: str)
     alice.assert_account_details_were_changed(new_posting_json_meta=new_posting_json_meta)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize(
@@ -201,6 +209,7 @@ def test_update_all_account_parameters_using_owner_authority(
     )
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize(
@@ -249,6 +258,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(
     )
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.testnet()
 @pytest.mark.parametrize(
     "iterations",

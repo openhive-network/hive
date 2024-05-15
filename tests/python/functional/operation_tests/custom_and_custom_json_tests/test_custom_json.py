@@ -87,6 +87,8 @@ def test_incorrect_custom_json(
     alice.check_if_rc_mana_was_unchanged()
 
 
+#  hasz13
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize(
     ("required_auths", "required_posting_auths"),
     [

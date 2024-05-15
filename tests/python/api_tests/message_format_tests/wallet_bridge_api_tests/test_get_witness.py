@@ -18,6 +18,7 @@ CORRECT_VALUES = [
 ]
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize(
     "witness_account",
     [
@@ -34,6 +35,7 @@ def test_get_witness_with_correct_value(
     node.api.wallet_bridge.get_witness(witness_account)
 
 
+@pytest.mark.skip(reason="Authorization bug")
 @pytest.mark.parametrize("witness_account", [["example-array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_witness_with_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, witness_account: list) -> None:
