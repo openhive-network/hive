@@ -325,13 +325,13 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_na
   return w->has_matching_private_key( public_key );
 }
 
-std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce )
+std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix )
 {
   fc::crypto_data _cd;
 
   auto _private_key = find_private_key_in_given_wallet( from_public_key, wallet_name );
   if( !_private_key )
-    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", wallet_name)("public_key", utility::public_key::to_string( from_public_key )));
+    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", wallet_name)("public_key", utility::public_key::to_string( from_public_key, prefix )));
 
   return _cd.encrypt( _private_key.value(), to_public_key, content, nonce );
 }

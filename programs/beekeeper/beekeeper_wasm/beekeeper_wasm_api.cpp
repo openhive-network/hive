@@ -319,7 +319,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       std::optional<unsigned int> implicitNonce;
-      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, implicitNonce) };
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, implicitNonce, HIVE_ADDRESS_PREFIX ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -329,7 +329,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, nonce ) };
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, nonce, HIVE_ADDRESS_PREFIX ) };
       return to_string( _result );
     };
     return exception_handler( _method );

@@ -143,10 +143,10 @@ bool beekeeper_wallet_manager::has_matching_private_key( const std::string& toke
   return sessions->get_wallet_manager( token )->has_matching_private_key( wallet_name, public_key );
 }
 
-std::string beekeeper_wallet_manager::encrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce )
+std::string beekeeper_wallet_manager::encrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->encrypt_data( from_public_key, to_public_key, wallet_name, content, nonce );
+  return sessions->get_wallet_manager( token )->encrypt_data( from_public_key, to_public_key, wallet_name, content, nonce, prefix );
 }
 
 std::string beekeeper_wallet_manager::decrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content )
