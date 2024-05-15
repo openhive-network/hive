@@ -217,7 +217,7 @@ public:
    * @param public_key  A public key corresponding to a private key that is stored in a wallet.
    * @returns           A `true` value if a private key exists otherwise `false`.
    */
-  bool has_matching_private_key( const std::string& token, const std::string& wallet_name, const std::string& public_key );
+  bool has_matching_private_key( const std::string& token, const std::string& wallet_name, const public_key_type& public_key );
 
   /** Encrypts given content.
    *
@@ -230,7 +230,7 @@ public:
    * @param nonce             Optional nonce to be used for encryption (otherwise current time is used).
    * @returns                 An encrypted string.
    */
-  std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
+  std::string encrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce );
 
   /** Decrypts given content.
    *
@@ -242,7 +242,7 @@ public:
    * @param encrypted_content A string to decrypt.
    * @returns                 A decrypted string.
    */
-  std::string decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
+  std::string decrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
 
 private:
 
@@ -259,8 +259,6 @@ private:
 
   std::shared_ptr<session_manager_base> sessions;
   std::shared_ptr<beekeeper_instance_base> instance;
-
-  public_key_type create_public_key( const std::string& public_key );
 };
 
 } //beekeeper

@@ -194,21 +194,21 @@ DEFINE_API_IMPL( beekeeper_api_impl, has_matching_private_key )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->has_matching_private_key( args.token, args.wallet_name, args.public_key ) };
+  return { _wallet_mgr->has_matching_private_key( args.token, args.wallet_name, utility::public_key::create( args.public_key, HIVE_ADDRESS_PREFIX ) ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, encrypt_data )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->encrypt_data( args.token, args.from_public_key, args.to_public_key, args.wallet_name, args.content, args.nonce ) };
+  return { _wallet_mgr->encrypt_data( args.token, utility::public_key::create( args.from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( args.to_public_key, HIVE_ADDRESS_PREFIX ), args.wallet_name, args.content, args.nonce ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, decrypt_data )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  return { _wallet_mgr->decrypt_data( args.token, args.from_public_key, args.to_public_key, args.wallet_name, args.encrypted_content ) };
+  return { _wallet_mgr->decrypt_data( args.token, utility::public_key::create( args.from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( args.to_public_key, HIVE_ADDRESS_PREFIX ), args.wallet_name, args.encrypted_content ) };
 }
 
 } // detail

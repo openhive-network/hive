@@ -1413,10 +1413,10 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
 
     auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
-    auto _public_key_str  = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+    auto _public_key = public_key_type::from_base58( "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4", false/*is_sha256*/ );
 
     auto _private_key_str_2 = "5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn";
-    auto _public_key_str_2  = "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm";
+    auto _public_key_2 = public_key_type::from_base58( "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm", false/*is_sha256*/ );
 
     const std::string _host = "127.0.0.1:666";
     const uint64_t _timeout = 90;
@@ -1433,21 +1433,21 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
 
     wm.import_key( _token, "0", _private_key_str, _prefix );
 
-    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "pear", _public_key_str ), fc::exception );
-    BOOST_REQUIRE_THROW( wm.has_matching_private_key( "_token", "0", _public_key_str ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "pear", _public_key ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( "_token", "0", _public_key ), fc::exception );
 
-    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
-    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), false );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key ), true );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_2 ), false );
 
     wm.import_key( _token, "0", _private_key_str_2, _prefix );
 
-    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
-    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), true );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key ), true );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_2 ), true );
 
     wm.close( _token, "0" );
 
-    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key_str ), fc::exception );
-    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key_2 ), fc::exception );
 
   } FC_LOG_AND_RETHROW()
 }
@@ -1629,10 +1629,10 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     };
     std::vector<keys> _keys =
     {
-      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "STM6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
-      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "STM8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
-      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
-      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
+      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
+      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
+      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "M8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
+      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
     };
 
     const string _fruits_content = "avocado-banana-cherry-durian";
@@ -1642,14 +1642,14 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
 
     auto _encrypt_with_nonce = [&_token, &_beekeeper, &_keys ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<uint64_t>& nonce )
     {
-      return _beekeeper.encrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, nonce );
+      return _beekeeper.encrypt_data( _token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, nonce );
     };
 
     auto _encrypt = [&_token, &_beekeeper, &_keys]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
       auto __encrypt = [&]()
       {
-          return _beekeeper.encrypt_data(_token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content, std::optional<unsigned int>() );
+          return _beekeeper.encrypt_data(_token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content, std::optional<unsigned int>() );
       };
 
       std::string _encrypted_content = __encrypt();
@@ -1662,7 +1662,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
 
     auto _decrypt = [&_token, &_beekeeper, &_keys]( const std::string& pattern, uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content )
     {
-      std::string _encrypted_content = _beekeeper.decrypt_data( _token, _keys[nr_from_public_key].public_key, _keys[nr_to_public_key].public_key, wallet_name, content );
+      std::string _encrypted_content = _beekeeper.decrypt_data( _token, public_key_type::from_base58( _keys[nr_from_public_key].public_key, false/*is_sha256*/ ), public_key_type::from_base58( _keys[nr_to_public_key].public_key, false/*is_sha256*/ ), wallet_name, content );
       BOOST_REQUIRE_EQUAL( _encrypted_content, pattern );
     };
 
