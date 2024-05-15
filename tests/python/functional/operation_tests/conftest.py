@@ -564,12 +564,12 @@ class UpdateAccount(Account):
         self,
         *,
         use_account_update2: bool = False,
-        json_metadata: str | None = None,
+        json_metadata: str = "",
         owner: str | None = None,
         active: str | None = None,
         posting: str | None = None,
         memo_key: str | None = None,
-        posting_json_metadata: str | None = None,
+        posting_json_metadata: str = "",
     ) -> dict:
         arguments = locals()
         to_pass = {
@@ -577,6 +577,10 @@ class UpdateAccount(Account):
             for element in arguments
             if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
         }
+        if use_account_update2 is False:
+            to_pass.pop("posting_json_metadata")
+        if memo_key is None and posting_json_metadata == "":
+            to_pass["memo_key"] = self._wallet.api.get_account(self.name).memo_key
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
         return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 

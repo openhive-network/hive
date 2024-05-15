@@ -83,20 +83,18 @@ def init_network(
     tt.logger.info("Wait 21 blocks (when every witness sign at least one block)")
     init_node.wait_number_of_blocks(21)
 
-    result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
+    irreversible = init_node.api.wallet_bridge.get_dynamic_global_properties().last_irreversible_block_num
+    head = init_node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
     tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
     if desired_blocklog_length is not None:
         while irreversible < desired_blocklog_length:
             init_node.wait_number_of_blocks(1)
-            result = wallet.api.info()
-            irreversible = result["last_irreversible_block_num"]
+            irreversible = init_node.api.wallet_bridge.get_dynamic_global_properties().last_irreversible_block_num
             tt.logger.info(
                 f"Generating block_log of length: {desired_blocklog_length}, "
-                f"current irreversible: {result['last_irreversible_block_num']}, "
-                f"current head block: {result['head_block_num']}"
+                f"current irreversible: {irreversible}, "
+                f"current head block: {init_node.api.wallet_bridge.get_dynamic_global_properties().head_block_number}"
             )
 
     # If a directory of `block_log` is given then it"s possible to save 2 files:
@@ -201,12 +199,11 @@ def run_networks(
             thread_number.result()
 
 
-def display_info(wallet) -> None:
+def display_info(node: tt.AnyNode) -> None:
     # Network should be set up at this time, with 21 active witnesses, enough participation rate
     # and irreversible block number lagging behind around 15-20 blocks head block number
-    result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
+    irreversible = node.api.wallet_bridge.get_dynamic_global_properties().last_irreversible_block_num
+    head = node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
     tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
 
@@ -277,7 +274,7 @@ def launch_networks(
 
     builder.init_wallet = tt.Wallet(attach_to=builder.init_node)
 
-    display_info(builder.init_wallet)
+    display_info(builder.init_node)
 
     return builder
 

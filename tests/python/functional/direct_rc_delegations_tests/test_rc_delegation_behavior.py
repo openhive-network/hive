@@ -135,6 +135,7 @@ def test_power_up_delegator(wallet: tt.Wallet) -> None:
 
 @pytest.mark.node_shared_file_size("16G")
 def test_multidelegation(wallet: tt.Wallet) -> None:
+    wallet.api.set_transaction_expiration(seconds=1800)
     amount_of_delegated_rc = 1
     number_of_threads = 50
     tt.logger.info("Start of delegators and receivers creation")

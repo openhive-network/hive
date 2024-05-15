@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import pytest
+from loguru import logger
 
 import test_tools as tt
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "node_shared_file_size: Shared file size of node from `node` fixture")
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 @pytest.fixture()
