@@ -378,7 +378,6 @@ namespace detail {
 
   produce_block_data_t witness_plugin_impl::get_produce_block_data(uint32_t slot)
   {
-    const auto head_block_num = _db.head_block_num();
     const auto next_block_time = _db.get_slot_time( slot );
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
     chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
@@ -396,40 +395,24 @@ namespace detail {
           return block_production_condition::not_synced;
         }
       }
-      // is anyone scheduled to produce now or one second in the future?
-      // uint32_t slot = _db.get_slot_at_time( now );
-      // if( slot == 0 )
-      // {
-        // // capture("next_time", _db.get_slot_time(1));
-        // return block_production_condition::not_time_yet;
-      // }
 
       // we must control the witness scheduled to produce the next block.
       if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
       {
-        // capture("scheduled_witness", scheduled_witness);
         return block_production_condition::not_my_turn;
       }
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
       {
-        // capture("scheduled_witness", scheduled_witness);
-        // capture("scheduled_key", scheduled_key);
         return block_production_condition::no_private_key;
       }
       private_key = private_key_itr->second;
       uint32_t prate = _db.witness_participation_rate();
       if( prate < _required_witness_participation )
       {
-        // capture("pct", uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT));
         pct = uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT);
         return block_production_condition::low_participation;
       }
-      // if( llabs((scheduled_time - next_block_time).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
-      // {
-        // // capture("scheduled_time", scheduled_time)("now", next_block_time);
-        // return block_production_condition::lag;
-      // }
       return block_production_condition::block_production_condition_enum::produced;
     }();
 
