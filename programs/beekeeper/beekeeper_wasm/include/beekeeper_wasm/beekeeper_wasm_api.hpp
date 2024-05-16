@@ -24,8 +24,16 @@ class beekeeper_api final
     const std::string empty_response;
 
     bool initialized = false;
+  
+    /*
+      HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined.
+      At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.
+    */
+    const char* prefix = "STM";
 
     std::unique_ptr<impl, impl_deleter> _impl;
+
+    public_key_type create( const std::string& source );
 
     template<typename T>
     std::string to_string( const T& src, bool valid = true );
