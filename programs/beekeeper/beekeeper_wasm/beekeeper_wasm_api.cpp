@@ -10,12 +10,6 @@
 
 namespace beekeeper {
 
-  /*
-    HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined.
-    At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.
-  */
-  const char* HIVE_ADDRESS_PREFIX = "STM";
-
   class beekeeper_api::impl
   {
   public:
@@ -66,6 +60,11 @@ namespace beekeeper {
     _result = app.init( params.size(), _params );
 
     return _result;
+  }
+
+  public_key_type beekeeper_api::create( const std::string& source )
+  {
+    return utility::public_key::create( source, prefix );
   }
 
   template<typename T>
@@ -228,7 +227,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      import_key_return _result = { _impl->app.get_wallet_manager()->import_key( token, wallet_name, wif_key, HIVE_ADDRESS_PREFIX ) };
+      import_key_return _result = { _impl->app.get_wallet_manager()->import_key( token, wallet_name, wif_key, prefix ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -238,7 +237,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, utility::public_key::create( public_key, HIVE_ADDRESS_PREFIX ) );
+      _impl->app.get_wallet_manager()->remove_key( token, wallet_name, create( public_key ) );
       return to_string( empty_response );
     };
     return exception_handler( _method );
@@ -278,7 +277,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, wallet_name, sig_digest, utility::public_key::create( public_key, HIVE_ADDRESS_PREFIX ), HIVE_ADDRESS_PREFIX ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, wallet_name, sig_digest, create( public_key ), prefix ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -308,7 +307,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      has_matching_private_key_return _result{ _impl->app.get_wallet_manager()->has_matching_private_key( token, wallet_name, utility::public_key::create( public_key, HIVE_ADDRESS_PREFIX ) ) };
+      has_matching_private_key_return _result{ _impl->app.get_wallet_manager()->has_matching_private_key( token, wallet_name, create( public_key ) ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -319,7 +318,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       std::optional<unsigned int> implicitNonce;
-      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, implicitNonce, HIVE_ADDRESS_PREFIX ) };
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, create( from_public_key ), create( to_public_key ), wallet_name, content, implicitNonce, prefix ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -329,7 +328,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, content, nonce, HIVE_ADDRESS_PREFIX ) };
+      encrypt_data_return _result{ _impl->app.get_wallet_manager()->encrypt_data( token, create( from_public_key ), create( to_public_key ), wallet_name, content, nonce, prefix ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -339,7 +338,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      decrypt_data_return _result{ _impl->app.get_wallet_manager()->decrypt_data( token, utility::public_key::create( from_public_key, HIVE_ADDRESS_PREFIX ), utility::public_key::create( to_public_key, HIVE_ADDRESS_PREFIX ), wallet_name, encrypted_content ) };
+      decrypt_data_return _result{ _impl->app.get_wallet_manager()->decrypt_data( token, create( from_public_key ), create( to_public_key ), wallet_name, encrypted_content ) };
       return to_string( _result );
     };
     return exception_handler( _method );
