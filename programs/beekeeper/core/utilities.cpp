@@ -1,5 +1,7 @@
 #include <core/utilities.hpp>
 
+#include <fc/git_revision.hpp>
+
 #include <boost/algorithm/string.hpp>
 
 namespace beekeeper {
@@ -7,6 +9,14 @@ namespace beekeeper {
   bool public_key_details::operator<( const public_key_details& obj ) const
   {
     return public_key < obj.public_key;
+  }
+
+  namespace utility
+  {
+    std::string get_revision()
+    {
+      return fc::git_revision_sha;
+    }
   }
 
 }
@@ -87,6 +97,12 @@ namespace fc
   void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo )
   {
     variant v = mutable_variant_object( "decrypted_content", var.decrypted_content );
+    vo = v;
+  }
+
+  void to_variant( const beekeeper::get_version_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "version", var.version );
     vo = v;
   }
 

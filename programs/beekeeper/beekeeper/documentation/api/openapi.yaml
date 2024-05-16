@@ -118,6 +118,8 @@ tags:
     description: Encryption and decryption data
   - name: timeout
     description: Timeout managing
+  - name: version
+    description: Get version
 paths:
   beekeeper_api.create_session:
     post:
@@ -511,6 +513,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/get_info_response'
+  beekeeper_api.get_version:
+    post:
+      tags:
+        - version
+      summary: Get current version.
+      description: Get current version. The version is based on git hash. 
+      operationId: get_version
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_version'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_version_response'
 components:
   schemas:
     create_session:
@@ -928,4 +950,13 @@ components:
           type: string
           example: '2024-04-11T12:35:34.000Z'
           description: Timeout time
+    get_version:
+      type: object
+    get_version_response:
+      type: object
+      properties:
+        version:
+          type: string
+          example: 'd2abc7e9318fce5a10c73cda8beb57f46fe37247'
+          description: Current version
 x-envelope: jsonrpc-2.0

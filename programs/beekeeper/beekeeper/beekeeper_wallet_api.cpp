@@ -58,6 +58,7 @@ class beekeeper_api_impl
       (has_matching_private_key)
       (encrypt_data)
       (decrypt_data)
+      (get_version)
     )
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> _wallet_mgr;
@@ -219,6 +220,13 @@ DEFINE_API_IMPL( beekeeper_api_impl, decrypt_data )
   return { _wallet_mgr->decrypt_data( args.token, create( args.from_public_key ), create( args.to_public_key ), args.wallet_name, args.encrypted_content ) };
 }
 
+DEFINE_API_IMPL( beekeeper_api_impl, get_version )
+{
+  std::lock_guard<std::mutex> guard( mtx );
+
+  return _wallet_mgr->get_version();
+}
+
 } // detail
 
 beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app, uint64_t unlock_interval )
@@ -249,6 +257,7 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (has_matching_private_key)
   (encrypt_data)
   (decrypt_data)
+  (get_version)
   )
 
 } // beekeeper

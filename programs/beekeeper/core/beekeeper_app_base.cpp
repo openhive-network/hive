@@ -2,7 +2,6 @@
 
 #include <fc/io/json.hpp>
 #include <fc/stacktrace.hpp>
-#include <fc/git_revision.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/filesystem.hpp>
@@ -72,11 +71,6 @@ init_data beekeeper_app_base::initialize_program_options()
       return save_keys( _args );
 
   } FC_LOG_AND_RETHROW()
-}
-
-std::string beekeeper_app_base::get_revision() const
-{
-  return fc::git_revision_sha;
 }
 
 init_data beekeeper_app_base::run( int argc, char** argv )

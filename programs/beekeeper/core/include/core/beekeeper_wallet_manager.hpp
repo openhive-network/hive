@@ -192,6 +192,13 @@ public:
    */
   info get_info( const std::string& token );
 
+  /**
+   * Gets current beekeeper version
+   * 
+   * @return      Current version based on git hash
+   */
+  version get_version();
+
   /** Create a session by a token's generating. That token is used in every endpoint that requires an unlocking wallet.
    *
    * @param salt                    Random data that is used as an additional input so as to create a token. Optional.

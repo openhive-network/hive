@@ -303,6 +303,16 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
+  std::string beekeeper_api::get_version()
+  {
+    auto _method = [&, this]()
+    {
+      version _result = _impl->app.get_wallet_manager()->get_version();
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
+
   std::string beekeeper_api::has_matching_private_key( const std::string& token, const std::string& wallet_name, const std::string& public_key )
   {
     auto _method = [&, this]()

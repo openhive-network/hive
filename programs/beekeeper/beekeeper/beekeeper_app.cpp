@@ -48,7 +48,7 @@ void beekeeper_app::set_program_options()
 std::string beekeeper_app::check_version()
 {
   std::string _version = "{\"version\":\"";
-  _version += get_revision();
+  _version += utility::get_revision();
   _version += "\"}";
 
   return _version;
@@ -242,7 +242,7 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
   if( args.count("export-keys-wallet") )
     start_loop = false;
 
-  return { _result, get_revision() };
+  return { _result, utility::get_revision() };
 }
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )

@@ -217,6 +217,14 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("get_info(token)", &beekeeper_api::get_info)
 
     /*
+      ****information about a version****
+      RESULT:
+        {"version":"d2abc7e9318fce5a10c73cda8beb57f46fe37247"}
+        version: a version based on git hash
+    */
+    .function("get_version()", &beekeeper_api::get_version)
+
+    /*
       ****testing if a private key corresponding to a public key exists in a wallet****
       PARAMS:
         token:        a token representing a session
