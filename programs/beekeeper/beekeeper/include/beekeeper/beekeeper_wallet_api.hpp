@@ -47,6 +47,7 @@ class beekeeper_wallet_api
       (has_matching_private_key)
       (encrypt_data)
       (decrypt_data)
+      (get_version)
     )
 
   private:

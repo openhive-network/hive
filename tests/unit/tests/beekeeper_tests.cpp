@@ -1886,6 +1886,47 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(get_version)
+{
+  try {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    std::string _version_a;
+    std::string _version_b;
+    {
+      BOOST_TEST_MESSAGE( "Network beekeeper" );
+      const uint64_t _timeout = 90;
+      const uint32_t _limit = 3;
+
+      appbase::application app;
+      bool _checker = false;
+
+      beekeeper_wallet_manager wm = b_mgr.create_wallet( app, _timeout, _limit, [&_checker](){ _checker = true; } );
+      BOOST_REQUIRE( wm.start() );
+
+      auto _version = wm.get_version();
+      _version_a = _version.version;
+      BOOST_REQUIRE( !_version_a.empty() );
+    }
+    {
+      BOOST_TEST_MESSAGE( "WASM beekeeper" );
+      beekeeper_api _obj( { "--wallet-dir", b_mgr.dir.string() } );
+
+      BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ), fc::json::format_validation_mode::full ).as<beekeeper::init_data>().status );
+
+      auto _version_str = extract_json( _obj.get_version() );
+      beekeeper::get_version_return _version = fc::json::from_string( _version_str, fc::json::format_validation_mode::full ).as<beekeeper::get_version_return>();
+      _version_b = _version.version;
+      BOOST_REQUIRE( !_version_b.empty() );
+    }
+    {
+      BOOST_REQUIRE_EQUAL( _version_a, _version_b );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

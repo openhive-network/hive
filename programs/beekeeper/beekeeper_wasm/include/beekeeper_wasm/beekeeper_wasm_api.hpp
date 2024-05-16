@@ -81,6 +81,7 @@ class beekeeper_api final
     std::string sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::string& wallet_name );
 
     std::string get_info( const std::string& token );
+    std::string get_version();
 
     std::string has_matching_private_key( const std::string& token, const std::string& wallet_name, const std::string& public_key );
 
