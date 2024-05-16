@@ -828,7 +828,7 @@ test.describe('WASM beekeeper_api tests', () => {
         const walletNo = 1;
 
         api.setAcceptError = true;
-        let error_message = api.removeKey(api.implicitSessionToken, "nonexsiting-wallet", "");
+        let error_message = api.removeKey(api.implicitSessionToken, "nonexsiting-wallet", "STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4");
         console.log(error_message);
         assert.equal(error_message.includes("Wallet not found: nonexsiting-wallet"), true, "NEGATIVE TESTCASE 6 FAILED");
 
@@ -836,7 +836,7 @@ test.describe('WASM beekeeper_api tests', () => {
         error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
 
         api.setAcceptError = true;
-        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "");
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4");
         console.log(error_message);
         assert.equal(error_message.includes("Wallet is locked: w1"), true, "NEGATIVE TESTCASE 6a FAILED");
 
@@ -846,7 +846,7 @@ test.describe('WASM beekeeper_api tests', () => {
         api.setAcceptError = true;
         error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "");
         console.log(error_message);
-        assert.equal(error_message.includes("public_key.size() > 0"), true);
+        assert.equal(error_message.includes("public key requires STM prefix"), true);
 
         error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "currant");
         console.log(error_message);
@@ -863,13 +863,13 @@ test.describe('WASM beekeeper_api tests', () => {
       {
         api.setAcceptError = true;
 
-        let error_message = api.signDigest(api.implicitSessionToken, "#", "lemon");
+        let error_message = api.signDigest(api.implicitSessionToken, "#", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
         console.log(error_message);
         assert.equal(error_message.includes("Invalid hex character '#'"), true);
 
-        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "lemon");
+        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "STMlemon");
         console.log(error_message);
-        assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
+        assert.equal(error_message.includes("Unable to decode base58 string lemon"), true);
 
         error_message = api.signDigest(api.implicitSessionToken, "abCDe", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
         console.log(error_message);

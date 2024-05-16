@@ -77,7 +77,7 @@ namespace utility
   {
     inline public_key_type create( const std::string& source, const std::string& prefix )
     {
-      FC_ASSERT( source.substr( 0, prefix.size() ) == prefix, "public key requires ${prefix} prefix", (prefix) );
+      FC_ASSERT( source.substr( 0, prefix.size() ) == prefix, "public key requires ${prefix} prefix, but was given `${source}`", (prefix)(source) );
       return public_key_type::from_base58( source.substr( prefix.size() ), false/*is_sha256*/ );
     }
 
