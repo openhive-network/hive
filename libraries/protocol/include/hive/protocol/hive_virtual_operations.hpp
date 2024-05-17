@@ -57,12 +57,12 @@ struct author_reward_operation : public virtual_operation
 struct curation_reward_operation : public virtual_operation
 {
   curation_reward_operation() = default;
-  curation_reward_operation( const account_name_type& c, const asset& r, const account_name_type& a, const string& p, bool must_be_claimed )
+  curation_reward_operation( const account_name_type& c, const VEST_asset& r, const account_name_type& a, const string& p, bool must_be_claimed )
     : curator( c ), reward( r ), author( a ), permlink( p ), payout_must_be_claimed( must_be_claimed )
   {}
 
   account_name_type curator; //user that curated the comment (receiver of reward)
-  asset             reward; //(VESTS) curation reward
+  VEST_asset        reward; //(VESTS) curation reward
   account_name_type author; //author of curated comment
   string            permlink; //permlink of curated comment
   bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
