@@ -95,7 +95,7 @@ class notification_handler
   {
     signal_connection_t connection;
     std::atomic_bool allowed_connection{true};
-    std::map<fc::ip::endpoint, uint32_t> address_pool;
+    std::map<fc::ip::endpoint, std::atomic_uint32_t> address_pool;
     bool allowed() const { return allowed_connection.load(); }
 
   public:
