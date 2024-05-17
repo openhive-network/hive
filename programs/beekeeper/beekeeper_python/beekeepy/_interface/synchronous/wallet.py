@@ -9,6 +9,7 @@ from beekeepy._interface.abc.synchronous.wallet import (
 from beekeepy._interface.abc.synchronous.wallet import (
     Wallet as WalletInterface,
 )
+from schemas.apis.beekeeper_api.response_schemas import HasMatchingPrivateKey
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import Beekeeper
@@ -75,3 +76,6 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         return self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key).signature
+
+    def has_matching_private_key(self, public_key: str) -> HasMatchingPrivateKey:
+        return self.__beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=public_key)
