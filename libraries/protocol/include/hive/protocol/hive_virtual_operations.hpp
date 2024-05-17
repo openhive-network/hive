@@ -558,7 +558,7 @@ struct vesting_shares_split_operation : public virtual_operation
 struct account_created_operation : public virtual_operation
 {
   account_created_operation() = default;
-  account_created_operation( const account_name_type& new_account_name, const account_name_type& creator, const asset& _initial_vesting, const asset& _delegation )
+  account_created_operation( const account_name_type& new_account_name, const account_name_type& creator, const VEST_asset& _initial_vesting, const VEST_asset& _delegation )
     : new_account_name( new_account_name ), creator( creator ), initial_vesting_shares( _initial_vesting ), initial_delegation( _delegation )
   {
     FC_ASSERT( creator != account_name_type(), "Every account should have a creator" );
@@ -566,8 +566,8 @@ struct account_created_operation : public virtual_operation
 
   account_name_type new_account_name; //newly created account (receiver of initial_vesting_shares)
   account_name_type creator; //account that initiated new account creation (genesis and mined accounts are their own creators)
-  asset             initial_vesting_shares; //(VESTS) amount of initial vesting on new account (converted from creation fee prior to HF20)
-  asset             initial_delegation; //(VESTS) amount of extra voting power on new account due to delegation
+  VEST_asset        initial_vesting_shares; //(VESTS) amount of initial vesting on new account (converted from creation fee prior to HF20)
+  VEST_asset        initial_delegation; //(VESTS) amount of extra voting power on new account due to delegation
 };
 
 /**
