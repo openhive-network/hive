@@ -328,12 +328,12 @@ struct proposal_pay_operation : public virtual_operation
 struct dhf_funding_operation : public virtual_operation
 {
   dhf_funding_operation() = default;
-  dhf_funding_operation( const account_name_type& f, const asset& v )
+  dhf_funding_operation( const account_name_type& f, const HBD_asset& v )
     : treasury( f ), additional_funds( v )
   {}
 
   account_name_type treasury; //treasury account (receiver of additional_funds)
-  asset             additional_funds; //(HBD) portion inflation accumulated since previous maintenance period
+  HBD_asset         additional_funds; //(HBD) portion inflation accumulated since previous maintenance period
 };
 
 /**
