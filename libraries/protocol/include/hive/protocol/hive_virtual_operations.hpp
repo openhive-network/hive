@@ -87,11 +87,11 @@ struct comment_reward_operation : public virtual_operation
 
   account_name_type author; //author of the comment
   string            permlink; //permlink of the comment
-  asset             payout; //(HBD) total value of comment reward recalculated to HBD
+  HBD_asset         payout; //(HBD) total value of comment reward recalculated to HBD
   share_type        author_rewards; //(HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
-  asset             total_payout_value; //(HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
-  asset             curator_payout_value; //(HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
-  asset             beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  HBD_asset         total_payout_value; //(HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  HBD_asset         curator_payout_value; //(HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  HBD_asset         beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
 };
 
 /**
