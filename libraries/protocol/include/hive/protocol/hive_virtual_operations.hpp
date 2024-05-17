@@ -103,12 +103,12 @@ struct comment_reward_operation : public virtual_operation
 struct liquidity_reward_operation : public virtual_operation
 {
   liquidity_reward_operation() = default;
-  liquidity_reward_operation( const account_name_type& o, const asset& p )
+  liquidity_reward_operation( const account_name_type& o, const HIVE_asset& p )
     : owner( o ), payout( p )
   {}
 
   account_name_type owner; //market maker (receiver of payout)
-  asset             payout; //(HIVE) reward for provided liquidity
+  HIVE_asset        payout; //(HIVE) reward for provided liquidity
 };
 
 /**
