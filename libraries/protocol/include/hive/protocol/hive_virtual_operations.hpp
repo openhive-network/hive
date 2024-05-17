@@ -309,14 +309,14 @@ struct clear_null_account_balance_operation : public virtual_operation
 struct proposal_pay_operation : public virtual_operation
 {
   proposal_pay_operation() = default;
-  proposal_pay_operation( uint32_t _proposal_id, const account_name_type& _receiver, const account_name_type& _treasury, const asset& _payment )
+  proposal_pay_operation( uint32_t _proposal_id, const account_name_type& _receiver, const account_name_type& _treasury, const HBD_asset& _payment )
     : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ), payment( _payment )
   {}
 
   uint32_t          proposal_id = 0; //id of chosen proposal
   account_name_type receiver; //account designated to receive funding (receiver of payment)
   account_name_type payer; //treasury account, source of payment
-  asset             payment; //(HBD) paid amount
+  HBD_asset         payment; //(HBD) paid amount
 };
 
 /**
