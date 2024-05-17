@@ -558,6 +558,20 @@ cli_wallet_tests:
   tags:
     - public-runner-docker
 
+beekeeper_wallet_tests:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beekeeper_wallet/report.xml
+    PYTEST_TIMEOUT_MINUTES: 30
+
+  script:
+    - cd tests/python/functional/beekeeper_wallet_tests
+    - !reference [.run-pytest, script]
+  tags:
+    - public-runner-docker
+  
 hived_tests:
   stage: test
   extends: .test_tools_based
