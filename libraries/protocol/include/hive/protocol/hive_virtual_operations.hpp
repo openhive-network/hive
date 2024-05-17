@@ -35,17 +35,17 @@ struct fill_convert_request_operation : public virtual_operation
 struct author_reward_operation : public virtual_operation
 {
   author_reward_operation() = default;
-  author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed )
+  author_reward_operation( const account_name_type& a, const string& p, const HBD_asset& s, const HIVE_asset& st, const VEST_asset& v, const VEST_asset& c, bool must_be_claimed )
     : author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ), curators_vesting_payout( c ), payout_must_be_claimed( must_be_claimed )
   {}
 
-  account_name_type author; //author of the comment (receiver of hbd_payout, hive_payout, vesting_payout)
-  string            permlink; //permlink of the comment
-  asset             hbd_payout; //(HBD) part of reward
-  asset             hive_payout; //(HIVE) part of reward
-  asset             vesting_payout; //(VESTS) part of reward
-  asset             curators_vesting_payout; //(VESTS) curators' portion of comment reward (@see curation_reward_operation)
-  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
+  account_name_type   author; //author of the comment (receiver of hbd_payout, hive_payout, vesting_payout)
+  string              permlink; //permlink of the comment
+  HBD_asset           hbd_payout; //(HBD) part of reward
+  HIVE_asset          hive_payout; //(HIVE) part of reward
+  VEST_asset          vesting_payout; //(VESTS) part of reward
+  VEST_asset          curators_vesting_payout; //(VESTS) curators' portion of comment reward (@see curation_reward_operation)
+  bool                payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
 /**
