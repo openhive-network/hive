@@ -540,13 +540,13 @@ struct pow_reward_operation : public virtual_operation
 struct vesting_shares_split_operation : public virtual_operation
 {
   vesting_shares_split_operation() = default;
-  vesting_shares_split_operation( const account_name_type& o, const asset& old_vests, const asset& new_vests )
+  vesting_shares_split_operation( const account_name_type& o, const VEST_asset& old_vests, const VEST_asset& new_vests )
     : owner( o ), vesting_shares_before_split( old_vests ), vesting_shares_after_split( new_vests )
   {}
 
   account_name_type owner; //affected account (source of vesting_shares_before_split and receiver of vesting_shares_after_split)
-  asset             vesting_shares_before_split; //(VESTS) balance before split
-  asset             vesting_shares_after_split; //(VESTS) balance after split
+  VEST_asset        vesting_shares_before_split; //(VESTS) balance before split
+  VEST_asset        vesting_shares_after_split; //(VESTS) balance after split
 };
 
 /**
