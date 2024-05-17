@@ -759,7 +759,7 @@ struct escrow_rejected_operation : public virtual_operation
 {
   escrow_rejected_operation() = default;
   escrow_rejected_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid,
-    const asset& d, const asset& h, const asset& f )
+    const HBD_asset& d, const HIVE_asset& h, const asset& f )
     : from( in ), to( out ), agent( a ), escrow_id( eid ), hbd_amount( d ), hive_amount( h ), fee( f )
   {}
 
@@ -767,8 +767,8 @@ struct escrow_rejected_operation : public virtual_operation
   account_name_type to; //user that was target of cancelled escrow transfer
   account_name_type agent; //user that was designated as agent of cancelled escrow transfer
   uint32_t          escrow_id = 0; //id of cancelled escrow transfer
-  asset             hbd_amount; //(HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
-  asset             hive_amount; //(HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
+  HBD_asset         hbd_amount; //(HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
+  HIVE_asset        hive_amount; //(HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   asset             fee; //(HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
 };
 
