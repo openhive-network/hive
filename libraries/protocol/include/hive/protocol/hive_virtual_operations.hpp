@@ -120,12 +120,12 @@ struct liquidity_reward_operation : public virtual_operation
 struct interest_operation : public virtual_operation
 {
   interest_operation() = default;
-  interest_operation( const account_name_type& o, const asset& i, bool _liquid_balance )
+  interest_operation( const account_name_type& o, const HBD_asset& i, bool _liquid_balance )
     :owner( o ), interest( i ), is_saved_into_hbd_balance( _liquid_balance )
   {}
 
   account_name_type owner; //user that had his HBD balance modified (receiver of interest)
-  asset             interest; //(HBD) amount of interest paid
+  HBD_asset         interest; //(HBD) amount of interest paid
   bool              is_saved_into_hbd_balance = false; //true when liquid balance was modified (not happening after HF25)
 };
 
