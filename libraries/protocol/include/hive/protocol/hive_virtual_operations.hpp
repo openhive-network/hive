@@ -587,9 +587,9 @@ struct fill_collateralized_convert_request_operation : public virtual_operation
 
   account_name_type owner; //user that requested conversion (receiver of excess_collateral)
   uint32_t          requestid = 0; //id of the request
-  asset             amount_in; //(HIVE) source of conversion (part of collateral)
-  asset             amount_out; //(HBD) result of conversion (already transferred to owner when request was made)
-  asset             excess_collateral; //(HIVE) unused part of collateral returned to owner
+  HIVE_asset        amount_in; //(HIVE) source of conversion (part of collateral)
+  HBD_asset         amount_out; //(HBD) result of conversion (already transferred to owner when request was made)
+  HIVE_asset        excess_collateral; //(HIVE) unused part of collateral returned to owner
 };
 
 /**
