@@ -426,7 +426,7 @@ struct effective_comment_vote_operation : public virtual_operation
   uint64_t          weight = 0; //weight of vote depending on when vote was cast and with what power
   int64_t           rshares = 0; //power of the vote
   uint64_t          total_vote_weight = 0; //sum of all vote weights on the target comment in the moment of casting current vote
-  asset             pending_payout = asset( 0, HBD_SYMBOL ); //(HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
+  HBD_asset         pending_payout { 0 }; //(HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
 };
 
 /**
