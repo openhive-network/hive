@@ -720,13 +720,13 @@ struct proposal_fee_operation : public virtual_operation
 struct collateralized_convert_immediate_conversion_operation : public virtual_operation
 {
   collateralized_convert_immediate_conversion_operation() = default;
-  collateralized_convert_immediate_conversion_operation( const account_name_type& o, uint32_t rid, const asset& out )
+  collateralized_convert_immediate_conversion_operation( const account_name_type& o, uint32_t rid, const HBD_asset& out )
     : owner( o ), requestid( rid ), hbd_out( out )
   {}
 
   account_name_type owner; //user that requested conversion (receiver of hbd_out)
   uint32_t          requestid = 0; //id of the conversion request
-  asset             hbd_out; //(HBD) funds after conversion
+  HBD_asset         hbd_out; //(HBD) funds after conversion
 };
 
 /**
