@@ -368,14 +368,14 @@ struct hardfork_hive_operation : public virtual_operation
 struct hardfork_hive_restore_operation : public virtual_operation
 {
   hardfork_hive_restore_operation() = default;
-  hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const asset& s, const asset& st )
+  hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const HBD_asset& s, const HIVE_asset& st )
     : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st )
   {}
 
   account_name_type account; //account to receive late airdrop (receiver of funds)
   account_name_type treasury; //treasury, source of late airdrop
-  asset             hbd_transferred; //(HBD) part of airdrop (equals related hardfork_hive_operation.hbd_transferred)
-  asset             hive_transferred; //(HIVE) part of airdrop (equals related hardfork_hive_operation.hive_transferred)
+  HBD_asset         hbd_transferred; //(HBD) part of airdrop (equals related hardfork_hive_operation.hbd_transferred)
+  HIVE_asset        hive_transferred; //(HIVE) part of airdrop (equals related hardfork_hive_operation.hive_transferred)
 };
 
 /**
