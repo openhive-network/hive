@@ -345,18 +345,17 @@ struct hardfork_hive_operation : public virtual_operation
   hardfork_hive_operation() = default;
   //other_affected_accounts as well as assets transfered have to be filled during actual operation
   hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury )
-    : account( acc ), treasury( _treasury ), hbd_transferred( 0, HBD_SYMBOL ), hive_transferred( 0, HIVE_SYMBOL ),
-    vests_converted( 0, VESTS_SYMBOL ), total_hive_from_vests( 0, HIVE_SYMBOL )
+    : account( acc ), treasury( _treasury ), hbd_transferred( 0 ), hive_transferred( 0 ),
+    vests_converted( 0 ), total_hive_from_vests( 0 )
   {}
 
-  account_name_type account; //account excluded from airdrop (source of amounts for airdrop)
-  account_name_type treasury; //treasury that received airdrop instead of account (receiver of funds)
-  std::vector< account_name_type >
-                    other_affected_accounts; //delegatees that lost delegations from account - filled before pre notification
-  asset             hbd_transferred; //(HBD) part of airdrop to treasury (sourced from various HBD balances on account)
-  asset             hive_transferred; //(HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
-  asset             vests_converted; //(VESTS) sum of all sources of VESTS on account
-  asset             total_hive_from_vests; //(HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
+  account_name_type                 account; //account excluded from airdrop (source of amounts for airdrop)
+  account_name_type                 treasury; //treasury that received airdrop instead of account (receiver of funds)
+  std::vector< account_name_type >  other_affected_accounts; //delegatees that lost delegations from account - filled before pre notification
+  HBD_asset                         hbd_transferred; //(HBD) part of airdrop to treasury (sourced from various HBD balances on account)
+  HIVE_asset                        hive_transferred; //(HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
+  VEST_asset                        vests_converted; //(VESTS) sum of all sources of VESTS on account
+  HIVE_asset                        total_hive_from_vests; //(HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
 };
 
 /**
