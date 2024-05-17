@@ -505,14 +505,14 @@ struct changed_recovery_account_operation : public virtual_operation
 struct transfer_to_vesting_completed_operation : public virtual_operation
 {
   transfer_to_vesting_completed_operation() = default;
-  transfer_to_vesting_completed_operation( const account_name_type& f, const account_name_type& t, const asset& s, const asset& v )
+  transfer_to_vesting_completed_operation( const account_name_type& f, const account_name_type& t, const HIVE_asset& s, const VEST_asset& v )
     : from_account( f ), to_account( t ), hive_vested( s ), vesting_shares_received( v )
   {}
 
   account_name_type from_account; //account that executed power up (source of hive_vested)
   account_name_type to_account; //account that gets power up (receiver of vesting_shares_received)
-  asset             hive_vested; //(HIVE) liquid funds being turned into VESTS
-  asset             vesting_shares_received; //(VESTS) result of power up
+  HIVE_asset        hive_vested; //(HIVE) liquid funds being turned into VESTS
+  VEST_asset        vesting_shares_received; //(VESTS) result of power up
 };
 
 /**
