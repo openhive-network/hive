@@ -455,13 +455,13 @@ struct ineffective_delete_comment_operation : public virtual_operation
 struct dhf_conversion_operation : public virtual_operation
 {
   dhf_conversion_operation() = default;
-  dhf_conversion_operation( const account_name_type& f, const asset& c, const asset& a )
+  dhf_conversion_operation( const account_name_type& f, const HIVE_asset& c, const HBD_asset& a )
     : treasury( f ), hive_amount_in( c ), hbd_amount_out( a )
   {}
 
   account_name_type treasury; //treasury (source of hive_amount_in and receiver of hbd_amount_out)
-  asset             hive_amount_in; //(HIVE) source of conversion
-  asset             hbd_amount_out; //(HBD) effect of conversion
+  HIVE_asset        hive_amount_in; //(HIVE) source of conversion
+  HBD_asset         hbd_amount_out; //(HBD) effect of conversion
 };
 
 /**
