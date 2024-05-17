@@ -243,12 +243,12 @@ struct comment_payout_update_operation : public virtual_operation
 struct return_vesting_delegation_operation : public virtual_operation
 {
   return_vesting_delegation_operation() = default;
-  return_vesting_delegation_operation( const account_name_type& a, const asset& v )
+  return_vesting_delegation_operation( const account_name_type& a, const VEST_asset& v )
     : account( a ), vesting_shares( v )
   {}
 
   account_name_type account; //delegator (receiver of vesting_shares)
-  asset             vesting_shares; //(VESTS) returned delegation
+  VEST_asset        vesting_shares; //(VESTS) returned delegation
 };
 
 /**
