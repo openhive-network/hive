@@ -138,7 +138,7 @@ struct interest_operation : public virtual_operation
 struct fill_vesting_withdraw_operation : public virtual_operation
 {
   fill_vesting_withdraw_operation() = default;
-  fill_vesting_withdraw_operation( const account_name_type& f, const account_name_type& t, const asset& w, const asset& d )
+  fill_vesting_withdraw_operation( const account_name_type& f, const account_name_type& t, const VEST_asset& w, const asset& d )
     : from_account( f ), to_account( t ), withdrawn( w ), deposited( d )
   {}
 
@@ -146,7 +146,7 @@ struct fill_vesting_withdraw_operation : public virtual_operation
 
   account_name_type from_account; //user that activated power down
   account_name_type to_account; //target of vesting route (potentially the same as from_account - receiver of deposited)
-  asset             withdrawn; //(VESTS) source amount
+  VEST_asset        withdrawn; //(VESTS) source amount
   asset             deposited; //(HIVE or VESTS) [converted] target amount
 };
 
