@@ -5,7 +5,7 @@ import test_tools as tt
 from .utilities import create_accounts
 
 
-def test_escrow(wallet: tt.Wallet) -> None:
+def test_escrow(wallet: tt.OldWallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
 
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(200), "avocado")

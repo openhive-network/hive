@@ -27,7 +27,7 @@ PROPOSAL_END_DATE_AFTER_UPDATE = tt.Time.from_now(weeks=19)
 )
 @run_for("testnet")
 def test_change_comment_operation(node, api, expected_extension):
-    wallet = tt.Wallet(attach_to=node)
+    wallet = tt.OldWallet(attach_to=node)
 
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
     wallet.create_account("bob", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))

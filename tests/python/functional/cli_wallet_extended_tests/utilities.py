@@ -80,6 +80,6 @@ def check_keys(result: dict, key_owner: str, key_active: str, key_posting: str, 
     assert result["memo_key"] == key_memo
 
 
-def create_accounts(wallet: tt.Wallet, creator: str, accounts: list) -> None:
+def create_accounts(wallet: tt.OldWallet, creator: str, accounts: list) -> None:
     for account in accounts:
         wallet.api.create_account(creator, account, "{}")
