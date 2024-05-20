@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-def test_account_creation(wallet: tt.Wallet) -> None:
+def test_account_creation(wallet: tt.OldWallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
     assert wallet.api.list_accounts("a", 1) == ["alice"]
 
@@ -28,7 +28,7 @@ def test_account_creation(wallet: tt.Wallet) -> None:
     ],
 )
 def test_creation_of_account_with_invalid_name(
-    wallet: tt.Wallet, account_name: str, expected_error_message: str
+    wallet: tt.OldWallet, account_name: str, expected_error_message: str
 ) -> None:
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.create_account("initminer", account_name, "{}")
