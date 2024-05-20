@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from requests import post
 
+import test_tools as tt
 from hive_local_tools import run_for
-
-if TYPE_CHECKING:
-    import test_tools as tt
 
 
 @run_for("testnet")
@@ -26,9 +24,8 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node: tt.InitNode | t
 # If the transactions do not enter a single block, they will be split between two blocks.
 # In this case, the test is repeated.
 @run_for("testnet")
-def test_if_transaction_ids_order_corresponds_to_transactions_order(
-    node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet
-):
+def test_if_transaction_ids_order_corresponds_to_transactions_order(node: tt.InitNode | tt.RemoteNode):
+    wallet = tt.OldWallet(attach_to=node)
     names = [f"account-{i:02d}" for i in range(20)]
 
     # transactions created in this loop are sent to single block (it's ensured by assert below)

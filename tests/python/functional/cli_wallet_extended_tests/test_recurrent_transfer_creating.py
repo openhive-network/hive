@@ -5,7 +5,7 @@ import test_tools as tt
 from .utilities import check_recurrent_transfer, check_recurrent_transfer_data, create_accounts
 
 
-def test_recurrent_transfer(wallet: tt.Wallet) -> None:
+def test_recurrent_transfer(wallet: tt.OldWallet) -> None:
     create_accounts(wallet, "initminer", ["alice", "bob"])
 
     wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(100))

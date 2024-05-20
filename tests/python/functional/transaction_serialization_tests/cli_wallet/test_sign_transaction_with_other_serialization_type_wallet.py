@@ -9,7 +9,7 @@ import test_tools as tt
 def wallet(request):
     node = tt.InitNode()
     node.run()
-    return tt.Wallet(attach_to=node, additional_arguments=[f"--transaction-serialization={request.param}"])
+    return tt.OldWallet(attach_to=node, additional_arguments=[f"--transaction-serialization={request.param}"])
 
 
 @pytest.mark.parametrize(
