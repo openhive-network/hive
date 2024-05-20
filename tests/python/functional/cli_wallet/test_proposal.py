@@ -18,23 +18,23 @@ from hive_local_tools.functional.python.cli_wallet import (
 )
 
 
-def list_proposals_by_creator(wallet: tt.Wallet, creator_name: str) -> list:
+def list_proposals_by_creator(wallet: tt.OldWallet, creator_name: str) -> list:
     all_proposals = wallet.api.list_proposals(**get_list_proposal_args(creator_name))
     return find_proposals_by_creator_name(_creator=creator_name, _proposal_list=all_proposals)
 
 
-def list_proposal_votes_by_voter(wallet: tt.Wallet, voter_name: str) -> list:
+def list_proposal_votes_by_voter(wallet: tt.OldWallet, voter_name: str) -> list:
     all_proposal_votes = wallet.api.list_proposal_votes(**get_list_proposal_votes_args(start=[voter_name]))
     return find_proposals_by_voter_name(voter_name, all_proposal_votes)
 
 
-def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposal_id) -> None:
+def test_create_proposal(wallet: tt.OldWallet, creator: tt.Account, creator_proposal_id) -> None:
     creator_proposals_after_count = len(list_proposals_by_creator(wallet, creator.name))
     assert creator_proposals_after_count == 1
 
 
 def test_remove_proposal(
-    wallet: tt.Wallet,
+    wallet: tt.OldWallet,
     funded_account: FundedAccountInfo,
     creator_proposal_id: PreparedProposalDataWithId,
     account_proposal_id: PreparedProposalDataWithId,
@@ -54,7 +54,7 @@ def test_remove_proposal(
 
 
 def test_update_proposal_votes(
-    wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
+    wallet: tt.OldWallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
 ) -> None:
     voter_proposals_before_count = len(list_proposal_votes_by_voter(wallet, creator.name))
 
@@ -65,7 +65,7 @@ def test_update_proposal_votes(
 
 
 def test_create_proposal_fail_negative_payment(
-    wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account
+    wallet: tt.OldWallet, funded_account: FundedAccountInfo, creator: tt.Account
 ) -> None:
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
@@ -87,7 +87,7 @@ def test_create_proposal_fail_negative_payment(
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> None:
+def test_update_proposal_xxx(wallet: tt.OldWallet, funded_account: FundedAccountInfo) -> None:
     from datetime import datetime as date_type
 
     def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:

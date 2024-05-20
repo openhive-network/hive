@@ -6,10 +6,10 @@ import test_tools as tt
 
 
 def test_signing_with_authority(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node)
-    wallet1 = tt.Wallet(attach_to=node)
-    wallet2 = tt.Wallet(attach_to=node)
-    wallet3 = tt.Wallet(attach_to=node)
+    wallet = tt.OldWallet(attach_to=node)
+    wallet1 = tt.OldWallet(attach_to=node)
+    wallet2 = tt.OldWallet(attach_to=node)
+    wallet3 = tt.OldWallet(attach_to=node)
 
     alice = tt.Account("tst-alice")
     auth1 = tt.Account("tst-auth1")

@@ -7,7 +7,7 @@ from .utilities import check_ask, check_sell_price
 
 
 @run_for("testnet", enable_plugins=["market_history_api"])
-def test_order(wallet: tt.Wallet) -> None:
+def test_order(wallet: tt.OldWallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
 
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(77), "lime")

@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_getters(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_getters(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     response = wallet.api.create_account("initminer", "alice", "{}")
 
     transaction_id = response["transaction_id"]

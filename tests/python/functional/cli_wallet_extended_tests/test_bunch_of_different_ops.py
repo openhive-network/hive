@@ -20,7 +20,7 @@ key2 = "STM7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
 """
 
 
-def test_different_false_cases(wallet: tt.Wallet) -> None:
+def test_different_false_cases(wallet: tt.OldWallet) -> None:
     try:
         wallet.api.get_account("not-exists")
     except Exception as e:
@@ -99,7 +99,7 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
         assert message.find("required_active.size()") != -1
 
 
-def test_complex(wallet: tt.Wallet) -> None:
+def test_complex(wallet: tt.OldWallet) -> None:
     create_accounts(wallet, "initminer", ["alice", "bob", "carol", "dan"])
 
     wallet.api.transfer_to_vesting("initminer", "bob", tt.Asset.Test(100))

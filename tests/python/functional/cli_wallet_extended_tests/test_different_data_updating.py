@@ -7,7 +7,7 @@ import test_tools as tt
 from .utilities import check_keys
 
 
-def test_update(wallet: tt.Wallet) -> None:
+def test_update(wallet: tt.OldWallet) -> None:
     wallet.create_account("alice")
 
     wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(500))

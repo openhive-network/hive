@@ -9,5 +9,5 @@ if TYPE_CHECKING:
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_getting_empty_history(wallet: tt.Wallet) -> None:
+def test_getting_empty_history(wallet: tt.OldWallet) -> None:
     assert len(wallet.api.get_account_history("initminer", -1, 1)) == 0

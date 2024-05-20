@@ -5,7 +5,7 @@ import test_tools as tt
 from .utilities import check_keys
 
 
-def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     old_accounts_number = len(wallet.api.list_accounts("a", 100))
 
     tt.logger.info("Waiting...")
@@ -33,7 +33,7 @@ def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.Wallet
     assert old_accounts_number + 2 == len(wallet.api.list_accounts("a", 100))
 
 
-def test_account_creation_with_exception(wallet: tt.Wallet) -> None:
+def test_account_creation_with_exception(wallet: tt.OldWallet) -> None:
     try:
         wallet.api.create_account_delegated("initminer", tt.Asset.Test(3), tt.Asset.Vest(6.123456), "alicex", "{}")
     except Exception as e:

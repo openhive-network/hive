@@ -5,7 +5,7 @@ import test_tools as tt
 from .utilities import create_accounts
 
 
-def test_transfer(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_transfer(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     create_accounts(wallet, "initminer", ["newaccount", "newaccount2"])
 
     wallet.api.transfer_to_vesting("initminer", "newaccount", tt.Asset.Test(100))

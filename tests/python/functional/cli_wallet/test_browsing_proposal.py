@@ -23,7 +23,7 @@ order_type_values = ["ascending", "descending"]
 
 
 def test_list_proposals(
-    wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
+    wallet: tt.OldWallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
 ) -> None:
     start_point_before_test = format_datetime(dt.now())
 
@@ -47,7 +47,7 @@ def test_list_proposals(
 
 
 def test_list_voter_proposal(
-    wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
+    wallet: tt.OldWallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
 ) -> None:
     wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
 
@@ -61,7 +61,7 @@ def test_list_voter_proposal(
                 )
 
 
-def test_find_proposals(wallet: tt.Wallet, creator: tt.Account) -> None:
+def test_find_proposals(wallet: tt.OldWallet, creator: tt.Account) -> None:
     accounts_count = 8
     proposal_id_test_scheme = [[1], [2], [3], [1, 2], [1, 2, 3], [2, 3], [3, 4], [4, 5], [1, 2, 3, 4, 5, 6, 7]]
 
