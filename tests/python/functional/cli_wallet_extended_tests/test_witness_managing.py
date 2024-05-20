@@ -3,7 +3,7 @@ from __future__ import annotations
 import test_tools as tt
 
 
-def test_witness(wallet: tt.Wallet) -> None:
+def test_witness(wallet: tt.OldWallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
 
     wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(500))

@@ -5,7 +5,7 @@ import datetime
 import test_tools as tt
 
 
-def test_transaction(wallet: tt.Wallet) -> None:
+def test_transaction(wallet: tt.OldWallet) -> None:
     wallet.api.create_account("initminer", "carol", "{}")
 
     with wallet.in_single_transaction(broadcast=False) as transaction:

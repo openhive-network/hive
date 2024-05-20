@@ -5,7 +5,7 @@ from __future__ import annotations
 import test_tools as tt
 
 
-def test_getting_key_references_of_claimed_created_account(node: tt.InitNode, wallet: tt.Wallet) -> None:
+def test_getting_key_references_of_claimed_created_account(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     tt.logger.info("Waiting until initminer will be able to create account...")
     node.wait_number_of_blocks(30)
 
