@@ -28,7 +28,7 @@ void generate_artifacts(const fc::path& block_log_path, appbase::application& ap
 
 void generate_from_scratch(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
-  fc::path artifact_file_path = block_log_path.generic_string() + ".artifacts";
+  fc::path artifact_file_path = block_log_path.generic_string() + block_log_file_name_info::_artifacts_extension;
 
   fc::remove_all(artifact_file_path);
 

@@ -250,6 +250,10 @@ public:
 private:
   bool load_header();
 
+  void overwrite_header(const std::string& file_str, const uint32_t block_log_head_block_num, 
+    const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
+  void create_and_generate(const std::string& file_str, const uint32_t block_log_head_block_num, 
+    const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
   void generate_artifacts_file(const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
   void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
   
@@ -315,33 +319,126 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 
 }
 
+void block_log_artifacts::impl::create_and_generate(const std::string& file_str, 
+  const uint32_t block_log_head_block_num, const block_log& source_block_provider, 
+  hive::chain::blockchain_worker_thread_pool& thread_pool)
+{
+  _storage_fd = ::open(file_str.c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
+
+  if (_storage_fd == -1)
+    FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
+
+  _flock = boost::interprocess::file_lock(file_str.c_str());
+  if (!_flock.try_lock())
+    FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", file_str.c_str()));
+
+  _header.dirty_close = 1;
+  flush_header();
+
+  /// Generate artifacts file only if some blocks are present in pointed block_log.
+  if (block_log_head_block_num > 0)
+  {
+    _header.tail_block_num = calculate_tail_block_num(1);
+    _header.head_block_num = block_log_head_block_num;
+    flush_header();
+    generate_artifacts_file(source_block_provider, thread_pool);
+  }
+}
+
+void block_log_artifacts::impl::overwrite_header(const std::string& file_str,
+  const uint32_t block_log_head_block_num, const block_log& source_block_provider,
+  hive::chain::blockchain_worker_thread_pool& thread_pool)
+{
+  wlog("Block artifacts file ${_artifact_file_name} exists, but its header validation failed.", (_artifact_file_name));
+  ilog("Attempting to overwrite existing artifacts file ${_artifact_file_name} ...", (_artifact_file_name));
+  HANDLE_IO((::close(_storage_fd)), "Closing the artifact file (before truncation)");
+  _storage_fd = ::open(file_str.c_str(), O_RDWR | O_CLOEXEC | O_TRUNC, 0644);
+
+  if (_storage_fd == -1)
+    FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
+  else
+  {
+    _header = artifact_file_header();
+    _header.dirty_close = 1;
+    flush_header();
+
+    if (block_log_head_block_num)
+    {
+      _header.tail_block_num = calculate_tail_block_num(1);
+      _header.head_block_num = block_log_head_block_num;
+      flush_header();
+      generate_artifacts_file(source_block_provider, thread_pool);
+    }
+  }
+}
+
 void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try {
   set_block_num_to_file_pos_offset(
     block_log_file_name_info::get_first_block_num_for_file_name(block_log_file_path)-1
   );
+
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + block_log_file_name_info::_artifacts_extension.c_str());
-  FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to block_log.artifacts file, not directory", (_artifact_file_name));
+  FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to a file, not directory", (_artifact_file_name));
   _is_writable = !read_only;
 
   const auto head_block = source_block_provider.head();
   const uint32_t block_log_head_block_num = head_block ? head_block->get_block_num() : 0;
+  std::string file_str = _artifact_file_name.generic_string();
 
   if (read_only)
   {
     ilog("Opening artifacts file ${_artifact_file_name} in read only mode ...", (_artifact_file_name));
-    _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDONLY | O_CLOEXEC, 0644);
+    _storage_fd = ::open(file_str.c_str(), O_RDONLY | O_CLOEXEC, 0644);
 
+    const char* open_error_msg = "Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}";
     if (_storage_fd == -1)
-      FC_THROW("Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}", (_artifact_file_name)("error", strerror(errno)));
+    {
+      if (errno == ENOENT)
+      {
+        wlog("Could not find artifacts file in ${_artifact_file_name}. Creating new artifacts file ...", (_artifact_file_name));
+        _is_writable = true;
+        create_and_generate(file_str, block_log_head_block_num, source_block_provider, thread_pool);
+        close();
+        // Now reopen in read_only mode.
+        ilog("Reopening newly created artifacts file in read only mode.");
+        _is_writable = false;
+        _storage_fd = ::open(file_str.c_str(), O_RDONLY | O_CLOEXEC, 0644);
+        if (_storage_fd == -1)
+          FC_THROW(open_error_msg, (_artifact_file_name)("error", strerror(errno)));
+      }
+      else
+        FC_THROW(open_error_msg, (_artifact_file_name)("error", strerror(errno)));
+    }
 
-    _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
-    if (!_flock.try_lock_sharable())
-      FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+    struct stat file_stats;
+    if (fstat(_storage_fd, &file_stats) == -1)
+      FC_THROW("Error getting size of file: ${error}", ("error", strerror(errno)));
 
+    if( (file_stats.st_mode & 0200) == 0 )
+    {
+      wlog( "Block log artifacts file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+    }
+    else
+    {
+      _flock = boost::interprocess::file_lock(file_str.c_str());
+      if (!_flock.try_lock_sharable())
+        FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", file_str.c_str()));
+    }
+    
     if (!load_header())
-      FC_THROW("Cannot load header of artifacts file: ${_artifact_file_name}", (_artifact_file_name));
+    {
+      _is_writable = true;
+      overwrite_header(file_str, block_log_head_block_num, source_block_provider, thread_pool);
+      close();
+      // Now reopen in read_only mode.
+      ilog("Reopening newly created artifacts file in read only mode.");
+      _is_writable = false;
+      _storage_fd = ::open(file_str.c_str(), O_RDONLY | O_CLOEXEC, 0644);
+      if (_storage_fd == -1)
+        FC_THROW(open_error_msg, (_artifact_file_name)("error", strerror(errno)));
+    }
 
     if (block_log_head_block_num != _header.head_block_num)
       FC_THROW("Artifacts file has other head block num: ${artifacts_head_block} than block_log: ${block_log_head_block_num}", ("artifacts_head_block", _header.head_block_num)(block_log_head_block_num));
@@ -355,33 +452,14 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
   else
   {
     ilog("Opening artifacts file ${_artifact_file_name} in read & write mode ...", (_artifact_file_name));
-    _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CLOEXEC, 0644);
+    _storage_fd = ::open(file_str.c_str(), O_RDWR | O_CLOEXEC, 0644);
 
     if (_storage_fd == -1)
     {
       if (errno == ENOENT)
       {
         wlog("Could not find artifacts file in ${_artifact_file_name}. Creating new artifacts file ...", (_artifact_file_name));
-        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
-
-        if (_storage_fd == -1)
-          FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
-
-        _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
-        if (!_flock.try_lock())
-          FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
-
-        _header.dirty_close = 1;
-        flush_header();
-
-        /// Generate artifacts file only if some blocks are present in pointed block_log.
-        if (block_log_head_block_num > 0)
-        {
-          _header.tail_block_num = calculate_tail_block_num(1);
-          _header.head_block_num = block_log_head_block_num;
-          flush_header();
-          generate_artifacts_file(source_block_provider, thread_pool);
-        }
+        create_and_generate(file_str, block_log_head_block_num, source_block_provider, thread_pool);
       }
       else
         FC_THROW("Error opening block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
@@ -390,9 +468,9 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     {
       /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
 
-      _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
+      _flock = boost::interprocess::file_lock(file_str.c_str());
       if (!_flock.try_lock())
-        FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+        FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", file_str.c_str()));
 
       if (load_header())
       {
@@ -432,29 +510,9 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           }
         }
       }
-      else
+      else // header loading failed
       {
-        wlog("Block artifacts file ${_artifact_file_name} exists, but its header validation failed.", (_artifact_file_name));
-        ilog("Attempting to overwrite existing artifacts file ${_artifact_file_name} ...", (_artifact_file_name));
-        HANDLE_IO((::close(_storage_fd)), "Closing the artifact file (before truncation)");
-        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CLOEXEC | O_TRUNC, 0644);
-
-        if (_storage_fd == -1)
-          FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
-        else
-        {
-          _header = artifact_file_header();
-          _header.dirty_close = 1;
-          flush_header();
-
-          if (block_log_head_block_num)
-          {
-            _header.tail_block_num = calculate_tail_block_num(1);
-            _header.head_block_num = block_log_head_block_num;
-            flush_header();
-            generate_artifacts_file(source_block_provider, thread_pool);
-          }
-        }
+        overwrite_header(file_str, block_log_head_block_num, source_block_provider, thread_pool);
       }
     }
   }

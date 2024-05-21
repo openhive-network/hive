@@ -830,7 +830,7 @@ void chain_plugin_impl::open()
 
     db.with_write_lock([&]()
     {
-      log_wrapper->open_and_init( bl_open_args );
+      log_wrapper->open_and_init( bl_open_args, true/*read_only*/ );
     });
     default_block_writer->open();
     db.open( db_open_args );
@@ -1257,6 +1257,7 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
 
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
+  log_wrapper->reopen_for_writing();
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
   const bool exit_at_block_reached = exit_at_block > 0 && exit_at_block == db.head_block_num();
   if (this->exit_before_sync || exit_at_block_reached)
@@ -1718,6 +1719,7 @@ void chain_plugin::plugin_startup()
         else
         {
           ilog("P2P is disabled.");
+          my->log_wrapper->reopen_for_writing();
         }
       }
     }

@@ -187,12 +187,12 @@ namespace hive { namespace chain {
 
   namespace
   {
-    ssize_t get_file_size(int fd)
+    struct stat get_file_stats(int fd)
     {
       struct stat file_stats;
       if (fstat(fd, &file_stats) == -1)
         FC_THROW("Error getting size of file: ${error}", ("error", strerror(errno)));
-      return file_stats.st_size;
+      return file_stats;
     }
   }
 
@@ -203,33 +203,56 @@ namespace hive { namespace chain {
 
       my->block_file = file;
 
+      fc::path dir = my->block_file.parent_path();
+      boost::filesystem::create_directories( dir.generic_string() );
+
+      std::string file_str = my->block_file.generic_string();
+
       int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
       if (read_only)
+      {
         flags = O_RDONLY | O_CLOEXEC;
-      else
-      {
-        fc::path dir = my->block_file.parent_path();
-        boost::filesystem::create_directories( dir.generic_string() );
+        if(auto_open_artifacts && not fc::exists(file))
+        {
+          int temp_flags = flags | O_CREAT;
+          int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
+          if (temp_fd == -1)
+            FC_THROW("Error creating block log file ${filename} in ${mode} mode: ${error}",
+              ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
+
+          ::close(temp_fd);
+        }
       }
-      ilog("Opening blocklog ${blocklog_filename}",("blocklog_filename",my->block_file.generic_string().c_str()));
-      my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
+
+      ilog("Opening blocklog ${blocklog_filename} in ${mode} mode ...",
+        ("blocklog_filename",file_str.c_str())("mode", read_only ? "read only" : "read write"));
+      my->block_log_fd = ::open(file_str.c_str(), flags, 0644);
       if (my->block_log_fd == -1)
-        FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
+        FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
+          ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
 
-      my->_flock = boost::interprocess::file_lock(my->block_file.generic_string().c_str());
-
-      if (read_only)
+      struct stat block_log_stats = get_file_stats(my->block_log_fd);
+      if( (block_log_stats.st_mode & 0200) == 0 )
       {
-        if (!my->_flock.try_lock_sharable())
-          FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", my->block_file.generic_string().c_str()));
+        wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
       }
       else
       {
-        if (!my->_flock.try_lock())
-          FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", my->block_file.generic_string().c_str()));
+        my->_flock = boost::interprocess::file_lock(file_str.c_str());
+
+        if (read_only)
+        {
+          if (!my->_flock.try_lock_sharable())
+            FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", file_str.c_str()));
+        }
+        else
+        {
+          if (!my->_flock.try_lock())
+            FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", file_str.c_str()));
+        }
       }
 
-      my->block_log_size = get_file_size(my->block_log_fd);
+      my->block_log_size = block_log_stats.st_size;
 
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
@@ -508,7 +531,7 @@ namespace hive { namespace chain {
 
   std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> block_log::read_raw_head_block() const
   {
-    ssize_t block_log_size = get_file_size(my->block_log_fd);
+    ssize_t block_log_size = get_file_stats(my->block_log_fd).st_size;
 
     // read the last int64 of the block log into `head_block_offset`, 
     // that's the index of the start of the head block
@@ -942,7 +965,7 @@ namespace hive { namespace chain {
                     (new_block_log_size)(block_log_size)("diff", (block_log_size - new_block_log_size)));
                 FC_ASSERT(ftruncate(my->block_log_fd, new_block_log_size) == 0, "failed to truncate block log, ${error}", ("error", strerror(errno)));
                 wlog("block_log file has been truncated. Replay blockchain may be needed.");
-                my->block_log_size = get_file_size(my->block_log_fd);
+                my->block_log_size = get_file_stats(my->block_log_fd).st_size;
                 break;
               }
             }

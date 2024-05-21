@@ -20,12 +20,10 @@ namespace hive { namespace chain {
 
 /*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
   const fc::path& the_path, appbase::application& app,
-  blockchain_worker_thread_pool& thread_pool, bool recreate_artifacts_if_needed /*= true*/ )
+  blockchain_worker_thread_pool& thread_pool, bool read_only )
 {
   FC_ASSERT( not fc::exists( the_path ) || fc::is_regular_file( the_path ),
     "Path ${p} does NOT point to regular file.", ("p", the_path) );
-
-  bool read_only = not recreate_artifacts_if_needed;
 
   if( the_path.filename().string() == block_log_file_name_info::_legacy_file_name )
   {
@@ -58,18 +56,24 @@ block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application&
     _block_log_split( block_log_split )
 {}
 
-void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args )
+void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, bool read_only )
 {
   _open_args = bl_open_args;
-  common_open_and_init( std::optional< bool >() /*set read_only where feasible*/,
-                        true /*allow_splitting_monolithic_log*/);
+  common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/);
 }
 
 void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
 {
   _open_args.data_dir = path.parent_path();
-  common_open_and_init( std::optional< bool >( read_only ),
-                        false /*allow_splitting_monolithic_log*/ );
+  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/ );
+}
+
+void block_log_wrapper::reopen_for_writing()
+{
+  // Only head part file is ever opened for writing.
+  ilog("Reopening block log for writing.");
+  auto head_log_ptr = _logs.back();
+  internal_open_and_init( head_log_ptr, head_log_ptr->get_log_file(), false/*read_only*/ );
 }
 
 void block_log_wrapper::close_log()
@@ -397,7 +401,8 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
           1;
 }
 
-void block_log_wrapper::common_open_and_init( std::optional< bool > read_only, 
+
+void block_log_wrapper::common_open_and_init( bool read_only, 
   bool allow_splitting_monolithic_log )
 {
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
@@ -405,7 +410,7 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only,
     auto single_part_log = std::make_shared<block_log>( _app );
     internal_open_and_init( single_part_log, 
                             _open_args.data_dir / block_log_file_name_info::_legacy_file_name,
-                            read_only ? *read_only : false );
+                            read_only );
     _logs.push_back( single_part_log );
     return;
   }
@@ -462,7 +467,7 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only,
     fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
 
     const auto first_part_log = std::make_shared<block_log>( _app );
-    internal_open_and_init( first_part_log, part_file_path, read_only ? *read_only : false );
+    internal_open_and_init( first_part_log, part_file_path, read_only );
     _logs.push_back( first_part_log );
     return;
   }
@@ -496,13 +501,9 @@ void block_log_wrapper::common_open_and_init( std::optional< bool > read_only,
   {
     const auto nth_part_log = std::make_shared<block_log>( _app );
     uint32_t part_number = cit->part_number;
-    // Read only access is preferred unless
-    // - rw is forced from outside (read_only optional parameter is set).
-    // - artifacts file corresponding to part file is missing.
-    // - part file is head one, where new blocks will be appended.
-    fc::path artifacts_file( cit->part_file.generic_string() + block_log_file_name_info::_artifacts_extension );
-    bool open_ro = read_only ? *read_only : 
-      ( fc::exists( artifacts_file ) && part_number < head_part_number ? true : false );
+    // Open all non-head parts for reading only (won't be appended),
+    // use provided flag for head part.
+    bool open_ro = part_number < head_part_number ? true : read_only;
     internal_open_and_init( nth_part_log, cit->part_file, open_ro );
     // Part numbers are always positive.
     _logs[ part_number-1 ] = nth_part_log;

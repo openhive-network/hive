@@ -100,7 +100,7 @@ int main( int argc, char** argv, char** envp )
 
   db.with_write_lock([&]()
   {
-    log_wrapper->open_and_init( bl_args );
+    log_wrapper->open_and_init( bl_args, true /*read_only*/ );
   });
   block_writer.open();
 
