@@ -618,7 +618,7 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
   try
   {
     hive::chain::block_log log( app );
-    log.open(block_log_filename, thread_pool, true);
+    log.open(block_log_filename, thread_pool, true/*read_only*/, false/*auto_open_artifacts*/);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
     std::cout << head_block_num << "\n";
