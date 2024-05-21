@@ -506,6 +506,9 @@ namespace detail {
       case block_production_condition::exception_producing_block:
         elog( "exception producing block" );
         break;
+      case block_production_condition::unknown:
+        elog( "Not producing block because could not determine whether to produce it" );
+        break;
       case block_production_condition::wait_for_genesis:
         break;
     }
@@ -553,6 +556,7 @@ namespace detail {
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
     produce_block_data.produce_in_next_slot = false;
+    produce_block_data.block_production_condition = block_production_condition::unknown;
 
     //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting
