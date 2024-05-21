@@ -108,7 +108,7 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     produce_block_data_t produce_block_data = {};
-    std::timed_mutex should_produce_block_mutex = {};
+    std::mutex should_produce_block_mutex = {};
 
     std::atomic<bool> _enable_fast_confirm = true;
 
@@ -368,11 +368,8 @@ namespace detail {
     }
     {
       produce_block_data_t data = get_produce_block_data(1);
-      std::unique_lock g(should_produce_block_mutex, std::defer_lock_t{});
-      if (g.try_lock_for(std::chrono::milliseconds(200)))
-      {
-        produce_block_data = std::move(data);
-      }
+      std::unique_lock g(should_produce_block_mutex);
+      produce_block_data = std::move(data);
     }
   }
 
@@ -539,9 +536,14 @@ namespace detail {
       capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
       if (lag.count() < 0)
       {
-        _db.with_read_lock([&](){
-          produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
-        });
+        try {
+          _db.with_read_lock([&](){
+            produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
+          }, fc::milliseconds(200));
+        }
+        catch (const chainbase::lock_exception& e) {
+          // Do nothing
+        }
       }
       return block_production_condition::lag;
     }
