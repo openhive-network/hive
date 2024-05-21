@@ -36,7 +36,8 @@ namespace block_production_condition
     lag = 6,
     consecutive = 7,
     wait_for_genesis = 8,
-    exception_producing_block = 9
+    exception_producing_block = 9,
+    unknown = 10
   };
 }
 
