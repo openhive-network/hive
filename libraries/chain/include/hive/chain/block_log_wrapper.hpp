@@ -24,7 +24,7 @@ namespace hive { namespace chain {
     /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
     static block_log_wrapper_t create_opened_wrapper( const fc::path& input_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
-      bool recreate_artifacts_if_needed = true );
+      bool read_only );
 
   public:
     block_log_wrapper( int block_log_split, appbase::application& app,
@@ -42,7 +42,8 @@ namespace hive { namespace chain {
       int       block_log_compression_level = 15;
       bool      enable_block_log_auto_fixing = true;
     };
-    void open_and_init( const block_log_open_args& bl_open_args );
+    void open_and_init( const block_log_open_args& bl_open_args, bool read_only );
+    void reopen_for_writing();
     void close_log();
     std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
     std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t>
@@ -89,8 +90,7 @@ namespace hive { namespace chain {
     /// @brief Used internally by create_opened_wrapper
     void open_and_init( const fc::path& path, bool read_only );
     // Common helpers
-    void common_open_and_init( std::optional< bool > read_only,
-                               bool allow_splitting_monolithic_log );
+    void common_open_and_init( bool read_only, bool allow_splitting_monolithic_log );
     using block_log_ptr_t = std::shared_ptr<block_log>;
     void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;

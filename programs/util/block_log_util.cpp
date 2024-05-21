@@ -618,7 +618,7 @@ void get_head_block_number(const fc::path& block_log_filename, appbase::applicat
   try
   {
     hive::chain::block_log log( app );
-    log.open(block_log_filename, thread_pool, true/*read_only*/, false/*auto_open_artifacts*/);
+    log.open(block_log_filename, thread_pool, true/*read_only*/, false/*write_fallback*/, false/*auto_open_artifacts*/);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
     std::cout << head_block_num << "\n";
@@ -775,13 +775,13 @@ bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_blo
     if (full_match_verification)
       ilog("Opening artifacts file with full artifacts match verification ...");
 
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, full_match_verification, app, thread_pool);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, false, full_match_verification, app, thread_pool);
 
     if (full_match_verification)
       ilog("Artifacts file match verification done");
 
     const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
-    FC_ASSERT(artifacts_block_head_num, "block_log.artifacts is empty");
+    FC_ASSERT(artifacts_block_head_num, "${file} is empty", ("file", artifacts->get_artifacts_file()));
 
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's not possible to read head block artifacts*/, tail_block_num);
 

@@ -830,7 +830,7 @@ void chain_plugin_impl::open()
 
     db.with_write_lock([&]()
     {
-      log_wrapper->open_and_init( bl_open_args );
+      log_wrapper->open_and_init( bl_open_args, true/*read_only*/ );
     });
     default_block_writer->open();
     db.open( db_open_args );
@@ -1264,7 +1264,11 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
     ilog("Shutting down node without performing any action on user request");
     theApp.kill();
     return;
-  }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
+  }
+
+  log_wrapper->reopen_for_writing();
+
+  ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
   start_write_processing();
@@ -1718,6 +1722,7 @@ void chain_plugin::plugin_startup()
         else
         {
           ilog("P2P is disabled.");
+          my->log_wrapper->reopen_for_writing();
         }
       }
     }
