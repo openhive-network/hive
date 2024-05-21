@@ -30,11 +30,11 @@ void split_block_log( fc::path monolith_path, appbase::application& app,
 
   ilog( "Opening legacy monolithic block log as source." );
   auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool, 
-                                                            true /*recreate_artifacts_if_needed*/ );
+                                                            true /*read_only*/ );
   ilog( "Opening split block log as target." );
   fc::path first_part_path( output_path / block_log_file_name_info::get_nth_part_file_name( 1 ) );
   auto split_log = block_log_wrapper::create_opened_wrapper( first_part_path, app, thread_pool,
-                                                             true /*recreate_artifacts_if_needed*/);
+                                                             false /*read_only*/);
 
   ilog("Starting splitting");
 

@@ -180,7 +180,7 @@ public:
 
   impl( appbase::application& app );
 
-  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool);
+  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool);
 
   fc::path get_artifacts_file() const
   {
@@ -315,39 +315,91 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 
 }
 
-void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
+void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try {
   set_block_num_to_file_pos_offset(
     block_log_file_name_info::get_first_block_num_for_file_name(block_log_file_path)-1
   );
+
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + block_log_file_name_info::_artifacts_extension.c_str());
-  FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to block_log.artifacts file, not directory", (_artifact_file_name));
+  FC_ASSERT(!fc::is_directory(_artifact_file_name), "${_artifact_file_name} should point to a file, not directory", (_artifact_file_name));
   _is_writable = !read_only;
 
   const auto head_block = source_block_provider.head();
   const uint32_t block_log_head_block_num = head_block ? head_block->get_block_num() : 0;
+  std::string file_str = _artifact_file_name.generic_string();
 
   if (read_only)
   {
     ilog("Opening artifacts file ${_artifact_file_name} in read only mode ...", (_artifact_file_name));
-    _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDONLY | O_CLOEXEC, 0644);
+    _storage_fd = ::open(file_str.c_str(), O_RDONLY | O_CLOEXEC, 0644);
+
+    auto open_writeable_fallback = [&](bool close_fd, const char* msg){
+      ilog(msg, (_artifact_file_name));
+      if (close_fd)
+        close();
+      open(block_log_file_path, source_block_provider, false /*read_only*/, false /*write_fallback*/, full_match_verification, thread_pool);
+    };
 
     if (_storage_fd == -1)
+    {
+      if (errno == ENOENT && write_fallback)
+      {
+        open_writeable_fallback(false/*close_fd*/, "Missing artifacts file ${_artifact_file_name}. Trying creation in read write mode...");
+        return;
+      }
+
       FC_THROW("Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}", (_artifact_file_name)("error", strerror(errno)));
+    }
 
-    _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
-    if (!_flock.try_lock_sharable())
-      FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+    struct stat file_stats;
+    if (fstat(_storage_fd, &file_stats) == -1)
+      FC_THROW("Error getting info on file: ${error}", ("error", strerror(errno)));
 
+    if( (file_stats.st_mode & 0200) == 0 )
+    {
+      wlog( "Block log artifacts file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+    }
+    else
+    {
+      _flock = boost::interprocess::file_lock(file_str.c_str());
+      if (!_flock.try_lock_sharable())
+        FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", file_str.c_str()));
+    }
+    
     if (!load_header())
+    {
+      if (write_fallback)
+      {
+        open_writeable_fallback(true/*close_fd*/, "Cannot load header of artifacts file: ${_artifact_file_name}. Trying to overwrite...");
+        return;
+      }
+
       FC_THROW("Cannot load header of artifacts file: ${_artifact_file_name}", (_artifact_file_name));
+    }
 
     if (block_log_head_block_num != _header.head_block_num)
+    {
+      if (write_fallback)
+      {
+        open_writeable_fallback(true/*close_fd*/, "Head block num mismatch between block_log and artifacts file: ${_artifact_file_name}. Trying to overwrite...");
+        return;
+      }
+
       FC_THROW("Artifacts file has other head block num: ${artifacts_head_block} than block_log: ${block_log_head_block_num}", ("artifacts_head_block", _header.head_block_num)(block_log_head_block_num));
+    }
 
     if (_header.generating_interrupted_at_block)
+    {
+      if (write_fallback)
+      {
+        open_writeable_fallback(true/*close_fd*/, "Artifacts file generating process was not finished. Trying to overwrite...");
+        return;
+      }
+
       FC_THROW("Artifacts file generating process is not finished.");
+    }
     
     verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
   }
@@ -355,7 +407,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
   else
   {
     ilog("Opening artifacts file ${_artifact_file_name} in read & write mode ...", (_artifact_file_name));
-    _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CLOEXEC, 0644);
+    _storage_fd = ::open(file_str.c_str(), O_RDWR | O_CLOEXEC, 0644);
 
     if (_storage_fd == -1)
     {
@@ -390,9 +442,9 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     {
       /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
 
-      _flock = boost::interprocess::file_lock(_artifact_file_name.generic_string().c_str());
+      _flock = boost::interprocess::file_lock(file_str.c_str());
       if (!_flock.try_lock())
-        FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", _artifact_file_name.generic_string().c_str()));
+        FC_THROW("Unable to get read & write access to artifacts file: ${file_cstr} (some other process opened artifacts probably)", ("file_cstr", file_str.c_str()));
 
       if (load_header())
       {
@@ -778,10 +830,10 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
-  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification, thread_pool );
+  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, write_fallback, full_match_verification, thread_pool );
   return block_artifacts;
 }
 

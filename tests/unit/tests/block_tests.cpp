@@ -116,7 +116,7 @@ void open_test_database( database& db, sync_block_writer& sbw,
   bl_args.data_dir = dir;
   db.with_write_lock([&]()
   {
-    log_wrapper.open_and_init( bl_args );
+    log_wrapper.open_and_init( bl_args, true/*read_only*/ );
   });
   sbw.open();
   db.open( args );

@@ -21,14 +21,14 @@ void generate_artifacts(const fc::path& block_log_path, appbase::application& ap
   block_log bl( app );
 
   bl.open(block_log_path, thread_pool, true, false);
-  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, app, thread_pool);
+  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, false, app, thread_pool);
   bla.reset();
   ilog("open and generation finished...");
 }
 
 void generate_from_scratch(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
-  fc::path artifact_file_path = block_log_path.generic_string() + ".artifacts";
+  fc::path artifact_file_path = block_log_path.generic_string() + block_log_file_name_info::_artifacts_extension;
 
   fc::remove_all(artifact_file_path);
 

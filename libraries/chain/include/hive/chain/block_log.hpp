@@ -104,7 +104,7 @@ namespace hive { namespace chain {
       block_log( appbase::application& app );
       ~block_log();
 
-      void open( const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only = false, bool auto_open_artifacts = true );
+      void open( const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only = false, bool write_fallback = false, bool auto_open_artifacts = true );
       void open_and_init( const fc::path& file,
                           bool read_only,
                           bool enable_compression,

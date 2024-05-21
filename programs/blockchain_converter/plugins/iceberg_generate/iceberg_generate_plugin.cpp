@@ -98,7 +98,7 @@ namespace detail {
   {
     try
     {
-      log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input, theApp, thread_pool );
+      log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input, theApp, thread_pool, true /*read_only*/ );
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 

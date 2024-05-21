@@ -207,7 +207,7 @@ void compress_blocks(uint32_t& current_block_num)
 
 void drain_completed_queue(const fc::path &output_path, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
-  auto log_writer = hive::chain::block_log_wrapper::create_opened_wrapper( output_path, app, thread_pool );
+  auto log_writer = hive::chain::block_log_wrapper::create_opened_wrapper( output_path, app, thread_pool, false /*read_only*/ );
   ilog("Opened output block log");
   if (log_writer->head_block())
     FC_THROW("output block log is not empty");
@@ -283,7 +283,7 @@ void drain_completed_queue(const fc::path &output_path, uint32_t &current_block_
 void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   ilog("Starting fill_pending_queue");
-  auto log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input_path, app, thread_pool, not read_only );
+  auto log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input_path, app, thread_pool, read_only );
   ilog("Opened source block log. Readonly: ${read_only}", (read_only));
 
   if (!log_reader->head_block())
