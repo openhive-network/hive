@@ -199,3 +199,21 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+set( bls_dependencies "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/src" )
+set( bls_dependencies2 "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/sodium-build" )
+set( bls_include "/home/mario/src/a.237.chia-networks-bls/bls-signatures/src" )
+set( bls_include2 "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/blst-src" )
+
+add_executable( bls_test bls_test.cpp )
+target_link_libraries( bls_test ${bls_dependencies}/libbls.a )
+target_link_libraries( bls_test fc ${bls_dependencies2}/libsodium.a )
+target_include_directories( bls_test PUBLIC ${bls_include} ${bls_include2} )
+
+install( TARGETS
+   bls_test
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
