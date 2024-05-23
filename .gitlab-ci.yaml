@@ -972,6 +972,7 @@ operation_tests:
                      escrow_tests,
                      limit_order_tests,
                      proposal_tests,
+                     set_withdraw_vesting_route_tests,
                      test_recurrent_transfer,
                      test_transfer_to_vesting_operation,
                      test_withdraw_vesting_operation,
