@@ -65,6 +65,8 @@ int main(int argc, char** argv, char** envp)
   const authority& _auth = fc::json::from_string( __auths, fc::json::format_validation_mode::full ).as< authority >();
   const chain_id_type _chain_id( fc::sha256::hash( __chain_id.c_str() ) );
 
+  auto _start = std::chrono::high_resolution_clock::now();
+
   auto _public_keys = _trx.get_signature_keys( _chain_id, serialization_type::hf26 );
 
   std::cout<<"Public keys from signatures"<<std::endl;
@@ -78,7 +80,6 @@ int main(int argc, char** argv, char** envp)
 
   try
   {
-    auto _start = std::chrono::high_resolution_clock::now();
     hive::protocol::verify_authority( _required_authorities,
                         _public_keys,
                         [&]( std::string account_name ){ return authority(); },

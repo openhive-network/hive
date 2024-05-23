@@ -22,6 +22,12 @@
 using std::string;
 using std::vector;
 
+
+#include <list>
+
+#include <thread>
+#include <future>
+
 using namespace bls;
 
 struct mario_test
@@ -118,12 +124,85 @@ struct mario_test
     return PopSchemeMPL().FastAggregateVerify( _public_keys, content, aggregated_signature );
   }
 
-  bool verify()
-  {
-    return verify( public_keys );
-  }
-
 };
+
+void sum( std::promise<G1Element>&& p, const std::vector<G1Element>& public_keys, uint32_t begin, uint32_t end )
+{
+  G1Element _result;
+
+  for( size_t i = begin; i < end; ++i )
+    _result += public_keys[i];
+
+  p.set_value( _result );
+}
+
+bool verify( mario_test& obj, const std::vector<G1Element>& public_keys, uint32_t nr_threads )
+{
+  if( nr_threads == 0 )
+    return false;
+
+  if( nr_threads == 1 )
+  {
+    G1Element _pk;
+
+    auto _start = std::chrono::high_resolution_clock::now();
+
+    for( auto& item : public_keys )
+      _pk += item;
+
+    auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"SUM: "<<" time: "<<_interval<<"[us]"<<std::endl;
+
+    _start = std::chrono::high_resolution_clock::now();
+    bool _result = obj.verify( { _pk } );
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"CAL: time: "<<_interval<<"[us]"<<std::endl;
+
+    return _result;
+  }
+  else
+  {
+    auto _start = std::chrono::high_resolution_clock::now();
+    auto _size = public_keys.size();
+    auto _range = _size / nr_threads;
+
+    std::list<std::thread> threads;
+
+    using _promise_type = std::promise<G1Element>;
+    using _future_type = std::future<G1Element>;
+
+    std::vector<_promise_type> promises( nr_threads );
+    std::list<_future_type> futures;
+
+    for( uint32_t i = 0; i < nr_threads; ++i )
+    {
+      auto _begin = i * _range;
+      auto _end =  ( i == nr_threads - 1 ) ? _size : ( (i + 1) * _range );
+
+      futures.emplace_back( promises[i].get_future() );
+      threads.emplace_back( std::thread( sum, std::move( promises[i] ), public_keys, _begin, _end ) );
+    }
+
+    for( auto& thread : threads )
+      thread.join();
+
+    std::vector<G1Element> _public_keys;
+
+    for( auto& future : futures )
+    {
+      _public_keys.emplace_back( future.get() );
+    }
+    auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"SUM: "<<" time: "<<_interval<<"[us]"<<std::endl;
+
+    _start = std::chrono::high_resolution_clock::now();
+    bool _result = obj.verify( _public_keys );
+    _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+    std::cout<<"CAL: time: "<<_interval<<"[us]"<<std::endl;
+
+    return _result;
+  }
+}
 
 int main(int argc, char* argv[])
 {
@@ -133,12 +212,14 @@ int main(int argc, char* argv[])
 
   bpo::options_description opts{""};
 
+  opts.add_options()("nr-threads", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures");
   opts.add_options()("nr-signatures", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures");
   opts.add_options()("nr-signatures-2", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures2");
   boost::program_options::variables_map options_map;
   boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(opts).run(), options_map);
 
   {
+    uint32_t _threads = options_map["nr-threads"].as<uint32_t>();
     mario_test obj_00( options_map["nr-signatures"].as<uint32_t>() );
 
     auto _start = std::chrono::high_resolution_clock::now();
@@ -149,12 +230,12 @@ int main(int argc, char* argv[])
     _start = std::chrono::high_resolution_clock::now();
     obj_00.aggregate_signatures();
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"aggregating: "<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"aggregating: "<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     _start = std::chrono::high_resolution_clock::now();
-    bool _result = obj_00.verify();
+    bool _result = verify( obj_00, obj_00.public_keys, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"XX: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"XXX: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_00( obj_00.public_keys.begin(), obj_00.public_keys.end() );
@@ -162,9 +243,9 @@ int main(int argc, char* argv[])
     _public_keys_00.insert( _public_keys_00.begin(), PopSchemeMPL().KeyGen( obj_00.get_seed( 1342343 ) ).GetG1Element() );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_00.verify( _public_keys_00 );
+    _result = verify( obj_00, _public_keys_00, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"00: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"000: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_01( obj_00.public_keys.begin(), obj_00.public_keys.end() );
@@ -174,17 +255,17 @@ int main(int argc, char* argv[])
     _public_keys_01.push_back( PopSchemeMPL().KeyGen( obj_00.get_seed( 1342343 ) ).GetG1Element() );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_00.verify( _public_keys_01 );
+    _result = verify( obj_00, _public_keys_01, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"01: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"001: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_02( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_00.verify( _public_keys_02 );
+    _result = verify( obj_00, _public_keys_02, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"02: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"002: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_03( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
@@ -197,9 +278,9 @@ int main(int argc, char* argv[])
     _public_keys_03.erase( _it_03 );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_00.verify( _public_keys_03 );
+    _result = verify( obj_00, _public_keys_03, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"03: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"003: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     std::vector<G1Element> _public_keys_04( obj_00.public_keys.rbegin(), obj_00.public_keys.rend() );
@@ -210,9 +291,9 @@ int main(int argc, char* argv[])
     _public_keys_04.erase( _it_04 );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_00.verify( _public_keys_04 );
+    _result = verify( obj_00, _public_keys_04, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"04: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"004: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
     ////=============================================
     mario_test obj_01( options_map["nr-signatures-2"].as<uint32_t>() );
@@ -232,9 +313,9 @@ int main(int argc, char* argv[])
     std::copy( obj_01.public_keys.begin(), obj_01.public_keys.end(), std::back_inserter( _public_keys_06 ) );
 
     _start = std::chrono::high_resolution_clock::now();
-    _result = obj_01.verify( _public_keys_06 );
+    _result = verify( obj_01, _public_keys_06, _threads );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
-    std::cout<<"06: verifying2: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl;
+    std::cout<<"006: verifying2: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 
   }
 }
