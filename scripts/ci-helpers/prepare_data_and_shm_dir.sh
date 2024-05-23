@@ -33,7 +33,6 @@ else
   mkdir -p $DATA_BASE_DIR/shm_dir
 fi
 
-
 if [ -n "$BLOCK_LOG_SOURCE_DIR" ] && [ -e $BLOCK_LOG_SOURCE_DIR/block_log ];
 then
   mkdir -p $DATA_BASE_DIR/datadir/blockchain
