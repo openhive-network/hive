@@ -69,6 +69,10 @@ class PowerDown(Operation):
     def update_timestamp(self) -> None:
         return self._update_timestamp
 
+    @property
+    def tranche_schedule(self) -> list[datetime]:
+        return self._tranche_schedule
+
     @staticmethod
     def convert_to_vest(node, hive: tt.Asset.TestT) -> tt.Asset.VestT:
         return tt.Asset.VestT(amount=int(hive.amount) * get_vesting_price(node))
