@@ -114,6 +114,14 @@ class PowerDown(Operation):
 
 
 class PowerDownAccount(Account):
+    @property
+    def withdrawn(self) -> int:
+        return self._acc_info.withdrawn
+
+    @property
+    def to_withdraw(self) -> int:
+        return self._acc_info.to_withdraw
+
     def assert_hive_power_is_unchanged(self) -> None:
         assert self.get_hive_power() == self.vest, "Hive Power has been changed."
 
