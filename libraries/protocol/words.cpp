@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 #include <stdint.h>
-#include <hive/utilities/words.hpp>
+#include <hive/protocol/words.hpp>
 
 namespace hive { namespace words {
 
