@@ -1,3 +1,4 @@
+#pragma once
 
 #include "bls_pop_scheme.hpp"
 #include "bls_aug_scheme.hpp"
@@ -18,7 +19,8 @@ void sum( std::promise<G1Element>&& p, const std::vector<G1Element>& public_keys
   p.set_value( _result );
 }
 
-bool verify( pop_scheme& obj, const std::vector<G1Element>& public_keys, uint32_t nr_threads )
+template< typename T >
+bool verify( T& obj, const std::vector<G1Element>& public_keys, uint32_t nr_threads )
 {
   if( nr_threads == 0 )
     return false;
@@ -29,14 +31,15 @@ bool verify( pop_scheme& obj, const std::vector<G1Element>& public_keys, uint32_
 
     auto _start = std::chrono::high_resolution_clock::now();
 
-    for( auto& item : public_keys )
-      _pk += item;
+    // for( auto& item : public_keys )
+    //   _pk += item;
 
     auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
     std::cout<<"SUM: "<<" time: "<<_interval<<"[us]"<<std::endl;
 
     _start = std::chrono::high_resolution_clock::now();
-    bool _result = obj.verify( { _pk } );
+    //bool _result = obj.verify( { _pk } );
+    bool _result = obj.verify( public_keys );
     _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
     std::cout<<"CAL: time: "<<_interval<<"[us]"<<std::endl;
 

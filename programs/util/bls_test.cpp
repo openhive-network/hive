@@ -10,7 +10,7 @@ using namespace bls;
 void test_pop( uint32_t nr_signatures, uint32_t nr_signatures_2, uint32_t nr_threads )
 {
   uint32_t _threads = nr_threads;
-  pop_scheme obj_00( nr_threads );
+  pop_scheme obj_00( nr_signatures );
 
   auto _start = std::chrono::high_resolution_clock::now();
   obj_00.sign_content();
@@ -117,6 +117,27 @@ void test_pop( uint32_t nr_signatures, uint32_t nr_signatures_2, uint32_t nr_thr
   std::cout<<"100: verifying2: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 }
 
+void test_aug( uint32_t nr_signatures, uint32_t nr_signatures_2, uint32_t nr_threads )
+{
+  uint32_t _threads = nr_threads;
+  aug_scheme obj_00( nr_signatures );
+
+  auto _start = std::chrono::high_resolution_clock::now();
+  obj_00.sign_content();
+  auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+  std::cout<<"signing: "<<" time: "<<_interval<<"[us]"<<std::endl;
+
+  _start = std::chrono::high_resolution_clock::now();
+  obj_00.aggregate_signatures();
+  _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+  std::cout<<"aggregating: "<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
+
+  _start = std::chrono::high_resolution_clock::now();
+  bool _result = verify( obj_00, obj_00.public_keys, _threads );
+  _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+  std::cout<<"XXX: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
+}
+
 int main(int argc, char* argv[])
 {
   namespace bpo = boost::program_options;
@@ -131,5 +152,6 @@ int main(int argc, char* argv[])
   boost::program_options::variables_map options_map;
   boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(opts).run(), options_map);
 
-  test_pop( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
+  //test_pop( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
+  test_aug( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
 }
