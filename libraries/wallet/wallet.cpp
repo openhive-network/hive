@@ -1,7 +1,6 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/utilities/git_revision.hpp>
-#include <hive/utilities/words.hpp>
 
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -69,8 +68,6 @@
 # include <sys/stat.h>
 #endif
 
-#define BRAIN_KEY_WORD_COUNT 16
-
 constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_bridge_api methods. Default value is false, so we need to pass it here.
 
 using hive::chain::full_transaction_ptr;
@@ -111,73 +108,6 @@ string pubkey_to_shorthash( const public_key_type& key )
   result += hd[(x >> 0x04) & 0x0f];
   result += hd[(x        ) & 0x0f];
 
-  return result;
-}
-
-
-fc::ecc::private_key derive_private_key( const std::string& prefix_string,
-                            int sequence_number )
-{
-  std::string sequence_string = std::to_string(sequence_number);
-  fc::sha512 h = fc::sha512::hash(prefix_string + " " + sequence_string);
-  fc::ecc::private_key derived_key = fc::ecc::private_key::regenerate(fc::sha256::hash(h));
-  return derived_key;
-}
-
-string normalize_brain_key( string s )
-{
-  size_t i = 0, n = s.length();
-  std::string result;
-  char c;
-  result.reserve( n );
-
-  bool preceded_by_whitespace = false;
-  bool non_empty = false;
-  while( i < n )
-  {
-    c = s[i++];
-    switch( c )
-    {
-    case ' ':  case '\t': case '\r': case '\n': case '\v': case '\f':
-      preceded_by_whitespace = true;
-      continue;
-
-    case 'a': c = 'A'; break;
-    case 'b': c = 'B'; break;
-    case 'c': c = 'C'; break;
-    case 'd': c = 'D'; break;
-    case 'e': c = 'E'; break;
-    case 'f': c = 'F'; break;
-    case 'g': c = 'G'; break;
-    case 'h': c = 'H'; break;
-    case 'i': c = 'I'; break;
-    case 'j': c = 'J'; break;
-    case 'k': c = 'K'; break;
-    case 'l': c = 'L'; break;
-    case 'm': c = 'M'; break;
-    case 'n': c = 'N'; break;
-    case 'o': c = 'O'; break;
-    case 'p': c = 'P'; break;
-    case 'q': c = 'Q'; break;
-    case 'r': c = 'R'; break;
-    case 's': c = 'S'; break;
-    case 't': c = 'T'; break;
-    case 'u': c = 'U'; break;
-    case 'v': c = 'V'; break;
-    case 'w': c = 'W'; break;
-    case 'x': c = 'X'; break;
-    case 'y': c = 'Y'; break;
-    case 'z': c = 'Z'; break;
-
-    default:
-      break;
-    }
-    if( preceded_by_whitespace && non_empty )
-      result.push_back(' ');
-    result.push_back(c);
-    preceded_by_whitespace = false;
-    non_empty = true;
-  }
   return result;
 }
 
@@ -498,41 +428,6 @@ public:
     }
   }
 
-  // This function generates derived keys starting with index 0 and keeps incrementing
-  // the index until it finds a key that isn't registered in the block chain.  To be
-  // safer, it continues checking for a few more keys to make sure there wasn't a short gap
-  // caused by a failed registration or the like.
-  int find_first_unused_derived_key_index(const fc::ecc::private_key& parent_key)
-  {
-    int first_unused_index = 0;
-    int number_of_consecutive_unused_keys = 0;
-    for( int key_index = 0; ; ++key_index )
-    {
-      fc::ecc::private_key derived_private_key = derive_private_key(parent_key.key_to_wif(), key_index);
-      hive::chain::public_key_type derived_public_key = derived_private_key.get_public_key();
-      if( _keys.find(derived_public_key) == _keys.end() )
-      {
-        if( number_of_consecutive_unused_keys )
-        {
-          ++number_of_consecutive_unused_keys;
-          if( number_of_consecutive_unused_keys > 5 )
-            return first_unused_index;
-        }
-        else
-        {
-          first_unused_index = key_index;
-          number_of_consecutive_unused_keys = 1;
-        }
-      }
-      else
-      {
-        // key_index is used
-        first_unused_index = 0;
-        number_of_consecutive_unused_keys = 0;
-      }
-    }
-  }
-  
   annotated_signed_transaction_ex set_voting_proxy(const string& account_to_modify, const string& proxy, bool broadcast /* = false */)
   { try {
     account_witness_proxy_operation op;
@@ -1080,32 +975,7 @@ get_active_witnesses_return wallet_api::get_active_witnesses( bool include_futur
 
 brain_key_info wallet_api::suggest_brain_key()const
 {
-  brain_key_info result;
-  // create a private key for secure entropy
-  fc::sha256 sha_entropy1 = fc::ecc::private_key::generate().get_secret();
-  fc::sha256 sha_entropy2 = fc::ecc::private_key::generate().get_secret();
-  fc::bigint entropy1( sha_entropy1.data(), sha_entropy1.data_size() );
-  fc::bigint entropy2( sha_entropy2.data(), sha_entropy2.data_size() );
-  fc::bigint entropy(entropy1);
-  entropy <<= 8*sha_entropy1.data_size();
-  entropy += entropy2;
-  string brain_key = "";
-
-  for( int i=0; i<BRAIN_KEY_WORD_COUNT; i++ )
-  {
-    fc::bigint choice = entropy % hive::words::word_list_size;
-    entropy /= hive::words::word_list_size;
-    if( i > 0 )
-      brain_key += " ";
-    brain_key += hive::words::word_list[ choice.to_int64() ];
-  }
-
-  brain_key = normalize_brain_key(brain_key);
-  fc::ecc::private_key priv_key = detail::derive_private_key( brain_key, 0 );
-  result.brain_priv_key = brain_key;
-  result.wif_priv_key = priv_key.key_to_wif();
-  result.pub_key = priv_key.get_public_key();
-  return result;
+  return hive::protocol::suggest_brain_key();
 }
 
 string wallet_api::serialize_transaction( const wallet_serializer_wrapper<signed_transaction>& tx )const
@@ -1154,7 +1024,7 @@ void wallet_api::import_keys( const vector< string >& wif_keys )
 
 string wallet_api::normalize_brain_key(string s) const
 {
-  return detail::normalize_brain_key( std::move( s ) );
+  return hive::protocol::normalize_brain_key( std::move( s ) );
 }
 
 variant wallet_api::info()

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <hive/protocol/key_utils.hpp>
+
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_args.hpp>
+
 #include <hive/wallet/misc_utilities.hpp>
 
 #include <fc/macros.hpp>
@@ -43,12 +46,7 @@ struct annotated_signed_transaction_ex : hive::plugins::account_history::annotat
 
 typedef wallet_serializer_wrapper<annotated_signed_transaction_ex> wallet_signed_transaction;
 
-struct brain_key_info
-{
-  string               brain_priv_key;
-  public_key_type      pub_key;
-  string               wif_priv_key;
-};
+using hive::protocol::brain_key_info;
 
 struct wallet_data
 {
