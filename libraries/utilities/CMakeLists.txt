@@ -18,7 +18,6 @@ set(sources
    split_block_log.cpp
    string_escape.cpp
    tempdir.cpp
-   words.cpp
    logging_config.cpp
    database_configuration.cpp
    io_primitives.cpp
