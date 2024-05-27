@@ -41,11 +41,13 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    block.cpp
    asset.cpp
    version.cpp
+   key_utils.cpp
    misc_utilities.cpp
    forward_impacted.cpp
    forward_keyauths.cpp
    fixed_string.cpp
    crypto_memo.cpp
+   words.cpp
    ${GET_CONFIG_CPP}
    ${HEADERS}
    ${hardfork_hpp_file}
