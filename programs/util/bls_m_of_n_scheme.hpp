@@ -138,7 +138,8 @@ struct bls_m_of_n_scheme: public scheme
     assert( _verify_pub_keys.size() == _verify_message.size() );
     assert( _verify_pub_keys.size() == 2 );
 
-    bool _result = AugSchemeMPL().AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
+    //bool _result = AugSchemeMPL().AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
+    bool _result = CoreMPL(AugSchemeMPL::CIPHERSUITE_ID).AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
     std::cout<<"n of m: "<<_result<<std::endl;
   }
 
