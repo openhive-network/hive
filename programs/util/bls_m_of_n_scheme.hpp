@@ -33,6 +33,22 @@ struct bls_m_of_n_scheme: public scheme
 
   void run()
   {
+    auto _merge_pk_message = []( const G1Element& _public_key, const std::vector<uint8_t>& _message )
+    {
+      bls::Bytes message = bls::Bytes( _message );
+      std::vector<uint8_t> augMessage = _public_key.Serialize();
+
+      augMessage.reserve(augMessage.size() + message.size());
+      augMessage.insert(augMessage.end(), message.begin(), message.end());
+
+      return augMessage;
+    };
+
+    auto _merge_pk_message_2 = [&]( const G1Element& _public_key, const uint8_t& _number )
+    {
+      return _merge_pk_message( _public_key, { _number } );
+    };
+
     //setup.
     G1Element _aggregated_public_key;
 
@@ -54,6 +70,15 @@ struct bls_m_of_n_scheme: public scheme
       }
       _membership_keys.emplace_back( _sum_keys );
     }
+
+    //==========temporary check n-of-n for every `_membership_key`
+    for( size_t i = 0; i < _membership_keys.size(); ++i )
+    {
+      std::vector<uint8_t> _tmp{ static_cast<uint8_t>( i ) };
+      bool _result = AugSchemeMPL().AggregateVerify( { _aggregated_public_key }, std::vector<std::vector<uint8_t>>{ _tmp }, _membership_keys[i] );
+      std::cout<<"n of n: "<<_result<<std::endl;
+    }
+    std::cout<<std::endl;
 
     //only `nr_signers` signers
     std::vector<G2Element> _temp_signatures;
@@ -95,22 +120,6 @@ struct bls_m_of_n_scheme: public scheme
       e(pk1×G+pk3×G, H(P, m))⋅e(P, H(P, 1)+H(P, 3))=
       e(P’, H(P, m))⋅e(P, H(P, 1)+H(P, 3))
     */
-
-    auto _merge_pk_message = []( const G1Element& _public_key, const std::vector<uint8_t>& _message )
-    {
-      bls::Bytes message = bls::Bytes( _message );
-      std::vector<uint8_t> augMessage = _public_key.Serialize();
-
-      augMessage.reserve(augMessage.size() + message.size());
-      augMessage.insert(augMessage.end(), message.begin(), message.end());
-
-      return augMessage;
-    };
-
-    auto _merge_pk_message_2 = [&]( const G1Element& _public_key, const uint8_t& _number )
-    {
-      return _merge_pk_message( _public_key, { _number } );
-    };
 
     //e(P’, H(P, m))
     _verify_pub_keys.push_back( _final_public_key );
