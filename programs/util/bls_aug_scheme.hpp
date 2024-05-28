@@ -59,25 +59,46 @@ struct aug_scheme: public scheme
     aggregated_signature = AugSchemeMPL().Aggregate( _res );
   }
 
-  bool verify( const std::vector<G1Element>& _public_keys )
+  bool verify_impl( const std::vector<G1Element>& _public_keys )
   {
     vector<vector<uint8_t>> _content;
 
-    _content.push_back( content );
+    for( size_t i = 0; i < _public_keys.size(); ++i )
+      _content.push_back( content );
 
     std::cout<<"asig: "<<Util::HexStr( aggregated_signature.Serialize() )<<std::endl;
 
-    std::cout<<std::endl;
+    //std::cout<<std::endl;
 
-    for(auto& pk : _public_keys )
-      std::cout<<"pk  : "<<Util::HexStr( pk.Serialize() )<<std::endl;
+    // for(auto& pk : _public_keys )
+    //   std::cout<<"pk  : "<<Util::HexStr( pk.Serialize() )<<std::endl;
 
-    std::cout<<std::endl;
+    //std::cout<<std::endl;
 
-    for(auto& c : _content )
-      std::cout<<"cont: "<<Util::HexStr( c )<<std::endl;
+    //for(auto& c : _content )
+      //std::cout<<"cont: "<<Util::HexStr( c )<<std::endl;
 
-    return AugSchemeMPL().AggregateVerify( {_public_keys}, _content, aggregated_signature );
+    return AugSchemeMPL().AggregateVerify( _public_keys, _content, aggregated_signature );
+  }
+
+  bool verify( const std::vector<G1Element>& _public_keys )
+  {
+    bool _result = verify_impl( _public_keys );
+
+    //*****only 1
+    std::vector<G1Element> _public_keys_1{ *_public_keys.begin() };
+    bool _result_1 = verify_impl( _public_keys_1 );
+    std::cout<<"*****1: "<<_result_1<<std::endl;
+
+    //*****all but one
+    std::vector<G1Element> _public_keys_abo{ _public_keys.begin(), _public_keys.end() };
+    auto _it = _public_keys_abo.end();
+    --_it;
+    _public_keys_abo.erase( _it );
+    bool _result_abo = verify_impl( _public_keys_abo );
+    std::cout<<"*****_result_abo: "<<_result_abo<<std::endl;
+
+    return _result;
   }
 
 };

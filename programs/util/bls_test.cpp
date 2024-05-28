@@ -138,6 +138,12 @@ void test_aug( uint32_t nr_signatures, uint32_t nr_signatures_2, uint32_t nr_thr
   std::cout<<"XXX: verifying: "<<_result<<" time: "<<_interval<<"[us]"<<std::endl<<std::endl;
 }
 
+void test_n_of_m( uint32_t nr_signatures, uint32_t nr_signers )
+{
+  bls_m_of_n_scheme _obj( nr_signers, nr_signatures );
+  _obj.run();
+}
+
 int main(int argc, char* argv[])
 {
   namespace bpo = boost::program_options;
@@ -149,9 +155,11 @@ int main(int argc, char* argv[])
   opts.add_options()("nr-threads", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures");
   opts.add_options()("nr-signatures", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures");
   opts.add_options()("nr-signatures-2", bpo::value< uint32_t >()->default_value( 1 ), "Number of signatures2");
+  opts.add_options()("nr-signers", bpo::value< uint32_t >()->default_value( 1 ), "Number of signers");
   boost::program_options::variables_map options_map;
   boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(opts).run(), options_map);
 
   //test_pop( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
-  test_aug( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
+  //test_aug( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signatures-2"].as<uint32_t>(), options_map["nr-threads"].as<uint32_t>() );
+  test_n_of_m( options_map["nr-signatures"].as<uint32_t>(), options_map["nr-signers"].as<uint32_t>() );
 }

@@ -2,6 +2,7 @@
 
 #include "bls_pop_scheme.hpp"
 #include "bls_aug_scheme.hpp"
+#include "bls_m_of_n_scheme.hpp"
 
 #include <thread>
 #include <future>
