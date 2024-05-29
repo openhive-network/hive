@@ -9,21 +9,27 @@ package hive.protocol.buffers;
  * Note: the reward is a fragment of the author portion of comment reward depending on share assigned to benefactor
  * in comment options (can be zero due to rounding).
  * @see author_reward
- *
- * @param {string} benefactor - user assigned to receive share of author reward (receiver of payouts)
- * @param {string} author - author of the comment
- * @param {string} permlink - permlink of the comment
- * @param {asset} hbd_payout - (HBD) part of reward
- * @param {asset} hive_payout - (HIVE) part of reward
- * @param {asset} vesting_payout - (VESTS) part of reward
- * @param {bool} payout_must_be_claimed - true if payouts require use of claim_reward_balance_operation
  */
 message comment_benefactor_reward {
+  // @param {string} benefactor - user assigned to receive share of author reward (receiver of payouts)
   required string benefactor = 1;
+
+  // @param {string} author - author of the comment
   required string author = 2;
+
+  // @param {string} permlink - permlink of the comment
   required string permlink = 3;
+
+  // @param {asset} hbd_payout - (HBD) part of reward
   required asset  hbd_payout = 4 [json_name = "hbd_payout"];
+
+  // @param {asset} hive_payout - (HIVE) part of reward
   required asset  hive_payout = 5 [json_name = "hive_payout"];
+
+  // @param {asset} vesting_payout - (VESTS) part of reward
   required asset  vesting_payout = 6 [json_name = "vesting_payout"];
+
+  // @param {bool} payout_must_be_claimed - true if payouts require use of claim_reward_balance_operation
   required bool   payout_must_be_claimed = 7 [json_name = "payout_must_be_claimed"];
 }
+
