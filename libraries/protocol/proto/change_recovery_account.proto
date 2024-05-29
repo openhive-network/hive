@@ -12,12 +12,16 @@ package hive.protocol.buffers;
  * the operation should be created with {new_recovery_account} set to the old one.
  * The operation is done with a 30 days (HIVE_OWNER_AUTH_RECOVERY_PERIOD) delay.
  *
- * @param {string} account_to_recover
- * @param {string} new_recovery_account
- * @param {future_extensions} extensions
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/26_change_recovery_account.md?ref_type=heads
  */
 message change_recovery_account {
+  // @param {string} account_to_recover
   required string            account_to_recover = 1 [json_name = "account_to_recover"];
+
+  // @param {string} new_recovery_account
   required string            new_recovery_account = 2 [json_name = "new_recovery_account"];
+
+  // @param {future_extensions} extensions
   repeated future_extensions extensions = 3;
 }
+
