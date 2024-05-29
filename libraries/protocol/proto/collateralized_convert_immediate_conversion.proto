@@ -7,13 +7,15 @@ package hive.protocol.buffers;
 /* Related to collateralized_convert_operation.
  * Generated every time above operation is executed. Contains amount of HBD received right when the transfer actually happens.
  * @see fill_collateralized_convert_request
- *
- * @param {string} owner - user that requested conversion (receiver of hbd_out)
- * @param {number} requested - id of the conversion request
- * @param {asset} hbd_out - (HBD) funds after conversion
  */
 message collateralized_convert_immediate_conversion {
+  // @param {string} owner - user that requested conversion (receiver of hbd_out)
   required string owner = 1;
+
+  // @param {number} requested - id of the conversion request
   required uint32 requestid = 2;
+
+  // @param {asset} hbd_out - (HBD) funds after conversion
   required asset  hbd_out = 3 [json_name = "hbd_out"];
 }
+
