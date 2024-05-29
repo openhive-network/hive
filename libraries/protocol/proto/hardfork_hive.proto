@@ -6,21 +6,26 @@ package hive.protocol.buffers;
 
 /* Related to hardfork 23 (HIVE inception hardfork).
  * Generated for every account that did not receive HIVE airdrop.
- *
- * @param {string} account - account excluded from airdrop (source of amounts for airdrop)
- * @param {string} treasury - treasury that received airdrop instead of account (receiver of funds)
- * @param {string} other_affected_accounts - delegatees that lost delegations from account - filled before pre notification
- * @param {asset} hbd_transferred - (HBD) part of airdrop to treasury (sourced from various HBD balances on account)
- * @param {asset} hive_transferred - (HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
- * @param {asset} vests_converted - (VESTS) sum of all sources of VESTS on account
- * @param {asset} total_hive_from_vests - (HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
  */
 message hardfork_hive {
+  // @param {string} account - account excluded from airdrop (source of amounts for airdrop)
   required string account = 1;
+
+  // @param {string} treasury - treasury that received airdrop instead of account (receiver of funds)
   required string treasury = 2;
+
+  // @param {string} other_affected_accounts - delegatees that lost delegations from account - filled before pre notification
   repeated string other_affected_accounts = 3 [json_name = "other_affected_accounts"];
+
+  // @param {asset} hbd_transferred - (HBD) part of airdrop to treasury (sourced from various HBD balances on account)
   required asset  hbd_transferred = 4 [json_name = "hbd_transferred"];
+
+  // @param {asset} hive_transferred - (HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
   required asset  hive_transferred = 5 [json_name = "hive_transferred"];
+
+  // @param {asset} vests_converted - (VESTS) sum of all sources of VESTS on account
   required asset  vests_converted = 6 [json_name = "vests_converted"];
+
+  // @param {asset} total_hive_from_vests - (HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
   required asset  total_hive_from_vests = 7 [json_name = "total_hive_from_vests"];
 }
