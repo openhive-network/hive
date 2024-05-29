@@ -5,12 +5,15 @@ package hive.protocol.buffers;
 /* There are the following custom operations: custom_operation, custom_json_operation and custom_binary (currently is disabled).
  * The operation: custom_operation provides a generic way to add higher level protocols on top of witness consensus operations.
  *
- * @param {string} required_auths
- * @param {number} id
- * @param {string} data
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/15_custom.md?ref_type=heads
  */
 message custom {
+  // @param {string} required_auths
   repeated string required_auths = 1 [json_name = "required_auths"];
+
+  // @param {number} id
   required uint32 id = 2;
+
+  // @param {string} data
   required string data = 3;
 }
