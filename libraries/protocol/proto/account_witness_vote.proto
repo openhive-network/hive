@@ -12,12 +12,16 @@ package hive.protocol.buffers;
  * is not executed in a HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, the votes are removed and the virtual operation:
  * expired_account_notification_operation is generated.
  *
- * @param {string} account
- * @param {string} witness - Witness account.
- * @param {bool} approve - To vote for the witness, the approve = true. To remove the vote, the approve = false.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/12_account_witness_vote.md?ref_type=heads
  */
 message account_witness_vote {
+  // @param {string} account
   required string account = 1;
+
+  // @param {string} witness - Witness account.
   required string witness = 2;
+
+  // @param {bool} approve - To vote for the witness, the approve = true. To remove the vote, the approve = false.
   required bool   approve = 3;
 }
+
