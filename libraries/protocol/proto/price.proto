@@ -13,12 +13,12 @@ package hive.protocol.buffers;
  * 1.25 USD us an asset specified as a qute
  *
  * can determine value of EUR against USD.
- *
- * @param {asset} base - Represents a value of the price object to be expressed relatively to quote asset.
- *                       Cannot have amount == 0 if you want to build valid price.
- * @param {asset} quote - represents an relative asset. Cannot have amount == 0, otherwise asertion fail.
  */
 message price {
+  // @param {asset} base - Represents a value of the price object to be expressed relatively to quote asset.
+  //                       Cannot have amount == 0 if you want to build valid price.
   required asset base = 1;
+
+  // @param {asset} quote - represents an relative asset. Cannot have amount == 0, otherwise asertion fail.
   required asset quote = 2;
 }
