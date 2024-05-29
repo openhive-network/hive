@@ -20,18 +20,24 @@ message update_proposal_extension {
  * change subject, permlink and {end_date} (using {extensions}).
  * In order to update the proposal parameters, all parameters should be entered.
  *
- * @param {number} proposal_id
- * @param {string} creator
- * @param {asset} daily_pay
- * @param {string} subject
- * @param {string} permlink
- * @param {update_proposal_extension} extensions
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/47_update_proposal.md?ref_type=heads
  */
 message update_proposal {
+  // @param {number} proposal_id
   required int64                     proposal_id = 1 [json_name = "proposal_id"];
+
+  // @param {string} creator
   required string                    creator = 2;
+
+  // @param {asset} daily_pay
   required asset                     daily_pay = 3 [json_name = "daily_pay"];
+
+  // @param {string} subject
   required string                    subject = 4;
+
+  // @param {string} permlinks
   required string                    permlink = 5;
+
+  // @param {update_proposal_extension} extensions
   repeated update_proposal_extension extensions = 6;
 }
