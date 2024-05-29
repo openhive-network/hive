@@ -11,22 +11,30 @@ package hive.protocol.buffers;
  * If there is a dispute regardless of expiration, the agent can release funds to either party
  * following whichever agreement was in place between the parties.
  *
- * @param {string} from_account - Account name.
- * @param {string} to_account - Account name.
- * @param {string} agent - Account name.
- * @param {string} who - The account that is attempting to release the funds.
- * @param {string} receiver - The account that should receive funds (might be {from}, might be {to}).
- * @param {number} escrow_id - Escrow indicator.
- * @param {asset} hbd_amount - The amount of HBD to release.
- * @param {asset} hive_amount - The amount of HIVE to release.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/29_escrow_release.md?ref_type=heads
  */
 message escrow_release {
+  // @param {string} from_account - Account name.
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - Account name.
   required string to_account = 2 [json_name = "to"];
+
+  // @param {string} agent - Account name.
   required string agent = 3;
+
+  // @param {string} who - The account that is attempting to release the funds.
   required string who = 4;
+
+  // @param {string} receiver - The account that should receive funds (might be {from}, might be {to}).
   required string receiver = 5;
+
+  // @param {number} escrow_id - Escrow indicator.
   required uint32 escrow_id = 6 [json_name = "escrow_id"];
+
+  // @param {asset} hbd_amount - The amount of HBD to release.
   required asset  hbd_amount = 7 [json_name = "hbd_amount"];
+
+  // @param {asset} hive_amount - The amount of HIVE to release.
   required asset  hive_amount = 8 [json_name = "hive_amount"];
 }
