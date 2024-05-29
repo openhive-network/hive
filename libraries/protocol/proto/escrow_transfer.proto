@@ -15,28 +15,38 @@ package hive.protocol.buffers;
  * If there is a dispute, the operation: escrow_dispute_operation should be used.
  * In case of the escrow releases, the operation: escrow_release_operation should be used.
  *
- * @param {string} from_account - Account name.
- * @param {string} to_account - Account name.
- * @param {string} agent - Account name.
- * @param {number} escrow_id - It is defined by the sender. It should be unique for { from }.
- * @param {asset} hbd_amount - Escrow amount.
- * @param {asset} hive_amount - Escrow amount.
- * @param {asset} fee - The fee amount depends on the agent. The fee is paid to the agent when approved.
- * @param {string} ratification_deadline - Time for approval for { to } and { agent }.
- *                                         If the escrow is not approved till { ratification_deadline },
- *                                         it will be rejected and all funds returned to { from }.
- * @param {string} escrow_expiration - See description of escrow_release_operation.
- * @param {string} json_meta - json string.
+ * Descritpion https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/27_escrow_transfer.md?ref_type=heads
  */
 message escrow_transfer {
+  // @param {string} from_account - Account name.
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - Account name.
   required string to_account = 2 [json_name = "to"];
+
+  // @param {string} agent - Account name.
   required string agent = 3;
+
+  // @param {number} escrow_id - It is defined by the sender. It should be unique for { from }.
   required uint32 escrow_id = 4 [json_name = "escrow_id"];
+
+  // @param {asset} hbd_amount - Escrow amount.
   required asset  hbd_amount = 5 [json_name = "hbd_amount"];
+
+  // @param {asset} hive_amount - Escrow amount.
   required asset  hive_amount = 6 [json_name = "hive_amount"];
+
+  // @param {asset} fee - The fee amount depends on the agent. The fee is paid to the agent when approved.
   required asset  fee = 7;
+
+  // @param {string} ratification_deadline - Time for approval for { to } and { agent }.
+  //                                         If the escrow is not approved till { ratification_deadline },
+  //                                         it will be rejected and all funds returned to { from }.
   required string ratification_deadline = 8 [json_name = "ratification_deadline"];
+
+  // @param {string} escrow_expiration - See description of escrow_release_operation.
   required string escrow_expiration = 9 [json_name = "escrow_expiration"];
+
+  // @param {string} json_meta - json string.
   required string json_meta = 10 [json_name = "json_meta"];
 }
