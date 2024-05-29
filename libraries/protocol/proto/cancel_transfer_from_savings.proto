@@ -4,10 +4,13 @@ package hive.protocol.buffers;
 
 /* Funds withdrawals from the savings can be canceled at any time before it is executed.
  *
- * @param {string} from_account
- * @param {number} request_id
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/34_cancel_transfer_from_savings.md?ref_type=heads
  */
 message cancel_transfer_from_savings {
+  // @param {string} from_account
   required string from_account = 1 [json_name = "from"];
+
+  // @param {number} request_id
   required uint32 request_id = 2 [json_name = "request_id"];
 }
+
