@@ -8,15 +8,17 @@ package hive.protocol.buffers;
  * Generated during block processing in batches for each active withdraw route (including implied
  * from_account(VESTS)->from_account(HIVE)) each time vesting withdrawal period passes.
  * Note: not generated for implied route when all funds were already distributed along explicit routes
- *
- * @param {string} from_account - user that activated power down
- * @param {string} to_account - target of vesting route (potentially the same as from_account - receiver of deposited)
- * @param {asset} withdraw - (VESTS) source amount
- * @param {asset} deposited - (HIVE or VESTS) [converted] target amount
  */
 message fill_vesting_withdraw {
+  // @param {string} from_account - user that activated power down
   required string from_account = 1 [json_name = "from_account"];
-  required string to_account = 2 [json_name = "to_account"]; 
+
+  // @param {string} to_account - target of vesting route (potentially the same as from_account - receiver of deposited)
+  required string to_account = 2 [json_name = "to_account"];
+
+  // @param {asset} withdraw - (VESTS) source amount
   required asset  withdrawn = 3;
+
+  //  @param {asset} deposited - (HIVE or VESTS) [converted] target amount
   required asset  deposited = 4;
 }
