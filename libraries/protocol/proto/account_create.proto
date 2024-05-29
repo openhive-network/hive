@@ -9,24 +9,32 @@ package hive.protocol.buffers;
  * The account that creates a new account pays a fee.
  * The fee amount is set by the witnesses.
  *
- * @param {asset} fee - Paid by creator. The witnesses decide the amount of the fee. Now, it is 3 HIVE.
- * @param {string} creator - An account that creates a new account.
- * @param {string} new_account_name - Valid account name may consist of many parts separated by a dot,
- *                                    total may have up to 16 characters, parts have to start from a letter,
- *                                    may be followed by numbers, or '-'.
- * @param {authority} owner
- * @param {authority} active
- * @param {authority} posting
- * @param {string} memo_key - Not authority, public memo key.
- * @param {string} json_metadata
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/09_account_create.md?ref_type=heads&plain=0&blame=1#2-parameters
  */
 message account_create {
+  // @param {asset} fee - Paid by creator. The witnesses decide the amount of the fee. Now, it is 3 HIVE.
   required asset     fee = 1;
+
+  // @param {string} creator - An account that creates a new account.
   required string    creator = 2;
+
+  // @param {string} new_account_name - Valid account name may consist of many parts separated by a dot,
+  //                                  total may have up to 16 characters, parts have to start from a letter,
+  //                                  may be followed by numbers, or '-'.
   required string    new_account_name = 3 [json_name = "new_account_name"];
+
+  // @param {authority} owner
   required authority owner = 4;
+
+  // @param {authority} active
   required authority active = 5;
+
+  //@param {authority} posting
   required authority posting = 6;
+
+  // @param {string} memo_key - Not authority, public memo key.
   required string    memo_key = 7 [json_name = "memo_key"];
+
+  // @param {string} json_metadata
   required string    json_metadata = 8 [json_name = "json_metadata"];
 }
