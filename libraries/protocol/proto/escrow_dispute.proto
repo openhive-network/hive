@@ -5,16 +5,21 @@ package hive.protocol.buffers;
 /* The operation  escrow_dispute_operation is used to raise the dispute. It may be used by { from } or { to } accounts.
  * If there is a dispute, only {agent} may release the funds.
  *
- * @param {string} from_account - Account name.
- * @param {string} to_account - Account name.
- * @param {string} agent - Account name.
- * @param {string} who - Account name. Either {to} or {agent}.
- * @param {number} escrow_id - Escrow identifier.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/28_escrow_dispute.md?ref_type=heads
  */
 message escrow_dispute {
+  // @param {string} from_account - Account name.
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - Account name.
   required string to_account = 2 [json_name = "to"];
+
+  // @param {string} agent - Account name.
   required string agent = 3;
+
+  // @param {string} who - Account name. Either {to} or {agent}.
   required string who = 4;
+
+  // @param {number} escrow_id - Escrow identifier.
   required uint32 escrow_id = 5 [json_name = "escrow_id"];
 }
