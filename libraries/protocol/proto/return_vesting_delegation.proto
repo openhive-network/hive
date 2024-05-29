@@ -7,11 +7,11 @@ package hive.protocol.buffers;
 /* Related to delegate_vesting_shares_operation.
  * Generated during block processing when process of returning removed or lowered vesting delegation is finished (after return period
  * passed) and delegator received back his vests.
- *
- * @param {string} account - delegator (receiver of vesting_shares)
- * @param {asset} vesting_shares - (VESTS) returned delegation
  */
 message return_vesting_delegation {
+  // @param {string} account - delegator (receiver of vesting_shares)
   required string account = 1;
+
+  // @param {asset} vesting_shares - (VESTS) returned delegation
   required asset  vesting_shares = 2 [json_name = "vesting_shares"];
 }
