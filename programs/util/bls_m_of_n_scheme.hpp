@@ -14,6 +14,21 @@ struct bls_m_of_n_scheme: public scheme
 {
   uint32_t nr_signers = 0;
 
+  std::chrono::time_point<std::chrono::high_resolution_clock> time_start;
+
+  void start_time()
+  {
+    time_start = std::chrono::high_resolution_clock::now();
+  }
+
+  void end_time( const std::string& message )
+  {
+    auto _interval = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now() - time_start ).count();
+    std::cout<<message<<std::endl;
+    std::cout<<_interval<<"[us]"<<std::endl;
+    std::cout<<( _interval / 1'000 )<<"[ms]"<<std::endl<<std::endl;
+  }
+
   void make_keys()
   {
     for( size_t i = 0; i < nr_signatures; ++i )
@@ -120,6 +135,7 @@ struct bls_m_of_n_scheme: public scheme
 
   bool verify( const std::pair<G1Element, G2Element>& partial_signature_and_public_key, const G1Element& aggregated_public_key )
   {
+    start_time();
     /*
       Final verification. Here an example for 2 signatures.
       e(G, S’) = e(P’, H(P, m))⋅e(P, H(P, 1)+H(P, 3))
@@ -141,25 +157,40 @@ struct bls_m_of_n_scheme: public scheme
     assert( _verify_pub_keys.size() == _verify_message.size() );
     assert( _verify_pub_keys.size() == nr_signers + 1 );
 
+    end_time( "verify: prepare params" );
     //bool _result = AugSchemeMPL().AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
-    return CoreMPL(AugSchemeMPL::CIPHERSUITE_ID).AggregateVerify( _verify_pub_keys, _verify_message, partial_signature_and_public_key.second );
+    start_time();
+    bool _result = CoreMPL(AugSchemeMPL::CIPHERSUITE_ID).AggregateVerify( _verify_pub_keys, _verify_message, partial_signature_and_public_key.second );
+    end_time( "verify" );
+    return _result;
   }
 
   void run()
   {
+    start_time();
     G1Element _aggregated_public_key = aggregate( public_keys );
+    end_time( "aggregate" );
 
+    start_time();
     std::vector<G2Element> _membership_keys = create_membership_keys( private_keys, _aggregated_public_key );
+    end_time( "create_membership_keys" );
 
+    start_time();
     check_membership_keys( _membership_keys, _aggregated_public_key );
+    end_time( "check_membership_keys" );
 
+    start_time();
     std::vector<G2Element> _signatures = sign( private_keys, _membership_keys, _aggregated_public_key );
+    end_time( "sign" );
 
+    start_time();
     std::pair<G1Element, G2Element> _partial_signature_and_public_key = create_partial_signature_and_public_key( public_keys, _signatures );
+    end_time( "create_partial_signature_and_public_key" );
 
+    start_time();
     bool _verification = verify( _partial_signature_and_public_key, _aggregated_public_key );
 
-    std::cout<<"n of m: "<<_verification<<std::endl;
+    std::cout<<"***** N-of-M: "<<_verification<<" *****"<<std::endl;
   }
 
 };
