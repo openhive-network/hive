@@ -14,16 +14,20 @@ package hive.protocol.buffers;
  * If the operation account_witness_vote_operation or account_witness_proxy_operation or update_proposal_votes_operation
  * is not executed in HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, the votes are removed and the virtual operation:
  * expired_account_notification_operation is generated.
- *
- * @param {string} voter - Account name.
- * @param {number} proposal_ids - IDs of proposals to vote for/against. Nonexisting IDs are ignored.
- * @param {bool} approve - To vote for the proposal, the approve = true.
- *                         To remove the vote, the approve = false.
- * @param {future_extensions} extensions
+ * 
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/45_update_proposal_votes.md?ref_type=heads
  */
 message update_proposal_votes {
+  // @param {string} voter - Account name.
   required string            voter = 1;
+
+  // @param {number} proposal_ids - IDs of proposals to vote for/against. Nonexisting IDs are ignored.
   repeated int64             proposal_ids = 2 [json_name = "proposal_ids"];
+
+  // @param {bool} approve - To vote for the proposal, the approve = true.
+  //                         To remove the vote, the approve = false.
   required bool              approve = 3;
+
+  // @param {future_extensions} extensions
   repeated future_extensions extensions = 4;
 }
