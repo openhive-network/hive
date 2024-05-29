@@ -7,6 +7,8 @@ import "future_extensions.proto";
 package hive.protocol.buffers;
 
 /* Deprecated.
+ *
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/41_account_create_with_delegation.md?ref_type=heads
  */
 message account_create_with_delegation {
   required asset             fee = 1;
