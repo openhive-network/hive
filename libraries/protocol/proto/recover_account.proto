@@ -13,16 +13,20 @@ package hive.protocol.buffers;
  * the old one (maybe compromised) and the new one (see request_account_recovery).
  * There must be at least 60 minutes (HIVE_OWNER_UPDATE_LIMIT) between executions of operation recover_account_operation.
  *
- * @param {string} account_to_recover - The account to be recovered.
- * @param {authority} new_owner_authority - The new owner authority as specified in the request account recovery operation.
- * @param {authority} recent_owner_authority - A previous owner's authority, may be compromised.
- *                                             If the operation change_recovery_account_operation was generated,
- *                                             it has not been yet 30 days since its creation.
- * @param {future_extensions} extensions - Not currently used.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/25_recover_account.md?ref_type=heads
  */
 message recover_account {
+  // @param {string} account_to_recover - The account to be recovered.
   required string            account_to_recover = 1 [json_name = "account_to_recover"];
+
+  // @param {authority} new_owner_authority - The new owner authority as specified in the request account recovery operation.
   required authority         new_owner_authority = 2 [json_name = "new_owner_authority"];
+
+  // @param {authority} recent_owner_authority - A previous owner's authority, may be compromised.
+  //                                             If the operation change_recovery_account_operation was generated,
+  //                                             it has not been yet 30 days since its creation.
   required authority         recent_owner_authority = 3 [json_name = "recent_owner_authority"];
+
+  // @param {future_extensions} extensions - Not currently used.
   repeated future_extensions extensions = 4;
 }
