@@ -11,15 +11,19 @@ package hive.protocol.buffers;
  * Assuming an account can be recovered quickly, loss in such situations can be kept to a minimum
  * Additionally for keeping Hive Dollars on the savings balance, the interests are calculated.
  *
- * @param {string} from_account - The account the funds are coming from.
- * @param {string} to_account - The account the funds are going to.
- *                              The funds may be transferred to someone else savings balance.
- * @param {asset} amount - The allowed currency: HIVE and HBD, amount > 0.
- * @param {string} memo - Have to be UTF8, must be shorter than 2048.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/32_transfer_to_savings.md?ref_type=heads
  */
 message transfer_to_savings {
+  // @param {string} from_account - The account the funds are coming from.
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - The account the funds are going to.
+  //                              The funds may be transferred to someone else savings balance.
   required string to_account = 2 [json_name = "to"];
+
+  // @param {asset} amount - The allowed currency: HIVE and HBD, amount > 0.
   required asset  amount = 3;
+
+  // @param {string} memo - Have to be UTF8, must be shorter than 2048.
   required string memo = 4;
 }
