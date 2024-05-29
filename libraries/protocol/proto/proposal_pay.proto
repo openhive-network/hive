@@ -7,15 +7,17 @@ package hive.protocol.buffers;
 /* Related to create_proposal_operation.
  * Generated during block processing during proposal maintenance in batches
  * for each proposal that is chosen and receives funding.
- *
- * @param {number} proposal_id - id of chosen proposal
- * @param {string} receiver - account designated to receive funding (receiver of payment)
- * @param {string} payer - treasury account, source of payment
- * @param {asset} payment - (HBD) paid amount
  */
 message proposal_pay {
+  // @param {number} proposal_id - id of chosen proposal
   required uint32 proposal_id = 1 [json_name = "proposal_id"];
+
+  // @param {string} receiver - account designated to receive funding (receiver of payment)
   required string receiver = 2;
+
+  // @param {string} payer - treasury account, source of payment
   required string payer = 3;
+
+  // @param {asset} payment - (HBD) paid amount
   required asset  payment = 4;
 }
