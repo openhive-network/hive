@@ -14,22 +14,32 @@ package hive.protocol.buffers;
  * Every hour all active proposals are processed and taking into consideration a current number of votes payments are done.
  * Accounts can create/remove votes anytime.
  *
- * @param {string} creator
- * @param {string} receiver
- * @param {string} start_date
- * @param {string} end_date
- * @param {asset} daily_pay
- * @param {string} subject
- * @param {string} permlink
- * @param {future_extensions} extensions
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/44_create_proposal.md?ref_type=heads
  */
 message create_proposal {
+  // @param {string} creator
   required string            creator = 1;
+
+  // @param {string} receiver
   required string            receiver = 2;
+
+  // @param {string} start_date
   required string            start_date = 3 [json_name = "start_date"];
+
+  // @param {asset} end_date
   required string            end_date = 4 [json_name = "end_date"];
+
+  // @param {asset} daily_pay
   required asset             daily_pay = 5 [json_name = "daily_pay"];
+
+  // @param {string} subject
   required string            subject = 6;
+
+  // @param {string} permlink
   required string            permlink = 7;
+
+   // @param {future_extensions} extensions
   repeated future_extensions extensions = 8;
 }
+
+
