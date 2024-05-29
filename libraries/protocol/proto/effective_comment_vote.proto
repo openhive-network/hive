@@ -7,21 +7,26 @@ package hive.protocol.buffers;
 /* Related to vote_operation.
  * Generated every time vote is cast for the first time or edited, but only as long as it is effective, that is,
  * the target comment was not yet cashed out.
- *
- * @param {string} voter - account that casts a vote
- * @param {string} author - author of comment voted on
- * @param {string} permlink - permlink of comment voted on
- * @param {number} weight - weight of vote depending on when vote was cast and with what power
- * @param {number} rshares - power of the vote
- * @param {number} total_vote_weight - sum of all vote weights on the target comment in the moment of casting current vote
- * @param {asset} pending_payout - (HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
  */
 message effective_comment_vote {
+  // @param {string} voter - account that casts a vote
   required string voter = 1;
+
+  // @param {string} author - author of comment voted on
   required string author = 2;
+
+  // @param {string} permlink - permlink of comment voted on
   required string permlink = 3;
+
+  // @param {number} weight - weight of vote depending on when vote was cast and with what power
   required uint64 weight = 4;
+
+  // @param {number} rshares - power of the vote
   required int64  rshares = 5;
+
+  // @param {number} total_vote_weight - sum of all vote weights on the target comment in the moment of casting current vote
   required uint64 total_vote_weight = 6 [json_name = "total_vote_weight"];
+
+  // @param {asset} pending_payout - (HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
   required asset  pending_payout = 7 [json_name = "pending_payout"];
 }
