@@ -6,11 +6,11 @@ package hive.protocol.buffers;
  * Generated when delete_comment_operation was executed but ignored.
  * Note: prior to HF19 it was possible to execute delete on comment that had net positive votes. Such operation was ignored.
  * This is the moment this vop is generated.
- *
- * @param {string} author - author of attempted-delete comment
- * @param {string} permlink - permlink of attempted-delete comment
  */
 message ineffective_delete_comment {
+  // @param {string} author - author of attempted-delete comment
   required string author = 1;
+
+  // @param {string} permlink - permlink of attempted-delete comment
   required string permlink = 2;
 }
