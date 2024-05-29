@@ -4,13 +4,15 @@ package hive.protocol.buffers;
 
 /* Related to change_recovery_account_operation.
  * Generated during block processing after wait period for the recovery account change has passed and the change became active.
- *
- * @param {string} account - used that requested recovery accout change
- * @param {string} old_recovery_account - previous recovery account
- * @param {string} new_recovery_account - new recovery account
  */
 message changed_recovery_account {
+  // @param {string} account - used that requested recovery accout change
   required string account = 1;
+
+  // @param {string} old_recovery_account - previous recovery account
   required string old_recovery_account = 2 [json_name = "old_recovery_account"];
+
+  // @param {string} new_recovery_account - new recovery account
   required string new_recovery_account = 3 [json_name = "new_recovery_account"];
 }
+
