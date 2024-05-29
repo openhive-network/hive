@@ -8,13 +8,14 @@ package hive.protocol.buffers;
  * Generated when operation modified HBD balance and account received interest payment.
  * Interest is stored in related balance (liquid when liquid was modified, savings when savings was modified).
  * Note: since HF25 interest is not calculated nor paid on liquid balance.
- *
- * @param {string} owner - user that had his HBD balance modified (receiver of interest)
- * @param {asset} interest - (HBD) amount of interest paid
- * @param {bool} is_saved_into_hbd_balance - true when liquid balance was modified (not happening after HF25)
  */
 message interest {
+  // @param {string} owner - user that had his HBD balance modified (receiver of interest)
   required string owner = 1;
+
+  // @param {asset} interest - (HBD) amount of interest paid
   required asset  interest = 2;
+
+  // @param {bool} is_saved_into_hbd_balance - true when liquid balance was modified (not happening after HF25)
   required bool   is_saved_into_hbd_balance = 3 [json_name = "is_saved_into_hbd_balance"];
 }
