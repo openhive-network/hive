@@ -12,14 +12,18 @@ package hive.protocol.buffers;
  * - pinned
  * - follow
  *
- * @param {string} required_auths
- * @param {string} required_posting_auths
- * @param {string} id - Must be less than 32 characters long.
- * @param {string} json - Must be a proper utf8 JSON string.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/18_custom_json.md?ref_type=heads
  */
 message custom_json {
+  // @param {string} required_auths
   repeated string required_auths = 1 [json_name = "required_auths"];
+
+  // @param {string} required_posting_auths
   repeated string required_posting_auths = 2 [json_name = "required_posting_auths"];
+
+  // @param {string} id - Must be less than 32 characters long.
   required string id = 3;
+
+  // @param {string} json - Must be a proper utf8 JSON string.
   required string json = 4;
 }
