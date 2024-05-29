@@ -10,17 +10,20 @@ package hive.protocol.buffers;
  * Note: in case of accumulation of very big amount of recurrent transfers to be executed in particular block, some
  * are going to be postponed to next block(s) and so will be generation of this vop.
  * @see failed_recurrent_transfer
- *
- * @param {string} from_account - user that initiated the transfer (source of amount)
- * @param {string} to_account - user that is target of transfer (receiver of amount)
- * @param {asset} amount - (HIVE of HBD) amount transferred in current iteration
- * @param {string} memo - memo attached to the transfer
- * @param {number} remaining_executions - number of remaining pending transfers
  */
 message fill_recurrent_transfer {
+  // @param {string} from_account - user that initiated the transfer (source of amount)
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - user that is target of transfer (receiver of amount)
   required string to_account = 2 [json_name = "to"];
+
+  // @param {asset} amount - (HIVE of HBD) amount transferred in current iteration
   required asset  amount = 3;
+
+  // @param {string} memo - memo attached to the transfer
   required string memo = 4;
+
+  // @param {number} remaining_executions - number of remaining pending transferss
   required uint32 remaining_executions = 5 [json_name = "remaining_executions"];
 }
