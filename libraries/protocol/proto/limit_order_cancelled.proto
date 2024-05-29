@@ -9,13 +9,14 @@ package hive.protocol.buffers;
  * filling limit order (second or third operation) when, after filling most of it, remaining funds are too small (would round
  * to zero when sold). Finally also generated during block processing for orders that reached expiration time without being filled.
  * @see fill_order
- *
- * @param {string} seller - user that placed an order (receiver of amount_back)
- * @param {number} orderid - id of the order
- * @param {asset} amount_back - (HIVE or HBD) remaining funds from original order that were not traded until cancellation
  */
 message limit_order_cancelled {
+  // @param {string} seller - user that placed an order (receiver of amount_back)
   required string seller = 1;
+
+  // @param {number} orderid - id of the order
   required uint32 orderid = 2;
+
+  // @param {asset} amount_back - (HIVE or HBD) remaining funds from original order that were not traded until cancellation
   required asset  amount_back = 3 [json_name = "amount_back"];
 }
