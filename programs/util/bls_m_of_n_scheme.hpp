@@ -126,17 +126,19 @@ struct bls_m_of_n_scheme: public scheme
     _verify_message.push_back( _merge_pk_message( _aggregated_public_key, content ) );
 
     //e(P, H(P, 1)+H(P, 3))
-    _verify_pub_keys.push_back( _aggregated_public_key );
-    vector<uint8_t> _sum_messages;
+    //vector<uint8_t> _sum_messages;
     for( size_t i = 0; i < nr_signers; ++i )
     {
-      std::vector<uint8_t> _tmp = _merge_pk_message_2( _aggregated_public_key, i );
-      std::copy( _tmp.begin(), _tmp.end(), std::back_inserter( _sum_messages ) );
+      _verify_pub_keys.push_back( _aggregated_public_key );
+      _verify_message.push_back( _merge_pk_message_2( _aggregated_public_key, i ) );
+
+      //std::vector<uint8_t> _tmp = _merge_pk_message_2( _aggregated_public_key, i );
+      //std::copy( _tmp.begin(), _tmp.end(), std::back_inserter( _sum_messages ) );
     }
-    _verify_message.push_back( _sum_messages );
+    //_verify_message.push_back( _sum_messages );
 
     assert( _verify_pub_keys.size() == _verify_message.size() );
-    assert( _verify_pub_keys.size() == 2 );
+    //assert( _verify_pub_keys.size() == 2 );
 
     //bool _result = AugSchemeMPL().AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
     bool _result = CoreMPL(AugSchemeMPL::CIPHERSUITE_ID).AggregateVerify( _verify_pub_keys, _verify_message, _final_signature );
