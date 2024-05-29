@@ -4,9 +4,8 @@ package hive.protocol.buffers;
 
 /* Related to block processing.
  * Generated during block processing every time new hardfork is activated. Many related vops can follow.
- *
- * @param {number} hardfork_id - number of hardfork
  */
 message hardfork {
+  //  @param {number} hardfork_id - number of hardfork
   required uint32 hardfork_id = 1 [json_name = "hardfork_id"];
 }
