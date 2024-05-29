@@ -9,25 +9,33 @@ package hive.protocol.buffers;
  * Pending claimed accounts (see claim_account_operation).
  * After executing the operation create_claimed_account_operation, a new account is created.
  *
- * @param {string} creator - An account who create a new account.
- * @param {string} new_account_name - Account name.
- *                                    Valid account name may consist of many parts separated by a dot,
- *                                    total may have up to 16 characters, parts have to start from a letter,
- *                                    may be followed by numbers, or “-“.
- * @param {authority} owner
- * @param {authority} active
- * @param {authority} posting
- * @param {string} memo_key
- * @param {string} json_metadata - Json string.
- * @param {future_extensions} extensions - Not currently used.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/23_create_claimed_account.md?ref_type=heads
  */
 message create_claimed_account {
+  // @param {string} creator - An account who create a new account.
   required string            creator = 1;
+
+  // @param {string} new_account_name - Account name.
+  //                                    Valid account name may consist of many parts separated by a dot,
+  //                                    total may have up to 16 characters, parts have to start from a letter,
+  //                                    may be followed by numbers, or “-“.
   required string            new_account_name = 2 [json_name = "new_account_name"];
+
+  // @param {authority} owner
   required authority         owner = 3;
+
+  // @param {authority} active
   required authority         active = 4;
+
+  // @param {authority} posting
   required authority         posting = 5;
+
+  // @param {string} memo_key
   required string            memo_key = 6 [json_name = "memo_key"];
+
+  // @param {string} json_metadata - Json string.
   required string            json_metadata = 7 [json_name = "json_metadata"];
+
+  // @param {future_extensions} extensions - Not currently used.
   repeated future_extensions extensions = 8;
 }
