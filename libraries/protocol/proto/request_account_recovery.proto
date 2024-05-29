@@ -37,16 +37,20 @@ package hive.protocol.buffers;
  * The operation: request_account_recovery is valid HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD hours and
  * if after HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD  hours there is no response (operation: recover_account_operation) it is expired.
  *
- * @param {string} recovery_account - The account that may create a request for account recovery.
- *                                    It is important to keep it actual.
- * @param {string} account_to_recover - The account to be recovered.
- * @param {authority} new_owner_authority - The new owner authority – the public, not private key.
- *                                          The new authority should be satisfiable.
- * @param {future_extensions} extensions - Not currently used.
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/24_request_account_recovery.md?ref_type=heads
  */
 message request_account_recovery {
+  // @param {string} recovery_account - The account that may create a request for account recovery.
+  //                                    It is important to keep it actual.
   required string            recovery_account = 1 [json_name = "recovery_account"];
+
+  // @param {string} account_to_recover - The account to be recovered.
   required string            account_to_recover = 2 [json_name = "account_to_recover"];
+
+  // @param {authority} new_owner_authority - The new owner authority – the public, not private key.
+  //                                          The new authority should be satisfiable.
   required authority         new_owner_authority = 3 [json_name = "new_owner_authority"];
+
+  // @param {future_extensions} extensions - Not currently used.
   repeated future_extensions extensions = 4;
 }
