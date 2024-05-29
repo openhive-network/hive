@@ -8,11 +8,11 @@ package hive.protocol.buffers;
  * Generated during block processing to indicate reward paid to the market makers on internal HIVE<->HBD market.
  * No longer active after HF12.
  * @see fill_order_operation
- *
- * @param {string} owner - market maker (receiver of payout)
- * @param {asset} payout - (HIVE) reward for provided liquidity
  */
 message liquidity_reward {
+  // @param {string} owner - market maker (receiver of payout)
   required string owner = 1;
+
+  // @param {asset} payout - (HIVE) reward for provided liquidity
   required asset  payout = 2;
 }
