@@ -10,21 +10,26 @@ package hive.protocol.buffers;
  * @see curation_reward_operation
  * @see comment_benefactor_reward_operation
  * @see author_reward_operation
- *
- * @param {string} author - author of the comment
- * @param {string} permlink - permlink of the comment
- * @param {asset} payout - (HBD) total value of comment reward recalculated to HBD
- * @param {number} author_rewards - (HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
- * @param {asset} total_payout_value - (HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
- * @param {asset} curator_payout_value - (HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
- * @param {asset} beneficiary_payout_value - (HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
  */
 message comment_reward {
+  // @param {string} author - author of the comment
   required string author = 1;
+
+  // @param {string} permlink - permlink of the comment
   required string permlink = 2;
+
+  // @param {asset} payout - (HBD) total value of comment reward recalculated to HBD
   required asset  payout = 3;
+
+  // @param {number} author_rewards - (HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
   required int64  author_rewards = 4 [json_name = "author_rewards"];
+
+  // @param {asset} total_payout_value - (HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
   required asset  total_payout_value = 5 [json_name = "total_payout_value"];
+
+  // @param {asset} curator_payout_value - (HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
   required asset  curator_payout_value = 6 [json_name = "curator_payout_value"];
+
+  // @param {asset} beneficiary_payout_value - (HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
   required asset  beneficiary_payout_value = 7 [json_name = "beneficiary_payout_value"];
 }
