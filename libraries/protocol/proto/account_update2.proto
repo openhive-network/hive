@@ -34,28 +34,37 @@ package hive.protocol.buffers;
  * 'account_name_1', weight = 1
  * The above settings mean that at least two signatures are needed to post on behalf of this account.
  *
- * @param {string} account - Account name, it cannot be updated.
- * @param {authority} owner - Optional. In order to update the {owner}, the owner authority is required.
- *                            It may be changed 2 times per hour.
- *                            If a user provides a new authority, the old one will be deleted.
- * @param {authority} active - Optional. In order to update the {active}, the active authority is required.
- *                             If a user provides a new authority, the old one will be deleted.
- * @param {authority} posting - Optional. In order to update the {posting}, the active authority is required.
- *                              If a user provides a new authority, the old one will be deleted.
- * @param {string} memo_key - Optional. In order to update the {memo_key}, the active authority is required.
- *                            If a user provides a new key, the old one will be deleted.
- * @param {string} json_metadata - json_string; In order to update the {json_metadata}, the active authority is required.
- * @param {string} posting_json_metadata - json_string; In order to update the { posting_json_metadata },
- *                                         the posting authority is required.
- * @param {future_extensions} extensions
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/43_account_update2.md?ref_type=heads
  */
 message account_update2 {
+  // @param {string} account - Account name, it cannot be updated.
   required string            account = 1;
+
+  // @param {authority} owner - Optional. In order to update the {owner}, the owner authority is required.
+  //                            It may be changed 2 times per hour.
+  //                            If a user provides a new authority, the old one will be deleted.
   optional authority         owner = 2;
+
+  // @param {authority} active - Optional. In order to update the {active}, the active authority is required.
+  //                             If a user provides a new authority, the old one will be deleted.
   optional authority         active = 3;
+
+  // @param {authority} posting - Optional. In order to update the {posting}, the active authority is required.
+  //                              If a user provides a new authority, the old one will be deleted.
   optional authority         posting = 4;
+
+  // @param {string} memo_key - Optional. In order to update the {memo_key}, the active authority is required.
+  //                            If a user provides a new key, the old one will be deleted.
   optional string            memo_key = 5 [default = "STM1111111111111111111111111111111114T1Anm", json_name = "memo_key"];
+
+  // @param {string} json_metadata - json_string; In order to update the {json_metadata}, the active authority is required.
   required string            json_metadata = 6 [json_name = "json_metadata"];
+
+  // @param {string} posting_json_metadata - json_string; In order to update the { posting_json_metadata },
+  //                                         the posting authority is required.
   required string            posting_json_metadata = 7 [json_name = "posting_json_metadata"];
+
+  // @param {future_extensions} extensions
   repeated future_extensions extensions = 8;
 }
+
