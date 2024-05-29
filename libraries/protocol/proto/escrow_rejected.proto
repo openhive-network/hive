@@ -9,21 +9,26 @@ package hive.protocol.buffers;
  * It can happen with explicit rejection with use of first operation. Can also happen during block processing when either
  * agent or to account failed to approve before ratification deadline.
  * @see escrow_approved
- *
- * @param {string} from_account - user that initiated escrow transfer (receiver of all the funds)
- * @param {string} to_account - user that was target of cancelled escrow transfer
- * @param {string} agent - user that was designated as agent of cancelled escrow transfer
- * @param {number} escrow_id - id of cancelled escrow transfer
- * @param {asset} hbd_amount - (HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
- * @param {asset} hive_amount - (HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
- * @param {asset} fee - (HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
  */
 message escrow_rejected {
+  // @param {string} from_account - user that initiated escrow transfer (receiver of all the funds)
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - user that was target of cancelled escrow transfer
   required string to_account = 2 [json_name = "to"];
+
+  // @param {string} agent - user that was designated as agent of cancelled escrow transfer
   required string agent = 3;
+
+  // @param {number} escrow_id - id of cancelled escrow transfer
   required uint32 escrow_id = 4 [json_name = "escrow_id"];
+
+  // @param {asset} hbd_amount - (HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   required asset  hbd_amount = 5 [json_name = "hbd_amount"];
+
+  // @param {asset} hive_amount - (HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   required asset  hive_amount = 6 [json_name = "hive_amount"];
+
+  // @param {asset} fee - (HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   required asset  fee = 7;
 }
