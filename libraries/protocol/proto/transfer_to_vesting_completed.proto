@@ -9,15 +9,17 @@ package hive.protocol.buffers;
  * Note: power up immediately increases mana regeneration and vote power for comments, but there is a grace period before
  * it activates as governance vote power.
  * @see delayed_voting
- *
- * @param {string} from_account - account that executed power up (source of hive_vested)
- * @param {string} to_account - account that gets power up (receiver of vesting_shares_received)
- * @param {asset} hive_vested - (HIVE) liquid funds being turned into VESTS
- * @param {asset} vesting_shares_received - (VESTS) result of power up
  */
 message transfer_to_vesting_completed {
+  // @param {string} from_account - account that executed power up (source of hive_vested)
   required string from_account = 1 [json_name = "from_account"];
+
+  // @param {string} to_account - account that gets power up (receiver of vesting_shares_received)
   required string to_account = 2 [json_name = "to_account"];
+
+  // @param {asset} hive_vested - (HIVE) liquid funds being turned into VESTS
   required asset  hive_vested = 3 [json_name = "hive_vested"];
+
+  // @param {asset} vesting_shares_received - (VESTS) result of power up
   required asset  vesting_shares_received = 4 [json_name = "vesting_shares_received"];
 }
