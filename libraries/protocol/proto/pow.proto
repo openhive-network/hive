@@ -4,6 +4,8 @@ import "legacy_chain_properties.proto";
 
 package hive.protocol.buffers;
 
+// Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/14_pow.md?ref_type=heads
+
 message pow_work {
   required string worker = 1;
   required string input = 2;
