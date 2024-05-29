@@ -6,12 +6,15 @@ package hive.protocol.buffers;
 
 /* Using operation remove_proposal_operation, a user may remove proposals specified by given IDs.
  *
- * @param {string} proposal_owner
- * @param {number} proposal_ids
- * @param {future_extensions} extensions
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/46_remove_proposal.md?ref_type=heads
  */
 message remove_proposal {
+  // @param {string} proposal_owner
   required string            proposal_owner = 1 [json_name = "proposal_owner"];
+
+  // @param {number} proposal_ids
   repeated int64             proposal_ids = 2 [json_name = "proposal_ids"];
+
+  // @param {future_extensions} extensions
   repeated future_extensions extensions = 3;
 }
