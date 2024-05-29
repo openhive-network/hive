@@ -7,17 +7,20 @@ package hive.protocol.buffers;
 /* Related to transfer_from_savings_operation.
  * Generated during block processing after savings withdraw time has passed and requested amount
  * was transfered from savings to liquid balance.
- *
- * @param {string} from_account - user that initiated transfer from savings
- * @param {string} to_account - user that was specified to receive funds (receiver of amount)
- * @param {asset} amount - (HIVE or HBD) funds transfered from savings
- * @param {number} request_id - id of transfer request
- * @param {string} memo - memo attached to transfer request
  */
 message fill_transfer_from_savings {
+  // @param {string} from_account - user that initiated transfer from savings
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - user that was specified to receive funds (receiver of amount)
   required string to_account = 2 [json_name = "to"];
+
+  // @param {asset} amount - (HIVE or HBD) funds transfered from savings
   required asset  amount = 3;
+
+  // @param {number} request_id - id of transfer request
   required uint32 request_id = 4 [json_name = "request_id"];
+
+  // @param {string} memo - memo attached to transfer request
   required string memo = 5;
 }
