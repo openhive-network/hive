@@ -6,10 +6,12 @@ package hive.protocol.buffers;
  * This operation is used in the process of block_validity_vote
  * (see https://hive.blog/hive-139531/@blocktrades/one-block-irreversibility-for-delegated-proof-of-stake-dpos).
  *
- * @param {string} witness
- * @param {string} block_id
+ * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/16_witness_block_approve.md?ref_type=heads
  */
 message witness_block_approve {
+  // @param {string} witness
   required string witness = 1;
+
+  // @param {string} block_id
   required string block_id = 2 [json_name = "block_id"];
 }
