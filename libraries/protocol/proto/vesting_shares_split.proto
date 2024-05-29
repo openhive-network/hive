@@ -7,14 +7,15 @@ package hive.protocol.buffers;
 /* Related to hardfork 1.
  * Generated for every account with nonzero vesting balance.
  * Note: due to too small precision of VESTS asset it was increased by 6 digits, meaning all underlying
- * amounts had to be multiplied by million.
- *
- * @param {string} owner - affected account (source of vesting_shares_before_split and receiver of vesting_shares_after_split)
- * @param {asset} vesting_shares_before_split - (VESTS) balance before split
- * @param {asset} vesting_shares_after_split - (VESTS) balance after split
+ * amounts had to be multiplied by million.s
  */
 message vesting_shares_split {
+  // @param {string} owner - affected account (source of vesting_shares_before_split and receiver of vesting_shares_after_split)
   required string owner = 1;
+
+  // @param {asset} vesting_shares_before_split - (VESTS) balance before split
   required asset  vesting_shares_before_split = 2 [json_name = "vesting_shares_before_split"];
+
+  // @param {asset} vesting_shares_after_split - (VESTS) balance after split
   required asset  vesting_shares_after_split = 3 [json_name = "vesting_shares_after_split"];
 }
