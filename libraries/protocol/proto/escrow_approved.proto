@@ -7,17 +7,20 @@ package hive.protocol.buffers;
 /* Related to escrow_approve_operation.
  * Generated when both agent and to accounts approved pending escrow transfer (agent receives fee).
  * @see escrow_rejected
- *
- * @param {string} from_account - user that initiated escrow transfer
- * @param {string} to_account - user that is target of pending escrow transfer
- * @param {string} agent - user that is an agent of pending escrow transfer (receiver of fee)
- * @param {number} escrow_id - id of escrow transfer
- * @param {asset} fee - (HIVE of HBD) fee paid to agent
  */
 message escrow_approved {
+  // @param {string} from_account - user that initiated escrow transfer
   required string from_account = 1 [json_name = "from"];
+
+  // @param {string} to_account - user that is target of pending escrow transfer
   required string to_account = 2 [json_name = "to"];
+
+  // @param {string} agent - user that is an agent of pending escrow transfer (receiver of fee)
   required string agent = 3;
+
+  // @param {number} escrow_id - id of escrow transfer
   required uint32 escrow_id = 4 [json_name = "escrow_id"];
+
+  // @param {asset} fee - (HIVE of HBD) fee paid to agent
   required asset  fee = 5;
 }
