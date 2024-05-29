@@ -7,11 +7,11 @@ package hive.protocol.buffers;
 /* Related to pow_operation and pow2_operation.
  * Generated every time one of above operations is executed (up to HF16).
  * Note: pow2_operation could be executed up to HF17 but mining rewards were stopped after HF16.
- *
- * @param {string} worker - (potentially new) witness that calculated PoW (receiver of reward)
- * @param {asset} reward - (VESTS or HIVE) reward for work (HIVE only during first 30 days after genesis)
  */
 message pow_reward {
+  // @param {string} worker - (potentially new) witness that calculated PoW (receiver of reward)
   required string worker = 1;
+
+  // @param {asset} reward - (VESTS or HIVE) reward for work (HIVE only during first 30 days after genesis)
   required asset  reward = 2;
 }
