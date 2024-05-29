@@ -43,43 +43,47 @@ sudo -n chmod a+rw "$LOG_FILE"
 # shellcheck source=../scripts/common.sh
 source "$SCRIPTSDIR/common.sh"
 
-
+# shellcheck disable=SC2317
 cleanup () {
   echo "Performing cleanup...."
-  hived_pid=$(pidof 'hived' || true)
-  if [[ -n "${hived_pid}" ]];
-  then
-    echo "Hived pid: $hived_pid"
+  local hived_pid
+  hived_pid=$(pidof 'hived' || echo '') # pidof returns 1 if hived isn't running, which crashes the script
+  echo "Hived pid: $hived_pid"
 
-    sudo -n kill -INT $hived_pid
+  jobs -l
 
-    echo "Waiting for hived finish..."
-    tail --pid=$hived_pid -f /dev/null || true
-    echo "Hived finish done."
-  fi
+  [[ -z "$hived_pid" ]] || sudo -n kill -INT "$hived_pid"
+
+  echo "Waiting for hived finish..."
+  [[ -z "$hived_pid" ]] || tail --pid="$hived_pid" -f /dev/null || true
+  echo "Hived finish done."
 
   echo "Cleanup actions done."
 }
-
-# What can be a difference to catch EXIT instead of SIGINT ? Found here: https://gist.github.com/CMCDragonkai/e2cde09b688170fb84268cafe7a2b509
-#trap 'exit' INT QUIT TERM
-#trap cleanup EXIT
-trap cleanup INT QUIT TERM
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
 export HIVED_ARGS
 
-echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
+run_instance() {
+# What can be a difference to catch EXIT instead of SIGINT ? Found here: https://gist.github.com/CMCDragonkai/e2cde09b688170fb84268cafe7a2b509
+#trap 'exit' INT QUIT TERM
+#trap cleanup EXIT
+trap cleanup INT TERM
+trap cleanup EXIT
+
+echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 
 {
 sudo -Enu hived /bin/bash << EOF
-echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
+echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
+set -euo pipefail
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
   --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
   ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR/hived.log"
-echo "$? Hived process finished execution."
+hived_return_code="\$?"
+echo "\$hived_return_code Hived process finished execution."
 EOF
 
 } &
@@ -89,13 +93,22 @@ job_pid=$!
 jobs -l
 
 echo "waiting for job finish: $job_pid."
-status=0
+local status=0
 wait $job_pid || status=$?
 
 if [ $status -eq 130 ];
 then
+  echo "Ignoring SIGINT exit code: $status."
   status=0 #ignore exitcode caught by handling SIGINT
 fi
 
-echo "Exiting docker entrypoint: $status"
+echo "Hived process finished execution: return status: ${status}."
+
+return ${status}
+}
+
+run_instance
+status=$?
+
+echo "Exiting docker entrypoint with status: ${status}..."
 exit $status
