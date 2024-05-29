@@ -4,6 +4,8 @@ import "legacy_chain_properties.proto";
 
 package hive.protocol.buffers;
 
+// Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/30_pow2.md?ref_type=heads
+
 message pow2_input {
   required string worker_account = 1 [json_name = "worker_account"];
   required string prev_block = 2 [json_name = "prev_block"];
