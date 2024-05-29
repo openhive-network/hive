@@ -9,17 +9,20 @@ package hive.protocol.buffers;
  * Note: HBD is transferred immediately during execution of above operation, this vop is generated after actual
  * price of conversion becomes known.
  * @see collateralized_convert_immediate_conversion
- *
- * @param {string} owner - user that requested conversion (receiver of excess_collateral)
- * @param {number} requestid - id of the request
- * @param {asset} amount_in - (HIVE) source of conversion (part of collateral)
- * @param {asset} amount_out - (HBD) result of conversion (already transferred to owner when request was made)
- * @param {asset} excess_collateral - (HIVE) unused part of collateral returned to owner
  */
 message fill_collateralized_convert_request {
+  // @param {string} owner - user that requested conversion (receiver of excess_collateral)
   required string owner = 1;
+
+  // @param {number} requestid - id of the request
   required uint32 requestid = 2;
+
+  // @param {asset} amount_in - (HIVE) source of conversion (part of collateral)
   required asset  amount_in = 3 [json_name = "amount_in"];
+
+  // @param {asset} amount_out - (HBD) result of conversion (already transferred to owner when request was made)
   required asset  amount_out = 4 [json_name = "amount_out"];
+
+  // @param {asset} excess_collateral - (HIVE) unused part of collateral returned to owner
   required asset  excess_collateral = 5 [json_name = "excess_collateral"];
 }
