@@ -2970,17 +2970,21 @@ namespace graphene { namespace net {
           if (full_block)
             last_full_block_sent = full_block;
 
-          // this block may need to be compressed or decompressed before sending to the peer.  If that's the case,
-          // send it over to a worker thread to get started on it
-          if (originating_peer->supports_compressed_blocks())
+          /// \warning full_block can be null. if so, we can't touch it, but instead (as previously) push it into reply_blocks, to finally produce `item_not_available_message`
+          if (full_block)
           {
-            if (originating_peer->requires_alternate_compression_for_block(full_block))
-              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+            // this block may need to be compressed or decompressed before sending to the peer.  If that's the case,
+            // send it over to a worker thread to get started on it
+            if (originating_peer->supports_compressed_blocks())
+            {
+              if (originating_peer->requires_alternate_compression_for_block(full_block))
+                _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+              else
+                _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+            }
             else
-              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
           }
-          else
-            _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
 
           reply_blocks.push_back(std::move(full_block));
         }
