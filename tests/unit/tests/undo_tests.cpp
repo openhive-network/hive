@@ -145,28 +145,75 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    const auto& index = db->get_index<account_index>();
-    const size_t initial_allocations = index.get_item_additional_allocation();
+    //const auto& index = db->get_index<account_index>();
+    //const size_t initial_allocations = index.get_item_additional_allocation();
+    /*
+    test used to check additional allocations related to delayed votes, however we are
+    not guaranteed to get the same allocation after undo, because it depends on capacity
+    which can be different in original object and in its copy; next test (undo_feed_history)
+    performs such check on feed history object, where allocation depends on size instead
+    */
 
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
     ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+    //BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+    //BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
     BOOST_REQUIRE( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
-    BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
+    //BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
-    BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+    //BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( undo_feed_history )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: undo_feed_history" );
+
+    generate_blocks( HIVE_MAX_WITNESSES * 2 ); //skip two first schedules
+
+    undo_db udb( *db );
+    undo_scenario< feed_history_object > fho( *db );
+    const auto& index = db->get_index< feed_history_index >();
+    const size_t initial_allocations = index.get_item_additional_allocation();
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( index.get_item_additional_allocation(), initial_allocations );
+
+    fho.remember_old_values< feed_history_index >();
+    udb.undo_begin();
+
+    // increase size by adding feed entries
+    const auto exchange_rate = price( ASSET( "0.500 TBD" ), ASSET( "1.000 TESTS" ) );
+    set_price_feed( exchange_rate, true );
+    //generate_block();
+    //ABW: note that we can't generate block since migrate_irreversible_state() calls
+    //commit() on undo session stack, effectively removing the external session we
+    //have here in test - if we produced the block and then tried undo_end(), it
+    //would do nothing, not restoring the feed and not restoring allocation; other tests
+    //with similar setup work only because they are running in small initial 30 block
+    //window where rules of irreversibility are different, but we can't do that in
+    //this test, because we need active witnesses to actually set the feed
+
+    size_t increased_allocations = index.get_item_additional_allocation();
+    BOOST_REQUIRE_GT( increased_allocations, initial_allocations );
+
+    // restore original feed history
+    udb.undo_end();
+    BOOST_REQUIRE_EQUAL( index.get_item_additional_allocation(), initial_allocations );
   }
   FC_LOG_AND_RETHROW()
 }
