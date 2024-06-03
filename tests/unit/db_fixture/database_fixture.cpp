@@ -574,14 +574,14 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
   if( stop_at_update_block )
     generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( db->head_block_num() % HIVE_FEED_INTERVAL_BLOCKS ) );
   else
-    generate_blocks( HIVE_BLOCKS_PER_HOUR );
+    generate_blocks( HIVE_BLOCKS_PER_HOUR ); // should be HIVE_FEED_INTERVAL_BLOCKS, but good luck with all the tests that fail due to such change
 
   BOOST_REQUIRE(
 #ifdef IS_TEST_NET
     !db->skip_price_feed_limit_check ||
 #endif
     db->get(feed_history_id_type()).current_median_history == new_price
-  );
+  ); // the check fails if you call set_price_feed more than once with different price
 }
 
 void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props )
