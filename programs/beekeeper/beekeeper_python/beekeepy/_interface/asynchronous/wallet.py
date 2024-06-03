@@ -75,3 +75,17 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     async def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         return (await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key)).signature
+
+    async def encrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str, nonce: int = 0) -> str:
+        return (
+            await self.__beekeeper.api.encrypt_data(
+                from_public_key=from_key, to_public_key=to_key, content=content, nonce=nonce
+            )
+        ).encrypted_content
+
+    async def decrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str) -> str:
+        return (
+            await self.__beekeeper.api.decrypt_data(
+                from_public_key=from_key, to_public_key=to_key, encrypted_content=content
+            )
+        ).decrypted_content

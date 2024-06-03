@@ -54,6 +54,14 @@ class UnlockedWallet(Wallet, ABC):
     def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         ...
 
+    @abstractmethod
+    def encrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str, nonce: int = 0) -> str:
+        ...
+
+    @abstractmethod
+    def decrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str) -> str:
+        ...
+
     def __enter__(self) -> Self:
         return self
 
