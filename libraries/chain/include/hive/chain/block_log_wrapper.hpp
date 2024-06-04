@@ -22,9 +22,12 @@ namespace hive { namespace chain {
     static block_log_wrapper_t create_wrapper( int block_log_split,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool );
     /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
-    static block_log_wrapper_t create_opened_wrapper( const fc::path& input_path,
+    static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
       bool read_only );
+    static block_log_wrapper_t create_limited_wrapper( const fc::path& dir,
+      appbase::application& app, blockchain_worker_thread_pool& thread_pool,
+      uint32_t start_from_part = 1 );
 
   public:
     block_log_wrapper( int block_log_split, appbase::application& app,
@@ -86,11 +89,60 @@ namespace hive { namespace chain {
      */
     void wipe_files( const fc::path& dir );
 
+    /** Returns 1 for 0,
+     *  1 for [1 .. _max_blocks_in_log_file] &
+     *  N for [1+(N-1)*_max_blocks_in_log_file .. N*_max_blocks_in_log_file]
+     */
+    static uint32_t get_part_number_for_block( uint32_t block_num, int block_log_split )
+    {
+      return get_part_number_for_block( 
+               block_num,
+               determine_max_blocks_in_log_file( block_log_split )
+             );
+    }
+
+    static uint32_t get_number_of_first_block_in_part( uint32_t part_number, int block_log_split )
+    {
+      FC_ASSERT( part_number > 0 );
+      return 1 + (part_number -1) * determine_max_blocks_in_log_file( block_log_split );
+    }
+
+    static uint32_t get_number_of_last_block_in_part( uint32_t part_number, int block_log_split )
+    {
+      FC_ASSERT( part_number > 0 );
+      return part_number * determine_max_blocks_in_log_file( block_log_split );
+    }
+
   private:
+    static uint32_t determine_max_blocks_in_log_file( int block_log_split );
+
+    void skip_first_parts( uint32_t parts_to_skip );
+
+    bool try_splitting_monolithic_log_file( uint32_t head_part_number = 0,
+                                            size_t part_count = 0 );
+    struct part_file_info_t {
+      uint32_t part_number = 0;
+      fc::path part_file;
+
+      bool operator<(const part_file_info_t& o) const { return part_number < o.part_number; }
+    };
+    using part_file_names_t=std::set< part_file_info_t >;
+    void look_for_part_files( part_file_names_t& part_file_names );
+    /**
+     * @brief Makes sure all parts required by configuration are found or generated.
+     * 
+     * @throws runtime_error when unable to find or generate enough file parts.
+     * @param head_part_number file part with biggest number (containing head block).
+     * @param part_file_names contains all parts found in block log directory.
+     * @return actual tail part number needed (and present).
+     */
+    uint32_t force_parts_exist( uint32_t head_part_number,
+      part_file_names_t& part_file_names, bool allow_splitting_monolithic_log );
     /// @brief Used internally by create_opened_wrapper
-    void open_and_init( const fc::path& path, bool read_only );
+    void open_and_init( const fc::path& path, bool read_only, uint32_t start_from_part = 1 );
     // Common helpers
-    void common_open_and_init( bool read_only, bool allow_splitting_monolithic_log );
+    void common_open_and_init( bool read_only, bool allow_splitting_monolithic_log,
+                               uint32_t start_from_part = 1 );
     using block_log_ptr_t = std::shared_ptr<block_log>;
     void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
@@ -104,20 +156,29 @@ namespace hive { namespace chain {
     using append_t = std::function< void( block_log_ptr_t log ) >;
     void internal_append( uint32_t block_num, append_t do_appending);
 
-    bool is_last_number_of_the_file( uint32_t block_num ) const
-    {
-      return block_num > 0 && 
-            ( block_num % _max_blocks_in_log_file == 0 );
-    }
-
-    /** Returns 1 for 0,
-     *  1 for [1 .. _max_blocks_in_log_file] &
-     *  N for [1+(N-1)*_max_blocks_in_log_file .. N*_max_blocks_in_log_file]
-     */
-    uint32_t get_part_number_for_block( uint32_t block_num ) const
+    static uint32_t get_part_number_for_block( uint32_t block_num, uint32_t max_blocks_in_log_file )
     {
       return block_num == 0 ? 1 :
-        ( (uint64_t)block_num + (uint64_t)_max_blocks_in_log_file -1 ) / _max_blocks_in_log_file;
+        ( (uint64_t)block_num + (uint64_t)max_blocks_in_log_file -1 ) / max_blocks_in_log_file;
+      // 0: 1
+      // 1: 1 + 1 000 000 -1 / 1 000 000 == 1 000 000 / 1 000 000 == 1
+      // 2: 2 + 1 000 000 -1 / 1 000 000 == 1 000 001 / 1 000 000 == 1
+      // 999 999: 999 999 + 1 000 000 -1 / 1 000 000 == 1 999 998 / 1 000 000 == 1
+      // 1 000 000: 1 000 000 + 1 000 000 -1 / 1 000 000 == 1 999 999 / 1 000 000 == 1
+      // 1 000 001: 1 000 001 + 1 000 000 -1 / 1 000 000 == 2 000 000 / 1 000 000 == 2
+      // 1 000 002: 1 000 002 + 1 000 000 -1 / 1 000 000 == 2 000 001 / 1 000 000 == 2
+    }
+
+    bool is_last_number_of_the_file( uint32_t block_num ) const
+    {
+      return block_num % _max_blocks_in_log_file == 0;
+      // 0: true
+      // 1: 1 % 1 000 000 == 1 / false
+      // 2: 2 % 1 000 000 == 2 / false
+      // 999 999: 999 999 % 1 000 000 == 999 999 / false
+      // 1 000 000: 1 000 000 % 1 000 000 == 0 / true
+      // 1 000 001: 1 000 001 % 1 000 000 == 1 / false
+      // 1 000 002: 1 000 002 % 1 000 000 == 2 / false
     }
 
     /// Returns the number of oldest stored block.
