@@ -59,11 +59,6 @@ struct bls_m_of_n_scheme: public scheme
     return augMessage;
   };
 
-  std::vector<uint8_t> merge_pk_number( const G1Element& _public_key, const uint8_t& _number )
-  {
-    return merge_pk_message( _public_key, { _number } );
-  };
-
   G1Element aggregate( const std::vector<G1Element>& src_public_keys )
   {
     G1Element _result;
@@ -72,6 +67,11 @@ struct bls_m_of_n_scheme: public scheme
       _result += item;
 
     return _result;
+  }
+
+  std::vector<uint8_t> generate_order_content( size_t val )
+  {
+    return std::vector<uint8_t>{ static_cast<uint8_t>( val ), static_cast<uint8_t>( val + 100 ), static_cast<uint8_t>( val * 6 ) };
   }
 
   std::vector<G2Element> create_membership_keys( const std::vector<PrivateKey>& src_private_keys, const G1Element& aggregated_public_key )
@@ -85,13 +85,11 @@ struct bls_m_of_n_scheme: public scheme
       G2Element _sum_keys;
       for( size_t k = 1; k < _size; k += 2 )
       {
-        std::vector<uint8_t> _val{ static_cast<uint8_t>( i ) };
-        _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], _val, aggregated_public_key );
+        _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], generate_order_content( i ), aggregated_public_key );
       }
       for( size_t k = 0; k < _size; k += 2 )
       {
-        std::vector<uint8_t> _val{ static_cast<uint8_t>( i ) };
-        _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], _val, aggregated_public_key );
+        _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], generate_order_content( i ), aggregated_public_key );
       }
       _result.emplace_back( _sum_keys );
     }
@@ -162,7 +160,7 @@ struct bls_m_of_n_scheme: public scheme
     for( size_t i = 0; i < nr_signers; ++i )
     {
       _verify_pub_keys.push_back( aggregated_public_key );
-      _verify_message.push_back( merge_pk_number( aggregated_public_key, i ) );
+      _verify_message.push_back( merge_pk_message( aggregated_public_key, generate_order_content( i ) ) );
     }
 
     assert( _verify_pub_keys.size() == _verify_message.size() );
