@@ -38,7 +38,7 @@ namespace hive { namespace chain {
     FC_ASSERT( part_number == 1,
               "Expected 1st part file name, not following one (${path})", ("path", the_path) );
     auto writer = std::make_shared< block_log_wrapper >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
-    writer->open_and_init( the_path, read_only );
+    writer->open_and_init( the_path, read_only, 1/*start_from_part*/ );
     return writer;
   }
 
@@ -47,12 +47,32 @@ namespace hive { namespace chain {
     ("path", the_path) );
 }
 
+/*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_limited_wrapper(
+  const fc::path& dir, appbase::application& app, blockchain_worker_thread_pool& thread_pool,
+  uint32_t start_from_part /*= 1*/ )
+{
+  FC_ASSERT( start_from_part > 0 );
+  FC_ASSERT( fc::exists( dir ) && fc::is_directory( dir ),
+    "Path ${p} is NOT an existing directory.", ("p", dir) );
+
+  auto writer = std::make_shared< block_log_wrapper >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
+  writer->_open_args.data_dir = dir;
+  writer->skip_first_parts( start_from_part -1 );
+
+  return writer;
+}
+
+/*static*/ uint32_t block_log_wrapper::determine_max_blocks_in_log_file( int block_log_split )
+{
+  return block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ?
+          std::numeric_limits<uint32_t>::max() :
+          BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+}
+
 block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application& app,
                                       blockchain_worker_thread_pool& thread_pool )
   : _app( app ), _thread_pool( thread_pool ), 
-    _max_blocks_in_log_file( block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ?
-                              std::numeric_limits<uint32_t>::max() :
-                              BLOCKS_IN_SPLIT_BLOCK_LOG_FILE),
+    _max_blocks_in_log_file( determine_max_blocks_in_log_file( block_log_split ) ),
     _block_log_split( block_log_split )
 {}
 
@@ -62,10 +82,11 @@ void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, 
   common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/);
 }
 
-void block_log_wrapper::open_and_init( const fc::path& path, bool read_only )
+void block_log_wrapper::open_and_init( const fc::path& path, bool read_only, 
+  uint32_t start_from_part /*= 1*/ )
 {
   _open_args.data_dir = path.parent_path();
-  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/ );
+  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/, start_from_part );
 }
 
 void block_log_wrapper::reopen_for_writing()
@@ -118,6 +139,15 @@ void block_log_wrapper::dispose_garbage( bool closing_time )
 
     fc::remove( log_file );
     fc::remove( artifacts_file );
+  }
+}
+
+void block_log_wrapper::skip_first_parts( uint32_t parts_to_skip )
+{
+  while( parts_to_skip > 0 )
+  {
+    _logs.push_back( block_log_ptr_t() );
+    --parts_to_skip;
   }
 }
 
@@ -198,7 +228,9 @@ void block_log_wrapper::process_blocks(uint32_t starting_block_number,
     if( not current_log )
       return;
 
-    uint32_t last_block_of_part = get_part_number_for_block( starting_block_number ) * _max_blocks_in_log_file;
+    uint32_t last_block_of_part = 
+      get_part_number_for_block( starting_block_number, _max_blocks_in_log_file ) *
+      _max_blocks_in_log_file;
     current_log->for_each_block(  starting_block_number, std::min( last_block_of_part, ending_block_number ),
                                   processor, block_log::for_each_purpose::replay, thread_pool );
     
@@ -367,7 +399,7 @@ block_id_type block_log_wrapper::read_block_id_by_num( uint32_t block_num ) cons
 const block_log_wrapper::block_log_ptr_t block_log_wrapper::get_block_log_corresponding_to(
   uint32_t block_num ) const
 {
-  uint32_t request_part_number = get_part_number_for_block( block_num );
+  uint32_t request_part_number = get_part_number_for_block( block_num, _max_blocks_in_log_file );
   if( request_part_number > _logs.size() )
     return block_log_ptr_t();
 
@@ -438,29 +470,116 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
           1;
 }
 
-
-void block_log_wrapper::common_open_and_init( bool read_only, 
-  bool allow_splitting_monolithic_log )
+bool block_log_wrapper::try_splitting_monolithic_log_file(
+  uint32_t head_part_number /*= 0*/, size_t part_count /*= 0*/  )
 {
-  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
+  fc::path monolith_path( _open_args.data_dir / block_log_file_name_info::_legacy_file_name );
+  if( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ) )
   {
-    auto single_part_log = std::make_shared<block_log>( _app );
-    internal_open_and_init( single_part_log, 
-                            _open_args.data_dir / block_log_file_name_info::_legacy_file_name,
-                            read_only );
-    _logs.push_back( single_part_log );
-    return;
+    try
+    {
+      wlog("Trying to split legacy monolithic block log file.");
+      utilities::split_block_log( monolith_path, head_part_number, part_count, _app, _thread_pool );
+      wlog("Successfully split legacy monolithic block log file.");
+      return true;
+    }
+    catch( fc::exception& e )
+    {
+      elog( "Error while trying to split legacy monolithic block log file: ${e}", (e) );
+    }
+  }
+  else
+    ilog("Unable to auto-split legacy monolithic log file - not found.");
+
+  return false;
+}
+
+uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number, 
+  part_file_names_t& part_file_names, bool allow_splitting_monolithic_log )
+{
+  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
+  uint32_t tail_part_number = part_file_names.cbegin()->part_number;
+  FC_ASSERT( head_part_number >= tail_part_number );
+
+  // Determine actual needed tail part number.
+  uint32_t actual_tail_needed = 0;
+  // Is block log not pruned or effectively not pruned (yet)?
+  if( _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG ||
+      head_part_number <= (unsigned int)_block_log_split )
+  {
+    // Expected tail part is obviously 1 - we need each part.
+    actual_tail_needed = 1;
+  }
+  else // pruned log here
+  {
+    // not all parts are needed here, i.e. head_part_number > _block_log_split
+    actual_tail_needed = head_part_number - _block_log_split;
   }
 
-  // Any log file created on previous run?
-  struct part_file_info_t {
-    uint32_t part_number = 0;
-    fc::path part_file;
+  // Walk over existing parts checking numbers continuity.
+  uint32_t last_continuous_number = head_part_number;
+  uint32_t last_checked_number = head_part_number;
+  for( auto crit = ++( part_file_names.crbegin() ); crit != part_file_names.crend(); ++crit )
+  {
+    last_checked_number = crit->part_number;
+    if( last_checked_number != last_continuous_number -1 )
+      break; // Missing parts detected.
 
-    bool operator<(const part_file_info_t& o) const { return part_number < o.part_number; }
-  };
-  std::set< part_file_info_t > part_file_names;
-  if( exists( _open_args.data_dir ) )
+    --last_continuous_number;
+  }
+
+  // Any missing needed part files?
+  if( tail_part_number > actual_tail_needed ||      // There's too few parts or
+      last_continuous_number > actual_tail_needed ) // a part file is missing in the middle and we need it.
+  {
+    uint32_t low_missing_part_number = 
+      last_checked_number == actual_tail_needed ? actual_tail_needed +1: actual_tail_needed;
+    uint32_t high_missing_part_number = last_continuous_number -1;
+
+    // Is there a separated part in the range of first/last missing ones?
+    bool blocking_part_exists = 
+      last_checked_number < last_continuous_number && // there's a gap
+      last_checked_number > low_missing_part_number; // and a separated part is inside missing range
+
+    std::stringstream msg;
+    msg << "Missing block log part file(s) in the range [" 
+      << block_log_file_name_info::get_nth_part_file_name( low_missing_part_number )
+      << ","
+      << block_log_file_name_info::get_nth_part_file_name( high_missing_part_number )
+      << "].";
+
+    // Examine possibility of generating missing part files.
+    if( not allow_splitting_monolithic_log || // splitting not allowed or
+        blocking_part_exists )                // there's a part that we don't want to overwrite.
+    {
+      msg <<
+        ( allow_splitting_monolithic_log ? " Existing part file is blocking" : " Not allowed" ) <<
+        " automatic splitting of legacy monolithic block log.";
+      throw std::runtime_error( msg.str() );
+    }
+
+    size_t needed_part_count = high_missing_part_number - low_missing_part_number + 1;
+    if( not try_splitting_monolithic_log_file( high_missing_part_number, needed_part_count ) )
+    {
+      msg <<
+        " Failed to generate missing block log part file(s) by splitting legacy monolithic block log file.";
+      throw std::runtime_error( msg.str() );
+    }
+
+    look_for_part_files( part_file_names );
+  }
+
+  // At this point all needed parts are available (or exception would have been thrown).
+  return actual_tail_needed;
+}
+
+void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names )
+{
+  if( not exists( _open_args.data_dir ) )
+  {
+    create_directories( _open_args.data_dir );
+  }
+  else // look for existing log parts
   {
     fc::directory_iterator it( _open_args.data_dir );
     fc::directory_iterator end_it;
@@ -475,69 +594,67 @@ void block_log_wrapper::common_open_and_init( bool read_only,
       }
     }
   }
+}
+
+void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitting_monolithic_log, 
+  uint32_t start_from_part /*= 1*/ )
+{
+  FC_ASSERT( start_from_part > 0 );
+
+  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
+  {
+    auto single_part_log = std::make_shared<block_log>( _app );
+    internal_open_and_init( single_part_log, 
+                            _open_args.data_dir / block_log_file_name_info::_legacy_file_name,
+                            read_only );
+    _logs.push_back( single_part_log );
+    return;
+  }
+
+  // Any log file created on previous run?
+  part_file_names_t part_file_names;
+  look_for_part_files( part_file_names );
   
   if( part_file_names.empty() )
   {
     // No part file name found. Try splitting legacy monolithic file if allowed & possible.
-    if( allow_splitting_monolithic_log )
+    size_t needed_part_count = 
+      _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
+    if( allow_splitting_monolithic_log &&
+        try_splitting_monolithic_log_file( 0/*determine head part from source*/, needed_part_count ) )
     {
-      fc::path monolith_path( _open_args.data_dir / block_log_file_name_info::_legacy_file_name );
-      if( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ) )
-      {
-        try
-        {
-          wlog("Trying to split legacy monolithic block log file.");
-          utilities::split_block_log( monolith_path, _app, _thread_pool );
-          wlog("Successfully split legacy monolithic block log file.");
-          // Now we can open split log file(s) as if the log was split from the beginning.
-          common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/);
-          return;
-        }
-        catch( fc::exception& e )
-        {
-          elog( "Error while trying to split legacy monolithic block log file: ${e}", (e) );
-        }
-      }
+      look_for_part_files( part_file_names );
+      allow_splitting_monolithic_log = false;
+      // Now we can continue opening split log file(s) as if the log was split from the beginning.
     }
-    // Otherwise create, open & set initial one.
-    uint32_t part_number = get_part_number_for_block( 0 );
-    fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
+    else
+    {
+      skip_first_parts( start_from_part -1 );
+      // Otherwise create, open & set empty initial part log object.
+      uint32_t part_number = start_from_part;
+      fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
 
-    const auto first_part_log = std::make_shared<block_log>( _app );
-    internal_open_and_init( first_part_log, part_file_path, read_only );
-    _logs.push_back( first_part_log );
-    return;
+      const auto first_part_log = std::make_shared<block_log>( _app );
+      internal_open_and_init( first_part_log, part_file_path, read_only );
+      _logs.push_back( first_part_log );
+      return;
+    }
   }
 
-  // Check integrity of found part file names.
+  // Make sure all parts required by configuration are there.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
-  uint32_t tail_part_number = part_file_names.cbegin()->part_number;
-  // Verify tail part number against configuration (may throw):
-  uint32_t actual_tail_needed = validate_tail_part_number( tail_part_number, head_part_number );
-  // Shrink the names pool if needed.
-  if( actual_tail_needed > tail_part_number )
-  {
-    auto it = part_file_names.begin();
-    std::advance( it, actual_tail_needed - tail_part_number );
-    part_file_names.erase( part_file_names.begin(), it );
-  }
-  // Common check:
-  auto crit = part_file_names.crbegin();
-  for( uint32_t prev_number = head_part_number +1; crit != part_file_names.crend(); ++crit )
-  {
-    if( crit->part_number != prev_number -1 )
-    {
-      throw std::runtime_error( "Broken integrity of block log files: missing file #" + std::to_string( prev_number-1 ) );
-    }
-    --prev_number;
-  }
+  uint32_t actual_tail_number_needed = 
+    force_parts_exist( head_part_number, part_file_names, allow_splitting_monolithic_log );
 
-  // Open them all.
+  // Open all needed parts.
   _logs.resize( head_part_number, block_log_ptr_t() );
   for( auto cit = part_file_names.cbegin(); cit != part_file_names.cend(); ++cit )
   {
-    const auto nth_part_log = std::make_shared<block_log>( _app );
     uint32_t part_number = cit->part_number;
+    if( part_number < actual_tail_number_needed )
+      continue;
+
+    const auto nth_part_log = std::make_shared<block_log>( _app );
     // Open all non-head parts for reading only (won't be appended),
     // use provided flag for head part.
     bool open_ro = part_number < head_part_number ? true : read_only;
@@ -589,11 +706,12 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
   // Note that we use provided block_num here instead of checking top log's head, as the latter
   // may not be updated when low-level appending using append_raw.
 
+  uint32_t block_part_number = 0;
   // Is it time to switch to a new file & append there?
-  if( is_last_number_of_the_file( block_num -1 ) )
+  if( is_last_number_of_the_file( block_num -1 ) &&
+      ( block_part_number = get_part_number_for_block( block_num, _max_blocks_in_log_file ) ) > _logs.size() )
   {
-    uint32_t new_part_number = get_part_number_for_block( block_num );
-    fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( new_part_number ).c_str();
+    fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( block_part_number ).c_str();
     const auto new_part_log = std::make_shared<block_log>( _app );
     internal_open_and_init( new_part_log, new_path, false /*read_only*/ );
     // Top log must keep valid head block. Append first, add on top later.
@@ -602,9 +720,9 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
     // Shall we delete old file (rotation)?
     // Note that initial part number is 1, new one must be at least 2.
     if( _block_log_split > 0 &&
-        new_part_number -1 > (unsigned int)_block_log_split )
+        block_part_number -1 > (unsigned int)_block_log_split )
       {
-        uint32_t removed_part_number = new_part_number -1 -(unsigned int)_block_log_split; // is > 0
+        uint32_t removed_part_number = block_part_number -1 -(unsigned int)_block_log_split; // is > 0
         block_log_ptr_t& log_ref = _logs[ removed_part_number -1 ];
         block_log_ptr_t removed_log = std::atomic_exchange( &log_ref, block_log_ptr_t() );
         // Set log to be closed, destroyed & have its files wiped when it's safe to do so.

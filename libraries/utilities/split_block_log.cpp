@@ -11,38 +11,62 @@ using hive::chain::block_log_file_name_info;
 using hive::chain::block_log_wrapper;
 using hive::chain::blockchain_worker_thread_pool;
 
-void split_block_log( fc::path monolith_path, appbase::application& app,
-                      blockchain_worker_thread_pool& thread_pool )
+void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t part_count,
+  appbase::application& app, blockchain_worker_thread_pool& thread_pool )
 {
+  std::stringstream request;
+  request << "Requested generation of " 
+          << ( part_count == 0 ? "all" : std::to_string( part_count ) ) 
+          << " part files, up to " 
+          << ( head_part_number == 0 ? "head part." : ("part " + std::to_string( head_part_number ) ) );
+  ilog( request.str() );
+
   FC_ASSERT( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ),
     "${monolith_path} is missing or not a regular file.", (monolith_path) );
   FC_ASSERT( monolith_path.filename().string() == block_log_file_name_info::_legacy_file_name,
     "${monolith_path} is not legacy monolithic block log file.", (monolith_path) );
+
+  ilog( "Opening legacy monolithic block log as source." );
+  auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool, 
+                                                            true /*read_only*/ );
+  uint32_t head_block_num = mono_log->head_block_num();
+  idump((head_block_num));
+
+  if( head_part_number == 0 /*determine from source log*/)
+  {
+    head_part_number = 
+      block_log_wrapper::get_part_number_for_block( head_block_num, MULTIPLE_FILES_FULL_BLOCK_LOG );
+    ilog( "head_part_number for block ${head_block_num} is ${head_part_number}", (head_block_num)(head_part_number) );
+  }
+
+  ilog( "Actual head_part_number: ${head_part_number}", (head_part_number) );
+
+  uint32_t tail_part_number = 
+    ( part_count == 0 /*all*/ || head_part_number <= part_count ) ?
+    1 :
+    head_part_number - part_count +1;
+
+  ilog( "Actual tail_part_number: ${tail_part_number}", (tail_part_number) );
 
   fc::path output_path( monolith_path.parent_path() );
   fc::directory_iterator it( output_path );
   fc::directory_iterator end_it;
   for( ; it != end_it; it++ )
   {
-    FC_ASSERT( block_log_file_name_info::is_part_file( *it ) == 0,
-      "Existing block log part file ${f} found.", ("f", *it) );
+    uint32_t part_number = block_log_file_name_info::is_part_file( *it );
+    FC_ASSERT( part_number < tail_part_number || part_number > head_part_number,
+      "Conflicting block log part file ${f} found.", ("f", *it) );
   }
 
-  ilog( "Opening legacy monolithic block log as source." );
-  auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool, 
-                                                            true /*read_only*/ );
   ilog( "Opening split block log as target." );
-  fc::path first_part_path( output_path / block_log_file_name_info::get_nth_part_file_name( 1 ) );
-  auto split_log = block_log_wrapper::create_opened_wrapper( first_part_path, app, thread_pool,
-                                                             false /*read_only*/);
+  auto split_log = block_log_wrapper::create_limited_wrapper( output_path, app, thread_pool,
+                                                              tail_part_number/*start_from_part*/ );
 
   ilog("Starting splitting");
 
-  uint32_t head_block_num = mono_log->head_block_num();
-  idump((head_block_num));
-
-  uint32_t starting_block_number = 1;
-  uint32_t stop_at_block = head_block_num;
+  uint32_t starting_block_number = block_log_wrapper::get_number_of_first_block_in_part( tail_part_number, MULTIPLE_FILES_FULL_BLOCK_LOG );
+  uint32_t stop_at_block = 
+    std::min<uint32_t>( head_block_num, block_log_wrapper::get_number_of_last_block_in_part( head_part_number, MULTIPLE_FILES_FULL_BLOCK_LOG ) );
   ilog( "Splitting blocks ${starting_block_number} to ${stop_at_block}",
         (starting_block_number)(stop_at_block) );
 
