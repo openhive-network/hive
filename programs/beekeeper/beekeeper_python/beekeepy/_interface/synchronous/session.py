@@ -26,34 +26,34 @@ class Session(SessionInterface):
     def __init__(self, *args: Any, beekeeper: SynchronousBeekeeperHandle, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = SyncRemoteBeekeeper(
-            settings=beekeeper.settings.copy(update={"notification_endpoint": None}),  # type: ignore
+            settings=beekeeper.settings.copy(update={"notification_endpoint": None}),
             logger=beekeeper.logger,
         )
         self.__beekeeper.run()
 
     def get_info(self) -> GetInfo:
-        return self.__beekeeper.api.beekeeper.get_info()
+        return self.__beekeeper.api.get_info()
 
     def create_wallet(self, *, name: str, password: str) -> UnlockedWalletInterface:
-        self.__beekeeper.api.beekeeper.create(wallet_name=name, password=password)
+        self.__beekeeper.api.create(wallet_name=name, password=password)
         return self.__construct_unlocked_wallet(name)
 
     def open_wallet(self, *, name: str) -> WalletInterface:
         with NoWalletWithSuchNameError(name):
-            self.__beekeeper.api.beekeeper.open(wallet_name=name)
+            self.__beekeeper.api.open(wallet_name=name)
         return self.__construct_wallet(name=name)
 
     def close_session(self) -> None:
         if self.__beekeeper.is_session_token_set():
-            self.__beekeeper.api.beekeeper.close_session()
+            self.__beekeeper.api.close_session()
         self.__beekeeper.close()
 
     def lock_all(self) -> list[WalletInterface]:
-        self.__beekeeper.api.beekeeper.lock_all()
+        self.__beekeeper.api.lock_all()
         return self.wallets
 
     def set_timeout(self, seconds: int) -> None:
-        self.__beekeeper.api.beekeeper.set_timeout(seconds=seconds)
+        self.__beekeeper.api.set_timeout(seconds=seconds)
 
     def on_wallet_locked(self, callback: SyncWalletLocked) -> None:
         self.__beekeeper.register_wallet_close_callback(callback)
@@ -64,10 +64,7 @@ class Session(SessionInterface):
 
     @property
     def wallets(self) -> list[WalletInterface]:
-        return [
-            self.__construct_wallet(name=wallet.name)
-            for wallet in self.__beekeeper.api.beekeeper.list_wallets().wallets
-        ]
+        return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_wallets().wallets]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper)

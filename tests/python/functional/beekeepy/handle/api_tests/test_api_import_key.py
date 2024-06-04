@@ -21,26 +21,26 @@ def test_api_import_key(beekeeper: Beekeeper, setup_wallets: WalletsGeneratorT) 
     # ACT & ASSERT
     for acc in wallet.accounts:
         assert (
-            acc.public_key.no_prefix()
-            == (beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=acc.private_key)).public_key
+            acc.public_key
+            == (beekeeper.api.import_key(wallet_name=wallet.name, wif_key=acc.private_key)).public_key
         ), "Public key of imported wif should match."
 
 
 def test_api_import_key_to_locked(beekeeper: Beekeeper, wallet: WalletInfo, keys_to_import: list[tt.Account]) -> None:
     """Test test_api_import_key_to_locked will test beekeeper_api.import_key to the locked wallet."""
     # ARRANGE & ACT
-    beekeeper.api.beekeeper.lock(wallet_name=wallet.name)
+    beekeeper.api.lock(wallet_name=wallet.name)
 
     # ASSERT
     with pytest.raises(RequestError, match=f"Wallet is locked: {wallet.name}"):
-        beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=keys_to_import[0].private_key)
+        beekeeper.api.import_key(wallet_name=wallet.name, wif_key=keys_to_import[0].private_key)
 
 
 def test_api_import_key_to_closed(beekeeper: Beekeeper, wallet: WalletInfo, keys_to_import: list[tt.Account]) -> None:
     """Test test_api_import_key_to_closed will test beekeeper_api.import_key to the closed wallet."""
     # ARRANGE & ACT
-    beekeeper.api.beekeeper.close(wallet_name=wallet.name)
+    beekeeper.api.close(wallet_name=wallet.name)
 
     # ASSERT
     with pytest.raises(RequestError, match=f"Wallet not found: {wallet.name}"):
-        beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=keys_to_import[0].private_key)
+        beekeeper.api.import_key(wallet_name=wallet.name, wif_key=keys_to_import[0].private_key)

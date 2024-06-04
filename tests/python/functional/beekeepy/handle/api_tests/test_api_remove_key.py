@@ -20,38 +20,38 @@ def test_api_remove_key(
     """Test test_api_remove_key will test beekeeper_api_remove_key.."""
     # ARRANGE
     for account in tt.Account.create_multiple(5):
-        beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=account.private_key)
+        beekeeper.api.import_key(wallet_name=wallet.name, wif_key=account.private_key)
 
         # ACT
-        beekeeper.api.beekeeper.remove_key(
-            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key.no_prefix()
+        beekeeper.api.remove_key(
+            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key
         )
 
     # ASSERT
-    assert len((beekeeper.api.beekeeper.get_public_keys()).keys) == 0, "There should be no keys left."
+    assert len((beekeeper.api.get_public_keys()).keys) == 0, "There should be no keys left."
 
 
 def test_api_remove_key_from_locked(beekeeper: Beekeeper, wallet: WalletInfo, account: tt.Account) -> None:
     """Test test_api_remove_key_from_locked will try to remove key from locker wallet."""
     # ARRANGE & ACT
-    beekeeper.api.beekeeper.lock(wallet_name=wallet.name)
+    beekeeper.api.lock(wallet_name=wallet.name)
 
     # ASSERT
     with pytest.raises(RequestError, match=f"Wallet is locked: {wallet.name}"):
-        beekeeper.api.beekeeper.remove_key(
-            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key.no_prefix()
+        beekeeper.api.remove_key(
+            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key
         )
 
 
 def test_api_remove_key_from_closed(beekeeper: Beekeeper, wallet: WalletInfo, account: tt.Account) -> None:
     """Test test_api_remove_key_from_closed will try to remove key from closed wallet."""
     # ARRANGE & ACT
-    beekeeper.api.beekeeper.close(wallet_name=wallet.name)
+    beekeeper.api.close(wallet_name=wallet.name)
 
     # ASSERT
     with pytest.raises(RequestError, match=f"Wallet not found: {wallet.name}"):
-        beekeeper.api.beekeeper.remove_key(
-            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key.no_prefix()
+        beekeeper.api.remove_key(
+            wallet_name=wallet.name, password=wallet.password, public_key=account.public_key
         )
 
 
@@ -63,24 +63,24 @@ def test_api_remove_key_simple_scenario(beekeeper: Beekeeper, setup_wallets: Wal
     key_to_remove = wallet.accounts.pop(3)
 
     # Get keys before removing
-    bk_keys_before = (beekeeper.api.beekeeper.get_public_keys()).keys
+    bk_keys_before = (beekeeper.api.get_public_keys()).keys
     bk_pub_keys_before = [pub_key.public_key for pub_key in bk_keys_before]
 
     # Check if key exist
-    assert key_to_remove.public_key.no_prefix() in bk_pub_keys_before, "Check if target key exists."
+    assert key_to_remove.public_key in bk_pub_keys_before, "Check if target key exists."
 
     # ACT
-    beekeeper.api.beekeeper.remove_key(
-        wallet_name=wallet.name, password=wallet.password, public_key=key_to_remove.public_key.no_prefix()
+    beekeeper.api.remove_key(
+        wallet_name=wallet.name, password=wallet.password, public_key=key_to_remove.public_key
     )
 
     # ASSERT
-    bk_keys_after = (beekeeper.api.beekeeper.get_public_keys()).keys
+    bk_keys_after = (beekeeper.api.get_public_keys()).keys
     bk_pub_keys_after = [pub_key.public_key for pub_key in bk_keys_after]
 
     # Check if key was removed
     assert key_to_remove.public_key not in bk_keys_after, "Recently removed key shouldn't not be listed."
     # Check if other keys still exists
     bk_pub_keys_before_copy = bk_pub_keys_before.copy()
-    bk_pub_keys_before_copy.remove(key_to_remove.public_key.no_prefix())
+    bk_pub_keys_before_copy.remove(key_to_remove.public_key)
     assert sorted(bk_pub_keys_before_copy) == sorted(bk_pub_keys_after), "Check if beekeeper removes only target key."

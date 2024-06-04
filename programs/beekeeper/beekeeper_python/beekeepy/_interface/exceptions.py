@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from helpy._interfaces.context import ContextSync
 from helpy.exceptions import RequestError
@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 class DetectableError(ContextSync[None], Exception):
     @abstractmethod
-    def _is_exception_handled(self, ex: BaseException) -> bool: ...
+    def _is_exception_handled(self, ex: BaseException) -> bool:
+        ...
 
     def _enter(self) -> None:
         return None
@@ -20,7 +21,7 @@ class DetectableError(ContextSync[None], Exception):
     def _finally(self) -> None:
         return None
 
-    def _handle_exception(self, ex: BaseException, tb: TracebackType | None) -> Literal[False]:
+    def _handle_exception(self, ex: BaseException, tb: TracebackType | None) -> bool:
         if self._is_exception_handled(ex):
             raise self
         return super()._handle_exception(ex, tb)

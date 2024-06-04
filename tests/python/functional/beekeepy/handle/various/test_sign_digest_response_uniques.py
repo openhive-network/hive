@@ -30,7 +30,7 @@ def test_sign_digest_response_uniques(beekeeper: Beekeeper, wallet: WalletInfo, 
             params={
                 "token": token,
                 "sig_digest": digest,
-                "public_key": account.public_key.no_prefix(),
+                "public_key": account.public_key,
             },
         )
 

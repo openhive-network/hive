@@ -21,8 +21,8 @@ class WalletInfo:
 class WalletInfoWithImportedAccounts(WalletInfo):
     accounts: list[tt.Account]
 
-    def get_all_public_keys(self, *, with_prefix: bool = False) -> list[PublicKey]:
-        return [acc.public_key.use_prefix(use=with_prefix) for acc in self.accounts]
+    def get_all_public_keys(self) -> list[PublicKey]:
+        return [acc.public_key for acc in self.accounts]
 
 
 class WalletsGeneratorT(Protocol):

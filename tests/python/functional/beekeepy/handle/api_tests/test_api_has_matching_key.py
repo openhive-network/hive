@@ -13,11 +13,11 @@ if TYPE_CHECKING:
 def test_api_has_matching_key(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
     # ARRANGE
     account = tt.Account("alice")
-    beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=account.private_key)
+    beekeeper.api.import_key(wallet_name=wallet.name, wif_key=account.private_key)
 
     # ACT
-    result = beekeeper.api.beekeeper.has_matching_private_key(
-        wallet_name=wallet.name, public_key=account.public_key.no_prefix()
+    result = beekeeper.api.has_matching_private_key(
+        wallet_name=wallet.name, public_key=account.public_key
     )
 
     # ASSERT

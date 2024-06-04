@@ -16,7 +16,7 @@ def test_api_get_info(beekeeper: Beekeeper) -> None:
     tolerance_secs = 1
 
     # ACT
-    get_info = beekeeper.api.beekeeper.get_info()
+    get_info = beekeeper.api.get_info()
 
     # ASSERT
     upper_bound = get_info.now + timedelta(seconds=(unlock_timeout + tolerance_secs))

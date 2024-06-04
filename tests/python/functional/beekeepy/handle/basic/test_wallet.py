@@ -24,17 +24,17 @@ def check_wallets(given: ListWallets, valid: list[str], *, unlocked: bool = True
 @pytest.mark.parametrize("wallet_name", ["test", "123"])
 def test_create_wallet(beekeeper: Beekeeper, wallet_name: str) -> None:
     # ARRANGE & ACT
-    beekeeper.api.beekeeper.create(wallet_name=wallet_name)
+    beekeeper.api.create(wallet_name=wallet_name)
 
     # ASSERT
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [wallet_name])
+    check_wallets(beekeeper.api.list_wallets(), [wallet_name])
 
 
 @pytest.mark.parametrize("invalid_wallet_name", [(",,,", "*", "   a   ", " ", "", json.dumps({"a": None, "b": 21.37}))])
 def test_invalid_wallet_names(beekeeper: Beekeeper, invalid_wallet_name: str) -> None:
     # ARRANGE, ACT & ASSERT
     with pytest.raises(RequestError):
-        beekeeper.api.beekeeper.create(wallet_name=invalid_wallet_name)
+        beekeeper.api.create(wallet_name=invalid_wallet_name)
 
 
 def test_wallet_open(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
@@ -42,20 +42,20 @@ def test_wallet_open(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
     beekeeper.restart()  # this will close
 
     # ACT & ASSERT
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [])
-    beekeeper.api.beekeeper.open(wallet_name=wallet.name)
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [wallet.name], unlocked=False)
+    check_wallets(beekeeper.api.list_wallets(), [])
+    beekeeper.api.open(wallet_name=wallet.name)
+    check_wallets(beekeeper.api.list_wallets(), [wallet.name], unlocked=False)
 
 
 def test_wallet_unlock(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
     # ARRANGE
-    beekeeper.api.beekeeper.lock_all()  # after creation wallet is opened and unlocked by default
+    beekeeper.api.lock_all()  # after creation wallet is opened and unlocked by default
 
     # ACT
-    beekeeper.api.beekeeper.unlock(wallet_name=wallet.name, password=wallet.password)
+    beekeeper.api.unlock(wallet_name=wallet.name, password=wallet.password)
 
     # ASSERT
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [wallet.name])
+    check_wallets(beekeeper.api.list_wallets(), [wallet.name])
 
 
 def test_timeout(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
@@ -63,24 +63,24 @@ def test_timeout(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
     comparison_error_max_delta: Final[float] = 1.0
 
     # ARRANGE
-    beekeeper.api.beekeeper.set_timeout(seconds=timeout)
+    beekeeper.api.set_timeout(seconds=timeout)
 
     # ASSERT
-    info = beekeeper.api.beekeeper.get_info()
+    info = beekeeper.api.get_info()
     assert timeout - (info.timeout_time - info.now).total_seconds() <= comparison_error_max_delta
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [wallet.name])
+    check_wallets(beekeeper.api.list_wallets(), [wallet.name])
 
     # ACT
     time.sleep(timeout)
 
     # ASSERT
-    check_wallets(beekeeper.api.beekeeper.list_wallets(), [wallet.name], unlocked=False)
+    check_wallets(beekeeper.api.list_wallets(), [wallet.name], unlocked=False)
 
 
 @pytest.mark.parametrize("wallet_name", ["test", "123"])
 def test_create_wallet_with_custom_password(beekeeper: Beekeeper, wallet_name: str) -> None:
     # ARRANGE & ACT
-    password = (beekeeper.api.beekeeper.create(wallet_name=wallet_name, password=wallet_name)).password
+    password = (beekeeper.api.create(wallet_name=wallet_name, password=wallet_name)).password
 
     # ASSERT
     assert password == wallet_name

@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 class Beekeeper(ABC):
     @abstractmethod
-    async def create_session(self, *, salt: str | None = None) -> Session: ...
+    async def create_session(self, *, salt: str | None = None) -> Session:
+        ...
 
     def __enter__(self) -> Self:
         return self
@@ -24,7 +25,9 @@ class Beekeeper(ABC):
         return ex is None
 
     @abstractmethod
-    def delete(self) -> None: ...
+    def delete(self) -> None:
+        ...
 
     @abstractmethod
-    def pack(self) -> Packed[Beekeeper]: ...
+    def pack(self) -> Packed[Beekeeper]:
+        ...

@@ -5,7 +5,7 @@ import math
 import os
 import signal
 import time
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from loguru import Logger
 
     from helpy import HttpUrl
-    from helpy import Settings as HelpySettings
 
 
 def _get_logger() -> Logger:
@@ -45,22 +44,14 @@ PackedBeekeeper = Packed[SynchronousBeekeeperInterface]
 PackedAsyncBeekeeper = Packed[AsynchronousBeekeeperInterface]
 
 
-def _adjust_settings(settings: HelpySettings) -> Settings:
-    adjusted = settings.copy()
-    adjusted.notification_endpoint = None
-    return cast(Settings, adjusted)
-
-
 class _SynchronousBeekeeperImpl(SynchronousBeekeeper):
     def pack(self) -> PackedBeekeeper:
-        return Packed(settings=_adjust_settings(self._get_instance().settings), unpack_factory=beekeeper_remote_factory)
+        return Packed(settings=self._get_instance().settings, unpack_factory=beekeeper_remote_factory)
 
 
 class _AsynchronousBeekeeperImpl(AsynchronousBeekeeper):
     def pack(self) -> PackedAsyncBeekeeper:
-        return Packed(
-            settings=_adjust_settings(self._get_instance().settings), unpack_factory=async_beekeeper_remote_factory
-        )
+        return Packed(settings=self._get_instance().settings, unpack_factory=async_beekeeper_remote_factory)
 
 
 def _beekeeper_factory_impl(

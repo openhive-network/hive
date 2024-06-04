@@ -24,7 +24,7 @@ class Wallet(WalletInterface):
 
     @property
     async def public_keys(self) -> list[PublicKey]:
-        return [key.public_key for key in (await self.__beekeeper.api.beekeeper.get_public_keys()).keys]
+        return [key.public_key for key in (await self.__beekeeper.api.get_public_keys()).keys]
 
     @property
     async def unlocked(self) -> UnlockedWallet | None:
@@ -34,11 +34,11 @@ class Wallet(WalletInterface):
 
     async def unlock(self, password: str) -> UnlockedWallet:
         if not (await self.__is_unlocked()):
-            await self.__beekeeper.api.beekeeper.unlock(wallet_name=self.name, password=password)
+            await self.__beekeeper.api.unlock(wallet_name=self.name, password=password)
         return self.__construct_unlocked_wallet()
 
     async def __is_unlocked(self) -> bool:
-        for wallet in (await self.__beekeeper.api.beekeeper.list_wallets()).wallets:
+        for wallet in (await self.__beekeeper.api.list_wallets()).wallets:
             if wallet.name == self.__name:
                 return wallet.unlocked
         return False
@@ -65,15 +65,13 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         return await self.import_key(private_key=private_key)
 
     async def import_key(self, *, private_key: str) -> PublicKey:
-        return (await self.__beekeeper.api.beekeeper.import_key(wallet_name=self.name, wif_key=private_key)).public_key
+        return (await self.__beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key)).public_key
 
     async def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
-        await self.__beekeeper.api.beekeeper.remove_key(
-            wallet_name=self.name, password=confirmation_password, public_key=key
-        )
+        await self.__beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
 
     async def lock(self) -> None:
-        await self.__beekeeper.api.beekeeper.lock(wallet_name=self.name)
+        await self.__beekeeper.api.lock(wallet_name=self.name)
 
     async def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
-        return (await self.__beekeeper.api.beekeeper.sign_digest(sig_digest=sig_digest, public_key=key)).signature
+        return (await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key)).signature

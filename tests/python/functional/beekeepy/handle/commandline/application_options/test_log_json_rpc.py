@@ -25,7 +25,7 @@ def test_log_json_rpc(beekeeper_not_started: Beekeeper) -> None:
 
     # ACT
     with beekeeper_not_started:
-        beekeeper_not_started.api.beekeeper.get_info()
+        beekeeper_not_started.api.get_info()
 
         # ASSERT
         check_log_json_rpc(path_to_jsonrpc_logs)

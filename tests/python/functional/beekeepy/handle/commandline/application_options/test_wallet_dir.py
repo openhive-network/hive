@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 def check_wallets_size(beekeeper: Beekeeper, required_size: int) -> None:
     """Check if wallet size."""
-    response_list_wallets = beekeeper.api.beekeeper.list_wallets()
+    response_list_wallets = beekeeper.api.list_wallets()
     assert len(response_list_wallets.wallets) == required_size
 
 
@@ -22,7 +22,7 @@ def test_wallet_dir(beekeeper_not_started: Beekeeper, wallet_name: str) -> None:
     with beekeeper:
         # ACT
         check_wallets_size(beekeeper, 0)
-        beekeeper.api.beekeeper.create(wallet_name=wallet_name)
+        beekeeper.api.create(wallet_name=wallet_name)
         check_wallets_size(beekeeper, 1)
 
     # Start and check if created wallet exists.
@@ -30,5 +30,5 @@ def test_wallet_dir(beekeeper_not_started: Beekeeper, wallet_name: str) -> None:
         check_wallets_size(beekeeper, 0)
 
         # ASSERT
-        beekeeper.api.beekeeper.open(wallet_name=wallet_name)
+        beekeeper.api.open(wallet_name=wallet_name)
         check_wallets_size(beekeeper, 1)

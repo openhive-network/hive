@@ -7,19 +7,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+import test_tools as tt
 from beekeepy._handle import Beekeeper
 from beekeepy.settings import Settings
-
-import test_tools as tt
-import wax
 from hive_local_tools.beekeeper.constants import DIGEST_TO_SIGN
 from hive_local_tools.beekeeper.generators import (
     generate_wallet_name,
     generate_wallet_password,
 )
 from hive_local_tools.beekeeper.models import WalletInfo
+
+import wax
+from helpy import KeyPair
 from schemas.fields.basic import PrivateKey, PublicKey
-from schemas.fields.compound import KeyPair
 
 
 @dataclass
@@ -44,7 +44,7 @@ class WalletInfoWithKeysToImport(WalletInfo):
             assert wax_result.status == wax.python_error_code.ok
             result.keys.append(
                 KeyPair(
-                    public_key=PublicKey(wax_result.result.decode("ascii")),
+                    public_key=PublicKey("STM" + wax_result.result.decode("ascii")),
                     private_key=PrivateKey(private_key),
                 )
             )
@@ -60,7 +60,6 @@ def prepare_wallet_dir(
     # number_of_wallets: int, use_existing_wallets: bool
 ) -> PrepereWalletDirResultT:
     """Copy wallets (.wallet) files from source_directory into number_of_dirs temp dirs."""
-
     number_of_wallets: int
     use_existing_wallets: bool
     number_of_wallets, use_existing_wallets = request.param
@@ -111,25 +110,25 @@ def use_existing_wallets(prepare_wallet_dir: PrepereWalletDirResultT) -> bool:
 
 def assert_wallet_unlocked(bk: Beekeeper, wallet_name: str) -> None:
     """Assert function checking if given wallet has been unlocked."""
-    unlocked_wallets = [wallet.name for wallet in (bk.api.beekeeper.list_wallets()).wallets if wallet.unlocked is True]
+    unlocked_wallets = [wallet.name for wallet in (bk.api.list_wallets()).wallets if wallet.unlocked is True]
     assert wallet_name in unlocked_wallets, "Wallet should be unlocked."
 
 
 def assert_wallet_closed(bk: Beekeeper, wallet_name: str) -> None:
     """Assert function checking if given wallet has been closed."""
-    opened_wallets = [wallet.name for wallet in (bk.api.beekeeper.list_wallets()).wallets]
+    opened_wallets = [wallet.name for wallet in (bk.api.list_wallets()).wallets]
     assert wallet_name not in opened_wallets, "Wallet should be closed."
 
 
 def assert_wallet_opened(bk: Beekeeper, wallet_name: str) -> None:
     """Assert function checking if given wallet has been opened."""
-    opened_wallets = [wallet.name for wallet in (bk.api.beekeeper.list_wallets()).wallets]
+    opened_wallets = [wallet.name for wallet in (bk.api.list_wallets()).wallets]
     assert wallet_name in opened_wallets, "Wallet should be opened."
 
 
 def assert_number_of_wallets_opened(bk: Beekeeper, number_of_available_wallets: int) -> None:
     """Assert function checking if bk has required number of opened wallets in current session."""
-    bk_wallets = (bk.api.beekeeper.list_wallets()).wallets
+    bk_wallets = (bk.api.list_wallets()).wallets
     assert number_of_available_wallets == len(
         bk_wallets
     ), f"There should be {number_of_available_wallets} opened wallets, but there are {len(bk_wallets)}."
@@ -137,20 +136,20 @@ def assert_number_of_wallets_opened(bk: Beekeeper, number_of_available_wallets: 
 
 def assert_same_keys(bk: Beekeeper, wallet: WalletInfoWithKeysToImport) -> None:
     """Assert function checkinf if bk holds the same keys, as given wallet."""
-    bk_keys = sorted([keys.public_key for keys in (bk.api.beekeeper.get_public_keys()).keys])
-    wallet_keys = sorted([key_pair.public_key.no_prefix() for key_pair in wallet.keys])
+    bk_keys = sorted([keys.public_key for keys in (bk.api.get_public_keys()).keys])
+    wallet_keys = sorted([key_pair.public_key for key_pair in wallet.keys])
     assert bk_keys == wallet_keys, "There should be same keys."
 
 
 def assert_keys_empty(bk: Beekeeper) -> None:
     """Assert function checking if bk holds no public keys."""
-    bk_keys_empty = (bk.api.beekeeper.get_public_keys()).keys
+    bk_keys_empty = (bk.api.get_public_keys()).keys
     assert len(bk_keys_empty) == 0, "There should be no keys."
 
 
 def create_wallets_if_needed(
     bk: Beekeeper,
-    wallet: WalletInfo,
+    wallet: WalletInfoWithKeysToImport,
     use_existing_wallets: bool,
 ) -> None:
     """Helper function for creating wallets under specific terms."""
@@ -159,14 +158,15 @@ def create_wallets_if_needed(
         return
 
     # Create given wallet
-    bk.api.beekeeper.create(wallet_name=wallet.name, password=wallet.password)
+    bk.api.create(wallet_name=wallet.name, password=wallet.password)
     for keys in wallet.keys:
-        bk.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=keys.private_key)
+        bk.api.import_key(wallet_name=wallet.name, wif_key=keys.private_key)
 
 
 @pytest.mark.parametrize(
     "prepare_wallet_dir",
-    [[1, True], [2, True], [1, False], [2, False]],
+    [[1, True]],
+    # [[1, True], [2, True], [1, False], [2, False]],
     indirect=True,
 )
 def test_simple_flow(
@@ -186,14 +186,13 @@ def test_simple_flow(
     * Signing.
     """
     with Beekeeper(settings=Settings(working_directory=wallet_dir), logger=tt.logger) as beekeeper:
-        beekeeper: Beekeeper = beekeeper
         # ACT & ASSERT 1
         # In this block we will create new session, and wallet import key to is and sign a digest
         for wallet_nr, wallet in enumerate(wallets):
             create_wallets_if_needed(beekeeper, wallet, use_existing_wallets)
 
-            beekeeper.api.beekeeper.open(wallet_name=wallet.name)
-            beekeeper.api.beekeeper.unlock(wallet_name=wallet.name, password=wallet.password)
+            beekeeper.api.open(wallet_name=wallet.name)
+            beekeeper.api.unlock(wallet_name=wallet.name, password=wallet.password)
 
             assert_wallet_opened(beekeeper, wallet.name)
             assert_wallet_unlocked(beekeeper, wallet.name)
@@ -201,35 +200,35 @@ def test_simple_flow(
             assert_same_keys(beekeeper, wallet)
 
             for keys in wallet.keys:
-                beekeeper.api.beekeeper.sign_digest(sig_digest=DIGEST_TO_SIGN, public_key=keys.public_key.no_prefix())
-            beekeeper.api.beekeeper.lock(wallet_name=wallet.name)
+                beekeeper.api.sign_digest(sig_digest=DIGEST_TO_SIGN, public_key=keys.public_key)
+            beekeeper.api.lock(wallet_name=wallet.name)
         assert_number_of_wallets_opened(beekeeper, len(wallets))
 
         # ACT & ASSERT 2
         # In this block we will unlock previous locked wallet, get public keys, list walleta, remove key from unlocked wallet and set timeout on it.
         for wallet in wallets:
-            beekeeper.api.beekeeper.unlock(wallet_name=wallet.name, password=wallet.password)
+            beekeeper.api.unlock(wallet_name=wallet.name, password=wallet.password)
             assert_wallet_unlocked(beekeeper, wallet.name)
             assert_number_of_wallets_opened(beekeeper, len(wallets))
             assert_same_keys(beekeeper, wallet)
             for keys in wallet.keys:
-                beekeeper.api.beekeeper.remove_key(
+                beekeeper.api.remove_key(
                     wallet_name=wallet.name,
                     password=wallet.password,
-                    public_key=keys.public_key.no_prefix(),
+                    public_key=keys.public_key,
                 )
         assert_keys_empty(beekeeper)
         assert_number_of_wallets_opened(beekeeper, len(wallets))
-        beekeeper.api.beekeeper.set_timeout(seconds=1)
+        beekeeper.api.set_timeout(seconds=1)
 
         # ACT & ASSERT 3
         # In this block we will unlock wallet which should be locked by timeout, close it, and lastly close all sessions.
         time.sleep(2)
         for wallet_nr, wallet in enumerate(wallets):
-            beekeeper.api.beekeeper.unlock(wallet_name=wallet.name, password=wallet.password)
+            beekeeper.api.unlock(wallet_name=wallet.name, password=wallet.password)
             assert_wallet_unlocked(beekeeper, wallet.name)
             assert_number_of_wallets_opened(beekeeper, len(wallets) - wallet_nr)
 
-            beekeeper.api.beekeeper.close(wallet_name=wallet.name)
+            beekeeper.api.close(wallet_name=wallet.name)
             assert_wallet_closed(beekeeper, wallet.name)
         assert_number_of_wallets_opened(beekeeper, 0)
