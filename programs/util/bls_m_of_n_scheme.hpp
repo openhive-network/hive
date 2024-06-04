@@ -83,7 +83,12 @@ struct bls_m_of_n_scheme: public scheme
     for( size_t i = 0; i < _size; ++i )
     {
       G2Element _sum_keys;
-      for( size_t k = 0; k < _size; ++k )
+      for( size_t k = 1; k < _size; k += 2 )
+      {
+        std::vector<uint8_t> _val{ static_cast<uint8_t>( i ) };
+        _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], _val, aggregated_public_key );
+      }
+      for( size_t k = 0; k < _size; k += 2 )
       {
         std::vector<uint8_t> _val{ static_cast<uint8_t>( i ) };
         _sum_keys += AugSchemeMPL().Sign( src_private_keys[k], _val, aggregated_public_key );
@@ -110,7 +115,13 @@ struct bls_m_of_n_scheme: public scheme
   {
     std::vector<G2Element> _result;
 
-    for( size_t i = 0; i < nr_signers; ++i )
+    for( size_t i = 0; i < nr_signers; i += 2 )
+    {
+      G2Element _temp_sig = AugSchemeMPL().Sign( src_private_keys[i], content, aggregated_public_key );
+      _temp_sig += membership_keys[i];
+      _result.emplace_back( _temp_sig );
+    }
+    for( size_t i = 1; i < nr_signers; i += 2 )
     {
       G2Element _temp_sig = AugSchemeMPL().Sign( src_private_keys[i], content, aggregated_public_key );
       _temp_sig += membership_keys[i];
