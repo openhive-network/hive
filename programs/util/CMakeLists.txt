@@ -200,18 +200,42 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
-set( bls_dependencies "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/src" )
-set( bls_dependencies2 "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/sodium-build" )
-set( bls_include "/home/mario/src/a.237.chia-networks-bls/bls-signatures/src" )
-set( bls_include2 "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/blst-src" )
+set( bls_dependencies_a "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/src" )
+set( bls_dependencies_b "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/sodium-build" )
+set( bls_include_a "/home/mario/src/a.237.chia-networks-bls/bls-signatures/src" )
+set( bls_include_b "/home/mario/src/a.237.chia-networks-bls/bls-signatures/build/_deps/blst-src" )
 
 add_executable( bls_test bls_test.cpp )
-target_link_libraries( bls_test ${bls_dependencies}/libbls.a )
-target_link_libraries( bls_test fc ${bls_dependencies2}/libsodium.a )
-target_include_directories( bls_test PUBLIC ${bls_include} ${bls_include2} )
+target_link_libraries( bls_test ${bls_dependencies_a}/libbls.a )
+target_link_libraries( bls_test fc ${bls_dependencies_b}/libsodium.a )
+target_include_directories( bls_test PUBLIC ${bls_include_a} ${bls_include_b} )
 
 install( TARGETS
    bls_test
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
+set( bls_dependencies_2_a "/home/mario/src/bls2/libBLS/build" )
+set( bls_dependencies_2_b "/home/mario/src/bls2/libBLS/deps/deps_inst/x86_or_x64/lib" )
+set( bls_dependencies_2_c "/home/mario/src/bls2/libBLS/deps/openssl" )
+
+
+set( bls_include_2_a "/home/mario/src/bls2/libBLS" )
+set( bls_include_2_b "/home/mario/src/bls2/libBLS/deps/deps_inst/x86_or_x64/include" )
+
+add_executable( bls_test_2 bls_test_2.cpp )
+target_link_libraries( bls_test_2 ${bls_dependencies_2_a}/libbls.a )
+target_link_libraries( bls_test_2 ${bls_dependencies_2_b}/libff.a )
+target_link_libraries( bls_test_2 ${bls_dependencies_2_b}/libgmp.a )
+target_link_libraries( bls_test_2 ${bls_dependencies_2_b}/libboost_program_options.a )
+target_link_libraries( bls_test_2 ${bls_dependencies_2_c}/libcrypto.a )
+target_include_directories( bls_test_2 PUBLIC ${bls_include_2_a} ${bls_include_2_b} )
+
+install( TARGETS
+   bls_test_2
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib
