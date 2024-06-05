@@ -3,28 +3,27 @@ from __future__ import annotations
 import asyncio
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import helpy
 from beekeepy._executable import BeekeeperExecutable
 from beekeepy._handle.beekeeper_callbacks import BeekeeperCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
 from beekeepy.settings import Settings
+from helpy import ContextSync
 from helpy._communication.universal_notification_server import (
     UniversalNotificationServer,
 )
 from helpy.exceptions import HelpyError
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
     from pathlib import Path
 
     from loguru import Logger
-    from typing_extensions import Self
 
     from beekeepy._executable.beekeeper_config import BeekeeperConfig
     from beekeepy._handle.callbacks_protocol import AsyncWalletLocked, SyncWalletLocked
-    from schemas.fields.compound import KeyPair
+    from helpy import KeyPair
     from schemas.notifications import (
         AttemptClosingWallets,
         Error,
@@ -46,7 +45,10 @@ class BeekeeperIsNotRunningError(HelpyError):
     pass
 
 
-class BeekeeperCommon(BeekeeperCallbacks):
+EnterReturnT = TypeVar("EnterReturnT", bound=helpy.Beekeeper | helpy.AsyncBeekeeper)
+
+
+class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, **kwargs)
         self.__exec = BeekeeperExecutable(settings, logger)
@@ -77,7 +79,9 @@ class BeekeeperCommon(BeekeeperCallbacks):
         assert self.__notification_event_handler is None
 
         self.__notification_event_handler = NotificationHandler(self)
-        return UniversalNotificationServer(self.__notification_event_handler, settings=self._get_settings())
+        return UniversalNotificationServer(
+            self.__notification_event_handler, notification_endpoint=self._get_settings().notification_endpoint
+        )
 
     def __destroy_notification_server(self) -> None:
         if self.__notification is not None:
@@ -106,9 +110,8 @@ class BeekeeperCommon(BeekeeperCallbacks):
     def _handle_opening_beekeeper_failed(self, info: OpeningBeekeeperFailed) -> None:
         return super()._handle_opening_beekeeper_failed(info)
 
-    def _run(self) -> None:
+    def _run(self, settings: Settings) -> None:
         self.__notification = self.__create_notification_server()
-        settings = self._get_settings()
         settings.notification_endpoint = helpy.HttpUrl(f"127.0.0.1:{self.__notification.run()}", protocol="http")
         settings.http_endpoint = settings.http_endpoint or helpy.HttpUrl("127.0.0.1:0", protocol="http")
         settings.working_directory = self.__exec.woring_dir
@@ -160,25 +163,34 @@ class BeekeeperCommon(BeekeeperCallbacks):
         )
 
     @abstractmethod
-    def run(self) -> None: ...
+    def run(self) -> None:
+        ...
 
     def restart(self) -> None:
         self.close()
         self.run()
 
     @abstractmethod
-    def _get_settings(self) -> Settings: ...
+    def _get_settings(self) -> Settings:
+        ...
+
+    def _enter(self) -> EnterReturnT:
+        self.run()
+        return cast(EnterReturnT, self)
+
+    def _finally(self) -> None:
+        self.close()
 
 
-class Beekeeper(BeekeeperCommon, helpy.Beekeeper):
+class Beekeeper(BeekeeperCommon["Beekeeper"], helpy.Beekeeper):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, logger=logger, **kwargs)
         self.__wallet_close_callbacks: list[SyncWalletLocked] = []
 
     def run(self) -> None:
         self._clear_session_token()
-        self._restore_settings()
-        self._run()
+        with self.update_settings() as settings:
+            self._run(settings=cast(Settings, settings))
         self.http_endpoint = self._get_http_endpoint_from_event()
 
     def _get_notification_endpoint(self) -> str:
@@ -196,26 +208,20 @@ class Beekeeper(BeekeeperCommon, helpy.Beekeeper):
         for callback in self.__wallet_close_callbacks:
             callback(wallet_names)
 
-    def __enter__(self) -> Beekeeper:  # noqa: PYI034
-        return cast(Beekeeper, super().__enter__())
-
-    def _enter(self) -> Self:
-        self.run()
-        return self
-
-    def _finally(self) -> None:
-        self.close()
+    @property
+    def settings(self) -> Settings:
+        return cast(Settings, super().settings)
 
 
-class AsyncBeekeeper(BeekeeperCommon, helpy.AsyncBeekeeper):
+class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], helpy.AsyncBeekeeper):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, logger=logger, **kwargs)
         self.__wallet_close_callbacks: list[AsyncWalletLocked] = []
 
     def run(self) -> None:
         self._clear_session_token()
-        self._restore_settings()
-        self._run()
+        with self.update_settings() as settings:
+            self._run(settings=cast(Settings, settings))
         self.http_endpoint = self._get_http_endpoint_from_event()
 
     def _get_notification_endpoint(self) -> str:
@@ -234,15 +240,9 @@ class AsyncBeekeeper(BeekeeperCommon, helpy.AsyncBeekeeper):
             for callback in self.__wallet_close_callbacks:
                 executor.submit(asyncio.run, callback(wallet_names)).exception()  # type: ignore[arg-type]
 
-    async def __aenter__(self) -> Awaitable[AsyncBeekeeper]:
-        return await super().__aenter__()  # type: ignore
-
-    async def _enter(self) -> Self:
-        self.run()
-        return self
-
-    async def _finally(self) -> None:
-        self.close()
+    @property
+    def settings(self) -> Settings:
+        return cast(Settings, super().settings)
 
 
 class SyncRemoteBeekeeper(Beekeeper):
