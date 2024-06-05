@@ -102,8 +102,8 @@ struct bls_m_of_n_scheme: public scheme
     size_t _counter = 0;
     for( size_t i = 0; i < membership_keys.size(); ++i )
     {
-      std::vector<uint8_t> _tmp{ static_cast<uint8_t>( i ) };
-      if( AugSchemeMPL().AggregateVerify( { aggregated_public_key }, std::vector<std::vector<uint8_t>>{ _tmp }, membership_keys[i] ) )
+      std::vector<std::vector<uint8_t>> _tmp{ generate_order_content( i ) };
+      if( AugSchemeMPL().AggregateVerify( { aggregated_public_key }, _tmp, membership_keys[i] ) )
         ++_counter;
     }
     std::cout<<"membership checker: "<<_counter<<"/"<<membership_keys.size()<<" passed"<<std::endl;

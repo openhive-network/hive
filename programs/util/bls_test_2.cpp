@@ -35,16 +35,6 @@ struct lib_bls
   using private_key_share_items_ptr = std::shared_ptr<private_key_share_items>;
   using generated_basic_keys = std::pair<private_key_share_items_ptr, BLSPublicKey>;
 
-  void display_fun( int size )
-  {
-    std::cout<<"size: "<<size<<std::endl;
-  }
-
-  void display_fun( int idx, int idx2 )
-  {
-    std::cout<<"idx: "<<idx<<" idx2: "<<idx2<<std::endl;
-  }
-
   std::shared_ptr<std::array<uint8_t, 32>> create_content()
   {
     start_time();
@@ -59,11 +49,32 @@ struct lib_bls
     return hash_ptr;
   }
 
-  generated_basic_keys create_private_key_share( size_t num_signed, size_t num_all )
+  bool create_private_key_share( size_t num_signed, size_t num_all )
   {
+    std::vector<size_t> participants(num_all);
+    for (size_t i = 0; i < num_all; ++i) participants.at(i) = i + 1; //set participants indices 1,2,3
+
     libff::alt_bn128_G2 common_public = libff::alt_bn128_G2::zero();
 
     std::vector< std::vector< libff::alt_bn128_Fr > > secret_shares_all;
+
+    //participant_0
+    // DKGBLSWrapper dkg_wrap_0( num_signed, num_all );
+    // std::shared_ptr< std::vector< libff::alt_bn128_Fr > > secret_shares_all_0 = dkg_wrap_0.createDKGSecretShares();
+    // std::shared_ptr< std::vector< libff::alt_bn128_G2 > > public_shares_ptr_0 = dkg_wrap_0.createDKGPublicShares();
+    // common_public = common_public + public_shares_ptr_0->at( 0 );
+
+    //participant_1
+    // DKGBLSWrapper dkg_wrap_1( num_signed, num_all );
+    // std::shared_ptr< std::vector< libff::alt_bn128_Fr > > secret_shares_all_1 = dkg_wrap_1.createDKGSecretShares();
+    // std::shared_ptr< std::vector< libff::alt_bn128_G2 > > public_shares_ptr_1 = dkg_wrap_1.createDKGPublicShares();
+    // common_public = common_public + public_shares_ptr_1->at( 0 );
+
+    //participant_2
+    // DKGBLSWrapper dkg_wrap_2( num_signed, num_all );
+    // std::shared_ptr< std::vector< libff::alt_bn128_Fr > > secret_shares_all_2 = dkg_wrap_2.createDKGSecretShares();
+    // std::shared_ptr< std::vector< libff::alt_bn128_G2 > > public_shares_ptr_2 = dkg_wrap_2.createDKGPublicShares();
+    // common_public = common_public + public_shares_ptr_2->at( 0 );
 
     for ( size_t i = 0; i < num_all; i++ )
     {
@@ -71,7 +82,6 @@ struct lib_bls
 
         std::shared_ptr< std::vector< libff::alt_bn128_Fr > > secret_shares_ptr = dkg_wrap.createDKGSecretShares();
         secret_shares_all.push_back( *secret_shares_ptr );
-        display_fun( secret_shares_ptr->size() );
 
         std::shared_ptr< std::vector< libff::alt_bn128_G2 > > public_shares_ptr = dkg_wrap.createDKGPublicShares();
         common_public = common_public + public_shares_ptr->at( 0 );
@@ -79,13 +89,47 @@ struct lib_bls
 
     std::vector< std::vector< libff::alt_bn128_Fr > > secret_key_shares;
 
+    std::vector< libff::alt_bn128_Fr > secret_key_contribution;
+
+    /*
+      participant_0
+        got from participant_1 number "0"
+        got from participant_2 number "0"
+    */
+    // secret_key_contribution.push_back( (*secret_shares_all_0)[0] );
+    // secret_key_contribution.push_back( (*secret_shares_all_1)[0] );
+    // secret_key_contribution.push_back( (*secret_shares_all_2)[0] );
+    // secret_key_shares.push_back( secret_key_contribution );
+    // secret_key_contribution.clear();
+
+    /*
+      participant_1
+        got from participant_0 number "1"
+        got from participant_2 number "1"
+    */
+    // secret_key_contribution.push_back( (*secret_shares_all_0)[1] );
+    // secret_key_contribution.push_back( (*secret_shares_all_1)[1] );
+    // secret_key_contribution.push_back( (*secret_shares_all_2)[1] );
+    // secret_key_shares.push_back( secret_key_contribution );
+    // secret_key_contribution.clear();
+
+    /*
+      participant_2
+        got from participant_0 number "2"
+        got from participant_1 number "2"
+    */
+    // secret_key_contribution.push_back( (*secret_shares_all_0)[2] );
+    // secret_key_contribution.push_back( (*secret_shares_all_1)[2] );
+    // secret_key_contribution.push_back( (*secret_shares_all_2)[2] );
+    // secret_key_shares.push_back( secret_key_contribution );
+    // secret_key_contribution.clear();
+
     for ( size_t i = 0; i < num_all; i++ )
     {
         std::vector< libff::alt_bn128_Fr > secret_key_contribution;
         for ( size_t j = 0; j < num_all; j++ )
         {
             secret_key_contribution.push_back( secret_shares_all.at( j ).at( i ) );
-            display_fun( j, i );
         }
         secret_key_shares.push_back( secret_key_contribution );
     }
@@ -95,23 +139,12 @@ struct lib_bls
     for ( size_t i = 0; i < num_all; i++ )
     {
       DKGBLSWrapper dkg_wrap( num_signed, num_all );
+      
       BLSPrivateKeyShare _tmp = dkg_wrap.CreateBLSPrivateKeyShare( std::make_shared< std::vector< libff::alt_bn128_Fr > >( secret_key_shares.at( i ) ) );
       _private_keys->push_back( std::make_shared<BLSPrivateKeyShare>( std::move( _tmp ) ) );
     }
 
     BLSPublicKey _common_public_key( common_public );
-
-    return std::make_pair( _private_keys, _common_public_key );
-  }
-
-  bool run( size_t num_all, size_t num_signed )
-  {
-    start_time();
-    std::vector<size_t> participants(num_all);
-    for (size_t i = 0; i < num_all; ++i) participants.at(i) = i + 1; //set participants indices 1,2,3
-
-    auto _generated_basic_keys = create_private_key_share(num_signed, num_all);
-    end_time( "create_private_keys" );
 
     auto _content = create_content();
 
@@ -119,7 +152,7 @@ struct lib_bls
     BLSSigShareSet sigSet(num_signed, num_all);
 
     for (size_t i = 0; i < num_signed; ++i) {
-      std::shared_ptr<BLSPrivateKeyShare> skey = _generated_basic_keys.first->at(i);
+      std::shared_ptr<BLSPrivateKeyShare> skey = _private_keys->at(i);
 
       // sign with private key of each participant
       std::shared_ptr<BLSSigShare> sigShare = skey->sign( _content, participants.at(i) );
@@ -134,10 +167,14 @@ struct lib_bls
 
     // verify common signature with common public key
     start_time();
-    bool _result = _generated_basic_keys.second.VerifySig( _content, common_sig_ptr );
+    bool _result = _common_public_key.VerifySig( _content, common_sig_ptr );
     end_time( "verify" );
-
     return _result;
+  }
+
+  bool run( size_t num_all, size_t num_signed )
+  {
+    return create_private_key_share( num_signed, num_all );
   }
 
 };
