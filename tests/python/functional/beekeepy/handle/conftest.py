@@ -36,14 +36,14 @@ def beekeeper(beekeeper_not_started: Beekeeper) -> Iterator[Beekeeper]:
 @pytest.fixture()
 def wallet(beekeeper: Beekeeper) -> WalletInfo:
     name, password = "wallet", "password"
-    beekeeper.api.beekeeper.create(wallet_name=name, password=password)
+    beekeeper.api.create(wallet_name=name, password=password)
     return WalletInfo(name=name, password=password)
 
 
 @pytest.fixture()
 def account(beekeeper: Beekeeper, wallet: WalletInfo) -> tt.Account:
     acc = tt.Account("account")
-    beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=acc.private_key)
+    beekeeper.api.import_key(wallet_name=wallet.name, wif_key=acc.private_key)
     return acc
 
 

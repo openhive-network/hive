@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 
 def open_and_unlock_wallet(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
-    beekeeper.api.beekeeper.open(wallet_name=wallet.name)
-    beekeeper.api.beekeeper.unlock(wallet_name=wallet.name, password=wallet.password)
+    beekeeper.api.open(wallet_name=wallet.name)
+    beekeeper.api.unlock(wallet_name=wallet.name, password=wallet.password)
 
 
 @pytest.mark.parametrize("explicit_wallet_name", [False, True])
@@ -28,10 +28,10 @@ def test_api_get_public_keys(
     explicit_wallet_name_param = {"wallet_name": wallet.name} if explicit_wallet_name else {}
 
     for account in wallet.accounts:
-        beekeeper.api.beekeeper.import_key(wallet_name=wallet.name, wif_key=account.private_key)
+        beekeeper.api.import_key(wallet_name=wallet.name, wif_key=account.private_key)
 
     # ACT
-    response = (beekeeper.api.beekeeper.get_public_keys(**explicit_wallet_name_param)).keys
+    response = (beekeeper.api.get_public_keys(**explicit_wallet_name_param)).keys
     bk_public_keys = [pub.public_key for pub in response]
 
     # ASSERT
@@ -44,7 +44,7 @@ def test_api_get_public_keys_with_different_wallet_name(beekeeper: Beekeeper, wa
 
     # ACT & ASSERT
     with pytest.raises(RequestError, match=f"Wallet {not_existing_wallet_name} is locked"):
-        beekeeper.api.beekeeper.get_public_keys(wallet_name=not_existing_wallet_name)
+        beekeeper.api.get_public_keys(wallet_name=not_existing_wallet_name)
 
 
 def test_api_get_public_keys_with_many_wallets(beekeeper: Beekeeper, setup_wallets: WalletsGeneratorT) -> None:
@@ -61,25 +61,25 @@ def test_api_get_public_keys_with_many_wallets(beekeeper: Beekeeper, setup_walle
     open_and_unlock_wallet(wallet=wallet_2, beekeeper=beekeeper)
 
     # Get ALL public key from bk it should contain both, wallet_1_keys and  wallet_2_keys
-    bk_pub_keys_all = [pub.public_key for pub in (beekeeper.api.beekeeper.get_public_keys()).keys]
+    bk_pub_keys_all = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
     bk_pub_keys_all.sort()
     assert bk_pub_keys_all == all_keys, "All keys should be available."
 
     # ACT & ASSERT 1
     # Lock wallet 2
-    beekeeper.api.beekeeper.lock(wallet_name=wallet_2.name)
+    beekeeper.api.lock(wallet_name=wallet_2.name)
     # Now only keys from wallet 1 should be available
-    bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.beekeeper.get_public_keys()).keys]
+    bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
     assert sorted(bk_pub_keys_1) == sorted(
         wallet_1.get_all_public_keys()
     ), "Only keys from wallet 1 should be available."
 
     # ACT & ASSERT 2
     # Lock wallet 1
-    beekeeper.api.beekeeper.lock(wallet_name=wallet_1.name)
+    beekeeper.api.lock(wallet_name=wallet_1.name)
     # Now all wallet are closed, so that no key should be available
     with pytest.raises(RequestError, match="You don't have any unlocked wallet"):
-        beekeeper.api.beekeeper.get_public_keys()
+        beekeeper.api.get_public_keys()
 
 
 def test_api_get_public_keys_with_many_wallets_closed(beekeeper: Beekeeper, setup_wallets: WalletsGeneratorT) -> None:
@@ -97,21 +97,21 @@ def test_api_get_public_keys_with_many_wallets_closed(beekeeper: Beekeeper, setu
     open_and_unlock_wallet(wallet=wallet_2, beekeeper=beekeeper)
 
     # Get all available public keys ()
-    bk_pub_keys_all = [pub.public_key for pub in (beekeeper.api.beekeeper.get_public_keys()).keys]
+    bk_pub_keys_all = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
     bk_pub_keys_all.sort()
     assert bk_pub_keys_all == all_keys, "Keys from wallet 1 and wallet 2 should be available."
 
     # ACT & ASSERT 1
     # Close wallet 2
-    beekeeper.api.beekeeper.close(wallet_name=wallet_2.name)
-    bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.beekeeper.get_public_keys()).keys]
+    beekeeper.api.close(wallet_name=wallet_2.name)
+    bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
     assert sorted(bk_pub_keys_1) == sorted(
         wallet_1.get_all_public_keys()
     ), "Only keys from wallet 1 should be available."
 
     # ACT & ASSERT 2
     # Close wallet 1,
-    beekeeper.api.beekeeper.close(wallet_name=wallet_1.name)
+    beekeeper.api.close(wallet_name=wallet_1.name)
     # There is no wallet
     with pytest.raises(RequestError, match="You don't have any wallet"):
-        beekeeper.api.beekeeper.get_public_keys()
+        beekeeper.api.get_public_keys()

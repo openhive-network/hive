@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 
 
 class NotificationCallback(Protocol):
-    def __call__(self, notification: Notification[Any]) -> None: ...
+    def __call__(self, notification: Notification[Any]) -> None:
+        ...
 
 
 @dataclass

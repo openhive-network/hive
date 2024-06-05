@@ -20,7 +20,7 @@ def create_session(beekeeper: Beekeeper, salt: str) -> None:
 
     # ACT
     token = (
-        beekeeper.api.beekeeper.create_session(
+        beekeeper.api.create_session(
             notifications_endpoint=notification_endpoint,
             salt=salt,
         )

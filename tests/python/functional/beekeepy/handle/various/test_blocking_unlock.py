@@ -45,14 +45,14 @@ def raise_if_exception(exception: AssertionError | None) -> None:
 def test_wallet_blocking_timeout(beekeeper: Beekeeper, wallet: WalletInfo, force_error: bool) -> None:
     """Test test_wallet_blocking_timeout will test wallet blocking 500ms interval."""
     # ARRANGE
-    wallets = (beekeeper.api.beekeeper.list_wallets()).wallets
+    wallets = (beekeeper.api.list_wallets()).wallets
     assert wallets[0].name == wallet.name
 
     unlock_jsons = []
     assert beekeeper.settings.notification_endpoint is not None
     for i in range(5):
         session = (
-            beekeeper.api.beekeeper.create_session(
+            beekeeper.api.create_session(
                 notifications_endpoint=beekeeper.settings.notification_endpoint.as_string(with_protocol=False),
                 salt=f"salt-{i}",
             )

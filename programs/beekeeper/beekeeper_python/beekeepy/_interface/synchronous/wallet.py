@@ -24,7 +24,7 @@ class Wallet(WalletInterface):
 
     @property
     def public_keys(self) -> list[PublicKey]:
-        return [key.public_key for key in self.__beekeeper.api.beekeeper.get_public_keys().keys]
+        return [key.public_key for key in self.__beekeeper.api.get_public_keys().keys]
 
     @property
     def unlocked(self) -> UnlockedWallet | None:
@@ -34,11 +34,11 @@ class Wallet(WalletInterface):
 
     def unlock(self, password: str) -> UnlockedWallet:
         if not self.__is_unlocked():
-            self.__beekeeper.api.beekeeper.unlock(wallet_name=self.name, password=password)
+            self.__beekeeper.api.unlock(wallet_name=self.name, password=password)
         return self.__construct_unlocked_wallet()
 
     def __is_unlocked(self) -> bool:
-        for wallet in self.__beekeeper.api.beekeeper.list_wallets().wallets:
+        for wallet in self.__beekeeper.api.list_wallets().wallets:
             if wallet.name == self.__name:
                 return wallet.unlocked
         return False
@@ -65,13 +65,13 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         return self.import_key(private_key=private_key)
 
     def import_key(self, *, private_key: str) -> PublicKey:
-        return self.__beekeeper.api.beekeeper.import_key(wallet_name=self.name, wif_key=private_key).public_key
+        return self.__beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
 
     def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
-        self.__beekeeper.api.beekeeper.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
+        self.__beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
 
     def lock(self) -> None:
-        self.__beekeeper.api.beekeeper.lock(wallet_name=self.name)
+        self.__beekeeper.api.lock(wallet_name=self.name)
 
     def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
-        return self.__beekeeper.api.beekeeper.sign_digest(sig_digest=sig_digest, public_key=key).signature
+        return self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key).signature

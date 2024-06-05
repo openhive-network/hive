@@ -22,4 +22,5 @@ def test_packing(settings: SettingsFactory) -> None:
         assert len(wlt.public_keys) == 0
         with ProcessPoolExecutor() as exec:
             future = exec.submit(import_new_key, bk.pack(), name, password)
-            assert future.exception() is None
+            exception = future.exception()
+            assert exception is None, str(exception)

@@ -8,7 +8,7 @@ from beekeepy._executable.beekeeper_config import BeekeeperConfig
 from beekeepy._executable.beekeeper_executable_discovery import get_beekeeper_binary_path
 from beekeepy._executable.executable import Executable
 from beekeepy.settings import Settings
-from schemas.fields.compound import KeyPair
+from helpy import KeyPair
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -38,7 +38,7 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
         )
         bk.run(
             blocking=True,
-            arguments=["-d", tempdir.as_posix(), "--export-keys-wallet", json.dumps([wallet_name, wallet_password])],
+            arguments=["-d", tempdir.as_posix(), "--notifications-endpoint", "0.0.0.0:0", "--export-keys-wallet", json.dumps([wallet_name, wallet_password])],
         )
 
         keys_path = bk.woring_dir / f"{wallet_name}.keys"

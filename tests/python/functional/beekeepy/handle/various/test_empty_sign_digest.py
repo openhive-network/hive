@@ -22,7 +22,7 @@ def test_empty_sign_digest(beekeeper: Beekeeper, wallet: WalletInfo, account: tt
         params={
             "token": token,
             "WRONG_ARG": "WRONG ARG",
-            "public_key": account.public_key.no_prefix(),
+            "public_key": account.public_key,
         },
     )
 

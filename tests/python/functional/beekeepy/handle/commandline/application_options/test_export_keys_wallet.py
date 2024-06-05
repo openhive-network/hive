@@ -4,9 +4,9 @@ import json
 from typing import TYPE_CHECKING, Final
 
 from beekeepy._handle import Beekeeper
+from helpy import KeyPair
 
 from schemas.fields.basic import PrivateKey, PublicKey
-from schemas.fields.compound import KeyPair
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -14,23 +14,23 @@ if TYPE_CHECKING:
 PRIVATE_AND_PUBLIC_KEYS: Final[list[KeyPair]] = [
     KeyPair(
         private_key=PrivateKey("5JqStPwQgnXBdyRDDxCDyjfC8oNjgJuZsBkT6MMz6FopydAebbC"),
-        public_key=PublicKey("5EjyFcCNidBSivAtTKvWWwWRNjakcRMB79QrbwMKprcTRBHtXz"),
+        public_key=PublicKey("STM5EjyFcCNidBSivAtTKvWWwWRNjakcRMB79QrbwMKprcTRBHtXz"),
     ),
     KeyPair(
         private_key=PrivateKey("5J7m49WCKnRBTo1HyJisBinn8Lk3syYaXsrzdFmfDxkejHLwZ1m"),
-        public_key=PublicKey("5hjCkhcMKcXQMppa97XUbDR5dWC3c2K8h23P1ajEi2fT9YuagW"),
+        public_key=PublicKey("STM5hjCkhcMKcXQMppa97XUbDR5dWC3c2K8h23P1ajEi2fT9YuagW"),
     ),
     KeyPair(
         private_key=PrivateKey("5HwHC7y2WtCL18J9QMqX7awDe1GDsUTg7cfw734m2qFkdMQK92q"),
-        public_key=PublicKey("6jACfK3P5xYFJQvavCwz5M8KR5EW3TcmSesArj9LJVGAq85qor"),
+        public_key=PublicKey("STM6jACfK3P5xYFJQvavCwz5M8KR5EW3TcmSesArj9LJVGAq85qor"),
     ),
     KeyPair(
         private_key=PrivateKey("5Khrc9PX4S8wAUUmX4h2JpBgf4bhvPyFT5RQ6tGfVpKEudwpYjZ"),
-        public_key=PublicKey("77P1n96ojdXcKpd5BRUhVmk7qFTfM2q2UkWSKg63Xi7NKyK2Q1"),
+        public_key=PublicKey("STM77P1n96ojdXcKpd5BRUhVmk7qFTfM2q2UkWSKg63Xi7NKyK2Q1"),
     ),
     KeyPair(
         private_key=PrivateKey("5JowdvuiDxoeLhzoSEKK74TCiwTaUHvxtRH3fkbweVEJZEsQJoc"),
-        public_key=PublicKey("8RgQ3yexUZjcVGxQ2i3cKywwKwhxqzwtCHPQznGUYvQ15ZvahW"),
+        public_key=PublicKey("STM8RgQ3yexUZjcVGxQ2i3cKywwKwhxqzwtCHPQznGUYvQ15ZvahW"),
     ),
 ]
 
@@ -54,12 +54,12 @@ def test_export_keys(beekeeper: Beekeeper) -> None:
 
     extract_path = beekeeper.settings.working_directory
 
-    create = beekeeper.api.beekeeper.create(wallet_name=wallet_name)
-    beekeeper.api.beekeeper.open(wallet_name=wallet_name)
-    beekeeper.api.beekeeper.unlock(password=create.password, wallet_name=wallet_name)
+    create = beekeeper.api.create(wallet_name=wallet_name)
+    beekeeper.api.open(wallet_name=wallet_name)
+    beekeeper.api.unlock(password=create.password, wallet_name=wallet_name)
 
     for key_pair in PRIVATE_AND_PUBLIC_KEYS:
-        beekeeper.api.beekeeper.import_key(wif_key=key_pair.private_key, wallet_name=wallet_name)
+        beekeeper.api.import_key(wif_key=key_pair.private_key, wallet_name=wallet_name)
 
     # ACT
     keys = beekeeper.export_keys_wallet(

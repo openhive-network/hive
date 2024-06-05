@@ -20,7 +20,8 @@ if TYPE_CHECKING:
 
 class Closable:
     @abstractmethod
-    def close(self) -> None: ...
+    def close(self) -> None:
+        ...
 
 
 class AutoCloser(ContextSync[None]):
@@ -159,7 +160,8 @@ class Executable(Closable, Generic[ConfigT]):
         return text in self.__files
 
     @abstractmethod
-    def _construct_config(self) -> ConfigT: ...
+    def _construct_config(self) -> ConfigT:
+        ...
 
     def generate_default_config(self) -> ConfigT:
         path_to_config = self.woring_dir / (Config.DEFAULT_FILE_NAME + ".tmp")
