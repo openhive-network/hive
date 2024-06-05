@@ -25,8 +25,6 @@ namespace hive { namespace protocol {
     share_type        amount;
     asset_symbol_type symbol;
 
-    void validate()const;
-
     asset& operator += ( const asset& o )
     {
       FC_ASSERT( symbol == o.symbol );
