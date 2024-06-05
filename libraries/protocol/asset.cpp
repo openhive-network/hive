@@ -256,13 +256,6 @@ void asset_symbol_type::validate()const
   // FC_ASSERT( decimals() <= HIVE_ASSET_MAX_DECIMALS );
 }
 
-void asset::validate()const
-{
-  symbol.validate();
-  FC_ASSERT( amount.value >= 0 );
-  FC_ASSERT( amount.value <= HIVE_MAX_SATOSHIS );
-}
-
 #define BQ(a) \
   std::tie( a.base.symbol, a.quote.symbol )
 
