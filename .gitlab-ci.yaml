@@ -93,6 +93,15 @@ cleanup_hived_cache_manual:
   tags:
     - data-cache-storage
 
+cleanup_cache_on_hived_builders:
+  extends: .cleanup_cache_manual_template
+  stage: cleanup
+  variables:
+    CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
 cleanup_old_hived_cache:
   extends: .cleanup_old_cache_template
   stage: cleanup
