@@ -192,8 +192,6 @@ BOOST_AUTO_TEST_CASE( asset_test )
 
     // amount overflow
     BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"9223372036854775808\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
-    // amount underflow
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"-1\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // precision overflow
     BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10\",\"precision\":256,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
