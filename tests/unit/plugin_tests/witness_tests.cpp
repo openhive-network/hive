@@ -147,6 +147,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
   try
   {
     initialize();
+    bool test_passed = false;
 
     fc::thread api_thread;
     api_thread.async( [&]()
@@ -205,6 +206,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
         } );
 
         ilog( "'API' thread finished" );
+        test_passed = true;
       }
       CATCH( "API" )
     } );
@@ -212,6 +214,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
     theApp.wait4interrupt_request();
     theApp.quit( true );
     ilog( "Test done" );
+    BOOST_REQUIRE( test_passed );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -226,6 +229,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     initialize();
 
     enum { ALICE, BOB, CAROL, DAN, FEEDER_COUNT };
+    bool test_passed[ FEEDER_COUNT + 1 ] = {};
     std::atomic<uint32_t> active_feeders( 0 );
     fc::thread sync_thread;
     sync_thread.async( [&]()
@@ -266,6 +270,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
         ilog( "waiting for the block to consume all account preparation transactions" );
         fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+        test_passed[ FEEDER_COUNT ] = true;
       }
       CATCH( "SYNC" )
 
@@ -327,6 +332,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         schedule_transfer( "alice", "dan", ASSET( "999.990 TBD" ), "Pull&Bear red cut long #43980982343" );
 
         ilog( "'alice' logging out" );
+        test_passed[ ALICE ] = true;
       }
       CATCH( "ALICE" )
       --active_feeders;
@@ -380,6 +386,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
           fc::usleep( fc::seconds( 1 ) );
         }
         ilog( "'bob' logging out" );
+        test_passed[ BOB ] = true;
       }
       CATCH( "BOB" )
       --active_feeders;
@@ -440,6 +447,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         schedule_transaction( comment );
 
         ilog( "'carol' logging out" );
+        test_passed[ CAROL ] = true;
       }
       CATCH( "CAROL" )
       --active_feeders;
@@ -481,6 +489,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         schedule_transaction( comment );
 
         ilog( "'dan' logging out" );
+        test_passed[ DAN ] = true;
       }
       CATCH( "DAN" )
       --active_feeders;
@@ -490,6 +499,11 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     theApp.wait4interrupt_request();
     theApp.quit( true );
     ilog( "Test done" );
+    BOOST_REQUIRE( test_passed[ FEEDER_COUNT ] );
+    BOOST_REQUIRE( test_passed[ ALICE ] );
+    BOOST_REQUIRE( test_passed[ BOB ] );
+    BOOST_REQUIRE( test_passed[ CAROL ] );
+    BOOST_REQUIRE( test_passed[ DAN ] );
   }
   FC_LOG_AND_RETHROW()
 }
