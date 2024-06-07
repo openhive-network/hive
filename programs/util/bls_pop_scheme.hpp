@@ -47,9 +47,24 @@ struct pop_scheme: public scheme
     sign_content( _idxs );
   }
 
-  void aggregate_signatures()
+  std::vector<G2Element> sign( const std::vector<PrivateKey>& src_private_keys )
   {
-    aggregated_signature = PopSchemeMPL().Aggregate( signatures );
+    std::vector<G2Element> _result;
+    for( auto& private_key : src_private_keys )
+    {
+      _result.emplace_back( PopSchemeMPL().Sign( private_key, content ) );
+    }
+    return _result;
+  }
+
+  std::vector<G2Element>  sign_content_2()
+  {
+    return sign( private_keys );
+  }
+
+  G2Element aggregate_signatures( std::vector<G2Element>& src_signatures )
+  {
+    return PopSchemeMPL().Aggregate( src_signatures );
   }
 
   void aggregate_signatures( const std::vector<G2Element>& a, const std::vector<G2Element>& b)
@@ -59,9 +74,9 @@ struct pop_scheme: public scheme
     aggregated_signature = PopSchemeMPL().Aggregate( _res );
   }
 
-  bool verify( const std::vector<G1Element>& _public_keys )
+  bool verify( const std::vector<G1Element>& src_public_keys, const G2Element& aggregated_signature )
   {
-    return PopSchemeMPL().FastAggregateVerify( _public_keys, content, aggregated_signature );
+    return PopSchemeMPL().FastAggregateVerify( src_public_keys, content, aggregated_signature );
   }
 
 };
