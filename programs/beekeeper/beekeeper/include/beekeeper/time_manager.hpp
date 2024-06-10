@@ -12,7 +12,7 @@ class time_manager: public time_manager_base
 
     bool stop_requested = false;
 
-    std::string error_notifications_endpoint;
+    std::optional<std::string> error_notifications_endpoint;
 
     std::unique_ptr<std::thread> notification_thread;
 
@@ -24,7 +24,7 @@ class time_manager: public time_manager_base
 
   public:
 
-    time_manager( const std::string& notifications_endpoint );
+    time_manager( const std::optional<std::string>& notifications_endpoint );
     ~time_manager() override;
 
     void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method ) override;

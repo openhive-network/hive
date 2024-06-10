@@ -60,7 +60,7 @@ struct keys_container
   std::string private_key;
 };
 
-bool beekeeper_app::save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password )
+bool beekeeper_app::save_keys( const std::optional<std::string>& notification, const std::string& wallet_name, const std::string& wallet_password )
 {
   bool _result = true;
 

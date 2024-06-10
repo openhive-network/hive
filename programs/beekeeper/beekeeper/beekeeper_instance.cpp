@@ -10,7 +10,7 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::string& notifications_endpoint )
+  beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::optional<std::string>& notifications_endpoint )
                     : app( app ), error_notifications_endpoint( notifications_endpoint )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
