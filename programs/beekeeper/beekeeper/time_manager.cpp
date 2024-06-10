@@ -4,7 +4,7 @@
 
 namespace beekeeper {
 
-time_manager::time_manager( const std::string& notifications_endpoint )
+time_manager::time_manager( const std::optional<std::string>& notifications_endpoint )
               : error_notifications_endpoint( notifications_endpoint )
 {
   notification_thread = std::make_unique<std::thread>( [this]()

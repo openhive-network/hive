@@ -14,7 +14,7 @@ class session_manager: public session_manager_base
 
   public:
 
-    session_manager( const std::string& notifications_endpoint );
+    session_manager( const std::optional<std::string>& notifications_endpoint );
     ~session_manager() override {}
 };
 

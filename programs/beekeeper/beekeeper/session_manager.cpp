@@ -4,7 +4,7 @@
 
 namespace beekeeper {
 
-session_manager::session_manager( const std::string& notifications_endpoint )
+session_manager::session_manager( const std::optional<std::string>& notifications_endpoint )
 {
   time = std::make_shared<time_manager>( notifications_endpoint );
 }
