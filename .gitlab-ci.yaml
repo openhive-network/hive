@@ -20,8 +20,6 @@ variables:
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
-  TOX_VERSION: "3.25.1"
-
   DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
@@ -650,7 +648,6 @@ patterns_tests:
   before_script:
     - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
     - !reference [.test_tools_based, before_script]
-    - pip3 install tox==${TOX_VERSION}
 
   script:
     # run pattern tests
