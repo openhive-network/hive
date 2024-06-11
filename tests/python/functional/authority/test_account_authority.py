@@ -49,9 +49,11 @@ def test_owner_account_authority(node: tt.InitNode, authority, alice, bob) -> No
     bob.wallet.api.import_key(tt.PrivateKey(bob.name, secret=authority))
 
     if authority == "owner":
-        # fixme:
-        # bob.wallet.api.import_key(tt.PrivateKey(bob.name, secret="active"))
-        # bob.wallet.api.use_authority("active", bob.name)
+        # fixme: ¿?
+        bob.wallet.api.import_key(tt.PrivateKey(bob.name, secret="active"))
+        bob.wallet.api.use_authority("active", bob.name)
+        #
+
         bob.wallet.api.update_account(
             alice.name,
             "{}",
