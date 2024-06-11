@@ -4,6 +4,7 @@
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
 ARG CI_IMAGE_TAG=ubuntu22.04-10
 ARG BUILD_IMAGE_TAG
+ARG IMAGE_TAG_PREFIX
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
 
@@ -174,7 +175,7 @@ EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
-FROM ${CI_REGISTRY_IMAGE}base_instance:${BUILD_IMAGE_TAG} as instance
+FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG} as instance
 
 #p2p service
 EXPOSE ${P2P_PORT}

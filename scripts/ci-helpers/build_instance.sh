@@ -134,6 +134,8 @@ if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
   GIT_LAST_COMMIT_DATE="[unknown]"
 fi
 
+echo -e "\nBuilding base instance image...\n"
+
 docker build --target=base_instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
   --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
@@ -145,10 +147,12 @@ docker build --target=base_instance \
   --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-  --tag "${REGISTRY}base_instance:${BUILD_IMAGE_TAG}" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
+
+echo -e "\nDone!\nBuilding instance image...\n"
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
@@ -161,9 +165,12 @@ docker build --target=instance \
   --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
+
+echo -e "\nDone!\nBuilding minimal instance image...\n"
 
 docker build --target=minimal-instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
@@ -176,9 +183,14 @@ docker build --target=minimal-instance \
   --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal-instance:${BUILD_IMAGE_TAG}" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal-instance:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
+
+# rm -rf base_instance.tar base_instance
+
+echo -e "\nDone!\n"
 
 popd
 
