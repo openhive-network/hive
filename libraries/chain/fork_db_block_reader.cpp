@@ -8,40 +8,40 @@
 namespace hive { namespace chain {
 
 fork_db_block_reader::fork_db_block_reader( fork_database& fork_db, 
-                                            const block_log_wrapper& log_reader )
-  : _fork_db( fork_db ), _log_reader( log_reader )
+                                            const block_read_i& block_reader )
+  : _fork_db( fork_db ), _block_reader( block_reader )
 {}
 
 std::shared_ptr<full_block_type> fork_db_block_reader::head_block() const
 {
   auto head = _fork_db.head();
-  return head ? head->full_block : _log_reader.head_block();
+  return head ? head->full_block : _block_reader.head_block();
 }
 
 uint32_t fork_db_block_reader::head_block_num(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   auto head = _fork_db.head();
-  return head ? head->get_block_num() : _log_reader.head_block_num( wait_for_microseconds );
+  return head ? head->get_block_num() : _block_reader.head_block_num( wait_for_microseconds );
 }
 
 block_id_type fork_db_block_reader::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   auto head = _fork_db.head();
-  return head ? head->get_block_id() : _log_reader.head_block_id( wait_for_microseconds );
+  return head ? head->get_block_id() : _block_reader.head_block_id( wait_for_microseconds );
 }
 
 std::shared_ptr<full_block_type> fork_db_block_reader::read_block_by_num( uint32_t block_num ) const
 {
-  return _log_reader.read_block_by_num( block_num );
+  return _block_reader.read_block_by_num( block_num );
 }
 
 void fork_db_block_reader::process_blocks( uint32_t starting_block_number,
   uint32_t ending_block_number, block_processor_t processor,
   blockchain_worker_thread_pool& thread_pool ) const
 {
-  return _log_reader.process_blocks( starting_block_number, ending_block_number, processor,
+  return _block_reader.process_blocks( starting_block_number, ending_block_number, processor,
                                      thread_pool );
 }
 
@@ -58,7 +58,7 @@ std::shared_ptr<full_block_type> fork_db_block_reader::get_block_by_number( uint
   if (forkdb_item)
     blk = forkdb_item->full_block;
   else
-    blk = _log_reader.get_block_by_number(block_num);
+    blk = _block_reader.get_block_by_number(block_num);
 
   return blk;
 }
@@ -71,7 +71,7 @@ std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id(
     if (fork_item)
       return fork_item->full_block;
 
-    return _log_reader.fetch_block_by_id( id );
+    return _block_reader.fetch_block_by_id( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 
@@ -82,7 +82,7 @@ bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
     if( _fork_db.fetch_block( id ) )
       return true;
 
-    return _log_reader.is_known_block( id );
+    return _block_reader.is_known_block( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 
@@ -92,7 +92,7 @@ bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) co
     if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
       return true;
 
-    return _log_reader.is_known_block( id );
+    return _block_reader.is_known_block( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 
@@ -123,7 +123,7 @@ block_id_type fork_db_block_reader::find_block_id_for_num( uint32_t block_num )c
       else
       {
         // Next we check if block_log has it. Irreversible blocks are there.
-        result = _log_reader.find_block_id_for_num( block_num );
+        result = _block_reader.find_block_id_for_num( block_num );
       }
     }
   }
@@ -160,7 +160,7 @@ std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_
     std::vector<std::shared_ptr<full_block_type>> result;
 
     if (remaining_count)
-      result = _log_reader.fetch_block_range(starting_block_num, remaining_count, wait_for_microseconds);
+      result = _block_reader.fetch_block_range(starting_block_num, remaining_count, wait_for_microseconds);
 
     result.reserve(result.size() + fork_items.size());
     for (fork_item& item : fork_items)
@@ -327,7 +327,7 @@ block_id_type fork_db_block_reader::get_block_id_for_num( uint32_t block_num ) c
   block_id_type read_block_id;
   try
   {
-    read_block_id = _log_reader.find_block_id_for_num( block_num );
+    read_block_id = _block_reader.find_block_id_for_num( block_num );
   }
   catch (fc::key_not_found_exception&)
   { /*leave read_block_id empty*/ }
