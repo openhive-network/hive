@@ -98,7 +98,6 @@ class Executable(Closeable, Generic[ConfigT]):
             stderr=self.__files.stderr.open_stream(),
         )
 
-        time.sleep(0.1)  # wait for beekeeper process to start
         return AutoCloser(self)
 
     def run_and_get_output(self, arguments: list[str], environ: dict[str, str] | None = None) -> str:

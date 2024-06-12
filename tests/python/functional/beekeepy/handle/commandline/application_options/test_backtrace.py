@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 import pytest
@@ -23,6 +24,7 @@ def test_backtrace(backtrace: str, beekeeper_exe: BeekeeperExecutable) -> None:
             f"--backtrace={backtrace}",
         ],
     ):
+        time.sleep(0.1)
         # ASSERT
         assert checkers.check_for_pattern_in_file(
             beekeeper_exe.woring_dir / "stderr.log", "Backtrace on segfault is enabled."
