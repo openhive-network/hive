@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/block_log_wrapper.hpp>
+#include <hive/chain/block_read_interface.hpp>
 
 namespace hive { namespace chain {
 
@@ -9,7 +9,7 @@ namespace hive { namespace chain {
   class fork_db_block_reader : public block_read_i
   {
   public:
-    fork_db_block_reader( fork_database& fork_db, const block_log_wrapper& log_reader );
+    fork_db_block_reader( fork_database& fork_db, const block_read_i& block_reader );
     virtual ~fork_db_block_reader() = default;
 
     virtual std::shared_ptr<full_block_type> head_block() const override;
@@ -60,8 +60,8 @@ namespace hive { namespace chain {
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
   private:
-    fork_database&            _fork_db;
-    const block_log_wrapper&  _log_reader;
+    fork_database&      _fork_db;
+    const block_read_i& _block_reader;
   };
 
 } }

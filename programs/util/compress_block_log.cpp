@@ -277,7 +277,7 @@ void drain_completed_queue(const fc::path &output_path, uint32_t &current_block_
     ilog("Writer thread done writing compressed blocks to ${output_path}, compressed ${input_size} to ${output_size}",
         (output_path)("input_size", total_uncompressed_size + size_of_start_positions)("output_size", total_compressed_size + size_of_start_positions));
 
-  log_writer->close_log();
+  log_writer->close_storage();
 }
 
 void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
@@ -362,7 +362,7 @@ void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32
     }
 
     queue_condition_variable.notify_all();
-    log_reader->close_log();
+    log_reader->close_storage();
   }
 }
 

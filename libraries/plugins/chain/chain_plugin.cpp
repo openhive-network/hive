@@ -3,7 +3,7 @@
 #include <appbase/application.hpp>
 
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
-#include <hive/chain/block_log_wrapper.hpp>
+#include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -172,7 +172,7 @@ class chain_plugin_impl
 
     void finish_request();
 
-    using block_log_open_args=block_log_wrapper::block_log_open_args;
+    using block_log_open_args=block_storage_i::block_log_open_args;
 
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
@@ -226,9 +226,9 @@ class chain_plugin_impl
 
     hive::chain::blockchain_worker_thread_pool thread_pool;
 
-    database                              db;
-    std::shared_ptr< block_log_wrapper >  log_wrapper;
-    std::unique_ptr<sync_block_writer>    default_block_writer;
+    database                            db;
+    std::shared_ptr<block_storage_i>    block_storage;
+    std::unique_ptr<sync_block_writer>  default_block_writer;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -746,8 +746,8 @@ void chain_plugin_impl::initial_settings()
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( shared_memory_dir );
     default_block_writer->close();
-    log_wrapper->close_log();
-    log_wrapper->wipe_files( theApp.data_dir() / "blockchain" );
+    block_storage->close_storage();
+    block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
   }
 
   db.set_flush_interval( flush_interval );
@@ -830,7 +830,7 @@ void chain_plugin_impl::open()
 
     db.with_write_lock([&]()
     {
-      log_wrapper->open_and_init( bl_open_args, true/*read_only*/ );
+      block_storage->open_and_init( bl_open_args, true/*read_only*/ );
     });
     default_block_writer->open();
     db.open( db_open_args );
@@ -1285,7 +1285,7 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   }
   else
   {
-    log_wrapper->reopen_for_writing();
+    block_storage->reopen_for_writing();
     ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
   }
 
@@ -1414,9 +1414,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  my->log_wrapper = block_log_wrapper::create_wrapper( options.at( "block-log-split" ).as< int >(), get_app(), my->thread_pool );
+  my->block_storage = block_storage_i::create_storage( options.at( "block-log-split" ).as< int >(), get_app(), my->thread_pool );
   my->default_block_writer = 
-    std::make_unique< sync_block_writer >( *( my->log_wrapper.get() ), my->db, get_app() );
+    std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
 
 
   get_app().setup_notifications(options);
@@ -1709,7 +1709,7 @@ void chain_plugin::plugin_startup()
   if( my->replay )
   {
     std::shared_ptr< block_write_i > reindex_block_writer =
-      std::make_shared< irreversible_block_writer >( *( my->log_wrapper.get() ) );
+      std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
     ilog("Replaying...");
     if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
     {
@@ -1725,7 +1725,7 @@ void chain_plugin::plugin_startup()
       if( my->db.get_snapshot_loaded() )
       {
         std::shared_ptr< block_write_i > reindex_block_writer =
-          std::make_shared< irreversible_block_writer >( *( my->log_wrapper.get() ) );
+          std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
         if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
@@ -1744,7 +1744,7 @@ void chain_plugin::plugin_startup()
         else
         {
           ilog("P2P is disabled.");
-          my->log_wrapper->reopen_for_writing();
+          my->block_storage->reopen_for_writing();
         }
       }
     }
@@ -1762,7 +1762,7 @@ void chain_plugin::plugin_shutdown()
   my->stop_write_processing();
   my->db.close();
   my->default_block_writer->close();
-  my->log_wrapper->close_log();
+  my->block_storage->close_storage();
 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");

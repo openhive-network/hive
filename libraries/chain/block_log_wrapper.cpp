@@ -97,7 +97,7 @@ void block_log_wrapper::reopen_for_writing()
   internal_open_and_init( head_log_ptr, head_log_ptr->get_log_file(), false/*read_only*/ );
 }
 
-void block_log_wrapper::close_log()
+void block_log_wrapper::close_storage()
 {
   // Make one last attempt to clear GC contents.
   dispose_garbage( true/*closing_time*/ );
@@ -186,7 +186,7 @@ uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_bloc
   return result;
 }
 
-void block_log_wrapper::flush_head_log()
+void block_log_wrapper::flush_head_storage()
 {
   get_head_log()->flush();
 }
@@ -664,7 +664,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   }
 }
 
-void block_log_wrapper::wipe_files( const fc::path& dir )
+void block_log_wrapper::wipe_storage_files( const fc::path& dir )
 {
   if( not exists( dir ) )
     return;

@@ -10,14 +10,14 @@
 
 namespace hive { namespace chain {
 
-  class block_log_wrapper;
+  class block_storage_i;
   class fork_database;
   using appbase::application;
 
   class sync_block_writer : public block_write_i
   {
   public:
-    sync_block_writer( block_log_wrapper& blw, database& db, application& app );
+    sync_block_writer( block_storage_i& blw, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
     virtual const block_read_i& get_block_reader() override;
@@ -81,7 +81,7 @@ namespace hive { namespace chain {
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
   private:
-    block_log_wrapper&    _block_log_wrapper;
+    block_storage_i&      _block_storage;
     fork_db_block_reader  _reader;
     fork_database         _fork_db;
     bool                  _is_at_live_sync = false;

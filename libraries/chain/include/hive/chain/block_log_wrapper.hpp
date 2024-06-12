@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/chain/block_log_artifacts.hpp>
-#include <hive/chain/block_read_interface.hpp>
+#include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
 
 #define LEGACY_SINGLE_FILE_BLOCK_LOG -1
@@ -10,11 +10,10 @@
 namespace hive { namespace chain {
 
   /**
-   * @brief Dual purpose block log wrapper / block reader implementation.
+   * @brief Dual purpose block log wrapper / block storage/reader implementation.
    * Use for reading & writing instead of block_log class to make your life easier.
-   * Use as block reader based on block log, e.g. while replaying.
    */
-  class block_log_wrapper : public block_read_i
+  class block_log_wrapper : public block_storage_i
   {
   public:
     using block_log_wrapper_t = std::shared_ptr< block_log_wrapper >;
@@ -34,27 +33,24 @@ namespace hive { namespace chain {
                                  blockchain_worker_thread_pool& thread_pool );
     virtual ~block_log_wrapper() = default;
 
-    using full_block_ptr_t = std::shared_ptr<full_block_type>;
-    using full_block_range_t = std::vector<std::shared_ptr<full_block_type>>;
+    using block_storage_i::full_block_ptr_t;
+    using block_storage_i::full_block_range_t;
+    using block_storage_i::block_log_open_args;
+
+    // Required by block_storage_i:
+    virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only ) override;
+    virtual void reopen_for_writing() override;
+    virtual void close_storage() override;
+    virtual void append( const full_block_ptr_t& full_block, const bool is_at_live_sync ) override;
+    virtual void flush_head_storage() override;
+    virtual void wipe_storage_files( const fc::path& dir ) override;
 
     // Methods wrapping safely block_log ones.
-    struct block_log_open_args
-    {
-      fc::path  data_dir;
-      bool      enable_block_log_compression = true;
-      int       block_log_compression_level = 15;
-      bool      enable_block_log_auto_fixing = true;
-    };
-    void open_and_init( const block_log_open_args& bl_open_args, bool read_only );
-    void reopen_for_writing();
-    void close_log();
     std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
     std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t>
       read_raw_block_data_by_num(uint32_t block_num) const;
-    void append( const full_block_ptr_t& full_block, const bool is_at_live_sync );
     uint64_t append_raw( uint32_t block_num, const char* raw_block_data, size_t raw_block_size,
                                  const block_attributes_t& flags, const bool is_at_live_sync );
-    void flush_head_log();
 
     // Methods implementing block_read_i interface:
     virtual full_block_ptr_t head_block() const override;
@@ -82,12 +78,6 @@ namespace hive { namespace chain {
       const std::vector<block_id_type>& blockchain_synopsis,
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
-
-    /** @brief Deletes block log file(s). Use carefully, getting them back takes time.
-     *  @param dir Where the file(s) should be deleted.
-     *  Note that only files matching block_log_split configuration will be removed.
-     */
-    void wipe_files( const fc::path& dir );
 
     /** Returns 1 for 0,
      *  1 for [1 .. _max_blocks_in_log_file] &
