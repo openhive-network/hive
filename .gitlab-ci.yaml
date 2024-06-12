@@ -1032,6 +1032,7 @@ operation_tests:
                      account_witness_proxy_tests,
                      account_witness_vote_tests,
                      cancel_transfer_from_savings,
+                     claim_account_tests,
                      comment_tests,
                      convert_tests,
                      custom_and_custom_json_tests,
