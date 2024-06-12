@@ -558,7 +558,7 @@ namespace detail {
   void iceberg_generate_plugin_impl::close()
   {
     if( log_reader )
-      log_reader->close_log();
+      log_reader->close_storage();
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
