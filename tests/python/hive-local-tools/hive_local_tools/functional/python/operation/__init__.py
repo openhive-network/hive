@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -28,7 +27,6 @@ if TYPE_CHECKING:
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
-from schemas.operations.custom_json_operation import CustomJsonOperation
 
 
 @dataclass
@@ -366,8 +364,6 @@ def create_transaction_with_any_operation(
     transaction = get_transaction_model()
     ops = []
     for op in operations:
-        if isinstance(op, CustomJsonOperation):
-            op.json_ = json.dumps(op.json_)
         ops.append((op.get_name(), op))
     transaction.operations = ops
     transaction.operations = [(op.get_name(), op) for op in operations]
