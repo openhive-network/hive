@@ -121,6 +121,11 @@ namespace fc {
     return boost::filesystem::path(*_p).make_preferred().wstring();
   }
 
+  bool path::empty() const
+  {
+    return _p->empty();
+  }
+
   std::string path::to_native_ansi_path() const
     {
     std::wstring path = generic_wstring();
