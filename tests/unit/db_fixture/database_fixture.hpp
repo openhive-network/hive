@@ -234,7 +234,7 @@ autoscope set_mainnet_feed_values( bool auto_reset = true );
 
 //common code for preparing arguments and data path
 //caller needs to register plugins and call initialize() on given application object
-fc::path common_init( appbase::application& app, bool remove_db_files,
+fc::path common_init( appbase::application& app, bool remove_db_files, const fc::path& data_dir,
   const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
 
 struct database_fixture {
