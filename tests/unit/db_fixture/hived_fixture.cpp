@@ -60,7 +60,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
   {
     bpo::variables_map option_overrides;
 
-    _data_dir = common_init( theApp, remove_db_files, [&]( appbase::application& app, int argc, char** argv )
+    _data_dir = common_init( theApp, remove_db_files, _data_dir, [&](appbase::application& app, int argc, char** argv)
     {
       
       // Global value should always default to true.

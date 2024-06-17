@@ -54,7 +54,7 @@ autoscope set_mainnet_feed_values( bool auto_reset )
     return autoscope([](){});
 }
 
-fc::path common_init( appbase::application& app, bool remove_db_files,
+fc::path common_init( appbase::application& app, bool remove_db_files, const fc::path& data_dir,
   const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer )
 {
   int argc = boost::unit_test::framework::master_test_suite().argc;
@@ -74,14 +74,17 @@ fc::path common_init( appbase::application& app, bool remove_db_files,
       std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
     if( ( arg == "--data-dir" || arg == "-d" ) && ( i + 1 ) < argc )
     {
-      _data_dir = argv_ext[ i + 1 ];
+      _data_dir = argv_ext[ i + 1 ]; // potentially overwrite data dir from test with command line
       _data_dir_str = _data_dir.string();
       has_data_dir = true;
     }
   }
   if( has_data_dir == false )
   {
-    _data_dir = hive::utilities::temp_directory_path();
+    if( data_dir.empty() )
+      _data_dir = hive::utilities::temp_directory_path();
+    else
+      _data_dir = data_dir;
     _data_dir_str = _data_dir.string();
     argv_ext.back() = "--data-dir";
     argv_ext.emplace_back( _data_dir_str.c_str() );

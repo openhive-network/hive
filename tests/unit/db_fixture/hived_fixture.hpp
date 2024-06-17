@@ -25,7 +25,7 @@ struct hived_fixture : public database_fixture
   
   /// @brief Allows verification that logging-related configuration is correctly processed.
   fc::optional< fc::logging_config > _logging_config;
-  /// @brief Where tested "hived" data go. Valid after a call to postponed_init.
+  /// @brief Where tested "hived" data go. Valid after a call to postponed_init (or set_data_dir).
   fc::path _data_dir;
   /// @brief Disables p2p in standard initialization
   bool _disable_p2p = true;
@@ -60,6 +60,9 @@ struct hived_fixture : public database_fixture
    *  in single test (to avoid problems with several logging threads).
   */
   void set_logging_config( const fc::optional< fc::logging_config > common_logging_config );
+
+  // when called prior to postponed_init it sets desired path for data storage
+  void set_data_dir( const std::string& data_dir ) { _data_dir = data_dir; };
   const fc::path& get_data_dir() const { return _data_dir; };
 
   const hive::chain::block_read_i& get_block_reader() const;
