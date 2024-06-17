@@ -41,7 +41,7 @@ namespace beekeeper {
           if( rc.type() == bfs::file_not_found )
           {
               app.generate_interrupt_request();
-              FC_ASSERT( false, "Lock file removed while `beekeeper` still running. Terminating.");
+              elog( "The lock file is removed while `beekeeper` is still running. Terminating." );
           }
         }
         t->expires_from_now( boost::posix_time::seconds(1) );
@@ -51,8 +51,6 @@ namespace beekeeper {
 
   void beekeeper_instance::initialize_lock()
   {
-    //This is technically somewhat racy in here -- if multiple keosd are in this function at once.
-    //I've considered that an acceptable tradeoff to maintain cross-platform boost constructs here
     {
         std::ofstream x( lock_path_file.string() );
         if( x.fail() )
