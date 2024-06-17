@@ -19,10 +19,12 @@ using namespace hive::protocol;
 
 struct witness_fixture : public hived_fixture
 {
-  witness_fixture() : hived_fixture( true, false ) {}
+  witness_fixture( bool remove_db = true ) : hived_fixture( remove_db, false ) {}
   virtual ~witness_fixture() {}
 
-  void initialize()
+  void initialize( int genesis_delay = 1, // genesis slightly in the future (or past with negative values)
+    const std::vector< std::string > initial_witnesses = {}, // initial witnesses over 'initminer'
+    const std::vector< std::string > represented_witnesses = { "initminer" } ) // which witnesses can produce
   {
     theApp.init_signals_handler();
 
@@ -30,18 +32,27 @@ struct witness_fixture : public hived_fixture
       200'000'000'000ul, 1'000'000'000ul, 100'000'000'000ul,
       price( VEST_asset( 1'800 ), HIVE_asset( 1'000 ) )
     );
-    genesis_time = fc::time_point::now() + fc::seconds( 1 );
-    // genesis slightly in the future
-    configuration_data.set_hardfork_schedule( genesis_time, { { HIVE_NUM_HARDFORKS, 1 } } );
+    if( genesis_time == fc::time_point_sec() )
+    {
+      genesis_time = fc::time_point::now() + fc::seconds( genesis_delay );
+      // we need to make genesis time proper multiple of 3 seconds, otherwise only first block will be
+      // produced at genesis + 3s, next one will be earlier than genesis + 6s (see database::get_slot_time)
+      genesis_time = fc::time_point_sec( ( genesis_time.sec_since_epoch() + 2 ) / HIVE_BLOCK_INTERVAL * HIVE_BLOCK_INTERVAL );
+    }
 
-    postponed_init(
-      {
-        config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
-        config_line_t( { "shared-file-size", { "1G" } } ),
-        config_line_t( { "witness", { "\"initminer\"" } } ),
-        config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
-      }
-    );
+    configuration_data.set_hardfork_schedule( genesis_time, { { HIVE_NUM_HARDFORKS, 1 } } );
+    if( not initial_witnesses.empty() )
+      configuration_data.set_init_witnesses( initial_witnesses );
+
+    config_arg_override_t config_args = {
+      config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
+      config_line_t( { "shared-file-size", { "1G" } } ),
+      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
+    };
+    for( auto& name : represented_witnesses )
+      config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
+
+    postponed_init( config_args );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
@@ -121,10 +132,17 @@ struct witness_fixture : public hived_fixture
     schedule_transaction( vote );
   }
 
+  void set_genesis_time( fc::time_point_sec time ) { genesis_time = time; }
   fc::time_point_sec get_genesis_time() const { return genesis_time; }
 
 private:
   fc::time_point_sec genesis_time;
+};
+
+struct restart_witness_fixture : public witness_fixture
+{
+  restart_witness_fixture() : witness_fixture( false ) {}
+  virtual ~restart_witness_fixture() {}
 };
 
 BOOST_FIXTURE_TEST_SUITE( witness_tests, witness_fixture )
@@ -213,8 +231,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    ilog( "Test done" );
     BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -498,12 +516,281 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    ilog( "Test done" );
     BOOST_REQUIRE( test_passed[ FEEDER_COUNT ] );
     BOOST_REQUIRE( test_passed[ ALICE ] );
     BOOST_REQUIRE( test_passed[ BOB ] );
     BOOST_REQUIRE( test_passed[ CAROL ] );
     BOOST_REQUIRE( test_passed[ DAN ] );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( start_before_genesis_test )
+{
+  using namespace hive::plugins::witness;
+
+  try
+  {
+    initialize( 3, { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" } );
+    bool test_passed = false;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        db->_log_hardforks = true;
+
+        const auto& block_header = get_block_reader().head_block()->get_block_header();
+        ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_header.block_num() )
+          ( "t", block_header.timestamp )( "w", block_header.witness ) );
+        BOOST_REQUIRE_EQUAL( block_header.witness, "initminer" ); // initminer produces all blocks for first two schedules
+        BOOST_REQUIRE( block_header.timestamp == get_genesis_time() + HIVE_BLOCK_INTERVAL );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( missing_blocks_test )
+{
+  using namespace hive::plugins::witness;
+
+  try
+  {
+    initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
+      { "initminer", "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
+    ); // representing every other witness
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    // produce first two schedules of blocks (initminer) so we can get to actual test
+    // note that genesis time was set in the past so we don't have to wait
+    generate_blocks( HIVE_MAX_WITNESSES * 2 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+    db->_log_hardforks = true;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        uint32_t block_num = HIVE_MAX_WITNESSES * 2;
+        BOOST_REQUIRE_EQUAL( block_num, db->head_block_num() );
+        fc::time_point_sec next_block_time = get_genesis_time() + ( block_num + 1 ) * HIVE_BLOCK_INTERVAL;
+        fc::sleep_until( next_block_time );
+
+        for( int i = 1; i <= HIVE_MAX_WITNESSES; ++i )
+        {
+          const auto& block_header = get_block_reader().head_block()->get_block_header();
+          if( block_num == block_header.block_num() )
+          {
+            ilog( "Missed block #${n}, ts: ${t}", ( "n", block_num + 1 )( "t", next_block_time ) );
+          }
+          else
+          {
+            block_num = block_header.block_num();
+            ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
+              ( "t", block_header.timestamp )( "w", block_header.witness ) );
+            BOOST_REQUIRE( block_header.timestamp == next_block_time );
+          }
+          next_block_time += HIVE_BLOCK_INTERVAL;
+          fc::sleep_until( next_block_time );
+        }
+        BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 - 10 ); // we should see 10 missed blocks
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
+{
+  using namespace hive::plugins::witness;
+  // ABW: same as missing_blocks_test except blocks that witness plugin could not produce due to
+  // not being marked as representing scheduled witnesses are generated artificially with debug plugin;
+  // the main purpose of this test is to check if such thing works; for witness plugin it should
+  // look as if those blocks were created outside of node and passed to it through p2p
+
+  try
+  {
+    initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
+      { "initminer", "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
+    ); // representing every other witness
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    // produce first two schedules of blocks (initminer) so we can get to actual test
+    // note that genesis time was set in the past so we don't have to wait
+    generate_blocks( HIVE_MAX_WITNESSES * 2 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+    db->_log_hardforks = true;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        uint32_t block_num = HIVE_MAX_WITNESSES * 2;
+        BOOST_REQUIRE_EQUAL( block_num, db->head_block_num() );
+        fc::time_point_sec next_block_time = get_genesis_time() + ( block_num + 1 ) * HIVE_BLOCK_INTERVAL;
+        fc::sleep_until( next_block_time );
+
+        for( int i = 1; i <= HIVE_MAX_WITNESSES; ++i )
+        {
+          const auto* block_header = &get_block_reader().head_block()->get_block_header();
+          if( block_num == block_header->block_num() )
+          {
+            ilog( "Supplementing block with debug plugin" );
+            generate_block();
+            block_header = &get_block_reader().head_block()->get_block_header();
+          }
+          block_num = block_header->block_num();
+          ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
+            ( "t", block_header->timestamp )( "w", block_header->witness ) );
+          BOOST_REQUIRE( block_header->timestamp == next_block_time );
+          next_block_time += HIVE_BLOCK_INTERVAL;
+          fc::sleep_until( next_block_time );
+        }
+        BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 ); // all missed blocks should be supplemented
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
+{
+  using namespace hive::plugins::witness;
+
+  bool test_passed = false;
+
+  try
+  {
+    witness_fixture preparation;
+    preparation.initialize( -HIVE_MAX_WITNESSES * 3 * HIVE_BLOCK_INTERVAL,
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" }
+    );
+
+    set_data_dir( preparation.theApp.data_dir().c_str() );
+    set_genesis_time( preparation.get_genesis_time() );
+
+    preparation.generate_blocks( HIVE_MAX_WITNESSES * 3 ); // last 15 is reversible
+    preparation.theApp.generate_interrupt_request();
+    preparation.theApp.wait4interrupt_request();
+    preparation.theApp.quit( true );
+  }
+  FC_LOG_AND_RETHROW()
+
+  try
+  {
+
+    initialize( 0, // already set
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
+      { "with" } ); // represent only 'with'
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+    db->_log_hardforks = true;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        // we filled three full schedules of blocks but last 15 should be reversible, which means
+        // we are that many behind at the moment; witness should think it is out of sync and not
+        // try to produce
+        uint32_t block_num = db->head_block_num();
+        generate_blocks( HIVE_MAX_WITNESSES * 3 - block_num );
+        block_num = db->head_block_num();
+        BOOST_REQUIRE_EQUAL( HIVE_MAX_WITNESSES * 3, block_num );
+        // now witness should turn on production, but wait for the turn of 'with'
+        bool already_produced = false;
+        fc::time_point_sec next_block_time = get_genesis_time() + ( block_num + 1 ) * HIVE_BLOCK_INTERVAL;
+        bool should_produce_next = db->get_scheduled_witness( 1 ) == "with";
+        fc::sleep_until( next_block_time );
+
+        for( int i = 1; i <= HIVE_MAX_WITNESSES; ++i )
+        {
+          const auto* block_header = &get_block_reader().head_block()->get_block_header();
+          if( block_num == block_header->block_num() )
+          {
+            ilog( "Supplementing block with debug plugin" );
+            BOOST_REQUIRE( not should_produce_next );
+            generate_block();
+            block_header = &get_block_reader().head_block()->get_block_header();
+            BOOST_REQUIRE_NE( block_header->witness, "with" );
+          }
+          else
+          {
+            ilog( "Witness produced first block" );
+            BOOST_REQUIRE( should_produce_next );
+            BOOST_REQUIRE_EQUAL( block_header->witness, "with" );
+            BOOST_REQUIRE( not already_produced );
+            already_produced = true;
+          }
+          block_num = block_header->block_num();
+          ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
+            ( "t", block_header->timestamp )( "w", block_header->witness ) );
+          BOOST_REQUIRE( block_header->timestamp == next_block_time );
+          next_block_time += HIVE_BLOCK_INTERVAL;
+          should_produce_next = db->get_scheduled_witness( 1 ) == "with";
+          fc::sleep_until( next_block_time );
+        }
+        BOOST_REQUIRE( already_produced );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
 }
