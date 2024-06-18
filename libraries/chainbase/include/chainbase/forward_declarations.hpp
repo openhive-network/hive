@@ -7,6 +7,8 @@
 #include <chainbase/util/object_id.hpp>
 #include <chainbase/util/object_id_serialization.hpp>
 
+#include <optional>
+
 namespace fc {
 
 namespace raw {

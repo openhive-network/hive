@@ -174,6 +174,7 @@ void database::open( const open_args& args )
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay /* wipe_shared_file */ );
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
+    _block_writer->on_state_independent_data_initialized();
     load_state_initial_data(args);
 
     if (!args.load_snapshot)
@@ -185,7 +186,7 @@ void database::open( const open_args& args )
 void database::initialize_state_independent_data(const open_args& args, const bool throw_an_error_on_state_definitions_mismatch)
 {
   _my->create_new_decoded_types_data_storage();
-  _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
+  _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
 
   initialize_indexes();
 
@@ -3244,19 +3245,50 @@ block_id_type database::head_block_id()const
 
 uint32_t database::get_last_irreversible_block_num() const
 {
-  //ilog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
-  //ilog("getting last_irreversible_block_num head is ${l}", ("l", head_block_num()));
-  return irreversible_object->last_irreversible_block_num;
+  //ilog("getting irreversible_block_num irreversible is ${l}", ("l", last_irreversible_object->_irreversible_block_num));
+  //ilog("getting irreversible_block_num head is ${l}", ("l", head_block_num()));
+  return last_irreversible_object->_irreversible_block_num;
 }
 
 void database::set_last_irreversible_block_num(uint32_t block_num)
 {
-  //dlog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
-  FC_ASSERT(block_num >= irreversible_object->last_irreversible_block_num, "Irreversible block can only move forward. Old: ${o}, new: ${n}",
-    ("o", irreversible_object->last_irreversible_block_num)("n", block_num));
+  //dlog("setting irreversible_block_num previous ${l}", ("l", last_irreversible_object->irreversible_block_num));
+  FC_ASSERT(block_num >= last_irreversible_object->_irreversible_block_num, "Irreversible block can only move forward. Old: ${o}, new: ${n}",
+    ("o", last_irreversible_object->_irreversible_block_num)("n", block_num));
 
-  irreversible_object->last_irreversible_block_num = block_num;
-  //dlog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  last_irreversible_object->_irreversible_block_num = block_num;
+  //dlog("setting irreversible_block_num new ${l}", ("l", last_irreversible_object->irreversible_block_num));
+}
+
+void database::set_last_irreversible_block_data(std::shared_ptr<full_block_type> new_block)
+{
+  FC_ASSERT( new_block );
+  FC_ASSERT(last_irreversible_object, "Premature access to non-initialized irreversible object data.");
+  //dlog("setting irreversible_block_data previous ${l}", ("l", last_irreversible_object->irreversible_block_data));
+
+  block_data_type& libd = last_irreversible_object->_irreversible_block_data;
+  FC_ASSERT(new_block->get_block_num() >= protocol::block_header::num_from_id(libd._block_id),
+            "Irreversible block can only move forward. Old: ${o}, new: ${n}",
+              ("o", protocol::block_header::num_from_id(libd._block_id))
+              ("n", new_block->get_block_num()));
+
+  libd = *new_block;
+
+  cached_lib = new_block;
+
+  //dlog("setting irreversible_block_num new ${l}", ("l", last_irreversible_object->irreversible_block_data));
+}
+
+std::shared_ptr<full_block_type> database::get_last_irreversible_block_data() const
+{
+  FC_ASSERT(last_irreversible_object, "Premature access to non-initialized irreversible object data.");
+
+  return cached_lib;
+}
+
+const irreversible_block_data_type* database::get_last_irreversible_object() const
+{
+  return last_irreversible_object;
 }
 
 void database::initialize_evaluators()
@@ -3356,7 +3388,11 @@ void database::initialize_indexes()
 void database::initialize_irreversible_storage()
 {
   auto s = get_segment_manager();
-  irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
+  last_irreversible_object = s->find_or_construct<irreversible_block_data_type>( "irreversible" )(
+    allocator< irreversible_block_data_type >( s )
+  );
+
+  cached_lib = last_irreversible_object->_irreversible_block_data.create_full_block();
 }
 
 void database::verify_match_of_state_objects_definitions_from_shm(const bool throw_an_error_on_state_definitions_mismatch)
@@ -4792,7 +4828,7 @@ void database::update_global_dynamic_data( const signed_block& b )
     HIVE_ASSERT( _dgp.head_block_number - get_last_irreversible_block_num() < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
                  "The database does not have enough undo history to support a blockchain with so many missed blocks. "
                  "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
-                 ("last_irreversible_block_num", get_last_irreversible_block_num())("head", _dgp.head_block_number)
+                 ("irreversible_block_num", get_last_irreversible_block_num())("head", _dgp.head_block_number)
                  ("max_undo", HIVE_MAX_UNDO_HISTORY) );
   }
 } FC_CAPTURE_AND_RETHROW() }

@@ -101,9 +101,8 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
-void open_test_database( database& db, sync_block_writer& sbw,
-  block_storage_i& block_storage, const fc::path& dir, appbase::application& app,
-  bool log_hardforks = false )
+void open_test_database( database& db, block_storage_i& block_storage,
+  const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
   hive::chain::open_args args;
   hive::chain::block_storage_i::block_log_open_args bl_args;
@@ -116,9 +115,8 @@ void open_test_database( database& db, sync_block_writer& sbw,
   bl_args.data_dir = dir;
   db.with_write_lock([&]()
   {
-    block_storage.open_and_init( bl_args, true/*read_only*/ );
+    block_storage.open_and_init( bl_args, true/*read_only*/, &db );
   });
-  sbw.open();
   db.open( args );
 }
 
@@ -1364,7 +1362,7 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     hive::chain::block_storage_i::create_storage( LEGACY_SINGLE_FILE_BLOCK_LOG, APP, THREAD_POOL ); \
   sync_block_writer sbw_ ## NAME ( *(block_storage_ ## NAME . get()), NAME, APP ); \
   NAME.set_block_writer( &sbw_ ## NAME ); \
-  open_test_database( NAME, sbw_ ## NAME, *(block_storage_ ## NAME .get()), DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
+  open_test_database( NAME, *(block_storage_ ## NAME .get()), DATA_DIR_PATH, APP, LOG_HARDFORKS ); \
   }
   
 BOOST_AUTO_TEST_CASE( safe_closing_database )

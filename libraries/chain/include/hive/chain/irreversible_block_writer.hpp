@@ -10,6 +10,8 @@ namespace hive { namespace chain {
     irreversible_block_writer( const block_read_i& block_reader );
     virtual ~irreversible_block_writer() = default;
 
+    virtual void on_state_independent_data_initialized() override;
+    
     virtual const block_read_i& get_block_reader() override;
 
     /**

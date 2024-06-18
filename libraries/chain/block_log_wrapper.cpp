@@ -6,18 +6,6 @@
 
 namespace hive { namespace chain {
 
-/*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_wrapper( int block_log_split,
-  appbase::application& app, blockchain_worker_thread_pool& thread_pool )
-{
-  // Allowed values are -1, 0 and positive.
-  if( block_log_split < LEGACY_SINGLE_FILE_BLOCK_LOG )
-  {
-    FC_THROW_EXCEPTION( fc::parse_error_exception, "Not supported block log split value" );
-  }
-
-  return std::make_shared< block_log_wrapper >( block_log_split, app, thread_pool );
-}
-
 /*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
   const fc::path& the_path, appbase::application& app,
   blockchain_worker_thread_pool& thread_pool, bool read_only )
@@ -37,7 +25,7 @@ namespace hive { namespace chain {
   {
     FC_ASSERT( part_number == 1,
               "Expected 1st part file name, not following one (${path})", ("path", the_path) );
-    auto writer = std::make_shared< block_log_wrapper >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
+    auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
     writer->open_and_init( the_path, read_only, 1/*start_from_part*/ );
     return writer;
   }
@@ -55,7 +43,7 @@ namespace hive { namespace chain {
   FC_ASSERT( fc::exists( dir ) && fc::is_directory( dir ),
     "Path ${p} is NOT an existing directory.", ("p", dir) );
 
-  auto writer = std::make_shared< block_log_wrapper >( MULTIPLE_FILES_FULL_BLOCK_LOG, app, thread_pool );
+  auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
   writer->_open_args.data_dir = dir;
   writer->skip_first_parts( start_from_part -1 );
 
@@ -76,7 +64,8 @@ block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application&
     _block_log_split( block_log_split )
 {}
 
-void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, bool read_only )
+void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
+  database* db )
 {
   _open_args = bl_open_args;
   common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/);
@@ -265,7 +254,7 @@ std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_
     return std::shared_ptr<full_block_type>();
 
   const block_log_ptr_t log = get_block_log_corresponding_to( block_num );
-  if( _block_log_split > MULTIPLE_FILES_FULL_BLOCK_LOG )
+  if( _block_log_split < MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
     FC_ASSERT( log,
       "Block ${num} has been pruned (oldest stored block is ${old}). "
@@ -446,7 +435,7 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
 {
   FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
 
-  if( _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG )
+  if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
     // Expected tail part is obviously 1 - we need each part.
     if( tail_part_number > 1 )
@@ -504,7 +493,7 @@ uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number,
   // Determine actual needed tail part number.
   uint32_t actual_tail_needed = 0;
   // Is block log not pruned or effectively not pruned (yet)?
-  if( _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG ||
+  if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ||
       head_part_number <= (unsigned int)_block_log_split )
   {
     // Expected tail part is obviously 1 - we need each part.
@@ -619,7 +608,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   {
     // No part file name found. Try splitting legacy monolithic file if allowed & possible.
     size_t needed_part_count = 
-      _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
+      _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
     if( allow_splitting_monolithic_log &&
         try_splitting_monolithic_log_file( 0/*determine head part from source*/, needed_part_count ) )
     {
@@ -740,7 +729,7 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
 uint32_t block_log_wrapper::get_tail_block_num() const
 {
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ||
-      _block_log_split == MULTIPLE_FILES_FULL_BLOCK_LOG )
+      _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
     return 1;
   }

@@ -6,6 +6,7 @@
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
 
@@ -551,10 +552,11 @@ namespace chain {
 
       uint32_t get_last_irreversible_block_num()const;
       void set_last_irreversible_block_num(uint32_t block_num);
-      struct irreversible_object_type
-      {
-        uint32_t last_irreversible_block_num = 0;
-      } *irreversible_object = nullptr;
+
+      std::shared_ptr<full_block_type> get_last_irreversible_block_data() const;
+      void set_last_irreversible_block_data(std::shared_ptr<full_block_type> new_block);
+
+      const irreversible_block_data_type* get_last_irreversible_object() const;
       //////////////////// db_init.cpp ////////////////////
 
       void initialize_evaluators();
@@ -653,6 +655,9 @@ namespace chain {
       void notify_changed_objects();
 
     private:
+      struct irreversible_block_data_type *last_irreversible_object = nullptr;
+      std::shared_ptr<full_block_type> cached_lib;
+
       optional< chainbase::database::session > _pending_tx_session;
 
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
@@ -958,5 +963,3 @@ namespace chain {
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
 } }
-
-FC_REFLECT(hive::chain::database::irreversible_object_type, (last_irreversible_block_num))
