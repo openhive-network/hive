@@ -35,7 +35,7 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
   if( head_part_number == 0 /*determine from source log*/)
   {
     head_part_number = 
-      block_log_wrapper::get_part_number_for_block( head_block_num, MULTIPLE_FILES_FULL_BLOCK_LOG );
+      block_log_wrapper::get_part_number_for_block( head_block_num, MAX_FILES_OF_SPLIT_BLOCK_LOG );
     ilog( "head_part_number for block ${head_block_num} is ${head_part_number}", (head_block_num)(head_part_number) );
   }
 
@@ -64,9 +64,9 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
 
   ilog("Starting splitting");
 
-  uint32_t starting_block_number = block_log_wrapper::get_number_of_first_block_in_part( tail_part_number, MULTIPLE_FILES_FULL_BLOCK_LOG );
+  uint32_t starting_block_number = block_log_wrapper::get_number_of_first_block_in_part( tail_part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG );
   uint32_t stop_at_block = 
-    std::min<uint32_t>( head_block_num, block_log_wrapper::get_number_of_last_block_in_part( head_part_number, MULTIPLE_FILES_FULL_BLOCK_LOG ) );
+    std::min<uint32_t>( head_block_num, block_log_wrapper::get_number_of_last_block_in_part( head_part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG ) );
   ilog( "Splitting blocks ${starting_block_number} to ${stop_at_block}",
         (starting_block_number)(stop_at_block) );
 

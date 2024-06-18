@@ -425,7 +425,7 @@ namespace shared_memory_file_util
     std::stringstream ss;
     ss << db.get_environment_details() << "\n";
     auto segment_manager = db.get_segment_manager();
-    const auto irreversible_object = segment_manager->find<hive::chain::database::irreversible_object_type>("irreversible");
+    const auto irreversible_object = segment_manager->find<hive::chain::irreversible_block_data_type>("irreversible");
     ss << fc::json::to_pretty_string(*irreversible_object.first) << "\n";
     log_result(ss.str(), "shm details", "shared_memory_file_details.log");
   }

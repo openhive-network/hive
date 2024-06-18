@@ -20,6 +20,8 @@ namespace hive { namespace chain {
     sync_block_writer( block_storage_i& blw, database& db, application& app );
     virtual ~sync_block_writer() = default;
 
+    virtual void on_state_independent_data_initialized() override;
+
     virtual const block_read_i& get_block_reader() override;
 
     virtual void store_block( uint32_t current_irreversible_block_num,
@@ -36,7 +38,6 @@ namespace hive { namespace chain {
     void set_is_at_live_sync() { _is_at_live_sync = true; }
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
-    void open();
     void close();
 
     using apply_block_t = std::function<

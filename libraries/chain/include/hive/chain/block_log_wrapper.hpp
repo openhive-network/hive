@@ -4,10 +4,9 @@
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
 
-#define LEGACY_SINGLE_FILE_BLOCK_LOG -1
-#define MULTIPLE_FILES_FULL_BLOCK_LOG 0
-
 namespace hive { namespace chain {
+
+  class database;
 
   /**
    * @brief Dual purpose block log wrapper / block storage/reader implementation.
@@ -18,8 +17,6 @@ namespace hive { namespace chain {
   public:
     using block_log_wrapper_t = std::shared_ptr< block_log_wrapper >;
 
-    static block_log_wrapper_t create_wrapper( int block_log_split,
-      appbase::application& app, blockchain_worker_thread_pool& thread_pool );
     /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
     static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
@@ -38,7 +35,8 @@ namespace hive { namespace chain {
     using block_storage_i::block_log_open_args;
 
     // Required by block_storage_i:
-    virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only ) override;
+    virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
+                                database* db ) override;
     virtual void reopen_for_writing() override;
     virtual void close_storage() override;
     virtual void append( const full_block_ptr_t& full_block, const bool is_at_live_sync ) override;
@@ -177,13 +175,13 @@ namespace hive { namespace chain {
     void dispose_garbage( bool closing_time );
 
   private:
-    appbase::application&           _app;
-    blockchain_worker_thread_pool&  _thread_pool;
-    const uint32_t                  _max_blocks_in_log_file = 0;
-    const int                       _block_log_split = 0;
-    block_log_open_args             _open_args;
-    std::deque< block_log_ptr_t >   _logs;
-    std::deque< block_log_ptr_t >   _garbage_collection;
+    appbase::application&             _app;
+    blockchain_worker_thread_pool&    _thread_pool;
+    const uint32_t                    _max_blocks_in_log_file = 0;
+    const int                         _block_log_split = 0;
+    block_log_open_args               _open_args;
+    std::deque< block_log_ptr_t >     _logs;
+    std::deque< block_log_ptr_t >     _garbage_collection;
   };
 
 } }

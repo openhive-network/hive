@@ -5,9 +5,11 @@
 #include <hive/chain/detail/block_attributes.hpp>
 
 #define LEGACY_SINGLE_FILE_BLOCK_LOG -1
-#define MULTIPLE_FILES_FULL_BLOCK_LOG 0
+// There are 4 digits available in split block log file name
+#define MAX_FILES_OF_SPLIT_BLOCK_LOG 9999
 
 namespace hive { namespace chain {
+  class database;
 
   /**
    * @brief Represents both block log and memory-only implementations of irreversible block storage.
@@ -44,7 +46,8 @@ namespace hive { namespace chain {
       int       block_log_compression_level = 15;
       bool      enable_block_log_auto_fixing = true;
     };
-    virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only ) = 0;
+    virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
+                                database* lib_access ) = 0;
     virtual void reopen_for_writing() = 0;
     virtual void close_storage() = 0;
 
