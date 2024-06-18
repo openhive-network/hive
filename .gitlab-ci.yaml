@@ -1028,7 +1028,8 @@ operation_tests:
     - !reference [.run-pytest, script]
   parallel:
     matrix:
-      - OPERATION: [ account_update_tests,
+      - OPERATION: [ account_create,
+                     account_update_tests,
                      account_witness_proxy_tests,
                      account_witness_vote_tests,
                      cancel_transfer_from_savings,
