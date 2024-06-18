@@ -100,9 +100,8 @@ int main( int argc, char** argv, char** envp )
 
   db.with_write_lock([&]()
   {
-    block_storage->open_and_init( bl_args, true /*read_only*/ );
+    block_storage->open_and_init( bl_args, true /*read_only*/, &db );
   });
-  block_writer.open();
 
   db.open( db_args );
 

@@ -174,6 +174,7 @@ void database::open( const open_args& args )
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay /* wipe_shared_file */ );
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
+    _block_writer->on_state_independent_data_initialized();
     load_state_initial_data(args);
 
     if (!args.load_snapshot)
@@ -3259,6 +3260,57 @@ void database::set_last_irreversible_block_num(uint32_t block_num)
   //dlog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
 }
 
+void database::set_last_irreversible_block_data(const std::shared_ptr<full_block_type> full_block)
+{
+  FC_ASSERT(irreversible_object, "Premature access to non-initialized irreversible object data.");
+  //dlog("setting last_irreversible_block_data previous ${l}", ("l", irreversible_object->last_irreversible_block_data));
+
+  block_data_type& libd = irreversible_object->last_irreversible_block_data;
+  FC_ASSERT(full_block->get_block_num() >= protocol::block_header::num_from_id(libd.block_id),
+            "Irreversible block can only move forward. Old: ${o}, new: ${n}",
+              ("o", protocol::block_header::num_from_id(libd.block_id))
+              ("n", full_block->get_block_num()));
+
+  const compressed_block_data& cbd = full_block->get_compressed_block();
+  size_t byte_size = cbd.compressed_size;
+  const char* bytes = cbd.compressed_bytes.get();
+
+  libd.compression_attributes = cbd.compression_attributes;
+  libd.byte_size = byte_size;
+  libd.block_bytes.assign( bytes, bytes+byte_size );
+  libd.block_id = full_block->get_block_id();
+
+  //dlog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_data));
+}
+
+std::shared_ptr<full_block_type> database::get_last_irreversible_block_data() const
+{
+  FC_ASSERT(irreversible_object, "Premature access to non-initialized irreversible object data.");
+
+  block_data_type& libd = irreversible_object->last_irreversible_block_data;
+  if( protocol::block_header::num_from_id(libd.block_id) == 0 )
+    return std::shared_ptr<full_block_type>();
+
+  try
+  {
+    FC_ASSERT( libd.byte_size > 0 && "Data mismatch in last_irreversible_block_data!" );
+
+    size_t raw_block_size = libd.byte_size;
+    std::unique_ptr<char[]> compressed_block_data(new char[raw_block_size]);
+    memcpy(compressed_block_data.get(), libd.block_bytes.data(), raw_block_size);
+    const block_attributes_t& attributes = libd.compression_attributes;
+    std::optional< block_id_type > block_id( libd.block_id );
+
+    return full_block_type::create_from_compressed_block_data(
+      std::move( compressed_block_data ),
+      raw_block_size,
+      attributes,
+      block_id
+    );
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
 void database::initialize_evaluators()
 {
   _my->_evaluator_registry.register_evaluator< vote_evaluator                           >();
@@ -3356,7 +3408,9 @@ void database::initialize_indexes()
 void database::initialize_irreversible_storage()
 {
   auto s = get_segment_manager();
-  irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
+  irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )(
+    allocator< irreversible_object_type >( s )
+  );
 }
 
 void database::verify_match_of_state_objects_definitions_from_shm(const bool throw_an_error_on_state_definitions_mismatch)

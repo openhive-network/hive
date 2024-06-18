@@ -54,6 +54,7 @@ add_library( hive_chain
              block_storage_interface.cpp
              fork_db_block_reader.cpp
              irreversible_block_writer.cpp
+             single_block_storage.cpp
              sync_block_writer.cpp
 
              generic_custom_operation_interpreter.cpp

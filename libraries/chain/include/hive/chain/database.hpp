@@ -6,6 +6,7 @@
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/last_irreversible_block_access_interface.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
 
@@ -105,7 +106,7 @@ namespace chain {
     *   @class database
     *   @brief tracks the blockchain state in an extensible manner
     */
-  class database : public chainbase::database
+  class database : public chainbase::database, public last_irreversible_block_access_i
   {
     public:
       database( appbase::application& app );
@@ -551,9 +552,33 @@ namespace chain {
 
       uint32_t get_last_irreversible_block_num()const;
       void set_last_irreversible_block_num(uint32_t block_num);
+      // Implementation of last_irreversible_block_access_i
+      virtual std::shared_ptr<full_block_type> get_last_irreversible_block_data() const override;
+      virtual void set_last_irreversible_block_data(
+        const std::shared_ptr<full_block_type> full_block) override;
+
+      using t_block_bytes = t_vector< char >;
+      struct block_data_type
+      {
+        block_attributes_t  compression_attributes;
+        size_t              byte_size = 0;
+        t_block_bytes       block_bytes;
+        block_id_type       block_id;
+
+        template< typename Allocator >
+        block_data_type( allocator< Allocator > a )
+          : block_bytes( a )
+        {}
+      };
       struct irreversible_object_type
       {
-        uint32_t last_irreversible_block_num = 0;
+        uint32_t        last_irreversible_block_num = 0;
+        block_data_type last_irreversible_block_data;
+
+        template< typename Allocator >
+        irreversible_object_type( allocator< Allocator > a )
+          : last_irreversible_block_data( a )
+        {}        
       } *irreversible_object = nullptr;
       //////////////////// db_init.cpp ////////////////////
 
@@ -945,4 +970,9 @@ namespace chain {
   };
 } }
 
-FC_REFLECT(hive::chain::database::irreversible_object_type, (last_irreversible_block_num))
+FC_REFLECT(hive::chain::database::block_data_type,
+  (compression_attributes)(byte_size)(block_bytes)(block_id))
+
+FC_REFLECT(hive::chain::database::irreversible_object_type, 
+  (last_irreversible_block_num)(last_irreversible_block_data))
+

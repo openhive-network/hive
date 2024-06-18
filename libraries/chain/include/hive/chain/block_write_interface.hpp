@@ -16,6 +16,9 @@ namespace hive { namespace chain {
     virtual ~block_write_i() = default;
 
   public:
+    /// Call immediately after database loads state independent data.
+    virtual void on_state_independent_data_initialized() = 0;
+
     virtual const block_read_i& get_block_reader() = 0;
 
     /**

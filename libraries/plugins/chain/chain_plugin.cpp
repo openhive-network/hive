@@ -227,6 +227,7 @@ class chain_plugin_impl
     hive::chain::blockchain_worker_thread_pool thread_pool;
 
     database                            db;
+    int                                 block_log_split = -1;
     std::shared_ptr<block_storage_i>    block_storage;
     std::unique_ptr<sync_block_writer>  default_block_writer;
 
@@ -830,9 +831,8 @@ void chain_plugin_impl::open()
 
     db.with_write_lock([&]()
     {
-      block_storage->open_and_init( bl_open_args, true/*read_only*/ );
+      block_storage->open_and_init( bl_open_args, true/*read_only*/, &db );
     });
-    default_block_writer->open();
     db.open( db_open_args );
 
     if( dump_memory_details )
@@ -1052,7 +1052,9 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     default_block_writer->on_reindex_start();
 
     auto start_time = fc::time_point::now();
-    HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+    HIVE_ASSERT( _head, block_log_exception, 
+      "No blocks in ${block_storage_type} block storage (as specified by 'block-log-split' option). Cannot reindex an empty chain.",
+      ("block_storage_type", block_log_split == 0 ? "memory only" : "file") );
 
     ilog( "Replaying blocks..." );
 
@@ -1109,7 +1111,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 
     return note.last_block_number;
   }
-  FC_CAPTURE_AND_RETHROW( (args.data_dir)(args.shared_mem_dir) )
+  FC_CAPTURE_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(block_log_split) )
 }
 
 uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
@@ -1174,6 +1176,8 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
 
   fc::enable_record_assert_trip = rat; //restore flag
   fc::enable_assert_stacktrace = as;
+
+  db.set_last_irreversible_block_data( last_applied_block );
 
   return last_applied_block->get_block_num();
 }
@@ -1385,7 +1389,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
-      ("block-log-split", bpo::value<int>()->default_value( -1 ), "Whether the block log should be single file (-1), split into files each containing 1M blocks (0), or split & keeping only N latest files, i.e. N million latest blocks (N). Default -1." )
+      ("block-log-split", bpo::value<int>()->default_value( -1 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default -1." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1414,7 +1418,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  my->block_storage = block_storage_i::create_storage( options.at( "block-log-split" ).as< int >(), get_app(), my->thread_pool );
+  my->block_log_split = options.at( "block-log-split" ).as< int >();
+  my->block_storage = block_storage_i::create_storage( my->block_log_split, get_app(), my->thread_pool );
   my->default_block_writer = 
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
 

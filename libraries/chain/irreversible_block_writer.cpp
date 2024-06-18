@@ -8,6 +8,9 @@ irreversible_block_writer::irreversible_block_writer( const block_read_i& block_
   : _block_reader( block_reader )
 {}
 
+void irreversible_block_writer::on_state_independent_data_initialized()
+{}
+
 const block_read_i& irreversible_block_writer::get_block_reader()
 {
   return _block_reader;
