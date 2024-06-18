@@ -39,7 +39,9 @@ class Operation:
     def rc_cost(self) -> int:
         return self._rc_cost
 
-    def assert_minimal_operation_rc_cost(self) -> None:
+    def assert_minimal_operation_rc_cost(self, minimal_cost: int | None = None) -> None:
+        if minimal_cost:
+            assert self._rc_cost >= minimal_cost, f"RC cost is less than or {minimal_cost}."
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
 
@@ -112,6 +114,10 @@ class Account:
     def proxy(self) -> str:
         return self._acc_info.proxy
 
+    @property
+    def pending_claimed_accounts(self) -> int:
+        return self._acc_info.pending_claimed_accounts
+
     def get_governance_vote_power(self, current: bool = False) -> tt.Asset.Vest:
         return self.get_direct_governance_vote_power(current) + tt.Asset.Vest(
             sum(self._acc_info.proxied_vsf_votes) / 1_000_000
@@ -164,6 +170,9 @@ class Account:
 
     def get_proxy(self) -> str:
         return get_proxy(self._node, self._name)
+
+    def get_pending_claimed_accounts(self) -> int:
+        return get_pending_claimed_accounts(self._node, self._name)
 
     def update_account_info(self) -> None:
         self._acc_info = _find_account(self._node, self._name)
@@ -528,6 +537,10 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
 
 def get_proxy(node: tt.InitNode, account_name: str) -> str:
     return node.api.database.find_accounts(accounts=[account_name]).accounts[0].proxy
+
+
+def get_pending_claimed_accounts(node: tt.InitNode, account_name: str) -> str:
+    return node.api.database.find_accounts(accounts=[account_name]).accounts[0].pending_claimed_accounts
 
 
 def list_votes_for_all_proposals(node):
