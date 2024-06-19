@@ -809,5 +809,127 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( block_conflict_test )
+{
+  using namespace hive::plugins::witness;
+  // ABW: in this test we are trying to emulate situation when there is already block waiting
+  // in writer queue to be processed, but it arrived so late that witness plugin already
+  // requested to produce its alternative; preferably we want the external block to be processed
+  // before witness request; we are achieving it by putting really slow transaction inside that
+  // block which emulates writer queue congestion
+
+  try
+  {
+    initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+      "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
+      { "with" }
+    ); // representing just one witness
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    // produce first two schedules of blocks (initminer) so we can get to actual test
+    // note that genesis time was set in the past so we don't have to wait
+    schedule_blocks( HIVE_MAX_WITNESSES * 2 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+    db->_log_hardforks = true;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Starting test thread" );
+        uint32_t block_num = HIVE_MAX_WITNESSES * 2;
+        BOOST_REQUIRE_EQUAL( block_num, db->head_block_num() );
+        fc::time_point_sec next_block_time = get_genesis_time() + ( block_num + 1 ) * HIVE_BLOCK_INTERVAL;
+        fc::sleep_until( next_block_time );
+
+        bool slow_block_next = db->get_scheduled_witness( 2 ) == "with";
+        // there is a chance that out 'with' witness is scheduled to produce first block of
+        // third schedule; in such case slow block should be the last one, because calls to
+        // get_scheduled_witness "wrap" active schedule, and we are doing it under assumption
+        // of missed block (witness is to have that assumption)
+        for( int i = 1; i <= HIVE_MAX_WITNESSES; ++i )
+        {
+          const auto* block_header = &get_block_reader().head_block()->get_block_header();
+          if( block_num == block_header->block_num() )
+          {
+            if( slow_block_next )
+            {
+              ilog( "Time to produce slow block" );
+              // we are first waiting 0.5s and then we generate marker transaction that takes 1s
+              // to process; it means that witness should notice the delay in block N and prepare
+              // to take over in case it reaches next timestamp with block N still missing;
+              // in the meantime we make the slow transaction (ends 1.5s before next timestamp)
+              // and create a block N (production repeats transaction that ends 0.5s before next
+              // timestamp, and starts applying that block which will end 0.5s after next
+              // timestamp); since witness will request to produce block N alternative 0.4s before
+              // next timestamp, we'll have the request of new block waiting for the slow block to
+              // finish processing; only after slow transaction is processed for the third time
+              // during block reapplication, the block number changes, which would be indication
+              // for witness to produce block N+1, but the witness already made its request to
+              // produce alternative for block N; fortunately none of the properties of the block
+              // are carried by block flow control, so by the time the alternative for block N starts
+              // being produced, the actual block N is already visible in state, so in reality block
+              // N+1 is going to be produced; there is a chance that it will happen on schedule switch
+              // in which case it is likely that FC_ASSERT( scheduled_witness == witness_owner ); will
+              // fire, resulting in the block production failure, but it should not affect the
+              // validity of the test
+              fc::usleep( fc::milliseconds( 500 ) );
+              ilog( "Adding slow transaction to pending" );
+              db_plugin->debug_update( [&]( database& db )
+              {
+                ilog( "Slow transaction start - tx status is ${s}", ( "s", (int)db.get_tx_status() ) );
+                fc::usleep( fc::seconds( 1 ) );
+                ilog( "Slow transaction end" );
+              } );
+              // while it is not exactly the thing we want, since there will be two competing
+              // block generations in the queue, it achieves desired result - alternative would
+              // require us to have full separate database, in other words, separate node
+              ilog( "Producing and reapplying slow block" );
+            }
+            else
+            {
+              ilog( "Supplementing block with debug plugin" );
+            }
+            schedule_block();
+            // ABW: there is a very small but nonzero chance that the read below is going to happen
+            // after block N+1 is produced by 'with' witness
+            block_header = &get_block_reader().head_block()->get_block_header();
+          }
+          block_num = block_header->block_num();
+          ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
+            ( "t", block_header->timestamp )( "w", block_header->witness ) );
+          next_block_time += HIVE_BLOCK_INTERVAL;
+          if( slow_block_next )
+            break;
+          else
+            slow_block_next = db->get_scheduled_witness( 2 ) == "with";
+          fc::sleep_until( next_block_time );
+        }
+        BOOST_REQUIRE( slow_block_next );
+        // the slow block should "win" over witness block
+        // ABW: there is a very small but nonzero chance that the read below is going to happen
+        // after block N+1 is produced by 'with' witness, and the test will fail as a result;
+        // will need to be addressed if that actually happens
+        const auto& block_header = get_block_reader().head_block()->get_block_header();
+        BOOST_REQUIRE_NE( block_header.witness, "with" );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
