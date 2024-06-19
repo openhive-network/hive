@@ -22,7 +22,7 @@
       },
       "op_in_trx": 1,
       "operation_id": 9881956,
-      "timestamp": "2016-08-03T00:00:00",
+      "timestamp": "2016-08-03T00:00:03",
       "trx_id": "92602fa0236147d88d3990795ad1ab6bcbc95c8c",
       "trx_in_block": 1,
       "virtual_op": true
@@ -47,7 +47,7 @@
       },
       "op_in_trx": 1,
       "operation_id": 9881958,
-      "timestamp": "2016-08-03T00:00:00",
+      "timestamp": "2016-08-03T00:00:03",
       "trx_id": "e86df9ab7b9ed12a3497190e4c80d1c63f609487",
       "trx_in_block": 2,
       "virtual_op": true
