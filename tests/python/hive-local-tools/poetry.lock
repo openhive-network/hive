@@ -459,12 +459,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev205+951023d"
+version = "0.0.1.dev208+9592696"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev205+951023d-py3-none-any.whl", hash = "sha256:b5c7c345feb985516b57465edf13f5a2baf5641e77e8b8c4f2a0cd048418d3da"},
+    {file = "helpy-0.0.1.dev208+9592696-py3-none-any.whl", hash = "sha256:e84e50c76a147c781b54ea27f86cd1b6d0f20aa77c6a31e2f5448f6ea6dbf96c"},
 ]
 
 [package.dependencies]
@@ -475,7 +475,7 @@ pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 schemas = "0.0.1.dev305+31029b3"
-wax = "0.0.3a2.dev300+4b5789e"
+wax = "0.3.10.dev25+8044195"
 
 [package.source]
 type = "legacy"
@@ -1579,7 +1579,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-helpy = "0.0.1.dev205+951023d"
+helpy = "0.0.1.dev208+9592696"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
@@ -1703,12 +1703,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.0.3a2.dev300+4b5789e"
+version = "0.3.10.dev25+8044195"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.0.3a2.dev300+4b5789e-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:d816954e3bb6cb68d88d2a266e419531a76d20d9e3133549189ea136bcca1883"},
+    {file = "wax-0.3.10.dev25+8044195-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:a5ff06bd8f982aaafcd9adb358834138293e220cd3b9e05289a2cf5ea3f829fb"},
 ]
 
 [package.dependencies]
