@@ -79,6 +79,16 @@ struct witness_fixture : public hived_fixture
     get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
 
+  void schedule_blocks( uint32_t count ) const
+  {
+    db_plugin->debug_generate_blocks( init_account_priv_key.key_to_wif(), count, default_skip, 0, false );
+  }
+
+  void schedule_block() const
+  {
+    schedule_blocks( 1 );
+  }
+
   void schedule_account_create( const account_name_type& name ) const
   {
     account_create_operation create;
@@ -577,14 +587,16 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
-      { "initminer", "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
+      { "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
     ); // representing every other witness
     bool test_passed = false;
     fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
 
-    // produce first two schedules of blocks (initminer) so we can get to actual test
-    // note that genesis time was set in the past so we don't have to wait
-    generate_blocks( HIVE_MAX_WITNESSES * 2 );
+    // produce first two schedules of blocks (initminer) so we can get to actual test;
+    // note that genesis time was set in the past so we don't have to wait;
+    // also note that we are not representing 'initminer' to avoid witness plugin thinking it is
+    // its turn to produce during call below
+    schedule_blocks( HIVE_MAX_WITNESSES * 2 );
     BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
     db->_log_hardforks = true;
 
@@ -616,7 +628,7 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
           next_block_time += HIVE_BLOCK_INTERVAL;
           fc::sleep_until( next_block_time );
         }
-        BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 - 10 ); // we should see 10 missed blocks
+        BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 - 11 ); // we should see 11 missed blocks
 
         ilog( "'API' thread finished" );
         test_passed = true;
@@ -645,14 +657,16 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
-      { "initminer", "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
+      { "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" }
     ); // representing every other witness
     bool test_passed = false;
     fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
 
-    // produce first two schedules of blocks (initminer) so we can get to actual test
-    // note that genesis time was set in the past so we don't have to wait
-    generate_blocks( HIVE_MAX_WITNESSES * 2 );
+    // produce first two schedules of blocks (initminer) so we can get to actual test;
+    // note that genesis time was set in the past so we don't have to wait;
+    // also note that we are not representing 'initminer' to avoid witness plugin thinking it is
+    // its turn to produce during call below
+    schedule_blocks( HIVE_MAX_WITNESSES * 2 );
     BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
     db->_log_hardforks = true;
 
@@ -673,7 +687,7 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
           if( block_num == block_header->block_num() )
           {
             ilog( "Supplementing block with debug plugin" );
-            generate_block();
+            schedule_block();
             block_header = &get_block_reader().head_block()->get_block_header();
           }
           block_num = block_header->block_num();
@@ -743,7 +757,7 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
         // we are that many behind at the moment; witness should think it is out of sync and not
         // try to produce
         uint32_t block_num = db->head_block_num();
-        generate_blocks( HIVE_MAX_WITNESSES * 3 - block_num );
+        schedule_blocks( HIVE_MAX_WITNESSES * 3 - block_num );
         block_num = db->head_block_num();
         BOOST_REQUIRE_EQUAL( HIVE_MAX_WITNESSES * 3, block_num );
         // now witness should turn on production, but wait for the turn of 'with'
@@ -759,7 +773,7 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
           {
             ilog( "Supplementing block with debug plugin" );
             BOOST_REQUIRE( not should_produce_next );
-            generate_block();
+            schedule_block();
             block_header = &get_block_reader().head_block()->get_block_header();
             BOOST_REQUIRE_NE( block_header->witness, "with" );
           }
