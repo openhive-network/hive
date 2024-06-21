@@ -21,7 +21,7 @@ hived_fixture::hived_fixture( bool remove_db_files /*= true*/, bool disable_p2p 
 hived_fixture::~hived_fixture() 
 {
   try {
-    if( !std::uncaught_exceptions() )
+    if( !std::uncaught_exceptions() && db != nullptr )
     {
       // If we're exiting nominally, check that skip flags have been restored.
       // Note that you can't do it after appbase finish -

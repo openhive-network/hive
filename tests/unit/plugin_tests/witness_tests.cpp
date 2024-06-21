@@ -244,6 +244,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -529,6 +530,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed[ FEEDER_COUNT ] );
     BOOST_REQUIRE( test_passed[ ALICE ] );
     BOOST_REQUIRE( test_passed[ BOB ] );
@@ -575,6 +577,7 @@ BOOST_AUTO_TEST_CASE( start_before_genesis_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -641,6 +644,7 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -710,6 +714,7 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -737,6 +742,7 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
     preparation.theApp.generate_interrupt_request();
     preparation.theApp.wait4interrupt_request();
     preparation.theApp.quit( true );
+    preparation.db = nullptr; // prevent fixture destructor from accessing database after it was closed
   }
   FC_LOG_AND_RETHROW()
 
@@ -806,6 +812,7 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -929,6 +936,7 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -1035,6 +1043,7 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
@@ -1153,6 +1162,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
 
     theApp.wait4interrupt_request();
     theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
