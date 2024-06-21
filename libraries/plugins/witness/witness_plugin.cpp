@@ -86,7 +86,7 @@ namespace detail {
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
-    produce_block_data_t get_produce_block_data(uint32_t slot);
+    produce_block_data_t get_produce_block_data( fc::time_point_sec time );
 
     void schedule_production_loop();
     block_production_condition block_production_loop(const boost::system::error_code&);
@@ -371,15 +371,21 @@ namespace detail {
       _last_fast_confirmation_block_number = note.block_num;
     }
     {
-      produce_block_data_t data = get_produce_block_data(1);
+      produce_block_data_t data = get_produce_block_data( _db.get_slot_time( 1 ) );
       std::unique_lock g(should_produce_block_mutex);
       produce_block_data = std::move(data);
     }
   }
 
-  produce_block_data_t witness_plugin_impl::get_produce_block_data(uint32_t slot)
+  produce_block_data_t witness_plugin_impl::get_produce_block_data( fc::time_point_sec time )
   {
-    const auto next_block_time = _db.get_slot_time( slot );
+    uint32_t slot = _db.get_slot_at_time( time );
+    {
+      fc::time_point_sec slot_time = _db.get_slot_time( slot );
+      FC_ASSERT( slot_time == time,
+        "Unalligned time passed to get_produce_block_data (time=$(time) vs slot_time=${slot_time})",
+        (time)(slot_time) );
+    }
     chain::account_name_type scheduled_witness;
     fc::ecc::private_key private_key;
 
@@ -420,7 +426,7 @@ namespace detail {
 
     produce_block_data_t produce_block_data;
     produce_block_data.next_slot = slot;
-    produce_block_data.next_slot_time = next_block_time;
+    produce_block_data.next_slot_time = time;
     produce_block_data.scheduled_witness = std::move(scheduled_witness);
     produce_block_data.scheduled_private_key = private_key;
     produce_block_data.condition = condition;
@@ -522,20 +528,23 @@ namespace detail {
     if( !_production_enabled )
       return block_production_condition::not_synced;
 
-    if( produce_block_data.next_slot_time > now)
+    if( produce_block_data.next_slot_time > now )
     {
-      capture("next_time", produce_block_data.next_slot);
+      capture( "next_time", produce_block_data.next_slot_time );
       return block_production_condition::not_time_yet;
     }
 
     const fc::microseconds lag = now - produce_block_data.next_slot_time;
     if( lag.count() > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
+      // if it was our time to produce, we are lagging, otherwise the block seems to be late
       try
       {
+        auto time = produce_block_data.next_slot_time + ( ( lag.to_seconds() + HIVE_BLOCK_INTERVAL - 1 ) / HIVE_BLOCK_INTERVAL ) * HIVE_BLOCK_INTERVAL;
         _db.with_read_lock( [&]()
         {
-          produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
+          // check if we are to produce in future slot nearest to current time
+          produce_block_data = get_produce_block_data( time );
         }, fc::milliseconds( 200 ) );
       }
       catch( const chainbase::lock_exception& e )
@@ -673,9 +682,7 @@ void witness_plugin::plugin_startup()
         new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
-    fc::time_point now = fc::time_point::now();
-    const uint32_t slot = my->_db.get_slot_at_time(now);
-    my->produce_block_data = my->get_produce_block_data(slot);
+    my->produce_block_data = my->get_produce_block_data( my->_db.get_slot_time( 1 ) );
     my->schedule_production_loop();
   }
   else
