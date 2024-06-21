@@ -22,7 +22,7 @@ void block_producer::generate_block( chain::generate_block_flow_control* generat
       _generate_block( generate_block_ctrl, generate_block_ctrl->get_block_timestamp(), generate_block_ctrl->get_witness_owner(),
                        generate_block_ctrl->get_block_signing_private_key() );
     }
-    FC_CAPTURE_AND_RETHROW( ( generate_block_ctrl->get_witness_owner() ) )
+    FC_CAPTURE_AND_RETHROW( ( generate_block_ctrl->get_block_timestamp() )( generate_block_ctrl->get_witness_owner() ) )
   } );
 }
 

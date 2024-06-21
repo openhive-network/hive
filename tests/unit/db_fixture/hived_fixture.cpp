@@ -26,7 +26,7 @@ hived_fixture::~hived_fixture()
       // If we're exiting nominally, check that skip flags have been restored.
       // Note that you can't do it after appbase finish -
       // the memory will be released by then.
-      BOOST_CHECK( db->get_node_skip_flags() == database::skip_nothing );
+      BOOST_CHECK_EQUAL( db->get_node_skip_flags(), database::skip_nothing );
     }
 
     // Try to finish appbase nominally.
