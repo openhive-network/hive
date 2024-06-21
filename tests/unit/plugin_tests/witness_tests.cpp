@@ -52,7 +52,7 @@ struct witness_fixture : public hived_fixture
     for( auto& name : represented_witnesses )
       config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
 
-    postponed_init( config_args );
+    postponed_init( config_args, &witness_plugin );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
@@ -145,8 +145,11 @@ struct witness_fixture : public hived_fixture
   void set_genesis_time( fc::time_point_sec time ) { genesis_time = time; }
   fc::time_point_sec get_genesis_time() const { return genesis_time; }
 
+  hive::plugins::witness::witness_plugin& get_witness_plugin() const { return *witness_plugin; }
+
 private:
   fc::time_point_sec genesis_time;
+  hive::plugins::witness::witness_plugin* witness_plugin = nullptr;
 };
 
 struct restart_witness_fixture : public witness_fixture
