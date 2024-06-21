@@ -23,23 +23,20 @@ namespace hive { namespace plugins { namespace witness {
 
 namespace detail { class witness_plugin_impl; }
 
-namespace block_production_condition
+enum class block_production_condition
 {
-  enum block_production_condition_enum
-  {
-    produced = 0,
-    not_synced = 1,
-    not_my_turn = 2,
-    not_time_yet = 3,
-    no_private_key = 4,
-    low_participation = 5,
-    lag = 6,
-    consecutive = 7,
-    wait_for_genesis = 8,
-    exception_producing_block = 9,
-    unknown = 10
-  };
-}
+  produced = 0,
+  not_synced = 1,
+  not_my_turn = 2,
+  not_time_yet = 3,
+  no_private_key = 4,
+  low_participation = 5,
+  lag = 6,
+  consecutive = 7,
+  wait_for_genesis = 8,
+  exception_producing_block = 9,
+  unknown = 10
+};
 
 class witness_plugin : public appbase::plugin< witness_plugin >
 {
