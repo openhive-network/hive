@@ -33,8 +33,7 @@ enum class block_production_condition
   low_participation = 5,
   lag = 6,
   wait_for_genesis = 7,
-  exception_producing_block = 8,
-  unknown = 9
+  exception_producing_block = 8
 };
 
 class witness_plugin : public appbase::plugin< witness_plugin >
