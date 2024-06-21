@@ -55,7 +55,15 @@ void new_chain_banner( const chain::database& db )
 namespace detail {
 
   struct produce_block_data_t {
-    produce_block_data_t() : next_slot(0), pct(0), next_slot_time(HIVE_GENESIS_TIME+HIVE_BLOCK_INTERVAL), scheduled_witness(""), scheduled_public_key{}, scheduled_private_key{}, block_production_condition(block_production_condition::block_production_condition_enum::not_my_turn), produce_in_next_slot(false)
+    produce_block_data_t() :
+      next_slot( 0 ),
+      pct( 0 ),
+      next_slot_time( HIVE_GENESIS_TIME + HIVE_BLOCK_INTERVAL ),
+      scheduled_witness( "" ),
+      scheduled_public_key{},
+      scheduled_private_key{},
+      condition( block_production_condition::block_production_condition_enum::not_my_turn ),
+      produce_in_next_slot( false )
     {}
 
     uint32_t next_slot;
@@ -64,7 +72,7 @@ namespace detail {
     chain::account_name_type scheduled_witness;
     fc::ecc::public_key scheduled_public_key;
     fc::ecc::private_key scheduled_private_key;
-    block_production_condition::block_production_condition_enum block_production_condition;
+    block_production_condition::block_production_condition_enum condition;
     bool produce_in_next_slot;
   };
 
@@ -420,7 +428,7 @@ namespace detail {
     produce_block_data.scheduled_witness = std::move(scheduled_witness);
     produce_block_data.scheduled_public_key = scheduled_key;
     produce_block_data.scheduled_private_key = private_key;
-    produce_block_data.block_production_condition = condition;
+    produce_block_data.condition = condition;
     produce_block_data.produce_in_next_slot = condition == block_production_condition::block_production_condition_enum::produced;
     return produce_block_data;
   }
@@ -549,7 +557,7 @@ namespace detail {
     }
 
     if (!produce_block_data.produce_in_next_slot)
-      return produce_block_data.block_production_condition;
+      return produce_block_data.condition;
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
       produce_block_data.scheduled_witness, produce_block_data.scheduled_private_key, _production_skip_flags, theApp );
@@ -558,7 +566,7 @@ namespace detail {
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
     produce_block_data.produce_in_next_slot = false;
-    produce_block_data.block_production_condition = block_production_condition::unknown;
+    produce_block_data.condition = block_production_condition::unknown;
 
     //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting
