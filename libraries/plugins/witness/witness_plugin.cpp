@@ -62,7 +62,7 @@ namespace detail {
       scheduled_witness( "" ),
       scheduled_public_key{},
       scheduled_private_key{},
-      condition( block_production_condition::block_production_condition_enum::not_my_turn ),
+      condition( block_production_condition::not_my_turn ),
       produce_in_next_slot( false )
     {}
 
@@ -72,7 +72,7 @@ namespace detail {
     chain::account_name_type scheduled_witness;
     fc::ecc::public_key scheduled_public_key;
     fc::ecc::private_key scheduled_private_key;
-    block_production_condition::block_production_condition_enum condition;
+    block_production_condition condition;
     bool produce_in_next_slot;
   };
 
@@ -93,8 +93,8 @@ namespace detail {
     produce_block_data_t get_produce_block_data(uint32_t slot);
 
     int64_t schedule_production_loop();
-    block_production_condition::block_production_condition_enum block_production_loop(const boost::system::error_code&);
-    block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
+    block_production_condition block_production_loop(const boost::system::error_code&);
+    block_production_condition maybe_produce_block(fc::mutable_variant_object& capture);
 
     bool     _production_enabled              = false;
     bool     _is_p2p_enabled                  = false;
@@ -390,7 +390,8 @@ namespace detail {
     uint32_t pct = 0;
 
     // immediately invoked lambda returning block_production_condition
-    block_production_condition::block_production_condition_enum condition = [&](){
+    block_production_condition condition = [&]()
+    {
       if( !_production_enabled )
       {
         if( _db.get_slot_time(1) >= next_block_time )
@@ -418,7 +419,7 @@ namespace detail {
         pct = uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT);
         return block_production_condition::low_participation;
       }
-      return block_production_condition::block_production_condition_enum::produced;
+      return block_production_condition::produced;
     }();
 
     produce_block_data_t produce_block_data;
@@ -429,7 +430,7 @@ namespace detail {
     produce_block_data.scheduled_public_key = scheduled_key;
     produce_block_data.scheduled_private_key = private_key;
     produce_block_data.condition = condition;
-    produce_block_data.produce_in_next_slot = condition == block_production_condition::block_production_condition_enum::produced;
+    produce_block_data.produce_in_next_slot = condition == block_production_condition::produced;
     return produce_block_data;
   }
 
@@ -447,7 +448,7 @@ namespace detail {
     return time_to_sleep;
   }
 
-  block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop(const boost::system::error_code& e)
+  block_production_condition witness_plugin_impl::block_production_loop(const boost::system::error_code& e)
   {
     if (e) return {};
 
@@ -458,7 +459,7 @@ namespace detail {
       return block_production_condition::wait_for_genesis;
     }
 
-    block_production_condition::block_production_condition_enum result;
+    block_production_condition result;
     fc::mutable_variant_object capture;
     try
     {
@@ -525,7 +526,7 @@ namespace detail {
     return result;
   }
 
-  block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
+  block_production_condition witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
     std::lock_guard g(should_produce_block_mutex);
     fc::time_point_sec now;
