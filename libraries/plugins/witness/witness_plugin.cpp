@@ -528,25 +528,25 @@ namespace detail {
       return block_production_condition::not_time_yet;
     }
 
-    const fc::microseconds lag = produce_block_data.next_slot_time - now;
-    if( llabs(lag.count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
+    const fc::microseconds lag = now - produce_block_data.next_slot_time;
+    if( lag.count() > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
-      capture("scheduled_time", produce_block_data.next_slot_time)("now", now);
-      if (lag.count() < 0)
+      try
       {
-        try {
-          _db.with_read_lock([&](){
-            produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
-          }, fc::milliseconds(200));
-        }
-        catch (const chainbase::lock_exception& e) {
-          // Do nothing
-        }
+        _db.with_read_lock( [&]()
+        {
+          produce_block_data = get_produce_block_data(produce_block_data.next_slot+1);
+        }, fc::milliseconds( 200 ) );
       }
-      return block_production_condition::lag;
+      catch( const chainbase::lock_exception& e )
+      {
+        // Do nothing
+      }
+      if( produce_block_data.produce_in_next_slot )
+        return block_production_condition::lag;
     }
 
-    if (!produce_block_data.produce_in_next_slot)
+    if( !produce_block_data.produce_in_next_slot )
       return produce_block_data.condition;
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
