@@ -9,6 +9,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <charconv>
+#include <locale>
+#include <codecvt>
 
 // #define SIMDJSON_DEVELOPMENT_CHECKS 1
 #include <simdjson.h>
@@ -771,20 +774,47 @@ namespace fc
     }
     os << ']';
   }
+
   template <typename T>
   void to_stream(T &os, const variant_object &o, json::output_formatting format)
   {
     os << '{';
-    auto itr = o.begin();
+    if (format == json::output_formatting::jcs) {
+      // sort the keys according to RFC 8785
+      // convert the keys to utf-16 for sorting, and keep a map back to the original utf-8
+      std::map<std::wstring, std::string> sorted_keys;
+      std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+      for (auto itr = o.begin(); itr != o.end(); ++itr)
+      {
+        std::string utf8_key = itr->key();
+        std::wstring utf16_key = converter.from_bytes(utf8_key);
+        auto insert_result = sorted_keys.insert(std::make_pair(utf16_key, utf8_key));
+        if (!insert_result.second)
+          FC_THROW_EXCEPTION(fc::invalid_arg_exception, "Keys must be unique for JCS (RFC 8785)");
+      }
+      bool first = true;
+      for (const auto& [utf16_key, utf8_key] : sorted_keys)
+      {
+        if (first)
+          first = false;
+        else
+          os << ",";
+        escape_string(utf8_key, os);
+        os << ':';
+        to_stream(os, o[utf8_key], format);
+      }
+    } else {
+      auto itr = o.begin();
 
-    while (itr != o.end())
-    {
-      escape_string(itr->key(), os);
-      os << ':';
-      to_stream(os, itr->value(), format);
-      ++itr;
-      if (itr != o.end())
-        os << ',';
+      while (itr != o.end())
+      {
+        escape_string(itr->key(), os);
+        os << ':';
+        to_stream(os, itr->value(), format);
+        ++itr;
+        if (itr != o.end())
+          os << ',';
+      }
     }
     os << '}';
   }
@@ -800,9 +830,11 @@ namespace fc
     case variant::int64_type:
     {
       int64_t i = v.as_int64();
-      if (format == json::stringify_large_ints_and_doubles &&
-          (i > json::json_integer_limits::max_positive_value ||
-           i < json::json_integer_limits::max_negative_value))
+      if (format == json::output_formatting::jcs)
+        os << json::double_to_jcs(i);
+      else if (format == json::stringify_large_ints_and_doubles &&
+               (i > json::json_integer_limits::max_positive_value ||
+                i < json::json_integer_limits::max_negative_value))
         os << '"' << v.as_string() << '"';
       else
         os << i;
@@ -812,8 +844,10 @@ namespace fc
     case variant::uint64_type:
     {
       uint64_t i = v.as_uint64();
-      if (format == json::stringify_large_ints_and_doubles &&
-          i > static_cast<uint64_t>(json::json_integer_limits::max_positive_value))
+      if (format == json::output_formatting::jcs)
+        os << json::double_to_jcs(i);
+      else if (format == json::stringify_large_ints_and_doubles &&
+               i > static_cast<uint64_t>(json::json_integer_limits::max_positive_value))
         os << '"' << v.as_string() << '"';
       else
         os << i;
@@ -821,7 +855,9 @@ namespace fc
       return;
     }
     case variant::double_type:
-      if (format == json::stringify_large_ints_and_doubles)
+      if (format == json::output_formatting::jcs)
+        os << json::double_to_jcs(v.as_double());
+      else if (format == json::stringify_large_ints_and_doubles)
         os << '"' << v.as_string() << '"';
       else
         os << v.as_string();
@@ -1118,10 +1154,10 @@ namespace fc
       {
         mutable_variant_object obj;
         auto object = element.get_object();
-        std::for_each(object.begin(), object.end(), [&obj](simdjson::ondemand::field field)
-                      {
-                     variant value = parse_element(field.value());
-                     obj(std::string((std::string_view)field.unescaped_key()), std::move(value)); });
+        std::for_each(object.begin(), object.end(), [&obj](simdjson::ondemand::field field) {
+          variant value = parse_element(field.value());
+          obj(std::string((std::string_view)field.unescaped_key()), std::move(value));
+        });
         return obj;
       }
       case simdjson::ondemand::json_type::number:
@@ -1200,20 +1236,20 @@ namespace fc
       switch (element.type())
       {
       case simdjson::ondemand::json_type::array:
-      {
-        auto array = element.get_array();
-        std::for_each(array.begin(), array.end(), validate_element);
-        break;
-      }
+        {
+          auto array = element.get_array();
+          std::for_each(array.begin(), array.end(), validate_element);
+          break;
+        }
       case simdjson::ondemand::json_type::object:
-      {
-        auto object = element.get_object();
-        std::for_each(object.begin(), object.end(), [](simdjson::ondemand::field field)
-                      {
-                     (void)field.unescaped_key().value();
-                     validate_element(field.value()); });
-        break;
-      }
+        {
+          auto object = element.get_object();
+          std::for_each(object.begin(), object.end(), [](simdjson::ondemand::field field) {
+            (void)field.unescaped_key().value();
+            validate_element(field.value()); 
+          });
+          break;
+        }
       case simdjson::ondemand::json_type::number:
         switch (element.get_number_type())
         {
@@ -1290,5 +1326,125 @@ namespace fc
     {
       return false;
     }
+  }
+
+  // Formats a double in the way required by the ECMAScript specification
+  // Note: this is a low-performance implementation that works by converting the double to a string,
+  // then rearranging the string.  There is lots of room for improvement if needed.  The
+  // dynamic allocation could be removed, but if this is a bottleneck, it's probably best to
+  // avoid the string manipulation entirely, and start with high-performance double-formatting 
+  // code like https://github.com/ulfjack/ryu and make a few tweaks so that it generates
+  // numbers according to the rules below.
+  std::string json::double_to_es6(const double value) {
+    if (value == 0) // 0 and -0
+      return "0";
+
+    if (std::isnan(value))
+      return "NaN";
+    if (std::isinf(value))
+      return value >= 0 ? "Infinity" : "-Infinity";
+
+    char buf[64];
+    auto end = std::to_chars(buf, buf + 64, value, std::chars_format::general);
+    std::string_view value_str(buf, end.ptr - buf);
+
+    // to use the ryu library's formatter, do this instead
+    // int nchars = d2s_buffered_n(value, buf);
+    // std::string_view value_str(buf, nchars);
+
+    // Save sign separately, it doesn't have any role in the algorithm
+    bool is_negative = value_str[0] == '-';
+    if (is_negative)
+      value_str.remove_prefix(1);
+
+    // find the exponent, and remove it
+    size_t e_pos = value_str.find('E');
+    if (e_pos == std::string_view::npos)
+      e_pos = value_str.find('e');
+    std::string exp_str;
+    int exp_value = 0;
+    if (e_pos != std::string_view::npos) {
+      exp_str = std::string(value_str.substr(e_pos));
+      // use 'e' instead of 'E'
+      exp_str[0] = 'e';
+      // if missing, insert a '+'
+      if (exp_str[1] != '-' && exp_str[1] != '+')
+        exp_str.insert(1, 1, '+');
+      // remove leading 0 from exponent
+      if (exp_str.length() > 3 && exp_str[2] == '0')
+        exp_str.erase(2, 1);
+      value_str = value_str.substr(0, e_pos);
+      exp_value = std::stoi(exp_str.substr(1));
+
+      if (exp_value == 0)
+        exp_str = "";
+    }
+
+    // split the number into first + dot + last
+    std::string_view first = value_str;
+    bool has_dot = false;
+    std::string_view last;
+
+    size_t dot_pos = value_str.find('.');
+    if (dot_pos != std::string_view::npos) {
+      has_dot = true;
+      last = value_str.substr(dot_pos + 1);
+      first = value_str.substr(0, dot_pos);
+    }
+
+    // Now the string is split into: is_negative + first + has_dot + last + exp_str
+
+    // Always remove trailing .0
+    if (last == "0") {
+      has_dot = false;
+      last = "";
+    }
+
+    std::string result;
+    if (is_negative)
+      result += '-';
+
+    if (exp_value > 0 && exp_value < 21) {
+      // Integers are shown as is with up to 21 digits
+      result += first;
+      has_dot = exp_value < (int)last.length();
+      if (has_dot) {
+        result += last.substr(0, exp_value);
+        result += ".";
+        result += last.substr(exp_value);
+      } else {
+        result += last;
+        result += std::string(exp_value - last.length(), '0');
+      }
+    } else if (exp_value < 0 && exp_value > -7) {
+      // Small numbers are shown as 0.etc with e-6 as lower limit
+      result += "0.";
+      result += std::string(-exp_value - 1, '0');
+      result += first;
+      result += last;
+    } else {
+      result += first;
+      result += has_dot ? "." : "";
+      result += last;
+      result += exp_str;
+    }
+    return result;
+  }
+
+  std::string json::double_to_jcs(const double value) {
+    if (std::isnan(value))
+      FC_THROW_EXCEPTION(fc::invalid_arg_exception, "NaN is not valid in JCS (RFC 8785)");
+    if (std::isinf(value))
+      FC_THROW_EXCEPTION(fc::invalid_arg_exception, "Infinities are not valid in JCS (RFC 8785)");
+    return double_to_es6(value);
+  }
+
+  // converts a string containing regular JSON into a string in the JSON Canonicalization Scheme (JCS) according to RFC 8785
+  std::string json::json_to_jcs(std::string plain_json) {
+    // parse the JSON using the simdjson library, which handles unicode escape sequences correctly.
+    // using the regular fc::json::from_string would cause us to generate invalid output
+    plain_json.reserve(plain_json.size() + 32); // allocate padding for simdjson parsing
+    fc::variant as_variant = fc::json::fast_from_string(plain_json);
+    return fc::json::to_string(as_variant, json::output_formatting::jcs);
   }
 } // fc

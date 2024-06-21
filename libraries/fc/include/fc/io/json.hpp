@@ -27,7 +27,8 @@ namespace fc
     enum output_formatting
     {
       stringify_large_ints_and_doubles = 0,
-      legacy_generator = 1
+      legacy_generator = 1,
+      jcs = 2
     };
     // Javascript needs to use bigint type for values which exceeses below limits
     enum json_integer_limits : int64_t
@@ -43,7 +44,9 @@ namespace fc
     };
 
     static ostream &to_stream(ostream &out, const fc::string &);
+    static ostream &to_jcs_stream(ostream& out, const std::string&);
     static ostream &to_stream(ostream &out, const variant &v, output_formatting format = stringify_large_ints_and_doubles);
+    static ostream &to_jcs_stream(ostream &out, const variant &v);
     static ostream &to_stream(ostream &out, const variants &v, output_formatting format = stringify_large_ints_and_doubles);
     static ostream &to_stream(ostream &out, const variant_object &v, output_formatting format = stringify_large_ints_and_doubles);
 
@@ -57,6 +60,12 @@ namespace fc
 
     static bool is_valid(const std::string &json_str, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
     static bool fast_is_valid(const std::string &json_str);
+
+    // you're unlikely to ever need the double_to_* functions, they're exposed to allow unit tests
+    static std::string double_to_es6(double value);
+    static std::string double_to_jcs(double value);
+
+    static std::string json_to_jcs(std::string plain_json);
 
     template <typename T>
     static void save_to_file(const T &v, const fc::path &fi, bool pretty = true, output_formatting format = stringify_large_ints_and_doubles)

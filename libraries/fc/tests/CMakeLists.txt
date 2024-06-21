@@ -53,6 +53,9 @@ target_link_libraries( ecdsa_canon_test fc )
 add_executable( sha_test sha_test.cpp )
 target_link_libraries( sha_test fc )
 
+add_executable( jcs_test all_tests.cpp jcs_test.cpp )
+target_link_libraries( jcs_test fc )
+
 add_executable( all_tests all_tests.cpp
                           compress/compress.cpp
                           crypto/aes_test.cpp
@@ -69,5 +72,6 @@ add_executable( all_tests all_tests.cpp
                           bloom_test.cpp
                           real128_test.cpp
                           utf8_test.cpp
+                          jcs_test.cpp
                           )
 target_link_libraries( all_tests fc )
