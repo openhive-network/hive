@@ -57,20 +57,16 @@ namespace detail {
   struct produce_block_data_t {
     produce_block_data_t() :
       next_slot( 0 ),
-      pct( 0 ),
       next_slot_time( HIVE_GENESIS_TIME + HIVE_BLOCK_INTERVAL ),
       scheduled_witness( "" ),
-      scheduled_public_key{},
       scheduled_private_key{},
       condition( block_production_condition::not_my_turn ),
       produce_in_next_slot( false )
     {}
 
     uint32_t next_slot;
-    uint32_t pct;
     fc::time_point_sec next_slot_time;
     chain::account_name_type scheduled_witness;
-    fc::ecc::public_key scheduled_public_key;
     fc::ecc::private_key scheduled_private_key;
     block_production_condition condition;
     bool produce_in_next_slot;
@@ -385,9 +381,7 @@ namespace detail {
   {
     const auto next_block_time = _db.get_slot_time( slot );
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
-    chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
     fc::ecc::private_key private_key;
-    uint32_t pct = 0;
 
     // immediately invoked lambda returning block_production_condition
     block_production_condition condition = [&]()
@@ -397,26 +391,27 @@ namespace detail {
         if( _db.get_slot_time(1) >= next_block_time )
           _production_enabled = true;
         else
-        {
           return block_production_condition::not_synced;
-        }
       }
 
       // we must control the witness scheduled to produce the next block.
       if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
-      {
         return block_production_condition::not_my_turn;
-      }
+
+      chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >( scheduled_witness ).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
       {
+        ilog( "Won't produce block because I don't have the private key for ${scheduled_key}", ( scheduled_key ) );
         return block_production_condition::no_private_key;
       }
       private_key = private_key_itr->second;
+
       uint32_t prate = _db.witness_participation_rate();
       if( prate < _required_witness_participation )
       {
-        pct = uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT);
+        uint32_t pct = uint32_t( 100 * uint64_t( prate ) / HIVE_100_PERCENT );
+        elog( "Won't produce block because node appears to be on a minority fork with only ${pct}% witness participation", ( pct ) );
         return block_production_condition::low_participation;
       }
       return block_production_condition::produced;
@@ -424,10 +419,8 @@ namespace detail {
 
     produce_block_data_t produce_block_data;
     produce_block_data.next_slot = slot;
-    produce_block_data.pct = pct;
     produce_block_data.next_slot_time = next_block_time;
     produce_block_data.scheduled_witness = std::move(scheduled_witness);
-    produce_block_data.scheduled_public_key = scheduled_key;
     produce_block_data.scheduled_private_key = private_key;
     produce_block_data.condition = condition;
     produce_block_data.produce_in_next_slot = condition == block_production_condition::produced;
@@ -485,22 +478,19 @@ namespace detail {
     {
       case block_production_condition::produced:
         ilog("Generated block #${n} with timestamp ${t} at time ${c}", ("n", capture["n"])("t", capture["t"])("c", capture["c"]));
-        
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+  //      ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+  //      ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+  //      ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
-        ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
         break;
       case block_production_condition::low_participation:
-        elog("Not producing block because node appears to be on a minority fork with only ${pct}% witness participation", ("pct", capture["pct"].as_uint64()/HIVE_1_PERCENT) );
         break;
       case block_production_condition::lag:
         elog("Not producing block because node didn't wake up within ${t}ms of the slot time.", ("t", BLOCK_PRODUCING_LAG_TIME));
