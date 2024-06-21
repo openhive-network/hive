@@ -505,9 +505,6 @@ namespace detail {
       case block_production_condition::exception_producing_block:
         elog( "exception producing block" );
         break;
-      case block_production_condition::unknown:
-        elog( "Not producing block because could not determine whether to produce it" );
-        break;
       case block_production_condition::wait_for_genesis:
         break;
     }
@@ -521,26 +518,30 @@ namespace detail {
 
   block_production_condition witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    std::lock_guard g(should_produce_block_mutex);
+    produce_block_data_t data;
+    {
+      std::lock_guard g(should_produce_block_mutex);
+      data = produce_block_data;
+    }
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
     if( !_production_enabled )
       return block_production_condition::not_synced;
 
-    if( produce_block_data.next_slot_time > now )
+    if( data.next_slot_time > now )
     {
-      capture( "next_time", produce_block_data.next_slot_time );
+      capture( "next_time", data.next_slot_time );
       return block_production_condition::not_time_yet;
     }
 
-    const fc::microseconds lag = now - produce_block_data.next_slot_time;
+    const fc::microseconds lag = now - data.next_slot_time;
     if( lag.count() > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
       // if it was our time to produce, we are lagging, otherwise the block seems to be late
       try
       {
-        auto time = produce_block_data.next_slot_time + ( ( lag.to_seconds() + HIVE_BLOCK_INTERVAL - 1 ) / HIVE_BLOCK_INTERVAL ) * HIVE_BLOCK_INTERVAL;
+        auto time = data.next_slot_time + ( ( lag.to_seconds() + HIVE_BLOCK_INTERVAL - 1 ) / HIVE_BLOCK_INTERVAL ) * HIVE_BLOCK_INTERVAL;
         _db.with_read_lock( [&]()
         {
           // check if we are to produce in future slot nearest to current time
@@ -551,21 +552,18 @@ namespace detail {
       {
         // Do nothing
       }
-      if( produce_block_data.produce_in_next_slot )
+      if( data.produce_in_next_slot )
         return block_production_condition::lag;
     }
 
-    if( !produce_block_data.produce_in_next_slot )
-      return produce_block_data.condition;
+    if( !data.produce_in_next_slot )
+      return data.condition;
 
-    const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( produce_block_data.next_slot_time,
-      produce_block_data.scheduled_witness, produce_block_data.scheduled_private_key, _production_skip_flags, theApp );
+    const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( data.next_slot_time,
+      data.scheduled_witness, data.scheduled_private_key, _production_skip_flags, theApp );
     _chain_plugin.generate_block( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
-
-    produce_block_data.produce_in_next_slot = false;
-    produce_block_data.condition = block_production_condition::unknown;
 
     //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting
