@@ -380,7 +380,7 @@ namespace detail {
   produce_block_data_t witness_plugin_impl::get_produce_block_data(uint32_t slot)
   {
     const auto next_block_time = _db.get_slot_time( slot );
-    chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
+    chain::account_name_type scheduled_witness;
     fc::ecc::private_key private_key;
 
     // immediately invoked lambda returning block_production_condition
@@ -388,13 +388,14 @@ namespace detail {
     {
       if( !_production_enabled )
       {
-        if( _db.get_slot_time(1) >= next_block_time )
+        if( _db.get_slot_time( 1 ) >= fc::time_point::now() )
           _production_enabled = true;
         else
           return block_production_condition::not_synced;
       }
 
       // we must control the witness scheduled to produce the next block.
+      scheduled_witness = _db.get_scheduled_witness( slot );
       if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
         return block_production_condition::not_my_turn;
 
@@ -518,6 +519,8 @@ namespace detail {
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
 
+    if( !_production_enabled )
+      return block_production_condition::not_synced;
 
     if( produce_block_data.next_slot_time > now)
     {
