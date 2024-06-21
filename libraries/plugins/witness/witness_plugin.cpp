@@ -531,6 +531,11 @@ bool witness_plugin::is_fast_confirm_enabled() const
   return my->_enable_fast_confirm.load(std::memory_order_relaxed);
 }
 
+void witness_plugin::set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses )
+{
+  my->_witnesses = witnesses;
+}
+
 void witness_plugin::set_program_options(
   boost::program_options::options_description& cli,
   boost::program_options::options_description& cfg)

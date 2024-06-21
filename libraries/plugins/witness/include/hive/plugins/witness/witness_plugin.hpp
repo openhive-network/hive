@@ -55,6 +55,9 @@ public:
   void disable_fast_confirm();
   bool is_fast_confirm_enabled() const;
 
+  // for unit tests - overrides list of represented witnesses
+  void set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses );
+
   static const std::string& name() { static std::string name = HIVE_WITNESS_PLUGIN_NAME; return name; }
 
   virtual void set_program_options(
