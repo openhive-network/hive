@@ -92,7 +92,7 @@ namespace detail {
     void on_finish_push_block( const chain::block_notification& note );
     produce_block_data_t get_produce_block_data(uint32_t slot);
 
-    int64_t schedule_production_loop();
+    void schedule_production_loop();
     block_production_condition block_production_loop(const boost::system::error_code&);
     block_production_condition maybe_produce_block(fc::mutable_variant_object& capture);
 
@@ -434,7 +434,7 @@ namespace detail {
     return produce_block_data;
   }
 
-  int64_t witness_plugin_impl::schedule_production_loop()
+  void witness_plugin_impl::schedule_production_loop()
   {
     // Sleep for 200ms, before checking the block production
     fc::time_point now = fc::time_point::now();
@@ -445,7 +445,6 @@ namespace detail {
     using boost::placeholders::_1;
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this, _1 ) );
-    return time_to_sleep;
   }
 
   block_production_condition witness_plugin_impl::block_production_loop(const boost::system::error_code& e)
