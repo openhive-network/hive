@@ -99,7 +99,7 @@ def beekeeper_factory(*, settings: Settings | None = None) -> SynchronousBeekeep
         Remember to call .delete() if you don't use with statement
 
     Keyword Arguments:
-        settings -- Adjustable parameters of connection and workspace (default: {None})
+        settings: Adjustable parameters of connection and workspace (default: {None})
     """
     return _beekeeper_factory_impl(_SynchronousBeekeeperImpl, SynchronousBeekeeperHandle, beekeeper_remote_factory, settings)  # type: ignore[return-value]
 

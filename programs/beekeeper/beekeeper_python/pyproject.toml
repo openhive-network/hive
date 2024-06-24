@@ -131,4 +131,4 @@ known-first-party = ["helpy", "schemas", "wax"]
 required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.pydocstyle]
-convention = "pep257"
+convention = "google"
