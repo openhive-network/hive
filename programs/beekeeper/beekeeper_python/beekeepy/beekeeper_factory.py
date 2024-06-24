@@ -141,10 +141,12 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
 
         try:
             wait_for_pid_to_die(pid, timeout_secs=10)
+            logger.debug("Process was closed with SIGINT")
         except TimeoutError:
             sig = signal.SIGKILL
             os.kill(pid, sig)
             wait_for_pid_to_die(pid)
+            logger.debug("Process was force-closed with SIGKILL")
 
     def is_running(pid: int) -> bool:
         """
