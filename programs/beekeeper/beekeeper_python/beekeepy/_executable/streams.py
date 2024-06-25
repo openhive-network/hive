@@ -8,7 +8,6 @@ from helpy import ContextSync
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from types import TracebackType
 
 
 @dataclass
@@ -27,6 +26,7 @@ class StreamRepresentation(ContextSync[TextIO]):
         return self.stream
 
     def backup(self) -> None:
+        """Can be called only when streams are closed. No support for backng up opened files."""
         path = self.__get_path()
         assert self.stream is None, "Cannot back up opened file"
         move(path, path.with_name(f"{self.filename}_{self._backup_count}.log"))
@@ -72,6 +72,7 @@ class StreamsHolder:
         self.stderr.set_path_for_dir(dir_path)
 
     def backup(self) -> None:
+        """Can be called only when streams are closed. No support for backng up opened files."""
         self.stdout.backup()
         self.stderr.backup()
 
