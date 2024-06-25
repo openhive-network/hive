@@ -32,7 +32,7 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
             shutil.rmtree(tempdir)
         tempdir.mkdir()
 
-        shutil.copy(self.working_directory / f"{wallet_name}.wallet", tempdir)
+        shutil.move(self.working_directory / f"{wallet_name}.wallet", tempdir)
         bk = BeekeeperExecutable(
             settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.working_directory),
             logger=self._logger,
