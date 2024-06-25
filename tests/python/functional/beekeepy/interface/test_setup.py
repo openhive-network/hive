@@ -29,4 +29,4 @@ def test_closing_with_with(settings: SettingsFactory) -> None:
 def test_session_tokens(settings: SettingsFactory) -> None:
     with beekeeper_factory(settings=settings()) as bk:  # noqa: SIM117
         with bk.create_session() as s1, bk.create_session() as s2:
-            assert s1.token != s2.token
+            assert s1.token != s2.token, "Tokens are not unique"
