@@ -93,8 +93,10 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
             self.__notification_event_handler.http_listening_event.wait(timeout=5)
         except TimeoutError as err:
             if self.__notification_event_handler.already_working_beekeeper_event.is_set():
-                assert (addr := self.__notification_event_handler.already_working_beekeeper_http_address) is not None, "Notification incomplete: missing http address"
-                assert (pid := self.__notification_event_handler.already_working_beekeeper_pid) is not None, "Notification incomplete: missing PID"
+                addr = self.__notification_event_handler.already_working_beekeeper_http_address
+                pid = self.__notification_event_handler.already_working_beekeeper_pid
+                assert addr is not None, "Notification incomplete: missing http address"
+                assert pid is not None, "Notification incomplete: missing PID"
                 raise BeekeeperAlreadyRunningError(address=addr, pid=pid) from err
 
     def _handle_error(self, error: Error) -> None:
@@ -148,7 +150,8 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
         assert self.__notification_event_handler is not None, "Notification event handler hasn't been set"
         # <###> if you get exception from here, and have consistent way of reproduce please report <###>
         # make sure you didn't forget to call beekeeper.run() methode
-        assert (addr := self.__notification_event_handler.http_endpoint_from_event) is not None, "Endpoint from event was not set"
+        addr = self.__notification_event_handler.http_endpoint_from_event
+        assert addr is not None, "Endpoint from event was not set"
         return addr
 
     def export_keys_wallet(
