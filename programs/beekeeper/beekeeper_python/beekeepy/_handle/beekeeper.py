@@ -79,7 +79,7 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
             self.__notification_event_handler, notification_endpoint=self._get_settings().notification_endpoint
         )
 
-    def __destroy_notification_server(self) -> None:
+    def __close_notification_server(self) -> None:
         if self.__notification is not None:
             self.__notification.close()
             self.__notification = None
@@ -135,7 +135,7 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
 
     def close(self) -> None:
         self._close_application()
-        self.__destroy_notification_server()
+        self.__close_notification_server()
 
     def _close_application(self) -> None:
         if self.__exec.is_running():
