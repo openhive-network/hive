@@ -65,6 +65,11 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         private_key = self.__get_wax_result(wax.generate_private_key())
         return self.import_key(private_key=private_key)
 
+    def import_keys(self, *, private_keys: list[str]) -> list[PublicKey]:
+        with self.__beekeeper.batch() as bk:
+            pubs = [bk.api.beekeeper.import_key(wallet_name=self.name, wif_key=key) for key in private_keys]
+        return [pub.public_key for pub in pubs]
+
     def import_key(self, *, private_key: str) -> PublicKey:
         return self.__beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
 
