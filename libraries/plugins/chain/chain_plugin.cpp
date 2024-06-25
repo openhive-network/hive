@@ -841,18 +841,15 @@ void chain_plugin_impl::open()
       dumper.dump( true, get_indexes_memory_details );
     }
   }
-  catch( const fc::exception& e )
-  {
+  FC_CAPTURE_CALL_LOG_AND_RETHROW(([&, this]()
+    {
     /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
     thread_pool.shutdown();
 
     wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-    wlog( " Error: ${e}", ("e", e) );
     theApp.notify_status("exitting with open database error");
-
-    /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
-    exit(EXIT_FAILURE);
-  }
+    }), ()
+  );
 }
 
 void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
@@ -1079,7 +1076,9 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
       }
       else
       {
-        start_block = block_reader.read_block_by_num( 1 );
+        uint32_t tail_block_num = 1;
+        start_block = block_reader.read_block_by_num( tail_block_num );
+        FC_ASSERT( start_block, "Tail block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", tail_block_num ) );
       }
 
       if( replay_required )
