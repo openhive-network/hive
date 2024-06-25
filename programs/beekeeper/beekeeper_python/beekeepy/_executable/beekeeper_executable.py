@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 from typing import TYPE_CHECKING
 
 from beekeepy._executable.beekeeper_config import BeekeeperConfig
@@ -27,27 +28,23 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
     def export_keys_wallet(
         self, wallet_name: str, wallet_password: str, extract_to: Path | None = None
     ) -> list[KeyPair]:
-        tempdir = self.working_directory / "export-keys-workdir"
-        if tempdir.exists():
-            shutil.rmtree(tempdir)
-        tempdir.mkdir()
-
-        shutil.move(self.working_directory / f"{wallet_name}.wallet", tempdir)
-        bk = BeekeeperExecutable(
-            settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.working_directory),
-            logger=self._logger,
-        )
-        bk.run(
-            blocking=True,
-            arguments=[
-                "-d",
-                tempdir.as_posix(),
-                "--notifications-endpoint",
-                "0.0.0.0:0",
-                "--export-keys-wallet",
-                json.dumps([wallet_name, wallet_password]),
-            ],
-        )
+        with tempfile.TemporaryDirectory() as tempdir:
+            shutil.move(self.working_directory / f"{wallet_name}.wallet", tempdir)
+            bk = BeekeeperExecutable(
+                settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.working_directory),
+                logger=self._logger,
+            )
+            bk.run(
+                blocking=True,
+                arguments=[
+                    "-d",
+                    tempdir.as_posix(),
+                    "--notifications-endpoint",
+                    "0.0.0.0:0",
+                    "--export-keys-wallet",
+                    json.dumps([wallet_name, wallet_password]),
+                ],
+            )
 
         keys_path = bk.working_directory / f"{wallet_name}.keys"
         if extract_to:
