@@ -185,6 +185,44 @@ push_to_wiki:
   tags:
     - public-runner-docker
 
+supplement_documentation_url:
+  extends: .npm_process_built_package_tarball
+  stage: build
+  needs:
+    - job: beekeeper_wasm_build
+      artifacts: true
+    - job: beekeeper_tsc_build
+      artifacts: true
+    - job: push_to_wiki
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+
+  script:
+    - |
+      set -xe
+      scripts/generate_api_docs.sh "${CI_PROJECT_URL}/programs/beekeeper/beekeeper_wasm" "${CI_COMMIT_SHA}" "${GEN_DOC_URL}" tmp_doc
+      cd "${SOURCE_DIR}"
+      npm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
+      BUILT_PACKAGE_NAME=$(jq -r .[].filename "${DIST_DIR}/built_package_info.json")
+      echo BUILT_PACKAGE_PATH="${DIST_DIR}/${BUILT_PACKAGE_NAME}" > ${CI_PROJECT_DIR}/built_package_info.env
+
+  artifacts:
+    reports:
+      dotenv:
+        - "built_package_info.env"  # contains path to produced tgz
+
+    paths:
+      - "${DIST_DIR}/*.tgz"  # Built package
+
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+
 mirrornet_node_build:
   stage: build
   extends: .prepare_hived_image
@@ -1057,10 +1095,9 @@ deploy_beekeeper_wasm_dev_package:
 
   needs:
     - job: test_beekeeper_wasm
-    - job: beekeeper_wasm_build
+    - job: supplement_documentation_url
       artifacts: true
-    - job: beekeeper_tsc_build
-      artifacts: true
+
   tags:
     - public-runner-docker
 
@@ -1075,9 +1112,7 @@ deploy_beekeeper_wasm_production_public_npm:
 
   needs:
     - job: test_beekeeper_wasm
-    - job: beekeeper_wasm_build
-      artifacts: true
-    - job: beekeeper_tsc_build
+    - job: supplement_documentation_url
       artifacts: true
 
   tags:
