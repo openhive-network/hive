@@ -47,7 +47,6 @@
   "files": [
     "LICENSE.md",
     "README.md",
-    "api.md",
     "dist/bundle"
   ],
   "devDependencies": {
@@ -56,16 +55,16 @@
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-replace": "^5.0.5",
-    "@types/node": "^20.7.1",
-    "concat-md": "^0.5.1",
+    "@types/node": "^20.10.6",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
     "playwright": "^1.39.0",
     "rollup": "^4.9.0",
     "rollup-plugin-dts": "^6.1.0",
     "tslib": "^2.6.2",
-    "typedoc": "0.25.3",
-    "typedoc-plugin-markdown": "3.17.1",
+    "typedoc": "0.25.13",
+    "typedoc-gitlab-wiki-theme": "^2.0.0",
+    "typedoc-plugin-markdown": "4.0.0",
     "typescript": "5.2.2"
   },
   "types": "dist/bundle/web.d.ts",
@@ -74,7 +73,7 @@
     "url": "https://gitlab.syncad.com/hive/hive.git"
   },
   "engines": {
-    "node": ">= 12"
+    "node": ">= 18"
   },
   "publishConfig": {
     "registry": "https://RegistryPlaceholder",
