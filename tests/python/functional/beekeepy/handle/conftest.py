@@ -68,7 +68,7 @@ def setup_wallets(beekeeper: Beekeeper) -> WalletsGeneratorT:
             )
             for i in range(count)
         ]
-        assert len(wallets) == count
+        assert len(wallets) == count, "Incorrect number of created wallets"
         with beekeeper.batch() as bk:
             for wallet in wallets:
                 bk.api.beekeeper.create(wallet_name=wallet.name, password=wallet.password)
