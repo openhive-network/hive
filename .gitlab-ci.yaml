@@ -159,6 +159,31 @@ generate_beekeeper_docs:
 
     when: always
     expire_in: 1 week
+  tags:
+    - public-runner-docker
+
+push_to_wiki:
+  extends: .npm_push_doc_template
+  stage: build
+  needs:
+    - job: generate_beekeeper_docs
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    WIKI_PUSH_TOKEN: "$BEEKEEPER_DOC_WIKI_PUSH_TOKEN"
+    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+    # Since beekeeper shares repo with Hived, we can't overwrite Wiki home here
+    PROJECT_URL: "https://gitlab.syncad.com/hive/beekeeper-doc"
+
+  artifacts:
+    reports:
+      dotenv:
+        - "${SOURCE_DIR}/gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
+
+
+  tags:
+    - public-runner-docker
 
 mirrornet_node_build:
   stage: build
