@@ -13,7 +13,7 @@ def test_smoke_interface(settings: SettingsFactory) -> None:
         name="test", password="password"
     ) as wallet:
         pub_key = wallet.generate_key()
-        assert pub_key in wallet.public_keys
+        assert pub_key in wallet.public_keys, "Public key not in wallet public keys"
 
 
 def test_closing_with_delete(settings: SettingsFactory) -> None:
