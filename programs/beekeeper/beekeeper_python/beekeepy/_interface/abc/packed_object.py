@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 
 class _RemoteFactoryCallable(Protocol):  # Generic[T]:
-    # Protocolls are quite limitted for generics:
+    # Protocools are quite limitted for generics:
     # https://stackoverflow.com/questions/61467673/how-do-i-create-a-generic-interface-in-python
     def __call__(self, *, url_or_settings: HttpUrl | Settings) -> Any:
         ...
