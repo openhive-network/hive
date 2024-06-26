@@ -281,6 +281,7 @@ class configuration
 #else
       28800; // HIVE_BLOCKS_PER_DAY - one report per day for mirrornet (like in mainnet)
 #endif
+    uint32_t hf_21_stall_block = 35922615; // remove when `iceberg` is implemented
 };
 
 extern configuration configuration_data;
