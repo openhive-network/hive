@@ -11,8 +11,6 @@ DISTTAG_PLACEHOLDER=$(jq -r ".publishConfig.tag" "${PROJECT_DIR}/package.json")
 
 STAGED_FILES=($(git diff --name-only --cached))
 
-. "${SCRIPTPATH}/generate_api_docs.sh"
-
 if [[ ! " ${STAGED_FILES[*]} " =~ " programs/beekeeper/beekeeper_wasm/package.json " ]];
 then
   echo "package.json file is not staged for commit - skipping further checks..."
