@@ -7,3 +7,7 @@ def generate_wallet_name(number: int = 0) -> str:
 
 def generate_wallet_password(number: int = 0) -> str:
     return f"password-{number}"
+
+
+def generate_account_name(number: int = 0) -> str:
+    return f"account-{number}"
