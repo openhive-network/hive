@@ -1605,6 +1605,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     if ( alternate_chain_spec.get_object().contains( "hive_owner_update_limit" ))
       configuration_data.set_hive_owner_update_limit( alternate_chain_spec["hive_owner_update_limit"].as< uint16_t >() );
 
+    if ( alternate_chain_spec.get_object().contains( "hf_21_stall_block" ) )
+      configuration_data.hf_21_stall_block = alternate_chain_spec[ "hf_21_stall_block" ].as< uint32_t >();
+
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )
       init_witnesses = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();
