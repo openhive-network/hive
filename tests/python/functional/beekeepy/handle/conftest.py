@@ -8,6 +8,7 @@ from beekeepy._handle import Beekeeper
 
 import test_tools as tt
 from hive_local_tools.beekeeper.generators import (
+    generate_account_name,
     generate_wallet_name,
     generate_wallet_password,
 )
@@ -63,7 +64,9 @@ def setup_wallets(beekeeper: Beekeeper) -> WalletsGeneratorT:
                 name=generate_wallet_name(i),
                 password=generate_wallet_password(i),
                 accounts=(
-                    tt.Account.create_multiple(keys_per_wallet, name_base=f"account-{i}") if keys_per_wallet else []
+                    tt.Account.create_multiple(keys_per_wallet, name_base=generate_account_name(i))
+                    if keys_per_wallet
+                    else []
                 ),
             )
             for i in range(count)
