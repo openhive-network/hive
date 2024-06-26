@@ -38,7 +38,7 @@ console.log(await wallet.getPublicKeys());
 
 ## API
 
-See API definition in [api.md](api.md)
+See API documentation at [project WIKI](${GEN_DOC_URL})
 
 ## Support and tests
 
@@ -56,7 +56,7 @@ and then compile the project:
 ./scripts/build_wasm_beekeeper.sh
 cd hive/programs/beekeeper/beekeeper_wasm
 sudo npm install -g pnpm
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 Compile source:
@@ -73,4 +73,5 @@ npm run test
 
 ## License
 
-See license in the [LICENSE.md](LICENSE.md) file
+See license in the [LICENSE.md](https://gitlab.syncad.com/hive/hive/-/blob/master/LICENSE.md?ref_type=heads) file
+
