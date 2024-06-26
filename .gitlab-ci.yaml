@@ -1019,7 +1019,7 @@ deploy_beekeeper_wasm_dev_package:
   stage: publish
 
   variables:
-    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
     NPM_PACKAGE_SCOPE: "@hiveio"
 
@@ -1036,6 +1036,7 @@ deploy_beekeeper_wasm_production_public_npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
   variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_PACKAGE_NAME: "beekeeper"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
