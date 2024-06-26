@@ -136,6 +136,30 @@ beekeeper_tsc_build:
   tags:
     - public-runner-docker
 
+generate_beekeeper_docs:
+  stage: build
+  extends: .npm_process_built_package_tarball
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  script:
+    - scripts/generate_api_docs.sh "${CI_PROJECT_URL}/programs/beekeeper/beekeeper_wasm" "${CI_COMMIT_SHA}"
+
+  needs:
+    - job: beekeeper_wasm_build
+      artifacts: true
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  artifacts:
+    paths:
+      - "${DIST_DIR}/docs"
+
+    when: always
+    expire_in: 1 week
+
 mirrornet_node_build:
   stage: build
   extends: .prepare_hived_image
