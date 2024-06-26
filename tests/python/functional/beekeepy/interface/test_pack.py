@@ -19,7 +19,7 @@ def test_packing(settings: SettingsFactory) -> None:
     with beekeeper_factory(settings=settings()) as bk, bk.create_session() as ss, ss.create_wallet(
         name=name, password=password
     ) as wlt:
-        assert len(wlt.public_keys) == 0
+        assert len(wlt.public_keys) == 0, "Unexpected public keys in wallet"
         with ProcessPoolExecutor() as exec:
             future = exec.submit(import_new_key, bk.pack(), name, password)
             exception = future.exception()
