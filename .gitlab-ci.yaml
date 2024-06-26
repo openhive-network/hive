@@ -41,23 +41,6 @@ include:
       - '/templates/python_projects.gitlab-ci.yml'
       - '/templates/cache_cleanup.gitlab-ci.yml'
 
-.wasm_beekeeper_test_base:
-  extends: .job-defaults
-  stage: test
-  # emscripten image can be used as it contains all needed tools (node and npm).
-  image: ${EMSCRIPTEN_IMAGE}
-  variables:
-    FF_NETWORK_PER_BUILD: 1
-
-  before_script:
-    - . "$NVM_DIR/nvm.sh"  # This loads nvm
-    - nvm use "${NODEJS_VERSION}"
-    - cd programs/beekeeper/beekeeper_wasm
-    - pnpm install --frozen-lockfile
-
-  tags:
-    - public-runner-docker
-
 prepare_hived_image:
   extends: .prepare_hived_image
   stage: build
