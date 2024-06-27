@@ -105,7 +105,8 @@ struct extended_serialization_functor
         return name_map;
     }();
 
-    if( !hive::protocol::serialization_mode_controller::legacy_enabled() )
+    bool force_legacy_mode = (std::string(fc::get_typename< static_variant >::name()) == "hive::protocol::comment_options_extension" && v.is_array());
+    if( !force_legacy_mode  && !hive::protocol::serialization_mode_controller::legacy_enabled() )
       return false;
 
     auto ar = v.get_array();
