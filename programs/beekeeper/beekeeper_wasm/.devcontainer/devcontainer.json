@@ -1,6 +1,6 @@
 {
   "name": "Hive NodeJS & Typescript",
-  "image": "registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.56-5@sha256:cd96d6ec7160634ee6f8fffe3cce101f0a02f8774604f3849631abdff1ee7aed",
+  "image": "registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.56-6@sha256:4082270d74ab15eb9ae69942f64a6b42894734e43ef7e2f3a4b9064eb96cb7bd",
   "containerUser": "emscripten",
   "customizations": {
     "vscode": {
