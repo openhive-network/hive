@@ -293,8 +293,6 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 {
   const auto& creator = _db.get_account( o.creator );
 
-  const auto& props = _db.get_dynamic_global_properties();
-
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
@@ -344,7 +342,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -450,7 +448,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator, o.delegation );
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -2138,7 +2136,7 @@ void pow_apply( database& db, Operation o )
   auto itr = accounts_by_name.find(o.get_worker_account());
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time,
+    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, db.get_current_timestamp(),
       true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
@@ -2277,7 +2275,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if(itr == accounts_by_name.end())
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
-    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time,
+    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, _db.get_current_timestamp(),
       true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
@@ -2527,7 +2525,6 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ), "create_claimed_account_operation is not enabled until hardfork 20." );
 
   const auto& creator = _db.get_account( o.creator );
-  const auto& props = _db.get_dynamic_global_properties();
 
   FC_ASSERT( creator.pending_claimed_accounts > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
 
@@ -2540,7 +2537,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     a.pending_claimed_accounts--;
   });
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA

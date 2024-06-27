@@ -803,6 +803,20 @@ namespace chain {
 
       bool                          snapshot_loaded = false;
 
+      std::optional<time_point_sec> _current_timestamp;
+
+    public:
+
+      time_point_sec get_current_timestamp()
+      {
+        if( _current_timestamp )
+          return *_current_timestamp;
+        else
+          return get_dynamic_global_properties().time;
+      }
+
+    private:
+
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
 
