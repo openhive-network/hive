@@ -129,3 +129,39 @@ HIVE_CASHOUT_WINDOW_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7 days 
 HIVE_100_PERCENT = 10_000
 
 HIVE_COLLATERALIZED_CONVERSION_FEE = 500
+
+HIVE_GENESIS_TIME: Final[int] = 1458835200
+
+MIRRORNET_SKELETON_KEY: Final[str] = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+
+MIRRORNET_5M_WITNESSES: Final[list] = [
+    "rabbit-70",
+    "kushed",
+    "delegate.lafona",
+    "wackou",
+    "complexring",
+    "jesta",
+    "xeldal",
+    "riverhead",
+    "clayop",
+    "steemed",
+    "smooth.witness",
+    "ihashfury",
+    "joseph",
+    "datasecuritynode",
+    "boatymcboatface",
+    "steemychicken1",
+    "roadscape",
+    "pharesim",
+    "abit",
+    "blocktrades",
+    "arhag",
+    "bitcube",
+    "witness.svk",
+    "gxt-1080-sc-0003",
+    "steve-walschot",
+    "bhuz",
+    "liondani",
+    "rabbit-63",
+    "pfunk",
+]
