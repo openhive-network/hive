@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hive_local_tools.functional.python.operation import Operation, get_transaction_timestamp
+import test_tools as tt
+from hive_local_tools.functional.python import get_authority
+from hive_local_tools.functional.python.operation import (
+    Operation,
+    create_transaction_with_any_operation,
+    get_transaction_timestamp,
+)
+from schemas.operations.create_claimed_account_operation import CreateClaimedAccountOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    import test_tools as tt
+    from schemas.fields.basic import AccountName
 
 
 class ClaimAccountToken(Operation):
@@ -29,3 +36,32 @@ class ClaimAccountToken(Operation):
     @property
     def timestamp(self) -> datetime:
         return get_transaction_timestamp(self._node, self._transaction)
+
+
+class CreateClaimedAccount(Operation):
+    def __init__(
+        self, node: tt.InitNode, wallet: tt.Wallet, creator: AccountName, new_account_name: AccountName
+    ) -> None:
+        super().__init__(node, wallet)
+        self._trx = self.generate_transaction(creator, new_account_name)
+        self._rc_cost: int = self._trx["rc_cost"]
+
+    def generate_transaction(self, creator: AccountName, new_account_name: AccountName) -> dict:
+        public_key = tt.Account(new_account_name).public_key
+        return create_transaction_with_any_operation(
+            self._wallet,
+            CreateClaimedAccountOperation(
+                creator=creator,
+                new_account_name=new_account_name,
+                owner=get_authority(public_key),
+                active=get_authority(public_key),
+                posting=get_authority(public_key),
+                memo_key=public_key,
+                json_metadata="{}",
+            ),
+            broadcast=True,
+        )
+
+    @property
+    def trx(self) -> dict:
+        return self._trx
