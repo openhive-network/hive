@@ -9,7 +9,8 @@ from hive_local_tools.constants import (
     OWNER_AUTH_RECOVERY_PERIOD,
     OWNER_UPDATE_LIMIT,
 )
-from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
+from hive_local_tools.functional.python import get_authority
+from hive_local_tools.functional.python.recovery import get_owner_key, get_recovery_agent
 
 
 @run_for("testnet")
