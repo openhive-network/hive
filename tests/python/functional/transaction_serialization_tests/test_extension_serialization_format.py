@@ -16,7 +16,7 @@ PROPOSAL_END_DATE_AFTER_UPDATE = tt.Time.from_now(weeks=19)
         (
             "condenser",
             # Extension is in legacy format
-            ["comment_payout_beneficiaries", {"beneficiaries": [{"account": "bob", "weight": 100}]}],
+            {"type": "comment_payout_beneficiaries", "value": {"beneficiaries": [{"account": "bob", "weight": 100}]}},
         ),
         (
             "block",
