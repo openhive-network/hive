@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import test_tools as tt
-from hive_local_tools.functional.python import sample_authority
+from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import (
     Operation,
     create_transaction_with_any_operation,
@@ -53,9 +53,9 @@ class CreateClaimedAccount(Operation):
             CreateClaimedAccountOperation(
                 creator=creator,
                 new_account_name=new_account_name,
-                owner=sample_authority(public_key),
-                active=sample_authority(public_key),
-                posting=sample_authority(public_key),
+                owner=basic_authority(public_key),
+                active=basic_authority(public_key),
+                posting=basic_authority(public_key),
                 memo_key=public_key,
                 json_metadata="{}",
             ),
