@@ -3902,6 +3902,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   uint32_t skip = get_node_skip_flags();
   _current_block_num    = block_num;
+  _current_timestamp    = block.timestamp;
   _current_trx_in_block = 0;
 
   if( BOOST_UNLIKELY( block_num == 1 ) )
@@ -4766,6 +4767,7 @@ void database::update_global_dynamic_data( const signed_block& b )
     }
   }
 
+  _current_timestamp.reset();
   // dynamic global properties updating
   modify( _dgp, [&]( dynamic_global_property_object& dgp )
   {
