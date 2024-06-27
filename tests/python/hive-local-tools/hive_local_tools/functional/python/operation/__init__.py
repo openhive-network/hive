@@ -16,6 +16,7 @@ from schemas.fields.compound import Manabar
 from schemas.filter import (
     build_vop_filter,
 )
+from schemas.operations.virtual.account_created_operation import AccountCreatedOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation,
@@ -610,3 +611,12 @@ def publish_feeds_with_confirmation(node: tt.InitNode, wallet: tt.Wallet, base: 
 def convert_from_mainnet_to_testnet_asset(asset: tt.Asset.AnyT) -> tt.Asset.AnyT:
     asset = asset.as_nai()
     return tt.Asset.from_nai(asset).as_legacy()
+
+
+def assert_account_was_created(node: tt.AnyNode, account_name: str) -> None:
+    account_created_operations = get_virtual_operations(node, AccountCreatedOperation)
+    created_accounts = []
+    for operation in account_created_operations:
+        created_accounts.append(operation.op.value.new_account_name)
+
+    assert account_name in created_accounts, f"Account named {account_name} was not created"
