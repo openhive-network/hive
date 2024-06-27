@@ -1127,6 +1127,7 @@ namespace fc
   {
     bool operator()( const fc::variant& v, comment_options_extension& s ) const
     {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
       return extended_serialization_functor< comment_options_extension >().serialize( v, s );
     }
   };
@@ -1137,6 +1138,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
       return extended_variant_creator_functor< comment_options_extension >().create( v );
     }
   };
