@@ -15,6 +15,10 @@
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
+  "keywords": [
+    "blockchain",
+    "hive"
+  ],
   "exports": {
     ".": {
       "node": {
