@@ -24,7 +24,3 @@ def get_recovery_agent(node: tt.InitNode, account_name: str, wait_for_agent=None
 
 def get_owner_key(node: tt.InitNode, account_name: str) -> str:
     return node.api.database.find_accounts(accounts=[account_name])["accounts"][0]["owner"]["key_auths"][0][0]
-
-
-def get_authority(key):
-    return {"weight_threshold": 1, "account_auths": [], "key_auths": [[key, 1]]}

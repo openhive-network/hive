@@ -4,7 +4,8 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
-from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
+from hive_local_tools.functional.python import basic_authority
+from hive_local_tools.functional.python.recovery import get_owner_key, get_recovery_agent
 
 
 def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
@@ -24,12 +25,12 @@ def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
     node, wallet_alice, wallet_thief, wallet_alice_agent, wallet_thief_agent = prepare_environment
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="thief_key").private_key)
-    thief_owner_authority_to_alice_account = get_authority(thief_owner_key_to_alice_account)
+    thief_owner_authority_to_alice_account = basic_authority(thief_owner_key_to_alice_account)
     wallet_thief.api.update_account(
         "alice",
         "{}",
@@ -44,7 +45,7 @@ def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
     alice_new_key = tt.Account("alice", secret="new_key").public_key
-    alice_new_authority = get_authority(alice_new_key)
+    alice_new_authority = basic_authority(alice_new_key)
     wallet_alice.api.import_key(tt.Account("alice", secret="new_key").private_key)
     wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
 
@@ -60,7 +61,7 @@ def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
     # thief recovers the alice account
     thief_key = tt.Account("thief", secret="it_is_thief").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="it_is_thief").private_key)
-    thief_authority = get_authority(thief_key)
+    thief_authority = basic_authority(thief_key)
     wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
@@ -84,7 +85,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     node, wallet_alice, wallet_thief, wallet_alice_agent, wallet_thief_agent = prepare_environment
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
@@ -101,7 +102,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
     alice_new_key = tt.Account("alice", secret="new_key").public_key
-    alice_new_authority = get_authority(alice_new_key)
+    alice_new_authority = basic_authority(alice_new_key)
     wallet_alice.api.import_key(tt.Account("alice", secret="new_key").private_key)
     wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
 
@@ -118,7 +119,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     assert get_recovery_agent(node, "alice") == "alice.agent"
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet_thief.api.request_account_recovery("thief", "alice", get_authority(tt.Account("thief").public_key))
+        wallet_thief.api.request_account_recovery("thief", "alice", basic_authority(tt.Account("thief").public_key))
     assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
@@ -138,7 +139,7 @@ def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
     node, wallet_alice, wallet_thief, wallet_alice_agent, wallet_thief_agent = prepare_environment
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
@@ -160,7 +161,7 @@ def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
     alice_new_key = tt.Account("alice", secret="new_key").public_key
-    alice_new_authority = get_authority(alice_new_key)
+    alice_new_authority = basic_authority(alice_new_key)
     wallet_alice.api.import_key(tt.Account("alice", secret="new_key").private_key)
     wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
 

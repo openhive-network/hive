@@ -9,7 +9,8 @@ from hive_local_tools.constants import (
     OWNER_AUTH_RECOVERY_PERIOD,
     OWNER_UPDATE_LIMIT,
 )
-from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
+from hive_local_tools.functional.python import basic_authority
+from hive_local_tools.functional.python.recovery import get_owner_key, get_recovery_agent
 
 
 @run_for("testnet")
@@ -18,7 +19,7 @@ def test_request_account_recovery(node: tt.InitNode) -> None:
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     new_key = tt.Account("alice", secret="new_key").public_key
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
@@ -30,7 +31,7 @@ def test_account_recovery_request_expiration(node: tt.InitNode) -> None:
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     recovery_account_key = tt.Account("initminer").public_key
-    authority = get_authority(recovery_account_key)
+    authority = basic_authority(recovery_account_key)
     wallet.api.request_account_recovery("initminer", "alice", authority)
 
     node.wait_number_of_blocks(ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD)
@@ -45,10 +46,10 @@ def test_remove_account_recovery_request(node: tt.InitNode) -> None:
 
     recovery_account_key = tt.Account("initminer").public_key
 
-    authority = get_authority(recovery_account_key)
+    authority = basic_authority(recovery_account_key)
     wallet.api.request_account_recovery("initminer", "alice", authority)
 
-    authority = get_authority(recovery_account_key)
+    authority = basic_authority(recovery_account_key)
     # to remove existing recovery request, recovery_agent broadcast request_account_operation with weight_threshold = 0
     authority["weight_threshold"] = 0
 
@@ -62,14 +63,14 @@ def test_account_recovery_process(node: tt.InitNode) -> None:
     wallet.create_account("alice", vests=100)
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # thief changes key to account "alice"
     wallet.api.update_account_auth_key("alice", "owner", str(tt.PublicKey("alice", secret="thief_key")), 3)
 
     # alice asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
@@ -85,10 +86,10 @@ def test_recovery_account_process_without_changing_owner_key(node: tt.InitNode) 
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     primary_key = get_owner_key(node, "alice")
-    primary_authority = get_authority(primary_key)
+    primary_authority = basic_authority(primary_key)
 
     new_key = tt.PublicKey("alice", secret="new_key")
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="new_key"))
 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
@@ -106,10 +107,10 @@ def test_confirm_account_recovery_without_account_recovery_request(node: tt.Init
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     primary_key = get_owner_key(node, "alice")
-    primary_authority = get_authority(primary_key)
+    primary_authority = basic_authority(primary_key)
 
     new_key = tt.PublicKey("alice", secret="new_key")
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="new_key"))
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
@@ -124,19 +125,19 @@ def test_account_recovery_process_with_mismatched_key(node: tt.InitNode) -> None
     wallet.create_account("alice", vests=100)
 
     primary_key = get_owner_key(node, "alice")
-    primary_authority = get_authority(primary_key)
+    primary_authority = basic_authority(primary_key)
 
     # thief changes owner key to account "alice"
     wallet.api.update_account_auth_key("alice", "owner", tt.PublicKey("alice", secret="thief_key"), 3)
 
     # alice asks her recovery_agent (initminer) to create a recovery request
     new_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
     random_key = tt.PublicKey("alice", secret="random_key")
-    random_authority = get_authority(random_key)
+    random_authority = basic_authority(random_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="random_key"))
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
@@ -154,11 +155,11 @@ def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node
     assert get_recovery_agent(node, account_name="alice") == ""
 
     primary_key = get_owner_key(node, "alice")
-    primary_authority = get_authority(primary_key)
+    primary_authority = basic_authority(primary_key)
 
     # alice asks her recovery_agent (most trusted witness - initminer) to create a recovery request
     new_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
 
     wallet.api.update_account_auth_key("alice", "owner", tt.PublicKey("alice", secret="thief_key"), 3)
@@ -178,7 +179,7 @@ def test_create_account_recovery_request_from_random_account_as_recovery_agent(n
     wallet.create_account("random-account")
 
     recovery_account_key = tt.Account("random-account").public_key
-    authority = get_authority(recovery_account_key)
+    authority = basic_authority(recovery_account_key)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         # alice confirms the request made by random account
@@ -195,7 +196,7 @@ def test_create_recovery_account_request_from_future_recovery_agent(node: tt.Ini
 
     wallet.api.change_recovery_account("alice", "future-agent")
     new_key = tt.Account("alice", secret="new_key").public_key
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.request_account_recovery("future-agent", "alice", new_authority)
@@ -211,7 +212,7 @@ def test_recover_account_using_current_agent_while_waiting_for_the_approval_of_t
     wallet.create_account("alice", vests=tt.Asset.Test(100))
 
     alice_original_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_key)
+    alice_original_authority = basic_authority(alice_original_key)
 
     wallet.create_account("future-agent")
 
@@ -223,7 +224,7 @@ def test_recover_account_using_current_agent_while_waiting_for_the_approval_of_t
 
     new_key = tt.Account("alice", secret="new_key").public_key
     wallet.api.import_key(tt.Account("alice", secret="new_key").private_key)
-    new_authority = get_authority(new_key)
+    new_authority = basic_authority(new_key)
 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
@@ -247,7 +248,7 @@ def test_try_to_confirm_account_recovery_request_with_expired_key(node: tt.InitN
     wallet.create_account("alice", vests=100)
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # thief changes key to account "alice"
     thief_key = tt.PublicKey("alice", secret="thief_key")
@@ -257,7 +258,7 @@ def test_try_to_confirm_account_recovery_request_with_expired_key(node: tt.InitN
 
     # alice asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
@@ -283,7 +284,7 @@ def test_use_account_recovery_system_twice(node: tt.InitNode) -> None:
     wallet.create_account("alice", vests=100)
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # thief changes key to account "alice"
     thief_key = tt.PublicKey("alice", secret="thief_key")
@@ -291,7 +292,7 @@ def test_use_account_recovery_system_twice(node: tt.InitNode) -> None:
 
     # alice asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
@@ -299,7 +300,7 @@ def test_use_account_recovery_system_twice(node: tt.InitNode) -> None:
 
     # alice second time asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_second_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_second_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
@@ -324,7 +325,7 @@ def test_use_account_recovery_system_twice_within_a_short_period_of_time(node: t
     wallet.create_account("alice", vests=100)
 
     alice_original_owner_key = get_owner_key(node, "alice")
-    alice_original_authority = get_authority(alice_original_owner_key)
+    alice_original_authority = basic_authority(alice_original_owner_key)
 
     # thief changes key to account "alice"
     thief_key = tt.PublicKey("alice", secret="thief_key")
@@ -332,7 +333,7 @@ def test_use_account_recovery_system_twice_within_a_short_period_of_time(node: t
 
     # alice asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_new_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
@@ -340,7 +341,7 @@ def test_use_account_recovery_system_twice_within_a_short_period_of_time(node: t
 
     # alice second time asks her recovery_agent (initminer) to create a recovery request
     new_authority_key = tt.PublicKey("alice", secret="alice_second_key")
-    new_authority = get_authority(new_authority_key)
+    new_authority = basic_authority(new_authority_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_second_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
