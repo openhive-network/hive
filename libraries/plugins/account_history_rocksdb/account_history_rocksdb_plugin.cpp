@@ -846,13 +846,6 @@ private:
   std::vector<rocksdb_operation_object> collectReversibleOps(uint32_t* blockRangeBegin, uint32_t* blockRangeEnd,
     uint32_t* collectedIrreversibleBlock) const;
 
-  fc::time_point_sec find_block_timestamp( uint32_t block_num )
-  {
-    std::shared_ptr<hive::chain::full_block_type> _blk = _block_reader.get_block_by_number( block_num );
-    FC_ASSERT( _blk, "Block doesn't exist" );
-    return _blk->get_block_header().timestamp;
-  }
-
 /// Class attributes:
 private:
   account_history_rocksdb_plugin&  _self;
@@ -933,6 +926,27 @@ private:
   std::ofstream                    _balance_csv_file;
   std::map<string, saved_balances> _saved_balances;
   unsigned                         _balance_csv_line_count = 0;
+
+  std::optional<std::pair<uint32_t, fc::time_point_sec>> _last_block_and_timestamp;
+
+  fc::time_point_sec find_block_timestamp( uint32_t block_num )
+  {
+    if( _last_block_and_timestamp )
+    {
+      if( _last_block_and_timestamp->first == block_num )
+        return _last_block_and_timestamp->second;
+    }
+    else
+      _last_block_and_timestamp = std::make_pair( block_num, fc::time_point_sec() );
+
+    std::shared_ptr<hive::chain::full_block_type> _blk = _block_reader.get_block_by_number( block_num );
+    FC_ASSERT( _blk, "Block doesn't exist" );
+
+    _last_block_and_timestamp->first = block_num;
+    _last_block_and_timestamp->second = _blk->get_block_header().timestamp;
+
+    return _last_block_and_timestamp->second;
+  }
 
   appbase::application& theApp;
 };
