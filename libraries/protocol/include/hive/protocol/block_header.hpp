@@ -41,6 +41,7 @@ struct serialization_functor< block_header_extensions >
 {
   bool operator()( const fc::variant& v, block_header_extensions& s ) const
   {
+    hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
     return extended_serialization_functor< block_header_extensions >().serialize( v, s );
   }
 };
@@ -51,6 +52,7 @@ struct variant_creator_functor< block_header_extensions >
   template<typename T>
   fc::variant operator()( const T& v ) const
   {
+    hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
     return extended_variant_creator_functor< block_header_extensions >().create( v );
   }
 };

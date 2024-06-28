@@ -105,7 +105,15 @@ struct extended_serialization_functor
         return name_map;
     }();
 
-    bool force_legacy_mode = (std::string(fc::get_typename< static_variant >::name()) == "hive::protocol::comment_options_extension" && v.is_array());
+    static std::unordered_set<std::string> types_for_force_legacy {
+      "hive::protocol::comment_options_extension",
+      "hive::protocol::recurrent_transfer_extension",
+      "hive::protocol::future_extensions",
+      "hive::protocol::block_header_extensions",
+      "hive::protocol::update_proposal_extension"
+    };
+
+    bool force_legacy_mode = (v.is_array() && types_for_force_legacy.count(std::string(fc::get_typename< static_variant >::name())));
     if( !force_legacy_mode  && !hive::protocol::serialization_mode_controller::legacy_enabled() )
       return false;
 

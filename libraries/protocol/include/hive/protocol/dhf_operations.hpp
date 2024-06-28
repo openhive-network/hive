@@ -144,15 +144,8 @@ namespace fc
   {
     bool operator()( const fc::variant& v, update_proposal_extension& s ) const
     {
-      // If this update_proposal_operation is supposed to be legacy-serialized completely 
-      // and its extension is legacy-serialized, we'll allow it.
-      if( hive::protocol::serialization_mode_controller::legacy_enabled() &&
-          v.is_array() )
-      {
-        return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
-      }
-      else // Otherwise force the extension to be hf26-serialized.
-        return false;
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
+      return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
     }
   };
 
@@ -162,6 +155,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
       return extended_variant_creator_functor< update_proposal_extension >().create( v );
     }
   };

@@ -1162,6 +1162,50 @@ namespace fc
       return extended_variant_creator_functor< pow2_work >().create( v );
     }
   };
+
+  using hive::protocol::recurrent_transfer_extension;
+  template<>
+  struct serialization_functor< recurrent_transfer_extension >
+  {
+    bool operator()( const fc::variant& v, recurrent_transfer_extension& s ) const
+    {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
+      return extended_serialization_functor< recurrent_transfer_extension >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< recurrent_transfer_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
+      return extended_variant_creator_functor< recurrent_transfer_extension >().create( v );
+    }
+  };
+
+  using hive::protocol::future_extensions;
+    template<>
+  struct serialization_functor< future_extensions >
+  {
+    bool operator()( const fc::variant& v, future_extensions& s ) const
+    {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
+      return extended_serialization_functor< future_extensions >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< future_extensions >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      hive::protocol::serialization_mode_controller::mode_guard m (hive::protocol::transaction_serialization_type::hf26);
+      return extended_variant_creator_functor< future_extensions >().create( v );
+    }
+  };
 }
 
 FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
