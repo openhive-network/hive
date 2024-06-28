@@ -3652,7 +3652,7 @@ void database::init_genesis()
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
       auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
-      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
+      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
         auth.account = STEEM_ACCOUNT_NAME;
