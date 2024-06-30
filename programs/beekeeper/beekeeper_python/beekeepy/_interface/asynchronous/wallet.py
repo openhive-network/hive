@@ -75,3 +75,6 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     async def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         return (await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key)).signature
+
+    async def has_matching_private_key(self, *, key: PublicKey) -> bool:
+        return (await self.__beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=key)).exists

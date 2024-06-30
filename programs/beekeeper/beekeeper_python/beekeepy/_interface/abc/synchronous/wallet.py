@@ -3,12 +3,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from helpy import ContextSync
+from schemas.fields.basic import PublicKey
+
 if TYPE_CHECKING:
-    from types import TracebackType
 
     from typing_extensions import Self
 
-    from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
 
 
@@ -33,7 +34,7 @@ class Wallet(ABC):
         ...
 
 
-class UnlockedWallet(Wallet, ABC):
+class UnlockedWallet(Wallet, ContextSync["Self"], ABC):
     @abstractmethod
     def generate_key(self, *, salt: str | None = None) -> PublicKey:
         ...
@@ -54,13 +55,17 @@ class UnlockedWallet(Wallet, ABC):
     def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         ...
 
-    def __enter__(self) -> Self:
+    @abstractmethod
+    def has_matching_private_key(self, *, key: PublicKey) -> bool:
+        ...
+
+    def _enter(self) -> Self:
         return self
 
-    def __exit__(
-        self,
-        _: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
+    def _finally(self) -> None:
         self.lock()
+
+    def __contains__(self, obj: object) -> bool:
+        if isinstance(obj, str):
+            return self.has_matching_private_key(key=PublicKey(obj))
+        raise TypeError(f"Object `{obj}` is not str which can't be check for matchin private key in wallet.")

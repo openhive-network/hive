@@ -180,8 +180,20 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
     def _finally(self) -> None:
         self.close()
 
+class RemoteBeekeeperCommon:
+    def run(self) -> None:
+        pass
 
-class Beekeeper(BeekeeperCommon["Beekeeper"], helpy.Beekeeper):
+
+class SyncRemoteBeekeeper(helpy.Beekeeper):
+    pass
+
+class AsyncRemoteBeekeeper(helpy.AsyncBeekeeper):
+    pass
+
+
+
+class Beekeeper(BeekeeperCommon["Beekeeper"], SyncRemoteBeekeeper):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, logger=logger, **kwargs)
         self.__wallet_close_callbacks: list[SyncWalletLocked] = []
@@ -212,7 +224,7 @@ class Beekeeper(BeekeeperCommon["Beekeeper"], helpy.Beekeeper):
         return cast(Settings, super().settings)
 
 
-class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], helpy.AsyncBeekeeper):
+class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], AsyncRemoteBeekeeper):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, logger=logger, **kwargs)
         self.__wallet_close_callbacks: list[AsyncWalletLocked] = []
@@ -242,27 +254,3 @@ class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], helpy.AsyncBeekeeper):
     @property
     def settings(self) -> Settings:
         return cast(Settings, super().settings)
-
-
-class SyncRemoteBeekeeper(Beekeeper):
-    def _run_application(self, settings: Settings) -> None:
-        pass
-
-    def _close_application(self) -> None:
-        pass
-
-    def _get_http_endpoint_from_event(self) -> helpy.HttpUrl:
-        assert self.settings.http_endpoint is not None
-        return self.settings.http_endpoint
-
-
-class AsyncRemoteBeekeeper(AsyncBeekeeper):
-    def _run_application(self, settings: Settings) -> None:
-        pass
-
-    def _close_application(self) -> None:
-        pass
-
-    def _get_http_endpoint_from_event(self) -> helpy.HttpUrl:
-        assert self.settings.http_endpoint is not None
-        return self.settings.http_endpoint

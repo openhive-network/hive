@@ -3,9 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from types import TracebackType
+from helpy import ContextAsync
 
+if TYPE_CHECKING:
     from typing_extensions import Self
 
     from schemas.fields.basic import PublicKey
@@ -33,7 +33,7 @@ class Wallet(ABC):
         ...
 
 
-class UnlockedWallet(Wallet, ABC):
+class UnlockedWallet(Wallet, ContextAsync["Self"], ABC):
     @abstractmethod
     async def generate_key(self, *, salt: str | None = None) -> PublicKey:
         ...
@@ -54,13 +54,12 @@ class UnlockedWallet(Wallet, ABC):
     async def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
         ...
 
-    async def __enter__(self) -> Self:
+    @abstractmethod
+    async def has_matching_private_key(self, *, key: PublicKey) -> bool:
+        ...
+
+    async def _aenter(self) -> Self:
         return self
 
-    async def __exit__(
-        self,
-        _: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
+    async def _afinally(self) -> None:
         await self.lock()

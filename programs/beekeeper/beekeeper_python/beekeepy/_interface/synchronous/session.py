@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         Wallet as WalletInterface,
     )
     from schemas.apis.beekeeper_api import GetInfo
+    from schemas.fields.basic import PublicKey
 
 
 class Session(SessionInterface):
@@ -34,9 +35,10 @@ class Session(SessionInterface):
     def get_info(self) -> GetInfo:
         return self.__beekeeper.api.get_info()
 
-    def create_wallet(self, *, name: str, password: str) -> UnlockedWalletInterface:
-        self.__beekeeper.api.create(wallet_name=name, password=password)
-        return self.__construct_unlocked_wallet(name)
+    def create_wallet(self, *, name: str, password: str | None = None) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
+        create_result = self.__beekeeper.api.create(wallet_name=name, password=password)
+        wallet = self.__construct_unlocked_wallet(name)
+        return wallet if password is not None else (wallet, create_result.password)
 
     def open_wallet(self, *, name: str) -> WalletInterface:
         with NoWalletWithSuchNameError(name):
@@ -65,6 +67,18 @@ class Session(SessionInterface):
     @property
     def wallets(self) -> list[WalletInterface]:
         return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_wallets().wallets]
+
+    @property
+    def created_wallets(self) -> list[Wallet]:
+        return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_created_wallets().wallets]
+
+    @property
+    def opened_wallets(self) -> list[Wallet]:
+        ...
+
+    @property
+    def public_keys(self) -> list[PublicKey]:
+        return [key.public_key for key in self.__beekeeper.api.get_public_keys().keys]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper)

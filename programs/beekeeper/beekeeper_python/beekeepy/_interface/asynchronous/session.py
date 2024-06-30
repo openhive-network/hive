@@ -34,9 +34,10 @@ class Session(SessionInterface):
     async def get_info(self) -> GetInfo:
         return await self.__beekeeper.api.get_info()
 
-    async def create_wallet(self, *, name: str, password: str) -> UnlockedWalletInterface:
-        await self.__beekeeper.api.create(wallet_name=name, password=password)
-        return self.__construct_unlocked_wallet(name)
+    async def create_wallet(self, *, name: str, password: str | None = None) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
+        create_result = await self.__beekeeper.api.create(wallet_name=name, password=password)
+        wallet = self.__construct_unlocked_wallet(name)
+        return wallet if password is not None else (wallet, create_result.password)
 
     async def open_wallet(self, *, name: str) -> WalletInterface:
         with NoWalletWithSuchNameError(name):
@@ -66,6 +67,12 @@ class Session(SessionInterface):
     async def wallets(self) -> list[WalletInterface]:
         return [
             self.__construct_wallet(name=wallet.name) for wallet in (await self.__beekeeper.api.list_wallets()).wallets
+        ]
+
+    @property
+    async def created_wallets(self) -> list[WalletInterface]:
+        return [
+            self.__construct_wallet(name=wallet.name) for wallet in (await self.__beekeeper.api.list_created_wallets()).wallets
         ]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
