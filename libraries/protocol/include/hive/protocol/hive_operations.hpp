@@ -1137,7 +1137,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< comment_options_extension >().create( v );
+      return extended_variant_creator_functor< comment_options_extension >().create( v, comment_options_extension::tag<T>().value );
     }
   };
 
@@ -1158,6 +1158,28 @@ namespace fc
     fc::variant operator()( const T& v ) const
     {
       return extended_variant_creator_functor< pow2_work >().create( v );
+    }
+  };
+
+  using hive::protocol::future_extensions;
+  template<>
+  struct variant_creator_functor< future_extensions >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< future_extensions >().create( v, future_extensions::tag<T>().value );
+    }
+  };
+
+  using hive::protocol::recurrent_transfer_extension;
+  template<>
+  struct variant_creator_functor< recurrent_transfer_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< recurrent_transfer_extension >().create( v, recurrent_transfer_extension::tag<T>().value );
     }
   };
 }
