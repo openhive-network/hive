@@ -29,29 +29,27 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const public_key_type& _memo_key,
-        const time_point_sec& _head_block_creation_time, const time_point_sec& _creation_time, bool _mined,
+        const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
-      : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ),
+      : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
         /*
           Explanation:
-            _head_block_creation_time = time is retrieved from a head block
-            _creation_time            = time from a current block
-
-            In the future `_head_block_creation_time` should disappear and all algorithms should take time from a current block, that hasn't been created yet
+            _creation_time = time is retrieved from a head block
+            _block_creation_time = time from a current block
         */
         if( _recovery_account != nullptr )
           recovery_account = _recovery_account->get_id();
         received_vesting_shares += incoming_delegation;
-        voting_manabar.last_update_time = _head_block_creation_time.sec_since_epoch();
-        downvote_manabar.last_update_time = _head_block_creation_time.sec_since_epoch();
+        voting_manabar.last_update_time = _creation_time.sec_since_epoch();
+        downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
         if( _fill_mana )
           voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
         if( rc_adjustment.value )
         {
-          rc_manabar.last_update_time = _head_block_creation_time.sec_since_epoch();
+          rc_manabar.last_update_time = _creation_time.sec_since_epoch();
           auto max_rc = get_maximum_rc().value;
           rc_manabar.current_mana = max_rc;
           last_max_rc = max_rc;
@@ -62,7 +60,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), name( _name ), created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
+        : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
       {}
 
       //liquid HIVE balance
@@ -130,6 +128,8 @@ namespace hive { namespace chain {
       //account creation time
       time_point_sec get_creation_time() const { return created; }
       //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
+      //account creation time according to a block
+      time_point_sec get_block_creation_time() const { return block_created; }
       bool was_mined() const { return mined; }
 
       //tells if account has some other account casting governance votes in its name
@@ -216,6 +216,7 @@ namespace hive { namespace chain {
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
     private:
       time_point_sec    created; //(not read by consensus code)
+      time_point_sec    block_created;
     public:
       time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
       time_point_sec    last_post; //(we could probably remove limit on posting replies)
@@ -730,7 +731,7 @@ FC_REFLECT( hive::chain::account_object,
           (received_rc)(last_max_rc)
           (pending_claimed_accounts)(sum_delayed_votes)
           (hbd_seconds_last_update)(hbd_last_interest_payment)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
-          (created)(last_account_update)(last_post)(last_root_post)
+          (created)(block_created)(last_account_update)(last_post)(last_root_post)
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)(governance_vote_expiration_ts)
           (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote)(mined)
