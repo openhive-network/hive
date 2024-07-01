@@ -264,7 +264,7 @@ void verify_authority_accounts_exist(
 }
 
 const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
-  const time_point_sec& _head_block_creation_time, const time_point_sec& time, bool mined, asset fee_for_rc_adjustment, const account_object* recovery_account = nullptr,
+  const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool mined, asset fee_for_rc_adjustment, const account_object* recovery_account = nullptr,
   asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
 {
   if( db.has_hardfork( HIVE_HARDFORK_0_11 ) )
@@ -285,7 +285,7 @@ const account_object& create_account( database& db, const account_name_type& nam
     rc_adjustment_from_fee = ( fee_for_rc_adjustment * dgpo.get_vesting_share_price() ).amount.value;
   }
 
-  return db.create< account_object >( name, key, _head_block_creation_time, time, mined, recovery_account,
+  return db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account,
     !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
 }
 
