@@ -225,7 +225,8 @@ void block_log_wrapper::process_blocks(uint32_t starting_block_number,
     
     starting_block_number = last_block_of_part + 1;
   }
-  while( starting_block_number < ending_block_number && current_log != head_log );
+  while( ( starting_block_number < ending_block_number && current_log != head_log ) &&
+         ( not _app.is_interrupt_request() ) );
 }
 
 std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id( 
