@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+
 import test_tools as tt
 
 
@@ -11,3 +14,34 @@ def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -
     tt.logger.info("Wait for current hardfork...")
     tt.Time.wait_for(is_current_hardfork)
     tt.logger.info(f"Current Hardfork {current_hardfork_number} applied.")
+
+
+def simultaneous_node_startup(
+    nodes: list[tt.InitNode | tt.ApiNode],
+    timeout: int,
+    alternate_chain_specs: tt.AlternateChainSpecs,
+    wait_for_live: bool,
+    arguments: list | None = None,
+    time_control: tt.StartTimeControl = None,
+    exit_before_synchronization: bool = False,
+) -> None:
+    with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+        tasks = []
+        for node in nodes:
+            tasks.append(
+                executor.submit(
+                    partial(
+                        lambda _node: _node.run(
+                            timeout=timeout,
+                            alternate_chain_specs=alternate_chain_specs,
+                            arguments=arguments or [],
+                            wait_for_live=wait_for_live,
+                            time_control=time_control,
+                            exit_before_synchronization=exit_before_synchronization,
+                        ),
+                        node,
+                    )
+                )
+            )
+        for thread_number in tasks:
+            thread_number.result()
