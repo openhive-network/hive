@@ -175,6 +175,19 @@ public:
 
   /**
    * 
+   * Import a private key into specified wallet.
+   * Wallet must be opened and unlocked.
+   * @param token       Session's identifier.
+   * @param wallet_name A name of a wallet to import into.
+   * @param wif_keys    The WIF Private Keys to import, e.g. 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n.
+   * @param prefix      A prefix of a public key
+   * @return            A public keys corresponding to WIF keys
+   * @throws            An exception `fc::exception` if a wallet not found or locked.
+   */
+  std::vector<string> import_keys( const std::string& token, const std::string& wallet_name, const std::vector<string>& wif_keys, const std::string& prefix );
+
+  /**
+   * 
    * Removes a private key from specified wallet.
    * Wallet must be opened and unlocked.
    * @param token       Session's identifier.

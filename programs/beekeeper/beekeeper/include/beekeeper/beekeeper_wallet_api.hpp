@@ -36,6 +36,7 @@ class beekeeper_wallet_api
       (lock)
       (unlock)
       (import_key)
+      (import_keys)
       (remove_key)
       (list_wallets)
       (list_created_wallets)

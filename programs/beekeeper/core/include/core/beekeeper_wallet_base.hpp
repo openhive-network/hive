@@ -71,16 +71,19 @@ class beekeeper_wallet_base
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *
-       * example: import_key 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
-       *
        * @param wif_key the WIF Private Key to import
        * @param prefix a prefix of a public key
        */
       virtual string import_key( const string& wif_key, const string& prefix ) = 0;
 
-      /** Removes a key from the wallet.
+      /** Imports a WIF Private Keys into the wallet to be used to sign transactions by an account.
        *
-       * example: remove_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+       * @param wif_keys the WIF Private Keys to import
+       * @param prefix a prefix of a public key
+       */
+      virtual std::vector<std::string> import_keys( const std::vector<string>& wif_keys, const string& prefix ) = 0;
+
+      /** Removes a key from the wallet.
        *
        * @param key the Public Key to remove
        */
@@ -91,8 +94,6 @@ class beekeeper_wallet_base
       virtual std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) = 0;
 
       /** Tests if a private key corresponding to a public key exists in a wallet
-       *
-       * example: has_matching_private_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
        *
        * @param a public key to test
        * @returns informatio if a private key exists
