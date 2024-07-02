@@ -1,0 +1,50 @@
+Multi_sign_keys:
+{
+'owner': [
+'5HuvBmD7bNmdcdBSx1wHNGVLUaKcbPRtjwkh4Vz9JFE1MLGMsPP',
+'5J9iuWsKXK566hXzHA4D3BPyFifK3JphwiQ4cuo92UqXjjKAt7R',
+'5KRoUjzQ5tJAVa6EfE9SgvqWK7336TPBypQXHWFABChVTrDh8nX',
+],
+'active': [
+'5J2fy1FoutB5UYJgAxVF3qWLVqNaZTCtg78ZaK1TTxCzdYqTEP4',
+'5KhwBEMAhwpmTHD2WETDcB92gWSG9GdXVevvGj3coTdUVjJcHVn',
+'5JpRi3FYim778JMaeQBVQwPsMd5U8FGirerSiiYus2hsRB277HD',
+'5JFAiVLsXB5LG2ntrCNUUjD9Hr4oJvf4Lp3v8C6vCD3HchphtuV',
+'5JUnx8u6PcYkQ5gjdmtkEKdFewtPRGFxyKBYjcbov1wnELw26uK',
+'5JUuhBJuFjFAi8r4fAw4TL2jDzLr6gNPY52drfh6bo4az2kGm9Q',
+],
+'posting': [
+'5JGe2JSPajRMmAh1VJmoC1mM8oLxADXw5XB3h57XjgA4zRTZjGJ',
+'5JTdmG2c2udBiorTZkENDVCfXgXJKy92d2caTm8kXcnfYiQCqAA',
+'5JPnznv2f3k1dx6uxqP9bKDv8PrShQuZ9tnQ242zaK5v8Ktk2KL',
+'5JvrAVQax5xxM8aSDBZaV1cGsrfsc6JGC58gPAgjedWXbwSVWgj',
+'5JhycWS1MLnyeR5nvU1peJddG2ho5H6WN2kDS813Utdkdp8xJSN',
+'5Huh6DuKYhkUFPmbt3k8dZGYU9t5brr35uYqV6Hfd9hqKF2Kmeg',
+'5JkkX2XvpFeeQoGGgyiG7CQ7SftunMfJTzwYrx6subgguop1T7x',
+'5Ju5hG9Qb4YrSgVVeSZ2H5TM5doFa3imdVFWTMoQ5gRiMpyTH6n',
+'5HwRzZae8h2qsmtAzyHkKwffUCxYqJktTgSzJjurezz86fYZb3d',
+'5K2DAwmDhEWYd6HRKCi6EFuKrFLAcVUi9nasSk1xQexN3p1Ecc3',
+]}
+
+Witnesses_keys:
+initminer:  5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+witness-0:  5K4aoZc1SQzfRvTfe9W5Yp32nN3tDgiSJ65ySePeG8g9RYJMVvL
+witness-1:  5JVn8V3d5RgBhaiHrWo6YRiVJdWJVMv43wbsMNDtYsT7wvuBvDN
+witness-2:  5JDKuxi3SzrJ96QQ6p2tB2zwCk9mMeJCDB65WaRdkHn5Nivkw2g
+witness-3:  5JyiNt8h5FWb5kYbP2fxkAgx1NTWVN3igbbTSp6VqbRX3rsjPKU
+witness-4:  5JeuU3PjbkfPUD2APWzS1mXKfufcBGiBQifjPdhUNFUoWBSWpre
+witness-5:  5JoUz8LLCRrCQJrMLAAHfZwZnGa7cAyY2TLAsPfP1MU9MFqgHf8
+witness-6:  5KJgoWcJbS2PoDJUaDnzywAG8TC4EB2EhSq3LtGFRR15xGdDLjb
+witness-7:  5KeAGu8yWpyaDn8LxMub2Xd5dWDd5bLE7bgyUCPASc7at5hUZAX
+witness-8:  5KMewQ4yv6FxyKSYac9EqaAdaJAeW4PPW3jkVetA29vnH1iEfTb
+witness-9:  5JRywXzcawejhNCrLvy8m1oqrVFapRRATnMAMr4spHhj6x8auBf
+witness-10:  5HpvDkxDkXvDN7diHvz2oVRZyPxQPbTLYx3rYaFLGvZTKVNpaGg
+witness-11:  5KePhGuSqjm8xrgg9ZTRN7ukbHRPRuECSBvQvvUZdgjNmxcqSyk
+witness-12:  5JfJqtA182G69VYECM89njRdi35zzbBuAYUnD4TyWH2tS3xpG4F
+witness-13:  5K32YvjWZuzEcuaExL8vf7E8nMu5h18dde8QUuwMZGbArV1siDu
+witness-14:  5KdEt2u4MkADyDywBs82KDjMLUnj86tVRHxYyMzfC4npXe1XNZg
+witness-15:  5Hz27CtQFUXzsBswBdZPax1QdBGmwtEimwamToFY7ukFDaEeTri
+witness-16:  5J9YwFnf9CqoH2St5Pa4zTvmbJMgSX66NXsatvbpDMQKjUpz62F
+witness-17:  5HtHJLNzo6Knau92XwgnoHdkuMNaJptrx1v34znar431UszB8Ea
+witness-18:  5JFmmgVMq5X57CxZuWKFQMdvgJeHsNg4dWpKbBs7HxBLxUMx9Rw
+witness-19:  5J9iu9kZzEjF2pBv2FNXndjf3EFw9tYxKmrYdpiFMA9pPBVAvrm
