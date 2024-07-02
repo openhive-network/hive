@@ -2662,6 +2662,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   _db.modify( account, [&]( account_object& a )
   {
     a.set_last_account_recovery_time( _db.head_block_time() );
+    a.set_block_last_account_recovery_time( _db.get_current_timestamp() );
   });
 }
 
