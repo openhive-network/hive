@@ -46,6 +46,12 @@ namespace fc
     vo = v;
   }
 
+  void to_variant( const beekeeper::import_keys_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "public_keys", var.public_keys );
+    vo = v;
+  }
+
   void to_variant( const beekeeper::create_session_return& var, fc::variant& vo )
   {
     variant v = mutable_variant_object( "token", var.token );
