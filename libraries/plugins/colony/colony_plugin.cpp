@@ -547,7 +547,7 @@ void colony_plugin_impl::start()
     return;
   // make sure the initialization code won't be run for the second time)
   _start_at_block = -1;
-
+  ilog("@@@colony START");
   // scan existing accounts to extract those for which you can effectively use _sign_with keys
   flat_set<public_key_type> common_keys;
   for( const auto& key : _sign_with )
@@ -577,6 +577,7 @@ void colony_plugin_impl::start()
   decltype( _threads )::iterator threadI;
   int i = 0;
   int not_matching_accounts = 0;
+  ilog("@@@colony START_accounts_loop");
   for( const auto& account : accounts )
   {
     auto get_active = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); };
@@ -624,6 +625,7 @@ void colony_plugin_impl::start()
       ++not_matching_accounts; // expected to have at least built-in accounts as not matching
     }
   }
+  ilog("@@@END account_loop");
 
   if( not_matching_accounts > 0 )
   {
@@ -643,6 +645,7 @@ void colony_plugin_impl::start()
 
   for( auto& thread : _threads )
     thread.init();
+  ilog("@@@colony END");
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
