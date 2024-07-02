@@ -246,3 +246,36 @@ def set_log_level_to_info(node):
         '{"name":"sync","level":"info","appender":"p2p"} '
         '{"name":"p2p","level":"info","appender":"p2p"}'
     )
+
+
+def test_colony_kill(block_log: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs) -> None:
+    # zrobić test -> sprawdzi na wersji która nie jest poprawiona -> zwykły kill -> powtórzyć to podając błędny klucz prywatny do kolonii
+    node = tt.InitNode()
+    node.config.shared_file_size = "4G"
+    prepare_colony_config(node)
+
+    # node.config.colony_sign_with.append("5JP3EbwqTqkyCHpkECAANMd9SWbr4RApzbj8WkZj7JwezicsL6m")  # klucz ownera
+    node.config.colony_sign_with.append(tt.PrivateKey("bad-account"))
+
+    for witness in WITNESSES:
+        key = tt.Account(witness).private_key
+        node.config.witness.append(witness)
+        node.config.private_key.append(key)
+
+    # only replay
+    node.run(
+        replay_from=block_log,
+        timeout=120,
+        arguments=["--chain-id=24"],
+        exit_before_synchronization=True,
+        alternate_chain_specs=alternate_chain_spec,
+    )
+
+    # run
+    node.run(
+        replay_from=block_log,
+        timeout=120,
+        arguments=["--chain-id=24"],
+        wait_for_live=True,
+        alternate_chain_specs=alternate_chain_spec,
+    )
