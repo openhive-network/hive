@@ -488,7 +488,7 @@ struct api_account_object
     created( a.get_block_creation_time() ),
     mined( a.was_mined() ),
     reset_account( HIVE_NULL_ACCOUNT ),
-    last_account_recovery( a.get_last_account_recovery_time() ),
+    last_account_recovery( a.get_block_last_account_recovery_time() ),
     post_count( a.post_count ),
     can_vote( a.can_vote ),
     voting_manabar( a.voting_manabar ),
