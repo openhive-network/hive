@@ -162,6 +162,13 @@ namespace hive { namespace chain {
         last_account_recovery = recovery_time;
       }
 
+      //time from a current block
+      time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
+      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
+      {
+        block_last_account_recovery = block_recovery_time;
+      }
+
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
     private:
@@ -169,6 +176,7 @@ namespace hive { namespace chain {
 
       account_id_type   recovery_account;
       time_point_sec    last_account_recovery;
+      time_point_sec    block_last_account_recovery;
 
       account_name_type name;
 
@@ -712,7 +720,7 @@ namespace hive { namespace chain {
 } }
 
 FC_REFLECT( hive::chain::account_object,
-          (id)(proxy)(recovery_account)(last_account_recovery)
+          (id)(proxy)(recovery_account)(last_account_recovery)(block_last_account_recovery)
           (name)
           (hbd_seconds)
           (savings_hbd_seconds)
