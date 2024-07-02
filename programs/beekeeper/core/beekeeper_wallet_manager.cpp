@@ -94,6 +94,12 @@ string beekeeper_wallet_manager::import_key( const std::string& token, const std
   return sessions->get_wallet_manager( token )->import_key( wallet_name, wif_key, prefix );
 }
 
+std::vector<string> beekeeper_wallet_manager::import_keys( const std::string& token, const std::string& wallet_name, const std::vector<std::string>& wif_keys, const std::string& prefix )
+{
+  sessions->check_timeout( token );
+  return sessions->get_wallet_manager( token )->import_keys( wallet_name, wif_keys, prefix );
+}
+
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const public_key_type& public_key )
 {
   sessions->check_timeout( token );

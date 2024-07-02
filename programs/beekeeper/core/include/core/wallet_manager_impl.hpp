@@ -33,6 +33,7 @@ class wallet_manager_impl {
     void lock( const std::string& wallet_name );
     void unlock( const std::string& wallet_name, const std::string& password );
     string import_key( const std::string& name, const std::string& wif_key, const std::string& prefix );
+    std::vector<string> import_keys( const std::string& name, const std::vector<string>& wif_keys, const std::string& prefix );
     void remove_key( const std::string& name, const public_key_type& public_key );
     signature_type sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix );
     bool has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key );
