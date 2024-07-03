@@ -144,10 +144,22 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         wallet_name:  a name of wallet
         wif_key:      a private key
       RESULT:
-        {"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}
+        {"public_key":"STM6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}
         public_key: a public key corresponding to a private key
     */
     .function("import_key(token, wallet_name, wif_key)", &beekeeper_api::import_key)
+
+    /*
+      ****importing of private keys into a wallet****
+      PARAMS:
+        token:        a token representing a session
+        wallet_name:  a name of wallet
+        wif_key:      set of private keys
+      RESULT:
+        {"public_keys":["STM6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa", "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"]}
+        public_keys: public keys corresponding to private keys
+    */
+    .function("import_keys(token, wallet_name, wif_keys)", &beekeeper_api::import_keys)
 
     /*
       ****removing of a private key from a wallet****
@@ -245,7 +257,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         wallet_name:      a name of wallet
         content:          a string to encrypt
 
-      WARNING: Current time is used as implcit nonce, so subsequent calls to this version can result in different results. 
+      WARNING: Current time is used as implicit nonce, so subsequent calls to this version can result in different results.
 
       RESULT:
         {"encrypted_content":"12796218200812abcd032de"}

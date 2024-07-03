@@ -1,6 +1,7 @@
 import { BeekeeperApi } from "./api.js";
 import { BeekeeperSession } from "./session.js";
 import { IBeekeeperUnlockedWallet, IBeekeeperSession, TPublicKey, IBeekeeperWallet, TSignature } from "../interfaces.js";
+import { StringList } from "../beekeeper.js";
 
 interface IImportKeyResponse {
   public_key: string;
@@ -44,6 +45,14 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
 
   public async importKey(wifKey: string): Promise<TPublicKey> {
     const { public_key } = this.api.extract(this.api.api.import_key(this.session.token, this.locked.name, wifKey) as string) as IImportKeyResponse;
+
+    await this.api.fs.sync();
+
+    return public_key;
+  }
+
+  public async importKeys(wifKeys: StringList): Promise<TPublicKey> {
+    const { public_key } = this.api.extract(this.api.api.import_keys(this.session.token, this.locked.name, wifKeys) as string) as IImportKeyResponse;
 
     await this.api.fs.sync();
 
