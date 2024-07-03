@@ -1381,8 +1381,8 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
             ilog( "Tx count for block #${b} is ${tx_count}", ( "b", block->get_block_num() )( tx_count ) );
             if( block->get_block_num() >= start )
             {
-              BOOST_CHECK_LT( tx_count, 300 );
-              BOOST_CHECK_GT( tx_count, 200 );
+              BOOST_CHECK_LT( tx_count, 285 );
+              BOOST_CHECK_GT( tx_count, 185 );
             }
           } );
         }
@@ -1431,6 +1431,68 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
     theApp.quit( true );
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( colony_no_workers_test )
+{
+  // this test checks reaction of colony with delayed start on lack of suitable worker accounts
+  bool test_passed = false;
+  BOOST_SCOPE_EXIT( &test_passed ) { BOOST_REQUIRE( test_passed ); } BOOST_SCOPE_EXIT_END
+
+  try
+  {
+    configuration_data.min_root_comment_interval = fc::seconds( 3 );
+    const uint32_t COLONY_START = 5;
+
+    std::string not_used_key = fc::ecc::private_key::regenerate( fc::sha256::hash( std::string( "not used key" ) ) ).key_to_wif();
+    // we are using some key that is not associated with any account; note that if we left "nothing" as
+    // a "key to use", 'temp' account would be a suitable worker
+    initialize( 1, {}, { "initminer" }, {
+      config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
+      config_line_t( { "colony-sign-with", { not_used_key } } ),
+      config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ) } );
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        db->_log_hardforks = true;
+
+        ilog( "Waiting for 'colony' to activate" );
+        fc::sleep_until( get_genesis_time() + COLONY_START * HIVE_BLOCK_INTERVAL - 1 );
+        uint32_t block_num = db->head_block_num();
+        BOOST_REQUIRE_EQUAL( block_num, COLONY_START - 1 );
+        // we are now 1 second before timestamp of block that will activate 'colony' in its
+        // post_apply_block notification
+        // 'colony' should stop the application which means no new blocks should be created;
+        // also this thread should be terminated with cancel exeption before it finishes
+
+        fc::usleep( fc::seconds( 2 ) );
+        BOOST_REQUIRE_EQUAL( db, nullptr );
+
+        ilog( "'API' thread finished incorrectly" );
+      }
+      catch( const fc::canceled_exception& )
+      {
+        ilog( "'API' thread canceled correctly" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    // the block that activated 'colony' should finish properly
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), COLONY_START );
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
     ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
