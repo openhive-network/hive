@@ -4386,13 +4386,18 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       if (_benchmark_dumper.is_enabled())
         _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());
     }
-    catch (protocol::tx_missing_active_auth& e)
+    catch( protocol::tx_missing_active_auth& e )
     {
-      if (get_shared_db_merkle().find(head_block_num() + 1) == get_shared_db_merkle().end())
+      if( get_shared_db_merkle().find( head_block_num() + 1 ) == get_shared_db_merkle().end() )
       {
         FC_FINALIZE_ASSERT( e );
-        throw e;
+        throw;
       }
+    }
+    catch( fc::assert_exception& e )
+    {
+      FC_FINALIZE_ASSERT( e );
+      throw;
     }
   }
 }
