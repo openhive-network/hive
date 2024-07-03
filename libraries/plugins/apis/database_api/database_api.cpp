@@ -1807,20 +1807,23 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
   return verify_authority_return( { true } );
 }
 
-// TODO: This is broken. By the look of is, it has been since BitShares. verify_authority always
-// returns false because the TX is not signed.
 DEFINE_API_IMPL( database_api_impl, verify_account_authority )
 {
   auto account = _db.find< chain::account_object, chain::by_name >( args.account );
   FC_ASSERT( account != nullptr, "no such account" );
 
-  /// reuse trx.verify_authority by creating a dummy transfer
-  verify_authority_args vap;
-  hive::protocol::transfer_operation op;
-  op.from = account->get_name();
-  vap.trx.operations.emplace_back( op );
+  hive::protocol::required_authorities_type required_authorities;
+  required_authorities.required_active.insert( args.account );
 
-  return verify_authority( vap );
+  bool ok = hive::protocol::has_authorization(
+    required_authorities,
+    args.signers,
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active ); },
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner ); },
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string witness_name ) { return _db.get_witness( witness_name ).signing_key; } );
+
+  return verify_account_authority_return( { ok } );
 }
 
 DEFINE_API_IMPL( database_api_impl, verify_signatures )
