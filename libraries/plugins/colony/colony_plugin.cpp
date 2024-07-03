@@ -587,9 +587,8 @@ void colony_plugin_impl::start()
     required_authorities_type required_authorities;
     required_authorities.required_active.insert( account.get_name() );
 
-    try
+    if( hive::protocol::has_authorization( required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
     {
-      hive::protocol::verify_authority( required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key );
       if( i < _max_threads )
       {
         threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
@@ -618,7 +617,7 @@ void colony_plugin_impl::start()
       if( threadI == _threads.end() )
         threadI = _threads.begin();
     }
-    catch( const hive::protocol::transaction_exception& ex )
+    else
     {
       dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
       ++not_matching_accounts; // expected to have at least built-in accounts as not matching
