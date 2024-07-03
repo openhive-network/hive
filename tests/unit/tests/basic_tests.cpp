@@ -1475,4 +1475,215 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 
 }
 
+void check_hive_assert( bool value )
+{
+  HIVE_FINALIZABLE_ASSERT( value, tx_missing_active_auth, "assert" );
+}
+
+void check_exception( bool value )
+{
+  if( not value )
+    throw std::exception();
+}
+
+BOOST_AUTO_TEST_CASE( authorization_speed )
+{
+  /*
+  This test does not test anything, but reports execution time of verify_authority.
+  Situations when verify_authority throws are about 100 times slower than when it passes
+  correctly. Part of it is due to speed of exceptions, formatting exception takes a lot
+  of time as well and it is most likely main source of the problem. Slowdown is way too big,
+  so at some point we might want to address that.
+  has_authorization is a version of verify_authority that returns false instead of throwing.
+  It is almost as fast in invalid case as in valid one (invalid falls back to check owner as well).
+  */
+  const int ITERATIONS = 200000;
+  fc::time_point time;
+  int counter = 0;
+  flat_set<public_key_type> valid_key, invalid_key, no_key;
+  valid_key.insert( init_account_pub_key );
+  invalid_key.insert( fc::ecc::private_key::regenerate( fc::sha256::hash( std::string( "not used key" ) ) ).get_public_key() );
+  fc::enable_record_assert_trip = false;
+
+  ilog( "verify_authority valid key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    try
+    {
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+      required_authorities_type required_authorities;
+      required_authorities.required_active.insert( "initminer" );
+
+      hive::protocol::verify_authority( required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
+      ++counter;
+    }
+    catch( ... )
+    {
+      counter = 0;
+    }
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "verify_authority valid key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+
+  ilog( "verify_authority invalid key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    try
+    {
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+      required_authorities_type required_authorities;
+      required_authorities.required_active.insert( "initminer" );
+
+      hive::protocol::verify_authority( required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
+      counter = 0;
+    }
+    catch( ... )
+    {
+      ++counter;
+    }
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "verify_authority invalid key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+
+  ilog( "verify_authority no key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    try
+    {
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+      required_authorities_type required_authorities;
+      required_authorities.required_active.insert( "initminer" );
+
+      hive::protocol::verify_authority( required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
+      counter = 0;
+    }
+    catch( ... )
+    {
+      ++counter;
+    }
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "verify_authority no key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+  /*
+  ilog( "has_authorization valid key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+    required_authorities_type required_authorities;
+    required_authorities.required_active.insert( "initminer" );
+
+    bool ok = hive::protocol::has_authorization( required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
+    if( ok )
+      ++counter;
+    else
+      counter = 0;
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "has_authorization valid key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+
+  ilog( "has_authorization invalid key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+    required_authorities_type required_authorities;
+    required_authorities.required_active.insert( "initminer" );
+
+    bool ok = hive::protocol::has_authorization( required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
+    if( ok )
+      counter = 0;
+    else
+      ++counter;
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "has_authorization invalid key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+
+  ilog( "has_authorization no key start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+    required_authorities_type required_authorities;
+    required_authorities.required_active.insert( "initminer" );
+
+    bool ok = hive::protocol::has_authorization( required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
+    if( ok )
+      counter = 0;
+    else
+      ++counter;
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "has_authorization no key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+  */
+  ilog( "HIVE_ASSERT start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    try
+    {
+      check_hive_assert( false );
+      counter = 0;
+    }
+    catch( ... )
+    {
+      ++counter;
+    }
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "HIVE_ASSERT end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+
+  ilog( "regular exception start" );
+  time = fc::time_point::now();
+  counter = 0;
+  for( int i = 0; i < ITERATIONS; ++i )
+  {
+    try
+    {
+      check_exception( false );
+      counter = 0;
+    }
+    catch( ... )
+    {
+      ++counter;
+    }
+  }
+  BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
+  ilog( "regular exception end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
