@@ -32,7 +32,7 @@ required_authorities_type get_required_authorities(const vector<AuthContainerTyp
   return result;
 } FC_CAPTURE_AND_RETHROW((auth_containers)) }
 
-void verify_authority(const required_authorities_type& required_authorities, 
+void verify_authority(const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
                       const authority_getter& get_owner,
@@ -45,6 +45,13 @@ void verify_authority(const required_authorities_type& required_authorities,
                       const flat_set<account_name_type>& active_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
+
+bool has_authorization( const required_authorities_type& required_authorities,
+                        const flat_set<public_key_type>& sigs,
+                        const authority_getter& get_active,
+                        const authority_getter& get_owner,
+                        const authority_getter& get_posting,
+                        const witness_public_key_getter& get_witness_key );
 
 template< typename AuthContainerType >
 void verify_authority(const vector<AuthContainerType>& auth_containers, 

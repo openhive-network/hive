@@ -1582,7 +1582,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   }
   BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
   ilog( "verify_authority no key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
-  /*
+
   ilog( "has_authorization valid key start" );
   time = fc::time_point::now();
   counter = 0;
@@ -1648,7 +1648,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   }
   BOOST_REQUIRE_EQUAL( counter, ITERATIONS );
   ilog( "has_authorization no key end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
-  */
+
   ilog( "HIVE_ASSERT start" );
   time = fc::time_point::now();
   counter = 0;
