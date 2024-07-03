@@ -633,7 +633,7 @@ void colony_plugin_impl::start()
   if( _threads.empty() )
   {
     elog( "No accounts suitable for use as colony workers! Shutting down." );
-    theApp.kill();
+    theApp.generate_interrupt_request();
   }
   else if( i < _max_threads )
   {
