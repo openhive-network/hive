@@ -1090,26 +1090,26 @@ BOOST_AUTO_TEST_CASE( genesis_account_authorities )
     // tests fix for missing authorities on steem.dao and hive.fund accounts in testnet;
     // before fix they would fail on access to authority object, but only until HF21/HF24
     HIVE_REQUIRE_ASSERT( transfer( OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
     HIVE_REQUIRE_ASSERT( transfer( NEW_HIVE_TREASURY_ACCOUNT, OBSOLETE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
 
     inject_hardfork( HIVE_HARDFORK_0_21 );
 
     HIVE_REQUIRE_ASSERT( transfer( OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
 
     inject_hardfork( HIVE_HARDFORK_1_24 );
 
     HIVE_REQUIRE_ASSERT( transfer( NEW_HIVE_TREASURY_ACCOUNT, OBSOLETE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
     HIVE_REQUIRE_ASSERT( transfer( OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
     HIVE_REQUIRE_ASSERT( transfer( NEW_HIVE_TREASURY_ACCOUNT, OBSOLETE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority(id) || s.check_authority(get_owner(id))" );
+      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
   }
   FC_LOG_AND_RETHROW()
 }
