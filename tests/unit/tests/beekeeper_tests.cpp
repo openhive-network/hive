@@ -58,15 +58,27 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
   BOOST_REQUIRE_EQUAL(0u, wallet.list_keys().size());
 
-  auto priv = fc::ecc::private_key::generate();
-  auto pub = priv.get_public_key();
-  auto wif = priv.key_to_wif();
+  auto _key_generation = []( size_t nr_keys )
+  {
+    using keys_pair = std::pair<std::string, public_key_type>;
+    std::vector<keys_pair> _result;
+
+    for( size_t i = 0 ; i < nr_keys; ++i )
+    {
+      auto priv = fc::ecc::private_key::generate();
+      _result.emplace_back( std::make_pair( priv.key_to_wif(), priv.get_public_key()) );
+    }
+    return _result;
+  };
+
+  auto _keys_a = _key_generation( 1 );
+
   auto _prefix = "STM";
-  wallet.import_key(wif, _prefix);
+  wallet.import_key( _keys_a[0].first, _prefix);
   BOOST_REQUIRE_EQUAL(1u, wallet.list_keys().size());
 
-  auto privCopy = wallet.get_private_key(pub);
-  BOOST_REQUIRE_EQUAL(wif, privCopy.key_to_wif());
+  auto privCopy = wallet.get_private_key( _keys_a[0].second );
+  BOOST_REQUIRE_EQUAL(_keys_a[0].first, privCopy.key_to_wif());
 
   wallet.lock();
   BOOST_REQUIRE(wallet.is_locked());
@@ -84,8 +96,22 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet2.unlock("pass");
   BOOST_REQUIRE_EQUAL(1u, wallet2.list_keys().size());
 
-  auto privCopy2 = wallet2.get_private_key(pub);
-  BOOST_REQUIRE_EQUAL(wif, privCopy2.key_to_wif());
+  auto privCopy2 = wallet2.get_private_key( _keys_a[0].second );
+  BOOST_REQUIRE_EQUAL(_keys_a[0].first, privCopy2.key_to_wif());
+
+  auto _keys_b = _key_generation( 4 );
+  std::vector<string> _keys;
+  for( auto& keys : _keys_b )
+    _keys.emplace_back( keys.first );
+
+  wallet.import_keys( _keys, _prefix );
+
+  BOOST_REQUIRE_EQUAL(5u, wallet.list_keys().size());
+  for( auto& keys : _keys_b )
+  {
+    auto _private_key = wallet.get_private_key( keys.second );
+    BOOST_REQUIRE_EQUAL( keys.first, _private_key.key_to_wif() );
+  }
 
 } FC_LOG_AND_RETHROW() }
 
@@ -1923,6 +1949,55 @@ BOOST_AUTO_TEST_CASE(get_version)
     {
       BOOST_REQUIRE_EQUAL( _version_a, _version_b );
     }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(import_keys)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+    auto _prefix = "STM";
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+
+    const std::string _wallet_name = "wallet-0";
+
+    _beekeeper.create( _token, _wallet_name, std::optional<std::string>() );
+
+    const size_t _nr_keys = 20'000;
+    std::vector<std::string> _keys( _nr_keys );
+
+    for( size_t i = 0; i < _nr_keys; ++i )
+    {
+      auto _priv = fc::ecc::private_key::generate();
+      _keys[i] = _priv.key_to_wif();
+    }
+
+    auto _start = std::chrono::high_resolution_clock::now();
+
+    _beekeeper.import_keys( _token, _wallet_name, _keys, _prefix );
+
+    auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start );
+    auto  _time = _duration.count();
+
+    //AMD Ryzen 7 5800X 8-Core Processor ~800ms
+    BOOST_REQUIRE_LT( _time, 1500 );
+
+    BOOST_TEST_MESSAGE( std::to_string( _time ) + " [ms]" );
+
+    auto _public_keys = _beekeeper.get_public_keys( _token, _wallet_name );
+    BOOST_REQUIRE_EQUAL( _public_keys.size(), _nr_keys );
 
   } FC_LOG_AND_RETHROW()
 }
