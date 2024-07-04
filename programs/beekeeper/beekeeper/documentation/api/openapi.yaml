@@ -348,6 +348,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/import_key_response'
+  beekeeper_api.import_keys:
+    post:
+      tags:
+        - keys
+      summary: Import private keys.
+      description: Import private keys into specified wallet
+      operationId: import_keys
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/import_keys'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/import_keys_response'
   beekeeper_api.remove_key:
     post:
       tags:
@@ -736,6 +756,33 @@ components:
           type: string
           example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
           description: A public key corresponding to WIF key
+    import_keys:
+      required:
+        - token
+        - wallet_name
+        - wif_keys
+      type: object
+      properties:
+        token:
+          type: string
+          example: c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913
+          description: Session's identifier
+        wallet_name:
+          type: string
+          example: my_second_wallet
+          description: A name of a wallet to import into
+        wif_keys:
+          type: array
+          items:
+            type: string
+            example: 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+            description: The WIF Private Key to import, e.g. 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+    import_keys_response:
+      type: array
+      items:
+        type: string
+        example: 6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4
+        description: A public key corresponding to WIF key
     remove_key:
       required:
         - token
