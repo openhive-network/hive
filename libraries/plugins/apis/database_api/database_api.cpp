@@ -1813,7 +1813,18 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
   FC_ASSERT( account != nullptr, "no such account" );
 
   hive::protocol::required_authorities_type required_authorities;
-  required_authorities.required_active.insert( args.account );
+  switch( args.level )
+  {
+  case authority_level::active:
+    required_authorities.required_active.insert( args.account );
+    break;
+  case authority_level::owner:
+    required_authorities.required_owner.insert( args.account );
+    break;
+  case authority_level::posting:
+    required_authorities.required_posting.insert( args.account );
+    break;
+  }
 
   bool ok = hive::protocol::has_authorization(
     required_authorities,
