@@ -801,8 +801,13 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, verify_account_authority )
   {
-    CHECK_ARG_SIZE( 2 )
-    return _database_api->verify_account_authority( { args.at(0).as< account_name_type >(), args.at(1).as< flat_set< public_key_type > >() } ).valid;
+    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2 or 3 argument(s), was ${n}", ( "n", args.size() ) );
+    hive::plugins::database_api::verify_account_authority_args call_args;
+    call_args.account = args.at( 0 ).as< account_name_type >();
+    call_args.signers = args.at( 1 ).as< flat_set< public_key_type > >();
+    if( args.size() > 2 )
+      call_args.level = args.at( 2 ).as< hive::plugins::database_api::authority_level >();
+    return _database_api->verify_account_authority( call_args ).valid;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_votes )
