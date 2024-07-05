@@ -36,6 +36,9 @@ class UnlockedWallet(Wallet, ContextSync["UnlockedWallet"], ABC):
     def import_key(self, *, private_key: str) -> PublicKey: ...
 
     @abstractmethod
+    def import_keys(self, *, private_keys: list[str]) -> list[PublicKey]: ...
+
+    @abstractmethod
     def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None: ...
 
     @abstractmethod

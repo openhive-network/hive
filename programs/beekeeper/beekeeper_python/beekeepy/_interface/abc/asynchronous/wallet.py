@@ -36,6 +36,9 @@ class UnlockedWallet(Wallet, ContextAsync["UnlockedWallet"], ABC):
     async def import_key(self, *, private_key: str) -> PublicKey: ...
 
     @abstractmethod
+    async def import_keys(self, *, private_keys: list[str]) -> list[PublicKey]: ...
+
+    @abstractmethod
     async def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None: ...
 
     @abstractmethod
