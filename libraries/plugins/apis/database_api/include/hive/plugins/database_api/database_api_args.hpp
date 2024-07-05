@@ -589,10 +589,18 @@ struct verify_authority_return
   bool valid;
 };
 
+enum class authority_level
+{
+  active,
+  owner,
+  posting
+};
+
 struct verify_account_authority_args
 {
-  account_name_type           account;
-  flat_set< public_key_type > signers;
+  account_name_type                   account;
+  flat_set< public_key_type >         signers;
+  fc::enum_type<int, authority_level> level = authority_level::active;
 };
 
 typedef verify_authority_return verify_account_authority_return;
@@ -931,9 +939,15 @@ FC_REFLECT( hive::plugins::database_api::verify_authority_args,
 FC_REFLECT( hive::plugins::database_api::verify_authority_return,
   (valid) )
 
+FC_REFLECT_ENUM( hive::plugins::database_api::authority_level,
+  (active)
+  (owner)
+  (posting) )
+
 FC_REFLECT( hive::plugins::database_api::verify_account_authority_args,
   (account)
-  (signers) )
+  (signers)
+  (level) )
 
 FC_REFLECT( hive::plugins::database_api::verify_signatures_args,
   (hash)

@@ -234,6 +234,315 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( verify_account_authority_test )
+{ try {
+  auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+
+#define KEYS( name ) \
+  auto name ## _owner = generate_private_key( BOOST_PP_STRINGIZE( name ) "_owner" ).get_public_key(); \
+  auto name ## _active = generate_private_key( BOOST_PP_STRINGIZE( name ) "_active" ).get_public_key(); \
+  auto name ## _posting = generate_private_key( BOOST_PP_STRINGIZE( name ) "_posting" ).get_public_key(); \
+  auto name ## _memo = generate_private_key( BOOST_PP_STRINGIZE( name ) "_memo" ).get_public_key()
+#define CREATE_ACCOUNT( name ) \
+  do { \
+    account_create_operation op; \
+    op.creator = HIVE_INIT_MINER_NAME; \
+    op.fee = fee; \
+    op.new_account_name = BOOST_PP_STRINGIZE( name ); \
+    op.owner = authority( 1, name ## _owner, 1 ); \
+    op.active = authority( 1, name ## _active, 1 ); \
+    op.posting = authority( 1, name ## _posting, 1 ); \
+    op.memo_key = name ## _memo; \
+    push_transaction( op, init_account_priv_key ); \
+  } while( 0 )
+
+  KEYS( single1 );
+  KEYS( single2 );
+  KEYS( multi1 );
+  KEYS( multi2 );
+  KEYS( multi3 );
+  KEYS( alice );
+  KEYS( bob );
+  KEYS( carol );
+
+  CREATE_ACCOUNT( alice );
+  CREATE_ACCOUNT( bob );
+  CREATE_ACCOUNT( carol );
+  {
+    account_create_operation op;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee;
+    op.new_account_name = "single";
+    op.owner = authority( 1, single1_owner, 1, single2_owner, 1, "alice", 1, "bob", 1 );
+    op.active = authority( 1, single1_active, 1, single2_active, 1, "alice", 1, "bob", 1 );
+    op.posting = authority( 1, single1_posting, 1, single2_posting, 1, "alice", 1, "bob", 1 );
+    op.memo_key = single1_memo;
+    push_transaction( op, init_account_priv_key );
+  }
+  {
+    account_create_operation op;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee;
+    op.new_account_name = "open";
+    op.owner = authority();
+    op.active = authority();
+    op.posting = authority();
+    op.memo_key = multi3_memo; // has to have some key
+    push_transaction( op, init_account_priv_key );
+  }
+  {
+    account_create_operation op;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee;
+    op.new_account_name = "multi";
+    op.owner = authority( 3, multi1_owner, 1, multi2_owner, 1, multi3_owner, 1,
+      "alice", 2, "bob", 2, "carol", 2 );
+    op.active = authority( 3, multi1_active, 1, multi2_active, 1, multi3_active, 1,
+      "alice", 2, "bob", 2, "carol", 2 );
+    op.posting = authority( 3, multi1_posting, 1, multi2_posting, 1, multi3_posting, 1,
+      "alice", 2, "bob", 2, "carol", 2 );
+    op.memo_key = multi1_memo;
+    push_transaction( op, init_account_priv_key );
+  }
+  generate_block();
+
+#undef KEYS
+#undef CREATE_ACCOUNT
+
+  using namespace hive::plugins::database_api;
+
+  auto OK = [&]( const account_name_type& actor, const flat_set< public_key_type >& sig_keys, authority_level level )
+  {
+    BOOST_CHECK( database_api->verify_account_authority( { actor, sig_keys, level } ).valid );
+  };
+  auto FAIL = [&]( const account_name_type& actor, const flat_set< public_key_type >& sig_keys, authority_level  level )
+  {
+    BOOST_CHECK( not database_api->verify_account_authority( { actor, sig_keys, level } ).valid );
+  };
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on regular account" );
+
+  // alice can sign posting with posting/active/owner
+  OK( "alice", { alice_posting }, authority_level::posting );
+  OK( "alice", { alice_active }, authority_level::posting );
+  OK( "alice", { alice_owner }, authority_level::posting );
+  // can't sign with memo, with other account key, with two of valid keys nor with no keys
+  FAIL( "alice", { alice_memo }, authority_level::posting );
+  FAIL( "alice", { bob_posting }, authority_level::posting );
+  FAIL( "alice", { alice_active, alice_posting }, authority_level::posting );
+  FAIL( "alice", {}, authority_level::posting );
+
+  // alice can sign active with active/owner
+  OK( "alice", { alice_active }, authority_level::active );
+  OK( "alice", { alice_owner }, authority_level::active );
+  // can't sign with posting/memo, with other account key, with two of valid keys nor with no keys
+  FAIL( "alice", { alice_posting }, authority_level::active );
+  FAIL( "alice", { alice_memo }, authority_level::active );
+  FAIL( "alice", { bob_active }, authority_level::active );
+  FAIL( "alice", { alice_active, alice_owner }, authority_level::active );
+  FAIL( "alice", {}, authority_level::active );
+
+  // alice can sign owner with owner
+  OK( "alice", { alice_owner }, authority_level::owner );
+  // can't sign posting/active/memo, with other account key, with two keys nor with no keys
+  FAIL( "alice", { alice_posting }, authority_level::owner );
+  FAIL( "alice", { alice_active }, authority_level::owner );
+  FAIL( "alice", { alice_memo }, authority_level::owner );
+  FAIL( "alice", { bob_active }, authority_level::owner );
+  FAIL( "alice", { alice_owner, alice_active }, authority_level::owner );
+  FAIL( "alice", {}, authority_level::owner );
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on account with alternative keys" );
+
+  // single can sign posting with posting/active/owner in both versions as well as with posting of alice/bob
+  OK( "single", { single1_posting }, authority_level::posting );
+  OK( "single", { single2_posting }, authority_level::posting );
+  OK( "single", { single1_active }, authority_level::posting );
+  OK( "single", { single2_active }, authority_level::posting );
+  OK( "single", { single1_owner }, authority_level::posting );
+  OK( "single", { single2_owner }, authority_level::posting );
+  OK( "single", { alice_posting }, authority_level::posting );
+  OK( "single", { bob_posting }, authority_level::posting );
+  // can't sign with memo, with unrelated account key, with two of valid keys nor with no keys
+  FAIL( "single", { single1_memo }, authority_level::posting );
+  FAIL( "single", { carol_posting }, authority_level::posting );
+  FAIL( "single", { single1_posting, single2_posting }, authority_level::posting );
+  FAIL( "single", { single1_posting, alice_posting }, authority_level::posting );
+  FAIL( "single", { alice_posting, bob_posting }, authority_level::posting );
+  FAIL( "single", {}, authority_level::posting );
+  // NOTE: can't sign with active/owner of alice/bob
+  FAIL( "single", { alice_active }, authority_level::posting );
+  FAIL( "single", { bob_active }, authority_level::posting );
+  FAIL( "single", { alice_owner }, authority_level::posting );
+  FAIL( "single", { bob_owner }, authority_level::posting );
+
+  // single can sign active with active/owner in both versions as well as with active of alice/bob
+  OK( "single", { single1_active }, authority_level::active );
+  OK( "single", { single2_active }, authority_level::active );
+  OK( "single", { single1_owner }, authority_level::active );
+  OK( "single", { single2_owner }, authority_level::active );
+  OK( "single", { alice_active }, authority_level::active );
+  OK( "single", { bob_active }, authority_level::active );
+  // can't sign with posting/memo, with unrelated account key, with two of valid keys nor with no keys
+  FAIL( "single", { single1_posting }, authority_level::active );
+  FAIL( "single", { single2_posting }, authority_level::active );
+  FAIL( "single", { single1_memo }, authority_level::active );
+  FAIL( "single", { carol_active }, authority_level::active );
+  FAIL( "single", { single1_active, single2_active }, authority_level::active );
+  FAIL( "single", { single1_active, alice_active }, authority_level::active );
+  FAIL( "single", { alice_active, bob_active }, authority_level::active );
+  FAIL( "single", {}, authority_level::active );
+  // NOTE: can't sign with owner of alice/bob (can't sign with posting either but that is normal)
+  FAIL( "single", { alice_owner }, authority_level::active );
+  FAIL( "single", { bob_owner }, authority_level::active );
+  FAIL( "single", { alice_posting }, authority_level::active );
+  FAIL( "single", { bob_posting }, authority_level::active );
+
+  // single can sign owner with owner in both versions as well as with active(!) of alice/bob
+  OK( "single", { single1_owner }, authority_level::owner );
+  OK( "single", { single2_owner }, authority_level::owner );
+  OK( "single", { alice_active }, authority_level::owner );
+  OK( "single", { bob_active }, authority_level::owner );
+  // can't sign with posting/active/memo, with unrelated account key, with two of valid keys nor with no keys
+  FAIL( "single", { single1_posting }, authority_level::owner );
+  FAIL( "single", { single2_posting }, authority_level::owner );
+  FAIL( "single", { single1_active }, authority_level::owner );
+  FAIL( "single", { single2_active }, authority_level::owner );
+  FAIL( "single", { single1_memo }, authority_level::owner );
+  FAIL( "single", { carol_active }, authority_level::owner );
+  FAIL( "single", { single1_owner, single2_owner }, authority_level::owner );
+  FAIL( "single", { single1_owner, alice_active }, authority_level::owner );
+  FAIL( "single", { alice_active, bob_active }, authority_level::owner );
+  FAIL( "single", {}, authority_level::owner );
+  // NOTE: can't sign with owner of alice/bob (also can't sign with posting, but that's expected)
+  FAIL( "single", { alice_owner }, authority_level::owner );
+  FAIL( "single", { bob_owner }, authority_level::owner );
+  FAIL( "single", { alice_posting }, authority_level::owner );
+  FAIL( "single", { bob_posting }, authority_level::owner );
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on account with open authority" );
+
+  // open can sign posting with no keys
+  OK( "open", {}, authority_level::posting );
+  // can't sign with any other key
+  FAIL( "open", { single1_memo }, authority_level::posting );
+  FAIL( "open", { alice_posting }, authority_level::posting );
+  FAIL( "open", { bob_active }, authority_level::posting );
+  FAIL( "open", { carol_owner }, authority_level::posting );
+
+  // open can sign active with no keys
+  OK( "open", {}, authority_level::active );
+  // can't sign with any other key
+  FAIL( "open", { single1_memo }, authority_level::active );
+  FAIL( "open", { alice_posting }, authority_level::active );
+  FAIL( "open", { bob_active }, authority_level::active );
+  FAIL( "open", { carol_owner }, authority_level::active );
+
+  // open can sign owner with no keys
+  OK( "open", {}, authority_level::owner );
+  // can't sign with any other key
+  FAIL( "open", { single1_memo }, authority_level::owner );
+  FAIL( "open", { alice_posting }, authority_level::owner );
+  FAIL( "open", { bob_active }, authority_level::owner );
+  FAIL( "open", { carol_owner }, authority_level::owner );
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on account with multisig authority" );
+
+  // multi can sign posting with all 3 posting/active/owner (but not mixed) as well as with
+  // two posting of alice/bob/carol or one own posting/active/owner key and one posting of alice/bob/carol
+  OK( "multi", { multi1_posting, multi2_posting, multi3_posting }, authority_level::posting );
+  OK( "multi", { multi1_active, multi2_active, multi3_active }, authority_level::posting );
+  OK( "multi", { multi1_owner, multi2_owner, multi3_owner }, authority_level::posting );
+  OK( "multi", { alice_posting, bob_posting }, authority_level::posting );
+  OK( "multi", { alice_posting, carol_posting }, authority_level::posting );
+  OK( "multi", { bob_posting, carol_posting }, authority_level::posting );
+  OK( "multi", { multi1_posting, alice_posting }, authority_level::posting );
+  OK( "multi", { multi2_active, bob_posting }, authority_level::posting );
+  OK( "multi", { multi3_owner, carol_posting }, authority_level::posting );
+  // it is ok to sign with two own posting and external posting, but only because of order of
+  // checks (if order was different, then it would reach threshold without one of own keys making
+  // its use superfluous)
+  OK( "multi", { multi1_posting, multi2_posting, alice_posting }, authority_level::posting );
+  // can't sign with memo, with unrelated account key, with too few or too many valid keys
+  // can't mix keys with different strength either
+  FAIL( "multi", { multi1_memo }, authority_level::posting );
+  FAIL( "multi", { single1_posting }, authority_level::posting );
+  FAIL( "multi", { multi1_posting, multi2_posting }, authority_level::posting );
+  FAIL( "multi", { multi1_posting, alice_posting, bob_posting }, authority_level::posting );
+  FAIL( "multi", {}, authority_level::posting );
+  FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::posting );
+  // NOTE: can't sign with active/owner of alice/bob/carol
+  FAIL( "multi", { multi1_posting, bob_active }, authority_level::posting );
+  FAIL( "multi", { multi1_active, bob_active }, authority_level::posting );
+  FAIL( "multi", { multi1_owner, bob_active }, authority_level::posting );
+  FAIL( "multi", { alice_posting, bob_active }, authority_level::posting );
+  FAIL( "multi", { alice_active, bob_active }, authority_level::posting );
+  FAIL( "multi", { multi1_posting, bob_owner }, authority_level::posting );
+  FAIL( "multi", { multi1_active, bob_owner }, authority_level::posting );
+  FAIL( "multi", { multi1_owner, bob_owner }, authority_level::posting );
+  FAIL( "multi", { alice_posting, bob_owner }, authority_level::posting );
+  FAIL( "multi", { alice_owner, bob_owner }, authority_level::posting );
+
+  // multi can sign active with all 3 active/owner (but not mixed) as well as with
+  // two active of alice/bob/carol or one own active/owner key and one active of alice/bob/carol
+  OK( "multi", { multi1_active, multi2_active, multi3_active }, authority_level::active );
+  OK( "multi", { multi1_owner, multi2_owner, multi3_owner }, authority_level::active );
+  OK( "multi", { alice_active, bob_active }, authority_level::active );
+  OK( "multi", { alice_active, carol_active }, authority_level::active );
+  OK( "multi", { bob_active, carol_active }, authority_level::active );
+  OK( "multi", { multi1_active, bob_active }, authority_level::active );
+  OK( "multi", { multi2_owner, carol_active }, authority_level::active );
+  // it is ok to sign with two own active and external active, but only because of order of
+  // checks (if order was different, then it would reach threshold without one of own keys making
+  // its use superfluous)
+  OK( "multi", { multi1_active, multi2_active, alice_active }, authority_level::active );
+  // can't sign with posting/memo, with unrelated account key, with too few or too many valid keys
+  // can't mix keys with different strength either
+  FAIL( "multi", { multi1_memo }, authority_level::active );
+  FAIL( "multi", { single1_active }, authority_level::active );
+  FAIL( "multi", { multi1_active, multi2_active }, authority_level::active );
+  FAIL( "multi", { multi1_active, alice_active, bob_active }, authority_level::active );
+  FAIL( "multi", {}, authority_level::active );
+  FAIL( "multi", { multi1_posting, multi2_posting, multi3_posting }, authority_level::active );
+  FAIL( "multi", { multi1_posting, alice_posting }, authority_level::active );
+  FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::active );
+  FAIL( "multi", { multi1_active, multi2_owner, multi3_active }, authority_level::active );
+  // NOTE: can't sign with owner of alice/bob/carol
+  FAIL( "multi", { multi1_active, bob_owner }, authority_level::active );
+  FAIL( "multi", { multi1_owner, bob_owner }, authority_level::active );
+  FAIL( "multi", { alice_active, bob_owner }, authority_level::active );
+  FAIL( "multi", { alice_owner, bob_owner }, authority_level::active );
+
+  // multi can sign owner with all 3 owner as well as with two active(!) of alice/bob/carol or
+  // one own owner key and one active of alice/bob/carol
+  OK( "multi", { multi1_owner, multi2_owner, multi3_owner }, authority_level::owner );
+  OK( "multi", { alice_active, bob_active }, authority_level::owner );
+  OK( "multi", { alice_active, carol_active }, authority_level::owner );
+  OK( "multi", { bob_active, carol_active }, authority_level::owner );
+  OK( "multi", { multi1_owner, bob_active }, authority_level::owner );
+  // it is ok to sign with two own owner and external active, but only because of order of
+  // checks (if order was different, then it would reach threshold without one of own keys making
+  // its use superfluous)
+  OK( "multi", { multi1_owner, multi2_owner, alice_active }, authority_level::owner );
+  // can't sign with posting/active/memo, with unrelated account key, with too few or too many
+  // valid keys; can't mix keys with different strength either
+  FAIL( "multi", { multi1_memo }, authority_level::owner );
+  FAIL( "multi", { single1_active }, authority_level::owner );
+  FAIL( "multi", { multi1_owner, multi2_owner }, authority_level::owner );
+  FAIL( "multi", { multi1_owner, alice_active, bob_active }, authority_level::owner );
+  FAIL( "multi", {}, authority_level::owner );
+  FAIL( "multi", { multi1_posting, multi2_posting, multi3_posting }, authority_level::owner );
+  FAIL( "multi", { multi1_active, multi2_active, multi3_active }, authority_level::owner );
+  FAIL( "multi", { multi1_owner, alice_posting }, authority_level::owner );
+  FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::owner );
+  FAIL( "multi", { multi1_owner, multi2_active, multi3_owner }, authority_level::owner );
+  // NOTE: can't sign with owner of alice/bob/carol
+  FAIL( "multi", { multi1_owner, bob_owner }, authority_level::owner );
+  FAIL( "multi", { alice_active, bob_owner }, authority_level::owner );
+  FAIL( "multi", { alice_owner, bob_owner }, authority_level::owner );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
 
