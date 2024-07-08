@@ -6,7 +6,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 import test_tools as tt
-import wax
+
+from helpy import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
     get_transaction_model,
@@ -231,7 +232,7 @@ class _BaseManabar(ABC):
         return self.manabar.current_mana
 
     @property
-    def last_update_time(self) -> datetime:
+    def last_update_time(self) -> int:
         return self.manabar.last_update_time
 
     @property
@@ -259,7 +260,7 @@ class _BaseManabar(ABC):
                 max_mana=self.max_mana,
                 current_mana=self.current_mana,
                 last_update_time=self.last_update_time,
-            ).result
+            )
         )
 
     def update(self) -> None:

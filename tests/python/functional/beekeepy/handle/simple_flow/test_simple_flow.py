@@ -7,19 +7,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+import test_tools as tt
 from beekeepy._handle import Beekeeper
 from beekeepy.settings import Settings
-from helpy import KeyPair
-
-import test_tools as tt
-import wax
 from hive_local_tools.beekeeper.constants import DIGEST_TO_SIGN
 from hive_local_tools.beekeeper.generators import (
     generate_wallet_name,
     generate_wallet_password,
 )
 from hive_local_tools.beekeeper.models import WalletInfo
-from schemas.fields.basic import PrivateKey, PublicKey
+
+from helpy import KeyPair, wax
+from schemas.fields.basic import PrivateKey
 
 
 @dataclass
@@ -40,11 +39,10 @@ class WalletInfoWithKeysToImport(WalletInfo):
             list_of_private_keys = json.load(file)
 
         for private_key in list_of_private_keys:
-            wax_result = wax.calculate_public_key(private_key.encode("ascii"))
-            assert wax_result.status == wax.python_error_code.ok
+            wax_result = wax.calculate_public_key(private_key)
             result.keys.append(
                 KeyPair(
-                    public_key=PublicKey(wax_result.result.decode("ascii")),
+                    public_key=wax_result,
                     private_key=PrivateKey(private_key),
                 )
             )
