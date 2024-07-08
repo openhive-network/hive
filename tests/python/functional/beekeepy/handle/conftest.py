@@ -4,9 +4,8 @@ from functools import wraps
 from typing import Iterator
 
 import pytest
-from beekeepy._handle import Beekeeper
-
 import test_tools as tt
+from beekeepy._handle import Beekeeper
 from hive_local_tools.beekeeper.generators import (
     generate_account_name,
     generate_wallet_name,
@@ -28,10 +27,8 @@ def beekeeper_not_started(settings_with_logger: SettingsLoggerFactory) -> Beekee
 
 @pytest.fixture()
 def beekeeper(beekeeper_not_started: Beekeeper) -> Iterator[Beekeeper]:
-    bk = beekeeper_not_started
-    bk.run()
-    yield bk
-    bk.close()
+    with beekeeper_not_started as bk:
+        yield bk
 
 
 @pytest.fixture()
