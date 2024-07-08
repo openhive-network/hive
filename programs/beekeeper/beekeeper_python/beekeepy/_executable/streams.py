@@ -4,13 +4,15 @@ from dataclasses import dataclass, field
 from shutil import move
 from typing import TYPE_CHECKING, TextIO, cast
 
+from helpy import ContextSync
+
 if TYPE_CHECKING:
     from pathlib import Path
     from types import TracebackType
 
 
 @dataclass
-class StreamRepresentation:
+class StreamRepresentation(ContextSync[TextIO]):
     filename: str
     path: Path | None = None
     stream: TextIO | None = None
@@ -43,15 +45,10 @@ class StreamRepresentation:
     def set_path_for_dir(self, dir_path: Path) -> None:
         self.path = dir_path / f"{self.filename}.log"
 
-    def __enter__(self) -> TextIO:
+    def _enter(self) -> TextIO:
         return self.open_stream()
 
-    def __exit__(
-        self,
-        _: type[BaseException] | None,
-        __: BaseException | None,
-        ___: TracebackType | None,
-    ) -> None:
+    def _finally(self) -> None:
         self.close_stream()
 
     def __contains__(self, text: str) -> bool:

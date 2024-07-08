@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Coroutine
+
+from helpy import ContextAsync
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -12,17 +14,16 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.packed_object import Packed
 
 
-class Beekeeper(ABC):
+class Beekeeper(ContextAsync["Beekeeper"], ABC):
     @abstractmethod
     async def create_session(self, *, salt: str | None = None) -> Session:
         ...
 
-    def __enter__(self) -> Self:
+    async def _aenter(self) -> Beekeeper:
         return self
 
-    def __exit__(self, _: type[BaseException] | None, ex: BaseException | None, __: TracebackType | None) -> bool:
+    async def _afinally(self) -> None:
         self.delete()
-        return ex is None
 
     @abstractmethod
     def delete(self) -> None:
