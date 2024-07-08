@@ -12,8 +12,7 @@ if TYPE_CHECKING:
 
 class Beekeeper(ContextSync["Beekeeper"], ABC):
     @abstractmethod
-    def create_session(self, *, salt: str | None = None) -> Session:
-        ...
+    def create_session(self, *, salt: str | None = None) -> Session: ...
 
     def _enter(self) -> Beekeeper:
         return self
@@ -22,9 +21,7 @@ class Beekeeper(ContextSync["Beekeeper"], ABC):
         self.delete()
 
     @abstractmethod
-    def delete(self) -> None:
-        ...
+    def delete(self) -> None: ...
 
     @abstractmethod
-    def pack(self) -> Packed[Beekeeper]:
-        ...
+    def pack(self) -> Packed[Beekeeper]: ...

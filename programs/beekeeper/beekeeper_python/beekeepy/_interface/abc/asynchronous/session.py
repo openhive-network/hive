@@ -1,65 +1,67 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
+
+from helpy import ContextAsync
 
 if TYPE_CHECKING:
-    from types import TracebackType
-
-    from typing_extensions import Self
-
-    from beekeepy._handle.callbacks_protocol import AsyncWalletLocked
     from beekeepy._interface.abc.asynchronous.wallet import UnlockedWallet, Wallet
     from schemas.apis.beekeeper_api import GetInfo
+    from schemas.fields.basic import PublicKey
 
 
-class Session(ABC):
+class Session(ContextAsync["Session"], ABC):
     @abstractmethod
-    async def get_info(self) -> GetInfo:
-        ...
+    async def get_info(self) -> GetInfo: ...
 
+    @overload
     @abstractmethod
-    async def create_wallet(self, *, name: str, password: str) -> UnlockedWallet:
-        ...
+    async def create_wallet(self, *, name: str, password: str) -> UnlockedWallet: ...
 
+    @overload
     @abstractmethod
-    async def open_wallet(self, *, name: str) -> Wallet:
-        ...
-
-    @abstractmethod
-    async def close_session(self) -> None:
-        ...
+    async def create_wallet(self, *, name: str, password: None = None) -> tuple[UnlockedWallet, str]: ...
 
     @abstractmethod
-    async def lock_all(self) -> list[Wallet]:
-        ...
+    async def create_wallet(
+        self, *, name: str, password: str | None = None
+    ) -> UnlockedWallet | tuple[UnlockedWallet, str]: ...
 
     @abstractmethod
-    async def set_timeout(self, seconds: int) -> None:
-        ...
+    async def open_wallet(self, *, name: str) -> Wallet: ...
+
+    @abstractmethod
+    async def close_session(self) -> None: ...
+
+    @abstractmethod
+    async def lock_all(self) -> list[Wallet]: ...
+
+    @abstractmethod
+    async def set_timeout(self, seconds: int) -> None: ...
 
     @property
     @abstractmethod
-    async def wallets(self) -> list[Wallet]:
-        ...
+    async def wallets(self) -> list[Wallet]: ...
 
     @property
     @abstractmethod
-    async def token(self) -> str:
-        ...
+    async def created_wallets(self) -> list[Wallet]: ...
 
+    @property
+    async def opened_wallets(self) -> list[Wallet]:
+        return [wallet for wallet in await self.wallets if wallet.unlocked is not None]
+
+    @property
     @abstractmethod
-    def on_wallet_locked(self, callback: AsyncWalletLocked) -> None:
-        ...
+    async def token(self) -> str: ...
 
-    async def __enter__(self) -> Self:
+    @property
+    @abstractmethod
+    async def public_keys(self) -> list[PublicKey]: ...
+
+    async def _aenter(self) -> Session:
         return self
 
-    async def __exit__(
-        self,
-        _: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
+    async def _afinally(self) -> None:
         await self.close_session()
-        return exception is None
