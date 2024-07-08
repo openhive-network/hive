@@ -4,7 +4,8 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
 import test_tools as tt
-import wax
+
+from helpy import wax
 from hive_local_tools.functional.python.operation import (
     Account,
     convert_from_mainnet_to_testnet_asset,
@@ -74,30 +75,26 @@ def get_reward_operations(node, mode: Literal["author", "curation", "comment_ben
     return [vop["op"]["value"] for vop in reward_operations]
 
 
-def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
+def convert_hbd_to_hive(node: tt.AnyNode, hbd: tt.Asset.HbdT) -> tt.Asset.HiveT:
     hbd_to_hive_feed = node.api.database.get_current_price_feed()
     calculated_hive = wax.calculate_hbd_to_hive(
-        wax.hbd(int(hbd.amount)),
-        wax.hbd(int(hbd_to_hive_feed.base.amount)),
-        wax.hive(int(hbd_to_hive_feed.quote.amount)),
+        tt.Asset.Hbd(int(hbd.amount)),
+        tt.Asset.Hbd(int(hbd_to_hive_feed.base.amount)),
+        tt.Asset.Hive(int(hbd_to_hive_feed.quote.amount)),
     )
-    return AssetHiveHF26(
-        amount=calculated_hive.amount.decode(), precision=calculated_hive.precision, nai=calculated_hive.nai.decode()
-    )
+    return AssetHiveHF26(amount=calculated_hive.amount, precision=calculated_hive.precision, nai=calculated_hive.nai)
 
 
-def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
+def convert_vesting_to_hive(node: tt.AnyNode, vesting: tt.Asset.VestT) -> tt.Asset.HiveT:
     gdgp = node.api.database.get_dynamic_global_properties()
     total_vesting_fund_hive = gdgp.total_vesting_fund_hive
     total_vesting_shares = gdgp.total_vesting_shares
     calculated_hp = wax.calculate_vests_to_hp(
-        wax.vests(int(vesting.amount)),
-        wax.hive(int(total_vesting_fund_hive.amount)),
-        wax.vests(int(total_vesting_shares.amount)),
+        tt.Asset.Vest(int(vesting.amount)),
+        tt.Asset.Hive(int(total_vesting_fund_hive.amount)),
+        tt.Asset.Vest(int(total_vesting_shares.amount)),
     )
-    return AssetHiveHF26(
-        amount=calculated_hp.amount.decode(), precision=calculated_hp.precision, nai=calculated_hp.nai.decode()
-    )
+    return AssetHiveHF26(amount=calculated_hp.amount, precision=calculated_hp.precision, nai=calculated_hp.nai)
 
 
 class Comment:
