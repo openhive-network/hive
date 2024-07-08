@@ -5,6 +5,7 @@
 #include <fc/array.hpp>
 #include <fc/safe.hpp>
 #include <deque>
+#include <optional>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -58,6 +59,9 @@ namespace fc {
 
     template<typename Stream, typename K, typename V> inline void pack( Stream& s, const std::pair<K,V>& value );
     template<typename Stream, typename K, typename V> inline void unpack( Stream& s, std::pair<K,V>& value, uint32_t depth = 0 );
+
+    template<typename Stream, typename T> inline void unpack( Stream& s, std::optional<T>& v, uint32_t depth = 0 );
+    template<typename Stream, typename T> inline void pack( Stream& s, const std::optional<T>& v );
 
     template<typename Stream> inline void pack( Stream& s, const variant_object& v );
     template<typename Stream> inline void unpack( Stream& s, variant_object& v, uint32_t depth = 0 );

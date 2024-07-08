@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <optional>
+
 namespace fc {
 
 namespace detail 
@@ -177,6 +179,30 @@ inline datastream<ST>& operator>>(datastream<ST>& ds, uint8_t& d) {
   return ds;
 }
 
+template<typename ST>
+inline fc::datastream<ST>& operator<<(fc::datastream<ST>& ds, const std::optional<unsigned char>& d) {
+  bool is_set = d.has_value();
+  ds.write( (const char*)&is_set, sizeof(is_set) );
+  if( is_set )
+  {
+    unsigned char aux = d.value();
+    ds.write( (const char*)&(aux), sizeof(aux) );
+  }
+  return ds;
+}
+
+template<typename ST>
+inline fc::datastream<ST>& operator>>(fc::datastream<ST>& ds, std::optional<unsigned char>& d) {
+  bool is_set = false;
+  ds.read( (char*)&is_set, sizeof(is_set) );
+  if( is_set )
+  {
+    unsigned char aux = 0;
+    ds.read( (char*)&(aux), sizeof(aux) );
+    d = aux;
+  }
+  return ds;
+}
 
 } // namespace fc
 
