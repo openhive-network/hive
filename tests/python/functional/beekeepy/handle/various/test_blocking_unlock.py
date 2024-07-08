@@ -4,15 +4,15 @@ import time
 from typing import TYPE_CHECKING, Final
 
 import pytest
-
 from hive_local_tools.beekeeper.network import raw_http_call
+
 from schemas.jsonrpc import JSONRPCRequest
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
-    from helpy import HttpUrl as Url
-
     from hive_local_tools.beekeeper.models import WalletInfo
+
+    from helpy import HttpUrl as Url
 
 
 # We have 500ms time period protection on ulocking wallet.
@@ -21,7 +21,7 @@ AES_DECRYPTION_ERROR: Final[str] = "Invalid password for wallet"
 WALLET_UNACCESSIBLE_ERROR: Final[str] = "Assert Exception:false: unlock is not accessible"
 
 
-def call_and_raise_if_error(http_endpoint: Url, data: JSONRPCRequest) -> AssertionError | None:
+def call_and_raise_if_error(http_endpoint: Url, data: JSONRPCRequest) -> str:
     """
     Function will query http_endpoint with given data, and raise AssertError exception if there is an error in response.
 
@@ -32,13 +32,13 @@ def call_and_raise_if_error(http_endpoint: Url, data: JSONRPCRequest) -> Asserti
     response = raw_http_call(http_endpoint=http_endpoint, data=data)
 
     if "error" in response:
-        return AssertionError(response["error"]["message"])
-    return None
+        return response["error"]["message"]
+    return ""
 
 
-def raise_if_exception(exception: AssertionError | None) -> None:
-    if exception is not None:
-        raise exception
+def raise_if_exception(exception: str) -> None:
+    if exception:
+        raise AssertionError(exception)
 
 
 @pytest.mark.parametrize("force_error", [True, False])
