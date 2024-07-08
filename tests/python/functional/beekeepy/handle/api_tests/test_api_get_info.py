@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from hive_local_tools.beekeeper.constants import DEFAULT_UNLOCK_TIMEOUT
+from beekeepy._executable.defaults import BeekeeperDefaults
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 def test_api_get_info(beekeeper: Beekeeper) -> None:
     """Test test_api_get_info will test beekeeper_api.get_info api call."""
     # ARRANGE
-    unlock_timeout = DEFAULT_UNLOCK_TIMEOUT
+    unlock_timeout = BeekeeperDefaults.DEFAULT_UNLOCK_TIMEOUT
     tolerance_secs = 1
 
     # ACT
