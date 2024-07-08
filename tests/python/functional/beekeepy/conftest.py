@@ -1,21 +1,21 @@
 from __future__ import annotations
 
+from functools import wraps
 from typing import TYPE_CHECKING, Iterator
 
 import pytest
+import test_tools as tt
 from beekeepy.settings import Settings
 from loguru import logger
 
-import test_tools as tt
-
 if TYPE_CHECKING:
-    from loguru import Logger
-
     from hive_local_tools.beekeeper.models import SettingsFactory, SettingsLoggerFactory
+    from loguru import Logger
 
 
 @pytest.fixture()
 def settings() -> SettingsFactory:
+    @wraps(settings)
     def _factory(settings_update: Settings | None = None) -> Settings:
         context_dir = tt.context.get_current_directory()
         amount_of_beekeepers_in_context = len([x for x in context_dir.glob("Beekeeper*") if x.is_dir()])
@@ -31,6 +31,7 @@ def settings() -> SettingsFactory:
 def settings_with_logger(request: pytest.FixtureRequest, settings: SettingsFactory) -> Iterator[SettingsLoggerFactory]:
     handlers_to_remove = []
 
+    @wraps(settings_with_logger)
     def _factory(settings_update: Settings | None = None) -> tuple[Settings, Logger]:
         sets = settings(settings_update)
         test_name = request.node.name

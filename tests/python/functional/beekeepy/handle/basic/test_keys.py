@@ -9,7 +9,6 @@ from schemas.fields.basic import PrivateKey, PublicKey
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
-
     from hive_local_tools.beekeeper.models import WalletInfo
 
 PRIVATE_AND_PUBLIC_KEYS: Final[list[tuple[str, str]]] = [
@@ -35,11 +34,11 @@ PRIVATE_AND_PUBLIC_KEYS: Final[list[tuple[str, str]]] = [
     ),
 ]
 
-AllowedListOfPublicKeysT = list[PublicKey] | list[PublicKeyItem] | list[ImportKey] | list[str] | None
+AllowedListOfPublicKeysT = list[PublicKey] | list[PublicKeyItem] | list[ImportKey] | list[str]
 
 
-def assert_keys(given: AllowedListOfPublicKeysT, valid: AllowedListOfPublicKeysT = None) -> None:
-    def normalize(keys: AllowedListOfPublicKeysT) -> list[str]:
+def assert_keys(given: AllowedListOfPublicKeysT, valid: AllowedListOfPublicKeysT | None = None) -> None:
+    def normalize(keys: AllowedListOfPublicKeysT | None) -> list[str]:
         def convert(key: PublicKey | PublicKeyItem | ImportKey | str) -> str:
             processed_key = key.public_key if not isinstance(key, str) else key
 

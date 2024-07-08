@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 import pytest
-from helpy.exceptions import CommunicationError, RequestError
-
 from hive_local_tools.beekeeper import checkers
+
+from helpy.exceptions import CommunicationError, RequestError
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
@@ -48,7 +48,7 @@ def test_if_beekeeper_closes_after_last_session_termination(
     ), "Beekeeper should be closed after last session termination."
 
 
-def test_x_api_close_session_double(beekeeper: Beekeeper) -> None:
+def test_api_close_session_double(beekeeper: Beekeeper) -> None:
     """Test test_api_close_session will test possibility of double closing session."""
     # ARRANGE & ACT
     beekeeper.api.close_session()
