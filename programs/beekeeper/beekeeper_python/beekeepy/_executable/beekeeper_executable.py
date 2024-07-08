@@ -3,18 +3,16 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from beekeepy._executable.beekeeper_config import BeekeeperConfig
 from beekeepy._executable.beekeeper_executable_discovery import get_beekeeper_binary_path
 from beekeepy._executable.executable import Executable
 from beekeepy.settings import Settings
-
 from helpy import KeyPair
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from loguru import Logger
 
 
@@ -29,7 +27,9 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
         self, wallet_name: str, wallet_password: str, extract_to: Path | None = None
     ) -> list[KeyPair]:
         with tempfile.TemporaryDirectory() as tempdir:
-            shutil.move(self.working_directory / f"{wallet_name}.wallet", tempdir)
+            tempdir_path = Path(tempdir) if not isinstance(tempdir, Path) else tempdir
+            wallet_file_name = f"{wallet_name}.wallet"
+            shutil.copyfile(self.working_directory / wallet_file_name, tempdir_path / wallet_file_name)
             bk = BeekeeperExecutable(
                 settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.working_directory),
                 logger=self._logger,
@@ -38,7 +38,7 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
                 blocking=True,
                 arguments=[
                     "-d",
-                    tempdir.as_posix(),
+                    tempdir_path.as_posix(),
                     "--notifications-endpoint",
                     "0.0.0.0:0",
                     "--export-keys-wallet",
@@ -47,8 +47,9 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
             )
 
         keys_path = bk.working_directory / f"{wallet_name}.keys"
-        if extract_to:
-            extract_to.write_text(keys_path.read_text())
+        if extract_to is not None:
+            shutil.move(keys_path, extract_to)
+            keys_path = extract_to
 
         with keys_path.open("r") as file:
             return [KeyPair(**obj) for obj in json.load(file)]
