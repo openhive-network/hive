@@ -259,6 +259,22 @@ namespace fc {
       if( b ) { v = T(); fc::raw::unpack( s, *v, depth ); }
     } FC_RETHROW_EXCEPTIONS( warn, "optional<${type}>", ("type",fc::get_typename<T>::name() ) ) }
 
+    // std::optional
+    template<typename Stream, typename T>
+    inline void pack( Stream& s, const std::optional<T>& v ) {
+      fc::raw::pack( s, bool(!!v) );
+      if( !!v ) fc::raw::pack( s, *v );
+    }
+
+    template<typename Stream, typename T>
+    void unpack( Stream& s, std::optional<T>& v, uint32_t depth )
+    { try {
+      depth++;
+      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+      bool b; fc::raw::unpack( s, b, depth );
+      if( b ) { v = T(); fc::raw::unpack( s, *v, depth ); }
+    } FC_RETHROW_EXCEPTIONS( warn, "std::optional<${type}>", ("type",fc::get_typename<T>::name() ) ) }
+
     // std::vector<char>
     template<typename Stream> inline void pack( Stream& s, const std::vector<char>& value ) {
       fc::raw::pack( s, unsigned_int((uint32_t)value.size()) );

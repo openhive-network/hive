@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fc/io/datastream.hpp>
 #include <fc/reflect/reflect.hpp>
 
 #include <cstdint>

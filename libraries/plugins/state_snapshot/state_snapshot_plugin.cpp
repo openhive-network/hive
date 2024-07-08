@@ -42,7 +42,7 @@
 
 namespace bpo = boost::program_options;
 
-#define SNAPSHOT_FORMAT_VERSION "2.2"
+#define SNAPSHOT_FORMAT_VERSION "2.3"
 
 namespace {
 
@@ -941,7 +941,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
+      load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1081,8 +1082,14 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
 
   {
     Slice key("LAST_IRREVERSIBLE_BLOCK");
-    uint32_t lib = _mainDb.get_last_irreversible_block_num();
-    Slice value(reinterpret_cast<const char*>(&lib), sizeof(uint32_t));
+
+    const hive::chain::irreversible_block_data_type* ibd = _mainDb.get_last_irreversible_object();
+    //ilog("Dumping last irreversible block num ${num}", ("num", ibd->_irreversible_block_num));
+    //ilog("Dumping last irreversible block data ${data}", ("data", ibd->_irreversible_block_data));
+    std::vector<char> storage;
+    chainbase::serialization::pack_to_buffer(storage, *ibd);
+
+    Slice value(storage.data(), storage.size());
     auto status = db->Put(writeOptions, snapshotManifestCF, key, value);
 
     if(status.ok() == false)
@@ -1156,7 +1163,8 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   db.close();
   }
 
-std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
+state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib)
 {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -1276,7 +1284,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
     }
   }
 
-  uint32_t lib = 0;
+  uint32_t libn = 0;
 
   {
     ::rocksdb::ReadOptions rOptions;
@@ -1294,9 +1302,16 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
     FC_ASSERT(keyName == "LAST_IRREVERSIBLE_BLOCK", "Broken snapshot - no entry for LAST_IRREVERSIBLE_BLOCK");
 
     buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
-    chainbase::serialization::unpack_from_buffer(lib, buffer);
+    // Unpack common data struct that will be destroyed soon when database is being wiped.
+    hive::chain::irreversible_block_data_type ibd{ chainbase::allocator< hive::chain::irreversible_block_data_type >( _mainDb.get_segment_manager() ) };
+    chainbase::serialization::unpack_from_buffer(ibd, buffer);
     buffer.clear();
-    //ilog("lib: ${s}", ("s", lib));
+    // Store block num for further use.
+    libn = ibd._irreversible_block_num;
+    // Store full block data in form of block - which is immune to database wipe.
+    lib = ibd._irreversible_block_data.create_full_block();
+    //ilog("Loaded last irreversible block num ${num}", ("num", libn));
+    //ilog("Loaded last irreversible block data ${data}", ("data", ibd._irreversible_block_data));
 
     irreversibleStateIterator->Next();
     FC_ASSERT(irreversibleStateIterator->Valid(), "Expected multiple entries specifying irreversible block.");
@@ -1377,7 +1392,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::stri
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), lib);
+  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), libn);
 }
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
@@ -1510,7 +1525,8 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   benchmark_dumper dumper;
   dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
 
-  auto snapshotManifest = load_snapshot_manifest(actualStoragePath);
+  std::shared_ptr<hive::chain::full_block_type> lib;
+  auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
 
   bool throw_exception_if_state_definitions_mismatch = false;
 
@@ -1704,6 +1720,8 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   auto last_irr_block = std::get<5>(snapshotManifest);
   
   _mainDb.set_last_irreversible_block_num(last_irr_block);
+  if(lib)
+    _mainDb.set_last_irreversible_block_data( lib );
 
   auto blockNo = _mainDb.head_block_num();
 
