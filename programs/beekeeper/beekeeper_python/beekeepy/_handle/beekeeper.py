@@ -48,6 +48,7 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
         self.__exec = BeekeeperExecutable(settings, logger)
         self.__notification: UniversalNotificationServer | None = None
         self.__notification_event_handler: NotificationHandler | None = None
+        self.__logger = logger
 
     @property
     def pid(self) -> int:
@@ -57,7 +58,8 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
 
     @property
     def notification_endpoint(self) -> str:
-        assert (endpoint := self._get_settings().notification_endpoint) is not None
+        endpoint = self._get_settings().notification_endpoint
+        assert endpoint is not None, "Notification endpoint is not set"
         return endpoint.as_string(with_protocol=False)
 
     @property
@@ -69,8 +71,8 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
         return self.__exec is not None and self.__exec.is_running()
 
     def __create_notification_server(self) -> UniversalNotificationServer:
-        assert self.__notification is None
-        assert self.__notification_event_handler is None
+        assert self.__notification is None, "Notification server already exists, previous hasn't been close?"
+        assert self.__notification_event_handler is None, "Notification event handler already exists, previous hasn't been close?"
 
         self.__notification_event_handler = NotificationHandler(self)
         return UniversalNotificationServer(
@@ -86,20 +88,20 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
             self.__notification_event_handler = None
 
     def __wait_till_ready(self) -> None:
-        assert self.__notification_event_handler is not None
+        assert self.__notification_event_handler is not None, "Notification event handler hasn't been set"
         try:
             self.__notification_event_handler.http_listening_event.wait(timeout=5)
         except TimeoutError as err:
             if self.__notification_event_handler.already_working_beekeeper_event.is_set():
-                assert (addr := self.__notification_event_handler.already_working_beekeeper_http_address) is not None
-                assert (pid := self.__notification_event_handler.already_working_beekeeper_pid) is not None
+                assert (addr := self.__notification_event_handler.already_working_beekeeper_http_address) is not None, "Notification incomplete: missing http address"
+                assert (pid := self.__notification_event_handler.already_working_beekeeper_pid) is not None, "Notification incomplete: missing PID"
                 raise BeekeeperAlreadyRunningError(address=addr, pid=pid) from err
 
     def _handle_error(self, error: Error) -> None:
-        pass
+        self.__logger.error(f"Beekeepr error: `{error.json()}`")
 
     def _handle_status_change(self, status: Status) -> None:
-        pass
+        self.__logger.info(f"Beekeeper status change to: `{status.current_status}`")
 
     def _handle_opening_beekeeper_failed(self, info: OpeningBeekeeperFailed) -> None:
         return super()._handle_opening_beekeeper_failed(info)
@@ -143,10 +145,10 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
         """It is convered by _get_http_endpoint_from_event."""
 
     def _get_http_endpoint_from_event(self) -> helpy.HttpUrl:
-        assert self.__notification_event_handler is not None
+        assert self.__notification_event_handler is not None, "Notification event handler hasn't been set"
         # <###> if you get exception from here, and have consistent way of reproduce please report <###>
         # make sure you didn't forget to call beekeeper.run() methode
-        assert (addr := self.__notification_event_handler.http_endpoint_from_event) is not None
+        assert (addr := self.__notification_event_handler.http_endpoint_from_event) is not None, "Endpoint from event was not set"
         return addr
 
     def export_keys_wallet(

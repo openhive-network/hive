@@ -21,18 +21,19 @@ class StreamRepresentation:
         return self.path
 
     def __get_stream(self) -> TextIO:
-        assert self.stream is not None
+        assert self.stream is not None, "Unable to get stream, as it is not opened"
         return self.stream
 
     def backup(self) -> None:
         path = self.__get_path()
-        assert self.stream is None, "Cannot backup opened file"
+        assert self.stream is None, "Cannot back up opened file"
         move(path, path.with_name(f"{self.filename}_{self._backup_count}.log"))
         self._backup_count += 1
 
     def open_stream(self, mode: str = "wt") -> TextIO:
+        assert self.stream is None, "Stream is already opened"
         self.stream = cast(TextIO, self.__get_path().open(mode))
-        assert not self.stream.closed
+        assert not self.stream.closed, f"Failed to open stream: `{self.stream.errors}`"
         return self.stream
 
     def close_stream(self) -> None:
