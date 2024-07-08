@@ -9,7 +9,7 @@ import helpy
 from beekeepy._executable import BeekeeperExecutable
 from beekeepy._handle.beekeeper_callbacks import BeekeeperCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
-from beekeepy.exceptions import BeekeeperAlreadyRunningError
+from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
 from beekeepy.settings import Settings
 from helpy import ContextSync
 from helpy._communication.universal_notification_server import (
@@ -33,10 +33,6 @@ if TYPE_CHECKING:
         Status,
         WebserverListening,
     )
-
-
-class BeekeeperIsNotRunningError(HelpyError):
-    pass
 
 
 EnterReturnT = TypeVar("EnterReturnT", bound=helpy.Beekeeper | helpy.AsyncBeekeeper)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import errno
-import math
 import os
 import signal
 import time
@@ -12,7 +11,6 @@ from loguru import logger
 from beekeepy._handle.beekeeper import AsyncBeekeeper as AsynchronousBeekeeperHandle
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
 from beekeepy._handle.beekeeper import Beekeeper as SynchronousBeekeeperHandle
-from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper as SynchronousRemoteBeekeeperHandle
 from beekeepy._interface.abc.asynchronous.beekeeper import (
     Beekeeper as AsynchronousBeekeeperInterface,
@@ -25,6 +23,7 @@ from beekeepy._interface.asynchronous.beekeeper import (
     Beekeeper as AsynchronousBeekeeper,
 )
 from beekeepy._interface.synchronous.beekeeper import Beekeeper as SynchronousBeekeeper
+from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from beekeepy.settings import Settings
 from helpy._interfaces.url import Url
 
@@ -149,6 +148,8 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
             os.kill(pid, sig)
             wait_for_pid_to_die(pid)
             logger.debug("Process was force-closed with SIGKILL")
+    else:
+        logger.debug("BeekeeperAlreadyRunningError did not raise, is other beekeeper running?")
 
     def is_running(pid: int) -> bool:
         """
