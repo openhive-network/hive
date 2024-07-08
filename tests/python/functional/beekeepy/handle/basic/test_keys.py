@@ -9,6 +9,7 @@ from schemas.fields.basic import PrivateKey, PublicKey
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
+
     from hive_local_tools.beekeeper.models import WalletInfo
 
 PRIVATE_AND_PUBLIC_KEYS: Final[list[tuple[str, str]]] = [

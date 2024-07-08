@@ -5,13 +5,13 @@ import shutil
 from pathlib import Path
 
 import pytest
-import test_tools as tt
 from beekeepy._handle import Beekeeper
 from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from beekeepy.settings import Settings
-from hive_local_tools.beekeeper import checkers
-
 from helpy import HttpUrl
+
+import test_tools as tt
+from hive_local_tools.beekeeper import checkers
 
 
 @pytest.fixture()

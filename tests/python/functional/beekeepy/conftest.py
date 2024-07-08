@@ -4,13 +4,15 @@ from functools import wraps
 from typing import TYPE_CHECKING, Iterator
 
 import pytest
-import test_tools as tt
 from beekeepy.settings import Settings
 from loguru import logger
 
+import test_tools as tt
+
 if TYPE_CHECKING:
-    from hive_local_tools.beekeeper.models import SettingsFactory, SettingsLoggerFactory
     from loguru import Logger
+
+    from hive_local_tools.beekeeper.models import SettingsFactory, SettingsLoggerFactory
 
 
 @pytest.fixture()
