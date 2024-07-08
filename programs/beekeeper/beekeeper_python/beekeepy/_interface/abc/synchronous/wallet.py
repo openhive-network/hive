@@ -3,64 +3,57 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from beekeepy._interface.common import ContainsWalletName
+from helpy import ContextSync
+from schemas.fields.basic import PublicKey
+
 if TYPE_CHECKING:
-    from types import TracebackType
-
-    from typing_extensions import Self
-
-    from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
 
 
-class Wallet(ABC):
+class Wallet(ContainsWalletName, ABC):
     @property
     @abstractmethod
-    def public_keys(self) -> list[PublicKey]:
-        ...
-
-    @property
-    @abstractmethod
-    def unlocked(self) -> UnlockedWallet | None:
-        ...
-
-    @abstractmethod
-    def unlock(self, password: str) -> UnlockedWallet:
-        ...
+    def public_keys(self) -> list[PublicKey]: ...
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
-
-
-class UnlockedWallet(Wallet, ABC):
-    @abstractmethod
-    def generate_key(self, *, salt: str | None = None) -> PublicKey:
-        ...
+    def unlocked(self) -> UnlockedWallet | None: ...
 
     @abstractmethod
-    def import_key(self, *, private_key: str) -> PublicKey:
-        ...
+    def unlock(self, password: str) -> UnlockedWallet: ...
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+
+class UnlockedWallet(Wallet, ContextSync["UnlockedWallet"], ABC):
+    @abstractmethod
+    def generate_key(self, *, salt: str | None = None) -> PublicKey: ...
 
     @abstractmethod
-    def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
-        ...
+    def import_key(self, *, private_key: str) -> PublicKey: ...
 
     @abstractmethod
-    def lock(self) -> None:
-        ...
+    def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None: ...
 
     @abstractmethod
-    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
-        ...
+    def lock(self) -> None: ...
 
-    def __enter__(self) -> Self:
+    @abstractmethod
+    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature: ...
+
+    @abstractmethod
+    def has_matching_private_key(self, *, key: PublicKey) -> bool: ...
+
+    def _enter(self) -> UnlockedWallet:
         return self
 
-    def __exit__(
-        self,
-        _: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
+    def _finally(self) -> None:
         self.lock()
+
+    def __contains__(self, obj: object) -> bool:
+        if isinstance(obj, str):
+            return self.has_matching_private_key(key=PublicKey(obj))
+        raise TypeError(f"Object `{obj}` is not str which can't be check for matchin private key in wallet.")
