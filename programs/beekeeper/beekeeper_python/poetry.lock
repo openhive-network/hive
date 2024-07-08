@@ -440,13 +440,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev207+0bfbc31"
+version = "0.0.0"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
-python-versions = ">=3.10,<4.0"
-files = [
-    {file = "helpy-0.0.1.dev207+0bfbc31-py3-none-any.whl", hash = "sha256:eb12cd507dd187b901ae955ee917880d5f4bf28fb4123c6636b7dde5384244fc"},
-]
+python-versions = "^3.10"
+files = []
+develop = true
 
 [package.dependencies]
 aiohttp = "3.9.1"
@@ -456,12 +455,11 @@ pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 schemas = "0.0.1.dev305+31029b3"
-wax = "0.0.3a2.dev255+edfd911"
+wax = "0.0.3a2.dev300+4b5789e"
 
 [package.source]
-type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
-reference = "gitlab-helpy"
+type = "directory"
+url = "../../../../../helpy/helpy"
 
 [[package]]
 name = "hpack"
@@ -1271,12 +1269,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.0.3a2.dev255+edfd911"
+version = "0.0.3a2.dev300+4b5789e"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.0.3a2.dev255+edfd911-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:b9bddc10a690e8523cfc4d87ec78f74872f2b4ce231a736356742c65ad25568e"},
+    {file = "wax-0.0.3a2.dev300+4b5789e-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:d816954e3bb6cb68d88d2a266e419531a76d20d9e3133549189ea136bcca1883"},
 ]
 
 [package.dependencies]
@@ -1407,4 +1405,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f54f8deee803904d070f2a6d9896a85cb15278abfa1af5e39c391e197a93f529"
+content-hash = "d7081d9d123cd701a5ca89ffcc101cc919ad3ff73755d0254088a2d8692641c5"
