@@ -320,8 +320,17 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
 {
   try
   {
-    uint32_t first_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(first_filename);
-    uint32_t second_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
+    // open both block log files
+    hive::chain::block_log first_block_log( app );
+    first_block_log.open(first_filename, thread_pool, true);
+    const uint32_t first_head_block_num = first_block_log.head() ? first_block_log.head()->get_block_num() : 0;
+
+    hive::chain::block_log second_block_log( app );
+    second_block_log.open(second_filename, thread_pool, true);
+    const uint32_t second_head_block_num = second_block_log.head() ? second_block_log.head()->get_block_num() : 0;
+
+    const uint32_t first_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(first_filename);
+    const uint32_t second_log_1st_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
 
     const uint32_t min_block_num = std::max(first_log_1st_block_num, second_log_1st_block_num);
 
@@ -335,15 +344,6 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
         elog(msg, ("l", second_filename)("lb", second_log_1st_block_num));
       return false;
     }
-
-    // open both block log files
-    hive::chain::block_log first_block_log( app );
-    first_block_log.open(first_filename, thread_pool, true);
-    const uint32_t first_head_block_num = first_block_log.head() ? first_block_log.head()->get_block_num() : 0;
-
-    hive::chain::block_log second_block_log( app );
-    second_block_log.open(second_filename, thread_pool, true);
-    const uint32_t second_head_block_num = second_block_log.head() ? second_block_log.head()->get_block_num() : 0;
 
     const uint32_t max_block_num = std::min(first_head_block_num, second_head_block_num);
 
@@ -632,9 +632,9 @@ bool get_block_ids(const fc::path& block_log_filename, const int32_t first_block
   try
   {
     hive::chain::block_log log( app );
-    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
+    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
 
     for (unsigned i = first_block; i <= last_block; ++i)
@@ -661,12 +661,12 @@ bool get_block_range( const fc::path& block_log_filename, const int32_t first_bl
 
   try
   {
-    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     hive::chain::block_log log( app );
     log.open(block_log_filename, thread_pool, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     FC_ASSERT(head_block_num, "block_log is empty");
 
+    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
 
     std::stringstream ss;
@@ -769,7 +769,6 @@ bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_blo
 {
   try
   {
-    uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_path);
     hive::chain::block_log block_log( app );
     block_log.open(block_log_path, thread_pool, true, false);
     if (full_match_verification)
@@ -783,6 +782,7 @@ bool get_block_artifacts(const fc::path& block_log_path, const int32_t first_blo
     const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
     FC_ASSERT(artifacts_block_head_num, "${file} is empty", ("file", artifacts->get_artifacts_file()));
 
+    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_path);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's not possible to read head block artifacts*/, tail_block_num);
 
     block_log.close();
