@@ -71,7 +71,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, **kwargs)
         self.__exec = BeekeeperExecutable(settings, logger)
-        self.__notification: UniversalNotificationServer | None = None
+        self.__notification_server: UniversalNotificationServer | None = None
         self.__notification_event_handler: NotificationHandler | None = None
         self.__logger = logger
 
@@ -82,10 +82,10 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
         return self.__exec.pid
 
     @property
-    def notification_endpoint(self) -> str:
+    def notification_endpoint(self) -> helpy.HttpUrl:
         endpoint = self._get_settings().notification_endpoint
         assert endpoint is not None, "Notification endpoint is not set"
-        return endpoint.as_string(with_protocol=False)
+        return endpoint
 
     @property
     def config(self) -> BeekeeperConfig:
@@ -95,19 +95,22 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
     def is_running(self) -> bool:
         return self.__exec is not None and self.__exec.is_running()
 
-    def __create_notification_server(self) -> UniversalNotificationServer:
-        assert self.__notification is None, "Notification server already exists, previous hasn't been close?"
-        assert self.__notification_event_handler is None, "Notification event handler already exists, previous hasn't been close?"
+    def __setup_notification_server(self) -> None:
+        assert self.__notification_server is None, "Notification server already exists, previous hasn't been close?"
+        assert (
+            self.__notification_event_handler is None
+        ), "Notification event handler already exists, previous hasn't been close?"
 
         self.__notification_event_handler = NotificationHandler(self)
-        return UniversalNotificationServer(
-            self.__notification_event_handler, notification_endpoint=self._get_settings().notification_endpoint
+        self.__notification_server = UniversalNotificationServer(
+            self.__notification_event_handler,
+            notification_endpoint=self._get_settings().notification_endpoint,  # this has to be accessed directly from settings
         )
 
     def __close_notification_server(self) -> None:
-        if self.__notification is not None:
-            self.__notification.close()
-            self.__notification = None
+        if self.__notification_server is not None:
+            self.__notification_server.close()
+            self.__notification_server = None
 
         if self.__notification_event_handler is not None:
             self.__notification_event_handler = None
@@ -130,12 +133,10 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
     def _handle_status_change(self, status: Status) -> None:
         self.__logger.info(f"Beekeeper status change to: `{status.current_status}`")
 
-    def _handle_opening_beekeeper_failed(self, info: OpeningBeekeeperFailed) -> None:
-        return super()._handle_opening_beekeeper_failed(info)
-
     def _run(self, settings: Settings) -> None:
-        self.__notification = self.__create_notification_server()
-        settings.notification_endpoint = helpy.HttpUrl(f"127.0.0.1:{self.__notification.run()}", protocol="http")
+        self.__setup_notification_server()
+        assert self.__notification_server is not None, "Creation of notification server failed"
+        settings.notification_endpoint = helpy.HttpUrl(f"127.0.0.1:{self.__notification_server.run()}", protocol="http")
         settings.http_endpoint = settings.http_endpoint or helpy.HttpUrl("127.0.0.1:0", protocol="http")
         settings.working_directory = self.__exec.working_directory
         self._run_application(settings=settings)
