@@ -77,7 +77,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
 
     @property
     def pid(self) -> int:
-        if self.__exec is None or not self.__exec.is_running():
+        if not self.is_running:
             raise BeekeeperIsNotRunningError
         return self.__exec.pid
 
@@ -117,15 +117,14 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
 
     def __wait_till_ready(self) -> None:
         assert self.__notification_event_handler is not None, "Notification event handler hasn't been set"
-        try:
-            self.__notification_event_handler.http_listening_event.wait(timeout=5)
-        except TimeoutError as err:
+        if not self.__notification_event_handler.http_listening_event.wait(timeout=5):
             if self.__notification_event_handler.already_working_beekeeper_event.is_set():
                 addr = self.__notification_event_handler.already_working_beekeeper_http_address
                 pid = self.__notification_event_handler.already_working_beekeeper_pid
                 assert addr is not None, "Notification incomplete: missing http address"
                 assert pid is not None, "Notification incomplete: missing PID"
-                raise BeekeeperAlreadyRunningError(address=addr, pid=pid) from err
+                raise BeekeeperAlreadyRunningError(address=addr, pid=pid)
+            raise TimeoutError("Waiting too long for beekeeper to be up and running")
 
     def _handle_error(self, error: Error) -> None:
         self.__logger.error(f"Beekeepr error: `{error.json()}`")
