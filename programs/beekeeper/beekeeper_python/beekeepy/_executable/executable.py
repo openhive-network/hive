@@ -5,7 +5,7 @@ import signal
 import subprocess
 import time
 import warnings
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from beekeepy._executable.streams import StreamsHolder
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from loguru import Logger
 
 
-class Closeable:
+class Closeable(ABC):
     @abstractmethod
     def close(self) -> None:
         ...
@@ -100,10 +100,10 @@ class Executable(Closeable, Generic[ConfigT]):
 
         return AutoCloser(self)
 
-    def run_and_get_output(self, arguments: list[str], environ: dict[str, str] | None = None) -> str:
+    def run_and_get_output(self, arguments: list[str], environ: dict[str, str] | None = None, timeout: float | None = None) -> str:
         command, environment_variables = self.__prepare(arguments=arguments, environ=environ)
-        result = subprocess.check_output(command, stderr=subprocess.STDOUT, env=environment_variables)
-        return result.decode("ascii").strip()
+        result = subprocess.check_output(command, stderr=subprocess.STDOUT, env=environment_variables, timeout=timeout)
+        return result.decode().strip()
 
     def __prepare(
         self, arguments: list[str] | None, environ: dict[str, str] | None
@@ -155,7 +155,7 @@ class Executable(Closeable, Generic[ConfigT]):
 
         return self.__process.poll() is None
 
-    def are_logs_contains(self, text: str) -> bool:
+    def log_has_phrase(self, text: str) -> bool:
         return text in self.__files
 
     @abstractmethod

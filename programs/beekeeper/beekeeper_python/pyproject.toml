@@ -21,7 +21,9 @@ source = [
 version = "0.0.0"
 
 [tool.poetry.dependencies]
-helpy = "0.0.1.dev207+0bfbc31"
+helpy = { path = "/workspace/helpy/helpy", develop = true }
+
+# helpy = "0.0.1.dev207+0bfbc31"
 python = "^3.10"
 
 [tool.poetry.group.dev.dependencies]
