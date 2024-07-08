@@ -6,21 +6,21 @@ from beekeepy._interface.abc.synchronous.beekeeper import Beekeeper as Beekeeper
 from beekeepy._interface.synchronous.session import Session
 
 if TYPE_CHECKING:
-    from beekeepy._handle.beekeeper import Beekeeper as SynchronousBeekeeperHandle
+    from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
     from beekeepy._interface.abc.synchronous.session import (
         Session as SessionInterface,
     )
 
 
 class Beekeeper(BeekeeperInterface):
-    def __init__(self, *args: Any, handle: SynchronousBeekeeperHandle, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, handle: SyncRemoteBeekeeper, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__instance = handle
 
     def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
         return Session(beekeeper=self._get_instance())
 
-    def _get_instance(self) -> SynchronousBeekeeperHandle:
+    def _get_instance(self) -> SyncRemoteBeekeeper:
         return self.__instance
 
     def delete(self) -> None:
