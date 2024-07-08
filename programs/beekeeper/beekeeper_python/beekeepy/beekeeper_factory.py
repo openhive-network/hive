@@ -12,7 +12,7 @@ from loguru import logger
 from beekeepy._handle.beekeeper import AsyncBeekeeper as AsynchronousBeekeeperHandle
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
 from beekeepy._handle.beekeeper import Beekeeper as SynchronousBeekeeperHandle
-from beekeepy._handle.beekeeper import BeekeeperAlreadyRunningError
+from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper as SynchronousRemoteBeekeeperHandle
 from beekeepy._interface.abc.asynchronous.beekeeper import (
     Beekeeper as AsynchronousBeekeeperInterface,
