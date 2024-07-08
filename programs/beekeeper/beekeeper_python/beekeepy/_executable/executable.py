@@ -20,8 +20,7 @@ if TYPE_CHECKING:
 
 class Closeable(ABC):
     @abstractmethod
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
 
 
 class AutoCloser(ContextSync[None]):
@@ -100,7 +99,9 @@ class Executable(Closeable, Generic[ConfigT]):
 
         return AutoCloser(self)
 
-    def run_and_get_output(self, arguments: list[str], environ: dict[str, str] | None = None, timeout: float | None = None) -> str:
+    def run_and_get_output(
+        self, arguments: list[str], environ: dict[str, str] | None = None, timeout: float | None = None
+    ) -> str:
         command, environment_variables = self.__prepare(arguments=arguments, environ=environ)
         result = subprocess.check_output(command, stderr=subprocess.STDOUT, env=environment_variables, timeout=timeout)
         return result.decode().strip()
@@ -159,8 +160,7 @@ class Executable(Closeable, Generic[ConfigT]):
         return text in self.__files
 
     @abstractmethod
-    def _construct_config(self) -> ConfigT:
-        ...
+    def _construct_config(self) -> ConfigT: ...
 
     def generate_default_config(self) -> ConfigT:
         path_to_config = self.working_directory / (Config.DEFAULT_FILE_NAME + ".tmp")

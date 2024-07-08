@@ -110,15 +110,9 @@ def test_beekeepers_files_generation(beekeeper: Beekeeper) -> None:
     # File beekeeper.wallet.lock holds no value inside, so we need only to check is its exists.
     assert beekeeper_wallet_lock_file.exists() is True, "File 'beekeeper.wallet.lock' should exists"
 
-    if False:  # Current beekeeper interface does not provide such method
-        connection_url = beekeeper.get_remote_address_from_connection_file()
-
     connection_url = get_remote_address_from_connection_file(wallet_dir)
     assert connection_url is not None, "There should be connection details."
 
-    # because of notifications.py:87
-    endpoint = beekeeper.http_endpoint
-    assert endpoint is not None
     if beekeeper.http_endpoint.address == "127.0.0.1":
         assert connection_url.address in [
             "0.0.0.0",

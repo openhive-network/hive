@@ -14,7 +14,7 @@ def http_webserver_default() -> HttpUrl:
 
 
 class BeekeeperConfig(Config):
-    wallet_dir: Path = Field(default_factory=lambda: BeekeeperDefaults.DEFAULT_WALLET_DIR)
+    wallet_dir: Path = BeekeeperDefaults.DEFAULT_WALLET_DIR
     unlock_timeout: int = BeekeeperDefaults.DEFAULT_UNLOCK_TIMEOUT
     unlock_interval: int = BeekeeperDefaults.DEFAULT_UNLOCK_INTERVAL
     log_json_rpc: Path | None = BeekeeperDefaults.DEFAULT_LOG_JSON_RPC

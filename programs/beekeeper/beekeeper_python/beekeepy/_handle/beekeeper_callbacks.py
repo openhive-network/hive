@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -16,29 +15,10 @@ if TYPE_CHECKING:
 
 
 class NotificationCallback(Protocol):
-    def __call__(self, notification: Notification[Any]) -> None:
-        ...
+    def __call__(self, notification: Notification[Any]) -> None: ...
 
 
-@dataclass
-class CallbackCollection:
-    _id_counter: int = 0
-    callbacks: dict[int, NotificationCallback] = field(default_factory=dict)
-
-    def add(self, callback: NotificationCallback) -> int:
-        self._id_counter += 1
-        self.callbacks[self._id_counter] = callback
-        return self._id_counter
-
-    def remove(self, callback_id: int) -> None:
-        self.callbacks.pop(callback_id)
-
-    def call(self, notification: Notification[Any]) -> None:
-        for callback in self.callbacks.values():
-            callback(notification)
-
-
-class BeekeeperCallbacks:
+class BeekeeperNotificationCallbacks:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 

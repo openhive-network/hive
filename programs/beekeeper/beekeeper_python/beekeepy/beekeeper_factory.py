@@ -67,7 +67,8 @@ class _AsynchronousBeekeeperImpl(AsynchronousBeekeeper):
 def _beekeeper_factory_impl(
     impl_t: type[_SynchronousBeekeeperImpl | _AsynchronousBeekeeperImpl],
     handle_t: type[SynchronousBeekeeperHandle | AsynchronousBeekeeperHandle],
-    remote_factory: _RemoteFactoryCallable,
+    remote_factory: _RemoteFactoryCallable[SynchronousBeekeeperInterface]
+    | _RemoteFactoryCallable[AsynchronousBeekeeperInterface],
     settings: Settings | None = None,
 ) -> SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface:
     settings = settings or Settings()
@@ -76,7 +77,7 @@ def _beekeeper_factory_impl(
         beekeeper.run()
     except BeekeeperAlreadyRunningError as err:
         settings.http_endpoint = err.address
-        return remote_factory(url_or_settings=settings)  # type: ignore[no-any-return]
+        return remote_factory(url_or_settings=settings)
     return impl_t(handle=beekeeper)  # type: ignore[arg-type]
 
 
@@ -87,7 +88,7 @@ def _beekeeper_remote_factory_impl(
 ) -> SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface:
     if isinstance(url_or_settings, Url):
         url_or_settings = Settings(http_endpoint=url_or_settings)
-    handle = handle_t(settings=url_or_settings, logger=_get_logger())  # type: ignore[arg-type]
+    handle = handle_t(settings=url_or_settings)  # type: ignore[arg-type]
     handle.run()
     return impl_t(handle=handle)  # type: ignore
 
@@ -122,7 +123,7 @@ def async_beekeeper_remote_factory(*, url_or_settings: HttpUrl | Settings) -> As
 def close_already_running_beekeeper(*, working_directory: Path) -> None:
     """If beekeeper has been started and explicitly not closed, this function allows to close it basing on workdir."""
 
-    def wait_for_pid_to_die(pid: int, *, timeout_secs: float = math.inf) -> None:
+    def wait_for_pid_to_die(pid: int, *, timeout_secs: float = 5.0) -> None:
         sleep_time = min(1.0, timeout_secs)
         already_waited = 0.0
         while not is_running(pid):
@@ -133,7 +134,8 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
             already_waited += sleep_time
 
     try:
-        SynchronousBeekeeperHandle(settings=Settings(working_directory=working_directory), logger=_get_logger())
+        with SynchronousBeekeeperHandle(settings=Settings(working_directory=working_directory), logger=_get_logger()):
+            pass
     except BeekeeperAlreadyRunningError as err:
         sig = signal.SIGINT
         pid = err.pid
