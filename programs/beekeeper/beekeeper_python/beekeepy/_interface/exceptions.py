@@ -12,8 +12,7 @@ if TYPE_CHECKING:
 
 class DetectableError(ContextSync[None], Exception):
     @abstractmethod
-    def _is_exception_handled(self, ex: BaseException) -> bool:
-        ...
+    def _is_exception_handled(self, ex: BaseException) -> bool: ...
 
     def _enter(self) -> None:
         return None
@@ -36,4 +35,5 @@ class NoWalletWithSuchNameError(DetectableError):
         return (
             isinstance(ex, RequestError)
             and "Assert Exception:wallet->load_wallet_file(): Unable to open file: " in ex.error
+            and f"{self.wallet_name}.wallet" in ex.error
         )

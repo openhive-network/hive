@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from beekeepy._handle.beekeeper import Beekeeper as SynchronousBeekeeperHandle
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
 from beekeepy._interface.abc.synchronous.session import Session as SessionInterface
 from beekeepy._interface.exceptions import NoWalletWithSuchNameError
@@ -12,7 +11,6 @@ from beekeepy._interface.synchronous.wallet import (
 )
 
 if TYPE_CHECKING:
-    from beekeepy._handle.callbacks_protocol import SyncWalletLocked
     from beekeepy._interface.abc.synchronous.wallet import (
         UnlockedWallet as UnlockedWalletInterface,
     )
@@ -20,23 +18,26 @@ if TYPE_CHECKING:
         Wallet as WalletInterface,
     )
     from schemas.apis.beekeeper_api import GetInfo
+    from schemas.fields.basic import PublicKey
 
 
 class Session(SessionInterface):
-    def __init__(self, *args: Any, beekeeper: SynchronousBeekeeperHandle, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, beekeeper: SyncRemoteBeekeeper, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = SyncRemoteBeekeeper(
-            settings=beekeeper.settings.copy(update={"notification_endpoint": None}),
-            logger=beekeeper.logger,
+            settings=beekeeper.settings,
         )
         self.__beekeeper.run()
 
     def get_info(self) -> GetInfo:
         return self.__beekeeper.api.get_info()
 
-    def create_wallet(self, *, name: str, password: str) -> UnlockedWalletInterface:
-        self.__beekeeper.api.create(wallet_name=name, password=password)
-        return self.__construct_unlocked_wallet(name)
+    def create_wallet(  # type: ignore[override]
+        self, *, name: str, password: str | None = None
+    ) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
+        create_result = self.__beekeeper.api.create(wallet_name=name, password=password)
+        wallet = self.__construct_unlocked_wallet(name)
+        return wallet if password is not None else (wallet, create_result.password)
 
     def open_wallet(self, *, name: str) -> WalletInterface:
         with NoWalletWithSuchNameError(name):
@@ -55,9 +56,6 @@ class Session(SessionInterface):
     def set_timeout(self, seconds: int) -> None:
         self.__beekeeper.api.set_timeout(seconds=seconds)
 
-    def on_wallet_locked(self, callback: SyncWalletLocked) -> None:
-        self.__beekeeper.register_wallet_close_callback(callback)
-
     @property
     def token(self) -> str:
         return self.__beekeeper.session_token
@@ -65,6 +63,24 @@ class Session(SessionInterface):
     @property
     def wallets(self) -> list[WalletInterface]:
         return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_wallets().wallets]
+
+    @property
+    def created_wallets(self) -> list[WalletInterface]:
+        return [
+            self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_created_wallets().wallets
+        ]
+
+    @property
+    def opened_wallets(self) -> list[WalletInterface]:
+        return [
+            self.__construct_wallet(name=wallet.name)
+            for wallet in self.__beekeeper.api.list_wallets().wallets
+            if wallet.unlocked
+        ]
+
+    @property
+    def public_keys(self) -> list[PublicKey]:
+        return [key.public_key for key in self.__beekeeper.api.get_public_keys().keys]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper)
