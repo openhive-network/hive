@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
-import time
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
@@ -135,13 +134,13 @@ class Executable(Closeable, Generic[ConfigT]):
             stacklevel=2,
         )
 
-    def close(self) -> None:
+    def close(self, timeout_secs: float = 10.0) -> None:
         if self.__process is None:
             return
 
         self.__process.send_signal(signal.SIGINT)
         try:
-            return_code = self.__process.wait(timeout=10)
+            return_code = self.__process.wait(timeout=timeout_secs)
             self._logger.debug(f"Closed with {return_code} return code")
         except subprocess.TimeoutExpired:
             self.__raise_warning()
@@ -149,6 +148,15 @@ class Executable(Closeable, Generic[ConfigT]):
             self.__process.wait()
         self.__process = None
         self.__files.close()
+        self.__warn_if_pid_file_exists()
+
+    def __warn_if_pid_file_exists(self) -> None:
+        pid_files = list(self.working_directory.glob("*.pid"))
+        if len(pid_files) > 0:
+            warnings.warn(
+                f"PID file has not been removed, malfunction may occur. Working directory: {self.working_directory}",
+                stacklevel=2,
+            )
 
     def is_running(self) -> bool:
         if not self.__process:
