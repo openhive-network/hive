@@ -173,19 +173,21 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "0.0.0"
+version = "1.25.2rc0.dev4296+4fe54174f"
 description = ""
 optional = false
-python-versions = "^3.10"
-files = []
-develop = true
+python-versions = ">=3.10,<4.0"
+files = [
+    {file = "beekeepy-1.25.2rc0.dev4296+4fe54174f-py3-none-any.whl", hash = "sha256:53b449623bd694dd43dab0d020c0ffced5b25a0866f4302ffe2c0dae65fa7967"},
+]
 
 [package.dependencies]
-helpy = "0.0.1.dev207+0bfbc31"
+helpy = "0.0.1.dev212+9063502"
 
 [package.source]
-type = "directory"
-url = "../../../programs/beekeeper/beekeeper_python"
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple"
+reference = "gitlab-beekeepy"
 
 [[package]]
 name = "black"
@@ -475,12 +477,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev207+0bfbc31"
+version = "0.0.1.dev212+9063502"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev207+0bfbc31-py3-none-any.whl", hash = "sha256:eb12cd507dd187b901ae955ee917880d5f4bf28fb4123c6636b7dde5384244fc"},
+    {file = "helpy-0.0.1.dev212+9063502-py3-none-any.whl", hash = "sha256:f96323909aa303978ba80d98ccc0e766d37207730e7fe20eddf5de89cdac4741"},
 ]
 
 [package.dependencies]
@@ -490,8 +492,8 @@ loguru = "0.7.2"
 pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev305+31029b3"
-wax = "0.0.3a2.dev255+edfd911"
+schemas = "0.0.1.dev307+6f4cbb8"
+wax = "0.3.10.dev25+8044195"
 
 [package.source]
 type = "legacy"
@@ -1477,12 +1479,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev305+31029b3"
+version = "0.0.1.dev307+6f4cbb8"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev305+31029b3-py3-none-any.whl", hash = "sha256:966d7f29baa9666cd88fa23432b8ba9ab1aad5797e51dcd86b66bdf86395e842"},
+    {file = "schemas-0.0.1.dev307+6f4cbb8-py3-none-any.whl", hash = "sha256:84cdb8f93fcbdc8e77dd7a5a6b62fe1c2d0f2ec22d71cf6b78822fbb7c9d36a9"},
 ]
 
 [package.dependencies]
@@ -1595,7 +1597,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = {path = "/workspace/hive/hive/programs/beekeeper/beekeeper_python", develop = true}
+beekeepy = "1.25.2rc0.dev4296+4fe54174f"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
@@ -1719,12 +1721,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.0.3a2.dev255+edfd911"
+version = "0.3.10.dev25+8044195"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.0.3a2.dev255+edfd911-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:b9bddc10a690e8523cfc4d87ec78f74872f2b4ce231a736356742c65ad25568e"},
+    {file = "wax-0.3.10.dev25+8044195-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:a5ff06bd8f982aaafcd9adb358834138293e220cd3b9e05289a2cf5ea3f829fb"},
 ]
 
 [package.dependencies]

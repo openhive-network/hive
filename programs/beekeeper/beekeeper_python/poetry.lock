@@ -440,12 +440,13 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.0"
+version = "0.0.1.dev212+9063502"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
-python-versions = "^3.10"
-files = []
-develop = true
+python-versions = ">=3.10,<4.0"
+files = [
+    {file = "helpy-0.0.1.dev212+9063502-py3-none-any.whl", hash = "sha256:f96323909aa303978ba80d98ccc0e766d37207730e7fe20eddf5de89cdac4741"},
+]
 
 [package.dependencies]
 aiohttp = "3.9.1"
@@ -454,12 +455,13 @@ loguru = "0.7.2"
 pytest-is-running = "1.5.0"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev305+31029b3"
-wax = "0.0.3a2.dev300+4b5789e"
+schemas = "0.0.1.dev307+6f4cbb8"
+wax = "0.3.10.dev25+8044195"
 
 [package.source]
-type = "directory"
-url = "../../../../../helpy/helpy"
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
+reference = "gitlab-helpy"
 
 [[package]]
 name = "hpack"
@@ -1108,12 +1110,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev305+31029b3"
+version = "0.0.1.dev307+6f4cbb8"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev305+31029b3-py3-none-any.whl", hash = "sha256:966d7f29baa9666cd88fa23432b8ba9ab1aad5797e51dcd86b66bdf86395e842"},
+    {file = "schemas-0.0.1.dev307+6f4cbb8-py3-none-any.whl", hash = "sha256:84cdb8f93fcbdc8e77dd7a5a6b62fe1c2d0f2ec22d71cf6b78822fbb7c9d36a9"},
 ]
 
 [package.dependencies]
@@ -1269,12 +1271,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.0.3a2.dev300+4b5789e"
+version = "0.3.10.dev25+8044195"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.0.3a2.dev300+4b5789e-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:d816954e3bb6cb68d88d2a266e419531a76d20d9e3133549189ea136bcca1883"},
+    {file = "wax-0.3.10.dev25+8044195-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:a5ff06bd8f982aaafcd9adb358834138293e220cd3b9e05289a2cf5ea3f829fb"},
 ]
 
 [package.dependencies]
@@ -1405,4 +1407,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d7081d9d123cd701a5ca89ffcc101cc919ad3ff73755d0254088a2d8692641c5"
+content-hash = "b7ce66157e55953bbba15a6fd15833036776fc7a2c83639e645af28e689cb463"
