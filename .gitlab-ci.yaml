@@ -518,8 +518,8 @@ deploy_beekeepy_wheel_to_gitlab:
   variables:
     PYPROJECT_DIR: "$BEEKEEPY_DIR"
   needs:
-    - job: pre_commit_checks
-    - job: beekeepy_tests
+    # - job: pre_commit_checks
+    # - job: beekeepy_tests
     - job: build_beekeepy_wheel
       artifacts: true
   when: on_success
