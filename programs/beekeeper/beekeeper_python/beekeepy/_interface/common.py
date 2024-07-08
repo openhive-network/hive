@@ -4,13 +4,15 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import iscoroutinefunction
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Generic, NoReturn, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generic, NoReturn, ParamSpec, TypeVar, overload
 
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper, SyncRemoteBeekeeper
 from beekeepy._handle.callbacks_protocol import AsyncWalletLocked, SyncWalletLocked
 from beekeepy.exceptions import WalletIsLockedError
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from schemas.apis.beekeeper_api.fundaments_of_responses import WalletDetails
 
 P = ParamSpec("P")

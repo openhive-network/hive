@@ -8,7 +8,7 @@ from loguru import logger
 import helpy
 
 if TYPE_CHECKING:
-    from beekeepy._handle.beekeeper_callbacks import BeekeeperCallbacks
+    from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
     from schemas.notifications import (
         AttemptClosingWallets,
         Error,
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class NotificationHandler(helpy.BeekeeperNotificationHandler):
-    def __init__(self, owner: BeekeeperCallbacks, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, owner: BeekeeperNotificationCallbacks, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__owner = owner
 
