@@ -177,6 +177,21 @@ export class BeekeeperInstanceHelper {
     }
   };
 
+  importKeys(sessionToken, walletName, keys) {
+    const returnedValue = this.instance.import_keys(sessionToken, walletName, keys);
+
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+
+      return value.public_key;
+    }
+  };
+
   encryptData(sessionToken, fromPublicKey, toPublicKey, walletName, content) {
     const returnedValue = this.instance.encrypt_data(sessionToken, fromPublicKey, toPublicKey, walletName, content);
 

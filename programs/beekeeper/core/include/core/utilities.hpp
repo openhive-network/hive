@@ -180,6 +180,17 @@ struct import_key_args: public session_token_type
   std::string wif_key;
 };
 
+struct import_keys_return
+{
+  std::vector<std::string> public_keys;
+};
+
+struct import_keys_args: public session_token_type
+{
+  std::string wallet_name;
+  std::vector<std::string> wif_keys;
+};
+
 using list_wallets_args = session_token_type;
 struct list_wallets_return
 {
@@ -295,6 +306,7 @@ namespace fc
   void to_variant( const beekeeper::get_info_return& var, fc::variant& vo );
   void to_variant( const beekeeper::create_return& var, fc::variant& vo );
   void to_variant( const beekeeper::import_key_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::import_keys_return& var, fc::variant& vo );
   void to_variant( const beekeeper::create_session_return& var, fc::variant& vo );
   void to_variant( const beekeeper::get_public_keys_return& var, fc::variant& vo );
   void to_variant( const beekeeper::list_wallets_return& var, fc::variant& vo );
@@ -325,8 +337,10 @@ FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::session_token_type), (wa
 FC_REFLECT( beekeeper::create_return, (password) )
 FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
 FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )
+FC_REFLECT_DERIVED( beekeeper::import_keys_args, (beekeeper::session_token_type), (wallet_name)(wif_keys) )
 FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(public_key) )
 FC_REFLECT( beekeeper::import_key_return, (public_key) )
+FC_REFLECT( beekeeper::import_keys_return, (public_keys) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
 FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (sig_digest)(public_key)(wallet_name) )

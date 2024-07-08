@@ -111,6 +111,20 @@ public:
     return { _str_wif_pub_key, false };
   }
 
+  std::vector<string> import_keys( const std::vector<string>& wif_keys, const string& prefix )
+  {
+    std::vector<string> _result;
+
+    for( auto& wif_key : wif_keys )
+    {
+      auto _status = import_key( wif_key, prefix );
+      if( _status.second )
+        _result.emplace_back( _status.first );
+    }
+
+    return _result;
+  }
+
   // Removes a key from the wallet
   // @returns true if the key matches a current active/owner/memo key for the named
   //     account, false otherwise (but it is removed either way)
@@ -219,6 +233,18 @@ string beekeeper_wallet::import_key( const string& wif_key, const string& prefix
     save_wallet_file();
 
   return _result.first;
+}
+
+std::vector<string> beekeeper_wallet::import_keys( const std::vector<string>& wif_keys, const string& prefix )
+{
+  FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
+
+  const auto _result = my->import_keys( wif_keys, prefix );
+
+  if( !_result.empty() )//Save a file only when at least one key is really imported.
+    save_wallet_file();
+
+  return _result;
 }
 
 bool beekeeper_wallet::remove_key( const public_key_type& public_key )

@@ -8,7 +8,7 @@ import { ExtractError, BeekeeperInstanceHelper } from '../assets/run_node_helper
 
 import { STORAGE_ROOT_NODE, WALLET_OPTIONS_NODE } from '../assets/data.js';
 
-const walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9"];
+const walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"];
 
 // const limitDisplay = (str, max) => str.length > max ? (str.slice(0, max - 3) + '...') : str;
 
@@ -23,7 +23,10 @@ const keys =
   ['5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su', 'STM8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME'],
   ['5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw', 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4'],
   ['5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG', 'STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45'],
-  ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', 'STM8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5']
+  ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', 'STM8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5'],
+  ['5Jen4tBsMEDyr4iNfDUTiUXbdrZZ7BuFa5oVHxBT7Zybm71Fmjz', 'STM7FMWqA7f5oYov4pmhfUDd4JJENRguZ4Sv7d3i2jt6Rz2Sg37fh'],
+  ['5Jo6ALLFrTBK9pbzdNYKxZt6wPfKtRa9bXrek7Ypo988PKJZWgV', 'STM6iEHkB8ohBUCGWfftcEWmNyRtqZhu4m8sbc5c2QYv2AWuMHt5k'],
+  ['5Js14qmTQ8Pf6mBzBaagKQ5Tc8tqgeLqncnKJoL6dEqYzzT7Mvf', 'STM6SKxp2eB7Zc4bFGVwQPNijyWouNidPWvyFsSALvavQWjRhqJXf']
 ];
 
 const signData =
@@ -124,7 +127,7 @@ const performWalletAutolockTest = async(beekeeperInstance, sessionToken) => {
 
   console.log(`Timer resumed after ${interval} ms`);
   const wallets = beekeeperInstance.listWallets(sessionToken);
-  requireWalletsIn(wallets, 3, 1, false, 2, false);
+  requireWalletsIn(wallets, 4, 1, false, 2, false, 10, false);
 };
 
 const provider = await (BeekeeperModule as typeof beekeepermodule)();
@@ -164,13 +167,22 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       api.importKey(sessionToken, walletNames[1], keys[2][0]);
       api.importKey(sessionToken, walletNames[1], keys[3][0]);
 
+      api.create(sessionToken, walletNames[10]);
+
+      let set_of_keys = new provider.StringList();
+      set_of_keys.push_back(keys[10][0]);
+      set_of_keys.push_back(keys[11][0]);
+      set_of_keys.push_back(keys[12][0]);
+
+      api.importKeys(sessionToken, walletNames[10], set_of_keys);
+
       {
         console.log('********* TESTCASE 1 ********* ');
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, true);
+        requireWalletsIn(wallets, 4, 1, true, 2, true, 10, true);
 
         const publicKeys = api.getPublicKeys(sessionToken);
-        requireKeysIn(publicKeys, 1, 2, 3);
+        requireKeysIn(publicKeys, 1, 2, 3, 10, 11, 12);
       }
 
       {
@@ -178,7 +190,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.close(sessionToken, walletNames[2]);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, false);
+        requireWalletsIn(wallets, 4, 1, true, 2, false, 10, true);
       }
 
       {
@@ -186,7 +198,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.open(sessionToken, walletNames[2]);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, false);
+        requireWalletsIn(wallets, 4, 1, true, 2, false, 10, true);
       }
 
       {
@@ -194,7 +206,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.unlock(sessionToken, walletNames[2]);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, true);
+        requireWalletsIn(wallets, 4, 1, true, 2, true, 10, true);
       }
 
       {
@@ -202,7 +214,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.lock(sessionToken, walletNames[2]);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, false);
+        requireWalletsIn(wallets, 4, 1, true, 2, false, 10, true);
       }
 
       {
@@ -210,7 +222,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.lockAll(sessionToken);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, false, 2, false);
+        requireWalletsIn(wallets, 4, 1, false, 2, false, 10, false);
       }
 
       {
@@ -218,7 +230,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
         api.unlock(sessionToken, walletNames[1]);
 
         const wallets = api.listWallets(sessionToken);
-        requireWalletsIn(wallets, 3, 1, true, 2, false);
+        requireWalletsIn(wallets, 4, 1, true, 2, false, 10, false);
 
         api.removeKey(sessionToken, walletNames[1], keys[2][1]);
 
@@ -312,7 +324,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     }
   });
 
-  test('Unlock 10 wallets. From every wallet remove every key', async () => {
+  test('Unlock 13 wallets. From every wallet remove every key', async () => {
     // Removing is done by passing always all public keys from `keys` set. Sometimes `remove` operation passes, sometimes (mostly) fails
     /** @type {BeekeeperInstanceHelper} */
     const api = new beekeper(WALLET_OPTIONS_NODE);
@@ -321,16 +333,19 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       api.unlock(api.implicitSessionToken!, name);
 
     let publicKeys = api.getPublicKeys(api.implicitSessionToken);
-    requireKeysIn(publicKeys, 0, 1, 3, 4, 5, 6, 9);
+    requireKeysIn(publicKeys, 0, 1, 3, 4, 5, 6, 9, 10, 11, 12);
 
     /*
-      api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[1], keys[1][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[1], keys[3][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[7], keys[4][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[8], keys[5][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[9], keys[6][1]);
-      api.removeKey(api.implicitSessionToken, walletNames[3], keys[9][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[0],  keys[0][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[1],  keys[1][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[1],  keys[3][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[7],  keys[4][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[8],  keys[5][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[9],  keys[6][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[3],  keys[9][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[10], keys[10][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[10], keys[11][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[10], keys[12][1]);
     */
 
     let keysRemoved = 0;
@@ -343,7 +358,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
           console.info('Key could not be removed, because it does not belong to this wallet. You can ignore this error.');
         }
 
-    assert.equal(keysRemoved, 7);
+    assert.equal(keysRemoved, 10);
 
     {
       const publicKeys = api.getPublicKeys(api.implicitSessionToken);
@@ -688,14 +703,14 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       const walletNo_4 = 4;
       api.open(api.implicitSessionToken, walletNames[walletNo_4]);
       let wallets = api.listWallets(api.implicitSessionToken);
-      requireWalletsIn(wallets, 10, 4, false, 9, false);
+      requireWalletsIn(wallets, 11, 4, false, 9, false);
       console.log(wallets);
 
       console.log("NEGATIVE TESTCASE 2");
 
       api.unlock(api.implicitSessionToken!, walletNames[walletNo_4]);
       wallets = api.listWallets(api.implicitSessionToken);
-      requireWalletsIn(wallets, 10, 4, true, 9, false);
+      requireWalletsIn(wallets, 11, 4, true, 9, false);
       console.log(wallets);
 
       (api.setAcceptError as unknown as boolean) = false;

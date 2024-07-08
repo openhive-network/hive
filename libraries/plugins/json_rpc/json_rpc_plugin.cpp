@@ -34,9 +34,33 @@ namespace detail
 
       void init()
       {
-        methods.insert( std::make_pair( "beekeeper_api.unlock",     "password" ) );
-        methods.insert( std::make_pair( "beekeeper_api.import_key", "wif_key" ) );
-        methods.insert( std::make_pair( "beekeeper_api.create",     "password" ) );
+        methods.insert( std::make_pair( "beekeeper_api.unlock",       "password" ) );
+        methods.insert( std::make_pair( "beekeeper_api.import_key",   "wif_key" ) );
+        methods.insert( std::make_pair( "beekeeper_api.import_keys",  "wif_keys" ) );
+        methods.insert( std::make_pair( "beekeeper_api.create",       "password" ) );
+      }
+
+      void replace( std::string& content, const std::string& value )
+      {
+        auto _idx = content.find( value );
+        if( _idx != std::string::npos )
+          content.replace( _idx, value.size(), new_value );
+      }
+
+      void scan( std::string& content, const fc::variant& element )
+      {
+        if( element.is_string() )
+        {
+          replace( content, element.as<std::string>() );
+        }
+        else if( element.is_array() )
+        {
+          auto _elements = element.get_array();
+          for( auto& e : _elements )
+          {
+            scan( content, e );
+          }
+        }
       }
 
     public:
@@ -58,19 +82,15 @@ namespace detail
               const auto& _args = args.get_object();
               if( _args.contains( _found->second.c_str() ) )
               {
-                const auto& _key_value = _args[ _found->second ].as<std::string>();
+                auto _content = fc::json::to_string( msg );
 
-                auto _msg = fc::json::to_string( msg );
-                auto _idx = _msg.find( _key_value );
-                if( _idx != std::string::npos )
-                {
-                  _msg.replace( _idx, _key_value.size(), new_value );
+                auto _element = _args[ _found->second ];
+                scan( _content, _element );
 
-                  fc::variant message( std::move( _msg ) );
-                  ddump( (message) );
+                fc::variant message( std::move( _content ) );
+                ddump( (message) );
 
-                  return true;
-                }
+                return true;
               }
             }
           }

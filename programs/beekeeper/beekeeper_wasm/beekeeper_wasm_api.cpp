@@ -233,6 +233,16 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
+  std::string beekeeper_api::import_keys( const std::string& token, const std::string& wallet_name, const std::vector<std::string>& wif_keys )
+  {
+    auto _method = [&, this]()
+    {
+      import_keys_return _result = { _impl->app.get_wallet_manager()->import_keys( token, wallet_name, wif_keys, prefix ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
+
   std::string beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& public_key )
   {
     auto _method = [&, this]()

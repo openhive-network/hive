@@ -262,6 +262,16 @@ string wallet_manager_impl::import_key( const std::string& name, const std::stri
   return w->import_key( wif_key, prefix );
 }
 
+std::vector<string> wallet_manager_impl::import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix )
+{
+  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+
+  auto& w = wallets.at(name);
+  FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
+
+  return w->import_keys( wif_keys, prefix );
+}
+
 void wallet_manager_impl::remove_key( const std::string& name, const public_key_type& public_key )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
