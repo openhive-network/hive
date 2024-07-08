@@ -158,6 +158,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
                 "-d",
                 settings.working_directory.as_posix(),
             ],
+            propagate_sigint=settings.propagate_sigint,
         )
 
     def close(self) -> None:
@@ -166,7 +167,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
 
     def _close_application(self) -> None:
         if self.__exec.is_running():
-            self.__exec.close()
+            self.__exec.close(self._get_settings().close_timeout.total_seconds())
 
     def _http_webserver_ready(self, notification: Notification[WebserverListening]) -> None:
         """It is convered by _get_http_endpoint_from_event."""

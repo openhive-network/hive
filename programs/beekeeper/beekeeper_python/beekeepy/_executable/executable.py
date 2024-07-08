@@ -72,6 +72,7 @@ class Executable(Closeable, Generic[ConfigT]):
         blocking: bool,
         arguments: list[str] | None = None,
         environ: dict[str, str] | None = None,
+        propagate_sigint: bool = True,
     ) -> AutoCloser:
         command, environment_variables = self.__prepare(arguments=arguments, environ=environ)
 
@@ -94,6 +95,7 @@ class Executable(Closeable, Generic[ConfigT]):
             env=environment_variables,
             stdout=self.__files.stdout.open_stream(),
             stderr=self.__files.stderr.open_stream(),
+            preexec_fn=(os.setpgrp if not propagate_sigint else None),  # noqa: PLW1509
         )
 
         return AutoCloser(self)
