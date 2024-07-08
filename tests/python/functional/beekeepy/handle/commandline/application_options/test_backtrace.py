@@ -20,12 +20,12 @@ def test_backtrace(backtrace: str, beekeeper_exe: BeekeeperExecutable) -> None:
         blocking=False,
         arguments=[
             "-d",
-            beekeeper_exe.woring_dir.as_posix(),
+            beekeeper_exe.working_directory.as_posix(),
             f"--backtrace={backtrace}",
         ],
     ):
         time.sleep(0.1)
         # ASSERT
         assert checkers.check_for_pattern_in_file(
-            beekeeper_exe.woring_dir / "stderr.log", "Backtrace on segfault is enabled."
+            beekeeper_exe.working_directory / "stderr.log", "Backtrace on segfault is enabled."
         ) is (backtrace == "yes")

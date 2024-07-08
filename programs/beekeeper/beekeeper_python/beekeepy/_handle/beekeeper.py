@@ -114,7 +114,7 @@ class BeekeeperCommon(BeekeeperCallbacks, ContextSync[EnterReturnT]):
         self.__notification = self.__create_notification_server()
         settings.notification_endpoint = helpy.HttpUrl(f"127.0.0.1:{self.__notification.run()}", protocol="http")
         settings.http_endpoint = settings.http_endpoint or helpy.HttpUrl("127.0.0.1:0", protocol="http")
-        settings.working_directory = self.__exec.woring_dir
+        settings.working_directory = self.__exec.working_directory
         self._run_application(settings=settings)
         try:
             self.__wait_till_ready()

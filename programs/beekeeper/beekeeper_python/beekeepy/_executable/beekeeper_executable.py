@@ -22,19 +22,19 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
         super().__init__(settings.binary_path or get_beekeeper_binary_path(), settings.working_directory, logger)
 
     def _construct_config(self) -> BeekeeperConfig:
-        return BeekeeperConfig(wallet_dir=self.woring_dir)
+        return BeekeeperConfig(wallet_dir=self.working_directory)
 
     def export_keys_wallet(
         self, wallet_name: str, wallet_password: str, extract_to: Path | None = None
     ) -> list[KeyPair]:
-        tempdir = self.woring_dir / "export-keys-workdir"
+        tempdir = self.working_directory / "export-keys-workdir"
         if tempdir.exists():
             shutil.rmtree(tempdir)
         tempdir.mkdir()
 
-        shutil.copy(self.woring_dir / f"{wallet_name}.wallet", tempdir)
+        shutil.copy(self.working_directory / f"{wallet_name}.wallet", tempdir)
         bk = BeekeeperExecutable(
-            settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.woring_dir),
+            settings=Settings(binary_path=get_beekeeper_binary_path(), working_directory=self.working_directory),
             logger=self._logger,
         )
         bk.run(
@@ -49,7 +49,7 @@ class BeekeeperExecutable(Executable[BeekeeperConfig]):
             ],
         )
 
-        keys_path = bk.woring_dir / f"{wallet_name}.keys"
+        keys_path = bk.working_directory / f"{wallet_name}.keys"
         if extract_to:
             extract_to.write_text(keys_path.read_text())
 
