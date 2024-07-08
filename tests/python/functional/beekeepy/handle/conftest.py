@@ -4,8 +4,9 @@ from functools import wraps
 from typing import Iterator
 
 import pytest
-import test_tools as tt
 from beekeepy._handle import Beekeeper
+
+import test_tools as tt
 from hive_local_tools.beekeeper.generators import (
     generate_account_name,
     generate_wallet_name,

@@ -4,15 +4,15 @@ import time
 from typing import TYPE_CHECKING, Final
 
 import pytest
-from hive_local_tools.beekeeper.network import raw_http_call
 
+from hive_local_tools.beekeeper.network import raw_http_call
 from schemas.jsonrpc import JSONRPCRequest
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
-    from hive_local_tools.beekeeper.models import WalletInfo
-
     from helpy import HttpUrl as Url
+
+    from hive_local_tools.beekeeper.models import WalletInfo
 
 
 # We have 500ms time period protection on ulocking wallet.

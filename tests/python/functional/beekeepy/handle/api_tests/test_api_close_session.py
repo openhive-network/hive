@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 import pytest
-from hive_local_tools.beekeeper import checkers
-
 from helpy.exceptions import CommunicationError, RequestError
+
+from hive_local_tools.beekeeper import checkers
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
