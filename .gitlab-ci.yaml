@@ -29,6 +29,12 @@ variables:
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
+  # Variables required by Common CI jobs
+  CI_COMMON_JOB_VERSION: "d4e29410ea168096e1a822f77c7ce741d9cfb57a"
+  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
+  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
+  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
@@ -252,6 +258,35 @@ mirrornet_node_build:
         docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
       fi
 
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
+extended_block_log_creation:
+  extends: .extended_block_log_creation
+  stage: build
+  needs:
+    - job: "mirrornet_node_build"
+      artifacts: true
+  variables:
+    REGISTRY: "${CI_REGISTRY_IMAGE}"
+    IMAGE_TAG: ${CI_COMMIT_SHORT_SHA}
+    HIVE_SRC: ${CI_PROJECT_DIR}
+    BLOCK_LOG_SOURCE_DIR: "/blockchain/block_log_5m"
+    BINARY_PATH: "${CI_PROJECT_DIR}/hived-mirrornet-binaries"
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        paths:
+          - scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
+          - scripts/ci-helpers/prepare_extendend_mirrornet_block_log.sh
+          - tests/python/functional/util/block_logs_for_denser/generate_block_log_for_denser.py
+      when: always
+    - when: never
   tags:
     - public-runner-docker
     - hived-for-tests

@@ -1,0 +1,57 @@
+variables:
+  TEST_IMAGE_TAG: ":ubuntu22.04-10"
+
+.extended_block_log_creation:
+  extends: .docker_image_builder_job
+  image: "registry.gitlab.syncad.com/hive/hive/ci-base-image$TEST_IMAGE_TAG"
+  timeout: 1 hour
+  variables:
+    REGISTRY: ""
+    REGISTRY_USER: "${CI_REGISTRY_USER}"
+    REGISTRY_PASS: "${CI_REGISTRY_PASSWORD}"
+    IMAGE_TAG: ""
+    HIVE_SRC: ""
+    BLOCK_LOG_SOURCE_DIR: ""
+    MIRRORNET_WORKING_DIR: "${CI_PROJECT_DIR}/mirrornet"
+    MIRRORNET_SOURCE_5M_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet_blockchain_data"
+    MAINNET_TRUNCATED_DIR: "${MIRRORNET_WORKING_DIR}/mainnet-truncated-dir"
+    MIRRORNET_BLOCKCHAIN_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet-44"
+    EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet-44-extended"
+    BINARY_PATH: ""
+    DOCKER_VERSION: "26.1.4"
+    DOCKER_HOST: "tcp://docker:2376"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_CERT_PATH: "${DOCKER_TLS_CERTDIR}/client" 
+  before_script:
+    - |
+      set -e
+
+      echo -e "\e[0Ksection_start:$(date +%s):install[collapsed=true]\r\e[0KInstalling Docker CLI..."
+      curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz
+      sudo tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 -C /usr/local/bin docker/docker
+      rm docker-${DOCKER_VERSION}.tgz
+      echo -e "\e[0Ksection_end:$(date +%s):install\r\e[0K"
+
+      echo -e "\e[0Ksection_start:$(date +%s):login[collapsed=true]\r\e[0KLogging to Docker registry..."
+      docker login -u "${REGISTRY_USER}" -p "${REGISTRY_PASS}" ${CI_REGISTRY}
+      echo -e "\e[0Ksection_end:$(date +%s):login\r\e[0K"
+ 
+      echo -e "\e[0Ksection_start:$(date +%s):prepare[collapsed=true]\r\e[0KPreparing block log..."
+      mkdir -p "${MIRRORNET_SOURCE_5M_DATA_DIR}"
+      cp "${BLOCK_LOG_SOURCE_DIR}/block_log" "${MIRRORNET_SOURCE_5M_DATA_DIR}"
+      echo -e "\e[0Ksection_end:$(date +%s):prepare\r\e[0K"
+  script:
+    - "${HIVE_SRC}/scripts/ci-helpers/prepare_extendend_mirrornet_block_log.sh"
+  artifacts:
+    reports:
+      dotenv:
+        - "block_log.env" 
+    paths:
+      - "*.log"
+      - "block_log.env"
+      - "generated/*/*.json"
+      - "generated/*/config.ini"
+      - "generated/*/*.txt"
+      - "generated/*/logs/p2p/*.log.*"

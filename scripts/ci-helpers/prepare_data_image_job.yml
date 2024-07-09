@@ -9,6 +9,7 @@ include:
   - project: 'hive/common-ci-configuration'
     ref: d4e29410ea168096e1a822f77c7ce741d9cfb57a # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
+  - local: scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml  
 
 .docker_image_builder_job:
   extends: .docker_image_builder_job_template
