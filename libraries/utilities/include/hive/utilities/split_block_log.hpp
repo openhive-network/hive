@@ -17,6 +17,7 @@ namespace hive { namespace utilities {
  * @throws lots of FC_ASSERTs.
  */
 void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t part_count,
-  appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool );
+  appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool,
+  const fc::optional<fc::path> splitted_block_log_destination_dir = fc::optional<fc::path>() );
 
 } } // hive::utilities
