@@ -117,7 +117,7 @@ docker_image_exists $IMGNAME "$short_commit" "$REGISTRY" image_exists
 if [ "$image_exists" -eq 1 ];
 then
   echo "Image already exists..."
-  "$SCRIPTPATH/export-binaries.sh" "${img}" "${BINARY_CACHE_PATH}"
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${img}" "${BINARY_CACHE_PATH}"
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
