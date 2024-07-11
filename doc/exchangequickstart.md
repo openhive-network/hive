@@ -83,7 +83,7 @@ Running a docker image in the API node case (specific to exhange deployment) and
 
 If you build with docker but do not want to run hived from within a docker container, you can stop here with this step and instead extract the binary from the container with the commands below. If you are going to run hived with docker (recommended method), skip this step altogether. We're simply providing an option for everyone's use-case. Our binaries are built mostly static, only dynamically linking to linux kernel libraries. We have tested and confirmed that binaries built in docker work on Ubuntu and Fedora and will likely work on many other Linux distributions. Building the image yourself or pulling one of our pre-built images both work.
 
-To extract the binary, you can use [export-binaries.sh](/scripts/export-binaries.sh) or start a container and then copy the file from it:
+To extract the binary, you can use [export-data-from-docker-image.sh](/scripts/export-data-from-docker-image.sh) or start a container and then copy the file from it:
 
 ```
 docker run -d --name hived-exchange hiveio/hive
