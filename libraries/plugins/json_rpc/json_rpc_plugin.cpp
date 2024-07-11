@@ -40,25 +40,26 @@ namespace detail
         methods.insert( std::make_pair( "beekeeper_api.create",       "password" ) );
       }
 
-      void replace( std::string& content, const std::string& value )
+      void replace( std::string& content, const std::string& key, const std::string& value )
       {
-        auto _idx = content.find( value );
-        if( _idx != std::string::npos )
-          content.replace( _idx, value.size(), new_value );
+        auto _idx_key = content.find( key );
+        auto _idx_val = content.find( value, _idx_key );
+        if( _idx_val != std::string::npos )
+          content.replace( _idx_val, value.size(), new_value );
       }
 
-      void scan( std::string& content, const fc::variant& element )
+      void scan( std::string& content, const std::string& key, const fc::variant& element )
       {
         if( element.is_string() )
         {
-          replace( content, element.as<std::string>() );
+          replace( content, key, element.as<std::string>() );
         }
         else if( element.is_array() )
         {
           auto _elements = element.get_array();
           for( auto& e : _elements )
           {
-            scan( content, e );
+            scan( content, key, e );
           }
         }
       }
@@ -85,7 +86,7 @@ namespace detail
                 auto _content = fc::json::to_string( msg );
 
                 auto _element = _args[ _found->second ];
-                scan( _content, _element );
+                scan( _content, _found->second, _element );
 
                 fc::variant message( std::move( _content ) );
                 ddump( (message) );
