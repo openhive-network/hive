@@ -11,17 +11,19 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 
 print_help () {
-    echo "Usage: $0 [OPTION[=VALUE]]..."
-    echo
-    echo "Setup this machine for hived installation"
-    echo "OPTIONS:"
-    echo "  --hived-admin-account=NAME  Specify the account name with sudo privileges."
-    echo "  --hived-account=NAME        Specify the account name to be used for hived process."
-    echo "  --runtime                   Installs all packages required to run a pre-built hived binary."
-    echo "  --dev                       Installs all packages required to build and test hived project (in addition to the required runtime packages)."
-    echo "  --user                      Installs all packages to the user's home directory)."
-    echo "  --help                      Display this help screen and exit."
-    echo
+cat <<EOF
+Usage: $0 [OPTION[=VALUE]]...
+
+Setup this machine for hived installation
+OPTIONS:
+  --hived-admin-account=NAME  Specify the account name with sudo privileges.
+  --hived-account=NAME        Specify the account name to be used for hived process.
+  --runtime                   Installs all packages required to run a pre-built hived binary.
+  --dev                       Installs all packages required to build and test hived project (in addition to the required runtime packages).
+  --user                      Installs all packages to the user's home directory).
+  --docker-cli=VERSION        Installs standalone Docker CLI.
+  --help                      Display this help screen and exit.
+EOF
 }
 
 hived_admin_unix_account="hived_admin"
@@ -98,6 +100,13 @@ install_user_packages() {
   poetry self add "poetry-dynamic-versioning[plugin]@>=1.0.0,<2.0.0"
 }
 
+install_docker_cli() {
+  DOCKER_VERSION=$1 
+  curl -fsSLO "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"
+  sudo tar xzvf "docker-${DOCKER_VERSION}.tgz" --strip 1 -C /usr/local/bin docker/docker
+  rm "docker-${DOCKER_VERSION}.tgz"
+}
+
 create_hived_admin_account() {
   echo "Attempting to create $hived_admin_unix_account account..."
   assert_is_root
@@ -131,6 +140,9 @@ while [ $# -gt 0 ]; do
         ;;
     --user)
         install_user_packages "${HOME}/hive_base_config"
+        ;;
+    --docker-cli=*)
+        install_docker_cli "${1#*=}"
         ;;
     --hived-admin-account=*)
         hived_admin_unix_account="${1#*=}"
