@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=ubuntu22.04-10
+ARG CI_IMAGE_TAG=ubuntu22.04-12
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 
@@ -57,6 +57,9 @@ WORKDIR /home/hived_admin
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
+# Install Docker CLI
+RUN /usr/local/src/scripts/setup_ubuntu.sh --docker-cli=26.1.4
+
 FROM ${CI_REGISTRY_IMAGE}ci-base-image:$CI_IMAGE_TAG AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -93,7 +96,7 @@ RUN \
   find . -name *.o  -type f -delete && \
   find . -name *.a  -type f -delete
 
-FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG as base_instance
+FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS base_instance
 
 ARG BUILD_TIME
 ARG GIT_COMMIT_SHA
@@ -175,7 +178,7 @@ EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
-FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG} as instance
+FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG} AS instance
 
 #p2p service
 EXPOSE ${P2P_PORT}
@@ -191,4 +194,4 @@ EXPOSE ${CLI_WALLET_PORT}
 # the current `instance` isn't bad.  Our current focus is shrinking the haf image size,
 # and since we use the same scripts for building both hive and haf, we need a 
 # 'minimal-instance' target here to match the one in haf.  Don't use this.
-FROM instance as minimal-instance
+FROM instance AS minimal-instance

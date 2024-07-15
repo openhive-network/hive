@@ -1,5 +1,5 @@
 variables:
-  TEST_IMAGE_TAG: ":ubuntu22.04-10"
+  TEST_IMAGE_TAG: ":ubuntu22.04-12"
 
 .extended_block_log_creation:
   extends: .docker_image_builder_job
@@ -18,7 +18,6 @@ variables:
     MIRRORNET_BLOCKCHAIN_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet-44"
     EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet-44-extended"
     BINARY_PATH: ""
-    DOCKER_VERSION: "26.1.4"
     DOCKER_HOST: "tcp://docker:2376"
     DOCKER_TLS_VERIFY: 1
     DOCKER_DRIVER: overlay2
@@ -27,12 +26,6 @@ variables:
   before_script:
     - |
       set -e
-
-      echo -e "\e[0Ksection_start:$(date +%s):install[collapsed=true]\r\e[0KInstalling Docker CLI..."
-      curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz
-      sudo tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 -C /usr/local/bin docker/docker
-      rm docker-${DOCKER_VERSION}.tgz
-      echo -e "\e[0Ksection_end:$(date +%s):install\r\e[0K"
 
       echo -e "\e[0Ksection_start:$(date +%s):login[collapsed=true]\r\e[0KLogging to Docker registry..."
       docker login -u "${REGISTRY_USER}" -p "${REGISTRY_PASS}" ${CI_REGISTRY}
