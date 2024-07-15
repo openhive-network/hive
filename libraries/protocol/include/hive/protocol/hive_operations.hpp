@@ -1137,7 +1137,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< comment_options_extension >().create( v, comment_options_extension::tag<T>().value );
+      return extended_variant_creator_functor< comment_options_extension >().create( v, comment_options_extension(v).which());
     }
   };
 
@@ -1168,7 +1168,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< future_extensions >().create( v, future_extensions::tag<T>().value );
+      return extended_variant_creator_functor< future_extensions >().create( v, future_extensions(v).which());
     }
   };
 
@@ -1179,7 +1179,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< recurrent_transfer_extension >().create( v, recurrent_transfer_extension::tag<T>().value );
+      return extended_variant_creator_functor< recurrent_transfer_extension >().create( v, recurrent_transfer_extension(v).which());
     }
   };
 }
