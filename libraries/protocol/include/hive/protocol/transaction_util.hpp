@@ -17,12 +17,6 @@ template< typename AuthContainerType >
 required_authorities_type get_required_authorities(const vector<AuthContainerType>& auth_containers)
 { try {
   required_authorities_type result;
-  flat_set<hive::protocol::account_name_type> required_active;
-  flat_set<hive::protocol::account_name_type> required_owner;
-  flat_set<hive::protocol::account_name_type> required_posting;
-  flat_set<hive::protocol::account_name_type> required_witness;
-  vector<hive::protocol::authority> other;
-
   hive::protocol::get_required_auth_visitor auth_visitor(result.required_active, result.required_owner, 
                                                          result.required_posting, result.required_witness, result.other);
 
