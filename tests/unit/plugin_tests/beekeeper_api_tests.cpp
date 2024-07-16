@@ -635,5 +635,77 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(beekeeper_api_performance_sign_transaction)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
+
+    std::string _wallet_name                = "w0";
+    std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
+    std::string _public_key                 = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+    hive::protocol::digest_type _sig_digest = hive::protocol::digest_type( "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff" );
+
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    auto _password = _api.create( beekeeper::create_args{ _token, _wallet_name } ).password;
+    BOOST_REQUIRE( !_password.empty() );
+
+    _api.import_key( beekeeper::import_key_args{ _token, _wallet_name, _private_key } );
+
+    auto _call = [&]( uint32_t nr_threads )
+    {
+      uint32_t _max = 50000 / nr_threads;
+      for( uint32_t _cnt = 0; _cnt < _max; ++_cnt )
+      {
+        _api.sign_digest( beekeeper::sign_digest_args{ _token, _sig_digest, _public_key } );
+      }
+    };
+
+    auto _execute_calls = [&_call]( uint32_t nr_threads )
+    {
+      std::vector<std::shared_ptr<std::thread>> threads;
+
+      for( size_t i = 0; i < nr_threads; ++i )
+        threads.emplace_back( std::make_shared<std::thread>( _call, nr_threads ) );
+
+      for( auto& thread : threads )
+        if( thread )
+          thread->join();
+    };
+
+    int64_t _duration_1 = 0;
+    int64_t _duration_10 = 0;
+    {
+      auto _start = std::chrono::high_resolution_clock::now();
+
+      _execute_calls( 1 );
+
+      _duration_1 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+      BOOST_TEST_MESSAGE( std::to_string( _duration_1 ) + " [ms]" );
+    }
+
+    {
+      auto _start = std::chrono::high_resolution_clock::now();
+
+      _execute_calls( 10 );
+
+      _duration_10 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+      BOOST_TEST_MESSAGE( std::to_string( _duration_10 ) + " [ms]" );
+    }
+
+    /*
+      AMD Ryzen 7 5800X 8-Core Processor
+      _duration_1   = 1344 [ms]
+      _duration_10  = 227 [ms]
+    */
+    BOOST_REQUIRE( _duration_10 * 3 < _duration_1 );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
