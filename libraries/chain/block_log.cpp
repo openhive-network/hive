@@ -203,7 +203,8 @@ namespace hive { namespace chain {
 
       my->block_file = file;
 
-      boost::filesystem::create_directories( my->block_file.parent_path().generic_string() );
+      if (!fc::exists(my->block_file.parent_path()))
+        boost::filesystem::create_directories( my->block_file.parent_path().generic_string() );
 
       std::string file_str = my->block_file.generic_string();
 
