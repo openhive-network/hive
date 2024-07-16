@@ -372,24 +372,37 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
           ws_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &ws_server, _1 ) );
         }
 
-        ws_server.listen( *ws_endpoint );
-        update_ws_endpoint();
         if( ws_and_http_uses_same_endpoint )
         {
           ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
+        ws_server.listen( *ws_endpoint );
+        update_ws_endpoint();
 
         notify( "WS", ws_endpoint );
 
+        ilog( "start accepting ws requests" );
         ws_server.start_accept();
 
         ws_ios.run();
         ilog( "ws io service exit" );
       }
+      catch( const fc::exception& e )
+      {
+        elog( "error thrown from ws io service. Details: ${message}", ( "message", e.what() ) );
+      }
+      catch ( const boost::exception& e )
+      {
+        elog( "error thrown from ws io service. Details: ${message}", ( "message", boost::diagnostic_information( e ) ) );
+      }
+      catch( std::exception& e )
+      {
+        elog( "error thrown from ws io service. Details: ${message}", ( "message", e.what() ) );
+      }
       catch( ... )
       {
-        elog( "error thrown from http io service" );
+        elog( "error thrown from ws io service" );
       }
     });
   }
@@ -413,16 +426,30 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         if( tls )
           tls->set_tls_handlers( http_server );
 
-        http_server.listen( *http_endpoint );
-        http_server.start_accept();
-        update_http_endpoint();
         ilog( "start listening for ${type} requests on ${endpoint}",
             ("type", tls ? "https" : "http")( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+        http_server.listen( *http_endpoint );
+
+        ilog( "start accepting http requests" );
+        http_server.start_accept();
+        update_http_endpoint();
 
         notify( "HTTP", http_endpoint );
 
         http_ios.run();
         ilog( "http io service exit" );
+      }
+      catch( const fc::exception& e )
+      {
+        elog( "error thrown from http io service. Details: ${message}", ( "message", e.what() ) );
+      }
+      catch ( const boost::exception& e )
+      {
+        elog( "error thrown from http io service. Details: ${message}", ( "message", boost::diagnostic_information( e ) ) );
+      }
+      catch( std::exception& e )
+      {
+        elog( "error thrown from http io service. Details: ${message}", ( "message", e.what() ) );
       }
       catch( ... )
       {
@@ -448,7 +475,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
 
         ilog( "start listening for unix http requests" );
         unix_server.listen( *unix_endpoint );
-        ilog( "start accpeting unix http requests" );
+        ilog( "start accepting unix http requests" );
         unix_server.start_accept();
 
         ilog( "start running unix http requests" );
