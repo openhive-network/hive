@@ -1039,6 +1039,21 @@ artifacts_generation_tests:
   tags:
     - public-runner-docker
 
+block_log_util_split_and_merge_block_log_tests:
+  extends: .job-defaults
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  variables:
+    BLOCK_LOG_UTIL_TESTNET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
+  script:
+    - cd tests/integration/block_log_util_split_and_merge_block_log
+    - ./test_block_log_util_split_and_merge_block_log.sh "$BLOCK_LOG_UTIL_TESTNET_PATH"
+  tags:
+    - public-runner-docker
+
 recovery_tests:
   stage: test
   extends: .test_tools_based
