@@ -92,16 +92,15 @@ on how to use lcov to check code coverage of tests.
 
 ## Config File
 
-Run `hived` once to generate a data directory and a config file. The default data directory location is `~/.hived`. Kill `hived`. If you want to modify the config to your liking, we have [example config](contrib/config-for-docker.ini) used in the docker image. All options will be present in the default config file and there may be more options that need to be changed from the docker configs (some of the options actually used in images are configured via command line).
+Run `hived --dump-config` to generate a data directory and a config file. The default data directory location is `~/.hived`. If you want to modify the config to your liking, we have [example config](contrib/config-for-docker.ini) used in the docker image. All options will be present in the default config file and there may be more options that need to be changed from the docker configs (some of the options actually used in images are configured via command line).
 
 ## Seed Nodes
 
 A list of some seed nodes to get you started can be found in
 [doc/seednodes.txt](doc/seednodes.txt).
 
-This same file is baked into the docker images and can be overridden by
-setting `HIVED_SEED_NODES` in the container environment at `docker run`
-time to a whitespace-delimited list of seed nodes (with port).
+This same file is baked into the binary and can be overridden by `--p2p-seed-node`
+command option set to a whitespace-delimited list of seed nodes (with port).
 
 ## System Requirements
 
