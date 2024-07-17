@@ -14,7 +14,7 @@ def test_help_option() -> None:
         "--server-rpc-endpoint",
         "--cert-authority",
         "--retry-server-connection",
-        "--rpc-endpoint",
+        "--webserver-ws-endpoint",
         "--rpc-tls-endpoint",
         "--rpc-tls-certificate",
         "--rpc-http-endpoint",
@@ -61,7 +61,7 @@ def test_wallet_help_default_values() -> None:
     assert default_values["--server-rpc-endpoint"] == "ws://127.0.0.1:8090"
     assert default_values["--cert-authority"] == "_default"
     assert default_values["--retry-server-connection"] is None
-    assert default_values["--rpc-endpoint"] == "127.0.0.1:8091"
+    assert default_values["--webserver-ws-endpoint"] == "127.0.0.1:8091"
     assert default_values["--rpc-tls-endpoint"] == "127.0.0.1:8092"
     assert default_values["--rpc-tls-certificate"] == "server.pem"
     assert default_values["--rpc-http-endpoint"] == "127.0.0.1:8093"

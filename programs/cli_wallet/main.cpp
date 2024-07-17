@@ -100,7 +100,7 @@ int main( int argc, char** argv )
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("retry-server-connection-delay", bpo::value<uint16_t>()->default_value(10), "Delay [s] between every attempt of establishing a connection to the Server websocket RPC endpoint")
-      ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
+      ("webserver-ws-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
       ("rpc-tls-endpoint,t", bpo::value<string>()->implicit_value("127.0.0.1:8092"), "Endpoint for wallet websocket TLS RPC to listen on")
       ("rpc-tls-certificate,c", bpo::value<string>()->implicit_value("server.pem"), "PEM certificate for wallet websocket TLS RPC")
       ("rpc-http-endpoint,H", bpo::value<string>()->implicit_value("127.0.0.1:8093"), "Endpoint for wallet HTTP RPC to listen on")
@@ -246,7 +246,7 @@ int main( int argc, char** argv )
 
     bool daemon_mode_enabled = options.count("daemon");
 
-    if( !daemon_mode_enabled && ( options.count("rpc-endpoint") || options.count("rpc-tls-endpoint") || options.count("rpc-http-endpoint") ) )
+    if( !daemon_mode_enabled && ( options.count("webserver-ws-endpoint") || options.count("rpc-tls-endpoint") || options.count("rpc-http-endpoint") ) )
     {
       ilog( "Daemon mode has been implicitly enabled by running the cli_wallet RPC server" );
       daemon_mode_enabled = true;
@@ -323,7 +323,7 @@ int main( int argc, char** argv )
     }));
 
     auto _websocket_server = std::make_shared<fc::http::websocket_server>();
-    if( options.count("rpc-endpoint") )
+    if( options.count("webserver-ws-endpoint") )
     {
       _websocket_server->on_connection([&]( const fc::http::websocket_connection_ptr& c ){
         std::cout << "here... \n";
@@ -338,8 +338,8 @@ int main( int argc, char** argv )
         --rpc_server_transactions;
         rpc_server_connections.notify_all();
       });
-      ilog( "Listening for incoming RPC requests on ${p}", ("p", options.at("rpc-endpoint").as<string>() ));
-      _websocket_server->listen( fc::ip::endpoint::from_string(options.at("rpc-endpoint").as<string>()) );
+      ilog( "Listening for incoming RPC requests on ${p}", ("p", options.at("webserver-ws-endpoint").as<string>() ));
+      _websocket_server->listen( fc::ip::endpoint::from_string(options.at("webserver-ws-endpoint").as<string>()) );
       _websocket_server->start_accept();
     }
 
