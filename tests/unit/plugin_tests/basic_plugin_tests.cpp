@@ -4,7 +4,6 @@
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
-#include <hive/plugins/follow/follow_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/tags/tags_plugin.hpp>
@@ -70,12 +69,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::account_history_rocksdb::volatile_operation_object>(dtds), "009775c2d4bf3384fa99c350674151b5c5c46b2a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_hash_state_object>(dtds), "1ad502e939386f07fb513d48c8c07f9ff5a76a6a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "b7da18e0b992b242d903ac255ca3023151db5e16" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_object>(dtds), "ec79acbc66b8210e1e6cd31c5edc8fc5d86618fe" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::feed_object>(dtds), "e81464ef261de05536c9ebfb72fbd401400516e3" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_object>(dtds), "f937a7645c6d33f37ddc38b1d72546abc6724aa5" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_author_stats_object>(dtds), "58e3ac97c4bc94439018638905b3bc9ff14fb7ce" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::reputation_object>(dtds), "49ee99bdff6ef39bc07ec1c8512a2e8818c74c8b" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_count_object>(dtds), "e1411fd1ee8d2fff1f8e825162e93728edd35bbf" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_object>(dtds), "3b2e46494852fc71120a3da6d4530083ed046a3f" );

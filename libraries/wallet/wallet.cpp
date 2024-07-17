@@ -9,12 +9,10 @@
 #include <hive/protocol/crypto_memo.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/version.hpp>
-
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
 #include <hive/wallet/reflect_util.hpp>
 
-#include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
@@ -2440,15 +2438,15 @@ wallet_signed_transaction wallet_api::follow( const string& follower, const stri
   FC_ASSERT( !following.empty() );
   get_account( following );
 
-  follow::follow_operation fop;
-  fop.follower = follower;
-  fop.following = '@' + following;
-  fop.what = std::move( what );
-  follow::follow_plugin_operation op = fop;
+  follow_operation op;
+  op.follower = follower;
+  op.following = '@' + following;
+  op.what = std::move( what );
+  follow_operation_type fop = op;
 
   custom_json_operation jop;
   jop.id = "follow";
-  jop.json = fc::json::to_string(op);
+  jop.json = fc::json::to_string(fop);
   jop.required_posting_auths.insert(follower);
 
   signed_transaction trx;
