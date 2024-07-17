@@ -19,33 +19,10 @@ def test_dump_config() -> None:
     assert node.config.json(exclude={"notifications_endpoint"}) == old_config
 
 
-def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used() -> None:
-    node = tt.InitNode()
-    node.run()
-
-    with open(node.directory / "stderr.txt") as file:
-        stderr = file.read()
-
-    warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
-    assert warning not in stderr
-
-
-def test_warning_about_deprecated_flag_exit_after_replay(block_log: Path) -> None:
-    node = tt.ApiNode()
-
-    node.run(replay_from=block_log, arguments=["--exit-after-replay"])
-
-    with open(node.directory / "stderr.txt") as file:
-        stderr = file.read()
-
-    warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
-    assert warning in stderr
-
-
 @pytest.mark.parametrize(
     "way_to_stop",
     [
-        {"arguments": ["--exit-after-replay"]},
+        {"arguments": ["--exit-before-sync"]},
         {"exit_before_synchronization": True},
     ],
 )
@@ -71,7 +48,7 @@ def test_stop_after_replay(way_to_stop: dict[str, Any], block_log: Path, block_l
 @pytest.mark.parametrize(
     "way_to_stop",
     [
-        {"arguments": ["--exit-after-replay"]},
+        {"arguments": ["--exit-before-sync"]},
         {"exit_before_synchronization": True},
     ],
 )

@@ -72,7 +72,7 @@ if __name__ == "__main__":
         args.path
         + " -d "
         + args.dir
-        + " --replay-blockchain --exit-after-replay --stop-at-block "
+        + " --replay-blockchain --exit-before-sync --stop-at-block "
         + str(args.block_limit)
     )
 

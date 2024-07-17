@@ -96,10 +96,10 @@ class HiveNode:
         self.hived_process = None
         self.hived_lock.release()
 
-    # waits for node, to close. Recomended to use with `--exit-after-replay` flag
+    # waits for node, to close. Recomended to use with `--exit-before-sync` flag
     def wait_till_end(self):
         assert self.hived_process is not None
-        # assert "--exit-after-replay" in self.hived_args
+        # assert "--exit-before-sync" in self.hived_args
 
         from time import sleep
 
