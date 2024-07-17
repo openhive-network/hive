@@ -115,7 +115,6 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
 } FC_LOG_AND_RETHROW() }
 
-
 BOOST_AUTO_TEST_CASE(wallet_name_test)
 { try {
   test_utils::beekeeper_mgr b_mgr;
@@ -147,6 +146,34 @@ BOOST_AUTO_TEST_CASE(wallet_name_test)
   wm.create(_token, "_wallet_", std::optional<std::string>());
   wm.create(_token, "-wallet-", std::optional<std::string>());
   wm.create(_token, "@wallet@", std::optional<std::string>());
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE(wallet_complex_name_test)
+{ try {
+  test_utils::beekeeper_mgr b_mgr;
+  b_mgr.remove_wallets();
+
+  appbase::application app;
+
+  beekeeper_wallet_manager wm = b_mgr.create_wallet( app, 900, 3 );
+
+  BOOST_REQUIRE( wm.start() );
+  std::string _token = wm.create_session( "this is salt", std::optional<std::string>() );
+
+  std::string _wallet_name = "small.minion.wallet";
+
+  wm.create( _token, _wallet_name, std::optional<std::string>() );
+  BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
+
+  wm.lock( _token, _wallet_name );
+  BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
+
+  wm.open( _token, _wallet_name );
+  BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
 
 } FC_LOG_AND_RETHROW() }
 
