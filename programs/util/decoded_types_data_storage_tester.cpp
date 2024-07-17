@@ -7,7 +7,6 @@
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
-#include <hive/plugins/tags/tags_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/plugins/witness/witness_plugin_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
@@ -81,9 +80,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::market_history::bucket_object>();
     dtds.register_new_type<hive::plugins::market_history::order_history_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();
-    dtds.register_new_type<hive::plugins::tags::tag_object>();
-    dtds.register_new_type<hive::plugins::tags::tag_stats_object>();
-    dtds.register_new_type<hive::plugins::tags::author_tag_stats_object>();
     dtds.register_new_type<hive::plugins::transaction_status::transaction_status_object>();
     dtds.register_new_type<hive::plugins::witness::witness_custom_op_object>();
 
