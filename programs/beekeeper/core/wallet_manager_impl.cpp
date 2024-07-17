@@ -141,7 +141,7 @@ std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const
         if( !_path_parts.empty() )
         {
           auto _end = *_path_parts.rbegin();
-          auto _found = _end.find( extension );
+          auto _found = _end.rfind( extension );
           if( _found != std::string::npos ) 
               _result.emplace_back( _end.substr( 0, _found ) );
         }
