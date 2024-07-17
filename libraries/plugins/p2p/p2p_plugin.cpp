@@ -395,7 +395,6 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
   cfg.add_options()
     ("p2p-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:9876"), "The local IP address and port to listen for incoming connections.")
     ("p2p-max-connections", bpo::value<uint32_t>(), "Maxmimum number of incoming connections on P2P endpoint.")
-    ("seed-node", bpo::value<vector<string>>()->composing(), "The IP address and port of a remote peer to sync with. Deprecated in favor of p2p-seed-node.")
     ("p2p-seed-node", bpo::value<vector<string>>()->composing()->default_value( default_seeds, seed_ss.str() ), "The IP address and port of a remote peer to sync with.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
@@ -416,43 +415,29 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
   if( options.count( "p2p-max-connections" ) )
     my->max_connections = options.at( "p2p-max-connections" ).as< uint32_t >();
 
-  if( options.count( "seed-node" ) || options.count( "p2p-seed-node" ) )
+  if (options.count("p2p-seed-node"))
   {
-    vector< string > seeds;
-    if( options.count( "seed-node" ) )
+    vector<string> seeds;
+
+    auto s = options.at("p2p-seed-node").as<vector<string>>();
+    for (auto &arg : s)
     {
-      wlog( "Option seed-node is deprecated in favor of p2p-seed-node" );
-      auto s = options.at("seed-node").as<vector<string>>();
-      for( auto& arg : s )
-      {
-        vector< string > addresses;
-        boost::split( addresses, arg, boost::is_any_of( " \t" ) );
-        seeds.insert( seeds.end(), addresses.begin(), addresses.end() );
-      }
+      vector<string> addresses;
+      boost::split(addresses, arg, boost::is_any_of(" \t"));
+      seeds.insert(seeds.end(), addresses.begin(), addresses.end());
     }
 
-    if( options.count( "p2p-seed-node" ) )
-    {
-      auto s = options.at("p2p-seed-node").as<vector<string>>();
-      for( auto& arg : s )
-      {
-        vector< string > addresses;
-        boost::split( addresses, arg, boost::is_any_of( " \t" ) );
-        seeds.insert( seeds.end(), addresses.begin(), addresses.end() );
-      }
-    }
-
-    for( const string& endpoint_string : seeds )
+    for (const string &endpoint_string : seeds)
     {
       try
       {
         std::vector<fc::ip::endpoint> endpoints = detail::resolve_string_to_ip_endpoints(endpoint_string);
-        my->seeds.insert( my->seeds.end(), endpoints.begin(), endpoints.end() );
+        my->seeds.insert(my->seeds.end(), endpoints.begin(), endpoints.end());
       }
-      catch( const fc::exception& e )
+      catch (const fc::exception &e)
       {
-        wlog( "caught exception ${e} while adding seed node ${endpoint}",
-          ("e", e.to_detail_string())("endpoint", endpoint_string) );
+        wlog("caught exception ${e} while adding seed node ${endpoint}",
+             ("e", e.to_detail_string())("endpoint", endpoint_string));
       }
     }
   }
