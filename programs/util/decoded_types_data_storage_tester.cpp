@@ -4,7 +4,6 @@
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
-#include <hive/plugins/follow/follow_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
@@ -79,12 +78,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::account_history_rocksdb::volatile_operation_object>();
     dtds.register_new_type<hive::plugins::block_log_info::block_log_hash_state_object>();
     dtds.register_new_type<hive::plugins::block_log_info::block_log_pending_message_object>();
-    dtds.register_new_type<hive::plugins::follow::follow_object>();
-    dtds.register_new_type<hive::plugins::follow::feed_object>();
-    dtds.register_new_type<hive::plugins::follow::blog_object>();
-    dtds.register_new_type<hive::plugins::follow::blog_author_stats_object>();
-    dtds.register_new_type<hive::plugins::follow::reputation_object>();
-    dtds.register_new_type<hive::plugins::follow::follow_count_object>();
     dtds.register_new_type<hive::plugins::market_history::bucket_object>();
     dtds.register_new_type<hive::plugins::market_history::order_history_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();

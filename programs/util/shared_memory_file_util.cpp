@@ -29,7 +29,6 @@
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
-#include <hive/plugins/follow/follow_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
@@ -398,12 +397,6 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::plugins::account_history_rocksdb::volatile_operation_index>());
     save_index_name(add_index_to_db<hive::plugins::block_log_info::block_log_hash_state_index>());
     save_index_name(add_index_to_db<hive::plugins::block_log_info::block_log_pending_message_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::follow_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::blog_author_stats_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::feed_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::blog_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::reputation_index>());
-    save_index_name(add_index_to_db<hive::plugins::follow::follow_count_index>());
     save_index_name(add_index_to_db<hive::plugins::market_history::bucket_index>());
     save_index_name(add_index_to_db<hive::plugins::market_history::order_history_index>());
     save_index_name(add_index_to_db<hive::plugins::reputation::reputation_index>());

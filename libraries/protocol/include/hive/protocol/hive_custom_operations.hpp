@@ -25,6 +25,11 @@ struct reblog_operation : public base_operation
   void get_required_posting_authorities( flat_set<account_name_type>& a )const { a.insert( account ); }
 };
 
+typedef fc::static_variant<
+    follow_operation,
+    reblog_operation
+  > follow_operation_type;
+
 struct delegate_rc_operation : public base_operation
 {
   account_name_type             from;
