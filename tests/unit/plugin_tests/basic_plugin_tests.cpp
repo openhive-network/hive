@@ -6,7 +6,6 @@
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
-#include <hive/plugins/tags/tags_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/plugins/witness/witness_plugin_objects.hpp>
 
@@ -71,9 +70,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "b7da18e0b992b242d903ac255ca3023151db5e16" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_object>(dtds), "3b2e46494852fc71120a3da6d4530083ed046a3f" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_stats_object>(dtds), "0de2c00c5633f9c1c7d79b5de15045b9016c772f" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::author_tag_stats_object>(dtds), "1fc079af51f6655c554ea2d30495802f626540b2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::witness::witness_custom_op_object>(dtds), "685bb79eb173fc063846cf12f938c26125f7099c" );
 
