@@ -75,7 +75,7 @@ variables:
         --chain-id "$MIRRORNET_CHAIN_ID" \
         --skeleton-key "$MIRRORNET_SKELETON_KEY" \
         --force-replay \
-        --stop-replay-at-block "$NUMBER_OF_BLOCKS" \
+        --stop-at-block "$NUMBER_OF_BLOCKS" \
         --validate-during-replay \
         --exit-before-sync 2>&1 | tee hived-replay.log
       /home/hived/bin/hived \

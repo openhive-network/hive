@@ -363,7 +363,7 @@ mirrornet_replay_test:
       --set-benchmark-interval 100000
       --force-replay
       --validate-during-replay
-      --stop-replay-at-block $NUMBER_OF_BLOCKS
+      --stop-at-block $NUMBER_OF_BLOCKS
       --exit-before-sync | tee hived-replay.log
   artifacts:
     paths:
@@ -416,7 +416,7 @@ plugin_test:
     variables:
       DATA_SOURCE: "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}"
       LOG_FILE: $CI_JOB_NAME.log
-    command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+    command: ["--replay-blockchain", "--stop-at-block=5000000"]
 
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
