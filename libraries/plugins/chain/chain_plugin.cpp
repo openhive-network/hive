@@ -1393,7 +1393,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
-      ("stop-replay-at-block", bpo::value<uint32_t>(), "[ DEPRECATED ] Stop replay after reaching given block number")
       ("stop-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-at-block", bpo::value<uint32_t>(), "Same as --stop-at-block, but also exit the application")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
@@ -1448,7 +1447,6 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     options.count( "validate-during-replay" ) ? options.at( "validate-during-replay" ).as<bool>() : false;
   my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
-  my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
   my->stop_at_block       = options.count( "stop-at-block" ) ? options.at( "stop-at-block" ).as<uint32_t>() : 0;
   my->exit_at_block       = options.count( "exit-at-block" ) ? options.at( "exit-at-block" ).as<uint32_t>() : 0;
   my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
@@ -1461,13 +1459,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->enable_block_log_auto_fixing = options.at( "enable-block-log-auto-fixing" ).as<bool>();
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
 
-  FC_ASSERT(!(my->stop_replay_at && my->stop_at_block), "--stop-replay-at and --stop-at-block cannot be used together" );
-  FC_ASSERT(!(my->stop_replay_at && my->exit_at_block), "--stop-replay-at and --exit-at-block cannot be used together" );
   FC_ASSERT(!(my->exit_at_block && my->stop_at_block), "--exit-at-block and --stop-at-block cannot be used together" );
-  if (my->stop_replay_at)
-  {
-    wlog("flag `--stop-replay-at` is deprecated, please use `--stop-at-block` instead");
-  }
+
   if (my->exit_at_block)
   {
     my->stop_at_block = my->exit_at_block;

@@ -84,18 +84,11 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict[str, Any], bl
     assert not node.is_running()
 
 
-@pytest.mark.parametrize(
-    "way_to_stop",
-    [
-        lambda n: {"arguments": [f"--stop-replay-at={n}"]},
-        lambda n: {"stop_at_block": n},
-    ],
-)
-def test_stop_replay_at_given_block(way_to_stop, block_log: Path, block_log_length: int) -> None:
+def test_stop_replay_at_given_block(block_log: Path, block_log_length: int) -> None:
     final_block: Final[int] = block_log_length // 2
 
     node = tt.ApiNode()
-    node.run(replay_from=block_log, **way_to_stop(final_block), wait_for_live=False)
+    node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block
 
@@ -112,16 +105,7 @@ def test_exit_replay_at_given_block(block_log: Path, block_log_length: int) -> N
         assert warning in stderr
 
 
-@pytest.mark.parametrize(
-    "way_to_stop",
-    [
-        lambda n: {"arguments": [f"--stop-replay-at={n}"]},
-        lambda n: {"stop_at_block": n},
-    ],
-)
-def test_stop_replay_at_given_block_with_enabled_witness_plugin(
-    way_to_stop, block_log: Path, block_log_length: int
-) -> None:
+def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path, block_log_length: int) -> None:
     # In the past there was a problem with witness node stopped at given block. This issue was caused by communication
     # of witness plugin with p2p plugin. When node is stopped at given block, p2p plugin is not enabled, so witness
     # plugin was unable to get information from it and program used to crash.
@@ -131,7 +115,7 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(
     final_block: Final[int] = block_log_length // 2
 
     node = tt.WitnessNode(witnesses=["alice"])
-    node.run(replay_from=block_log, **way_to_stop(final_block), wait_for_live=False)
+    node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block
 

@@ -85,7 +85,7 @@ if args.artifacts:
 node = HiveNode(
     args.hived,
     work_dir,
-    ["--stop-replay-at-block", str(args.blocks), "--replay-blockchain", "--exit-after-replay"],
+    ["--stop-at-block", str(args.blocks), "--replay-blockchain", "--exit-after-replay"],
     stdout,
     stderr,
 )
@@ -94,7 +94,7 @@ node = HiveNode(
 with node:
     node.wait_till_end()
 
-node.hived_args = ["--stop-replay-at-block", str(args.blocks), "--replay-blockchain"]
+node.hived_args = ["--stop-at-block", str(args.blocks), "--replay-blockchain"]
 
 # check success
 assert node.last_returncode == 0
