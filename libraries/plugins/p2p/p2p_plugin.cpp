@@ -400,7 +400,6 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
-    ("force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions. Deprecated in favor of p2p-force-validate" )
     ("p2p-force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions." )
     ;
 }
@@ -460,11 +459,6 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   my->force_validate = options.at( "p2p-force-validate" ).as< bool >();
 
-  if( !my->force_validate && options.at( "force-validate" ).as< bool >() )
-  {
-    wlog( "Option force-validate is deprecated in favor of p2p-force-validate" );
-    my->force_validate = true;
-  }
   my->request_precomputing_transaction_signatures_if_useful();
 
   if( options.count("p2p-parameters") )
