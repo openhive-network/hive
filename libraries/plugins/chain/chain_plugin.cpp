@@ -190,7 +190,6 @@ class chain_plugin_impl
     uint32_t                         stop_replay_at = 0;
     uint32_t                         stop_at_block = 0;
     uint32_t                         exit_at_block = 0;
-    bool                             exit_after_replay = false;
     bool                             exit_before_sync = false;
     bool                             force_replay = false;
     bool                             validate_during_replay = false;
@@ -712,7 +711,7 @@ bool chain_plugin_impl::start_replay_processing(
       /*
         Triggering artificial signal.
         Whole application should be closed in identical way, as if it was closed by user.
-        This case occurs only when `exit-after-replay` switch is used.
+        This case occurs only when `exit-before-sync` switch is used.
       */
       theApp.generate_interrupt_request();
     }
@@ -778,7 +777,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.chainbase_flags = chainbase_flags;
   db_open_args.do_validate_invariants = validate_invariants;
   db_open_args.stop_replay_at = stop_replay_at;
-  db_open_args.exit_after_replay = exit_after_replay;
   db_open_args.force_replay = force_replay;
   db_open_args.validate_during_replay = validate_during_replay;
   db_open_args.benchmark_is_enabled = benchmark_is_enabled;
@@ -1230,7 +1228,7 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
     /*
       Returns information if the replay is last operation.
     */
-    return theApp.is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_after_replay/*shutdown node definitely*/;
+    return theApp.is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_before_sync;
   } FC_CAPTURE_LOG_AND_RETHROW( () )
 
   return true;
@@ -1395,7 +1393,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-at-block", bpo::value<uint32_t>(), "Same as --stop-at-block, but also exit the application")
-      ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
       ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exits before starting sync, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
       ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
@@ -1477,12 +1474,6 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
   else
     my->flush_interval = 10000;
-
-  if(options.at( "exit-after-replay" ).as<bool>())
-  {
-    my->exit_after_replay = true;
-    wlog("flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync` flag instead");
-  }
 
   if(options.count("checkpoint"))
   {

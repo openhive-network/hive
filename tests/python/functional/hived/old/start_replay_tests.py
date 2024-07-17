@@ -85,7 +85,7 @@ if args.artifacts:
 node = HiveNode(
     args.hived,
     work_dir,
-    ["--stop-at-block", str(args.blocks), "--replay-blockchain", "--exit-after-replay"],
+    ["--stop-at-block", str(args.blocks), "--replay-blockchain", "--exit-before-sync"],
     stdout,
     stderr,
 )
