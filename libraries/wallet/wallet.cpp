@@ -1261,16 +1261,17 @@ wallet_signed_transaction wallet_api::create_account_with_keys(
  * provide their desired keys. The resulting account may not be controllable by this
  * wallet.
  */
-wallet_signed_transaction wallet_api::create_funded_account_with_keys( const string& creator,
-                                                                                      const string& new_account_name,
-                                                                                      const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
-                                                                                      const string& memo,
-                                                                                      const string& json_meta,
-                                                                                      public_key_type owner_key,
-                                                                                      public_key_type active_key,
-                                                                                      public_key_type posting_key,
-                                                                                      public_key_type memo_key,
-                                                                                      bool broadcast )const
+wallet_signed_transaction wallet_api::create_funded_account_with_keys(
+  const string& creator,
+  const string& new_account_name,
+  const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
+  const string& memo,
+  const string& json_meta,
+  public_key_type owner_key,
+  public_key_type active_key,
+  public_key_type posting_key,
+  public_key_type memo_key,
+  bool broadcast )const
 { try {
    FC_ASSERT( !is_locked() );
    my->require_online();
@@ -1333,7 +1334,7 @@ wallet_signed_transaction wallet_api::create_funded_account_with_keys( const str
   tx.validate();
 
   return { my->sign_transaction( tx, broadcast ) };
-} FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
+} FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner_key)(active_key)(posting_key)(memo_key)(broadcast) ) }
 
 
 /**
