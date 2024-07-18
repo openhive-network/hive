@@ -84,5 +84,40 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
  */
 void collect_potential_keys( std::vector< public_key_type >* keys, const account_name_type& account, const std::string& str );
 
+/**
+ * Class that encapsulates process of detecting which keys need to be used for signing transaction.
+ */
+class signing_keys_collector
+{
+public:
+  virtual ~signing_keys_collector() {}
+
+  // disables automatic detection and adds given account's active authority to set of used authorities
+  void use_active_authority( const account_name_type& account_name );
+  // disables automatic detection and adds given account's owner authority to set of used authorities
+  void use_owner_authority( const account_name_type& account_name );
+  // disables automatic detection and adds given account's posting authority to set of used authorities
+  void use_posting_authority( const account_name_type& account_name );
+  // clears set of used authorities and enables automatic detection
+  void use_automatic_authority();
+
+  bool automatic_detection_enabled() const { return automatic_detection; }
+
+  virtual void collect_signing_keys( flat_set< public_key_type >* keys, const transaction& tx );
+
+  // called before get_active/get_owner/get_posting for each given account
+  virtual void prepare_account_authority_data( const std::vector< account_name_type >& accounts ) = 0;
+
+  virtual const authority& get_active( const account_name_type& account_name ) const = 0;
+  virtual const authority& get_owner( const account_name_type& account_name ) const = 0;
+  virtual const authority& get_posting( const account_name_type& account_name ) const = 0;
+
+protected:
+  flat_set<account_name_type> use_active;
+  flat_set<account_name_type> use_owner;
+  flat_set<account_name_type> use_posting;
+  bool automatic_detection = true;
+};
+
 } } // hive::protocol
 

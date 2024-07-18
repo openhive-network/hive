@@ -7,6 +7,7 @@
 #include <hive/protocol/dhf_operations.hpp>
 #include <hive/protocol/validation.hpp>
 #include <hive/protocol/crypto_memo.hpp>
+#include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
@@ -168,7 +169,7 @@ public:
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id,
     const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization,
     const std::string& store_transaction ) : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _chosen_transaction_serialization(transaction_serialization),
-    _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
+    _remote_wallet_bridge_api( remote_api ), _key_collector( *this ), _store_transaction( store_transaction )
   {
     wallet_transaction_serialization::transaction_serialization = transaction_serialization;
     serialization_mode_controller::set_pack( transaction_serialization );
@@ -460,16 +461,17 @@ public:
 
   void use_authority( authority_type type, const account_name_type& account_name )
   {
-    _authorities_to_use[type].push_back(account_name);
-    _use_automatic_authority = false;
+    switch( type )
+    {
+    case authority_type::active: _key_collector.use_active_authority( account_name ); break;
+    case authority_type::owner: _key_collector.use_owner_authority( account_name ); break;
+    case authority_type::posting: _key_collector.use_posting_authority( account_name ); break;
+    }
   }
 
   void use_automatic_authority()
   {
-    _use_automatic_authority = true;
-    _authorities_to_use[active].clear();
-    _authorities_to_use[owner].clear();
-    _authorities_to_use[posting].clear();
+    _key_collector.use_automatic_authority();
   }
 
   // sets the expiration time and reference block
@@ -529,166 +531,11 @@ public:
   {
     require_online();
     static const authority null_auth( 1, public_key_type(), 0 );
-    flat_set< account_name_type >   req_active_approvals;
-    flat_set< account_name_type >   req_owner_approvals;
-    flat_set< account_name_type >   req_posting_approvals;
-    flat_set< account_name_type >   req_witness_approvals;
-    vector< authority >  other_auths;
-
-    if( _use_automatic_authority == true )
-    {
-      tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, req_witness_approvals, other_auths );
-    }
-    else
-    {
-      req_active_approvals.insert(_authorities_to_use[active].begin(), _authorities_to_use[active].end());
-      req_owner_approvals.insert(_authorities_to_use[owner].begin(), _authorities_to_use[owner].end());
-      req_posting_approvals.insert(_authorities_to_use[posting].begin(), _authorities_to_use[posting].end());
-    }
-
-    for( const auto& auth : other_auths )
-      for( const auto& a : auth.account_auths )
-        req_active_approvals.insert(a.first);
-
-    // std::merge lets us de-duplicate account_id's that occur in both
-    //   sets, and dump them into a vector (as required by remote_db api)
-    //   at the same time
-    vector< account_name_type > v_approving_account_names;
-    std::merge(req_active_approvals.begin(), req_active_approvals.end(),
-            req_owner_approvals.begin() , req_owner_approvals.end(),
-            std::back_inserter( v_approving_account_names ) );
-
-    for( const auto& a : req_posting_approvals )
-      v_approving_account_names.push_back(a);
-
-    /// TODO: handle the op that must be signed using witness keys
-
-    /// TODO: fetch the accounts specified via other_auths as well.
-
-    auto approving_account_objects = get_accounts( variant(v_approving_account_names) );
-
-    FC_ASSERT( approving_account_objects.size() == v_approving_account_names.size(), "", ("aco.size:", approving_account_objects.size())("acn",v_approving_account_names.size()) );
-
-    flat_map< string, database_api::api_account_object > approving_account_lut;
-    for( const auto& approving_acct : approving_account_objects )
-      approving_account_lut[ approving_acct.name ] =  approving_acct;
-
-    /// recursively check one layer deeper in the authority tree for keys
-    std::function< void(flat_set< account_name_type > &, authority_type, uint32_t) > recursively_get_authorities =
-      [&](flat_set< account_name_type > &authorities_names, authority_type type, uint32_t depth)
-      {
-        if(depth > HIVE_MAX_SIG_CHECK_DEPTH)
-          return;
-
-        flat_set< account_name_type > authorities_names_next_level;
-        for(account_name_type& acct_name : authorities_names)
-        {
-          const auto it = approving_account_lut.find( acct_name );
-          if( it == approving_account_lut.end() )
-            continue;
-          const database_api::api_account_object& acct = it->second;
-          flat_map< account_name_type, weight_type > account_auths;
-          if( type == active )
-            account_auths = acct.active.account_auths;
-          else if( type == owner )
-            account_auths = acct.owner.account_auths;
-          else
-            account_auths = acct.posting.account_auths;
-          for(const auto& kv : account_auths)
-            authorities_names_next_level.insert(kv.first);
-        }
-
-        vector< account_name_type > v_authorities_names_next_level;
-        for(const auto& name : authorities_names_next_level)
-          v_authorities_names_next_level.push_back(name);
-
-        auto approving_account_objects = get_accounts( variant(v_authorities_names_next_level) );
-        for( const auto& approving_acct : approving_account_objects )
-          approving_account_lut[ approving_acct.name ] =  approving_acct;
-
-        recursively_get_authorities(authorities_names_next_level, type, depth+1);
-        for(const auto& name : authorities_names_next_level)
-          authorities_names.insert(name);
-      };
-
-    if( _use_automatic_authority == true )
-    {
-      recursively_get_authorities(req_active_approvals, active, 1);
-      recursively_get_authorities(req_owner_approvals, owner, 1);
-      recursively_get_authorities(req_posting_approvals, posting, 1);
-    }
-
-    auto get_account_from_lut = [&]( const std::string& name ) -> fc::optional< const database_api::api_account_object* >
-    {
-      fc::optional< const database_api::api_account_object* > result;
-      auto it = approving_account_lut.find( name );
-      if( it != approving_account_lut.end() )
-      {
-        result = &(it->second);
-      }
-      else
-      {
-        elog( "Tried to access authority for account ${a} but not cached.", ("a", name) );
-      }
-
-      return result;
-    };
 
     flat_set<public_key_type> approving_key_set;
-    for( account_name_type& acct_name : req_active_approvals )
-    {
-      const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-
-      const database_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.active.get_keys();
-      wdump((v_approving_keys));
-      for( const public_key_type& approving_key : v_approving_keys )
-      {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
-      }
-    }
-
-    for( account_name_type& acct_name : req_posting_approvals )
-    {
-      const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-
-      const database_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.posting.get_keys();
-      wdump((v_approving_keys));
-      for( const public_key_type& approving_key : v_approving_keys )
-      {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
-      }
-    }
-
-    for( const account_name_type& acct_name : req_owner_approvals )
-    {
-      const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-
-      const database_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.owner.get_keys();
-      for( const public_key_type& approving_key : v_approving_keys )
-      {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
-      }
-    }
-    for( const authority& a : other_auths )
-    {
-      for( const auto& k : a.key_auths )
-      {
-        wdump((k.first));
-        approving_key_set.insert( k.first );
-      }
-    }
+    // we need local copy to remain stateless, so other threads making the same call won't cause conflicts
+    signing_keys_collector collector = _key_collector;
+    collector.collect_signing_keys( &approving_key_set, tx );
 
     initialize_transaction_header(tx);
 
@@ -712,37 +559,16 @@ public:
 
     std::vector<hive::protocol::private_key_type> keys_to_sign;
 
-    if( _use_automatic_authority == true )
+    if( collector.automatic_detection_enabled() )
     {
       const signed_transaction& signature_source = new_tx->get_transaction();
 
       auto minimal_signing_keys = signature_source.minimize_required_signatures(
         _hive_chain_id,
         available_keys,
-        [&]( const string& account_name ) -> const authority&
-        {
-          auto maybe_account = get_account_from_lut( account_name );
-          if( maybe_account.valid() )
-            return (*maybe_account)->active;
-
-          return null_auth;
-        },
-        [&]( const string& account_name ) -> const authority&
-        {
-          auto maybe_account = get_account_from_lut( account_name );
-          if( maybe_account.valid() )
-            return (*maybe_account)->owner;
-
-          return null_auth;
-        },
-        [&]( const string& account_name ) -> const authority&
-        {
-          auto maybe_account = get_account_from_lut( account_name );
-          if( maybe_account.valid() )
-            return (*maybe_account)->posting;
-
-          return null_auth;
-        },
+        [&]( const string& account_name ) { return collector.get_account( account_name ).active; },
+        [&]( const string& account_name ) { return collector.get_account( account_name ).owner; },
+        [&]( const string& account_name ) { return collector.get_account( account_name ).posting; },
         [&]( const string& witness_name ) -> public_key_type
         {
           auto maybe_witness = get_witness(witness_name);
@@ -845,6 +671,54 @@ public:
     FC_CAPTURE_AND_LOG(())
   }
 
+  class signing_keys_collector : public hive::protocol::signing_keys_collector
+  {
+  public:
+    signing_keys_collector( wallet_api_impl& _self ) : self( _self ) {}
+    virtual ~signing_keys_collector() {}
+
+    virtual void collect_signing_keys( flat_set< public_key_type >* keys, const transaction& tx ) override
+    {
+      approving_account_lut.clear();
+      hive::protocol::signing_keys_collector::collect_signing_keys( keys, tx );
+      // approving_account_lut remains filled until next call
+    }
+
+    virtual void prepare_account_authority_data( const std::vector< account_name_type >& accounts ) override
+    {
+      auto approving_account_objects = self.get_accounts( variant( accounts ) );
+      FC_ASSERT( approving_account_objects.size() == accounts.size(), "Some requested accounts were not found",
+        ( "found.size:", approving_account_objects.size() )( "requested.size", accounts.size() ) );
+      for( const auto& account : approving_account_objects )
+        approving_account_lut[ account.name ] = account;
+    }
+
+    const database_api::api_account_object& get_account( const account_name_type& account_name ) const
+    {
+      auto it = approving_account_lut.find( account_name );
+      FC_ASSERT( it != approving_account_lut.end(),
+        "Tried to access authority for account ${a} but not cached.", ( "a", account_name ) );
+      return it->second;
+    }
+
+    virtual const authority& get_active( const account_name_type& account_name ) const override
+    {
+      return get_account( account_name ).active;
+    }
+    virtual const authority& get_owner( const account_name_type& account_name ) const override
+    {
+      return get_account( account_name ).owner;
+    }
+    virtual const authority& get_posting( const account_name_type& account_name ) const override
+    {
+      return get_account( account_name ).posting;
+    }
+
+  private:
+    wallet_api_impl& self;
+    flat_map< account_name_type, database_api::api_account_object > approving_account_lut;
+  };
+
   string                                                    _wallet_filename;
   wallet_data                                               _wallet;
   chain_id_type                                             _hive_chain_id;
@@ -858,9 +732,7 @@ public:
 
   static_variant_map _operation_which_map = create_static_variant_map< operation >();
 
-  typedef map <authority_type, vector<account_name_type> > authorities_type;
-  authorities_type                        _authorities_to_use;
-  bool                                    _use_automatic_authority = true;
+  signing_keys_collector                                    _key_collector;
 
   std::string                             _store_transaction;
 
