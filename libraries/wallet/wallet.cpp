@@ -1479,15 +1479,15 @@ wallet_signed_transaction wallet_api::update_account_auth_key(
 
   switch( type )
   {
-    case( owner ):
-      new_auth = account.owner;
-      break;
-    case( active ):
-      new_auth = account.active;
-      break;
-    case( posting ):
-      new_auth = account.posting;
-      break;
+  case authority_type::owner:
+    new_auth = account.owner;
+    break;
+  case authority_type::active:
+    new_auth = account.active;
+    break;
+  case authority_type::posting:
+    new_auth = account.posting;
+    break;
   }
 
   if( weight == 0 ) // Remove the key
@@ -1501,7 +1501,7 @@ wallet_signed_transaction wallet_api::update_account_auth_key(
 
   if( new_auth.is_impossible() )
   {
-    if( type == owner )
+    if( type == authority_type::owner )
     {
       FC_ASSERT( false, "Owner authority change would render account irrecoverable." );
     }
@@ -1511,15 +1511,15 @@ wallet_signed_transaction wallet_api::update_account_auth_key(
 
   switch( type )
   {
-    case( owner ):
-      op.owner = new_auth;
-      break;
-    case( active ):
-      op.active = new_auth;
-      break;
-    case( posting ):
-      op.posting = new_auth;
-      break;
+  case authority_type::owner:
+    op.owner = new_auth;
+    break;
+  case authority_type::active:
+    op.active = new_auth;
+    break;
+  case authority_type::posting:
+    op.posting = new_auth;
+    break;
   }
 
   signed_transaction tx;
@@ -1551,15 +1551,15 @@ wallet_signed_transaction wallet_api::update_account_auth_account(
 
   switch( type )
   {
-    case( owner ):
-      new_auth = account.owner;
-      break;
-    case( active ):
-      new_auth = account.active;
-      break;
-    case( posting ):
-      new_auth = account.posting;
-      break;
+  case authority_type::owner:
+    new_auth = account.owner;
+    break;
+  case authority_type::active:
+    new_auth = account.active;
+    break;
+  case authority_type::posting:
+    new_auth = account.posting;
+    break;
   }
 
   if( weight == 0 ) // Remove the key
@@ -1573,7 +1573,7 @@ wallet_signed_transaction wallet_api::update_account_auth_account(
 
   if( new_auth.is_impossible() )
   {
-    if( type == owner )
+    if( type == authority_type::owner )
     {
       FC_ASSERT( false, "Owner authority change would render account irrecoverable." );
     }
@@ -1583,15 +1583,15 @@ wallet_signed_transaction wallet_api::update_account_auth_account(
 
   switch( type )
   {
-    case( owner ):
-      op.owner = new_auth;
-      break;
-    case( active ):
-      op.active = new_auth;
-      break;
-    case( posting ):
-      op.posting = new_auth;
-      break;
+  case authority_type::owner:
+    op.owner = new_auth;
+    break;
+  case authority_type::active:
+    op.active = new_auth;
+    break;
+  case authority_type::posting:
+    op.posting = new_auth;
+    break;
   }
 
   signed_transaction tx;
@@ -1623,22 +1623,22 @@ wallet_signed_transaction wallet_api::update_account_auth_threshold(
 
   switch( type )
   {
-    case( owner ):
-      new_auth = account.owner;
-      break;
-    case( active ):
-      new_auth = account.active;
-      break;
-    case( posting ):
-      new_auth = account.posting;
-      break;
+  case authority_type::owner:
+    new_auth = account.owner;
+    break;
+  case authority_type::active:
+    new_auth = account.active;
+    break;
+  case authority_type::posting:
+    new_auth = account.posting;
+    break;
   }
 
   new_auth.weight_threshold = threshold;
 
   if( new_auth.is_impossible() )
   {
-    if( type == owner )
+    if( type == authority_type::owner )
     {
       FC_ASSERT( false, "Owner authority change would render account irrecoverable." );
     }
@@ -1648,15 +1648,15 @@ wallet_signed_transaction wallet_api::update_account_auth_threshold(
 
   switch( type )
   {
-    case( owner ):
-      op.owner = new_auth;
-      break;
-    case( active ):
-      op.active = new_auth;
-      break;
-    case( posting ):
-      op.posting = new_auth;
-      break;
+  case authority_type::owner:
+    op.owner = new_auth;
+    break;
+  case authority_type::active:
+    op.active = new_auth;
+    break;
+  case authority_type::posting:
+    op.posting = new_auth;
+    break;
   }
 
   signed_transaction tx;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hive/protocol/authority.hpp>
 #include <hive/protocol/key_utils.hpp>
 
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
@@ -59,12 +60,7 @@ struct wallet_data
   bool                      offline = false;
 };
 
-enum authority_type
-{
-  owner,
-  active,
-  posting
-};
+using authority_type = hive::protocol::authority::classification;
 
 namespace detail {
 class wallet_api_impl;
@@ -462,16 +458,17 @@ class wallet_api
       * @param memo_key public memo key of the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-  wallet_signed_transaction create_funded_account_with_keys( const string& creator,
-                                                                              const string& new_account_name,
-                                                                              const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
-                                                                              const string& memo,
-                                                                              const string& json_meta,
-                                                                              public_key_type owner_key,
-                                                                              public_key_type active_key,
-                                                                              public_key_type posting_key,
-                                                                              public_key_type memo_key,
-                                                                              bool broadcast )const;
+  wallet_signed_transaction create_funded_account_with_keys(
+    const string& creator,
+    const string& new_account_name,
+    const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
+    const string& memo,
+    const string& json_meta,
+    public_key_type owner_key,
+    public_key_type active_key,
+    public_key_type posting_key,
+    public_key_type memo_key,
+    bool broadcast )const;
     
     /** This method will genrate new owner, active, posting and memo keys for the new account which
       * will be controlable by this wallet. There is a fee associated with account creation
@@ -1492,8 +1489,6 @@ FC_REFLECT( hive::wallet::wallet_data,
 FC_REFLECT( hive::wallet::brain_key_info, (brain_priv_key)(wif_priv_key) (pub_key))
 
 FC_REFLECT( hive::wallet::plain_keys, (checksum)(keys) )
-
-FC_REFLECT_ENUM( hive::wallet::authority_type, (owner)(active)(posting) )
 
 FC_API( hive::wallet::wallet_api,
       /// wallet api
