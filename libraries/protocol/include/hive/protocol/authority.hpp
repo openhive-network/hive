@@ -12,8 +12,7 @@ namespace hive { namespace protocol {
     {
       owner   = 0,
       active  = 1,
-      key     = 2,
-      posting = 3
+      posting = 2
     };
 
     template< class ...Args >
@@ -117,4 +116,4 @@ bool operator == ( const authority& a, const authority& b );
 FC_REFLECT_TYPENAME( hive::protocol::authority::account_authority_map)
 FC_REFLECT_TYPENAME( hive::protocol::authority::key_authority_map)
 FC_REFLECT( hive::protocol::authority, (weight_threshold)(account_auths)(key_auths) )
-FC_REFLECT_ENUM( hive::protocol::authority::classification, (owner)(active)(key)(posting) )
+FC_REFLECT_ENUM( hive::protocol::authority::classification, (owner)(active)(posting) )
