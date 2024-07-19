@@ -60,5 +60,28 @@ def bob(node: tt.InitNode, initminer_wallet: tt.Wallet) -> Account:
         memo=tt.Account(bob.name, secret="memo").public_key,
     )
 
-    assert bob.wallet.api.list_keys() == [], "Bob's wallet has an incorrect number of keys. Expected 0"
+    initminer_wallet.api.transfer_to_vesting("initminer", bob.name, tt.Asset.Test(100))
+    initminer_wallet.api.transfer("initminer", bob.name, tt.Asset.Test(100), f"transfer hive to {bob.name}.")
+
+    assert not bob.wallet.api.list_keys(), "Bob's wallet has an incorrect number of keys. Expected 0"
     return bob
+
+
+@pytest.fixture()
+def carol(node: tt.InitNode, initminer_wallet: tt.Wallet) -> Account:
+    carol = Account(node, "carol")
+    initminer_wallet.api.create_account_with_keys(
+        "initminer",
+        carol.name,
+        "",
+        posting=tt.Account(carol.name, secret="posting").public_key,
+        active=tt.Account(carol.name, secret="active").public_key,
+        owner=tt.Account(carol.name, secret="owner").public_key,
+        memo=tt.Account(carol.name, secret="memo").public_key,
+    )
+
+    initminer_wallet.api.transfer_to_vesting("initminer", carol.name, tt.Asset.Test(100))
+    initminer_wallet.api.transfer("initminer", carol.name, tt.Asset.Test(100), f"transfer hive to {carol.name}.")
+
+    assert not carol.wallet.api.list_keys(), "Carol's wallet has an incorrect number of keys. Expected 0"
+    return carol
