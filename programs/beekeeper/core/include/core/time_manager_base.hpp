@@ -26,7 +26,6 @@ class time_manager_base
     {
       std::string token;
       types::lock_method_type lock_method;
-      types::notification_method_type notification_method;
       types::timepoint_t time = types::timepoint_t::max();
     };
 
@@ -57,7 +56,7 @@ class time_manager_base
     time_manager_base();
     virtual ~time_manager_base();
 
-    virtual void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
+    virtual void add( const std::string& token, types::lock_method_type&& lock_method );
     virtual void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
 
     virtual void run();

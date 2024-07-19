@@ -117,7 +117,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      create_session_return _result{ _impl->app.get_wallet_manager()->create_session( salt, "notification endpoint"/*notifications_endpoint - not used here*/ ) };
+      create_session_return _result{ _impl->app.get_wallet_manager()->create_session( salt ) };
       return to_string( _result );
     };
     return exception_handler( _method );
