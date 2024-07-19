@@ -50,7 +50,6 @@ void time_manager_base::modify_times( const std::vector<std::string>& modified_i
 
                                                   _idx_token.modify( _found, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
 
-                                                  _found->notification_method( _found->token );
                                                   _found->lock_method( _found->token );
                                                 }
                                                 return "";
@@ -96,10 +95,10 @@ void time_manager_base::run( const std::string& token )
   modify_times( _modified_items );
 }
 
-void time_manager_base::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
+void time_manager_base::add( const std::string& token, types::lock_method_type&& lock_method )
 {
   auto& _idx = items.get<by_token>();
-  _idx.emplace( session_data{ token, lock_method, notification_method } );
+  _idx.emplace( session_data{ token, lock_method } );
 }
 
 void time_manager_base::change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active )

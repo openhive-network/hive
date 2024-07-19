@@ -4,7 +4,7 @@ Example:
 HTTP server or number ports presented in following information should be treated as an example.
 
 1. Launch beekeeper
-./beekeeper --webserver-http-endpoint 127.0.0.1:7778 --notifications-endpoint 127.0.0.1:8000
+./beekeeper --webserver-http-endpoint 127.0.0.1:7778
 
 2. Launch proxy server
 node proxy.js
