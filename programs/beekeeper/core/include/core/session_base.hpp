@@ -43,8 +43,6 @@ class session_base
     info get_info();
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
-
-    virtual void prepare_notifications(){};
 };
 
 } //beekeeper
