@@ -18,8 +18,6 @@ class beekeeper_app: public beekeeper_app_base
 
     uint64_t unlock_interval = 0;
 
-    std::optional<std::string> notifications_endpoint;
-
     std::shared_ptr<beekeeper_instance> instance;
 
     boost::signals2::connection webserver_connection;
@@ -31,7 +29,7 @@ class beekeeper_app: public beekeeper_app_base
     std::shared_ptr<mutex_handler> mtx_handler;
 
     std::string check_version();
-    bool save_keys( const std::optional<std::string>& notification, const std::string& wallet_name, const std::string& wallet_password );
+    bool save_keys( const std::string& wallet_name, const std::string& wallet_password );
 
     const boost::program_options::variables_map& get_args() const override;
     bfs::path get_data_dir() const override;

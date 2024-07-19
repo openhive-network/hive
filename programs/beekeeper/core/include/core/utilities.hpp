@@ -62,7 +62,6 @@ struct version
 namespace types
 {
   using basic_method_type         = std::function<void( const std::string& )>;
-  using notification_method_type  = basic_method_type;
   using lock_method_type          = basic_method_type;
   using timepoint_t               = std::chrono::time_point<std::chrono::system_clock>;
 }
@@ -234,7 +233,6 @@ using get_version_return = version;
 struct create_session_args
 {
   std::optional<std::string> salt;
-  std::optional<std::string> notifications_endpoint;
 };
 using create_session_return = session_token_type;
 using close_session_args = session_token_type;
@@ -365,7 +363,7 @@ FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
 FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (sig_digest)(public_key)(wallet_name) )
 FC_REFLECT( beekeeper::signature_return, (signature) )
-FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
+FC_REFLECT( beekeeper::create_session_args, (salt) )
 FC_REFLECT_DERIVED( beekeeper::get_public_keys_args, (beekeeper::session_token_type), (wallet_name) )
 FC_REFLECT_DERIVED( beekeeper::has_matching_private_key_args, (beekeeper::wallet_args), (public_key) )
 FC_REFLECT( beekeeper::has_matching_private_key_return, (exists) )
