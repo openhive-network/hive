@@ -9,6 +9,7 @@
 #include <hive/protocol/crypto_memo.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/version.hpp>
+
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
 #include <hive/wallet/reflect_util.hpp>
@@ -17,7 +18,6 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/rc/rc_operations.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
@@ -2650,7 +2650,7 @@ wallet_signed_transaction wallet_api::delegate_rc(
   dro.max_rc  = max_rc;
 
   custom_json_operation op;
-  op.json = fc::json::to_string( rc_custom_operation( dro ) );
+  op.json = fc::json::to_string( hive::protocol::rc_custom_operation( dro ) );
   op.id = HIVE_RC_CUSTOM_OPERATION_ID;
 
   flat_set< account_name_type > required_auths;

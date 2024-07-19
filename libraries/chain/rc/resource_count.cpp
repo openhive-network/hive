@@ -2,10 +2,9 @@
 #include <hive/chain/rc/resource_count.hpp>
 #include <hive/chain/rc/resource_sizes.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
 
-#include <hive/protocol/operations.hpp>
+#include <hive/protocol/hive_custom_operations.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
@@ -166,7 +165,7 @@ void resource_credits::handle_operation_discount( const OpType& op )
 template
 void resource_credits::handle_operation_discount< operation >( const operation& op );
 template
-void resource_credits::handle_operation_discount< rc_custom_operation >( const rc_custom_operation& op );
+void resource_credits::handle_operation_discount< hive::protocol::rc_custom_operation >( const hive::protocol::rc_custom_operation& op );
 
 struct count_operation_visitor
 {
@@ -723,12 +722,12 @@ void resource_credits::count_resources(
 }
 
 template
-void count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
+void count_resources< hive::protocol::rc_custom_operation >( const hive::protocol::rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
 template
-void resource_credits::count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
+void resource_credits::count_resources< hive::protocol::rc_custom_operation >( const hive::protocol::rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
-void resource_credits::handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now )
+void resource_credits::handle_custom_op_usage( const hive::protocol::rc_custom_operation& op, const fc::time_point_sec now )
 {
   count_resources_result extra_usage;
   resource_credits::count_resources( op, extra_usage, now );

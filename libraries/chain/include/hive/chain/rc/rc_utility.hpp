@@ -2,10 +2,12 @@
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/rc/rc_export_objects.hpp>
-#include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/rc/resource_count.hpp>
 
+#include <hive/protocol/hive_custom_operations.hpp>
+
 #include <hive/chain/util/rd_dynamics.hpp>
+#include <hive/chain/evaluator.hpp>
 
 #include <fc/reflect/reflect.hpp>
 
@@ -74,7 +76,7 @@ class resource_credits
       count_resources_result& result,
       const fc::time_point_sec now );
     // collects and stores extra resources used by nonstandard operation (must be called before transaction usage is collected)
-    void handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now );
+    void handle_custom_op_usage( const hive::protocol::rc_custom_operation& op, const fc::time_point_sec now );
 
     /** scans database for state related to given operation and remembers it as a discount (implemented for operation and rc_custom_operation)
       * must be called before operation is executed
@@ -168,13 +170,18 @@ class resource_credits
     // information collected for current block
     rc_block_info block_info;
 
-    std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
+    std::shared_ptr< generic_custom_operation_interpreter< hive::protocol::rc_custom_operation > > _custom_operation_interpreter;
 
     static report_type auto_report_type; //type of automatic daily rc stats reports
     static report_output auto_report_output; //output of automatic daily rc stat reports
 };
 
+  using namespace hive::protocol;
+  HIVE_DEFINE_PLUGIN_EVALUATOR( void, rc_custom_operation, delegate_rc );
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::rc_price_curve_params, (coeff_a)(coeff_b)(shift) )
 FC_REFLECT( hive::chain::rc_resource_params, (resource_dynamics_params)(price_curve_params) )
+
+HIVE_DECLARE_OPERATION_TYPE( hive::protocol::rc_custom_operation )

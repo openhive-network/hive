@@ -2,8 +2,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/protocol/hive_custom_operations.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -1253,7 +1253,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     custom_json_operation custom_json;
     custom_json.required_posting_auths.insert( "alice" );
     custom_json.id = HIVE_RC_CUSTOM_OPERATION_ID;
-    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 203, 0, 0, 128 + 1927200, 94165 + 6622 + 1509 + 75000 } );
@@ -1266,7 +1266,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Create and update RC delegation with delegate_rc_operation" );
     rc_delegation.delegatees = { "bob", "sam" };
     rc_delegation.max_rc = 5000000;
-    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     tx_usage = db->rc.get_tx_info().usage;
     //just one new delegation like in first case
@@ -1279,7 +1279,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update RC delegations with delegate_rc_operation" );
     rc_delegation.max_rc = 7500000;
-    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     tx_usage = db->rc.get_tx_info().usage;
     //no extra state - all delegations are updates

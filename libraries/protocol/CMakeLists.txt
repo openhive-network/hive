@@ -30,6 +30,7 @@ generate_get_config(
 SET( SOURCES testnet_blockchain_configuration.cpp
    smt_operations.cpp
    hive_operations.cpp
+   hive_custom_operations.cpp
    dhf_operations.cpp
    types.cpp
    schema_types.cpp
