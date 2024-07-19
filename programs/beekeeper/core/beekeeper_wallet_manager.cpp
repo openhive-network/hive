@@ -124,11 +124,11 @@ version beekeeper_wallet_manager::get_version()
   return { utility::get_revision() };
 }
 
-std::string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint )
+std::string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt )
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
-  auto _token = sessions->create_session( salt, notifications_endpoint, wallet_directory );
+  auto _token = sessions->create_session( salt, wallet_directory );
   set_timeout_impl( _token, unlock_timeout );
 
   ++session_cnt;
