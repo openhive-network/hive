@@ -19,13 +19,13 @@ HTTPS command line parameters:
 Example of connection:
 
 *****server*****
-./beekeeper --webserver-https-endpoint 127.0.0.1:6666 --notifications-endpoint 127.0.0.1:8000 --webserver-https-certificate-file-name my_server.crt --webserver-https-key-file-name my_server.key
+./beekeeper --webserver-https-endpoint 127.0.0.1:6666 --webserver-https-certificate-file-name my_server.crt --webserver-https-key-file-name my_server.key
 
 *****client*****
 We have two possibilities:
 
 a) A server's certificate is explicitly given by `--cacert`
-curl --cacert my_server.crt --data '{"jsonrpc":"2.0", "method":"beekeeper_api.create_session", "params":{ "salt" : "banana", "notifications_endpoint" : "127.0.0.1:8001" }, "id":1}' https://127.0.0.1:6666 | jq
+curl --cacert my_server.crt --data '{"jsonrpc":"2.0", "method":"beekeeper_api.create_session", "params":{ "salt" : "banana" }, "id":1}' https://127.0.0.1:6666 | jq
 
 b) A server's certificate is put into /etc/ssl/certs/ca-certificates.crt
-curl --data '{"jsonrpc":"2.0", "method":"beekeeper_api.create_session", "params":{ "salt" : "banana", "notifications_endpoint" : "127.0.0.1:8001" }, "id":1}' https://127.0.0.1:6666 | jq
+curl --data '{"jsonrpc":"2.0", "method":"beekeeper_api.create_session", "params":{ "salt" : "banana" },"id":1}' https://127.0.0.1:6666 | jq
