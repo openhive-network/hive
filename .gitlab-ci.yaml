@@ -1124,8 +1124,8 @@ authority_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 4
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
+    PYTEST_TIMEOUT_MINUTES: 6
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/authority/report.xml
 
   script:
     - cd tests/python/functional/authority
