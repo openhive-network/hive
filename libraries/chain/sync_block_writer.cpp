@@ -64,7 +64,7 @@ void sync_block_writer::pop_block()
   _fork_db.pop_block();
 }
 
-bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_block, 
+bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_block,
   const block_flow_control& block_ctrl,
   uint32_t state_head_block_num,
   block_id_type state_head_block_id,
@@ -119,8 +119,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       switch_forks( new_head->get_block_id(), new_head->get_block_num(),
                     skip, &block_ctrl, state_head_block_id, state_head_block_num,
                     apply_block_extended, pop_block_extended );
-      _app.notify( "switching forks", "id", 
-                   new_head->get_block_id().str(), "num", new_head->get_block_num() );
+      _app.status.save_fork( new_head->get_block_num(), new_head->get_block_id().str());
       return true;
     }
   }
@@ -140,7 +139,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       bool is_pushed_block = (*iter)->get_block_id() == block_ctrl.get_full_block()->get_block_id();
       if( blocks.size() > 1 )
         _fork_db.set_head( _fork_db.fetch_block((*iter)->get_block_id(), true) );
-      apply_block_extended( 
+      apply_block_extended(
         // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
         // with what we're applying.  If we're only appending a single block, the forkdb's head block
         // should already be correct
@@ -264,7 +263,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
   ilog("done pushing blocks from new fork");
 } // switch_forks
 
-std::optional<block_write_i::new_last_irreversible_block_t> 
+std::optional<block_write_i::new_last_irreversible_block_t>
 sync_block_writer::find_new_last_irreversible_block(
   const std::vector<const witness_object*>& scheduled_witness_objects,
   const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
@@ -287,7 +286,7 @@ sync_block_writer::find_new_last_irreversible_block(
   // create a map of each block_id that was the best vote for at least one witness, mapped
   // to the number of witnesses directly voting for it
   // start with the fast-confirms broadcast by each witness
-  const std::map<account_name_type, block_id_type> last_block_generated_by_witness = 
+  const std::map<account_name_type, block_id_type> last_block_generated_by_witness =
     _fork_db.get_last_block_generated_by_each_witness();
   std::map<block_id_type, uint32_t> number_of_approvals_by_block_id;
   for (const witness_object* witness_obj : scheduled_witness_objects)
@@ -359,7 +358,7 @@ sync_block_writer::find_new_last_irreversible_block(
   }
 
   // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
-  const item_ptr main_branch_block = 
+  const item_ptr main_branch_block =
     _fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
 
   result.found_on_another_fork = ( new_last_irreversible_block != main_branch_block );

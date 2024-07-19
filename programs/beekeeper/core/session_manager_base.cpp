@@ -1,5 +1,4 @@
 #include <core/session_manager_base.hpp>
-#include <core/beekeeper_instance_base.hpp>
 
 #include <core/time_manager_base.hpp>
 
@@ -7,9 +6,8 @@
 
 namespace beekeeper {
 
-session_manager_base::session_manager_base()
+session_manager_base::session_manager_base( const time_manager_base::ptr_time_manager_base& time ): time( time )
 {
-  time = std::make_shared<time_manager_base>();
 }
 
 std::shared_ptr<session_base> session_manager_base::get_session( const std::string& token )
@@ -20,16 +18,16 @@ std::shared_ptr<session_base> session_manager_base::get_session( const std::stri
   return _found->second;
 }
 
-std::shared_ptr<session_base> session_manager_base::create_session( const std::optional<std::string>& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
+std::shared_ptr<session_base> session_manager_base::create_session( const std::string& token, const boost::filesystem::path& wallet_directory )
 {
   return std::make_shared<session_base>( content_deliverer, token, time, wallet_directory );
 }
 
-std::string session_manager_base::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint, const boost::filesystem::path& wallet_directory )
+std::string session_manager_base::create_session( const std::optional<std::string>& salt, const boost::filesystem::path& wallet_directory )
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
-  std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time, wallet_directory );
+  std::shared_ptr<session_base> _session = create_session( _token, wallet_directory );
   sessions.emplace( _token, _session );
 
   FC_ASSERT( time );
@@ -40,10 +38,6 @@ std::string session_manager_base::create_session( const std::optional<std::strin
                 FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
 
                 _wallet_mgr->lock_all();
-              },
-              [this]( const std::string& token )
-              {
-                get_session( token )->prepare_notifications();
               }
               );
 
@@ -67,14 +61,9 @@ void session_manager_base::set_timeout( const std::string& token, const std::chr
   get_session( token )->set_timeout( t );
 }
 
-void session_manager_base::check_timeout( const std::string& token )
+void session_manager_base::check_timeout( const std::string& token, bool move_time_forward )
 {
-  get_session( token )->check_timeout();
-}
-
-void session_manager_base::refresh_timeout( const std::string& token )
-{
-  get_session( token )->refresh_timeout();
+  get_session( token )->check_timeout( move_time_forward );
 }
 
 info session_manager_base::get_info( const std::string& token )

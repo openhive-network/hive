@@ -6,12 +6,10 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       main.cpp
                       beekeeper_app.cpp
                       beekeeper_instance.cpp
-                      session.cpp
-                      session_manager.cpp
-                      time_manager.cpp
                       beekeeper_wallet_api.cpp
+                      time_manager.cpp
                       extended_api.cpp
-                      LIBRARIES appbase webserver_plugin hive_utilities beekeeper_core
+                      LIBRARIES appbase webserver_plugin app_status_api_plugin hive_utilities beekeeper_core
 )
 
 target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )

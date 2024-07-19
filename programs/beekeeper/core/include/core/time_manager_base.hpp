@@ -20,13 +20,16 @@ namespace beekeeper {
 
 class time_manager_base
 {
+  public:
+
+    using ptr_time_manager_base = std::shared_ptr<time_manager_base>;
+
   private:
 
     struct session_data
     {
       std::string token;
       types::lock_method_type lock_method;
-      types::notification_method_type notification_method;
       types::timepoint_t time = types::timepoint_t::max();
     };
 
@@ -45,24 +48,14 @@ class time_manager_base
 
     session_data_index items;
 
-  bool run( const types::timepoint_t& now, const session_data& s_data, std::vector<std::string>& modified_items );
-  void modify_times( const std::vector<std::string>& modified_items );
-
-  protected:
-
-    virtual void send_auto_lock_error_message( const std::string& message ){ /*not implemented here*/ };
+  void modify( const std::string& token, const types::timepoint_t& new_time, bool allow_lock );
 
   public:
 
-    time_manager_base();
-    virtual ~time_manager_base();
+    virtual ~time_manager_base(){};
 
-    virtual void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
-    virtual void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
-
-    virtual void run();
-    virtual void run( const std::string& token );
-
+    virtual void add( const std::string& token, types::lock_method_type&& lock_method );
+    virtual void run( const std::string& token, const types::timepoint_t& new_time, bool move_time_forward, bool allow_lock );
     virtual void close( const std::string& token );
 };
 

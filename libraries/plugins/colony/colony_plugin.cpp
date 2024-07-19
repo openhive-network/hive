@@ -10,6 +10,8 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/thread/thread.hpp>
 
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
@@ -711,7 +713,7 @@ void colony_plugin_impl::end_of_sync()
   }
 
   // it won't retrigger anyway, but just in case we should detach from this signal
-  chain::util::disconnect_signal( _end_of_sync_conn );
+  hive::utilities::disconnect_signal( _end_of_sync_conn );
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )

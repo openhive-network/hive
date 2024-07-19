@@ -613,7 +613,7 @@ void dumping_worker::prepareWriter()
     }
   }
 
-chainbase::snapshot_writer::workers 
+chainbase::snapshot_writer::workers
 index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize,
   size_t indexNextId, snapshot_converter_t converter)
   {
@@ -661,7 +661,7 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
     else
       right += ITEMS_PER_WORKER;
     }
-  
+
   return retVal;
   }
 
@@ -818,10 +818,10 @@ void loading_worker::perform_load()
   for(const auto& fileInfo : _manifestInfo.storage_files)
     {
     _reader = std::make_unique< ::rocksdb::SstFileReader>(_controller.get_storage_config());
-    
+
     bfs::path sstFilePath(_inputPath);
     sstFilePath /= fileInfo.relative_path;
-    
+
     auto status = _reader->Open(sstFilePath.string());
     if(status.ok())
       {
@@ -847,7 +847,7 @@ void loading_worker::perform_load()
     }
   }
 
-chainbase::snapshot_reader::workers 
+chainbase::snapshot_reader::workers
 index_dump_reader::prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id)
   {
   _converter = converter;
@@ -1173,7 +1173,7 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   ::rocksdb::Options dbOptions;
   dbOptions.create_if_missing = false;
   dbOptions.max_open_files = 1024;
-  
+
   ::rocksdb::ColumnFamilyDescriptor cfDescriptor;
   cfDescriptor.name = "INDEX_MANIFEST";
 
@@ -1219,7 +1219,7 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   ilog("Attempting to read snapshot manifest from opened database...");
 
   snapshot_manifest retVal;
-  
+
   {
     ::rocksdb::ReadOptions rOptions;
 
@@ -1445,7 +1445,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   {
     FC_ASSERT(bfs::is_empty(actualStoragePath), "Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
   }
-  
+
   const auto& indices = _mainDb.get_abstract_index_cntr();
   ilog("Attempting to dump contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
   std::vector<std::unique_ptr<index_dump_writer>> builtWriters;
@@ -1486,7 +1486,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     bfs::create_directories(external_data_storage_base_path);
 
   snapshot_dump_supplement_helper dump_helper;
-  
+
   hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
 
   _mainDb.notify_prepare_snapshot_data_supplement(notification);
@@ -1628,7 +1628,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   }
 
   auto last_irr_block = std::get<5>(snapshotManifest);
-  
+
   _mainDb.set_last_irreversible_block_num(last_irr_block);
   if(lib)
     _mainDb.set_last_irreversible_block_data( lib );
@@ -1667,16 +1667,16 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
   {
     if(_do_immediate_load)
     {
-      _self.get_app().notify_status("loading snapshot");
+      _self.get_app().status.save_status("loading snapshot");
       load_snapshot(_snapshot_name, openArgs);
-      _self.get_app().notify_status("finished loading snapshot");
+      _self.get_app().status.save_status("finished loading snapshot");
     }
 
     if(_do_immediate_dump)
     {
-      _self.get_app().notify_status("dumping snapshot");
+      _self.get_app().status.save_status("dumping snapshot");
       prepare_snapshot(_snapshot_name);
-      _self.get_app().notify_status("finished dumping snapshot");
+      _self.get_app().status.save_status("finished dumping snapshot");
     }
   }
 

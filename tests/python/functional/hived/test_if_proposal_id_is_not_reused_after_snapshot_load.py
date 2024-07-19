@@ -29,6 +29,9 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
     init_node.run()
     wallet = tt.Wallet(attach_to=init_node)
 
+    # This wait is added to avoid situation, when gdpo is called on non existing block 0
+    init_node.wait_number_of_blocks(blocks_to_wait=2)
+
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100), hbds=tt.Asset.Tbd(100))
     wallet.api.post_comment("alice", "permlink", "", "parent-permlink", "title", "body", "{}")
 

@@ -4,13 +4,15 @@
 
 #include <core/wallet_content_handler.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
+#include <core/session_manager_base.hpp>
 
-#include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
+#include <beekeeper/time_manager.hpp>
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
 using wallet_content_handler    = beekeeper::wallet_content_handler;
-using session_manager           = beekeeper::session_manager;
+using session_manager_base      = beekeeper::session_manager_base;
+using time_manager              = beekeeper::time_manager;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 
 namespace test_utils
@@ -53,8 +55,8 @@ namespace test_utils
 
     beekeeper_wallet_manager create_wallet( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
     {
-      return beekeeper_wallet_manager(  std::make_shared<session_manager>( "" ),
-                                        std::make_shared<beekeeper_instance>( app, dir, "" ),
+      return beekeeper_wallet_manager(  std::make_shared<session_manager_base>( std::make_shared<time_manager>() ),
+                                        std::make_shared<beekeeper_instance>( app, dir ),
                                         dir,
                                         cmd_unlock_timeout,
                                         cmd_session_limit,
@@ -64,8 +66,8 @@ namespace test_utils
 
     std::shared_ptr<beekeeper_wallet_manager> create_wallet_ptr( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
     {
-      return std::shared_ptr<beekeeper_wallet_manager>( new beekeeper_wallet_manager( std::make_shared<session_manager>( "" ),
-                                                                                      std::make_shared<beekeeper_instance>( app, dir, "" ),
+      return std::shared_ptr<beekeeper_wallet_manager>( new beekeeper_wallet_manager( std::make_shared<session_manager_base>( std::make_shared<time_manager>() ),
+                                                                                      std::make_shared<beekeeper_instance>( app, dir ),
                                                                                       dir,
                                                                                       cmd_unlock_timeout,
                                                                                       cmd_session_limit,

@@ -52,7 +52,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
 
     node.dump_snapshot(close=True)
     node.close()
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         assert error_message in file.read(999999)
         """
     for line in file:

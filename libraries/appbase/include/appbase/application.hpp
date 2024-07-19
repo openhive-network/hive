@@ -2,10 +2,12 @@
 #include <appbase/plugin.hpp>
 #include <appbase/signals_handler.hpp>
 
+#include <fc/io/json.hpp>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <iostream>
@@ -23,7 +25,7 @@ namespace appbase {
 
   class application;
 
-  class initialization_result 
+  class initialization_result
   {
     public:
       enum result {
@@ -83,7 +85,7 @@ namespace appbase {
         * @return true if the application and plugins were initialized, false or exception on error
         */
       template< typename... Plugin >
-      initialization_result initialize( int argc, char** argv, 
+      initialization_result initialize( int argc, char** argv,
         const bpo::variables_map& arg_overrides = bpo::variables_map() )
       {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... }, arg_overrides );
@@ -175,7 +177,7 @@ namespace appbase {
       template< typename Impl >
       friend class plugin;
 
-      initialization_result initialize_impl( int argc, char** argv, 
+      initialization_result initialize_impl( int argc, char** argv,
         vector< abstract_plugin* > autostart_plugins, const bpo::variables_map& arg_overrides );
 
       abstract_plugin* find_plugin( const string& name )const;
@@ -215,8 +217,6 @@ namespace appbase {
 
       std::atomic_bool _is_interrupt_request{false};
 
-      mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
-
       bool is_finished = false;
 
       /*
@@ -229,48 +229,7 @@ namespace appbase {
     public:
 
       finish_request_type finish_request;
-
-      void notify_status(const fc::string& current_status) const noexcept;
-      void notify_error(const fc::string& error_message) const noexcept;
-      void setup_notifications(const boost::program_options::variables_map &args) const;
-
-      template <typename... KeyValuesTypes>
-      inline void notify(
-          const fc::string &name,
-          KeyValuesTypes &&...key_value_pairs) const noexcept
-      {
-        hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
-        });
-      }
-
-      inline void notify(
-          const fc::string &name,
-          hive::utilities::notifications::collector_t&& collector) const noexcept
-      {
-
-        hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
-          );
-        });
-      }
-
-      template <typename... KeyValuesTypes>
-      static inline void dynamic_notify(
-          hive::utilities::notifications::notification_handler_wrapper& handler,
-          const fc::string &name,
-          KeyValuesTypes &&...key_value_pairs)
-      {
-        hive::utilities::notifications::error_handler([&]{
-          handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
-        });
-      }
-
+      hive::utilities::statuses_signal_manager status;
   };
 
   template< typename Impl >

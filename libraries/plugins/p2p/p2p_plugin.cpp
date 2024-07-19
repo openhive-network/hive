@@ -93,7 +93,7 @@ public:
       elog("Swallowing exceptions from shutdown_helper");
     }
     ilog("P2P plugin was closed...");
-    theApp.notify_status("P2P stopped");
+    theApp.status.save_status("P2P stopped");
   }
 
   bool is_included_block(const block_id_type& block_id);
@@ -319,7 +319,7 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    std::shared_ptr<hive::chain::full_block_type> block = 
+    std::shared_ptr<hive::chain::full_block_type> block =
       chain.block_reader().fetch_block_by_id(block_id);
     return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
@@ -363,7 +363,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
   uint32_t block_num = block_header::num_from_id(block_id);
   try
   {
-    block_id_type block_id_in_preferred_chain = 
+    block_id_type block_id_in_preferred_chain =
       chain.block_reader().find_block_id_for_num(block_num);
     return block_id == block_id_in_preferred_chain;
   }
@@ -520,16 +520,14 @@ void p2p_plugin::plugin_startup()
     });
     my->node->sync_from(graphene::net::item_id(graphene::net::block_message_type, block_id), std::vector<uint32_t>());
     ilog("P2P node listening at ${ep}", ("ep", my->node->get_actual_listening_endpoint()));
-    get_app().notify( "P2P listening",
-    // {
-        "type", "p2p",
-        "address", static_cast<fc::string>(my->node->get_actual_listening_endpoint().get_address()),
-        "port", my->node->get_actual_listening_endpoint().port()
-    // }
+    get_app().status.save_webserver(
+      "P2P",
+      static_cast<fc::string>(my->node->get_actual_listening_endpoint().get_address()),
+      my->node->get_actual_listening_endpoint().port()
     );
   }).wait();
   ilog( "P2P Plugin started" );
-  get_app().notify_status("P2P started");
+  get_app().status.save_status("P2P started");
 }
 
 void p2p_plugin::plugin_pre_shutdown() {
@@ -548,11 +546,11 @@ void p2p_plugin::plugin_pre_shutdown() {
   }
   catch (const fc::exception& e)
   {
-    // if shutdown fails, maybe because there are unprocessed blocks in the 
+    // if shutdown fails, maybe because there are unprocessed blocks in the
     // write queue and the write thread didn't finish processing them before
     // the timeout expired, swallow the exception and try to continue
     // shutting down the p2p plugin.  There's a small chance this will cause
-    // a crash, but if we let the exception leak then we're guaranteed to 
+    // a crash, but if we let the exception leak then we're guaranteed to
     // exit uncleanly.
     elog("P2P shutdown timed out before all blocks/transactions were processed: ${e}", (e));
   }

@@ -20,7 +20,7 @@ def pytest_addoption(parser: pytest.Parser):
 
 @pytest.fixture(autouse=True)
 def _disable_logging() -> None:
-    logger.disable("helpy")
+    logger.enable("helpy")
 
 
 @pytest.fixture()

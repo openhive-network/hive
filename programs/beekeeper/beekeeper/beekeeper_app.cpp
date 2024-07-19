@@ -1,11 +1,12 @@
 #include <beekeeper/beekeeper_app.hpp>
-#include <beekeeper/session_manager.hpp>
+#include <beekeeper/time_manager.hpp>
 
 #include <core/beekeeper_wallet_manager.hpp>
 
 #include <fc/value_set.hpp>
 
 #include <hive/plugins/webserver/webserver_plugin.hpp>
+#include <hive/plugins/app_status_api/app_status_api_plugin.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -30,8 +31,6 @@ beekeeper_app::~beekeeper_app()
 
 void beekeeper_app::set_program_options()
 {
-  hive::utilities::notifications::add_program_options( options_cfg );
-
   options_cli.add_options()
     ("export-keys-wallet", boost::program_options::value< std::vector<std::string> >()->composing()->multitoken(),
       "Export explicitly private keys to a local file `wallet_name.keys`. Both [name, password] are required for every wallet. By default is empty."
@@ -60,7 +59,7 @@ struct keys_container
   std::string private_key;
 };
 
-bool beekeeper_app::save_keys( const std::optional<std::string>& notification, const std::string& wallet_name, const std::string& wallet_password )
+bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string& wallet_password )
 {
   bool _result = true;
 
@@ -72,7 +71,7 @@ bool beekeeper_app::save_keys( const std::optional<std::string>& notification, c
   ilog( "*****Saving keys into `${_filename}` file*****", (_filename) );
 
   ilog( "Create a session" );
-  std::string _token = wallet_manager_ptr->create_session( "salt", notification );
+  std::string _token = wallet_manager_ptr->create_session( "salt" );
 
   auto _save_keys = [&]()
   {
@@ -88,7 +87,7 @@ bool beekeeper_app::save_keys( const std::optional<std::string>& notification, c
     {
       return keys_container{ beekeeper::utility::public_key::to_string( item ), item.second.first.key_to_wif() };
     } );
-    
+
     ilog( "Save keys into `${_filename}` file", (_filename) );
     fc::path _file( _filename );
     fc::json::save_to_file( _v, _file );
@@ -154,9 +153,11 @@ init_data beekeeper_app::initialize( int argc, char** argv )
   app.set_version_string( check_version() );
 
   app.register_plugin<hive::plugins::webserver::webserver_plugin>();
+  app.register_plugin<hive::plugins::app_status_api::app_status_api_plugin>();
 
   auto initializationResult = app.initialize<
-                                hive::plugins::webserver::webserver_plugin >
+                                hive::plugins::webserver::webserver_plugin,
+                                hive::plugins::app_status_api::app_status_api_plugin>
                               ( argc, argv );
   start_loop = initializationResult.should_start_loop();
 
@@ -173,7 +174,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
 
-    app.notify_status( "beekeeper is starting" );
+    instance->get_app().status.save_status( "beekeeper is starting" );
 
     return _initialization;
   }
@@ -194,7 +195,7 @@ void beekeeper_app::start()
   if( !app.is_interrupt_request() )
   {
     _webserver_plugin.start_webserver();
-    app.notify_status( "beekeeper is ready" );
+    app.status.save_status( "beekeeper is ready" );
   }
 
   ilog("beekeeper is waiting");
@@ -214,15 +215,6 @@ bfs::path beekeeper_app::get_data_dir() const
 
 void beekeeper_app::setup( const boost::program_options::variables_map& args )
 {
-  app.setup_notifications( args );
-
-  if( args.count("notifications-endpoint") )
-  {
-    auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
-    if( !_notifications.empty() )
-      notifications_endpoint = *_notifications.begin();
-  }
-
   FC_ASSERT( args.count("unlock-interval") );
   unlock_interval = args.at("unlock-interval").as<uint64_t>();
 }
@@ -237,7 +229,7 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 
   for( auto& item : _items )
   {
-    _result = save_keys( notifications_endpoint, item.first, item.second );
+    _result = save_keys( item.first, item.second );
     if( !_result )
       break;
   }
@@ -250,8 +242,8 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
 {
-  instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, notifications_endpoint );
-  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
+  instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir );
+  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>( std::make_shared<time_manager>() ), instance,
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
                                                                        [this]() { app.kill(); } );
 }

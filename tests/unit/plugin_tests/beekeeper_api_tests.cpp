@@ -7,7 +7,6 @@
 
 #include <core/beekeeper_wallet_manager.hpp>
 
-#include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/beekeeper_wallet_api.hpp>
 
@@ -19,7 +18,7 @@
 using namespace hive::chain;
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
-using session_manager           = beekeeper::session_manager;
+using session_manager           = beekeeper::session_manager_base;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 using beekeeper_wallet_api      = beekeeper::beekeeper_wallet_api;
 
@@ -78,7 +77,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
     };
 
     //************preparation************
-    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token;
     for( size_t i = 0; i < _wallets.size(); ++i )
     {
       auto _password = _api.create( beekeeper::create_args{ _token, _wallets[i].name } ).password;
@@ -196,7 +195,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
     std::string _public_key                 = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
     hive::protocol::digest_type _sig_digest = hive::protocol::digest_type( "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff" );
 
-    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token;
     auto _password = _api.create( beekeeper::create_args{ _token, _wallet_name } ).password;
     BOOST_REQUIRE( !_password.empty() );
 
@@ -401,7 +400,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions_create_close)
 
         try
         {
-          _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+          _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token );
         }
         catch( const fc::exception& e )
         {
@@ -494,7 +493,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+              _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token );
             }
             catch( const fc::exception& e )
             {
@@ -591,7 +590,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
     uint64_t _interval = 500;
     beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
 
-    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token;
 
     std::vector<std::shared_ptr<std::thread>> threads;
 
@@ -653,7 +652,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_performance_sign_transaction)
     std::string _public_key                 = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
     hive::protocol::digest_type _sig_digest = hive::protocol::digest_type( "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff" );
 
-    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+    std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token;
     auto _password = _api.create( beekeeper::create_args{ _token, _wallet_name } ).password;
     BOOST_REQUIRE( !_password.empty() );
 
@@ -727,7 +726,7 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization_threads)
     std::vector<std::string> _tokens;
 
     for( size_t i = 0; i < _nr_threads; ++i )
-      _tokens.emplace_back( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+      _tokens.emplace_back( _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token );
 
     auto _password  = _api.create( beekeeper::create_args{ _tokens[0], _wallet_name } ).password;
 

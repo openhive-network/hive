@@ -8,13 +8,12 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <hive/utilities/notifications.hpp>
 
 #include <string>
 
 namespace beekeeper
 {
-  using collector_t = hive::utilities::notifications::collector_t;
+  using data_collector = hive::utilities::statuses;
 
   class beekeeper_instance: public beekeeper_instance_base
   {
@@ -24,32 +23,23 @@ namespace beekeeper
 
       appbase::application& app;
 
-      boost::filesystem::path pid_file;
-      boost::filesystem::path connection_file;
       boost::filesystem::path lock_path_file;
 
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
-      std::optional<std::string> error_notifications_endpoint;
 
       void start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t );
       void initialize_lock();
 
-      template<typename content_type>
-      void write_to_file( const boost::filesystem::path& file_name, const content_type& content );
-
-      fc::variant read_file( const boost::filesystem::path& file_name );
-
-      void save_pid();
-
-      void send_fail_notification();
-
     public:
 
-      beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::optional<std::string>& notifications_endpoint );
+      beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory );
       ~beekeeper_instance() override;
 
-      bool start() override;
+      appbase::application& get_app()
+      {
+        return app;
+      }
 
-      void save_connection_details( const collector_t& values );
+      bool start() override;
   };
 }
