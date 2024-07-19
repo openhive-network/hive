@@ -133,7 +133,6 @@ int main( int argc, char** argv )
 
     if( !initializationResult.should_start_loop() ) 
       return initializationResult.get_result_code();
-    else theApp.notify_status("starting");
 
     _started_loop = true;
 

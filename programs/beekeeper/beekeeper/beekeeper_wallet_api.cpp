@@ -200,7 +200,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, create_session )
 {
   std::unique_lock guard( _mtx_handler->get_mutex() );
 
-  return { _wallet_mgr->create_session( args.salt, args.notifications_endpoint ) };
+  return { _wallet_mgr->create_session( args.salt ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, close_session )
