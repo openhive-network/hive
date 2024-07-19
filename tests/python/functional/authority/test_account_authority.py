@@ -107,3 +107,109 @@ def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice:
                 memo=tt.Account("alice", secret="memo").public_key,
             )
         assert "missing required owner authority" in exception.value.error
+
+
+@run_for("testnet")
+def test_sign_owner_required_transaction_by_account_authority(
+    node: tt.InitNode, initminer_wallet: tt.Wallet, bob: Account, carol: Account
+) -> None:
+    """
+           ● owner -> carol (account_auth)
+           │
+    bob ── ● active
+           │
+           ● posting
+    """
+    bob.wallet.api.import_key(tt.PrivateKey(account_name=bob.name, secret="owner"))
+    assert len(bob.wallet.api.list_keys()) == 1, "Bob's wallet has an incorrect number of imported keys. Expected 1"
+
+    bob.wallet.api.update_account_auth_account(bob.name, "owner", carol.name, 1)
+    assert (
+        len(get_authority(node, bob.name, authority_level="owner").account_auths) == 1
+    ), "Bob's owner-account_auths is not set"
+
+    carol.wallet.api.import_key(tt.PrivateKey(account_name=carol.name, secret="active"))
+    carol.wallet.api.import_key(tt.PrivateKey(account_name=carol.name, secret="owner"))
+    assert len(carol.wallet.api.list_keys()) == 2, "Carol's wallet has an incorrect number of imported keys. Expected 2"
+
+    # carol signing an `bob - owner type - operation` using carol - active authority
+    carol.wallet.api.update_account(
+        bob.name,
+        "{}",
+        tt.PublicKey("account", secret="new-owner-key"),
+        tt.PublicKey("account", secret="active"),
+        tt.PublicKey("account", secret="posting"),
+        tt.PublicKey("account", secret="memo"),
+    )
+
+
+@run_for("testnet")
+def test_signing_with_circular_account_authority(
+    node: tt.InitNode, initminer_wallet: tt.Wallet, bob: Account, carol: Account
+) -> None:
+    """
+     ■─────────────────────────────────────────────────────────────■
+     │                                                             │
+     │     ● owner -> carol (account_auth) ■────■      ● owner -> bob (account_auth)
+     ↓     │                                    ↓      │
+    bob ── ● active                           carol ── ● active
+           │                                           │
+           ● posting                                   ● posting
+    """
+    initminer_wallet.api.import_keys(
+        [tt.PrivateKey(account_name=bob.name, secret="owner"), tt.PrivateKey(account_name=carol.name, secret="owner")]
+    )
+
+    bob.wallet.api.import_key(tt.PrivateKey(account_name=bob.name, secret="active"))
+    assert len(bob.wallet.api.list_keys()) == 1, "Bob's wallet has an incorrect number of imported keys. Expected 1"
+
+    initminer_wallet.api.update_account_auth_account(bob.name, "owner", carol.name, 1)
+    assert (
+        len(get_authority(node, bob.name, authority_level="owner").account_auths) == 1
+    ), "Bob's owner-account_auths is not set"
+
+    initminer_wallet.api.update_account_auth_account(carol.name, "owner", bob.name, 1)
+    assert (
+        len(get_authority(node, carol.name, authority_level="owner").account_auths) == 1
+    ), "Carol's owner-account_auths is not set"
+
+    # bob trying broadcast a self - owner type operation (by active authority)
+    bob.wallet.api.use_authority("active", bob.name)
+    decline_voting_rights = bob.wallet.api.decline_voting_rights(bob.name, True, broadcast=False)
+    with pytest.raises(tt.exceptions.CommunicationError):
+        bob.wallet.api.sign_transaction(decline_voting_rights)
+
+    """
+     ■─────────────────────────────────────────────────────────────■─────────────────────■
+     │                                                             │                     │
+     │     ● owner -> carol (account_auth) ■────■      ● owner -> bob (account_auth)     │
+     ↓     │                                    ↓      │                                 │
+    bob ── ● active                           carol ── ● active -> bob (account_auth) ───■
+           │                                           │
+           ● posting                                   ● posting
+    """
+    # bob as carols owner account authority set carols active authority to redirect to bob
+    bob.wallet.api.use_authority("active", bob.name)
+    bob.wallet.api.update_account_auth_account(carol.name, "active", bob.name, 1)
+    assert (
+        len(get_authority(node, carol.name, authority_level="active").account_auths) == 1
+    ), "Carol's active-account_auths is not set"
+
+    # now bob can sign owner type operation (use active bob authority)
+    bob.wallet.api.use_authority("active", bob.name)
+    bob.wallet.api.sign_transaction(decline_voting_rights)
+
+
+@run_for("testnet")
+def test_automatic_transaction_signing_by_key_with_higher_authority_level(
+    node: tt.InitNode, initminer_wallet: tt.Wallet, bob: Account
+) -> None:
+    """https://gitlab.syncad.com/hive/hive/-/issues/703"""
+    bob.wallet.api.import_key(tt.PrivateKey(account_name=bob.name, secret="active"))
+
+    bob.wallet.api.use_automatic_authority()
+
+    post = bob.wallet.api.post_comment(bob.name, "test-permlink", "", "someone", "title", "body", "{}", broadcast=False)
+    with pytest.raises(tt.exceptions.CommunicationError) as error:
+        bob.wallet.api.sign_transaction(post)
+    assert "missing required posting authority" in error.value.error
