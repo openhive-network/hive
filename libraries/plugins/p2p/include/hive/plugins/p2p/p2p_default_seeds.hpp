@@ -18,7 +18,6 @@ const std::vector< std::string > default_seeds = {
   "node.mahdiyari.info:2001",            // mahdiyari
   "hive-seed.lukestokes.info:2001",      // lukestokes.mhth
   "seed.deathwing.me:2001",              // deathwing
-  "seed.mintrawa.com:2001",              // mintrawa
   "hive-seed.actifit.io:2001",           // actifit
   "seed.shmoogleosukami.co.uk:2001",     // shmoogleosukami
   "hiveseed.rishipanthee.com:2001"       // rishi556
