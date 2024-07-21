@@ -1,10 +1,18 @@
+# Hive
+
+[![GitLab](https://img.shields.io/badge/Development%20on-Community%20GitLab-orange)](https://gitlab.syncad.com/hive/hive)
+
+This project is primarily developed on a community-hosted GitLab instance. Please visit the [community GitLab repository](https://gitlab.syncad.com/hive/hive) for the latest updates, issues, and contributions.
+
 # Please Read
 
-Please read these instructions before submitting issues to the Hive GitHub repository. The issue tracker is for bugs and specific implementation discussion **only**. It should not be used for other purposes, as described below.
+Please read these instructions before submitting issues to the Hive repository. The issue tracker is for bugs and specific implementation discussion **only**. It should not be used for other purposes, as described below.
 
-## Bug Reports
+#### **Did you find a bug?**
 
-If there is an existing feature that is not working correctly, or a glitch in the blockchain that is impacting user behaviour - please open an issue to report variance. Include as much relevant information as you can, including screen shots or log output when applicable, and steps to reproduce the issue.
+* **Do not open up a GitLab/GitHub issue if the bug is a security vulnerability, and instead please email it to [outreach+security@hive.io](mailto:outreach+security@hive.io)
+* **Ensure the bug was not already reported** by searching on community GitLab under [Issues](https://gitlab.syncad.com/hive/hive/-/issues).
+* If there is an existing feature that is not working correctly, or a glitch in the blockchain that is impacting user behaviour - please open an issue to report variance. Include as much relevant information as you can, including screen shots or log output when applicable, and steps to reproduce the issue.
 
 ## Enhancement Suggestions
 
@@ -17,10 +25,6 @@ The developers frequently open issues to discuss changes that are being worked o
 Issues opened that devolve into lengthy discussion of minor site features will be closed or locked.  The issue tracker is not a general purpose discussion forum.
 
 This is not the place to make suggestions for product improvement (please see the Enhancement Suggestions section above for this). If you are not planning to work on the change yourself - do not open an issue for it.
-
-## Duplicate Issues
-
-Please do a keyword search to see if there is already an existing issue before opening a new one.
 
 ## Pull Requests
 
