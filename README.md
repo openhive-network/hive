@@ -66,6 +66,8 @@ If you'd like to use our pre-built official binary images, download them from th
 docker pull hiveio/hive:1.27.6
 ```
 
+Please note that the `latest` tag is not supported; you must specify the version tag explicitly, in order to avoid problems for new versions that require replay.
+
 A script is available that wraps a `docker run` statement and emulates direct hived usage: [run_hived_img.sh](scripts/run_hived_img.sh). This script is the recommended way to launch the hived docker container:
 
 General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`
