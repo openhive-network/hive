@@ -60,12 +60,11 @@ However, if you prefer to build from source, we also provide [build instructions
 
 Building a `hived` docker image is described in detail here: [Building under Docker](doc/building.md#building-under-docker).
 
-If you'd like to use our pre-built official binary images, simply download them from the Docker Hub registry with this command:
+If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.27.6, run:
 
 ```
-docker pull hiveio/hive
+docker pull hiveio/hive:1.27.6
 ```
-
 
 A script is available that wraps a `docker run` statement and emulates direct hived usage: [run_hived_img.sh](scripts/run_hived_img.sh). This script is the recommended way to launch the hived docker container:
 
