@@ -8,11 +8,11 @@ This project is primarily developed on a community-hosted GitLab instance. Pleas
 
 Hive is a Graphene-based social blockchain that was created as a fork of Steem and born on the core idea of decentralization. Originally, Hive was announced on the [Steem blockchain](https://peakd.com/communityfork/@hiveio/announcing-the-launch-of-hive-blockchain) prior to the initial token airdrop. Hive did not have any ICO or mining period.
 
-The Hive blockchain removes the elements of centralization and imbalanced control that plagued the Steem blockchain. Since it’s launch on March 20, 2020, Hive is growing and evolving day by day. Hive's prime selling points are its decentralization, 3 second transaction speed and ability to handle large volumes. It is ideal real estate for a variety of innovative projects focused on a broad range of fields, from open source development to games.
+The Hive blockchain eliminates the elements of centralization and imbalanced control that plagued the Steem blockchain. Since its launch on March 20, 2020, Hive has been continuously growing and evolving. Hive's prime selling points are its decentralization, 3-second transaction speed, and ability to handle large volumes. It is an ideal platform for a variety of innovative projects focused on a broad range of fields, from open source development to games.
 
-Hive serves as the operational home for all kinds of projects, companies, and applications. Having a highly active and passionate community, Hive has become a thriving atmosphere for new and experienced developers to quickly bootstrap their applications. On top of this, Hive is extremely rewarding to content creators and curators alike.
+Hive serves as the operational home for all kinds of projects, companies, and applications. With a highly active and passionate community, Hive has become a thriving environment for both new and experienced developers to quickly bootstrap their applications. On top of this, Hive is extremely rewarding to content creators and curators alike.
 
-The technical development of the Hive blockchain itself is carried out by the founding decentralized group of over 30 open source developers, many of whom were instrumental in creating Steem back in 2016, and supported by a growing community of additional open source developers and witnesses.
+The technical development of the Hive blockchain is carried out by a founding decentralized group of over 30 open source developers, many of whom were instrumental in creating Steem back in 2016. This core team is supported by a growing community of additional open source developers and witnesses.
 
 ## Documents
 
@@ -24,6 +24,7 @@ The technical development of the Hive blockchain itself is carried out by the fo
 * Truly Decentralized Community
 * Free Transactions (Resource Credits = Freemium Model)
 * Fast Block Confirmations (3 seconds)
+* One Block Irreversibility
 * Time Delay Security (Vested Hive & Savings)
 * Hierarchical Role Based Permissions (Keys)
 * Integrated Token Allocation
@@ -43,23 +44,23 @@ The technical development of the Hive blockchain itself is carried out by the fo
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use pre-built docker-images, build with docker manually, or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 22.04 LTS.
+Getting started with Hive is fairly simple. You can either choose to use pre-built Docker images, build with Docker manually, or build from source directly. All steps have been documented and while many different OSes are supported, the easiest one is Ubuntu 22.04 LTS.
 
 ## Quickstart
 
-Just want to get up and running quickly? We have pre-built Docker images for your convenience. More details are in our [Quickstart Guide](doc/exchangequickstart.md).
+Want to get up and running quickly? We offer pre-built Docker images for your convenience. More details can be found in our [Quickstart Guide](doc/exchangequickstart.md).
 
 ## Building
 
-We **strongly** recommend using one of the pre-built Docker images or using docker to build Hive. Both of these processes are described in the [Quickstart Guide](doc/exchangequickstart.md).
+We **strongly** recommend using one of the pre-built Docker images or building Hive using Docker. Both processes are described in the [Quickstart Guide](doc/exchangequickstart.md).
 
-But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS).
+However, if you prefer to build from source, we also provide [build instructions](doc/building.md) for Linux (Ubuntu LTS).
 
 ## Dockerized deployment
 
-Building a hived docker image is described here: [Building under Docker](doc/building.md#building-under-docker)
+Building a `hived` docker image is described in detail here: [Building under Docker](doc/building.md#building-under-docker).
 
-If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
+If you'd like to use our pre-built official binary images, simply download them from the Docker Hub registry with this command:
 
 ```
 docker pull hiveio/hive
