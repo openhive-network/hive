@@ -4,7 +4,7 @@
 
 ### Releases
 
-There are two release procedures, depending on if the release is a major or minor release. Every major release (i.e. change from 1.26.0 -> 1.27.0) enforces a hard fork and earlier hived versions will stop working when the hard fork is triggered. If the release is a minor release, i.e. 1.27.0 -> 1.27.1, hived versions coming from 1.27.x release line will work together, altough upgrading from one version to another may require a full replay of the hived node. Every release should have a proper tag created for it (tagging a commit in the `master` branch).
+There are two release procedures, depending on if the release is a major or minor release. Every major release (i.e. change from 1.26.x -> 1.27.0) enforces a hard fork and earlier hived versions will stop working when the hard fork is triggered. If the release is a minor release, i.e. 1.27.0 -> 1.27.1, hived versions coming from 1.27.x release line will work together, altough upgrading from one version to another may require a full replay of the hived node. Every release should have a proper tag created for it (tagging a commit in the `master` branch).
 
 ### Feature Branches
 
