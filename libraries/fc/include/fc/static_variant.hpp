@@ -269,7 +269,9 @@ public:
          impl::position<X, Types...>::pos != -1,
          "Type not in static_variant."
        );
-       static const int64_t value = impl::position<X, Types...>::pos;
+       /// As defined in C++ 17 spec, to enable static variables auto instantiation (inlining) they shall be declared as constexpr 
+       /// See https://en.cppreference.com/w/cpp/language/static
+       static constexpr int64_t value = impl::position<X, Types...>::pos;
     };
     static_variant(int64_t t = 0)
       : _tag( t )
