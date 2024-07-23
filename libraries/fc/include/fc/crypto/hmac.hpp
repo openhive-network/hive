@@ -33,6 +33,7 @@ namespace fc {
                 return encoder.result();
             }
 
+            typedef H hash_type;
         private:
             void add_key( const char* c, const uint32_t c_len, char pad )
             {

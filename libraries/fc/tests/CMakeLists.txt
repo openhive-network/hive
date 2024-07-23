@@ -65,6 +65,7 @@ add_executable( all_tests all_tests.cpp
                           crypto/blowfish_test.cpp
                           crypto/rand_test.cpp
                           crypto/sha_tests.cpp
+                          crypto/pbkdf2_tests.cpp
                           network/ntp_test.cpp
                           network/http/websocket_test.cpp
                           thread/task_cancel.cpp

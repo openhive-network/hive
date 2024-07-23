@@ -195,6 +195,7 @@ set( fc_minimal_sources
      src/crypto/base58.cpp
      src/crypto/city.cpp
      src/crypto/crc.cpp
+     src/crypto/bip39.cpp
      src/crypto/crypto_data.cpp
      src/io/json.cpp
      src/io/datastream.cpp
