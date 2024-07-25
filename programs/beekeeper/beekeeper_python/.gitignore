@@ -189,3 +189,4 @@ pip-selfcheck.json
 
 **/generated_*
 **/beekeeper
+!beekeeper/*

@@ -1,33 +1,46 @@
+files: "^programs/beekeeper/beekeeper_python"
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
+        args: [ "--enforce-all" ]
       - id: check-merge-conflict
       - id: check-yaml
+        args: [ "--unsafe" ]
       - id: check-json
       - id: pretty-format-json
         args: [ "--autofix" ]
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.6.1
+    rev: 1.7.1
     hooks:
       - id: poetry-lock
         name: checking if poetry.lock is consistent with pyproject.toml
-        args: [ "--no-update" ]
-        language_version: python3.10
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.277'
+        args: [ "--directory", "programs/beekeeper/beekeeper_python", "--no-update" ]
+  - repo: https://github.com/lk16/detect-missing-init
+    rev: v0.1.6
     hooks:
-      - id: ruff
-        name: linting code with Ruff
-        args: [ "--fix" ]
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
+      - id: detect-missing-init
+        args: ["--create", "--python-folders", "^programs/beekeeper/beekeeper_python/beekeepy/**"]
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 24.2.0
     hooks:
       - id: black
         name: format code using black
+        args: [ "--config", "programs/beekeeper/beekeeper_python/.pre-commit-config.yaml" ]
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.2.2'
+    hooks:
+      - id: ruff
+        name: linting code with Ruff
+        args: [ "--config", "programs/beekeeper/beekeeper_python/.pre-commit-config.yaml", "--fix" ]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.4
+    hooks:
+    - id: codespell
   - repo: local
     hooks:
     - id: mypy
@@ -35,3 +48,4 @@ repos:
       entry: mypy
       language: system
       types: [ python ]
+      args: [ "--config-file", "programs/beekeeper/beekeeper_python/.pre-commit-config.yaml" ]
