@@ -47,6 +47,14 @@ class UnlockedWallet(Wallet, ContextAsync["UnlockedWallet"], ABC):
     @abstractmethod
     async def has_matching_private_key(self, *, key: PublicKey) -> bool: ...
 
+    @abstractmethod
+    async def encrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str, nonce: int = 0) -> str:
+        ...
+
+    @abstractmethod
+    async def decrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str) -> str:
+        ...
+
     async def _aenter(self) -> UnlockedWallet:
         return self
 

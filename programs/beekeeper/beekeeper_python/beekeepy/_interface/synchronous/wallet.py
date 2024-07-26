@@ -74,3 +74,15 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
     @wallet_unlocked
     def has_matching_private_key(self, *, key: PublicKey) -> bool:
         return self._beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=key).exists
+
+    @wallet_unlocked
+    def encrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str, nonce: int = 0) -> str:
+        return self._beekeeper.api.encrypt_data(
+            wallet_name=self.name, from_public_key=from_key, to_public_key=to_key, content=content, nonce=nonce
+        ).encrypted_content
+
+    @wallet_unlocked
+    def decrypt_data(self, *, from_key: PublicKey, to_key: PublicKey, content: str) -> str:
+        return self._beekeeper.api.decrypt_data(
+            wallet_name=self.name, from_public_key=from_key, to_public_key=to_key, encrypted_content=content
+        ).decrypted_content
