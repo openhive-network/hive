@@ -1181,3 +1181,32 @@ prepare_universal_block_logs_image:
     - echo "Created and push docker image with universal block logs"
   tags:
     - public-runner-docker
+
+copy_universal_block_logs_to_cache:
+  stage: build
+  extends: .docker_image_builder_job
+  needs:
+    - job: prepare_universal_block_logs_image
+  variables:
+    UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs"
+  script:
+    - container_id=$(docker create --name tmp_container $CI_DOCKER_REGISTRY/hive/hive/universal-block-logs:latest bash)
+    - if [ -z "$container_id" ]; then
+        echo "Failed to create Docker container";
+        exit 1;
+      fi
+    - mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - rm -rf *
+    - echo "Docker container created with ID $container_id"
+    - docker cp tmp_container:/block_log_open_sign $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - docker cp tmp_container:/block_log_single_sign $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - docker cp tmp_container:/block_log_multi_sign $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - docker rm tmp_container
+    - tree $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - echo "UNIVERSAL_BLOCK_LOGS_CACHE_DIR=$UNIVERSAL_BLOCK_LOGS_CACHE_DIR" >> $CI_PROJECT_DIR/universal_block_logs.env
+  artifacts:
+    reports:
+      dotenv:
+        - $CI_PROJECT_DIR/universal_block_logs.env
+  tags:
+    - public-runner-docker
