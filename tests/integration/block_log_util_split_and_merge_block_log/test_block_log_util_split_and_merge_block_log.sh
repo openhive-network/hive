@@ -20,7 +20,7 @@ test_split_block_log() {
   echo "In this case, 4 block_log files and 4 artifacts file should be created"
   local files_count=$(ls -1 "$SPLITTED_BLOCK_LOGS_DIRECTORY" | wc -l)
   if [ ${files_count} -ne 8 ]; then
-    echo "Number of files in directory where splitted block_log should be should be 8"
+    echo "Number of files in directory where splitted block_log should be 8"
     return 1
   fi
 
@@ -50,16 +50,89 @@ test_split_block_log() {
 
   echo "Try to extract part of block_log"
   local TMP_SPLITTED_BLOCK_LOG_DIR="tmp_limited_splitted_block_log"
-  mkdir -p "$TMP_SPLITTED_BLOCK_LOG_DIR"
   "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --from 400 --to 800
 
-  local files_count_second_split=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
-  if [ ${files_count_second_split} -ne 2 ]; then
-    echo "Number of files in directory where splitted block_log should be should be 2 in case of extracting part of block_log"
+   files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 2 ]; then
+    echo "Number of files in directory where splitted block_log should be 2 in case of extracting part of block_log"
     return 1
   fi
 
   "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --from 401 --to 800
+
+  echo "Test split --from 800"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --from 800
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 4 ]; then
+    echo "Number of files in directory where splitted block_log should be 4 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0003" --from 801 --to 1200
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0004" --from 1201
+
+  echo "Test split --to 800"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --to 800
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 4 ]; then
+    echo "Number of files in directory where splitted block_log should be 4 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0001"  --to 400
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --to 800 --from 401
+
+  echo "test --files-count - positive value"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --files-count 3
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 6 ]; then
+    echo "Number of files in directory where splitted block_log should be 6 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0001"  --to 400
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --to 800 --from 401
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0003" --to 1200 --from 801
+
+  echo "test --files-count - negative value"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --files-count -3
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 6 ]; then
+    echo "Number of files in directory where splitted block_log should be 6 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --from 401 --to 800
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0003" --to 1200 --from 801
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0004" --from 1201
+
+  echo "test --files-count with --from"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --files-count 2 --from 400
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 4 ]; then
+    echo "Number of files in directory where splitted block_log should be 4 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --from 401 --to 800
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0003" --to 1200 --from 801
+
+  echo "test --files-count with --to"
+  rm -r "$TMP_SPLITTED_BLOCK_LOG_DIR"
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_SPLITTED_BLOCK_LOG_DIR" --files-count 2 --to 1200
+  files_count=$(ls -1 "$TMP_SPLITTED_BLOCK_LOG_DIR" | wc -l)
+  if [ ${files_count} -ne 4 ]; then
+    echo "Number of files in directory where splitted block_log should be 4 in this case"
+    return 1
+  fi
+
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0002" --from 401 --to 800
+  "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$BLOCK_LOG_TESTNET_PATTERN" --second-block-log "$TMP_SPLITTED_BLOCK_LOG_DIR/block_log_part.0003" --to 1200 --from 801
 }
 
 test_merge_splitted_block_log() {
@@ -81,5 +154,67 @@ test_merge_splitted_block_log() {
   "$BLOCK_LOG_UTIL_BINARY_PATH" --compare -i "$MERGED_BLOCK_LOG_DIRECTORY/block_log" --second-block-log "$TMP_PATTERN_BLOCK_LOG_DIR/block_log"
 }
 
+test_split_and_merge_block_log_errors() {
+  TMP_DIR="test_tmp_dir"
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --files-count 5 ; then
+    echo "This command should fail. No more than 4 parts could be created."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --from 1600; then
+    echo "This command should fail. Above head block number"
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --to 1600; then
+    echo "This command should fail. Above head block number"
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --from 400 --files-count 4; then
+    echo "This command should fail. No more than 3 parts could be created."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --to 1200 --files-count 4; then
+    echo "This command should fail. No more than 3 parts could be created."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --from 400 --to 1200 --files-count 2 ; then
+    echo "This command should fail. --from --to and --files-count cannot be used together at once."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --to 99; then
+    echo "This command should fail. In testnet case, --to must be multiplicity of 400."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --split -i "$BLOCK_LOG_TESTNET_PATTERN" -o "$TMP_DIR" --from 99; then
+    echo "This command should fail. In testnet case, --from must be multiplicity of 400."
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --merge-block-logs -i "$SPLITTED_BLOCK_LOGS_DIRECTORY" -o "$TMP_DIR" -n 1312; then
+    echo "This command should fail. Above head block number"
+    return 1
+  fi
+
+  rm "$SPLITTED_BLOCK_LOGS_DIRECTORY/block_log_part.0003"
+  rm "$SPLITTED_BLOCK_LOGS_DIRECTORY/block_log_part.0003.artifacts"
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --merge-block-logs -i "$SPLITTED_BLOCK_LOGS_DIRECTORY" -o "$TMP_DIR"; then
+    echo "This command should fail. Missing block_log_part.0003"
+    return 1
+  fi
+
+  if "$BLOCK_LOG_UTIL_BINARY_PATH" --merge-block-logs -i "$TMP_DIR" -o "$TMP_DIR"; then
+    echo "This command should fail. Nothing in tmp directory."
+    return 1
+  fi
+}
+
 test_split_block_log
 test_merge_splitted_block_log
+test_split_and_merge_block_log_errors
