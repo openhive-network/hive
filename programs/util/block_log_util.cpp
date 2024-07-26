@@ -100,7 +100,11 @@ std::pair<uint32_t, uint32_t> get_effective_range_of_blocks(const int32_t given_
   else
     first_block = std::max(tail_block, head_block + given_first_block + 1);
   if (given_last_block >= 0)
-    last_block = std::min(head_block, given_last_block);
+  {
+    const uint32_t lb = static_cast<uint32_t>(given_last_block);
+    FC_ASSERT(lb <= given_head_block, "--to ${lb} must be below or equal to head_block: ${given_head_block}",(lb)(given_head_block));
+    last_block = lb;
+  }
   else
     last_block = std::min(head_block, head_block + given_last_block + 1);
 
@@ -125,33 +129,33 @@ void checksum_block_log(const fc::path &block_log, fc::optional<uint32_t> checkp
   {
     hive::chain::block_log log(app);
     log.open(block_log, thread_pool, true);
+    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
 
     uint64_t uncompressed_block_start_offset = 0; // as we go, keep track of the block's starting offset if it were recorded uncompressed
     fc::sha256::encoder block_log_sha256_encoder;
 
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    if (head_block_num) // if the log is non-empty
+    const uint32_t head_block_num = log.head()->get_block_num();
+
+    const auto process_block = [&](const std::shared_ptr<hive::chain::full_block_type> full_block)
     {
-      const auto process_block = [&](const std::shared_ptr<hive::chain::full_block_type> full_block)
+      if (full_block->get_block_num() % 1000000 == 0)
+        dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
+
+      append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
+
+      if (checkpoint_every_n_blocks && full_block->get_block_num() % *checkpoint_every_n_blocks == 0 && full_block->get_block_num() != head_block_num)
       {
-        if (full_block->get_block_num() % 1000000 == 0)
-          dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
+        fc::sha256::encoder block_log_encoder_up_to_this_block(block_log_sha256_encoder);
+        ilog("${result} ${block_log}@${block_num}", ("result", block_log_encoder_up_to_this_block.result().str())(block_log)("block_num", full_block->get_block_num()));
+        std::cout << block_log_encoder_up_to_this_block.result().str() << " " << block_log.generic_string() << "@" << full_block->get_block_num() << "\n";
+      }
 
-        append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
+      return true;
+    };
+    log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
+                        head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
+                        thread_pool);
 
-        if (checkpoint_every_n_blocks && full_block->get_block_num() % *checkpoint_every_n_blocks == 0 && full_block->get_block_num() != head_block_num)
-        {
-          fc::sha256::encoder block_log_encoder_up_to_this_block(block_log_sha256_encoder);
-          ilog("${result} ${block_log}@${block_num}", ("result", block_log_encoder_up_to_this_block.result().str())(block_log)("block_num", full_block->get_block_num()));
-          std::cout << block_log_encoder_up_to_this_block.result().str() << " " << block_log.generic_string() << "@" << full_block->get_block_num() << "\n";
-        }
-
-        return true;
-      };
-      log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
-                         head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
-                         thread_pool);
-    }
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
     if (checkpoint_every_n_blocks)
@@ -174,6 +178,7 @@ bool validate_block_log_checksum(const fc::path &block_log, const block_log_hash
   {
     hive::chain::block_log log(app);
     log.open(block_log, thread_pool, true);
+    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
 
     uint64_t uncompressed_block_start_offset = 0; // as we go, keep track of the block's starting offset if it were recorded uncompressed
     fc::sha256::encoder block_log_sha256_encoder;
@@ -182,51 +187,49 @@ bool validate_block_log_checksum(const fc::path &block_log, const block_log_hash
     auto next_checkpoint_iter = hashes_to_validate.checkpoints.begin();
     bool all_hashes_matched = true;
 
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    if (head_block_num) // if the log is non-empty
+    const uint32_t head_block_num = log.head()->get_block_num();
+    const auto process_block = [&](const std::shared_ptr<hive::chain::full_block_type> full_block)
     {
-      const auto process_block = [&](const std::shared_ptr<hive::chain::full_block_type> full_block)
+      if (full_block->get_block_num() % 1000000 == 0)
+        dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
+
+      append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
+
+      if (next_checkpoint_iter != hashes_to_validate.checkpoints.end())
       {
-        if (full_block->get_block_num() % 1000000 == 0)
-          dlog("processed block ${current} of ${total}", ("current", full_block->get_block_num())("total", head_block_num));
-
-        append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
-
-        if (next_checkpoint_iter != hashes_to_validate.checkpoints.end())
+        const uint32_t checkpoint_block = next_checkpoint_iter->first;
+        const fc::sha256 &checkpoint_hash = next_checkpoint_iter->second;
+        if (full_block->get_block_num() == checkpoint_block)
         {
-          const uint32_t checkpoint_block = next_checkpoint_iter->first;
-          const fc::sha256 &checkpoint_hash = next_checkpoint_iter->second;
-          if (full_block->get_block_num() == checkpoint_block)
+          const fc::sha256 block_log_hash_up_to_this_block = fc::sha256::encoder(block_log_sha256_encoder).result();
+
+          if (block_log_hash_up_to_this_block != checkpoint_hash)
           {
-            const fc::sha256 block_log_hash_up_to_this_block = fc::sha256::encoder(block_log_sha256_encoder).result();
+            elog("${block_log}@${checkpoint_block}: FAILED (checksum mismatch)", (block_log)(checkpoint_block));
+            all_hashes_matched = false;
+            for (; next_checkpoint_iter != hashes_to_validate.checkpoints.end(); ++next_checkpoint_iter)
+              elog("${block_log}@${block_num} : FAILED (presumed checksum mismatch because of checksum mismatch on earlier block: ${checkpoint_block}", (block_log)("block_num", next_checkpoint_iter->first)(checkpoint_block));
+            return false; // stop iterating
+          }
+          else
+          {
+            ilog("${block_log}@${checkpoint_block}: OK", (block_log)(checkpoint_block));
+            last_good_checkpoint_block_number = checkpoint_block;
+            ++next_checkpoint_iter;
 
-            if (block_log_hash_up_to_this_block != checkpoint_hash)
-            {
-              elog("${block_log}@${checkpoint_block}: FAILED (checksum mismatch)", (block_log)(checkpoint_block));
-              all_hashes_matched = false;
-              for (; next_checkpoint_iter != hashes_to_validate.checkpoints.end(); ++next_checkpoint_iter)
-                elog("${block_log}@${block_num} : FAILED (presumed checksum mismatch because of checksum mismatch on earlier block: ${checkpoint_block}", (block_log)("block_num", next_checkpoint_iter->first)(checkpoint_block));
+            if (next_checkpoint_iter == hashes_to_validate.checkpoints.end() &&
+                !hashes_to_validate.final_hash)
               return false; // stop iterating
-            }
-            else
-            {
-              ilog("${block_log}@${checkpoint_block}: OK", (block_log)(checkpoint_block));
-              last_good_checkpoint_block_number = checkpoint_block;
-              ++next_checkpoint_iter;
-
-              if (next_checkpoint_iter == hashes_to_validate.checkpoints.end() &&
-                  !hashes_to_validate.final_hash)
-                return false; // stop iterating
-            }
           }
         }
+      }
 
-        return true;
-      };
-      log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
-                         head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
-                         thread_pool);
-    }
+      return true;
+    };
+    log.for_each_block(block_log_info::get_first_block_num_for_file_name(block_log),
+                        head_block_num, process_block, hive::chain::block_log::for_each_purpose::decompressing,
+                        thread_pool);
+
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
     for (; next_checkpoint_iter != hashes_to_validate.checkpoints.end(); ++next_checkpoint_iter)
@@ -333,22 +336,24 @@ bool compare_block_logs(const fc::path &first_filename, const fc::path &second_f
     // open both block log files
     hive::chain::block_log first_block_log(app);
     first_block_log.open(first_filename, thread_pool, true);
-    const uint32_t first_head_block_num = first_block_log.head() ? first_block_log.head()->get_block_num() : 0;
+    FC_ASSERT(first_block_log.head(), "Cannot operate on empty block_log");
+    const uint32_t first_head_block_num = first_block_log.head()->get_block_num();
     const uint32_t first_tail_block_num = block_log_info::get_first_block_num_for_file_name(first_filename);
     const auto [first_log_first_block_num, first_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, first_head_block_num, first_tail_block_num);
 
     hive::chain::block_log second_block_log(app);
     second_block_log.open(second_filename, thread_pool, true);
-    const uint32_t second_head_block_num = second_block_log.head() ? second_block_log.head()->get_block_num() : 0;
+    FC_ASSERT(second_block_log.head(), "Cannot operate on empty block_log");
+    const uint32_t second_head_block_num = second_block_log.head()->get_block_num();
     const uint32_t second_tail_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
     const auto [second_log_first_block_num, second_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, second_head_block_num, second_tail_block_num);
 
-    FC_ASSERT(first_log_first_block_num == second_log_first_block_num, "Difference between comparing starting block number in given block logs.\n"
+    FC_ASSERT(first_log_first_block_num == second_log_first_block_num, "Difference found when between comparing starting block number in given block logs.\n"
               "First block_log: ${first_filename}, first block number in block_log: ${first_tail_block_num}, first block number to compare: ${first_log_first_block_num},\n"
               "Second block_log: ${second_filename}, first block number in block_log: ${second_tail_block_num}, first block number to compare: ${second_log_first_block_num}.",
               (first_filename)(first_tail_block_num)(first_log_first_block_num)(second_filename)(second_tail_block_num)(second_log_first_block_num));
 
-    FC_ASSERT(first_log_last_block_num == second_log_last_block_num, "Difference between comparing ending block number in given block logs.\n"
+    FC_ASSERT(first_log_last_block_num == second_log_last_block_num, "Difference found between comparing ending block number in given block logs.\n"
               "First block_log: ${first_filename}, head block number in block_log: ${first_head_block_num}, last block number to compare: ${first_log_last_block_num},\n"
               "Second block_log: ${second_filename}, head block number in block_log: ${second_head_block_num}, last block number to compare: ${second_log_last_block_num}.",
               (first_filename)(first_head_block_num)(first_log_last_block_num)(second_filename)(second_head_block_num)(second_log_last_block_num));
@@ -445,6 +450,7 @@ bool truncate_block_log(const fc::path &block_log_filename, uint32_t new_head_bl
     std::cout << "\n";
     hive::chain::block_log log(app);
     log.open(block_log_filename, thread_pool, false);
+    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
     const uint32_t head_block_num = log.read_head()->get_block_num();
     FC_ASSERT(head_block_num > new_head_block_num);
     FC_ASSERT(block_log_info::get_first_block_num_for_file_name(block_log_filename) <= new_head_block_num);
@@ -605,7 +611,8 @@ void get_head_block_number(const fc::path &block_log_filename, appbase::applicat
   {
     hive::chain::block_log log(app);
     log.open(block_log_filename, thread_pool, true /*read_only*/, false /*write_fallback*/, false /*auto_open_artifacts*/);
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
+    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
+    const uint32_t head_block_num = log.head()->get_block_num();
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
     std::cout << head_block_num << "\n";
     log.close();
@@ -619,6 +626,7 @@ bool get_block_ids(const fc::path &block_log_filename, const int32_t first_block
   {
     hive::chain::block_log log(app);
     log.open(block_log_filename, thread_pool, true);
+    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
@@ -761,6 +769,7 @@ bool get_block_artifacts(const fc::path &block_log_path, const int32_t first_blo
   {
     hive::chain::block_log block_log(app);
     block_log.open(block_log_path, thread_pool, true, false);
+    FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
     if (full_match_verification)
       ilog("Opening artifacts file with full artifacts match verification ...");
 
@@ -790,6 +799,7 @@ bool generate_artifacts(const fc::path &block_log_path, appbase::application &ap
   {
     hive::chain::block_log block_log(app);
     block_log.open(block_log_path, thread_pool, false, true);
+    FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
     block_log.close();
     std::cout << "Opened and closed block log file. Artifacts were generated if needed\n";
     return true;
@@ -797,14 +807,16 @@ bool generate_artifacts(const fc::path &block_log_path, appbase::application &ap
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool split_block_log(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, const fc::path &output_dir, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+bool split_block_log(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, const fc::path &output_dir, const int32_t files_count_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
 {
   try
   {
+    FC_ASSERT(!(first_block_arg != 1 && last_block_arg != -1 && files_count_arg != 0));
     const uint32_t head_block_num = [&block_log_filename, &thread_pool, &app]()
     {
       hive::chain::block_log log(app);
       log.open(block_log_filename, thread_pool, true);
+      FC_ASSERT(log.head(), "Cannot operate on empty block_log");
       return log.head()->get_block_num();
     }();
 
@@ -832,6 +844,32 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
     if (!last_block_is_head_block)
       head_part_num = last_block / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
 
+    const uint32_t max_possible_head_block_number_in_last_part = head_block_num + (BLOCKS_IN_SPLIT_BLOCK_LOG_FILE % head_block_num);
+
+    if (files_count_arg)
+    {
+      const size_t max_files_limit = head_part_num ? head_part_num : (((head_block_num - first_block + 1) / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + 1);
+
+      if (files_count_arg < 0)
+      {
+        FC_ASSERT(first_block_arg == 1 && last_block_arg == -1);
+        part_count = abs(files_count_arg);
+      }
+      else
+      {
+        FC_ASSERT(!(first_block_arg != 1 && last_block_arg != -1));
+        part_count = static_cast<size_t>(files_count_arg);
+
+        if (last_block_arg == -1)
+          head_part_num = static_cast<size_t>(files_count_arg) + (first_block / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
+      }
+
+      FC_ASSERT(max_files_limit >= part_count, "Requested to create more files: ${part_count} than it's possible: ${max_files_limit} from given block_log with specific parameters", (part_count)(max_files_limit));
+    }
+
+    FC_ASSERT(max_possible_head_block_number_in_last_part >= (head_part_num * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE),
+      "head_part_num ${head_part_num} exceeds block_log head block number: ${head_block_num}, ${max_possible_head_block_number_in_last_part}", (head_part_num)(head_block_num)(max_possible_head_block_number_in_last_part));
+
     std::cout << "Splitting block_log ...\n";
     hive::utilities::split_block_log(block_log_filename, head_part_num, part_count, app, thread_pool, output_dir);
     std::cout << "Splitting block_log finished\n";
@@ -849,8 +887,9 @@ bool merge_block_logs(const fc::path &input_block_log_dir, const fc::path &outpu
     args.data_dir = input_block_log_dir;
     block_log_reader->open_and_init(args, true, nullptr);
     const uint32_t head_block_num = block_log_reader->head_block_num();
+    FC_ASSERT(head_block_num, "No block_logs detected in input directory");
     const uint32_t highest_block_limit = get_effective_range_of_blocks(1, block_number_arg, head_block_num, 1).second;
-    FC_ASSERT(head_block_num >= highest_block_limit, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${last_block}", (head_block_num)(highest_block_limit));
+    FC_ASSERT(head_block_num >= highest_block_limit, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${highest_block_limit}", (head_block_num)(highest_block_limit));
     if (!fc::exists(output_block_log_dir))
     {
       dlog("Creating directories: ${output_block_log_dir}", (output_block_log_dir));
@@ -888,16 +927,16 @@ int main(int argc, char **argv)
   block_log_operations.add_options()("get-block-ids", "Get range of blocks ids. (Block_log opened in RO mode)");
   block_log_operations.add_options()("get-head-block-number", "Get block_log head block number. (Block_log opened in RO mode)");
   block_log_operations.add_options()("sha256sum", "Verify sha256 checksums in block-log. (Block_log opened in RO mode)");
-  block_log_operations.add_options()("split", "Split single block_log file into multiple files");
+  block_log_operations.add_options()("split", "Split legacy monolithic block log file into new-style multiple part files.");
   block_log_operations.add_options()("truncate", "Truncate block log to given block number.");
 
   boost::program_options::options_description additional_operations("additional operations");
   additional_operations.add_options()("verify-checksums-from-file", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Verify sha256 from text file.");
-  additional_operations.add_options()("merge-block-logs", "Merge splitted block_log file into one file.");
+  additional_operations.add_options()("merge-block-logs", "Merge new-style split block log part files into legacy monolithic single file.");
 
   boost::program_options::options_description merge_block_logs_options("merge-block-logs options");
-  merge_block_logs_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory which contains splitted block_log.");
-  merge_block_logs_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where new block_log file, created from input splitted block_logs, should be created.");
+  merge_block_logs_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory which contains split throughout the file block_log. Can be the same as --output");
+  merge_block_logs_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where new block_log file, created from input splitted block_logs, should be created. Can be the same as --input");
   merge_block_logs_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("n"), "Merge block_log files up to given block number (inclusive). Negative numbers mean distance from end (-1 is head block of last splitted block_log). Defaults to -1.");
 
   // args for sha256sum subcommand
@@ -944,10 +983,13 @@ int main(int argc, char **argv)
   boost::program_options::options_description split_block_log_options("split options");
   split_block_log_options.add_options()("output-dir,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where block_log files will be stored.");
   {
-    std::string info = "Split block_log file from given block number (exclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Negative numbers mean distance from end (-1 is head block). Defaults to 1.";
+    std::string info = "Split block_log file from given block number (exclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Defaults to 0.";
     split_block_log_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("n"), info.c_str());
-    info = "Split block_log file to given block number (inclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Negative numbers mean distance from end (-1 is head block). Defaults to -1.";
+    info = "Split block_log file to given block number (inclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Defaults to head_block_number.";
     split_block_log_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("m"), info.c_str());
+    info = "Number of files which will be created. Every block_log file will contain " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + " blocks. Cannot be used together with both from and to."
+           "If --from or nothing specified, tool will create c files from block m, if --to specified, it will create c files to block m. Negative numbers mean distance from end (-1 is file contains head block).";
+    split_block_log_options.add_options()("files-count", boost::program_options::value<int32_t>()->value_name("c"), info.c_str());
   }
 
   const auto print_usage = [&]() {
@@ -1205,15 +1247,33 @@ int main(int argc, char **argv)
       else if (options_map.count("split"))
       {
         update_options_map(split_block_log_options);
-        const auto [first_block, last_block] = get_first_and_last_block_from_options();
+        int32_t first_block = 1, last_block = -1;
+
+        if (options_map.count("from"))
+        {
+          first_block = options_map["from"].as<int32_t>();
+          FC_ASSERT(first_block, "--from in split option cannot be negative or 0");
+        }
+        if (options_map.count("to"))
+        {
+          last_block = options_map["to"].as<int32_t>();
+          FC_ASSERT(last_block == -1 || last_block > 0, "--to in split option cannot be negative or 0");
+        }
+
+        size_t files_count = 0;
+        if (options_map.count("files-count"))
+        {
+          FC_ASSERT(!(options_map.count("from") && options_map.count("to")), "--files-count cannot be specified together with from and to");
+          files_count = options_map["files-count"].as<int32_t>();
+        }
 
         FC_ASSERT(first_block == 1 || first_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0, "first block should be 1 or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
         FC_ASSERT(last_block == -1 || last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0, "last block should be -1 (head_block) or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
         FC_ASSERT(options_map.count("output-dir"), "output_dir is necessary when splitting block_log in order to know where new block_log files should be stored.");
         const fc::path output_dir = options_map["output-dir"].as<boost::filesystem::path>();
-        dlog("block_log_util will perform split block_log operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, output_dir: ${output_dir}",
-             (block_log_path)(first_block)(last_block)(output_dir));
-        return split_block_log(block_log_path, first_block, last_block, output_dir, theApp, thread_pool) ? 0 : 1;
+        dlog("block_log_util will perform split block_log operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, output_dir: ${output_dir}, files_count: ${files_count}",
+             (block_log_path)(first_block)(last_block)(output_dir)(files_count));
+        return split_block_log(block_log_path, first_block, last_block, output_dir, files_count, theApp, thread_pool) ? 0 : 1;
       }
       else if (options_map.count("truncate"))
       {
