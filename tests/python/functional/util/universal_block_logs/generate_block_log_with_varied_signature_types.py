@@ -59,6 +59,7 @@ def prepare_block_log(
     block_log_directory = output_block_log_directory / f"block_log_{signature_type}"
 
     logger.disable("helpy")
+    logger.disable("test_tools")
 
     node = tt.InitNode()
     node.config.shared_file_size = "24G"
@@ -113,6 +114,7 @@ def prepare_block_log(
     authority = generate_authority(wallet, signature_type)
 
     # create_accounts, fund hbd and hive
+    tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
@@ -125,9 +127,10 @@ def prepare_block_log(
         chunk_size=ACCOUNTS_PER_CHUNK - 512,
         max_workers=MAX_WORKERS,
     )
-    tt.logger.info(f"{len(ACCOUNT_NAMES)} accounts successfully created!")
+    tt.logger.info(f"Finish creating accounts! @Block: {node.get_last_block_number()}")
 
     # invest hives from account to account
+    tt.logger.info(f"Start invest hives! @Block: {node.get_last_block_number()}")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
@@ -140,9 +143,10 @@ def prepare_block_log(
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
-    tt.logger.info(f"{len(ACCOUNT_NAMES)} transfer to vesting completed")
+    tt.logger.info(f"Finish transfer to vesting! @Block: {node.get_last_block_number()}")
 
     # delegate rc from initminer to each account
+    tt.logger.info(f"Start delegate rc! @Block: {node.get_last_block_number()}")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
@@ -155,12 +159,13 @@ def prepare_block_log(
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
-    tt.logger.info(f"{len(ACCOUNT_NAMES)} delegate rc completed")
+    tt.logger.info(f"Finish delegate rc! @Block: {node.get_last_block_number()}")
 
     # Unlock delayed votes after vesting delegation.
     node.wait_for_irreversible_block()
     # fixme: after adding ability to pass `--alternate-chain-spec` parameter to node.restart() method
     wallet.close()
+    tt.logger.info(f"Unlock delayed votes! @Block: {node.get_last_block_number()}")
     head_block_time = node.get_head_block_time()
     node.close()
     node.run(
@@ -173,9 +178,10 @@ def prepare_block_log(
     wallet.run()
     node.wait_number_of_blocks(1)
     # fixme
-    tt.logger.info("Unlock delayed votes after RC delegation - restart")
+    tt.logger.info(f"Unlock delayed votes after RC delegation - restart. @Block {node.get_last_block_number()}")
 
     # create posts
+    tt.logger.info(f"Start creating posts! @Block: {node.get_last_block_number()}")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
@@ -188,25 +194,30 @@ def prepare_block_log(
         chunk_size=ACCOUNTS_PER_CHUNK - 512,
         max_workers=MAX_WORKERS,
     )
+    tt.logger.info(f"Finish crateing posts! @Block: {node.get_last_block_number()}")
 
-    for witness in wallet.api.list_witnesses("", 100):
-        # change block size to 2mb
-        wallet.api.update_witness(
-            witness,
-            "https://" + witness,
-            tt.Account(witness).public_key,
-            {
-                # fee is high because the number of `create proposal operations` performed increases the RC costs
-                "account_creation_fee": ACCOUNT_CREATION_FEE_AFTER_HF_20,
-                "maximum_block_size": 2097152,
-                "hbd_interest_rate": 0,
-            },
-        )
+    witnesses = wallet.api.list_witnesses("", 100)
+    with wallet.in_single_transaction():
+        for witness in witnesses:
+            # change block size to 2mb
+            wallet.api.update_witness(
+                witness,
+                "https://" + witness,
+                tt.Account(witness).public_key,
+                {
+                    # fee is high because the number of `create proposal operations` performed increases the RC costs
+                    "account_creation_fee": ACCOUNT_CREATION_FEE_AFTER_HF_20,
+                    "maximum_block_size": 2097152,
+                    "hbd_interest_rate": 0,
+                },
+            )
 
     assert node.api.database.get_hardfork_properties().last_hardfork == 18
     headblock = node.get_last_block_number()
+    tt.logger.info(f"Start waiting for current hardfork! @Block: {node.get_last_block_number()}")
     wait_for_current_hardfork(node, current_hardfork_number)
     assert node.api.database.get_hardfork_properties().last_hardfork == current_hardfork_number
+    tt.logger.info(f"Finish waiting for current hardfork! @Block: {node.get_last_block_number()}")
 
     # To avoid a missed block wait +128 blocks ( at least 33% of the blocks should be correct )
     node.wait_for_block_with_number(headblock + 250)
