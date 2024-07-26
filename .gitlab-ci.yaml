@@ -1254,3 +1254,19 @@ universal_block_log_tests:
     - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
+
+colony_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: copy_universal_block_logs_to_cache
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
+  script:
+    - cp -r $UNIVERSAL_BLOCK_LOGS_CACHE_DIR/* $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+    - cd $CI_PROJECT_DIR/tests/python/functional/colony
+    - !reference [.run-pytest, script]
+  tags:
+    - data-cache-storage
