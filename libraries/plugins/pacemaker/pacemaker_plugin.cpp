@@ -33,8 +33,10 @@ public:
   block_emission_condition block_emission_loop();
   block_emission_condition maybe_emit_block();
 
-  fc::time_point emission_time() const { return _next_block->get_block_header().timestamp + fc::microseconds( _min_offset ); }
-  fc::time_point failure_time() const { return _next_block->get_block_header().timestamp + fc::microseconds( _max_offset ); }
+  fc::time_point block_time() const { return _next_block->get_block_header().timestamp; }
+  fc::time_point emission_time() const { return block_time() + fc::microseconds( _min_offset ); }
+  fc::time_point failure_time() const { return block_time() + fc::microseconds( _max_offset ); }
+  fc::time_point catch_up_time() const { return block_time() + fc::microseconds( _catch_up_offset ); }
 
   boost::asio::deadline_timer      _timer;
 
@@ -45,13 +47,14 @@ public:
 
   int64_t                          _min_offset = 0;
   int64_t                          _max_offset = 0;
+  int64_t                          _catch_up_offset = 0;
 
   std::shared_ptr<full_block_type> _next_block;
 
   appbase::application& theApp;
 };
 
-class pacemaker_emit_block_flow_control final : public p2p_block_flow_control
+class pacemaker_emit_block_flow_control : public p2p_block_flow_control
 {
 public:
   using p2p_block_flow_control::p2p_block_flow_control;
@@ -59,6 +62,16 @@ public:
 
 private:
   virtual const char* buffer_type() const override { return "pacemaker"; }
+};
+
+class pacemaker_sync_block_flow_control final : public pacemaker_emit_block_flow_control
+{
+public:
+  using pacemaker_emit_block_flow_control::pacemaker_emit_block_flow_control;
+  virtual ~pacemaker_sync_block_flow_control() = default;
+
+private:
+  virtual const char* buffer_type() const override { return "pacemaker-sync"; }
 };
 
 void pacemaker_plugin_impl::schedule_emission_loop()
@@ -98,24 +111,31 @@ block_emission_condition pacemaker_plugin_impl::block_emission_loop()
       case block_emission_condition::normal:
         break;
       case block_emission_condition::lag:
-        ilog( "Trying to catch up..." );
+        if( !_catch_up_offset )
+          ilog( "Trying to catch up..." );
         break;
       case block_emission_condition::too_early:
         break;
       case block_emission_condition::too_late:
-        elog( "Failed to emit block because max offset was exceeded. Now: ${n}; Block ts: ${t}; Last time to emit: ${f}",
-          ( "n", fc::time_point::now() )( "t", _next_block->get_block_header().timestamp )( "f", failure_time() ) );
+        if( _catch_up_offset )
+        {
+          elog( "Pacemaker exit condition met: failed to emit block because node is not catching up. Now: ${n}; Block ts: ${t}; Last time to emit: ${f}",
+            ( "n", fc::time_point::now() )( "t", block_time() )( "f", catch_up_time() ) );
+        }
+        else
+        {
+          elog( "Pacemaker exit condition met: failed to emit block because max offset was exceeded. Now: ${n}; Block ts: ${t}; Last time to emit: ${f}",
+            ( "n", fc::time_point::now() )( "t", block_time() )( "f", failure_time() ) );
+        }
         theApp.generate_interrupt_request();
-        FC_THROW_EXCEPTION( fc::canceled_exception, "Pacemaker exit condition met: exceeded max offset." );
         break;
       case block_emission_condition::no_more_blocks:
-        ilog( "Interrupring - no more blocks left in source." );
+        ilog( "Pacemaker exit condition met: no more blocks left in source." );
         theApp.generate_interrupt_request();
-        FC_THROW_EXCEPTION( fc::canceled_exception, "Pacemaker exit condition met: no more blocks to emit." );
         break;
       case block_emission_condition::exception_emitting_block:
+        elog( "Pacemaker exit condition met: emitted block turned out to be invalid" );
         theApp.generate_interrupt_request();
-        FC_THROW_EXCEPTION( fc::canceled_exception, "Pacemaker exit condition met: emitted block turned out to be invalid." );
         break;
     }
   }
@@ -131,16 +151,29 @@ block_emission_condition pacemaker_plugin_impl::block_emission_loop()
 block_emission_condition pacemaker_plugin_impl::maybe_emit_block()
 {
   fc::time_point now = fc::time_point::now();
-  fc::time_point fail_time = failure_time();
-  if( now > fail_time )
+  fc::time_point max_time = _catch_up_offset ? catch_up_time() : failure_time();
+  if( now >= max_time )
     return block_emission_condition::too_late;
+  if( _catch_up_offset )
+  {
+    _catch_up_offset = ( now - block_time() ).count();
+    if( _catch_up_offset <= _max_offset )
+    {
+      ilog( "Caught up - switching to live sync" );
+      _catch_up_offset = 0;
+    }
+  }
 
   fc::time_point earliest_emission_time = emission_time();
   if( now < earliest_emission_time )
     return block_emission_condition::too_early;
 
-  auto emit_block_ctrl = std::make_shared< pacemaker_emit_block_flow_control >( _next_block, database::skip_nothing );
-  _chain_plugin.accept_block( emit_block_ctrl, false );
+  std::shared_ptr< pacemaker_emit_block_flow_control > block_ctrl;
+  if( _catch_up_offset )
+    block_ctrl = std::make_shared< pacemaker_sync_block_flow_control >( _next_block, database::skip_nothing );
+  else
+    block_ctrl = std::make_shared< pacemaker_emit_block_flow_control >( _next_block, database::skip_nothing );
+  _chain_plugin.accept_block( block_ctrl, false );
   _p2p_plugin.broadcast_block( _next_block );
 
   _next_block = _source.read_block_by_num( _next_block->get_block_num() + 1 );
@@ -199,15 +232,36 @@ void pacemaker_plugin::plugin_startup()
 { try {
   ilog("pacemaker plugin: plugin_startup() begin" );
 
+  if( !my->_chain_plugin.is_p2p_enabled() )
+  {
+    ilog( "Pacemaker plugin cannot work when P2P plugin is disabled..." );
+    // it is because main writer loop is not working then
+    my->theApp.generate_interrupt_request();
+    return;
+  }
+
   uint32_t nextBlock = my->_db.head_block_num() + 1;
   my->_next_block = my->_source.read_block_by_num( nextBlock );
   FC_ASSERT( my->_next_block.get() != nullptr, "No block #${n} in data source.", ( "n", nextBlock ) );
 
   auto now = fc::time_point::now();
   auto max_time = my->failure_time();
-  FC_ASSERT( now < max_time, "Already too late to emit first block. Current time: ${now}; Max emission time: ${max_time}", ( now )( max_time ) );
-  ilog( "First block to emit is #${b} with timestamp ${t}; Current time: ${now}",
-    ( "b", nextBlock )( "t", my->_next_block->get_block_header().timestamp )( now ) );
+  auto block_time = my->block_time();
+  if( now >= max_time )
+  {
+    // Already too late to emit first block - we need to activate catch up phase when each new block
+    // has to be a bit closer to valid time, but it can exceed max_offset
+    my->_catch_up_offset = ( now - block_time ).count() + my->_max_offset;
+    ilog( "Already too late to emit block #${b} with timestamp ${t}; Current time: ${now}",
+      ( "b", nextBlock )( "t", block_time )( now ) );
+    ilog( "Entering catch up mode with initial offset of ${o} microseconds.",
+      ( "o", my->_catch_up_offset ) );
+  }
+  else
+  {
+    ilog( "First block to emit is #${b} with timestamp ${t}; Current time: ${now}",
+      ( "b", nextBlock )( "t", block_time )( now ) );
+  }
 
   my->schedule_emission_loop();
 
