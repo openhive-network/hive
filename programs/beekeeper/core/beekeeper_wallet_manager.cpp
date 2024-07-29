@@ -85,6 +85,7 @@ void beekeeper_wallet_manager::lock( const std::string& token, const std::string
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& wallet_name, const std::string& password )
 {
+  sessions->refresh_timeout( token );
   sessions->get_wallet_manager( token )->unlock( wallet_name, password );
 }
 
