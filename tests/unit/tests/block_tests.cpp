@@ -113,11 +113,12 @@ void open_test_database( database& db, block_storage_i& block_storage,
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
   bl_args.data_dir = dir;
+  db.pre_open( args );
   db.with_write_lock([&]()
   {
     block_storage.open_and_init( bl_args, true/*read_only*/, &db );
   });
-  db.open( args );
+  db._open( args );
 }
 
 #define SET_UP_FIXTURE( REMOVE_DB_FILES, DATA_DIR_PATH_STR ) \

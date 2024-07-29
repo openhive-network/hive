@@ -160,11 +160,11 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args )
+void database::pre_open( const open_args& args )
 {
   try
   {
-    init_schema();
+    //init_schema();
 
     helpers::environment_extension_resources environment_extension(
                                                 theApp.get_version_string(),
@@ -172,6 +172,22 @@ void database::open( const open_args& args )
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay /* wipe_shared_file */ );
+    initialize_irreversible_storage();
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
+
+void database::_open( const open_args& args )
+{
+  try
+  {
+    FC_ASSERT(get_is_open(), "database::pre_open must be called first!");
+
+    helpers::environment_extension_resources environment_extension(
+                                                theApp.get_version_string(),
+                                                theApp.get_plugins_names(),
+                                                []( const std::string& message ){ wlog( message.c_str() ); }
+                                              );
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
     _block_writer->on_state_independent_data_initialized();

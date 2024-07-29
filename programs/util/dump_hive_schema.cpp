@@ -98,12 +98,14 @@ int main( int argc, char** argv, char** envp )
 
   std::map< std::string, schema_info > schema_map;
 
+  db.pre_open( db_args );
+
   db.with_write_lock([&]()
   {
     block_storage->open_and_init( bl_args, true /*read_only*/, &db );
   });
 
-  db.open( db_args );
+  db._open( db_args );
 
   hive_schema ss;
 

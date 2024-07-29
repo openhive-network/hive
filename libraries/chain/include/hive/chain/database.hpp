@@ -181,6 +181,7 @@ namespace chain {
         skip_block_log              = 1 << 13  ///< used to skip block logging on reindex
       };
 
+      void pre_open( const open_args& args );
       /**
         * @brief Open a database, creating a new one if necessary
         *
@@ -189,7 +190,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
+      void _open( const open_args& args );
 
     private:
 
