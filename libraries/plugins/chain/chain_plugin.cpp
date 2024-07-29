@@ -827,11 +827,12 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
+    db.pre_open( db_open_args );
     db.with_write_lock([&]()
     {
       block_storage->open_and_init( bl_open_args, true/*read_only*/, &db );
     });
-    db.open( db_open_args );
+    db._open( db_open_args );
 
     if( dump_memory_details )
     {
