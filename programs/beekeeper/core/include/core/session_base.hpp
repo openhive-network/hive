@@ -38,6 +38,7 @@ class session_base
 
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();
+    void refresh_timeout();
 
     info get_info();
 

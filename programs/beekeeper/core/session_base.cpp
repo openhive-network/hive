@@ -22,6 +22,11 @@ void session_base::check_timeout()
   refresh_timeout( true/*refresh_only_active*/ );
 }
 
+void session_base::refresh_timeout()
+{
+  refresh_timeout( false/*refresh_only_active*/ );
+}
+
 void session_base::refresh_timeout( bool refresh_only_active )
 {
   auto _now = std::chrono::system_clock::now();

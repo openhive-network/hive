@@ -37,6 +37,7 @@ class session_manager_base
 
     void set_timeout( const std::string& token, const std::chrono::seconds& t );
     void check_timeout( const std::string& token );
+    void refresh_timeout( const std::string& token );
     info get_info( const std::string& token );
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager( const std::string& token );

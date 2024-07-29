@@ -72,6 +72,11 @@ void session_manager_base::check_timeout( const std::string& token )
   get_session( token )->check_timeout();
 }
 
+void session_manager_base::refresh_timeout( const std::string& token )
+{
+  get_session( token )->refresh_timeout();
+}
+
 info session_manager_base::get_info( const std::string& token )
 {
   return get_session( token )->get_info();
