@@ -2002,6 +2002,58 @@ BOOST_AUTO_TEST_CASE(import_keys)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(wallets_synchronization)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+    auto _prefix = "STM";
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token_00 = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token_01 = _beekeeper.create_session( "salt", std::optional<std::string>() );
+
+    const std::string _wallet_name = "wallet-0";
+
+    _beekeeper.create( _token_00, _wallet_name, "avocado" );
+    _beekeeper.unlock( _token_01, _wallet_name, "avocado" );
+
+    std::vector<std::pair<std::string, std::string>> _keys =
+      {
+        { "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78", "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" },
+        { "5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4" },
+        { "5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg", "8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5" }
+      };
+
+    _beekeeper.import_keys( _token_00, _wallet_name, { _keys[0].first }, _prefix );
+    _beekeeper.import_keys( _token_01, _wallet_name, { _keys[1].first, _keys[2].first }, _prefix );
+
+    _beekeeper.close( _token_00, _wallet_name );
+    _beekeeper.unlock( _token_00, _wallet_name, "avocado" );
+
+    auto _checker = [&]( const std::string& token )
+    {
+      auto _public_keys = _beekeeper.get_public_keys( token, _wallet_name );
+      BOOST_REQUIRE_EQUAL( _public_keys.size(), _keys.size() );
+
+      for( auto& key : _keys )
+        BOOST_REQUIRE( _public_keys.find( public_key_type::from_base58( key.second, false/*is_sha256*/ ) ) != _public_keys.end() );
+    };
+
+    _checker( _token_00 );
+    _checker( _token_01 );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
