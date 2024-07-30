@@ -212,8 +212,8 @@ public:
 
 }
 
-beekeeper_wallet::beekeeper_wallet()
-  : my(new detail::beekeeper_impl( *this ))
+beekeeper_wallet::beekeeper_wallet( const std::string& name )
+  : beekeeper_wallet_base( name ), my(new detail::beekeeper_impl( *this ))
 {}
 
 beekeeper_wallet::~beekeeper_wallet() {}
@@ -267,6 +267,7 @@ bool beekeeper_wallet::load_wallet_file( string wallet_filename )
 void beekeeper_wallet::save_wallet_file( string wallet_filename )
 {
   my->save_wallet_file( wallet_filename );
+  on_update();
 }
 
 bool beekeeper_wallet::is_locked() const

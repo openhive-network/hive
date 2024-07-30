@@ -1,5 +1,4 @@
 #include <core/wallet_manager_impl.hpp>
-#include <core/beekeeper_wallet.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/crypto/crypto_data.hpp>
@@ -7,9 +6,39 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <functional>
+
 namespace beekeeper {
 
 namespace bfs = boost::filesystem;
+
+wallet_manager_impl::~wallet_manager_impl()
+{
+  for( auto& connection : on_change_connections )
+  {
+    finish_connection( connection );
+  }
+}
+
+void wallet_manager_impl::finish_connection( boost::signals2::connection& connection )
+{
+  if( connection.connected() )
+    connection.disconnect();
+  FC_ASSERT( !connection.connected() );
+}
+
+void wallet_manager_impl::on_update_handler( const std::string& wallet_name )
+{
+  updated_wallets.insert( wallet_name );
+}
+
+std::unique_ptr<beekeeper_wallet> wallet_manager_impl::start_wallet( const std::string& wallet_name )
+{
+  auto _wallet = make_unique<beekeeper_wallet>( wallet_name );
+  on_change_connections.emplace_back( _wallet->connect( std::bind( &wallet_manager_impl::on_update_handler, this, std::placeholders::_1 ) ) );
+
+  return _wallet;
+}
 
 std::string wallet_manager_impl::gen_password()
 {
@@ -42,7 +71,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
 
   std::string _password = password ? ( *password ) : gen_password();
 
-  auto wallet = make_unique<beekeeper_wallet>();
+  auto wallet = start_wallet( wallet_name );
   wallet->set_password( _password );
   wallet->set_wallet_filename(wallet_filename.string());
   wallet->unlock( _password );
@@ -68,7 +97,7 @@ void wallet_manager_impl::open( const std::string& wallet_name )
 {
   valid_filename( wallet_name );
 
-  auto wallet = std::make_unique<beekeeper_wallet>();
+  auto wallet = start_wallet( wallet_name );
   auto wallet_filename = create_wallet_filename( wallet_name );
   wallet->set_wallet_filename(wallet_filename.string());
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));

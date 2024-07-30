@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   test_utils::beekeeper_mgr b_mgr;
   b_mgr.remove_wallets();
 
-  beekeeper_wallet wallet;
+  beekeeper_wallet wallet( "any_name" );
   BOOST_REQUIRE(wallet.is_locked());
 
   wallet.set_password("pass");
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet.save_wallet_file( _wallet_file_name );
   BOOST_REQUIRE( fc::exists( _wallet_file_name ) );
 
-  beekeeper_wallet wallet2;
+  beekeeper_wallet wallet2( "any_name" );
 
   BOOST_REQUIRE(wallet2.is_locked());
   wallet2.load_wallet_file( _wallet_file_name );

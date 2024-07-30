@@ -2,14 +2,28 @@
 
 #include <core/beekeeper_wallet_base.hpp>
 #include <core/utilities.hpp>
+#include <core/beekeeper_wallet.hpp>
 
 #include <boost/filesystem.hpp>
+#include <boost/signals2.hpp>
 
 namespace fc { class variant; }
 
 namespace beekeeper {
 
 class wallet_manager_impl {
+
+  private:
+
+    std::vector<boost::signals2::connection> on_change_connections;
+    void finish_connection( boost::signals2::connection& connection );
+
+    void on_update_handler( const std::string& wallet_name );
+
+    std::unique_ptr<beekeeper_wallet> start_wallet( const std::string& wallet_name );
+
+    std::set<std::string> updated_wallets;
+
   private:
 
     std::vector<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );
@@ -21,6 +35,7 @@ class wallet_manager_impl {
   public:
 
     wallet_manager_impl( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory ){}
+    ~wallet_manager_impl();
 
     std::string create( const std::string& wallet_name, const std::optional<std::string>& password );
     void open( const std::string& wallet_name );

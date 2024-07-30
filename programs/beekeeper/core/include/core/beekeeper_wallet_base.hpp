@@ -2,6 +2,8 @@
 
 #include <core/utilities.hpp>
 
+#include <boost/signals2/signal.hpp>
+
 using namespace std;
 
 namespace beekeeper {
@@ -9,6 +11,23 @@ namespace beekeeper {
 class beekeeper_wallet_base
 {
    public:
+
+      using on_update_handler = std::function<void( const std::string& )>;
+
+   private:
+
+      std::string name;
+      boost::signals2::signal<void( const std::string& )> on_update_signal;
+
+   public:
+
+      boost::signals2::connection connect( on_update_handler&& handler );
+      void on_update();
+
+   public:
+
+      beekeeper_wallet_base( const std::string& name ): name( name ) {}
+
       virtual ~beekeeper_wallet_base() {}
 
       /**

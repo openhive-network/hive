@@ -10,6 +10,7 @@ add_library( beekeeper_core
              ./beekeeper_app_base.cpp
              ./utilities.cpp
              ./time_manager_base.cpp
+             ./beekeeper_wallet_base.cpp
              ${HEADERS}
            )
 
