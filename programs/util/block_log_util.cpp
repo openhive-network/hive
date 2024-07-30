@@ -348,12 +348,12 @@ bool compare_block_logs(const fc::path &first_filename, const fc::path &second_f
     const uint32_t second_tail_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
     const auto [second_log_first_block_num, second_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, second_head_block_num, second_tail_block_num);
 
-    FC_ASSERT(first_log_first_block_num == second_log_first_block_num, "Difference found when between comparing starting block number in given block logs.\n"
+    FC_ASSERT(first_log_first_block_num == second_log_first_block_num, "Difference found when comparing starting block number in given block logs.\n"
               "First block_log: ${first_filename}, first block number in block_log: ${first_tail_block_num}, first block number to compare: ${first_log_first_block_num},\n"
               "Second block_log: ${second_filename}, first block number in block_log: ${second_tail_block_num}, first block number to compare: ${second_log_first_block_num}.",
               (first_filename)(first_tail_block_num)(first_log_first_block_num)(second_filename)(second_tail_block_num)(second_log_first_block_num));
 
-    FC_ASSERT(first_log_last_block_num == second_log_last_block_num, "Difference found between comparing ending block number in given block logs.\n"
+    FC_ASSERT(first_log_last_block_num == second_log_last_block_num, "Difference found comparing ending block number in given block logs.\n"
               "First block_log: ${first_filename}, head block number in block_log: ${first_head_block_num}, last block number to compare: ${first_log_last_block_num},\n"
               "Second block_log: ${second_filename}, head block number in block_log: ${second_head_block_num}, last block number to compare: ${second_log_last_block_num}.",
               (first_filename)(first_head_block_num)(first_log_last_block_num)(second_filename)(second_head_block_num)(second_log_last_block_num));
@@ -837,14 +837,17 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
     if (first_block != 1)
     {
       part_count = ((last_block - first_block) / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
-      if (last_block_is_head_block)
+
+      if (last_block_is_head_block || (last_block - first_block != BLOCKS_IN_SPLIT_BLOCK_LOG_FILE))
         ++part_count;
     }
 
     if (!last_block_is_head_block)
+    {
       head_part_num = last_block / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
-
-    const uint32_t max_possible_head_block_number_in_last_part = head_block_num + (BLOCKS_IN_SPLIT_BLOCK_LOG_FILE % head_block_num);
+      if (last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE != 0)
+        ++head_part_num;
+    }
 
     if (files_count_arg)
     {
@@ -867,12 +870,25 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
       FC_ASSERT(max_files_limit >= part_count, "Requested to create more files: ${part_count} than it's possible: ${max_files_limit} from given block_log with specific parameters", (part_count)(max_files_limit));
     }
 
-    FC_ASSERT(max_possible_head_block_number_in_last_part >= (head_part_num * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE),
-      "head_part_num ${head_part_num} exceeds block_log head block number: ${head_block_num}, ${max_possible_head_block_number_in_last_part}", (head_part_num)(head_block_num)(max_possible_head_block_number_in_last_part));
-
     std::cout << "Splitting block_log ...\n";
     hive::utilities::split_block_log(block_log_filename, head_part_num, part_count, app, thread_pool, output_dir);
     std::cout << "Splitting block_log finished\n";
+    if (!last_block_is_head_block && (last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE != 0))
+    {
+      const std::string block_log_part_filename_pattern = "block_log_part.0000";
+      const std::string last_part_num_as_str = std::to_string(hive::chain::block_log_wrapper::get_part_number_for_block(last_block, MAX_FILES_OF_SPLIT_BLOCK_LOG));
+      const size_t lpnas_size = last_part_num_as_str.size();
+      const fc::path block_log_file_to_truncate = output_dir / fc::path(std::string("block_log_part.0000").replace(block_log_part_filename_pattern.size() - lpnas_size, lpnas_size, last_part_num_as_str));
+      std::cout << "Requested block_log with head_block_num: " << last_block << " ... truncating " << block_log_file_to_truncate.generic_string() << " to " << last_block << " blocks...\n";
+      hive::chain::block_log log(app);
+      log.open(block_log_file_to_truncate, thread_pool, false);
+      FC_ASSERT(log.head(), "Cannot operate on empty block_log");
+      const uint32_t head_block_num = log.read_head()->get_block_num();
+      FC_ASSERT(head_block_num > last_block);
+      FC_ASSERT(block_log_info::get_first_block_num_for_file_name(block_log_filename) <= last_block);
+      log.truncate(last_block);
+      ilog("Truncating finished.");
+    }
   }
   FC_CAPTURE_AND_RETHROW()
   return true;
@@ -935,9 +951,9 @@ int main(int argc, char **argv)
   additional_operations.add_options()("merge-block-logs", "Merge new-style split block log part files into legacy monolithic single file.");
 
   boost::program_options::options_description merge_block_logs_options("merge-block-logs options");
-  merge_block_logs_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory which contains split throughout the file block_log. Can be the same as --output");
-  merge_block_logs_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where new block_log file, created from input splitted block_logs, should be created. Can be the same as --input");
-  merge_block_logs_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("n"), "Merge block_log files up to given block number (inclusive). Negative numbers mean distance from end (-1 is head block of last splitted block_log). Defaults to -1.");
+  merge_block_logs_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory containing split block log part files to be merged. Can be the same as --output");
+  merge_block_logs_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Directory where merged block log file should be created.. Can be the same as --input");
+  merge_block_logs_options.add_options()("block-number,n", boost::program_options::value<int32_t>()->value_name("n"), "Merge block_log files up to given block number (inclusive). Negative numbers mean distance from end (-1 is head block of last split block_log). Defaults to -1.");
 
   // args for sha256sum subcommand
   boost::program_options::options_description sha256sum_options("sha256sum options");
@@ -985,10 +1001,10 @@ int main(int argc, char **argv)
   {
     std::string info = "Split block_log file from given block number (exclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Defaults to 0.";
     split_block_log_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("n"), info.c_str());
-    info = "Split block_log file to given block number (inclusive). Block number must be multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + ". Defaults to head_block_number.";
+    info = "Split block_log file to given block number (inclusive). Negative numbers mean distance from end (-1 is head block). Defaults to -1.";
     split_block_log_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("m"), info.c_str());
     info = "Number of files which will be created. Every block_log file will contain " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE) + " blocks. Cannot be used together with both from and to."
-           "If --from or nothing specified, tool will create c files from block m, if --to specified, it will create c files to block m. Negative numbers mean distance from end (-1 is file contains head block).";
+           "If --from or nothing specified, tool will create c files from block m, if --to specified, it will create c files to block m. Negative numbers mean distance from end (-1 is file contains head block, but cannot be used with --from or --to).";
     split_block_log_options.add_options()("files-count", boost::program_options::value<int32_t>()->value_name("c"), info.c_str());
   }
 
@@ -1103,7 +1119,7 @@ int main(int argc, char **argv)
       update_options_map(merge_block_logs_options);
       options_map.erase("merge-block-logs");
 
-      FC_ASSERT(options_map.count("input") && options_map.count("output"), "input directory with splitted block_log and output directory for new block_log must be specified");
+      FC_ASSERT(options_map.count("input") && options_map.count("output"), "input directory with split block_log and output directory for new block_log must be specified");
       const fc::path input_block_log_files_dir = options_map["input"].as<boost::filesystem::path>();
       const fc::path output_block_log_file_dir = options_map["output"].as<boost::filesystem::path>();
       options_map.erase("input");
@@ -1155,6 +1171,8 @@ int main(int argc, char **argv)
           last_block = options_map.count("to") ? options_map["to"].as<int32_t>() : -1;
         }
 
+        FC_ASSERT(first_block != 0);
+        FC_ASSERT(last_block != 0);
         return std::make_pair(first_block, last_block);
       };
 
@@ -1247,28 +1265,20 @@ int main(int argc, char **argv)
       else if (options_map.count("split"))
       {
         update_options_map(split_block_log_options);
-        int32_t first_block = 1, last_block = -1;
 
-        if (options_map.count("from"))
-        {
-          first_block = options_map["from"].as<int32_t>();
-          FC_ASSERT(first_block, "--from in split option cannot be negative or 0");
-        }
-        if (options_map.count("to"))
-        {
-          last_block = options_map["to"].as<int32_t>();
-          FC_ASSERT(last_block == -1 || last_block > 0, "--to in split option cannot be negative or 0");
-        }
-
-        size_t files_count = 0;
+        int32_t files_count = 0;
         if (options_map.count("files-count"))
         {
-          FC_ASSERT(!(options_map.count("from") && options_map.count("to")), "--files-count cannot be specified together with from and to");
+          const bool from_given = options_map.count("from");
+          const bool to_given = options_map.count("to");
+          FC_ASSERT(!(from_given && to_given), "--files-count cannot be specified together with from and to");
           files_count = options_map["files-count"].as<int32_t>();
+          if (files_count < 0)
+            FC_ASSERT(!from_given && !to_given, "if --files-count is negative, cannot use --from or --to");
         }
 
-        FC_ASSERT(first_block == 1 || first_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0, "first block should be 1 or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
-        FC_ASSERT(last_block == -1 || last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0, "last block should be -1 (head_block) or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
+        const auto [first_block, last_block] = get_first_and_last_block_from_options();
+        FC_ASSERT(first_block > 0 && (first_block == 1 || first_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0), "first block should be 1 or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
         FC_ASSERT(options_map.count("output-dir"), "output_dir is necessary when splitting block_log in order to know where new block_log files should be stored.");
         const fc::path output_dir = options_map["output-dir"].as<boost::filesystem::path>();
         dlog("block_log_util will perform split block_log operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, output_dir: ${output_dir}, files_count: ${files_count}",
