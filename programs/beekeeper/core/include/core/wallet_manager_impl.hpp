@@ -91,6 +91,8 @@ class wallet_manager_impl {
     {
       return wallet_directory;
     }
+
+    const std::map<std::string, std::unique_ptr<beekeeper_wallet_base>>& get_wallets() { return wallets; }
 };
 
 } //beekeeper

@@ -35,7 +35,18 @@ void wallet_manager_impl::on_update_handler( const std::string& wallet_name )
 std::unique_ptr<beekeeper_wallet> wallet_manager_impl::start_wallet( const std::string& wallet_name )
 {
   auto _wallet = make_unique<beekeeper_wallet>( wallet_name );
-  on_change_connections.emplace_back( _wallet->connect( std::bind( &wallet_manager_impl::on_update_handler, this, std::placeholders::_1 ) ) );
+
+  for( auto& wallet_manager : wallet_managers )
+  {
+    const auto& _wallets = wallet_manager->get_wallets();
+    for( auto& wallet : _wallets )
+    {
+      if( wallet.second->get_wallet_name() == wallet_name )
+      {
+        on_change_connections.emplace_back( wallet.second->connect( std::bind( &wallet_manager_impl::on_update_handler, this, std::placeholders::_1 ) ) );
+      }
+    }
+  }
 
   return _wallet;
 }

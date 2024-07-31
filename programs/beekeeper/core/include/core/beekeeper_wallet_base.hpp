@@ -24,6 +24,8 @@ class beekeeper_wallet_base
       boost::signals2::connection connect( on_update_handler&& handler );
       void on_update();
 
+      const std::string& get_wallet_name() const { return name; };
+
    public:
 
       beekeeper_wallet_base( const std::string& name ): name( name ) {}
