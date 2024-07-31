@@ -10,9 +10,11 @@ class beekeeper_instance_base;
 
 class session_manager_base
 {
-  private:
+  public:
 
     using items = std::map<std::string/*token*/, std::shared_ptr<session_base>>;
+
+  private:
 
     const unsigned int token_length = 32;
 
@@ -40,6 +42,8 @@ class session_manager_base
     info get_info( const std::string& token );
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager( const std::string& token );
+
+    const items& get_sessions() { return sessions; };
 };
 
 } //beekeeper

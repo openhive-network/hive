@@ -40,6 +40,14 @@ std::unique_ptr<beekeeper_wallet> wallet_manager_impl::start_wallet( const std::
   return _wallet;
 }
 
+void wallet_manager_impl::attach_wallet_manager( std::shared_ptr<wallet_manager_impl> wallet_manager )
+{
+  FC_ASSERT( wallet_manager );
+
+  if( wallet_manager.get() != this )
+    wallet_managers.push_back( wallet_manager );
+}
+
 std::string wallet_manager_impl::gen_password()
 {
   constexpr auto password_prefix = "PW";

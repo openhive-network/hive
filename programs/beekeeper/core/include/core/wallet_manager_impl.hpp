@@ -24,6 +24,12 @@ class wallet_manager_impl {
 
     std::set<std::string> updated_wallets;
 
+    std::vector<std::shared_ptr<wallet_manager_impl>> wallet_managers;
+
+  public:
+
+    void attach_wallet_manager( std::shared_ptr<wallet_manager_impl> wallet_manager );
+
   private:
 
     std::vector<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );

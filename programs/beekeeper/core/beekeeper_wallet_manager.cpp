@@ -129,6 +129,12 @@ string beekeeper_wallet_manager::create_session( const std::optional<std::string
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
   auto _token = sessions->create_session( salt, notifications_endpoint, wallet_directory );
+
+  const session_manager_base::items& _sessions = sessions->get_sessions();
+  std::shared_ptr<wallet_manager_impl> _new_wallet_manager = sessions->get_wallet_manager( _token );
+  for( auto& session : _sessions )
+    _new_wallet_manager->attach_wallet_manager( session.second->get_wallet_manager() );
+
   set_timeout_impl( _token, unlock_timeout );
 
   ++session_cnt;
