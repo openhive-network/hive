@@ -1167,3 +1167,22 @@ authority_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+
+generate_universal_block_logs_and_save_image:
+  stage: build
+  extends: [.extended_block_log_creation, .test_tools_based]
+  timeout: 7h
+  variables:
+    UNIVERSAL_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/universal_block_logs"
+  script:
+  - |
+    echo "Block logs directory is $UNIVERSAL_BLOCK_LOGS_DIR"
+    cd tests/python/functional/util/universal_block_logs
+    python3 generate_mini_block_log.py --output-block-log-directory="$UNIVERSAL_BLOCK_LOGS_DIR"
+    cd "$UNIVERSAL_BLOCK_LOGS_DIR"
+    "$CI_PROJECT_DIR/scripts/ci-helpers/build_universal_block_log_image.sh"
+  tags:
+  - public-runner-docker
+  - hived-for-tests
+  when: manual
+  allow_failure: false
