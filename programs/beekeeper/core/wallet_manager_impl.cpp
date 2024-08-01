@@ -1,5 +1,5 @@
 #include <core/wallet_manager_impl.hpp>
-#include <core/beekeeper_wallet.hpp>
+#include <core/wallet_content_handler.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/crypto/crypto_data.hpp>
@@ -56,7 +56,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
 
   std::string _password = password ? ( *password ) : gen_password();
 
-  auto wallet = std::make_unique<beekeeper_wallet>( is_temporary ? *is_temporary : false );
+  auto wallet = std::make_unique<wallet_content_handler>( is_temporary ? *is_temporary : false );
   wallet->set_password( _password );
   wallet->set_wallet_name( is_temporary ? wallet_name : _wallet_path_name.string() );
   wallet->unlock( _password );
@@ -82,6 +82,13 @@ void wallet_manager_impl::open( const std::string& wallet_name )
 {
   valid_filename( wallet_name );
 
+  auto wallet = std::make_unique<wallet_content_handler>();
+  auto wallet_filename = create_wallet_filename( wallet_name );
+  wallet->set_wallet_filename(wallet_filename.string());
+  FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
+
+  // If we have name in our map then remove it since we want the emplace below to replace.
+  // This can happen if the wallet file is added while a wallet is running.
   auto it = wallets.find( wallet_name );
 
   if( it != wallets.end() && it->second->is_wallet_temporary() )
@@ -211,7 +218,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   keys_details _result;
   bool is_all_wallet_locked = true;
 
-  auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet>& wallet )
+  auto _process_wallet = [&]( const std::unique_ptr<wallet_content_handler>& wallet )
   {
     if( !wallet->is_locked() )
     {
@@ -310,11 +317,11 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
   w->remove_key( public_key );
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<wallet_content_handler>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
 {
   try
   {
-    auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet>& wallet )
+    auto _process_wallet = [&]( const std::unique_ptr<wallet_content_handler>& wallet )
     {
       if( !wallet->is_locked() )
         return sign_method( wallet );
@@ -350,7 +357,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
 
 signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const std::unique_ptr<beekeeper_wallet>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
+  return sign( [&]( const std::unique_ptr<wallet_content_handler>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )

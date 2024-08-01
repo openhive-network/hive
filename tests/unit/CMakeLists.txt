@@ -18,7 +18,7 @@ set(BEEKEEPER_SOURCES
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/time_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/extended_api.cpp
 
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/wallet_content_handler.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/token_generator.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_base.cpp

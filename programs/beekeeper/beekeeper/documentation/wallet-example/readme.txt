@@ -1,4 +1,4 @@
-A file `wallet-0.wallet` is an excellent example that shows a case that `fc::aes_decrypt` call from `beekeeper_wallet::unlock` method passes for a wrong password.
+A file `wallet-0.wallet` is an excellent example that shows a case that `fc::aes_decrypt` call from `wallet_content_handler::unlock` method passes for a wrong password.
 Details:
 
 `wallet-0.wallet` contains 1 private key. The password for this wallet is: `password-0`
