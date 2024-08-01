@@ -1,4 +1,4 @@
-#include <core/beekeeper_wallet.hpp>
+#include <core/wallet_content_handler.hpp>
 
 #include <fstream>
 
@@ -30,8 +30,8 @@ class beekeeper_impl
     }
 
 public:
-  beekeeper_wallet& self;
-  beekeeper_impl( beekeeper_wallet& s )
+  wallet_content_handler& self;
+  beekeeper_impl( wallet_content_handler& s )
    : self( s )
   {
   }
@@ -212,18 +212,18 @@ public:
 
 }
 
-beekeeper_wallet::beekeeper_wallet( bool is_temporary )
+wallet_content_handler::wallet_content_handler( bool is_temporary )
   : is_temporary( is_temporary ), my(new detail::beekeeper_impl( *this ))
 {}
 
-beekeeper_wallet::~beekeeper_wallet() {}
+wallet_content_handler::~wallet_content_handler() {}
 
-const std::string& beekeeper_wallet::get_wallet_name() const
+const std::string& wallet_content_handler::get_wallet_name() const
 {
   return my->get_wallet_name();
 }
 
-std::string beekeeper_wallet::import_key( const std::string& wif_key, const std::string& prefix )
+std::string wallet_content_handler::import_key( const std::string& wif_key, const std::string& prefix )
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
@@ -235,7 +235,7 @@ std::string beekeeper_wallet::import_key( const std::string& wif_key, const std:
   return _result.first;
 }
 
-std::vector<std::string> beekeeper_wallet::import_keys( const std::vector<std::string>& wif_keys, const std::string& prefix )
+std::vector<std::string> wallet_content_handler::import_keys( const std::vector<std::string>& wif_keys, const std::string& prefix )
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
@@ -247,7 +247,7 @@ std::vector<std::string> beekeeper_wallet::import_keys( const std::vector<std::s
   return _result;
 }
 
-bool beekeeper_wallet::remove_key( const public_key_type& public_key )
+bool wallet_content_handler::remove_key( const public_key_type& public_key )
 {
   FC_ASSERT( !is_locked(), "Unable to remove key from a locked wallet");
 
@@ -259,7 +259,7 @@ bool beekeeper_wallet::remove_key( const public_key_type& public_key )
   return false;
 }
 
-bool beekeeper_wallet::load_wallet_file( std::string wallet_filename )
+bool wallet_content_handler::load_wallet_file( std::string wallet_filename )
 {
   if( is_wallet_temporary() )
     return true;
@@ -267,28 +267,28 @@ bool beekeeper_wallet::load_wallet_file( std::string wallet_filename )
     return my->load_wallet_file( wallet_filename );
 }
 
-void beekeeper_wallet::save_wallet_file( std::string wallet_filename )
+void wallet_content_handler::save_wallet_file( std::string wallet_filename )
 {
   if( !is_wallet_temporary() )
     my->save_wallet_file( wallet_filename );
 }
 
-bool beekeeper_wallet::is_locked() const
+bool wallet_content_handler::is_locked() const
 {
   return my->is_locked();
 }
 
-bool beekeeper_wallet::is_new() const
+bool wallet_content_handler::is_new() const
 {
   return my->_wallet.cipher_keys.size() == 0;
 }
 
-void beekeeper_wallet::encrypt_keys()
+void wallet_content_handler::encrypt_keys()
 {
   my->encrypt_keys();
 }
 
-void beekeeper_wallet::lock()
+void wallet_content_handler::lock()
 {
   FC_ASSERT( !is_locked(), "Unable to lock a locked wallet" );
 
@@ -301,7 +301,7 @@ void beekeeper_wallet::lock()
   my->_checksum = fc::sha512();
 }
 
-bool beekeeper_wallet::is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content )
+bool wallet_content_handler::is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content )
 {
   fc::sha512 _new_checksum;
   fc::raw::unpack_from_vector<fc::sha512>( content, _new_checksum );
@@ -309,7 +309,7 @@ bool beekeeper_wallet::is_checksum_valid( const fc::sha512& old_checksum, const 
   return old_checksum == _new_checksum;
 }
 
-void beekeeper_wallet::unlock(std::string password)
+void wallet_content_handler::unlock(std::string password)
 {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -338,7 +338,7 @@ void beekeeper_wallet::unlock(std::string password)
   my->_checksum = _pk.checksum;
 }
 
-void beekeeper_wallet::check_password(std::string password)
+void wallet_content_handler::check_password(std::string password)
 {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -361,7 +361,7 @@ void beekeeper_wallet::check_password(std::string password)
   }
 }
 
-void beekeeper_wallet::set_password( std::string password )
+void wallet_content_handler::set_password( std::string password )
 {
   if( !is_new() )
     FC_ASSERT( !is_locked(), "The wallet must be unlocked before the password can be set" );
@@ -369,29 +369,29 @@ void beekeeper_wallet::set_password( std::string password )
   lock();
 }
 
-keys_details beekeeper_wallet::list_keys()
+keys_details wallet_content_handler::list_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
   return my->_keys;
 }
 
-keys_details beekeeper_wallet::list_public_keys()
+keys_details wallet_content_handler::list_public_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
   return my->_keys;
 }
 
-private_key_type beekeeper_wallet::get_private_key( public_key_type pubkey )const
+private_key_type wallet_content_handler::get_private_key( public_key_type pubkey )const
 {
   return my->get_private_key( pubkey );
 }
 
-std::optional<signature_type> beekeeper_wallet::try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key )
+std::optional<signature_type> wallet_content_handler::try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key )
 {
   return my->try_sign_digest( sig_digest, public_key );
 }
 
-std::pair<public_key_type,private_key_type> beekeeper_wallet::get_private_key_from_password( std::string account, std::string role, std::string password )const
+std::pair<public_key_type,private_key_type> wallet_content_handler::get_private_key_from_password( std::string account, std::string role, std::string password )const
 {
   auto seed = account + role + password;
   FC_ASSERT( seed.size(), "seed should not be empty" );
@@ -400,14 +400,14 @@ std::pair<public_key_type,private_key_type> beekeeper_wallet::get_private_key_fr
   return std::make_pair( public_key_type( priv.get_public_key() ), priv );
 }
 
-void beekeeper_wallet::set_wallet_name( const std::string& wallet_name )
+void wallet_content_handler::set_wallet_name( const std::string& wallet_name )
 {
   my->_wallet_name = wallet_name;
 }
 
-bool beekeeper_wallet::has_matching_private_key( const public_key_type& public_key )
+bool wallet_content_handler::has_matching_private_key( const public_key_type& public_key )
 {
   return my->try_get_private_key( public_key ).has_value();
 }
 
-} //beekeeper_wallet
+} //wallet_content_handler
