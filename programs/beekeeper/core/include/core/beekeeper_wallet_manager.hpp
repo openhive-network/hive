@@ -1,6 +1,5 @@
 #pragma once
 
-#include <core/beekeeper_wallet_base.hpp>
 #include <core/beekeeper_instance_base.hpp>
 #include <core/session_manager_base.hpp>
 
@@ -123,7 +122,7 @@ public:
    * @param password    A password of given wallet.
    * @return            A list of private keys.
    */
-  keys_details list_keys( const std::string& token, const string& wallet_name, const string& password );
+  keys_details list_keys( const std::string& token, const std::string& wallet_name, const std::string& password );
 
   /**
    *
@@ -172,7 +171,7 @@ public:
    * @return            A public key corresponding to WIF key
    * @throws            An exception `fc::exception` if a wallet not found or locked.
    */
-  string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix );
+  std::string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix );
 
   /**
    * 
@@ -185,7 +184,7 @@ public:
    * @return            A public keys corresponding to WIF keys
    * @throws            An exception `fc::exception` if a wallet not found or locked.
    */
-  std::vector<string> import_keys( const std::string& token, const std::string& wallet_name, const std::vector<string>& wif_keys, const std::string& prefix );
+  std::vector<std::string> import_keys( const std::string& token, const std::string& wallet_name, const std::vector<std::string>& wif_keys, const std::string& prefix );
 
   /**
    * 
@@ -219,7 +218,7 @@ public:
    * @param notifications_endpoint  A server attached to given session. It's used to receive notifications. Optional.
    * @returns                       A token that is attached to newly created session.
    */
-  string create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint );
+  std::string create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint );
 
   /** Close a session according to given token.
    * After closing the session expires.
@@ -227,7 +226,7 @@ public:
    * @param token  Session's identifier.
    * @param allow_close_all_sessions_action If `true`, after closing a session earlier defined action is executed.
    */
-  void close_session( const string& token, bool allow_close_all_sessions_action = true );
+  void close_session( const std::string& token, bool allow_close_all_sessions_action = true );
 
   /**
    * 

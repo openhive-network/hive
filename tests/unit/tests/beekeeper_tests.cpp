@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   BOOST_REQUIRE_EQUAL(_keys_a[0].first, privCopy2.key_to_wif());
 
   auto _keys_b = _key_generation( 4 );
-  std::vector<string> _keys;
+  std::vector<std::string> _keys;
   for( auto& keys : _keys_b )
     _keys.emplace_back( keys.first );
 
@@ -760,7 +760,7 @@ std::string extract_json( const std::string& str )
 
 std::string get_wasm_data( const std::string& json )
 {
-  vector< string > _elements;
+  std::vector< std::string > _elements;
   boost::split( _elements, json, boost::is_any_of( "\"" ) );
   BOOST_REQUIRE( _elements.size() >= 2 );
   return _elements[ _elements.size() - 2 ];
@@ -1717,9 +1717,9 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
       {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
     };
 
-    const string _fruits_content = "avocado-banana-cherry-durian";
-    const string _empty_content = "";
-    const string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
+    const std::string _fruits_content = "avocado-banana-cherry-durian";
+    const std::string _empty_content = "";
+    const std::string _dummy_content = "xxxxxxxxxxxxxxxxxxxxxxxxxxx";
     const std::optional<uint64_t> _nonce;
 
     auto _encrypt_with_nonce = [&_token, &_beekeeper, &_keys, &_prefix ]( uint32_t nr_from_public_key, uint32_t nr_to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<uint64_t>& nonce )
@@ -1885,9 +1885,9 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data_with_many_keys)
 {
   try
   {
-      const string _fruits_content  = "avocado-banana-cherry-durian";
-      const string _hex_content     = "0123456789ABCDEFabcdef";
-      const string _empty_content   = "";
+      const std::string _fruits_content  = "avocado-banana-cherry-durian";
+      const std::string _hex_content     = "0123456789ABCDEFabcdef";
+      const std::string _empty_content   = "";
 
       auto _different_keys = []( const std::string& content )
       {

@@ -61,7 +61,7 @@ std::vector<wallet_details> beekeeper_wallet_manager::list_created_wallets(const
   return sessions->get_wallet_manager(token)->list_created_wallets();
 }
 
-keys_details beekeeper_wallet_manager::list_keys( const std::string& token, const string& wallet_name, const string& password )
+keys_details beekeeper_wallet_manager::list_keys( const std::string& token, const std::string& wallet_name, const std::string& password )
 {
   sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->list_keys( wallet_name, password );
@@ -89,13 +89,13 @@ void beekeeper_wallet_manager::unlock( const std::string& token, const std::stri
   sessions->get_wallet_manager( token )->unlock( wallet_name, password );
 }
 
-string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix )
+std::string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key, const std::string& prefix )
 {
   sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->import_key( wallet_name, wif_key, prefix );
 }
 
-std::vector<string> beekeeper_wallet_manager::import_keys( const std::string& token, const std::string& wallet_name, const std::vector<std::string>& wif_keys, const std::string& prefix )
+std::vector<std::string> beekeeper_wallet_manager::import_keys( const std::string& token, const std::string& wallet_name, const std::vector<std::string>& wif_keys, const std::string& prefix )
 {
   sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->import_keys( wallet_name, wif_keys, prefix );
@@ -125,7 +125,7 @@ version beekeeper_wallet_manager::get_version()
   return { utility::get_revision() };
 }
 
-string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint )
+std::string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint )
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
@@ -137,7 +137,7 @@ string beekeeper_wallet_manager::create_session( const std::optional<std::string
   return _token;
 }
 
-void beekeeper_wallet_manager::close_session( const string& token, bool allow_close_all_sessions_action )
+void beekeeper_wallet_manager::close_session( const std::string& token, bool allow_close_all_sessions_action )
 {
   sessions->close_session( token );
   if( allow_close_all_sessions_action && sessions->empty() )
