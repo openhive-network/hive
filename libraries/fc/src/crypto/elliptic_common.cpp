@@ -405,6 +405,36 @@ namespace fc { namespace ecc {
     public_key extended_public_key::generate_p(int i) const { return derive_normal_child(2*i + 0); }
     public_key extended_public_key::generate_q(int i) const { return derive_normal_child(2*i + 1); }
 
+
+    // derives a key using the syntax defined in BIP32: "m/1'/0/1" (where ' indicates hardened derivation)
+    extended_private_key extended_private_key::derive_child(const std::string& path)
+    {
+      fc::ecc::extended_private_key parent_key = *this;
+
+      std::istringstream path_stream(path);
+      std::string element;
+      bool first = true;
+      while (std::getline(path_stream, element, '/'))
+      {
+        if (first)
+        {
+          FC_ASSERT(element == "m");
+          first = false;
+          continue;
+        }
+        FC_ASSERT(element.length() > 0);
+        bool is_hardened = element[element.length() - 1] == '\'';
+        if (is_hardened)
+          element.pop_back();
+        FC_ASSERT(element.length() > 0);
+        int path_part = std::stoi(element);
+        if (is_hardened)
+          path_part |= 0x80000000;
+        parent_key = parent_key.derive_child(path_part);
+      }
+      return parent_key;
+    }
+
     extended_private_key extended_private_key::derive_child(int i) const
     {
         return i < 0 ? derive_hardened_child(i) : derive_normal_child(i);

@@ -2084,9 +2084,8 @@ namespace fc {
     for (int i = 0; i < word_count; ++i) {
       std::string segment = combined_bits.substr(i * 11, 11);
       int index = std::bitset<11>(segment).to_ulong();
-      if (i > 0) {
+      if (i > 0)
         mnemonic_stream << " ";
-      }
       mnemonic_stream << bip39_wordlist[index];
     }
 
