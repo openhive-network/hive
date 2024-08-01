@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/beekeeper_wallet_base.hpp>
 #include <core/utilities.hpp>
+#include <core/beekeeper_wallet.hpp>
 
 #include <boost/filesystem.hpp>
 
@@ -16,8 +16,8 @@ class wallet_manager_impl {
     bool scan_directory( std::function<bool( const std::string& )>&& processor, const boost::filesystem::path& directory, const std::string& extension ) const;
     std::vector< std::string > list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const;
 
-    fc::optional<private_key_type> find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name );
-    keys_details list_keys_impl( const string& name, const string& pw, bool password_is_required );
+    fc::optional<private_key_type> find_private_key_in_given_wallet( const public_key_type& public_key, const std::string& wallet_name );
+    keys_details list_keys_impl( const std::string& name, const std::string& pw, bool password_is_required );
 
   public:
 
@@ -28,13 +28,13 @@ class wallet_manager_impl {
     void close( const std::string& wallet_name );
     std::vector<wallet_details> list_wallets();
     std::vector<wallet_details> list_created_wallets();
-    keys_details list_keys( const string& name, const string& password );
+    keys_details list_keys( const std::string& name, const std::string& password );
     keys_details get_public_keys( const std::optional<std::string>& wallet_name );
     void lock_all();
     void lock( const std::string& wallet_name );
     void unlock( const std::string& wallet_name, const std::string& password );
-    string import_key( const std::string& name, const std::string& wif_key, const std::string& prefix );
-    std::vector<string> import_keys( const std::string& name, const std::vector<string>& wif_keys, const std::string& prefix );
+    std::string import_key( const std::string& name, const std::string& wif_key, const std::string& prefix );
+    std::vector<std::string> import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix );
     void remove_key( const std::string& name, const public_key_type& public_key );
     signature_type sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix );
     bool has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key );
@@ -49,14 +49,14 @@ class wallet_manager_impl {
 
     boost::filesystem::path wallet_directory;
 
-    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
+    std::map<std::string, std::unique_ptr<beekeeper_wallet>> wallets;
 
     std::string gen_password();
-    void valid_filename( const string& name );
+    void valid_filename( const std::string& name );
 
-    bool is_locked( const string& name );
+    bool is_locked( const std::string& name );
 
-    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
+    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
 
     boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
     {

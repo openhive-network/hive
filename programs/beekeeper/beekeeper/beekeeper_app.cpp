@@ -228,8 +228,8 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 {
   bool _result = true;
 
-  using _strings_pair_type = std::pair< string, string >;
-  fc::flat_map< string, string > _items;
+  using _strings_pair_type = std::pair< std::string, std::string >;
+  fc::flat_map< std::string, std::string > _items;
   fc::load_value_set<_strings_pair_type>( args, "export-keys-wallet", _items );
 
   for( auto& item : _items )
