@@ -17,14 +17,14 @@ class beekeeper_impl;
  * This wallet assumes it is connected to the database server with a high-bandwidth, low-latency connection and
  * performs minimal caching.
  */
-class beekeeper_wallet
+class wallet_content_handler
 {
    bool is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content );
 
    public:
-      beekeeper_wallet();
+      wallet_content_handler();
 
-      ~beekeeper_wallet();
+      ~wallet_content_handler();
 
       /** Returns the current wallet filename.
        *
@@ -176,4 +176,4 @@ class beekeeper_wallet
       bool has_matching_private_key( const public_key_type& public_key );
 };
 
-} //beekeeper_wallet
+} //wallet_content_handler
