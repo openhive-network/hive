@@ -385,4 +385,79 @@ bool wallet_content_handler::has_matching_private_key( const public_key_type& pu
   return my->try_get_private_key( public_key ).has_value();
 }
 
+wallet_content_handler_lock wallet_content_handlers_deliverer::create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
+{
+  auto _found = items.find( wallet_name );
+  if( _found != items.end() )
+  {
+    if( !fc::exists( wallet_file_name ) )
+      items.erase( _found );
+    else
+    {
+      if( _found->second->is_locked() )
+        _found->second->unlock( password );
+      else
+        _found->second->check_password( password );
+
+      return wallet_content_handler_lock{ false, _found->second };
+    }
+  }
+
+  auto _new_item = std::make_shared<wallet_content_handler>();
+
+  _new_item->set_password( password );
+  _new_item->set_wallet_filename( wallet_file_name );
+  _new_item->unlock( password );
+  _new_item->lock();
+  _new_item->unlock( password );
+
+  _new_item->save_wallet_file();
+
+  items.insert( std::make_pair( wallet_name, _new_item ) );
+
+  return wallet_content_handler_lock{ false, _new_item };
+}
+
+wallet_content_handler_lock wallet_content_handlers_deliverer::open( const std::string& wallet_name, const std::string& wallet_file_name )
+{
+  auto _found = items.find( wallet_name );
+  if( _found != items.end() )
+  {
+    return wallet_content_handler_lock{ true, _found->second };
+  }
+
+  auto _new_item = std::make_shared<wallet_content_handler>();
+  _new_item->set_wallet_filename( wallet_file_name );
+  FC_ASSERT( _new_item->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_file_name) );
+
+  items.insert( std::make_pair( wallet_name, _new_item ) );
+
+  return wallet_content_handler_lock{ true, _new_item };
+}
+
+void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_lock& wallet )
+{
+  auto _found = items.find( wallet_name );
+  if( _found != items.end() )
+  {
+    if( _found->second->is_locked() )
+      _found->second->unlock( password );
+    else
+      _found->second->check_password( password );
+
+    wallet.set_locked( false );
+  }
+}
+
+void wallet_content_handlers_deliverer::lock( wallet_content_handler_lock& wallet )
+{
+  wallet.set_locked( true );
+}
+
+wallet_content_handlers_deliverer& wallet_content_handlers_deliverer::get_instance()
+{
+  static wallet_content_handlers_deliverer _mgr;
+  return _mgr;
+}
+
 } //wallet_content_handler
