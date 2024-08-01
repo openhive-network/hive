@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet.set_wallet_filename( _wallet_file_name );
   BOOST_REQUIRE_EQUAL( _wallet_file_name , wallet.get_wallet_filename() );
 
-  BOOST_REQUIRE_EQUAL(0u, wallet.list_keys().size());
+  BOOST_REQUIRE_EQUAL(0u, wallet.get_keys_details().size());
 
   auto _key_generation = []( size_t nr_keys )
   {
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
   auto _prefix = "STM";
   wallet.import_key( _keys_a[0].first, _prefix);
-  BOOST_REQUIRE_EQUAL(1u, wallet.list_keys().size());
+  BOOST_REQUIRE_EQUAL(1u, wallet.get_keys_details().size());
 
   auto privCopy = wallet.get_private_key( _keys_a[0].second );
   BOOST_REQUIRE_EQUAL(_keys_a[0].first, privCopy.key_to_wif());
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet.lock();
   BOOST_REQUIRE(wallet.is_locked());
   wallet.unlock("pass");
-  BOOST_REQUIRE_EQUAL(1u, wallet.list_keys().size());
+  BOOST_REQUIRE_EQUAL(1u, wallet.get_keys_details().size());
   wallet.save_wallet_file( _wallet_file_name );
   BOOST_REQUIRE( fc::exists( _wallet_file_name ) );
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   BOOST_REQUIRE(wallet2.is_locked());
 
   wallet2.unlock("pass");
-  BOOST_REQUIRE_EQUAL(1u, wallet2.list_keys().size());
+  BOOST_REQUIRE_EQUAL(1u, wallet2.get_keys_details().size());
 
   auto privCopy2 = wallet2.get_private_key( _keys_a[0].second );
   BOOST_REQUIRE_EQUAL(_keys_a[0].first, privCopy2.key_to_wif());
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
   wallet.import_keys( _keys, _prefix );
 
-  BOOST_REQUIRE_EQUAL(5u, wallet.list_keys().size());
+  BOOST_REQUIRE_EQUAL(5u, wallet.get_keys_details().size());
   for( auto& keys : _keys_b )
   {
     auto _private_key = wallet.get_private_key( keys.second );

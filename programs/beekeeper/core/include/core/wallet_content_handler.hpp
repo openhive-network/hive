@@ -46,14 +46,6 @@ class wallet_content_handler
        */
       std::pair<public_key_type,private_key_type>  get_private_key_from_password( std::string account, std::string role, std::string password )const;
 
-      /** Checks whether the wallet has just been created and has not yet had a password set.
-       *
-       * Calling \c set_password will transition the wallet to the locked state.
-       * @return true if the wallet is new
-       * @ingroup Wallet Management
-       */
-      bool    is_new()const;
-
       /** Checks whether the wallet is locked (is unable to use its private keys).
        *
        * This state can be changed by calling \c lock() or \c unlock().
@@ -83,7 +75,7 @@ class wallet_content_handler
        * @param password the password previously set with \c set_password()
        * @ingroup Wallet Management
        */
-      void    check_password(std::string password);
+      void    check_password( const std::string& password );
 
       /** Sets a new password on the wallet.
        *
@@ -91,20 +83,13 @@ class wallet_content_handler
        * execute this command.
        * @ingroup Wallet Management
        */
-      void    set_password(std::string password);
+      void    set_password( const std::string& password );
 
-      /** Dumps all private keys owned by the wallet.
-       *
-       * The keys are printed in WIF format.  You can import these keys into another wallet
-       * using \c import_key()
-       * @returns a map containing the private keys, indexed by their public key
-       */
-      keys_details list_keys();
-
-      /** Dumps all public keys owned by the wallet.
+      /** Returns details about private/public keys. In further processing proper data is extracted i.e.
+       * for `get_public_keys` endpoint only public keys are returned, but for saving locally data for backup are returned both keys (private/public).
        * @returns a std::vector containing the public keys
        */
-      keys_details list_public_keys();
+      keys_details get_keys_details();
 
       /** Loads a specified Graphene wallet.
        *
