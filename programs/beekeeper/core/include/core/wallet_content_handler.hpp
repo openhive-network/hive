@@ -19,7 +19,13 @@ class beekeeper_impl;
  */
 class wallet_content_handler
 {
-   bool is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content );
+   public:
+
+      using ptr = std::shared_ptr<wallet_content_handler>;
+
+   private:
+
+      bool is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content );
 
    public:
       wallet_content_handler();
@@ -159,6 +165,44 @@ class wallet_content_handler
        * @param key the Public Key to remove
        */
       bool has_matching_private_key( const public_key_type& public_key );
+};
+
+class wallet_content_handler_lock
+{
+   private:
+
+      bool locked = true;
+
+   public:
+
+      wallet_content_handler::ptr content;
+
+      wallet_content_handler_lock( bool locked, wallet_content_handler::ptr& content ): locked( locked ), content( content )
+      {
+      }
+
+      void set_locked( bool value ) { locked = value; }
+      bool is_locked() const { return locked; }
+};
+
+class wallet_content_handlers_deliverer
+{
+   public:
+
+      wallet_content_handlers_deliverer(){};
+
+   private:
+
+      std::map<std::string, wallet_content_handler::ptr> items;
+
+   public:
+
+      wallet_content_handler_lock create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
+      wallet_content_handler_lock open( const std::string& wallet_name, const std::string& wallet_file_name );
+      void unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_lock& wallet );
+      void lock( wallet_content_handler_lock& wallet );
+
+      static wallet_content_handlers_deliverer& get_instance();
 };
 
 } //wallet_content_handler

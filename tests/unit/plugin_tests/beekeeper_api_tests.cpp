@@ -126,15 +126,18 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
         BOOST_TEST_MESSAGE( "sleep: " + std::to_string( _interval + 5 ) );
         _sleep(_interval + 5 );
         BOOST_TEST_MESSAGE( "unlock: _wallets[0]" );
+        bool _unlock_passed = true;
         try
         {
           _api.unlock( beekeeper::unlock_args{ _token, _wallets[0].name, _wallets[1].password } );
         }
         catch( const fc::exception& e )
         {
+          _unlock_passed = false;
           BOOST_TEST_MESSAGE( e.to_string() );
           BOOST_REQUIRE( e.to_string().find( "Invalid password for wallet:" ) != std::string::npos );
         }
+        BOOST_REQUIRE( _unlock_passed == false );
         _list_created_wallets_checker( _token, { {"w0", false}, {"w1", false}, {"w2", false} } );
       }
       {
@@ -616,7 +619,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
             }
             catch( const fc::exception& e )
             {
-              BOOST_REQUIRE( e.to_string().find( "already exists at" ) != std::string::npos );
+              BOOST_REQUIRE( e.to_string().find( "Invalid password for wallet" ) != std::string::npos );
               _delete_wallet_file( _wallet_names[_idx] );
             }
           }break;
