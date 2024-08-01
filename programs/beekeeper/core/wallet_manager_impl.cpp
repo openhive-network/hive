@@ -19,7 +19,7 @@ std::string wallet_manager_impl::gen_password()
   return password_prefix + key.key_to_wif();
 }
 
-void wallet_manager_impl::valid_filename( const string& name )
+void wallet_manager_impl::valid_filename( const std::string& name )
 {
   FC_ASSERT( !name.empty(), "Name of wallet is incorrect. Is empty.");
 
@@ -42,7 +42,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
 
   std::string _password = password ? ( *password ) : gen_password();
 
-  auto wallet = make_unique<beekeeper_wallet>();
+  auto wallet = std::make_unique<beekeeper_wallet>();
   wallet->set_password( _password );
   wallet->set_wallet_filename(wallet_filename.string());
   wallet->unlock( _password );
@@ -93,7 +93,7 @@ void wallet_manager_impl::close( const std::string& wallet_name )
   wallets.erase( wallet_name );
 }
 
-fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name )
+fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wallet( const public_key_type& public_key, const std::string& wallet_name )
 {
   keys_details _keys = list_keys_impl( wallet_name, std::string(), false/*password_is_required*/ );
   for( auto& key : _keys )
@@ -161,7 +161,7 @@ std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
   return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
 
-keys_details wallet_manager_impl::list_keys_impl( const string& name, const string& password, bool password_is_required )
+keys_details wallet_manager_impl::list_keys_impl( const std::string& name, const std::string& password, bool password_is_required )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -171,7 +171,7 @@ keys_details wallet_manager_impl::list_keys_impl( const string& name, const stri
   return w->list_keys();
 }
 
-keys_details wallet_manager_impl::list_keys( const string& name, const string& password )
+keys_details wallet_manager_impl::list_keys( const std::string& name, const std::string& password )
 {
   return list_keys_impl( name, password, true/*password_is_required*/ );
 }
@@ -183,7 +183,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   keys_details _result;
   bool is_all_wallet_locked = true;
 
-  auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet )
+  auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet>& wallet )
   {
     if( !wallet->is_locked() )
     {
@@ -224,7 +224,7 @@ void wallet_manager_impl::lock_all()
   }
 }
 
-bool wallet_manager_impl::is_locked( const string& name )
+bool wallet_manager_impl::is_locked( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -252,7 +252,7 @@ void wallet_manager_impl::unlock( const std::string& wallet_name, const std::str
   w->unlock( password );
 }
 
-string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key, const std::string& prefix )
+std::string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key, const std::string& prefix )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -262,7 +262,7 @@ string wallet_manager_impl::import_key( const std::string& name, const std::stri
   return w->import_key( wif_key, prefix );
 }
 
-std::vector<string> wallet_manager_impl::import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix )
+std::vector<std::string> wallet_manager_impl::import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -282,11 +282,11 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
   w->remove_key( public_key );
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
 {
   try
   {
-    auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet )
+    auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet>& wallet )
     {
       if( !wallet->is_locked() )
         return sign_method( wallet );
@@ -322,7 +322,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
 
 signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )
