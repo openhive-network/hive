@@ -196,6 +196,7 @@ namespace fc {
 
             extended_public_key get_extended_public_key()const;
 
+            extended_private_key derive_child(const std::string& path); // using bip-32 paths like "m/1'/1/0'"
             extended_private_key derive_child( int i ) const;
             extended_private_key derive_normal_child( int i ) const;
             extended_private_key derive_hardened_child( int i ) const;
