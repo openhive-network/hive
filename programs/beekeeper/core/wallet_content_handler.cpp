@@ -41,14 +41,11 @@ public:
 
   void encrypt_keys()
   {
-    if( !is_locked() )
-    {
-      plain_keys data;
-      data.keys = _keys;
-      data.checksum = _checksum;
-      auto plain_txt = fc::raw::pack_to_vector(data);
-      _wallet.cipher_keys = fc::aes_encrypt( data.checksum, plain_txt );
-    }
+    plain_keys data;
+    data.keys = _keys;
+    data.checksum = _checksum;
+    auto plain_txt = fc::raw::pack_to_vector(data);
+    _wallet.cipher_keys = fc::aes_encrypt( data.checksum, plain_txt );
   }
 
   bool is_locked()const
@@ -225,8 +222,6 @@ std::string wallet_content_handler::get_wallet_filename() const
 
 std::string wallet_content_handler::import_key( const std::string& wif_key, const std::string& prefix )
 {
-  FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
-
   const auto _result = my->import_key( wif_key, prefix );
 
   if( _result.second )//Save a file only when a key is really imported.
@@ -237,8 +232,6 @@ std::string wallet_content_handler::import_key( const std::string& wif_key, cons
 
 std::vector<std::string> wallet_content_handler::import_keys( const std::vector<std::string>& wif_keys, const std::string& prefix )
 {
-  FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
-
   const auto _result = my->import_keys( wif_keys, prefix );
 
   if( !_result.empty() )//Save a file only when at least one key is really imported.
@@ -249,8 +242,6 @@ std::vector<std::string> wallet_content_handler::import_keys( const std::vector<
 
 bool wallet_content_handler::remove_key( const public_key_type& public_key )
 {
-  FC_ASSERT( !is_locked(), "Unable to remove key from a locked wallet");
-
   if( my->remove_key( public_key ) )
   {
     save_wallet_file();
@@ -274,11 +265,6 @@ bool wallet_content_handler::is_locked() const
   return my->is_locked();
 }
 
-bool wallet_content_handler::is_new() const
-{
-  return my->_wallet.cipher_keys.size() == 0;
-}
-
 void wallet_content_handler::encrypt_keys()
 {
   my->encrypt_keys();
@@ -286,8 +272,6 @@ void wallet_content_handler::encrypt_keys()
 
 void wallet_content_handler::lock()
 {
-  FC_ASSERT( !is_locked(), "Unable to lock a locked wallet" );
-
   encrypt_keys();
 
   for( auto key : my->_keys )
@@ -334,7 +318,7 @@ void wallet_content_handler::unlock(std::string password)
   my->_checksum = _pk.checksum;
 }
 
-void wallet_content_handler::check_password(std::string password)
+void wallet_content_handler::check_password( const std::string& password )
 {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -357,23 +341,14 @@ void wallet_content_handler::check_password(std::string password)
   }
 }
 
-void wallet_content_handler::set_password( std::string password )
+void wallet_content_handler::set_password( const std::string& password )
 {
-  if( !is_new() )
-    FC_ASSERT( !is_locked(), "The wallet must be unlocked before the password can be set" );
   my->_checksum = fc::sha512::hash( password.c_str(), password.size() );
   lock();
 }
 
-keys_details wallet_content_handler::list_keys()
+keys_details wallet_content_handler::get_keys_details()
 {
-  FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
-  return my->_keys;
-}
-
-keys_details wallet_content_handler::list_public_keys()
-{
-  FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
   return my->_keys;
 }
 

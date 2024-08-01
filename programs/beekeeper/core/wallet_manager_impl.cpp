@@ -168,7 +168,7 @@ keys_details wallet_manager_impl::list_keys_impl( const std::string& name, const
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
   if( password_is_required )
     w->check_password( password ); //throws if bad password
-  return w->list_keys();
+  return w->get_keys_details();
 }
 
 keys_details wallet_manager_impl::list_keys( const std::string& name, const std::string& password )
@@ -187,7 +187,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   {
     if( !wallet->is_locked() )
     {
-      _result.merge( wallet->list_public_keys() );
+      _result.merge( wallet->get_keys_details() );
     }
     is_all_wallet_locked &= wallet->is_locked();
   };
@@ -236,6 +236,8 @@ void wallet_manager_impl::lock( const std::string& wallet_name )
 {
   FC_ASSERT( wallets.count( wallet_name ), "Wallet not found: ${w}", ("w", wallet_name));
   auto& w = wallets.at( wallet_name );
+
+  FC_ASSERT( !w->is_locked(), "Unable to lock a locked wallet ${w}", ("w", wallet_name));
 
   w->lock();
 }
