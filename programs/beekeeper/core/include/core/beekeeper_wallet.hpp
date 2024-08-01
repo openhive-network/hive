@@ -1,8 +1,9 @@
 #pragma once
 
-#include <core/beekeeper_wallet_base.hpp>
+#include <core/utilities.hpp>
 
 #include<vector>
+#include<string>
 
 namespace beekeeper {
 
@@ -16,14 +17,14 @@ class beekeeper_impl;
  * This wallet assumes it is connected to the database server with a high-bandwidth, low-latency connection and
  * performs minimal caching.
  */
-class beekeeper_wallet final : public beekeeper_wallet_base
+class beekeeper_wallet
 {
-   bool is_checksum_valid( const fc::sha512& old_checksum, const vector<char>& content );
+   bool is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content );
 
    public:
       beekeeper_wallet();
 
-      ~beekeeper_wallet() override;
+      ~beekeeper_wallet();
 
       /** Returns the current wallet filename.
        *
@@ -32,18 +33,18 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * @see set_wallet_filename()
        * @return the wallet filename
        */
-      string                            get_wallet_filename() const;
+      std::string                            get_wallet_filename() const;
 
       /**
        * Get the WIF private key corresponding to a public key.  The
        * private key must already be in the wallet.
        */
-      private_key_type get_private_key( public_key_type pubkey )const override;
+      private_key_type get_private_key( public_key_type pubkey ) const;
 
       /**
        *  @param role - active | owner | posting | memo
        */
-      pair<public_key_type,private_key_type>  get_private_key_from_password( string account, string role, string password )const;
+      std::pair<public_key_type,private_key_type>  get_private_key_from_password( std::string account, std::string role, std::string password )const;
 
       /** Checks whether the wallet has just been created and has not yet had a password set.
        *
@@ -59,12 +60,12 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * @return true if the wallet is locked
        * @ingroup Wallet Management
        */
-      bool    is_locked()const override;
+      bool    is_locked()const;
 
       /** Locks the wallet immediately.
        * @ingroup Wallet Management
        */
-      void    lock() override;
+      void    lock();
 
       /** Unlocks the wallet.
        *
@@ -73,7 +74,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * @param password the password previously set with \c set_password()
        * @ingroup Wallet Management
        */
-      void    unlock(string password) override;
+      void    unlock(std::string password);
 
       /** Checks the password of the wallet
        *
@@ -82,7 +83,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * @param password the password previously set with \c set_password()
        * @ingroup Wallet Management
        */
-      void    check_password(string password) override;
+      void    check_password(std::string password);
 
       /** Sets a new password on the wallet.
        *
@@ -90,7 +91,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * execute this command.
        * @ingroup Wallet Management
        */
-      void    set_password(string password) override;
+      void    set_password(std::string password);
 
       /** Dumps all private keys owned by the wallet.
        *
@@ -98,12 +99,12 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      keys_details list_keys() override;
+      keys_details list_keys();
 
       /** Dumps all public keys owned by the wallet.
-       * @returns a vector containing the public keys
+       * @returns a std::vector containing the public keys
        */
-      keys_details list_public_keys() override;
+      keys_details list_public_keys();
 
       /** Loads a specified Graphene wallet.
        *
@@ -118,7 +119,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *                        existing wallet file
        * @returns true if the specified wallet is loaded
        */
-      bool    load_wallet_file(string wallet_filename = "");
+      bool    load_wallet_file(std::string wallet_filename = "");
 
       /** Saves the current wallet to the given filename.
        *
@@ -130,7 +131,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *                        or overwrite.  If \c wallet_filename is empty,
        *                        save to the current filename.
        */
-      void    save_wallet_file(string wallet_filename = "");
+      void    save_wallet_file(std::string wallet_filename = "");
 
       /** Sets the wallet filename used for future writes.
        *
@@ -139,31 +140,31 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *
        * @param wallet_filename the new filename to use for future saves
        */
-      void    set_wallet_filename(string wallet_filename);
+      void    set_wallet_filename(std::string wallet_filename);
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *
        * @param wif_key the WIF Private Key to import
        * @param prefix a prefix of a public key
        */
-      string import_key( const string& wif_key, const string& prefix ) override;
+      std::string import_key( const std::string& wif_key, const std::string& prefix );
 
       /** Imports a WIF Private Keys into the wallet to be used to sign transactions by an account.
        *
        * @param wif_key the WIF Private Keys to import
        * @param prefix a prefix of a public key
        */
-      std::vector<string> import_keys( const std::vector<string>& wif_keys, const string& prefix ) override;
+      std::vector<std::string> import_keys( const std::vector<std::string>& wif_keys, const std::string& prefix );
 
       /** Removes a key from the wallet.
        *
        * @param key the Public Key to remove
        */
-      bool remove_key( const public_key_type& public_key ) override;
+      bool remove_key( const public_key_type& public_key );
 
       /* Attempts to sign a digest via the given public_key
       */
-      std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) override;
+      std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key );
 
       std::shared_ptr<detail::beekeeper_impl> my;
       void encrypt_keys();
@@ -172,7 +173,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *
        * @param key the Public Key to remove
        */
-      bool has_matching_private_key( const public_key_type& public_key ) override;
+      bool has_matching_private_key( const public_key_type& public_key );
 };
 
 } //beekeeper_wallet

@@ -1,6 +1,5 @@
 #include <beekeeper/beekeeper_wallet_api.hpp>
 #include <beekeeper/extended_api.hpp>
-#include <core/beekeeper_wallet_base.hpp>
 
 #include <hive/protocol/config.hpp>
 
