@@ -16,7 +16,7 @@
 #include <fc/io/json.hpp>
 #include <fc/crypto/crypto_data.hpp>
 
-#include <core/beekeeper_wallet.hpp>
+#include <core/wallet_content_handler.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
 #include <core/utilities.hpp>
 
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   test_utils::beekeeper_mgr b_mgr;
   b_mgr.remove_wallets();
 
-  beekeeper_wallet wallet;
+  wallet_content_handler wallet;
   BOOST_REQUIRE(wallet.is_locked());
 
   wallet.set_password("pass");
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet.save_wallet_file( _wallet_file_name );
   BOOST_REQUIRE( fc::exists( _wallet_file_name ) );
 
-  beekeeper_wallet wallet2;
+  wallet_content_handler wallet2;
 
   BOOST_REQUIRE(wallet2.is_locked());
   wallet2.load_wallet_file( _wallet_file_name );

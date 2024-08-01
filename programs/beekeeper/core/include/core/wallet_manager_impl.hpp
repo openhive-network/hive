@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/utilities.hpp>
-#include <core/beekeeper_wallet.hpp>
+#include <core/wallet_content_handler.hpp>
 
 #include <boost/filesystem.hpp>
 
@@ -47,14 +47,14 @@ class wallet_manager_impl {
 
     boost::filesystem::path wallet_directory;
 
-    std::map<std::string, std::unique_ptr<beekeeper_wallet>> wallets;
+    std::map<std::string, std::unique_ptr<wallet_content_handler>> wallets;
 
     std::string gen_password();
     void valid_filename( const std::string& name );
 
     bool is_locked( const std::string& name );
 
-    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
+    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<wallet_content_handler>&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
 
     boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
     {

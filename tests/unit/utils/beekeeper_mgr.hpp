@@ -2,14 +2,14 @@
 
 #include <fc/filesystem.hpp>
 
-#include <core/beekeeper_wallet.hpp>
+#include <core/wallet_content_handler.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
 
 #include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
-using beekeeper_wallet          = beekeeper::beekeeper_wallet;
+using wallet_content_handler    = beekeeper::wallet_content_handler;
 using session_manager           = beekeeper::session_manager;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 
