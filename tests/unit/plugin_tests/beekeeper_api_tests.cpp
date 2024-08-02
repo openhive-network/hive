@@ -710,5 +710,99 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_performance_sign_transaction)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(wallets_synchronization_threads)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const size_t _nr_threads = 10;
+
+    std::string _wallet_name = "www";
+
+    uint64_t _interval = 500;
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64 ), theApp, _interval );
+
+    std::vector<std::string> _tokens;
+
+    for( size_t i = 0; i < _nr_threads; ++i )
+      _tokens.emplace_back( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+
+    auto _password  = _api.create( beekeeper::create_args{ _tokens[0], _wallet_name } ).password;
+
+    for( size_t i = 1; i < _nr_threads; ++i )
+      _api.unlock( beekeeper::unlock_args{ _tokens[i], _wallet_name, _password } );
+
+    std::vector<std::shared_ptr<std::thread>> threads;
+
+    auto _call = [&]( int nr_thread )
+    {
+      size_t _max = 300;
+      for( size_t _cnt = 0; _cnt < _max; ++_cnt )
+      {
+        if( nr_thread % 2 )
+        {
+          auto _priv = fc::ecc::private_key::generate();
+          try
+          {
+            _api.import_key( beekeeper::import_key_args{ _tokens[nr_thread], _wallet_name, _priv.key_to_wif() } );
+          }
+          catch( fc::exception& e )
+          {
+            elog( "${e}", (e) );
+            BOOST_REQUIRE( false );
+          }
+        }
+        else
+        {
+          auto _keys = _api.get_public_keys( beekeeper::get_public_keys_args{ _tokens[nr_thread] } ).keys;
+          if( !_keys.empty() )
+          {
+            beekeeper::public_key_details _key;
+
+            if( _keys.size() == 1 )
+              _key = *_keys.begin();
+            else
+              _key = *_keys.rbegin();
+
+            try
+            {
+              _api.remove_key( beekeeper::remove_key_args{ _tokens[nr_thread], _wallet_name, _key.public_key } );
+            }
+            catch( fc::exception& e )
+            {
+              BOOST_REQUIRE( e.to_string().find( "Key not in wallet" ) != std::string::npos );
+            }
+          }
+        }
+      }
+    };
+
+    for( size_t i = 0; i < _nr_threads; ++i )
+      threads.emplace_back( std::make_shared<std::thread>( _call, i ) );
+
+    for( auto& thread : threads )
+      if( thread )
+        thread->join();
+
+    auto _pattern_keys = _api.get_public_keys( beekeeper::get_public_keys_args{ _tokens[0] } ).keys;
+    for( size_t i = 1; i < _nr_threads; ++i )
+    {
+      auto _keys = _api.get_public_keys( beekeeper::get_public_keys_args{ _tokens[i] } ).keys;
+
+      BOOST_REQUIRE( _pattern_keys.size() == _keys.size() );
+
+      auto _itr = _keys.begin();
+      for( auto& item : _pattern_keys )
+      {
+        BOOST_REQUIRE( item.public_key == _itr->public_key );
+        ++_itr;
+      }
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
