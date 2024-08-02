@@ -150,6 +150,16 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( explain_op explain_op.cpp )
+target_link_libraries( explain_op PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+install( TARGETS
+   explain_op
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
 add_executable( compress_block_log compress_block_log.cpp )
 
 # needed to correctly print crash stacktrace
