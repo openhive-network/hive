@@ -279,6 +279,8 @@ std::string to_string(const boost::container::flat_map<K, T...>& v)
 template<typename... Types>
 std::string to_string(const fc::static_variant<Types...>& v)
 {
+  std::vector<char> tag = fc::raw::pack_to_vector((uint8_t)v.which());
+  std::cout << fc::to_hex(tag) << ": " << v.get_stored_type_name() << '\n';
   v.visit(explainer{});
   return "";
 }
@@ -299,6 +301,6 @@ int main()
   for (;std::cin >> hex;) {
     fc::from_hex(hex, buf.data(), 4096);
     hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(buf);
-    op.visit(explainer{});
+    to_string(op);
   }
 }
