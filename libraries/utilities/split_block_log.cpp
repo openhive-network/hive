@@ -13,7 +13,7 @@ using hive::chain::blockchain_worker_thread_pool;
 
 void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t part_count,
   appbase::application& app, blockchain_worker_thread_pool& thread_pool,
-  const fc::optional<fc::path> splitted_block_log_destination_dir )
+  const fc::optional<fc::path> split_block_log_destination_dir )
 {
   std::stringstream request;
   request << "Requested generation of " 
@@ -49,7 +49,7 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
 
   ilog( "Actual tail_part_number: ${tail_part_number}", (tail_part_number) );
 
-  fc::path output_path( (splitted_block_log_destination_dir ? *splitted_block_log_destination_dir : monolith_path.parent_path()) );
+  fc::path output_path( (split_block_log_destination_dir ? *split_block_log_destination_dir : monolith_path.parent_path()) );
   fc::directory_iterator it( output_path );
   fc::directory_iterator end_it;
   for( ; it != end_it; it++ )
