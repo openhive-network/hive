@@ -182,12 +182,12 @@ std::string to_string(bool v)
 
 std::string to_string(int16_t v)
 {
-  return std::to_string(static_cast<int>(v));
+  return std::to_string(v);
 }
 
 std::string to_string(int64_t v)
 {
-  return std::to_string(static_cast<int>(v));
+  return std::to_string(v);
 }
 
 std::string to_string(uint8_t v)
@@ -197,17 +197,17 @@ std::string to_string(uint8_t v)
 
 std::string to_string(uint16_t v)
 {
-  return std::to_string(static_cast<int>(v));
+  return std::to_string(v);
 }
 
 std::string to_string(uint32_t v)
 {
-  return std::to_string(static_cast<int>(v));
+  return std::to_string(v);
 }
 
 std::string to_string(uint64_t v)
 {
-  return std::to_string(static_cast<int>(v));
+  return std::to_string(v);
 }
 
 template<size_t N>
