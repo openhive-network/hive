@@ -54,8 +54,6 @@ std::string to_string(const fc::ripemd160& v);
 std::string to_string(const fc::sha256& v);
 template<typename T>
 std::string to_string(const fc::safe<T>& v);
-template<typename T>
-std::string to_string(const fc::optional<T>& v);
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v);
 std::string to_string(const std::vector<char>& v);
@@ -69,11 +67,24 @@ template<typename T>
 std::string to_string(const flat_set_ex<T>& v);
 template<typename K, typename... T>
 std::string to_string(const boost::container::flat_map<K, T...>& v);
-template<typename... Types>
-std::string to_string(const fc::static_variant<Types...>& v);
-template<typename T>
-std::string to_string(const T& v);
 
+template <typename, typename = void>
+struct is_to_string_invocable : std::false_type {};
+template <typename T>
+struct is_to_string_invocable<T, std::void_t<decltype(to_string(std::declval<T>()))>> : std::true_type {};
+template <typename T>
+inline constexpr bool is_to_string_invocable_v = is_to_string_invocable<T>::value;
+
+template<typename T>
+void explain_member(const std::string& name, const fc::optional<T>& v);
+template<typename... Types>
+void explain_member(const std::string& name, const fc::static_variant<Types...>& v);
+template<typename T>
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<not is_to_string_invocable_v<T>>;
+template<typename T>
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<is_to_string_invocable_v<T>>;
+template<typename U, typename V>
+void explain_member(const std::string& name, const U& u, const V& v);
 
 template<typename Op>
 class member_explainer
@@ -83,21 +94,16 @@ public:
     : op(op)
   {}
   member_explainer(const Op& op, const std::string& prefix)
-    : op(op), prefix(prefix+".")
+    : op(op), prefix(prefix)
   {}
 
     template<typename Member, class Class, Member (Class::*member)>
     void operator()(const char* name) const
     {
-      if constexpr (fc::reflector<Member>::is_defined::value)
-      {
-        fc::reflector<Member>::visit(member_explainer<Member>(op.*member, prefix + name));
-      }
+      if (prefix.empty())
+        explain_member(name, op.*member);
       else
-      {
-        std::vector<char> v = fc::raw::pack_to_vector(op.*member);
-        std::cout << fc::to_hex(v) << ": " << name << ": " << to_string(op.*member) << '\n';
-      }
+        explain_member(prefix+"."+name, op.*member);
     }
 
 private:
@@ -107,15 +113,67 @@ private:
 
 struct explainer
 {
+public:
   using result_type = void;
+
+  explainer()
+  {}
+  explainer(const std::string& prefix)
+    : prefix(prefix)
+  {}
 
   template <typename Op>
   void operator()(const Op& op) const
   {
-    fc::reflector<Op>::visit(member_explainer<Op>(op));
+    fc::reflector<Op>::visit(member_explainer<Op>(op, prefix));
   }
 
+private:
+    std::string prefix;
 };
+
+
+template<typename T>
+void explain_member(const std::string& name, const fc::optional<T>& v)
+{
+  explain_member(name+".valid", v.valid());
+  if (v.valid())
+    explain_member(name+".value", v.value());
+}
+
+template<typename... Types>
+void explain_member(const std::string& name, const fc::static_variant<Types...>& v)
+{
+  explain_member(name, (uint8_t)v.which(), v.get_stored_type_name());
+  v.visit(explainer(name));
+}
+
+template<typename T>
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<not is_to_string_invocable_v<T>>
+{
+  fc::reflector<T>::visit(member_explainer<T>(v, name));
+}
+
+template<typename T>
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<is_to_string_invocable_v<T>>
+{
+  std::vector<char> vec = fc::raw::pack_to_vector(v);
+  if (name.empty())
+    std::cout << fc::to_hex(vec) << ": " << to_string(v) << '\n';
+  else
+    std::cout << fc::to_hex(vec) << ": " << name << ": " << to_string(v) << '\n';
+}
+
+template<typename U, typename V>
+void explain_member(const std::string& name, const U& u, const V& v)
+{
+  std::vector<char> vec = fc::raw::pack_to_vector(u);
+  if (name.empty())
+    std::cout << fc::to_hex(vec) << ": " << to_string(v) << '\n';
+  else
+    std::cout << fc::to_hex(vec) << ": " << name << ": " << to_string(v) << '\n';
+}
+
 
 std::string to_string(bool v)
 {
@@ -228,13 +286,6 @@ std::string to_string(const fc::safe<T>& v)
   return to_string(v.value);
 }
 
-template<typename T>
-std::string to_string(const fc::optional<T>& v)
-{
-  if (v.valid()) return to_string(*v);
-  else return "";
-}
-
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v)
 {
@@ -273,24 +324,7 @@ std::string to_string(const flat_set_ex<T>& v)
 template<typename K, typename... T>
 std::string to_string(const boost::container::flat_map<K, T...>& v)
 {
-  return "flat_map<K< T...>"; // TODO
-}
-
-template<typename... Types>
-std::string to_string(const fc::static_variant<Types...>& v)
-{
-  std::vector<char> tag = fc::raw::pack_to_vector((uint8_t)v.which());
-  std::cout << fc::to_hex(tag) << ": " << v.get_stored_type_name() << '\n';
-  v.visit(explainer{});
-  return "";
-}
-
-template<typename T>
-std::string to_string(const T& v)
-{
-  static_assert(fc::reflector<T>::is_defined::value);
-  fc::reflector<T>::visit(member_explainer<T>(v));
-  return "";
+  return "flat_map<K, T...>"; // TODO
 }
 
 int main()
@@ -301,6 +335,6 @@ int main()
   for (;std::cin >> hex;) {
     fc::from_hex(hex, buf.data(), 4096);
     hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(buf);
-    to_string(op);
+    explain_member("", op);
   }
 }
