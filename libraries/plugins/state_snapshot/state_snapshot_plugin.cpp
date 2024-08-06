@@ -1669,7 +1669,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.close();
   _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.pre_open(openArgs);
-  _mainDb._open(openArgs);
+  _mainDb.open(openArgs);
   dlog("Updating DB decoded state objects data and blockchain config with data from snapshot.");
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
   _mainDb.set_blockchain_config(full_loaded_blockchain_configuration_json);

@@ -105,7 +105,7 @@ int main( int argc, char** argv, char** envp )
     block_storage->open_and_init( bl_args, true /*read_only*/, &db );
   });
 
-  db._open( db_args );
+  db.open( db_args );
 
   hive_schema ss;
 

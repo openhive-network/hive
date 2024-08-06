@@ -45,6 +45,7 @@ namespace hive { namespace chain {
       bool      enable_block_log_compression = true;
       int       block_log_compression_level = 15;
       bool      enable_block_log_auto_fixing = true;
+      bool      load_snapshot = false;
     };
     virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
                                 database* lib_access ) = 0;
