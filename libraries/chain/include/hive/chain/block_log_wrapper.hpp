@@ -106,7 +106,8 @@ namespace hive { namespace chain {
 
     void skip_first_parts( uint32_t parts_to_skip );
 
-    bool try_splitting_monolithic_log_file( uint32_t head_part_number = 0,
+    bool try_splitting_monolithic_log_file( full_block_ptr_t state_head_block,
+                                            uint32_t head_part_number = 0,
                                             size_t part_count = 0 );
     struct part_file_info_t {
       uint32_t part_number = 0;
@@ -122,15 +123,17 @@ namespace hive { namespace chain {
      * @throws runtime_error when unable to find or generate enough file parts.
      * @param head_part_number file part with biggest number (containing head block).
      * @param part_file_names contains all parts found in block log directory.
+     * @param state_head_block pre-read from state file.
      * @return actual tail part number needed (and present).
      */
     uint32_t force_parts_exist( uint32_t head_part_number,
-      part_file_names_t& part_file_names, bool allow_splitting_monolithic_log );
+      part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
+      full_block_ptr_t state_head_block );
     /// @brief Used internally by create_opened_wrapper
     void open_and_init( const fc::path& path, bool read_only, uint32_t start_from_part = 1 );
     // Common helpers
     void common_open_and_init( bool read_only, bool allow_splitting_monolithic_log,
-                               uint32_t start_from_part = 1 );
+                               full_block_ptr_t state_head_block, uint32_t start_from_part = 1 );
     using block_log_ptr_t = std::shared_ptr<block_log>;
     void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;

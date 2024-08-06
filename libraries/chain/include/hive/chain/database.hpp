@@ -181,16 +181,19 @@ namespace chain {
         skip_block_log              = 1 << 13  ///< used to skip block logging on reindex
       };
 
-      void pre_open( const open_args& args );
       /**
-        * @brief Open a database, creating a new one if necessary
+        * @brief Preliminary part of state database opening. Requires following call to open.
         *
         * Opens a database in the specified directory. If no initialized database is found the database
         * will be initialized with the default state.
-        *
-        * @param data_dir Path to open or create database in
+        * 
+        * Exists after independent irreversible storage is initiated (no index loaded).
         */
-      void _open( const open_args& args );
+      void pre_open( const open_args& args );
+      /**
+        * @brief Main part of state database opening. Requires earlier call to pre_open.
+        */
+      void open( const open_args& args );
 
     private:
 

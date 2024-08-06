@@ -12,6 +12,8 @@ single_block_storage::single_block_storage( appbase::application& app,
 void single_block_storage::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
   database* db )
 {
+  FC_ASSERT(db);
+  
   _open_args = bl_open_args;
   _db = db;
 }

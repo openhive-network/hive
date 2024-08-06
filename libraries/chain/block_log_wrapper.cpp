@@ -1,6 +1,7 @@
 #include <hive/chain/block_log_wrapper.hpp>
 
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/database.hpp>
 #include <hive/utilities/split_block_log.hpp>
 //#include <regex>
 
@@ -68,14 +69,16 @@ void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, 
   database* db )
 {
   _open_args = bl_open_args;
-  common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/);
+  common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/, 
+    db ? db->get_last_irreversible_block_data() : full_block_ptr_t() /*state_head_block*/ );
 }
 
 void block_log_wrapper::open_and_init( const fc::path& path, bool read_only, 
   uint32_t start_from_part /*= 1*/ )
 {
   _open_args.data_dir = path.parent_path();
-  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/, start_from_part );
+  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/, full_block_ptr_t(),
+                        start_from_part );
 }
 
 void block_log_wrapper::reopen_for_writing()
@@ -460,7 +463,7 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
           1;
 }
 
-bool block_log_wrapper::try_splitting_monolithic_log_file(
+bool block_log_wrapper::try_splitting_monolithic_log_file( full_block_ptr_t state_head_block,
   uint32_t head_part_number /*= 0*/, size_t part_count /*= 0*/  )
 {
   fc::path monolith_path( _open_args.data_dir / block_log_file_name_info::_legacy_file_name );
@@ -468,6 +471,13 @@ bool block_log_wrapper::try_splitting_monolithic_log_file(
   {
     try
     {
+      if( head_part_number == 0 /*to be determined from the source*/ && 
+          state_head_block /*state is not empty*/ &&
+          not _open_args.load_snapshot /*the state won't be overridden*/ )
+      {
+        head_part_number =
+          get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
+      }
       wlog("Trying to split legacy monolithic block log file.");
       utilities::split_block_log( monolith_path, head_part_number, part_count, _app, _thread_pool );
       wlog("Successfully split legacy monolithic block log file.");
@@ -485,7 +495,8 @@ bool block_log_wrapper::try_splitting_monolithic_log_file(
 }
 
 uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number, 
-  part_file_names_t& part_file_names, bool allow_splitting_monolithic_log )
+  part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
+  full_block_ptr_t state_head_block )
 {
   FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
   uint32_t tail_part_number = part_file_names.cbegin()->part_number;
@@ -549,7 +560,8 @@ uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number,
     }
 
     size_t needed_part_count = high_missing_part_number - low_missing_part_number + 1;
-    if( not try_splitting_monolithic_log_file( high_missing_part_number, needed_part_count ) )
+    if( not try_splitting_monolithic_log_file( state_head_block, high_missing_part_number,
+                                               needed_part_count ) )
     {
       msg <<
         " Failed to generate missing block log part file(s) by splitting legacy monolithic block log file.";
@@ -587,7 +599,7 @@ void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names 
 }
 
 void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitting_monolithic_log, 
-  uint32_t start_from_part /*= 1*/ )
+  full_block_ptr_t state_head_block, uint32_t start_from_part /*= 1*/ )
 {
   FC_ASSERT( start_from_part > 0 );
 
@@ -611,7 +623,8 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     size_t needed_part_count = 
       _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
     if( allow_splitting_monolithic_log &&
-        try_splitting_monolithic_log_file( 0/*determine head part from source*/, needed_part_count ) )
+        try_splitting_monolithic_log_file( state_head_block, 0/*determine head part from source*/,
+                                           needed_part_count ) )
     {
       look_for_part_files( part_file_names );
       allow_splitting_monolithic_log = false;
@@ -634,7 +647,8 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   // Make sure all parts required by configuration are there.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
   uint32_t actual_tail_number_needed = 
-    force_parts_exist( head_part_number, part_file_names, allow_splitting_monolithic_log );
+    force_parts_exist( head_part_number, part_file_names, allow_splitting_monolithic_log,
+                       state_head_block );
 
   // Open all needed parts.
   _logs.resize( head_part_number, block_log_ptr_t() );

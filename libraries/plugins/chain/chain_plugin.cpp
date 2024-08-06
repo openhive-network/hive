@@ -789,6 +789,7 @@ void chain_plugin_impl::initial_settings()
   bl_open_args.enable_block_log_compression = enable_block_log_compression;
   bl_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
   bl_open_args.block_log_compression_level = block_log_compression_level;
+  bl_open_args.load_snapshot = load_snapshot;
 }
 
 bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
@@ -832,7 +833,7 @@ void chain_plugin_impl::open()
     {
       block_storage->open_and_init( bl_open_args, true/*read_only*/, &db );
     });
-    db._open( db_open_args );
+    db.open( db_open_args );
 
     if( dump_memory_details )
     {

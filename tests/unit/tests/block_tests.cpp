@@ -118,7 +118,7 @@ void open_test_database( database& db, block_storage_i& block_storage,
   {
     block_storage.open_and_init( bl_args, true/*read_only*/, &db );
   });
-  db._open( args );
+  db.open( args );
 }
 
 #define SET_UP_FIXTURE( REMOVE_DB_FILES, DATA_DIR_PATH_STR ) \

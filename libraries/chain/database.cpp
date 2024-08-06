@@ -164,7 +164,7 @@ void database::pre_open( const open_args& args )
 {
   try
   {
-    //init_schema();
+    init_schema();
 
     helpers::environment_extension_resources environment_extension(
                                                 theApp.get_version_string(),
@@ -177,7 +177,7 @@ void database::pre_open( const open_args& args )
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::_open( const open_args& args )
+void database::open( const open_args& args )
 {
   try
   {
@@ -210,7 +210,6 @@ void database::initialize_state_independent_data(const open_args& args, const bo
     verify_match_of_state_objects_definitions_from_shm(throw_an_error_on_state_definitions_mismatch);
 
   initialize_evaluators();
-  initialize_irreversible_storage();
 
   if(!find< dynamic_global_property_object >())
   {
