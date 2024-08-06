@@ -19,8 +19,9 @@ wait_for_instance() {
 }
 
 stop_instance() {
-  docker stop hive-instance
-  docker wait hive-instance || true
+  local container_name="$1"
+  docker stop "$container_name"
+  docker wait "$container_name" || true
 }
 
 mkdir -p "$SOURCE_DATA_DIR"
@@ -29,13 +30,13 @@ echo "Create replay environment..."
 "$SCRIPTS_PATH/ci-helpers/prepare_data_and_shm_dir.sh" --data-base-dir="$SOURCE_DATA_DIR" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
 
 echo "Start first replay: "
-"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=hive-instance --docker-option="--network=bridge" --replay --stop-at-block=$first_replay_block_limit --detach
-wait_for_instance hive-instance $first_replay_block_limit
-stop_instance hive-instance
+"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=first-replay-container --docker-option="--network=bridge" --replay --stop-at-block=$first_replay_block_limit --detach
+wait_for_instance first-replay-container $first_replay_block_limit
+stop_instance "first-replay-container"
 
 echo "Start second replay: "
-"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=hive-instance --docker-option="--network=bridge" --replay --stop-at-block=$second_replay_block_limit --detach
-wait_for_instance hive-instance $second_replay_block_limit
-stop_instance hive-instance
+"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=second-replay-container --docker-option="--network=bridge" --replay --stop-at-block=$second_replay_block_limit --detach
+wait_for_instance second-replay-container $second_replay_block_limit
+stop_instance "second-replay-container"
 
 echo "Test passed!"
