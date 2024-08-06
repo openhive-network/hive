@@ -1182,3 +1182,20 @@ authority_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+
+generate_universal_block_logs_and_save_image:
+  stage: build
+  extends: [.extended_block_log_creation, .test_tools_based]
+  timeout: 6h
+  variables:
+    GIT_DEPTH: 0
+    UNIVERSAL_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/universal_block_logs"
+  script:
+  - $CI_PROJECT_DIR/scripts/ci-helpers/universal_block_log_image_generator.sh
+  artifacts:
+     reports:
+       dotenv:
+         - universal_block_log_latest_version.env
+  tags:
+  - public-runner-docker
+  - hived-for-tests
