@@ -95,7 +95,8 @@ done
 
 echo "Attempting to get commit for: $submodule_path"
 
-commit=$( "$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" )
+CHANGES=(libraries/ programs/ scripts/ docker/ tests/unit/ Dockerfile cmake CMakeLists.txt)
+commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
 echo "commit with last source code changes is $commit"
 
 pushd "${submodule_path}"
