@@ -23,6 +23,7 @@ variables:
   DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
+  UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs"
 
   # Variables required by the mirrornet pipeline
   MIRRORNET_CHAIN_ID: 42
@@ -1199,3 +1200,17 @@ generate_universal_block_logs_and_save_image:
   tags:
   - public-runner-docker
   - hived-for-tests
+
+copy_universal_block_logs_to_cache:
+  stage: build
+  extends: .docker_image_builder_job
+  needs:
+    - job: generate_universal_block_logs_and_save_image
+      artifacts: true
+  script:
+    - mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - echo "Start copy block_logs from - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+    - $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE $UNIVERSAL_BLOCK_LOGS_CACHE_DIR --image-path=/
+    - tree $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+  tags:
+    - data-cache-storage
