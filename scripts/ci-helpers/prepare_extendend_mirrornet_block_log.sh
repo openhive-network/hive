@@ -101,6 +101,7 @@ time "${BLOCK_LOG_UTIL_PATH}" --generate-artifacts --block-log "${EXTENDED_MIRRO
 
 cat <<EOF > "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}/Dockerfile"
 FROM scratch
+COPY *.json /blockchain/
 COPY block_log* /blockchain/
 EOF
 
