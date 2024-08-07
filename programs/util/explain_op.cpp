@@ -18,18 +18,10 @@
 #include <hive/utilities/git_revision.hpp>
 #include <hive/chain/buffer_type.hpp>
 
-#include <thread>
-#include <chrono>
-#include <memory>
 #include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <atomic>
-#include <algorithm>
 #include <string>
+#include <vector>
+#include <type_traits>
 
 std::string to_string(bool v);
 std::string to_string(int16_t v);
@@ -38,6 +30,7 @@ std::string to_string(uint8_t v);
 std::string to_string(uint16_t v);
 std::string to_string(uint32_t v);
 std::string to_string(uint64_t v);
+std::string to_string(const fc::unsigned_int& v);
 template<size_t N>
 std::string to_string(const hive::protocol::fixed_string<N>& v);
 template<typename Storage>
@@ -57,16 +50,10 @@ std::string to_string(const fc::safe<T>& v);
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v);
 std::string to_string(const std::vector<char>& v);
-template<typename T>
-std::string to_string(const std::vector<T>& v);
 template<typename A, typename B>
 std::string to_string(const std::pair<A, B>& v);
 template<typename T>
-std::string to_string(const boost::container::flat_set<T>& v);
-template<typename T>
 std::string to_string(const flat_set_ex<T>& v);
-template<typename K, typename... T>
-std::string to_string(const boost::container::flat_map<K, T...>& v);
 
 template <typename, typename = void>
 struct is_to_string_invocable : std::false_type {};
@@ -77,6 +64,12 @@ inline constexpr bool is_to_string_invocable_v = is_to_string_invocable<T>::valu
 
 template<typename T>
 void explain_member(const std::string& name, const fc::optional<T>& v);
+template<typename T>
+auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<not std::is_same_v<T, char>>;
+template<typename T>
+auto explain_member(const std::string& name, const boost::container::flat_set<T>& v);
+template<typename K, typename... T>
+auto explain_member(const std::string& name, const boost::container::flat_map<K, T...>& v);
 template<typename... Types>
 void explain_member(const std::string& name, const fc::static_variant<Types...>& v);
 template<typename T>
@@ -139,6 +132,33 @@ void explain_member(const std::string& name, const fc::optional<T>& v)
   explain_member(name+".valid", v.valid());
   if (v.valid())
     explain_member(name+".value", v.value());
+}
+
+template<typename T>
+auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<not std::is_same_v<T, char>>
+{
+  explain_member(name+".size", static_cast<fc::unsigned_int>(v.size()));
+  size_t idx = 0;
+  for (const auto& elem : v)
+    explain_member(name+"."+std::to_string(idx++), elem);
+}
+
+template<typename T>
+auto explain_member(const std::string& name, const boost::container::flat_set<T>& v)
+{
+  explain_member(name+".size", static_cast<fc::unsigned_int>(v.size()));
+  size_t idx = 0;
+  for (const auto& elem : v)
+    explain_member(name+"."+std::to_string(idx++), elem);
+}
+
+template<typename K, typename... T>
+auto explain_member(const std::string& name, const boost::container::flat_map<K, T...>& v)
+{
+  explain_member(name+".size", static_cast<fc::unsigned_int>(v.size()));
+  size_t idx = 0;
+  for (const auto& elem : v)
+    explain_member(name+"."+std::to_string(idx++), elem);
 }
 
 template<typename... Types>
@@ -208,6 +228,11 @@ std::string to_string(uint32_t v)
 std::string to_string(uint64_t v)
 {
   return std::to_string(v);
+}
+
+std::string to_string(const fc::unsigned_int& v)
+{
+  return std::to_string(v.value);
 }
 
 template<size_t N>
@@ -298,12 +323,6 @@ std::string to_string(const std::vector<char>& v)
   return fc::to_hex(v);
 }
 
-template<typename T>
-std::string to_string(const std::vector<T>& v)
-{
-  return "vec<T>"; // TODO
-}
-
 template<typename A, typename B>
 std::string to_string(const std::pair<A, B>& v)
 {
@@ -311,21 +330,9 @@ std::string to_string(const std::pair<A, B>& v)
 }
 
 template<typename T>
-std::string to_string(const boost::container::flat_set<T>& v)
-{
-  return "flat_set<T>"; // TODO
-}
-
-template<typename T>
 std::string to_string(const flat_set_ex<T>& v)
 {
   return "flat_set_ex<T>"; // TODO
-}
-
-template<typename K, typename... T>
-std::string to_string(const boost::container::flat_map<K, T...>& v)
-{
-  return "flat_map<K, T...>"; // TODO
 }
 
 int main()
