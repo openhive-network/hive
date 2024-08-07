@@ -289,12 +289,13 @@ std::string to_string(const fc::safe<T>& v)
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v)
 {
-  return "fc::array"; // TODO
+  const auto vec = std::vector<char>( (const char*)&v, ((const char*)&v) + sizeof(v) );
+  return to_string(vec);
 }
 
 std::string to_string(const std::vector<char>& v)
 {
-  return "vec"; // TODO
+  return fc::to_hex(v);
 }
 
 template<typename T>
