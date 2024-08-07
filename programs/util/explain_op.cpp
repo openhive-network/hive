@@ -50,10 +50,6 @@ std::string to_string(const fc::safe<T>& v);
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v);
 std::string to_string(const std::vector<char>& v);
-template<typename A, typename B>
-std::string to_string(const std::pair<A, B>& v);
-template<typename T>
-std::string to_string(const flat_set_ex<T>& v);
 
 template <typename, typename = void>
 struct is_to_string_invocable : std::false_type {};
@@ -68,6 +64,10 @@ template<typename T>
 auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<not std::is_same_v<T, char>>;
 template<typename T>
 auto explain_member(const std::string& name, const boost::container::flat_set<T>& v);
+template<typename T>
+auto explain_member(const std::string& name, const flat_set_ex<T>& v);
+template<typename A, typename B>
+auto explain_member(const std::string& name, const std::pair<A, B>& v);
 template<typename K, typename... T>
 auto explain_member(const std::string& name, const boost::container::flat_map<K, T...>& v);
 template<typename... Types>
@@ -150,6 +150,19 @@ auto explain_member(const std::string& name, const boost::container::flat_set<T>
   size_t idx = 0;
   for (const auto& elem : v)
     explain_member(name+"."+std::to_string(idx++), elem);
+}
+
+template<typename T>
+auto explain_member(const std::string& name, const flat_set_ex<T>& v)
+{
+  explain_member(name, static_cast<boost::container::flat_set<T>>(v));
+}
+
+template<typename A, typename B>
+auto explain_member(const std::string& name, const std::pair<A, B>& v)
+{
+  explain_member(name+".first", (v.first));
+  explain_member(name+".second", (v.second));
 }
 
 template<typename K, typename... T>
@@ -321,18 +334,6 @@ std::string to_string(const fc::array<T, N>& v)
 std::string to_string(const std::vector<char>& v)
 {
   return fc::to_hex(v);
-}
-
-template<typename A, typename B>
-std::string to_string(const std::pair<A, B>& v)
-{
-  return "pair<A, B>"; // TODO
-}
-
-template<typename T>
-std::string to_string(const flat_set_ex<T>& v)
-{
-  return "flat_set_ex<T>"; // TODO
 }
 
 int main()
