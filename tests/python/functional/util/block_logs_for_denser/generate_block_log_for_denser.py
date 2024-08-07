@@ -125,6 +125,7 @@ def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
 
     node.close()
     node.block_log.copy_to(args.output_block_log_directory)
+    chain_parameters.export_to_file(args.output_block_log_directory)
 
     tt.logger.info(f"Block_log created successfully. Save in {args.output_block_log_directory} Exiting...")
 
