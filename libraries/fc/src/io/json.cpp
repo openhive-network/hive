@@ -996,6 +996,7 @@ namespace fc
     // auto tmp = std::make_shared<std::ifstream>( p.generic_string().c_str(), std::ios::binary );
     // buffered_istream bi( tmp );
     boost::filesystem::ifstream bi(p, std::ios::binary);
+    FC_ASSERT(!bi.fail(), "Fail to open file ${p}", ("p", p.string()));
     switch (ptype)
     {
     case legacy_parser:
