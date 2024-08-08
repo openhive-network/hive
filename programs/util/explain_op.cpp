@@ -339,11 +339,14 @@ std::string to_string(const std::vector<char>& v)
 int main()
 {
   std::string hex;
-  std::string buf;
-  buf.resize(4096);
+  std::string bytes;
+  bytes.resize(4096);
   for (;std::cin >> hex;) {
-    fc::from_hex(hex, buf.data(), 4096);
-    hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(buf);
+    if (hex.size() > bytes.size())
+      bytes.resize(hex.size());
+    fc::from_hex(hex, bytes.data(), bytes.size());
+    hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(bytes);
     explain_member("", op);
+    std::cout << '\n';
   }
 }
