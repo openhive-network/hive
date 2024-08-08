@@ -7,7 +7,7 @@ struct unsigned_int {
     unsigned_int( uint32_t v = 0 ):value(v){}
 
     template<typename T>
-    unsigned_int( T v ):value(v){}
+    explicit unsigned_int( T v ):value(v){}
 
     //operator uint32_t()const { return value; }
     //operator uint64_t()const { return value; }
