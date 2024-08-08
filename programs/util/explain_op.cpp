@@ -342,11 +342,25 @@ int main()
   std::string bytes;
   bytes.resize(4096);
   for (;std::cin >> hex;) {
-    if (hex.size() > bytes.size())
-      bytes.resize(hex.size());
-    fc::from_hex(hex, bytes.data(), bytes.size());
-    hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(bytes);
-    explain_member("", op);
-    std::cout << '\n';
+    try {
+      if (hex.size() > bytes.size())
+        bytes.resize(hex.size());
+      fc::from_hex(hex, bytes.data(), bytes.size());
+      hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(bytes);
+      explain_member("", op);
+      std::cout << '\n';
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Unexpected error: " << e.what() << '\n';
+    }
+    catch (const fc::exception& e)
+    {
+      std::cerr << "Unexpected error: " << e.to_detail_string() << '\n';
+    }
+    catch ( ...  )
+    {
+      std::cerr << "Unknown exception" << '\n';
+    }
   }
 }
