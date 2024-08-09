@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import math
-from concurrent.futures import ThreadPoolExecutor
-
 import pytest
 
 import test_tools as tt
@@ -137,35 +134,25 @@ def test_power_up_delegator(wallet: tt.Wallet) -> None:
 def test_multidelegation(wallet: tt.Wallet) -> None:
     wallet.api.set_transaction_expiration(seconds=1800)
     amount_of_delegated_rc = 1
-    number_of_threads = 50
+    number_of_delegators = 50
+    number_of_delegations_per_operation = 100
     tt.logger.info("Start of delegators and receivers creation")
     accounts = get_accounts_name(wallet.create_accounts(100_000, "receiver"))
-    delegators = get_accounts_name(wallet.create_accounts(number_of_threads, "delegator"))
+    delegators = get_accounts_name(wallet.create_accounts(number_of_delegators, "delegator"))
     tt.logger.info("End of delegators and receivers creation")
-    number_of_delegations_in_thread = math.ceil(len(accounts) / number_of_threads)
 
     with wallet.in_single_transaction():
-        for thread_number in range(number_of_threads):
+        for thread_number in range(number_of_delegators):
             wallet.api.transfer_to_vesting("initminer", delegators[thread_number], tt.Asset.Test(0.1))
 
-    tasks_list = []
-    executor = ThreadPoolExecutor(max_workers=number_of_threads)
-    for thread_number in range(number_of_threads):
-        tasks_list.append(
-            executor.submit(
-                delegate_rc,
-                wallet,
-                delegators[thread_number],
-                accounts[
-                    thread_number * number_of_delegations_in_thread : thread_number * number_of_delegations_in_thread
-                    + number_of_delegations_in_thread
-                ],
-                amount_of_delegated_rc,
-            )
-        )
-
-    for thread_number in tasks_list:
-        thread_number.result()
+    accounts_splited = split_list(accounts, int(100_000 / number_of_delegators / number_of_delegations_per_operation))
+    for accounts_per_transaction in accounts_splited:
+        accounts_per_transaction_splited = split_list(accounts_per_transaction, number_of_delegators)
+        with wallet.in_single_transaction():
+            for delegator, delegatees in zip(delegators, accounts_per_transaction_splited):
+                tt.logger.info(f"Delegation accounts from range {delegatees[0]} : {delegatees[-1]}--------START")
+                wallet.api.delegate_rc(delegator, delegatees, amount_of_delegated_rc)
+                tt.logger.info(f"Delegation accounts from range {delegatees[0]} : {delegatees[-1]}--------END")
 
     for account_index in [0, int(len(accounts) / 2), -1]:
         assert get_rc_account_info(accounts[account_index], wallet)["received_delegated_rc"] == amount_of_delegated_rc
@@ -189,6 +176,11 @@ def delegate_rc(wallet: tt.Wallet, delegator: str, receivers: list, amount_of_de
     for account_number in range(0, len(receivers), 100):
         wallet.api.delegate_rc(delegator, receivers[account_number : account_number + 100], amount_of_delegated_rc)
     tt.logger.info(f"Delegation accounts from range {receivers[0]} : {receivers[-1]}--------END")
+
+
+def split_list(input_list: list, num_parts: int) -> list[list]:
+    part_size = len(input_list) // num_parts
+    return [input_list[i : i + part_size] for i in range(0, len(input_list), part_size)]
 
 
 def get_accounts_name(accounts: list) -> list:
