@@ -7,6 +7,7 @@ from typing import Any, Final
 import pytest
 
 import test_tools as tt
+from hive_local_tools.functional import connect_nodes
 
 
 def test_dump_config() -> None:
@@ -101,13 +102,6 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
 
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
-
-
-def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
-    """
-    This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
-    """
-    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
 
 
 def test_stop_sync_mode_at_given_block() -> None:
