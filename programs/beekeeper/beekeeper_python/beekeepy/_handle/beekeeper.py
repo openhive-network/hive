@@ -132,16 +132,15 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
         """It is convered by _get_http_endpoint."""
 
     def _get_http_endpoint(self, timeout_secs: float = 5.0) -> helpy.HttpUrl:
-        tmp = psutil.net_connections()
         sleep_time = min(1.0, timeout_secs)
         already_waited = 0.0
         while already_waited <= timeout_secs:
-            for i in tmp:
+            for i in psutil.net_connections():
                 if i.pid==self.pid:
                     return helpy.HttpUrl(f"{i.laddr.ip}:{i.laddr.port}", protocol="http")
             time.sleep(sleep_time)
             already_waited += sleep_time
-        raise TimeoutError(f"Process with pid {self.pid} not exists in active connectionsc list")
+        raise TimeoutError(f"Process with pid {self.pid} not exists in active connections list")
 
 
     def export_keys_wallet(
