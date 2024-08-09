@@ -10,7 +10,7 @@ int main( int argc, char** argv, char** envp )
   std::cout << "argument.  If you don't wish to use compression in your truncated log\n";
   std::cout << "you can also specify `--decompress`.\n";
   std::cout << "\n";
-  std::cout << "You can also use the repair_block_log.sh shell script to truncate\n";
+  std::cout << "You can also use the `block_log_util truncate` command to truncate\n";
   std::cout << "an existing block in-place (without making a copy)\n";
   return 1;
 }
