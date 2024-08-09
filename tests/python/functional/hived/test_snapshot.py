@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import test_tools as tt
+from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,8 +26,7 @@ def test_snapshots_content_binary(block_log: Path) -> None:
 
     snap.append(node[1].dump_snapshot(name="snapshot2", close=True))
 
-
-    assert snap[0] == snap[1]
+    compare_snapshots_contents(snap[0], snap[1])
 
 
 def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
