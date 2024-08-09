@@ -1,0 +1,31 @@
+{
+  "genesis_time": 1724143191,
+  "hardfork_schedule": [
+    {
+      "block_num": 1,
+      "hardfork": 28
+    }
+  ],
+  "init_witnesses": [
+    "witness-0",
+    "witness-1",
+    "witness-2",
+    "witness-3",
+    "witness-4",
+    "witness-5",
+    "witness-6",
+    "witness-7",
+    "witness-8",
+    "witness-9",
+    "witness-10",
+    "witness-11",
+    "witness-12",
+    "witness-13",
+    "witness-14",
+    "witness-15",
+    "witness-16",
+    "witness-17",
+    "witness-18",
+    "witness-19"
+  ]
+}
