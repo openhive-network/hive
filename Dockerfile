@@ -96,6 +96,9 @@ RUN \
   find . -name *.o  -type f -delete && \
   find . -name *.a  -type f -delete
 
+# This prevents crash if testnet is not build
+RUN mkdir -p /home/hived_admin/build/libraries/vendor/rocksdb/tools
+
 FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS base_instance
 
 ARG BUILD_TIME
@@ -152,7 +155,8 @@ COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/beekeeper/beekeeper \
   /home/hived_admin/build/programs/util/* \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
-  /home/hived_admin/build/tests/unit/* /home/hived/bin/
+  /home/hived_admin/build/tests/unit/* \
+  /home/hived_admin/build/libraries/vendor/rocksdb/tools/sst_dum*  /home/hived/bin/
 
 COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
 
@@ -192,6 +196,6 @@ EXPOSE ${CLI_WALLET_PORT}
 # We don't have a separate 'minimal-instance' version of hive.  We could create one, based
 # off `minimal-runtime` instead of `runtime` and probably save a hundred MB or so, but
 # the current `instance` isn't bad.  Our current focus is shrinking the haf image size,
-# and since we use the same scripts for building both hive and haf, we need a 
+# and since we use the same scripts for building both hive and haf, we need a
 # 'minimal-instance' target here to match the one in haf.  Don't use this.
 FROM instance AS minimal-instance

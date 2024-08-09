@@ -492,6 +492,7 @@ formatting_with_black_check:
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/get_dev_key"
     BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
+    SST_DUMP_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sst_dump"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: testnet_node_build
