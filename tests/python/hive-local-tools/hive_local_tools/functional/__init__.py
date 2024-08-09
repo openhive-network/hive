@@ -45,3 +45,10 @@ def simultaneous_node_startup(
             )
         for thread_number in tasks:
             thread_number.result()
+
+
+def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
+    """
+    This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
+    """
+    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
