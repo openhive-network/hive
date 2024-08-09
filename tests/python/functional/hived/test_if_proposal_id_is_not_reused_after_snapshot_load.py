@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from hive_local_tools.functional import connect_nodes
 
 
 @pytest.mark.testnet()
@@ -50,13 +51,6 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
     create_proposal(wallet)  # to allocate next proposal ids on each node
 
     assert get_last_proposal_id(init_node) == get_last_proposal_id(api_node) == 1
-
-
-def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
-    """
-    This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
-    """
-    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
 
 
 def get_last_proposal_id(node: tt.AnyNode) -> int:
