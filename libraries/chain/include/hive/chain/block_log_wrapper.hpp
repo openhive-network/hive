@@ -107,7 +107,7 @@ namespace hive { namespace chain {
     void skip_first_parts( uint32_t parts_to_skip );
 
     bool try_splitting_monolithic_log_file( full_block_ptr_t state_head_block,
-                                            uint32_t head_part_number = 0,
+                                            uint32_t head_block_number = 0,
                                             size_t part_count = 0 );
     struct part_file_info_t {
       uint32_t part_number = 0;
@@ -122,11 +122,12 @@ namespace hive { namespace chain {
      * 
      * @throws runtime_error when unable to find or generate enough file parts.
      * @param head_part_number file part with biggest number (containing head block).
+     * @param actual_tail_needed file part with lowest number required.
      * @param part_file_names contains all parts found in block log directory.
      * @param state_head_block pre-read from state file.
      * @return actual tail part number needed (and present).
      */
-    uint32_t force_parts_exist( uint32_t head_part_number,
+    void force_parts_exist( uint32_t head_part_number, uint32_t actual_tail_needed,
       part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
       full_block_ptr_t state_head_block );
     /// @brief Used internally by create_opened_wrapper

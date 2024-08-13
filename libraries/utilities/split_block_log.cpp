@@ -11,7 +11,7 @@ using hive::chain::block_log_file_name_info;
 using hive::chain::block_log_wrapper;
 using hive::chain::blockchain_worker_thread_pool;
 
-void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t part_count,
+void split_block_log( fc::path monolith_path, uint32_t head_block_number, size_t part_count,
   appbase::application& app, blockchain_worker_thread_pool& thread_pool,
   const fc::optional<fc::path> split_block_log_destination_dir )
 {
@@ -19,7 +19,7 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
   request << "Requested generation of " 
           << ( part_count == 0 ? "all" : std::to_string( part_count ) ) 
           << " part files, up to " 
-          << ( head_part_number == 0 ? "head part." : ("part " + std::to_string( head_part_number ) ) );
+          << ( head_block_number == 0 ? "head block." : ("block " + std::to_string( head_block_number ) ) );
   ilog( request.str() );
 
   FC_ASSERT( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ),
@@ -30,16 +30,17 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
   ilog( "Opening legacy monolithic block log as source." );
   auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool, 
                                                             true /*read_only*/ );
-  uint32_t head_block_num = mono_log->head_block_num();
-  idump((head_block_num));
+  uint32_t source_head_block_num = mono_log->head_block_num();
+  idump((source_head_block_num));
 
-  if( head_part_number == 0 /*determine from source log*/)
+  if( head_block_number == 0 /*determine from source log*/)
   {
-    head_part_number = 
-      block_log_wrapper::get_part_number_for_block( head_block_num, MAX_FILES_OF_SPLIT_BLOCK_LOG );
-    ilog( "head_part_number for block ${head_block_num} is ${head_part_number}", (head_block_num)(head_part_number) );
+    head_block_number = source_head_block_num;
+    ilog( "Actual head_block_number is ${head_block_number}", (head_block_number) );
   }
 
+  uint32_t head_part_number = 
+      block_log_wrapper::get_part_number_for_block( head_block_number, MAX_FILES_OF_SPLIT_BLOCK_LOG );
   ilog( "Actual head_part_number: ${head_part_number}", (head_part_number) );
 
   uint32_t tail_part_number = 
@@ -66,8 +67,7 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
   ilog("Starting splitting");
 
   uint32_t starting_block_number = block_log_wrapper::get_number_of_first_block_in_part( tail_part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG );
-  uint32_t stop_at_block = 
-    std::min<uint32_t>( head_block_num, block_log_wrapper::get_number_of_last_block_in_part( head_part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG ) );
+  uint32_t stop_at_block = std::min<uint32_t>( source_head_block_num, head_block_number );
   ilog( "Splitting blocks ${starting_block_number} to ${stop_at_block}",
         (starting_block_number)(stop_at_block) );
 
@@ -77,7 +77,7 @@ void split_block_log( fc::path monolith_path, uint32_t head_part_number, size_t 
   {
     // read a block
     std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> data_with_artifacts;
-    if (current_block_number == head_block_num)
+    if (current_block_number == source_head_block_num)
     {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> head_block_data =
         mono_log->read_raw_head_block();
