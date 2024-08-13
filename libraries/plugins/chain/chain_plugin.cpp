@@ -790,6 +790,8 @@ void chain_plugin_impl::initial_settings()
   bl_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
   bl_open_args.block_log_compression_level = block_log_compression_level;
   bl_open_args.load_snapshot = load_snapshot;
+  bl_open_args.replay = replay;
+  bl_open_args.force_replay = force_replay;
 }
 
 bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )

@@ -464,22 +464,15 @@ uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number
 }
 
 bool block_log_wrapper::try_splitting_monolithic_log_file( full_block_ptr_t state_head_block,
-  uint32_t head_part_number /*= 0*/, size_t part_count /*= 0*/  )
+  uint32_t head_block_number /*= 0*/, size_t part_count /*= 0*/  )
 {
   fc::path monolith_path( _open_args.data_dir / block_log_file_name_info::_legacy_file_name );
   if( fc::exists( monolith_path ) && fc::is_regular_file( monolith_path ) )
   {
     try
     {
-      if( head_part_number == 0 /*to be determined from the source*/ && 
-          state_head_block /*state is not empty*/ &&
-          not _open_args.load_snapshot /*the state won't be overridden*/ )
-      {
-        head_part_number =
-          get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
-      }
       wlog("Trying to split legacy monolithic block log file.");
-      utilities::split_block_log( monolith_path, head_part_number, part_count, _app, _thread_pool );
+      utilities::split_block_log( monolith_path, head_block_number, part_count, _app, _thread_pool );
       wlog("Successfully split legacy monolithic block log file.");
       return true;
     }
@@ -494,28 +487,13 @@ bool block_log_wrapper::try_splitting_monolithic_log_file( full_block_ptr_t stat
   return false;
 }
 
-uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number, 
+void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t actual_tail_needed,
   part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
   full_block_ptr_t state_head_block )
 {
   FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
   uint32_t tail_part_number = part_file_names.cbegin()->part_number;
   FC_ASSERT( head_part_number >= tail_part_number );
-
-  // Determine actual needed tail part number.
-  uint32_t actual_tail_needed = 0;
-  // Is block log not pruned or effectively not pruned (yet)?
-  if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ||
-      head_part_number <= (unsigned int)_block_log_split )
-  {
-    // Expected tail part is obviously 1 - we need each part.
-    actual_tail_needed = 1;
-  }
-  else // pruned log here
-  {
-    // not all parts are needed here, i.e. head_part_number > _block_log_split
-    actual_tail_needed = head_part_number - _block_log_split;
-  }
 
   // Walk over existing parts checking numbers continuity.
   uint32_t last_continuous_number = head_part_number;
@@ -560,7 +538,10 @@ uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number,
     }
 
     size_t needed_part_count = high_missing_part_number - low_missing_part_number + 1;
-    if( not try_splitting_monolithic_log_file( state_head_block, high_missing_part_number,
+    uint32_t head_block_number = 
+      block_log_wrapper::get_number_of_last_block_in_part( high_missing_part_number, _block_log_split );
+    if( not try_splitting_monolithic_log_file( state_head_block, 
+                                               head_block_number,
                                                needed_part_count ) )
     {
       msg <<
@@ -570,9 +551,6 @@ uint32_t block_log_wrapper::force_parts_exist( uint32_t head_part_number,
 
     look_for_part_files( part_file_names );
   }
-
-  // At this point all needed parts are available (or exception would have been thrown).
-  return actual_tail_needed;
 }
 
 void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names )
@@ -613,6 +591,20 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     return;
   }
 
+  uint32_t actual_tail_number_needed = 0;
+  if( _open_args.load_snapshot || _open_args.force_replay )
+  {
+    // When hard replay is in cards, ignore current state head (will be overridden anyway),
+    // and split as many parts as it's possible from the source log.
+    actual_tail_number_needed = 1;
+  }
+  else if ( _open_args.replay && not _open_args.force_replay && state_head_block )
+  {
+    // For regular replay require all parts beginning from state head block to be present & opened.
+    actual_tail_number_needed = 
+      get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
+  }
+
   // Any log file created on previous run?
   part_file_names_t part_file_names;
   look_for_part_files( part_file_names );
@@ -622,8 +614,26 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     // No part file name found. Try splitting legacy monolithic file if allowed & possible.
     size_t needed_part_count = 
       _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
+    size_t head_block_number = 0 /*determine head block from source*/;
+
+    if( _open_args.replay || _open_args.load_snapshot )
+    {
+      // When replay is in cards, ignore current state head (will be overridden anyway),
+      // and split as many parts as it's possible from the source log.
+      needed_part_count = MAX_FILES_OF_SPLIT_BLOCK_LOG;
+    }
+    else
+    {
+      // Otherwise split log storage no further than current state database head block,
+      // to make them match.
+      if( state_head_block /*state is not empty*/ )
+      {
+        head_block_number = state_head_block->get_block_num();
+      }
+    }
+
     if( allow_splitting_monolithic_log &&
-        try_splitting_monolithic_log_file( state_head_block, 0/*determine head part from source*/,
+        try_splitting_monolithic_log_file( state_head_block, head_block_number,
                                            needed_part_count ) )
     {
       look_for_part_files( part_file_names );
@@ -646,9 +656,24 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
 
   // Make sure all parts required by configuration are there.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
-  uint32_t actual_tail_number_needed = 
-    force_parts_exist( head_part_number, part_file_names, allow_splitting_monolithic_log,
-                       state_head_block );
+  // Determine actual needed tail part number (if not set earlier).
+  if( actual_tail_number_needed == 0 )
+  {
+    // Is block log not pruned or effectively not pruned (yet)?
+    if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ||
+        head_part_number <= (unsigned int)_block_log_split )
+    {
+      // Expected tail part is obviously 1 - we need each part.
+      actual_tail_number_needed = 1;
+    }
+    else // pruned log here
+    {
+      // not all parts are needed here, i.e. head_part_number > _block_log_split
+      actual_tail_number_needed = head_part_number - _block_log_split;
+    }
+  }
+  force_parts_exist( head_part_number, actual_tail_number_needed, part_file_names,
+                      allow_splitting_monolithic_log, state_head_block );
 
   // Open all needed parts.
   _logs.resize( head_part_number, block_log_ptr_t() );

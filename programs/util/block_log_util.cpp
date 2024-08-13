@@ -825,8 +825,8 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
       dlog("Creating directories: ${output_dir}", (output_dir));
       fc::create_directories(output_dir);
     }
-    size_t head_part_num = 0;
-    size_t part_count = 0;
+    size_t head_part_num = 0; // Default value - determine from source log.
+    size_t part_count = 0; // Default value - determine from source log.
 
     const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
@@ -870,8 +870,10 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
       FC_ASSERT(max_files_limit >= part_count, "Requested to create more files: ${part_count} than it's possible: ${max_files_limit} from given block_log with specific parameters", (part_count)(max_files_limit));
     }
 
+    uint32_t head_block_number = head_part_num == 0 ? 0 :
+      hive::chain::block_log_wrapper::get_number_of_last_block_in_part( head_part_num, MAX_FILES_OF_SPLIT_BLOCK_LOG );
     std::cout << "Splitting block_log ...\n";
-    hive::utilities::split_block_log(block_log_filename, head_part_num, part_count, app, thread_pool, output_dir);
+    hive::utilities::split_block_log(block_log_filename, head_block_number, part_count, app, thread_pool, output_dir);
     std::cout << "Splitting block_log finished\n";
     if (!last_block_is_head_block && (last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE != 0))
     {

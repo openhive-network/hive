@@ -448,12 +448,103 @@ BOOST_AUTO_TEST_CASE( auto_split_2 )
     }
     { // Switch to split log to trigger auto-split matching trimmed block count.
       hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", "1" );
+
+      // Verify that parts 2 & 3 were split (as opposed to 4 & 5 available in legacy log)
+      // and that splitting went up to state head block.
+      require_blocks( fixture, BLOCKS_IN_SPLIT_BLOCK_LOG_FILE+1, trimmed_block_count );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), trimmed_block_count );
+    }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( auto_split_3 )
+{
+  try {
+    ilog( "Testing auto-splitting followed by replay." );
+
+    const uint32_t legacy_log_block_count = 5 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+    const uint32_t trimmed_block_count = 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 17;
+
+    { // Generate legacy log, full 5 parts.
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", std::to_string( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
+
+      for( uint32_t i = 0; i < legacy_log_block_count; ++i )
+        fixture.generate_block();
+    }
+    { // Stay with legacy log, replay up to trimmed block count
+      // (equivalent to 2 full parts plus 17 blocks in the 3rd one).
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_3( "block-log-split", std::to_string( LEGACY_SINGLE_FILE_BLOCK_LOG ),
+                      "force-replay", "",
+                      "stop-at-block", std::to_string( trimmed_block_count ) );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), trimmed_block_count );
+    }
+    { // Switch to split log to trigger auto-split matching replay needs.
+      hived_fixture fixture( false /*remove blockchain*/ );
       INIT_FIXTURE_2( "block-log-split", "1",
                       "replay-blockchain", "" );
 
-      // Verify that parts 2 & 3 were split (as opposed to 4 & 5 available in legacy log)
-      // and that replay went up to the last block of part 3.
-      require_blocks( fixture, BLOCKS_IN_SPLIT_BLOCK_LOG_FILE+1, 3*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE );
+      // Verify that all parts needed for replay (2 to 5) were split
+      // and that replay went up to the last block of part 5.
+      require_blocks( fixture, 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1, legacy_log_block_count );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), legacy_log_block_count );
+    }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( auto_split_4 )
+{
+  try {
+    ilog( "Testing auto-splitting followed by replay stopped at block." );
+
+    const uint32_t legacy_log_block_count = 5 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+    const uint32_t trimmed_block_count = 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 17;
+
+    { // Generate legacy log, full 5 parts.
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", std::to_string( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
+
+      for( uint32_t i = 0; i < legacy_log_block_count; ++i )
+        fixture.generate_block();
+    }
+    { // Stay with legacy log, replay up to trimmed block count
+      // (equivalent to 2 full parts plus 17 blocks in the 3rd one).
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_3( "block-log-split", std::to_string( LEGACY_SINGLE_FILE_BLOCK_LOG ),
+                      "force-replay", "",
+                      "stop-at-block", std::to_string( trimmed_block_count ) );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), trimmed_block_count );
+    }
+    { // Switch to split log to trigger auto-split matching replay needs.
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_3( "block-log-split", "1",
+                      "replay-blockchain", "",
+                      "stop-at-block", std::to_string( trimmed_block_count +1 ) );
+
+      // Verify that all parts needed for replay (2 to 5) were split
+      // and that replay went up to the last block of part 5.
+      require_blocks( fixture, 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1, legacy_log_block_count );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), trimmed_block_count +1 );
+    }
+    { // Continue the replay to check that all needed parts were opened.
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_2( "block-log-split", "1",
+                      "replay-blockchain", "" );
+
+      // Verify that all parts needed for replay (2 to 5) were opened
+      // matching the state database head block.
+      require_blocks( fixture, 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1, legacy_log_block_count );
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), legacy_log_block_count );
     }
 
   } catch (fc::exception& e) {
