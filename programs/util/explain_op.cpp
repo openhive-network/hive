@@ -340,11 +340,9 @@ int main()
 {
   std::string hex;
   std::string bytes;
-  bytes.resize(4096);
   for (;std::cin >> hex;) {
     try {
-      if (hex.size() > bytes.size())
-        bytes.resize(hex.size());
+      bytes.resize(hex.size() / 2);
       fc::from_hex(hex, bytes.data(), bytes.size());
       hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(bytes);
       explain_member("", op);
