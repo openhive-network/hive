@@ -1,22 +1,14 @@
-#include <appbase/application.hpp>
-
-#include <fc/log/logger.hpp>
-#include <fc/log/logger_config.hpp>
-#include <fc/log/file_appender.hpp>
-#include <fc/crypto/hex.hpp>
-#include <fc/io/json.hpp>
-#include <fc/filesystem.hpp>
-#include <fc/thread/thread.hpp>
-#include <fc/string.hpp>
-#include <hive/chain/block_log.hpp>
-#include <hive/chain/detail/block_attributes.hpp>
-#include <hive/chain/block_compression_dictionaries.hpp>
-#include <hive/chain/full_block.hpp>
-#include <hive/chain/blockchain_worker_thread_pool.hpp>
-#include <hive/chain/block_compression_dictionaries.hpp>
-#include <hive/utilities/io_primitives.hpp>
-#include <hive/utilities/git_revision.hpp>
 #include <hive/chain/buffer_type.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/protocol/fixed_string.hpp>
+#include <hive/protocol/json_string.hpp>
+#include <hive/protocol/legacy_asset.hpp>
+#include <hive/protocol/operations.hpp>
+
+#include <fc/crypto/hex.hpp>
+#include <fc/crypto/ripemd160.hpp>
+#include <fc/io/varint.hpp>
+#include <fc/string.hpp>
 
 #include <iostream>
 #include <string>
