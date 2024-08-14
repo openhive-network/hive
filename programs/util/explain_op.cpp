@@ -336,12 +336,20 @@ std::string to_string(const std::vector<char>& v)
   return fc::to_hex(v);
 }
 
+void chop(std::string& s, char prefix)
+{
+  if (s.size() > 0 && s[0] == prefix)
+    s = s.substr(1);
+}
+
 int main()
 {
   std::string hex;
   std::string bytes;
   for (;std::cin >> hex;) {
     try {
+      chop(hex, '\\');
+      chop(hex, 'x');
       bytes.resize(hex.size() / 2);
       fc::from_hex(hex, bytes.data(), bytes.size());
       hive::protocol::operation op = fc::raw::unpack_from_buffer<hive::protocol::operation>(bytes);
