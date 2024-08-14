@@ -42,6 +42,9 @@ else
   python3 generate_universal_block_logs.py --output-block-log-directory="$UNIVERSAL_BLOCK_LOGS_DIR"
   echo "Block logs saved in: $UNIVERSAL_BLOCK_LOGS_DIR"
 
+  checksum=$(find $UNIVERSAL_BLOCK_LOGS_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
+  echo "Checksum of the generated universal block logs: $checksum"
+
   echo "Build a Dockerfile"
 
   pwd
@@ -50,6 +53,7 @@ else
 
   cat <<EOF > Dockerfile
 FROM scratch
+LABEL universal_block_logs_checksum=${checksum}
 COPY block_log_open_sign /block_log_open_sign
 COPY block_log_single_sign /block_log_single_sign
 COPY block_log_multi_sign /block_log_multi_sign
