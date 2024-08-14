@@ -1210,9 +1210,26 @@ copy_universal_block_logs_to_cache:
   variables:
     UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs_${UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA}"
   script:
-    - mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
-    - echo "Start copy block_logs from - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE $UNIVERSAL_BLOCK_LOGS_CACHE_DIR --image-path=/
+    - echo $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+    - echo "UNIVERSAL_BLOCK_LOGS_CACHE_DIR=$UNIVERSAL_BLOCK_LOGS_CACHE_DIR" > $CI_PROJECT_DIR/universal_block_log_cache_dir.env
+    - |
+      if [ -d "$UNIVERSAL_BLOCK_LOGS_CACHE_DIR" ]; then
+        echo "Directory $UNIVERSAL_BLOCK_LOGS_CACHE_DIR exists. Skipping copy from image process..."
+      else
+        echo "Start copy universal block logs from image - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+        mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+        echo "Start copy block_logs from - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+        docker pull $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
+        $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE $UNIVERSAL_BLOCK_LOGS_CACHE_DIR --image-path=/
+        checksum_from_image=$(docker inspect --format='{{ index .Config.Labels "universal_block_logs_checksum" }}' $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE)
+        echo "Checksum from image: $checksum_from_image"
+        checksum_after_copy=$(find $UNIVERSAL_BLOCK_LOGS_CACHE_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
+        echo "Checksum after copy: $checksum_after_copy"
+        if [[ "$checksum_from_image" != "$checksum_after_copy" ]]; then
+          echo "Checksum mismatch detected! The checksum from the container does not match the checksum after copying."
+          exit 1
+        fi
+      fi
     - tree $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
   artifacts:
     reports:
