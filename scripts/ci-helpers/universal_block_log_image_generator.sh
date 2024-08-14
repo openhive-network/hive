@@ -62,3 +62,4 @@ EOF
 fi
 
 echo "UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/universal_block_log_latest_version.env
+echo "UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/universal_block_log_latest_commit_short_sha.env

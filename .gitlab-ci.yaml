@@ -23,7 +23,6 @@ variables:
   DATA_CACHE_HIVE_PREFIX: "/cache/replay_data_hive"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
-  UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs"
 
   # Variables required by the mirrornet pipeline
   MIRRORNET_CHAIN_ID: 42
@@ -1197,6 +1196,7 @@ generate_universal_block_logs_and_save_image:
      reports:
        dotenv:
          - universal_block_log_latest_version.env
+         - universal_block_log_latest_commit_short_sha.env
   tags:
   - public-runner-docker
   - hived-for-tests
@@ -1207,11 +1207,17 @@ copy_universal_block_logs_to_cache:
   needs:
     - job: generate_universal_block_logs_and_save_image
       artifacts: true
+  variables:
+    UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs_${UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA}"
   script:
     - mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
     - echo "Start copy block_logs from - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
     - $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE $UNIVERSAL_BLOCK_LOGS_CACHE_DIR --image-path=/
     - tree $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
+  artifacts:
+    reports:
+      dotenv:
+        - universal_block_log_cache_dir.env
   tags:
     - data-cache-storage
 
@@ -1221,6 +1227,7 @@ universal_block_log_tests:
   needs:
     - !reference [.test_tools_based, needs]
     - job: copy_universal_block_logs_to_cache
+      artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
