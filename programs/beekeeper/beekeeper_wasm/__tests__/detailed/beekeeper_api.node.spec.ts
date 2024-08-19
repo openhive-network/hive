@@ -650,7 +650,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       const walletNo = 9;
       error_message = api.create_with_password(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
       console.log(error_message);
-      assert.equal(error_message.includes("Invalid password for wallet"), true);
+      assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
 
       error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", "");
       console.log(error_message);

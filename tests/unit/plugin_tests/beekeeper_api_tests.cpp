@@ -619,7 +619,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
             }
             catch( const fc::exception& e )
             {
-              BOOST_REQUIRE( e.to_string().find( "Invalid password for wallet" ) != std::string::npos );
+              BOOST_REQUIRE( e.to_string().find( "already exists at" ) != std::string::npos );
               _delete_wallet_file( _wallet_names[_idx] );
             }
           }break;

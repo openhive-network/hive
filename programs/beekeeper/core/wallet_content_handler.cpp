@@ -383,10 +383,13 @@ bool wallet_content_handler::has_matching_private_key( const public_key_type& pu
 
 wallet_content_handler_lock wallet_content_handlers_deliverer::create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
 {
+  bool _exists = fc::exists( wallet_file_name );
+  FC_ASSERT( !_exists, "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( wallet_file_name )) );
+
   auto _found = items.find( wallet_name );
   if( _found != items.end() )
   {
-    if( !fc::exists( wallet_file_name ) )
+    if( !_exists )
       items.erase( _found );
     else
     {
@@ -448,12 +451,6 @@ void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, 
 void wallet_content_handlers_deliverer::lock( wallet_content_handler_lock& wallet )
 {
   wallet.set_locked( true );
-}
-
-wallet_content_handlers_deliverer& wallet_content_handlers_deliverer::get_instance()
-{
-  static wallet_content_handlers_deliverer _mgr;
-  return _mgr;
 }
 
 } //wallet_content_handler
