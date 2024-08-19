@@ -191,10 +191,6 @@ class wallet_content_handler_lock
 
 class wallet_content_handlers_deliverer
 {
-   public:
-
-      wallet_content_handlers_deliverer(){};
-
    private:
 
       std::map<std::string, wallet_content_handler::ptr> items;
@@ -205,8 +201,6 @@ class wallet_content_handlers_deliverer
       wallet_content_handler_lock open( const std::string& wallet_name, const std::string& wallet_file_name );
       void unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_lock& wallet );
       void lock( wallet_content_handler_lock& wallet );
-
-      static wallet_content_handlers_deliverer& get_instance();
 };
 
 } //wallet_content_handler

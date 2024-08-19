@@ -11,6 +11,11 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
+wallet_manager_impl::wallet_manager_impl( wallet_content_handlers_deliverer& content_deliverer, const boost::filesystem::path& _wallet_directory )
+                                        : content_deliverer( content_deliverer ), wallet_directory( _wallet_directory )
+{
+}
+
 std::string wallet_manager_impl::gen_password()
 {
   constexpr auto password_prefix = "PW";
@@ -40,7 +45,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
   auto _wallet_file_name = create_wallet_filename( wallet_name );
   std::string _password = password ? ( *password ) : gen_password();
 
-  auto _wallet = wallet_content_handlers_deliverer::get_instance().create( wallet_name, _wallet_file_name.string(), _password );
+  auto _wallet = content_deliverer.create( wallet_name, _wallet_file_name.string(), _password );
 
   // If we have name in our map then remove it since we want the emplace below to replace.
   // This can happen if the wallet file is removed while a wallet is running.
@@ -60,7 +65,7 @@ void wallet_manager_impl::open( const std::string& wallet_name )
 
   auto _wallet_file_name = create_wallet_filename( wallet_name );
 
-  auto _wallet = wallet_content_handlers_deliverer::get_instance().open( wallet_name, _wallet_file_name.string() );
+  auto _wallet = content_deliverer.open( wallet_name, _wallet_file_name.string() );
 
   // If we have name in our map then remove it since we want the emplace below to replace.
   // This can happen if the wallet file is added while a wallet is running.
@@ -224,7 +229,7 @@ void wallet_manager_impl::lock_all()
   // no call to check_timeout since we are locking all anyway
   for (auto& i : wallets)
     if( !i.second.is_locked() )
-      wallet_content_handlers_deliverer::get_instance().lock( i.second );
+      content_deliverer.lock( i.second );
 }
 
 void wallet_manager_impl::lock( const std::string& wallet_name )
@@ -234,7 +239,7 @@ void wallet_manager_impl::lock( const std::string& wallet_name )
 
   FC_ASSERT( !w.is_locked(), "Unable to lock a locked wallet ${w}", ("w", wallet_name));
 
-  wallet_content_handlers_deliverer::get_instance().lock( w );
+  content_deliverer.lock( w );
 }
 
 void wallet_manager_impl::unlock( const std::string& wallet_name, const std::string& password )
@@ -246,7 +251,7 @@ void wallet_manager_impl::unlock( const std::string& wallet_name, const std::str
   auto& w = wallets.at( wallet_name );
   FC_ASSERT( w.is_locked(), "Wallet is already unlocked: ${w}", ("w", wallet_name));
 
-  wallet_content_handlers_deliverer::get_instance().unlock( wallet_name, password, w );
+  content_deliverer.unlock( wallet_name, password, w );
 }
 
 std::string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key, const std::string& prefix )
