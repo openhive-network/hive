@@ -6,8 +6,8 @@
 
 namespace beekeeper {
 
-session::session( const std::optional<std::string>& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
-        : session_base( token, time, wallet_directory )
+session::session( wallet_content_handlers_deliverer& content_deliverer, const std::optional<std::string>& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
+        : session_base( content_deliverer, token, time, wallet_directory )
 {
   notification_handler.register_endpoint( notifications_endpoint );
 }

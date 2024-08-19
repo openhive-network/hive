@@ -33,7 +33,7 @@ class session_base
 
   public:
 
-    session_base( const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory );
+    session_base( wallet_content_handlers_deliverer& content_deliverer, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory );
     virtual ~session_base(){}
 
     void set_timeout( const std::chrono::seconds& t );

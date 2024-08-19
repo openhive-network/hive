@@ -22,7 +22,7 @@ std::shared_ptr<session_base> session_manager_base::get_session( const std::stri
 
 std::shared_ptr<session_base> session_manager_base::create_session( const std::optional<std::string>& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
 {
-  return std::make_shared<session_base>( token, time, wallet_directory );
+  return std::make_shared<session_base>( content_deliverer, token, time, wallet_directory );
 }
 
 std::string session_manager_base::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint, const boost::filesystem::path& wallet_directory )
