@@ -1398,7 +1398,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
-      ("block-log-split", bpo::value<int>()->default_value( -1 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default -1." )
+      ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1426,6 +1426,12 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
+  std::string block_storage_description( "single block in memory" );
+  if( my->block_log_split < 0 ) 
+    block_storage_description = "legacy monolithic file";
+  else if( my->block_log_split > 0 )
+    block_storage_description = "split into multiple files";
+  ilog("Block storage is configured to be ${bs}.", ("bs", block_storage_description));
   my->block_storage = block_storage_i::create_storage( my->block_log_split, get_app(), my->thread_pool );
   my->default_block_writer = 
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );

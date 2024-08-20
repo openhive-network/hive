@@ -22,7 +22,7 @@ def replayed_node() -> ReplayedNodeMaker:
         time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
-        block_log = tt.BlockLog(block_log_directory / "block_log")
+        block_log = tt.BlockLog(block_log_directory, "auto")
 
         if absolute_start_time is None:
             time_offset = tt.StartTimeControl(start_time="head_block_time")

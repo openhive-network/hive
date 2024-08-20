@@ -174,7 +174,7 @@ namespace hive { namespace chain {
     }
 
     /// Returns the number of oldest stored block.
-    uint32_t get_tail_block_num() const;
+    uint32_t get_actual_tail_block_num() const;
 
     void dispose_garbage( bool closing_time );
 

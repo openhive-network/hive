@@ -17,8 +17,9 @@ def test_recalculation_proposal_votes() -> None:
     # load block_log to node
     node.config.shared_file_size = "2G"
     node.config.plugin.append("account_history_api")
+    node.config.block_log_split = -1
     node.run(
-        replay_from=Path(__file__).parent.joinpath("block_log/block_log"),
+        replay_from=Path(__file__).parent.joinpath("block_log"),
         exit_before_synchronization=True,
     )
 

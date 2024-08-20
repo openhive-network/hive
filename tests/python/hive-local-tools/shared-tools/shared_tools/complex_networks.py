@@ -99,17 +99,19 @@ def init_network(
                 f"current head block: {result['head_block_num']}"
             )
 
-    # If a directory of `block_log` is given then it"s possible to save 2 files:
-    # 1) "block_log" file that contains whole saved network
+    # If a directory of `block_log` is given then it"s possible to save several files:
+    # 1) block log files that contain whole saved network
     # 2) "timestamp" file that contains information about time what should be set by `libfaketime` library
     if block_log_directory_name is not None:
         # Prepare dedicated directory
         if block_log_directory_name.exists():
-            (block_log_directory_name / "block_log").unlink(missing_ok=True)
+            block_log = tt.BlockLog(block_log_directory_name, "auto")
+            for file in block_log.block_files:
+                file.unlink(missing_ok=True)
         else:
             Path.mkdir(block_log_directory_name)
 
-        # Copy newly created "block_log" into dedicated directory
+        # Copy newly created block log into dedicated directory
         init_node.close()
         init_node.block_log.copy_to(block_log_directory_name)
 
@@ -127,7 +129,7 @@ def run_networks(
     arguments = []
     alternate_chain_spec: tt.AlternateChainSpecs | None = None
     if blocklog_directory is not None:
-        block_log = tt.BlockLog(blocklog_directory / "block_log")
+        block_log = tt.BlockLog(blocklog_directory, "auto")
         timestamp = block_log.get_head_block_time()
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")

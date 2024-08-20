@@ -15,12 +15,13 @@ def node_with_custom_witnesses() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
 
     node = tt.InitNode()
+    node.config.block_log_split = -1
 
     for witness in WITNESSES:
         node.config.witness.append(witness)
         node.config.private_key.append(tt.Account(witness).private_key)
 
-    node.run(replay_from=block_log_directory / "block_log")
+    node.run(replay_from=block_log_directory)
 
     return node
 

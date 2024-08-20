@@ -16,12 +16,13 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def node(chain_id, skeleton_key):
     block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
 
     init_node = tt.InitNode()
     init_node.config.private_key = skeleton_key
     init_node.config.plugin.append("account_history_api")
     init_node.config.plugin.append("condenser_api")
+    init_node.config.block_log_split = -1
 
     init_node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time"),

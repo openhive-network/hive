@@ -36,11 +36,12 @@ def block_log_length(block_log_helper) -> int:
 @pytest.fixture()
 def node_with_20k_proposal_votes() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "monolithic")
 
     init_node = tt.InitNode()
     init_node.config.plugin.append("condenser_api")
     init_node.config.plugin.append("market_history_api")
+    init_node.config.block_log_split = -1
 
     init_node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time"),

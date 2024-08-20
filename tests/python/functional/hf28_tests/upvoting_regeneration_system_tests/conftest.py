@@ -11,8 +11,9 @@ import test_tools as tt
 def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
+    node.config.block_log_split = -1
     block_log_directory = Path(__file__).parent.joinpath("block_log")
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
 
     with open(block_log_directory / "genesis_time", encoding="utf-8") as file:
         genesis_time = file.read()

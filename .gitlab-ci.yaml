@@ -338,6 +338,7 @@ mirrornet_replay_test:
   script:
     - echo "Generating artifacts file for block_log."
     - time ./hived
+      --block-log-split=-1
       -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
     - time ./compress_block_log
@@ -357,6 +358,7 @@ mirrornet_replay_test:
       --jobs $NUMBER_OF_PROCESSES
     - echo "Starting hived replay"
     - ./hived
+      --block-log-split=-1
       -d "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
       --chain-id $MIRRORNET_CHAIN_ID
       --skeleton-key "$MIRRORNET_SKELETON_KEY"
@@ -473,7 +475,7 @@ formatting_with_black_check:
   after_script:
     - |
       shopt -s globstar
-      tar --exclude='**/generated_during_*/**/block_log' --exclude='**/generated_during_*/**/block_log.artifacts' --exclude='**/generated_during_*/**/shared_memory.bin' --exclude='**/generated_during_*/**/*.sst' -cf - **/generated_during_* | 7z a -si generated_during.tar.7z
+      tar --exclude='**/generated_during_*/**/block_log*' --exclude='**/generated_during_*/**/shared_memory.bin' --exclude='**/generated_during_*/**/*.sst' -cf - **/generated_during_* | 7z a -si generated_during.tar.7z
       tar -cf - **/generated_by_package_fixtures | 7z a -si generated_by_package_fixtures.tar.7z
   artifacts:
     reports:
@@ -823,8 +825,7 @@ python_pattern_mainnet_tests:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
     exclude:
-    - "**/generated_during_*/**/block_log"
-    - "**/generated_during_*/**/block_log.artifacts"
+    - "**/generated_during_*/**/block_log*"
     - "**/generated_during_*/**/shared_memory.bin"
     - "**/generated_during_*/**/*.sst"
     when: always
@@ -896,8 +897,7 @@ message_format_mainnet_5m_tests:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
     exclude:
-    - "**/generated_during_*/**/block_log"
-    - "**/generated_during_*/**/block_log.artifacts"
+    - "**/generated_during_*/**/block_log*"
     - "**/generated_during_*/**/shared_memory.bin"
     - "**/generated_during_*/**/*.sst"
     when: always

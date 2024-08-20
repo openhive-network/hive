@@ -5,6 +5,7 @@ import os
 import sys
 
 import hive_utils
+import test_tools as tt
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -63,7 +64,6 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
             paths_to_delete = [
                 work_dir_path + "/p2p",
                 work_dir_path + "/logs",
-                blockchain_dir + "/block_log.index",
                 blockchain_dir + "/shared_memory.bin",
             ]
             from glob import glob
@@ -71,6 +71,7 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
             paths_to_delete.extend(glob(work_dir_path + "/*.log"))
             paths_to_delete.extend(glob(work_dir_path + "/*.pid"))
             paths_to_delete.extend(glob(work_dir_path + "/*.cfg"))
+            paths_to_delete.extend(glob(blockchain_dir + "/*.artifacts"))
             for path in paths_to_delete:
                 if os.path.exists(path):
                     logger.info(f"Removing {path}")
@@ -86,7 +87,11 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
         logger.info(f"Creating directory {blockchain_dir}")
         os.makedirs(blockchain_dir)
         logger.info("Copying files...")
-        copy(block_log_path, blockchain_dir + "/block_log")
+        paths_to_copy = tt.BlockLog.get_existing_block_files(False, blockchain_dir)
+        paths_to_copy.extend(tt.BlockLog.get_existing_block_files(True, blockchain_dir))
+        for path in paths_to_copy:
+            if os.path.exists(path):
+                copy(block_log_path, path)
         copy(config_file_path, work_dir_path + "/config.ini")
 
 

@@ -23,7 +23,7 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     """
     block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
 
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
 
     # during this replay, before entering live mode node processes a lots of recurrent transfers, therefore the timeout has been increased.
     replayed_node: tt.InitNode = replayed_node(

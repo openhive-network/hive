@@ -14,13 +14,14 @@ from .block_log.generate_block_log import WITNESSES
 def node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
+    node.config.block_log_split = -1
 
     for witness in WITNESSES:
         node.config.witness.append(witness)
         node.config.private_key.append(tt.Account(witness).private_key)
 
     block_log_directory = Path(__file__).parent.joinpath("block_log")
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "monolithic")
 
     node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time"),
