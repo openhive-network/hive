@@ -25,12 +25,14 @@ def test_start_colony_plugin() -> None:
 
 
 @pytest.mark.testnet()
-def test_start_colony_from_block_log(block_log: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs) -> None:
+def test_start_colony_from_block_log(
+    block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
+) -> None:
     node = tt.InitNode()
     node.config.shared_file_size = "4G"
     set_log_level_to_info(node)
     prepare_colony_config(node)
-    node.config.colony_start_at_block = block_log.get_head_block_number()
+    node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
     for witness in WITNESSES:
         key = tt.Account(witness).private_key
@@ -38,14 +40,14 @@ def test_start_colony_from_block_log(block_log: tt.BlockLog, alternate_chain_spe
         node.config.private_key.append(key)
 
     node.run(
-        replay_from=block_log,
+        replay_from=block_log_single_sign,
         timeout=180,
         exit_before_synchronization=True,
         alternate_chain_specs=alternate_chain_spec,
     )
 
     node.run(
-        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
         timeout=180,
         wait_for_live=True,
         alternate_chain_specs=alternate_chain_spec,
@@ -57,7 +59,7 @@ def test_start_colony_from_block_log(block_log: tt.BlockLog, alternate_chain_spe
 
 @pytest.mark.testnet()
 def test_colony_on_basic_network_structure(
-    block_log: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
+    block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
     """
     WitnessNode ●───────────● ColonyNode
@@ -81,11 +83,11 @@ def test_colony_on_basic_network_structure(
     witness_node.config.p2p_seed_node = colony_node.config.p2p_endpoint
 
     prepare_colony_config(colony_node)
-    colony_node.config.colony_start_at_block = block_log.get_head_block_number()
+    colony_node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
     for node in nodes:
         node.run(
-            replay_from=block_log,
+            replay_from=block_log_single_sign,
             timeout=180,
             alternate_chain_specs=alternate_chain_spec,
             exit_before_synchronization=True,
@@ -96,7 +98,7 @@ def test_colony_on_basic_network_structure(
         timeout=180,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
-        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
     )
 
     assert witness_node.is_running(), "Witness node didn't work"
@@ -105,7 +107,7 @@ def test_colony_on_basic_network_structure(
 
 
 @pytest.mark.testnet()
-def test_colony_on_complex_network(block_log: tt.BlockLog, alternate_chain_spec: tt.BlockLog) -> None:
+def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.BlockLog) -> None:
     """
     ColonyNode-0 ●─────●─────● ColonyNode-1
                  │     │     │
@@ -128,11 +130,11 @@ def test_colony_on_complex_network(block_log: tt.BlockLog, alternate_chain_spec:
         wn.config.p2p_seed_node = [a for a in open_addresses if a != address]
         set_log_level_to_info(wn)
         prepare_colony_config(wn)
-        wn.config.colony_start_at_block = block_log.get_head_block_number()
+        wn.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
     for node in nodes:
         node.run(
-            replay_from=block_log,
+            replay_from=block_log_single_sign,
             timeout=180,
             alternate_chain_specs=alternate_chain_spec,
             exit_before_synchronization=True,
@@ -143,7 +145,7 @@ def test_colony_on_complex_network(block_log: tt.BlockLog, alternate_chain_spec:
         timeout=180,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
-        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
     )
 
     assert all(node.is_running() for node in nodes), "At least one node is not working"
@@ -152,7 +154,7 @@ def test_colony_on_complex_network(block_log: tt.BlockLog, alternate_chain_spec:
 
 @pytest.mark.testnet()
 def test_multiple_colony_nodes_communication_with_single_witness_node(
-    block_log: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
+    block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
     """
     ColonyNode-0 ──●
@@ -182,13 +184,13 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
         set_log_level_to_info(nodes[num])
 
         prepare_colony_config(nodes[num])
-        nodes[num].config.colony_start_at_block = block_log.get_head_block_number()
+        nodes[num].config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
     nodes.append(witness_node)
 
     for node in nodes:
         node.run(
-            replay_from=block_log,
+            replay_from=block_log_single_sign,
             timeout=180,
             alternate_chain_specs=alternate_chain_spec,
             exit_before_synchronization=True,
@@ -199,7 +201,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
         timeout=180,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
-        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
     )
 
     assert all(node.is_running() for node in nodes), "At least one node is not working"
@@ -207,13 +209,13 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
 
 
 def test_colony_with_unknown_colony_signer(
-    block_log: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
+    block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
     node = tt.InitNode()
     node.config.shared_file_size = "4G"
     set_log_level_to_info(node)
     prepare_colony_config(node)
-    node.config.colony_start_at_block = block_log.get_head_block_number()
+    node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
     node.config.colony_sign_with = [tt.PrivateKey("unknown-signer-account")]
 
@@ -223,7 +225,7 @@ def test_colony_with_unknown_colony_signer(
         node.config.private_key.append(key)
 
     node.run(
-        replay_from=block_log,
+        replay_from=block_log_single_sign,
         timeout=180,
         exit_before_synchronization=True,
         alternate_chain_specs=alternate_chain_spec,
@@ -233,7 +235,7 @@ def test_colony_with_unknown_colony_signer(
         timeout=180,
         wait_for_live=False,
         alternate_chain_specs=alternate_chain_spec,
-        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
     )
 
     tt.Time.wait_for(

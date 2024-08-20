@@ -31,11 +31,12 @@ ACCOUNT_DETAILS = [
 def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
     tt.logger.info("Start with block log from:", input_block_log_directory)
 
-    block_log = tt.BlockLog(input_block_log_directory / "block_log")
+    block_log = tt.BlockLog(input_block_log_directory, "auto")
 
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
+    node.config.block_log_split = 9999 if block_log.is_split else -1
     node.config.shared_file_size = "2G"
     node.config.enable_stale_production = 1
     node.config.required_participation = 0

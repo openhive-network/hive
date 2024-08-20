@@ -28,7 +28,8 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
 
     if transaction_status_block_depth:
         api_node.config.transaction_status_block_depth = next(iter(transaction_status_block_depth.args))
-    block_log = tt.BlockLog(Path(__file__).parent.joinpath("block_log/block_log"))
+    block_log = tt.BlockLog(Path(__file__).parent.joinpath("block_log"), "monolithic")
+    api_node.config.block_log_split = -1
     api_node.run(
         replay_from=block_log,
         wait_for_live=False,

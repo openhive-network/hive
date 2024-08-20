@@ -11,8 +11,9 @@ from hive_local_tools.functional.python.operation import Account
 @pytest.fixture()
 def node() -> tt.InitNode:
     node = tt.InitNode()
+    node.config.block_log_split = -1
     block_log_directory = Path(__file__).parent.joinpath("block_log")
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "monolithic")
 
     node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time"),

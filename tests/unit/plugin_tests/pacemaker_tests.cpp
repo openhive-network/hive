@@ -44,7 +44,8 @@ struct pacemaker_fixture : public hived_fixture
     configuration_data.set_init_witnesses( initial_witnesses );
 
     config_arg_override_t config_args = {
-      config_line_t( { "shared-file-size", { shared_file_size } } )
+      config_line_t( { "shared-file-size", { shared_file_size } } ),
+      config_line_t( { "block-log-split", { "-1" } } ) // pacemaker-source is designed to be monolithic log.
     };
 
     // build block log with the same config but separate fixture

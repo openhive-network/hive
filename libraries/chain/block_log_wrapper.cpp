@@ -258,12 +258,12 @@ std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_
     return std::shared_ptr<full_block_type>();
 
   const block_log_ptr_t log = get_block_log_corresponding_to( block_num );
-  if( _block_log_split < MAX_FILES_OF_SPLIT_BLOCK_LOG )
+  if( _block_log_split <= MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
     FC_ASSERT( log,
       "Block ${num} has been pruned (oldest stored block is ${old}). "
       "Consider disabling pruning or increasing block-log-split value (currently ${part_count}).",
-      ("num", block_num)("old", get_tail_block_num())("part_count", _block_log_split) );
+      ("num", block_num)("old", get_actual_tail_block_num())("part_count", _block_log_split) );
   }
   else
   {
@@ -392,6 +392,7 @@ block_id_type block_log_wrapper::read_block_id_by_num( uint32_t block_num ) cons
 const block_log_wrapper::block_log_ptr_t block_log_wrapper::get_block_log_corresponding_to(
   uint32_t block_num ) const
 {
+  FC_ASSERT( get_head_log(), "Using unopened block log?" );
   uint32_t request_part_number = get_part_number_for_block( block_num, _max_blocks_in_log_file );
   if( request_part_number > _logs.size() )
     return block_log_ptr_t();
@@ -410,7 +411,12 @@ block_log_wrapper::full_block_range_t block_log_wrapper::read_block_range_by_num
     if( not current_log )
       return result;
 
-    auto part_result = current_log->read_block_range_by_num( starting_block_num, count );
+    FC_ASSERT( current_log->head(), "Empty or unopened log! ${io}", ("io", current_log->is_open() ) );
+
+    // block_log class is not prepared for over-the-head count parameter.
+    uint32_t actual_count =
+      std::min<uint32_t>( count, current_log->head()->get_block_num() - starting_block_num +1);
+    auto part_result = current_log->read_block_range_by_num( starting_block_num, actual_count );
     size_t part_result_count = part_result.size();
     if( part_result_count == 0 )
       return result;
@@ -584,25 +590,11 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
     auto single_part_log = std::make_shared<block_log>( _app );
-    internal_open_and_init( single_part_log, 
-                            _open_args.data_dir / block_log_file_name_info::_legacy_file_name,
-                            read_only );
+    auto log_file_path = _open_args.data_dir / block_log_file_name_info::_legacy_file_name;
+    ilog("Opening monolithic block log file ${log_file_path}", (log_file_path));
+    internal_open_and_init( single_part_log, log_file_path, read_only );
     _logs.push_back( single_part_log );
     return;
-  }
-
-  uint32_t actual_tail_number_needed = 0;
-  if( _open_args.load_snapshot || _open_args.force_replay )
-  {
-    // When hard replay is in cards, ignore current state head (will be overridden anyway),
-    // and split as many parts as it's possible from the source log.
-    actual_tail_number_needed = 1;
-  }
-  else if ( _open_args.replay && not _open_args.force_replay && state_head_block )
-  {
-    // For regular replay require all parts beginning from state head block to be present & opened.
-    actual_tail_number_needed = 
-      get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
   }
 
   // Any log file created on previous run?
@@ -656,26 +648,42 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
 
   // Make sure all parts required by configuration are there.
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
-  // Determine actual needed tail part number (if not set earlier).
-  if( actual_tail_number_needed == 0 )
+  // Determine actual needed tail part number.
+  uint32_t actual_tail_number_needed = head_part_number;
+  if( _open_args.load_snapshot || _open_args.force_replay ||
+      head_part_number <= (unsigned int)_block_log_split )
   {
-    // Is block log not pruned or effectively not pruned (yet)?
-    if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ||
-        head_part_number <= (unsigned int)_block_log_split )
+    // When hard replay is in cards, ignore current state head (will be overridden anyway),
+    // and split as many parts as it's possible from the source log.
+    // Do the same when block log is effectively not pruned (yet).
+    actual_tail_number_needed = 1;
+  }
+  else
+  {
+    if ( _open_args.replay && not _open_args.force_replay && state_head_block )
     {
-      // Expected tail part is obviously 1 - we need each part.
-      actual_tail_number_needed = 1;
+      // For regular replay require all parts beginning from state head block to be present & opened.
+      actual_tail_number_needed = 
+        get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
     }
-    else // pruned log here
+
+    if( head_part_number > (uint32_t)_block_log_split )
     {
-      // not all parts are needed here, i.e. head_part_number > _block_log_split
-      actual_tail_number_needed = head_part_number - _block_log_split;
+      // Make sure that we require sufficient number of parts.
+      actual_tail_number_needed = 
+        std::min<uint32_t>( actual_tail_number_needed, head_part_number - _block_log_split);
     }
   }
   force_parts_exist( head_part_number, actual_tail_number_needed, part_file_names,
                       allow_splitting_monolithic_log, state_head_block );
 
   // Open all needed parts.
+  if( actual_tail_number_needed < head_part_number )
+    ilog( "Opening split block log files numbered ${from} to ${to}",
+          ("from", actual_tail_number_needed)("to", head_part_number) );
+  else
+    ilog( "Opening single split block log file numbered ${to}", ("to", head_part_number) );
+
   _logs.resize( head_part_number, block_log_ptr_t() );
   for( auto cit = part_file_names.cbegin(); cit != part_file_names.cend(); ++cit )
   {
@@ -766,16 +774,31 @@ void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appendi
   }
 }
 
-uint32_t block_log_wrapper::get_tail_block_num() const
+uint32_t block_log_wrapper::get_actual_tail_block_num() const
 {
-  if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG ||
-      _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG )
-  {
-    return 1;
-  }
+  //FC_ASSERT( get_head_log(), "Using unopened block log?" );
+  size_t log_number = _logs.size();
+  FC_ASSERT( log_number > 0, "Uninitialized block_log_wrapper object?" );
+  FC_ASSERT( std::atomic_load( &(_logs[log_number -1]) ), "Head log not initialized?" );
 
-  int oldest_available_part = std::max<int>( _logs.size() - _block_log_split, 1 );
-  return (oldest_available_part -1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 1;
+  uint32_t block_num = 0;
+  do
+  {
+    block_num = 1 + (log_number-1) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+    --log_number;
+  } while ( log_number > 0 && std::atomic_load( &(_logs[log_number -1]) ) );
+
+  return block_num;
+  
+  /*uint32_t block_num = 1;
+  block_log_ptr_t another_log;
+  for(; not another_log; block_num += BLOCKS_IN_SPLIT_BLOCK_LOG_FILE )
+  {
+    another_log = get_block_log_corresponding_to( block_num );
+  }
+  while( not another_log ); // Will finally happen, see initial assertion.
+
+  return block_num;*/
 }
 
 } } //hive::chain

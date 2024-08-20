@@ -228,7 +228,7 @@ def prepare_block_log(
 
     node.close()
     node.block_log.copy_to(block_log_directory)
-    tt.BlockLog(block_log_directory / "block_log").generate_artifacts()
+    tt.BlockLog(block_log_directory, "auto").generate_artifacts()
     tt.logger.info(f"Save block log file to {block_log_directory}")
 
 

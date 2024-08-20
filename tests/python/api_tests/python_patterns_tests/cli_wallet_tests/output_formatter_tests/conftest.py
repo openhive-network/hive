@@ -12,10 +12,12 @@ def node(request):
     if request.node.get_closest_marker("replayed_node") is None:
         node = tt.InitNode()
         node.config.plugin.append("market_history_api")
+        node.config.block_log_split = -1
         node.run()
         return node
     api_node = tt.FullApiNode()
-    api_node.run(replay_from=Path(__file__).parent.joinpath("block_log/block_log"), wait_for_live=False)
+    api_node.config.block_log_split = -1
+    api_node.run(replay_from=Path(__file__).parent.joinpath("block_log"), wait_for_live=False)
     return api_node
 
 

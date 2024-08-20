@@ -4,6 +4,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
+#include <hive/plugins/block_api/block_api.hpp>
 
 #include "../db_fixture/hived_fixture.hpp"
 
@@ -495,6 +496,55 @@ BOOST_AUTO_TEST_CASE( auto_split_3 )
       require_blocks( fixture, 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1, legacy_log_block_count );
       BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), legacy_log_block_count );
     }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+void get_head_block_range( std::string block_log_split )
+{
+  const uint32_t block_count = 2 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+  block_api::block_api_plugin* api_plugin = nullptr;
+
+  hived_fixture fixture( true /*remove blockchain*/ );
+  fixture.postponed_init(
+    {
+      hived_fixture::config_line_t( { "plugin", { HIVE_BLOCK_API_PLUGIN_NAME } } ),
+      hived_fixture::config_line_t( { "block-log-split", { block_log_split } } )
+    },
+    &api_plugin
+  );
+
+  BOOST_REQUIRE( api_plugin );
+  BOOST_REQUIRE( api_plugin->api );
+
+  // Generate block log, full 2 parts of blocks.
+  for( uint32_t i = 0; i < block_count; ++i )
+    fixture.generate_block();
+
+  api_plugin->api->get_block_range( { 
+    .starting_block_num = block_count,
+    .count = 1 } );
+  api_plugin->api->get_block_range( { 
+    .starting_block_num = block_count,
+    .count = 2 } );
+  api_plugin->api->get_block_range( { 
+    .starting_block_num = BLOCKS_IN_SPLIT_BLOCK_LOG_FILE,
+    .count = 1 } );
+  api_plugin->api->get_block_range( { 
+    .starting_block_num = BLOCKS_IN_SPLIT_BLOCK_LOG_FILE,
+    .count = 2 } );
+}
+
+BOOST_AUTO_TEST_CASE( get_block_range )
+{
+  try {
+    ilog( "Testing get_block_range crossing the boundary of head block." );
+
+    get_head_block_range( std::to_string( LEGACY_SINGLE_FILE_BLOCK_LOG ) );
+    get_head_block_range( std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ) );
 
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));

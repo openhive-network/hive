@@ -26,9 +26,10 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
 def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
     node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
+    node.config.block_log_split = -1
 
     block_log_directory = Path(__file__).parent / "block_log"
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
 
     node.run(
         replay_from=block_log,

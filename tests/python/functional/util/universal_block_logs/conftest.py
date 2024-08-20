@@ -18,7 +18,7 @@ WEBSERVER_THREAD_POOL_SIZE: Final[int] = 16
 @pytest.fixture()
 def replayed_node(request: pytest.FixtureRequest) -> tt.InitNode:
     block_log_directory = Path(__file__).parent / request.param[0]
-    block_log = tt.BlockLog(block_log_directory / "block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
     alternate_chain_spec_path = block_log_directory / tt.AlternateChainSpecs.FILENAME
 
     node = tt.InitNode()
@@ -36,6 +36,7 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.InitNode:
         '{"name":"sync","level":"debug","appender":"p2p"} '
         '{"name":"p2p","level":"debug","appender":"p2p"}'
     )
+    node.config.block_log_split = 9999
 
     for witness in WITNESSES:
         key = tt.Account(witness).private_key
