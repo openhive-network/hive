@@ -5,7 +5,7 @@ namespace beekeeper {
 session_base::session_base( wallet_content_handlers_deliverer& content_deliverer, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
         : token(token), time( time )
 {
-  wallet_mgr = std::make_shared<wallet_manager_impl>( content_deliverer, wallet_directory );
+  wallet_mgr = std::make_shared<wallet_manager_impl>( token, content_deliverer, wallet_directory );
 }
 
 void session_base::set_timeout( const std::chrono::seconds& t )
