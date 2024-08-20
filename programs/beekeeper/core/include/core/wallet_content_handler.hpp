@@ -171,7 +171,7 @@ class wallet_content_handler
       bool has_matching_private_key( const public_key_type& public_key );
 };
 
-class wallet_content_handler_lock
+class wallet_content_handler_session
 {
    private:
 
@@ -181,7 +181,7 @@ class wallet_content_handler_lock
 
       wallet_content_handler::ptr content;
 
-      wallet_content_handler_lock( bool locked, wallet_content_handler::ptr& content ): locked( locked ), content( content )
+      wallet_content_handler_session( bool locked, wallet_content_handler::ptr& content ): locked( locked ), content( content )
       {
       }
 
@@ -197,10 +197,10 @@ class wallet_content_handlers_deliverer
 
    public:
 
-      wallet_content_handler_lock create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
-      wallet_content_handler_lock open( const std::string& wallet_name, const std::string& wallet_file_name );
-      void unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_lock& wallet );
-      void lock( wallet_content_handler_lock& wallet );
+      wallet_content_handler_session create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
+      wallet_content_handler_session open( const std::string& wallet_name, const std::string& wallet_file_name );
+      void unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_session& wallet );
+      void lock( wallet_content_handler_session& wallet );
 };
 
 } //wallet_content_handler
