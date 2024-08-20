@@ -21,7 +21,7 @@ class wallet_manager_impl {
 
   public:
 
-    wallet_manager_impl( wallet_content_handlers_deliverer& content_deliverer, const boost::filesystem::path& _wallet_directory );
+    wallet_manager_impl( const std::string& token, wallet_content_handlers_deliverer& content_deliverer, const boost::filesystem::path& _wallet_directory );
 
     std::string create( const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary );
     void open( const std::string& wallet_name );
@@ -43,6 +43,8 @@ class wallet_manager_impl {
     bool has_wallet( const std::string& wallet_name );
 
   private:
+
+    const std::string& token;
 
     wallet_content_handlers_deliverer& content_deliverer;
 

@@ -11,8 +11,8 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
-wallet_manager_impl::wallet_manager_impl( wallet_content_handlers_deliverer& content_deliverer, const boost::filesystem::path& _wallet_directory )
-                                        : content_deliverer( content_deliverer ), wallet_directory( _wallet_directory )
+wallet_manager_impl::wallet_manager_impl( const std::string& token, wallet_content_handlers_deliverer& content_deliverer, const boost::filesystem::path& _wallet_directory )
+                                        : token( token ), content_deliverer( content_deliverer ), wallet_directory( _wallet_directory )
 {
 }
 
