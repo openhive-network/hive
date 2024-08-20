@@ -174,7 +174,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   keys_details _result;
   bool is_all_wallet_locked = true;
 
-  auto _process_wallet = [&]( const wallet_content_handler_lock& wallet )
+  auto _process_wallet = [&]( const wallet_content_handler_session& wallet )
   {
     if( !wallet.is_locked() )
     {
@@ -263,11 +263,11 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
   w.content->remove_key( public_key );
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_lock&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_session&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
 {
   try
   {
-    auto _process_wallet = [&]( const wallet_content_handler_lock& wallet )
+    auto _process_wallet = [&]( const wallet_content_handler_session& wallet )
     {
       if( !wallet.is_locked() )
         return sign_method( wallet );
@@ -303,7 +303,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
 
 signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const wallet_content_handler_lock& wallet ){ return wallet.content->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
+  return sign( [&]( const wallet_content_handler_session& wallet ){ return wallet.content->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )

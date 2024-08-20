@@ -381,7 +381,7 @@ bool wallet_content_handler::has_matching_private_key( const public_key_type& pu
   return my->try_get_private_key( public_key ).has_value();
 }
 
-wallet_content_handler_lock wallet_content_handlers_deliverer::create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
+wallet_content_handler_session wallet_content_handlers_deliverer::create( const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
 {
   bool _exists = fc::exists( wallet_file_name );
   FC_ASSERT( !_exists, "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( wallet_file_name )) );
@@ -398,7 +398,7 @@ wallet_content_handler_lock wallet_content_handlers_deliverer::create( const std
       else
         _found->second->check_password( password );
 
-      return wallet_content_handler_lock{ false, _found->second };
+      return wallet_content_handler_session{ false, _found->second };
     }
   }
 
@@ -414,15 +414,15 @@ wallet_content_handler_lock wallet_content_handlers_deliverer::create( const std
 
   items.insert( std::make_pair( wallet_name, _new_item ) );
 
-  return wallet_content_handler_lock{ false, _new_item };
+  return wallet_content_handler_session{ false, _new_item };
 }
 
-wallet_content_handler_lock wallet_content_handlers_deliverer::open( const std::string& wallet_name, const std::string& wallet_file_name )
+wallet_content_handler_session wallet_content_handlers_deliverer::open( const std::string& wallet_name, const std::string& wallet_file_name )
 {
   auto _found = items.find( wallet_name );
   if( _found != items.end() )
   {
-    return wallet_content_handler_lock{ true, _found->second };
+    return wallet_content_handler_session{ true, _found->second };
   }
 
   auto _new_item = std::make_shared<wallet_content_handler>();
@@ -431,10 +431,10 @@ wallet_content_handler_lock wallet_content_handlers_deliverer::open( const std::
 
   items.insert( std::make_pair( wallet_name, _new_item ) );
 
-  return wallet_content_handler_lock{ true, _new_item };
+  return wallet_content_handler_session{ true, _new_item };
 }
 
-void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_lock& wallet )
+void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_session& wallet )
 {
   auto _found = items.find( wallet_name );
   if( _found != items.end() )
@@ -448,7 +448,7 @@ void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, 
   }
 }
 
-void wallet_content_handlers_deliverer::lock( wallet_content_handler_lock& wallet )
+void wallet_content_handlers_deliverer::lock( wallet_content_handler_session& wallet )
 {
   wallet.set_locked( true );
 }
