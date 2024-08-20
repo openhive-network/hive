@@ -144,6 +144,8 @@ class Executable(Closeable, Generic[ConfigT]):
         try:
             return_code = self.__process.wait(timeout=timeout_secs)
             self._logger.debug(f"Closed with {return_code} return code")
+            if return_code != 0:
+                raise Exception(f"Close with code: {return_code}")
         except subprocess.TimeoutExpired:
             self.__raise_warning()
             self.__process.kill()
