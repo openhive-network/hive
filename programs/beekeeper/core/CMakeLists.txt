@@ -2,6 +2,7 @@ file(GLOB HEADERS "include/core/*.hpp")
 
 add_library( beekeeper_core
              ./wallet_content_handler.cpp
+             ./wallet_content_handlers_deliverer.cpp
              ./beekeeper_wallet_manager.cpp
              ./token_generator.cpp
              ./session_base.cpp
