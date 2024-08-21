@@ -13,6 +13,7 @@ namespace beekeeper {
   using boost::multi_index::multi_index_container;
   using boost::multi_index::indexed_by;
   using boost::multi_index::ordered_unique;
+  using boost::multi_index::ordered_non_unique;
   using boost::multi_index::tag;
   using boost::multi_index::const_mem_fun;
   using boost::multi_index::composite_key;
@@ -41,6 +42,11 @@ class wallet_content_handler_session
     void set_locked( bool value ) { locked = value; }
     bool is_locked() const { return locked; }
 
+    void set_content( const wallet_content_handler::ptr& new_content )
+    {
+      content = new_content;
+    };
+
     const wallet_content_handler::ptr& get_content() const
     {
       FC_ASSERT( content );
@@ -62,9 +68,9 @@ class wallet_content_handlers_deliverer
     typedef multi_index_container<
       wallet_content_handler_session,
       indexed_by<
-        ordered_unique< tag< by_token >,
+        ordered_non_unique< tag< by_token >,
           const_mem_fun< wallet_content_handler_session, const std::string&, &wallet_content_handler_session::get_token > >,
-        ordered_unique< tag< by_wallet_name >,
+        ordered_non_unique< tag< by_wallet_name >,
           const_mem_fun< wallet_content_handler_session, const std::string&, &wallet_content_handler_session::get_wallet_name > >,
         ordered_unique< tag< by_token_wallet_name >,
           composite_key< wallet_content_handler_session,
@@ -75,25 +81,13 @@ class wallet_content_handlers_deliverer
       >
     > wallet_content_handler_session_index;
 
-  public:
-
-      using wallet_data = std::map<std::string/*wallet_name*/, wallet_content_handler_session::ptr>;
-
    private:
 
-      std::map<std::string, wallet_content_handler::ptr> items;
-
-      using session_wallet_data = std::map<std::string/*token*/, wallet_data>;
-
-      session_wallet_data session_items;
-
-   private:
-
-      void add( const std::string& token, const std::string& wallet_name, bool locked, wallet_content_handler::ptr& content );
+      void emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content );
 
    public:
 
-      wallet_content_handler_session_index complete_items;
+      wallet_content_handler_session_index items;
 
       bool empty( const std::string& token );
       std::optional<wallet_content_handler_session> find( const std::string& token, const std::string& wallet_name );

@@ -90,12 +90,12 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::v
       open( wallet_file_name );
   }
 
-  const auto& _idx = content_deliverer.complete_items.get<by_token>();
+  const auto& _idx = content_deliverer.items.get<by_token>();
   auto _itr = _idx.find( token );
 
   while( _itr != _idx.end() && _itr->get_token() == token )
   {
-    _result.emplace_back( wallet_details{ _itr->get_wallet_name(), !_itr->get_content()->is_locked() } );
+    _result.emplace_back( wallet_details{ _itr->get_wallet_name(), !_itr->is_locked() } );
     ++_itr;
   }
 
@@ -188,7 +188,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   }
   else
   {
-    const auto& _idx = content_deliverer.complete_items.get<by_token>();
+    const auto& _idx = content_deliverer.items.get<by_token>();
     auto _itr = _idx.find( token );
 
     while( _itr != _idx.end() && _itr->get_token() == token )
@@ -209,7 +209,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
 void wallet_manager_impl::lock_all()
 {
   // no call to check_timeout since we are locking all anyway
-  auto& _idx = content_deliverer.complete_items.get<by_token>();
+  auto& _idx = content_deliverer.items.get<by_token>();
   auto _itr = _idx.find( token );
 
   while( _itr != _idx.end() && _itr->get_token() == token )
@@ -227,7 +227,7 @@ void wallet_manager_impl::lock_all()
 
 void wallet_manager_impl::lock( const std::string& wallet_name )
 {
-  auto& _idx = content_deliverer.complete_items.get<by_token_wallet_name>();
+  auto& _idx = content_deliverer.items.get<by_token_wallet_name>();
   auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
   FC_ASSERT( _itr != _idx.end(), "Wallet not found: ${w}", ("w", wallet_name));
@@ -247,7 +247,7 @@ void wallet_manager_impl::unlock( const std::string& wallet_name, const std::str
     open( wallet_name );
   }
 
-  auto& _idx = content_deliverer.complete_items.get<by_token_wallet_name>();
+  auto& _idx = content_deliverer.items.get<by_token_wallet_name>();
   auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
   FC_ASSERT( _itr->is_locked(), "Wallet is already unlocked: ${w}", ("w", wallet_name));
@@ -316,7 +316,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
     }
     else
     {
-      const auto& _idx = content_deliverer.complete_items.get<by_token>();
+      const auto& _idx = content_deliverer.items.get<by_token>();
       auto _itr = _idx.find( token );
 
       while( _itr != _idx.end() && _itr->get_token() == token )
