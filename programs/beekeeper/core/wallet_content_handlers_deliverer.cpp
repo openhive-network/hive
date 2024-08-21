@@ -13,15 +13,6 @@ bool wallet_content_handlers_deliverer::empty( const std::string& token )
   return _session_found->second.empty();
 }
 
-wallet_content_handlers_deliverer::wallet_data wallet_content_handlers_deliverer::get_wallets( const std::string& token )
-{
-  auto _session_found = session_items.find( token );
-  if( _session_found == session_items.end() )
-    return wallet_data();
-
-  return _session_found->second;
-}
-
 std::optional<wallet_content_handler_session::ptr> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
 {
   auto _session_found = session_items.find( token );

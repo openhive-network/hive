@@ -90,9 +90,13 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::v
       open( wallet_file_name );
   }
 
-  for( const auto& w : content_deliverer.get_wallets( token ) )
+  const auto& _idx = content_deliverer.complete_items.get<by_token>();
+  auto _itr = _idx.find( token );
+
+  while( _itr != _idx.end() && _itr->get_token() == token )
   {
-    _result.emplace_back( wallet_details{ w.first, !w.second->is_locked() } );
+    _result.emplace_back( wallet_details{ _itr->get_wallet_name(), !_itr->get_content()->is_locked() } );
+    ++_itr;
   }
 
   return _result;
@@ -159,25 +163,31 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   keys_details _result;
   bool is_all_wallet_locked = true;
 
-  auto _process_wallet = [&]( const wallet_content_handler_session::ptr& wallet )
+  auto _process_wallet = [&]( const wallet_content_handler_session& wallet )
   {
-    if( !wallet->is_locked() )
+    if( !wallet.is_locked() )
     {
-      _result.merge( wallet->get_content()->get_keys_details() );
+      _result.merge( wallet.get_content()->get_keys_details() );
     }
-    is_all_wallet_locked &= wallet->is_locked();
+    is_all_wallet_locked &= wallet.is_locked();
   };
 
   if( wallet_name )
   {
     auto _found = content_deliverer.find( token, *wallet_name );
     if( _found )
-      _process_wallet( *_found );
+      _process_wallet( *(*_found) );
   }
   else
   {
-    for( const auto& i : content_deliverer.get_wallets( token ) )
-      _process_wallet( i.second );
+    const auto& _idx = content_deliverer.complete_items.get<by_token>();
+    auto _itr = _idx.find( token );
+
+    while( _itr != _idx.end() && _itr->get_token() == token )
+    {
+      _process_wallet( *_itr );
+      ++_itr;
+    }
   }
 
   if( wallet_name )
@@ -191,9 +201,20 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
 void wallet_manager_impl::lock_all()
 {
   // no call to check_timeout since we are locking all anyway
-  for( auto& i : content_deliverer.get_wallets( token ) )
-    if( !i.second->is_locked() )
-      content_deliverer.lock( i.second );
+  auto& _idx = content_deliverer.complete_items.get<by_token>();
+  auto _itr = _idx.find( token );
+
+  while( _itr != _idx.end() && _itr->get_token() == token )
+  {
+    if( !_itr->get_content()->is_locked() )
+    {
+      _idx.modify( _itr, []( wallet_content_handler_session &obj )
+      {
+        obj.set_locked( true );
+      });
+    }
+    ++_itr;
+  }
 }
 
 void wallet_manager_impl::lock( const std::string& wallet_name )
@@ -259,13 +280,13 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
   __wallet->get_content()->remove_key( public_key );
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_session::ptr&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_session&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
 {
   try
   {
-    auto _process_wallet = [&]( const wallet_content_handler_session::ptr& wallet )
+    auto _process_wallet = [&]( const wallet_content_handler_session& wallet )
     {
-      if( !wallet->is_locked() )
+      if( !wallet.is_locked() )
         return sign_method( wallet );
       return std::optional<signature_type>();
     };
@@ -275,18 +296,22 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
       auto _wallet = content_deliverer.find( token, *wallet_name );
       if( _wallet )
       {
-        auto _sig = _process_wallet( *_wallet );
+        auto _sig = _process_wallet( *(*_wallet) );
         if( _sig )
           return *_sig;
       }
     }
     else
     {
-      for( const auto& i : content_deliverer.get_wallets( token ) )
+      const auto& _idx = content_deliverer.complete_items.get<by_token>();
+      auto _itr = _idx.find( token );
+
+      while( _itr != _idx.end() && _itr->get_token() == token )
       {
-        auto _sig = _process_wallet( i.second );
+        auto _sig = _process_wallet( *_itr );
         if( _sig )
           return *_sig;
+        ++_itr;
       }
     }
   } FC_LOG_AND_RETHROW();
@@ -299,7 +324,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
 
 signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const wallet_content_handler_session::ptr& wallet ){ return wallet->get_content()->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
+  return sign( [&]( const wallet_content_handler_session& wallet ){ return wallet.get_content()->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )

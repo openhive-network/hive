@@ -54,7 +54,7 @@ class wallet_manager_impl {
     std::string gen_password();
     void valid_filename( const std::string& name );
 
-    signature_type sign( std::function<std::optional<signature_type>(const wallet_content_handler_session::ptr&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
+    signature_type sign( std::function<std::optional<signature_type>(const wallet_content_handler_session&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix );
 
     boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
     {

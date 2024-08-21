@@ -41,7 +41,7 @@ class wallet_content_handler_session
     void set_locked( bool value ) { locked = value; }
     bool is_locked() const { return locked; }
 
-    wallet_content_handler::ptr& get_content()
+    const wallet_content_handler::ptr& get_content() const
     {
       FC_ASSERT( content );
       return content;
@@ -51,13 +51,13 @@ class wallet_content_handler_session
     const std::string& get_wallet_name() const { return wallet_name; }
   };
 
+struct by_wallet_name;
+struct by_token;
+struct by_token_wallet_name;
+
 class wallet_content_handlers_deliverer
 {
   public:
-
-    struct by_wallet_name;
-    struct by_token;
-    struct by_token_wallet_name;
 
     typedef multi_index_container<
       wallet_content_handler_session,
@@ -75,8 +75,6 @@ class wallet_content_handlers_deliverer
       >
     > wallet_content_handler_session_index;
 
-    wallet_content_handler_session_index complete_items;
-
   public:
 
       using wallet_data = std::map<std::string/*wallet_name*/, wallet_content_handler_session::ptr>;
@@ -92,10 +90,12 @@ class wallet_content_handlers_deliverer
    private:
 
       void add( const std::string& token, const std::string& wallet_name, bool locked, wallet_content_handler::ptr& content );
+
    public:
 
+      wallet_content_handler_session_index complete_items;
+
       bool empty( const std::string& token );
-      wallet_data get_wallets( const std::string& token );
       std::optional<wallet_content_handler_session::ptr> find( const std::string& token, const std::string& wallet_name );
       void erase( const std::string& token, const std::string& wallet_name );
 
