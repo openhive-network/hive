@@ -6,25 +6,31 @@ namespace beekeeper {
 
 class wallet_content_handler_session
 {
-   public:
+  public:
 
-      using ptr = std::shared_ptr<wallet_content_handler_session>;
+    using ptr = std::shared_ptr<wallet_content_handler_session>;
 
-   private:
+  private:
 
-      bool locked = true;
+    bool locked = true;
+    wallet_content_handler::ptr content;
 
-   public:
+  public:
 
-      wallet_content_handler::ptr content;
+    wallet_content_handler_session( bool locked, wallet_content_handler::ptr& content )
+    : locked( locked ), content( content )
+    {
+    }
 
-      wallet_content_handler_session( bool locked, wallet_content_handler::ptr& content ): locked( locked ), content( content )
-      {
-      }
+    void set_locked( bool value ) { locked = value; }
+    bool is_locked() const { return locked; }
 
-      void set_locked( bool value ) { locked = value; }
-      bool is_locked() const { return locked; }
-};
+    wallet_content_handler::ptr& get_content()
+    {
+      FC_ASSERT( content );
+      return content;
+    };
+  };
 
 class wallet_content_handlers_deliverer
 {
