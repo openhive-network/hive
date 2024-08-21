@@ -6,16 +6,13 @@ namespace beekeeper {
 
 bool wallet_content_handlers_deliverer::empty( const std::string& token )
 {
-  auto _session_found = session_items.find( token );
-  if( _session_found == session_items.end() )
-    return true;
-
-  return _session_found->second.empty();
+  const auto& _idx = items.get<by_token>();
+  return _idx.find( token ) == _idx.end();
 }
 
 std::optional<wallet_content_handler_session> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
 {
-  const auto& _idx = complete_items.get<by_token_wallet_name>();
+  const auto& _idx = items.get<by_token_wallet_name>();
   auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
   if( _itr == _idx.end() )
@@ -26,51 +23,41 @@ std::optional<wallet_content_handler_session> wallet_content_handlers_deliverer:
 
 void wallet_content_handlers_deliverer::erase( const std::string& token, const std::string& wallet_name )
 {
-  auto _session_found = session_items.find( token );
-  if( _session_found == session_items.end() )
-    return;
+  auto& _idx = items.get<by_token_wallet_name>();
+  auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
-  auto _session_wallet_found = _session_found->second.find( wallet_name );
-  if( _session_wallet_found == _session_found->second.end() )
-    return;
-
-  _session_found->second.erase( _session_wallet_found );
+  if( _itr != _idx.end() )
+    _idx.erase( _itr );
 }
 
-void wallet_content_handlers_deliverer::add( const std::string& token, const std::string& wallet_name, bool locked, wallet_content_handler::ptr& content )
+void wallet_content_handlers_deliverer::emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content )
 {
-  /*
-    If we have name in our map then remove it since we want the insert to replace.
-    This can happen if the wallet file is added or removed while a wallet is running.
-  */
-  erase( token, wallet_name );
+  auto& _idx = items.get<by_token_wallet_name>();
+  auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
-  auto _session_found = session_items.find( token );
-  if( _session_found != session_items.end() )
-    _session_found->second.insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( token, wallet_name, locked, content ) ) );
+  if( _itr == _idx.end() )
+    _idx.emplace( wallet_content_handler_session( token, wallet_name, locked, content ) );
   else
-    session_items[ token ].insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( token, wallet_name, locked, content ) ) );
+    _idx.modify( _itr, [&]( wallet_content_handler_session& obj )
+    {
+      obj.set_locked( locked );
+      obj.set_content( content );
+    });
 }
 
 void wallet_content_handlers_deliverer::create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
 {
-  bool _exists = fc::exists( wallet_file_name );
-  FC_ASSERT( !_exists, "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( wallet_file_name )) );
+  FC_ASSERT( !fc::exists( wallet_file_name ), "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( wallet_file_name )) );
 
-  auto _found = items.find( wallet_name );
-  if( _found != items.end() )
+  auto& _idx = items.get<by_wallet_name>();
+  auto _itr = _idx.find( wallet_name );
+  if( _itr != _idx.end() )//If exists at least one wallet, but lack of file, every old wallet should be deleted
   {
-    if( !_exists )
-      items.erase( _found );
-    else
+    while( _itr != _idx.end() && _itr->get_wallet_name() == wallet_name )
     {
-      if( _found->second->is_locked() )
-        _found->second->unlock( password );
-      else
-        _found->second->check_password( password );
-
-      add( token, wallet_name, false, _found->second );
-      return;
+      auto __itr = _itr;
+      ++_itr;
+      _idx.erase( __itr );
     }
   }
 
@@ -84,17 +71,16 @@ void wallet_content_handlers_deliverer::create( const std::string& token, const 
 
   _new_item->save_wallet_file();
 
-  items.insert( std::make_pair( wallet_name, _new_item ) );
-
-  add( token, wallet_name, false, _new_item );
+  emplace_or_modify( token, wallet_name, false, _new_item );
 }
 
 void wallet_content_handlers_deliverer::open( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name )
 {
-  auto _found = items.find( wallet_name );
-  if( _found != items.end() )
+  const auto& _idx = items.get<by_wallet_name>();
+  auto _itr = _idx.find( wallet_name );
+  if( _itr != _idx.end() )
   {
-    add( token, wallet_name, true, _found->second );
+    emplace_or_modify( token, wallet_name, true, _itr->get_content() );
     return;
   }
 
@@ -102,9 +88,7 @@ void wallet_content_handlers_deliverer::open( const std::string& token, const st
   _new_item->set_wallet_filename( wallet_file_name );
   FC_ASSERT( _new_item->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_file_name) );
 
-  items.insert( std::make_pair( wallet_name, _new_item ) );
-
-  add( token, wallet_name, true, _new_item );
+  emplace_or_modify( token, wallet_name, true, _new_item );
 }
 
 } //wallet_content_handler
