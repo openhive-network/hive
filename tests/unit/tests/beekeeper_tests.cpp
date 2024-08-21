@@ -2034,7 +2034,23 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization)
       };
 
     _beekeeper.import_keys( _token_00, _wallet_name, { _keys[0].first }, _prefix );
+    {
+      auto _public_keys = _beekeeper.get_public_keys( _token_00, _wallet_name );
+      BOOST_REQUIRE_EQUAL( _public_keys.size(), 1 );
+    }
+    {
+      auto _public_keys = _beekeeper.get_public_keys( _token_01, _wallet_name );
+      BOOST_REQUIRE_EQUAL( _public_keys.size(), 1 );
+    }
     _beekeeper.import_keys( _token_01, _wallet_name, { _keys[1].first, _keys[2].first }, _prefix );
+    {
+      auto _public_keys = _beekeeper.get_public_keys( _token_00, _wallet_name );
+      BOOST_REQUIRE_EQUAL( _public_keys.size(), 3 );
+    }
+    {
+      auto _public_keys = _beekeeper.get_public_keys( _token_01, _wallet_name );
+      BOOST_REQUIRE_EQUAL( _public_keys.size(), 3 );
+    }
 
     _beekeeper.close( _token_00, _wallet_name );
     _beekeeper.unlock( _token_00, _wallet_name, "avocado" );
