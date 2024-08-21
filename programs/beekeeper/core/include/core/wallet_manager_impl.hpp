@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/utilities.hpp>
-#include <core/wallet_content_handler.hpp>
+#include <core/wallet_content_handlers_deliverer.hpp>
 
 #include <boost/filesystem.hpp>
 
