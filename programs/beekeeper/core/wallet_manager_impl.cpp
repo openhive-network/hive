@@ -153,8 +153,8 @@ keys_details wallet_manager_impl::list_keys_impl( const std::string& name, const
 
   FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
   if( password_is_required )
-    __wallet->content->check_password( password ); //throws if bad password
-  return __wallet->content->get_keys_details();
+    __wallet->get_content()->check_password( password ); //throws if bad password
+  return __wallet->get_content()->get_keys_details();
 }
 
 keys_details wallet_manager_impl::list_keys( const std::string& name, const std::string& password )
@@ -173,7 +173,7 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   {
     if( !wallet->is_locked() )
     {
-      _result.merge( wallet->content->get_keys_details() );
+      _result.merge( wallet->get_content()->get_keys_details() );
     }
     is_all_wallet_locked &= wallet->is_locked();
   };
@@ -242,7 +242,7 @@ std::string wallet_manager_impl::import_key( const std::string& name, const std:
 
   FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-  return __wallet->content->import_key( wif_key, prefix );
+  return __wallet->get_content()->import_key( wif_key, prefix );
 }
 
 std::vector<std::string> wallet_manager_impl::import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix )
@@ -254,7 +254,7 @@ std::vector<std::string> wallet_manager_impl::import_keys( const std::string& na
 
   FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-  return __wallet->content->import_keys( wif_keys, prefix );
+  return __wallet->get_content()->import_keys( wif_keys, prefix );
 }
 
 void wallet_manager_impl::remove_key( const std::string& name, const public_key_type& public_key )
@@ -266,7 +266,7 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
 
   FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-  __wallet->content->remove_key( public_key );
+  __wallet->get_content()->remove_key( public_key );
 }
 
 signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_session::ptr&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
@@ -309,7 +309,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
 
 signature_type wallet_manager_impl::sign_digest( const std::optional<std::string>& wallet_name, const digest_type& sig_digest, const public_key_type& public_key, const std::string& prefix )
 {
-  return sign( [&]( const wallet_content_handler_session::ptr& wallet ){ return wallet->content->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
+  return sign( [&]( const wallet_content_handler_session::ptr& wallet ){ return wallet->get_content()->try_sign_digest( sig_digest, public_key ); }, wallet_name, public_key, prefix );
 }
 
 bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key )
@@ -321,7 +321,7 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_na
 
   FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", wallet_name));
 
-  return __wallet->content->has_matching_private_key( public_key );
+  return __wallet->get_content()->has_matching_private_key( public_key );
 }
 
 std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix )
