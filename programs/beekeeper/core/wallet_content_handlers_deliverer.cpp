@@ -58,9 +58,9 @@ void wallet_content_handlers_deliverer::add( const std::string& token, const std
 
   auto _session_found = session_items.find( token );
   if( _session_found != session_items.end() )
-    _session_found->second.insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( locked, content ) ) );
+    _session_found->second.insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( token, wallet_name, locked, content ) ) );
   else
-    session_items[ token ].insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( locked, content ) ) );
+    session_items[ token ].insert( std::make_pair( wallet_name, std::make_shared<wallet_content_handler_session>( token, wallet_name, locked, content ) ) );
 }
 
 void wallet_content_handlers_deliverer::create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
