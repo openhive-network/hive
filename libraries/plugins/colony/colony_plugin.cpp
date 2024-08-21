@@ -640,6 +640,17 @@ void colony_plugin_impl::start()
     _max_threads = i;
   }
 
+  if( not _disable_broadcast && not theApp.is_interrupt_request() )
+  {
+    auto* _p2p_plugin = theApp.find_plugin< hive::plugins::p2p::p2p_plugin >();
+    if( _p2p_plugin == nullptr )
+      wlog( "P2P plugin not present - transactions produced by colony won't be broadcast" );
+    else if( _chain.is_p2p_enabled() == false )
+      wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
+    else
+      _p2p_ptr = _p2p_plugin;
+  }
+
   for( auto& thread : _threads )
     thread.init();
 }
@@ -786,35 +797,16 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
 
     my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
     my->_disable_broadcast = options.at( "colony-no-broadcast" ).as<bool>();
+
+    my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
+      { my->post_apply_transaction( note ); }, *this, 0 );
+    my->_post_apply_block_conn = my->_db.add_post_apply_block_handler( [&]( const block_notification& note )
+      { my->post_apply_block( note ); }, *this, 0 );
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-void colony_plugin::plugin_startup()
-{ try {
-  ilog( "colony plugin:  plugin_startup() begin" );
-
-  if( my->_start_at_block <= my->_db.head_block_num() )
-    my->start();
-
-  my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
-    { my->post_apply_transaction( note ); }, *this, 0 );
-  my->_post_apply_block_conn = my->_db.add_post_apply_block_handler( [&]( const block_notification& note )
-    { my->post_apply_block( note ); }, *this, 0 );
-
-  if( not my->_disable_broadcast )
-  {
-    auto* _p2p_plugin = get_app().find_plugin< hive::plugins::p2p::p2p_plugin >();
-    if( _p2p_plugin == nullptr )
-      wlog( "P2P plugin not present - transactions produced by colony won't be broadcast" );
-    else if( my->_chain.is_p2p_enabled() == false )
-      wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
-    else
-      my->_p2p_ptr = _p2p_plugin;
-  }
-
-  ilog( "colony plugin:  plugin_startup() end" );
-} FC_CAPTURE_AND_RETHROW() }
+void colony_plugin::plugin_startup() {}
 
 void colony_plugin::plugin_shutdown()
 {
