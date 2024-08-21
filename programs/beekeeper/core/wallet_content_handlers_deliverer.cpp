@@ -13,17 +13,15 @@ bool wallet_content_handlers_deliverer::empty( const std::string& token )
   return _session_found->second.empty();
 }
 
-std::optional<wallet_content_handler_session::ptr> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
+std::optional<wallet_content_handler_session> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
 {
-  auto _session_found = session_items.find( token );
-  if( _session_found == session_items.end() )
-    return std::optional<wallet_content_handler_session::ptr>();
+  const auto& _idx = complete_items.get<by_token_wallet_name>();
+  auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
-  auto _session_wallet_found = _session_found->second.find( wallet_name );
-  if( _session_wallet_found == _session_found->second.end() )
-    return std::optional<wallet_content_handler_session::ptr>();
-
-  return { _session_wallet_found->second };
+  if( _itr == _idx.end() )
+    return std::optional<wallet_content_handler_session>();
+  else
+    return std::optional<wallet_content_handler_session>( *_itr );
 }
 
 void wallet_content_handlers_deliverer::erase( const std::string& token, const std::string& wallet_name )
@@ -107,25 +105,6 @@ void wallet_content_handlers_deliverer::open( const std::string& token, const st
   items.insert( std::make_pair( wallet_name, _new_item ) );
 
   add( token, wallet_name, true, _new_item );
-}
-
-void wallet_content_handlers_deliverer::unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_session::ptr& wallet )
-{
-  auto _found = items.find( wallet_name );
-  if( _found != items.end() )
-  {
-    if( _found->second->is_locked() )
-      _found->second->unlock( password );
-    else
-      _found->second->check_password( password );
-
-    wallet->set_locked( false );
-  }
-}
-
-void wallet_content_handlers_deliverer::lock( wallet_content_handler_session::ptr& wallet )
-{
-  wallet->set_locked( true );
 }
 
 } //wallet_content_handler

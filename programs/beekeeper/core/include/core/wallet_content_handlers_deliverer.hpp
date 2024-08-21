@@ -96,13 +96,11 @@ class wallet_content_handlers_deliverer
       wallet_content_handler_session_index complete_items;
 
       bool empty( const std::string& token );
-      std::optional<wallet_content_handler_session::ptr> find( const std::string& token, const std::string& wallet_name );
+      std::optional<wallet_content_handler_session> find( const std::string& token, const std::string& wallet_name );
       void erase( const std::string& token, const std::string& wallet_name );
 
       void create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
       void open( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name );
-      void unlock( const std::string& wallet_name, const std::string& password, wallet_content_handler_session::ptr& wallet );
-      void lock( wallet_content_handler_session::ptr& wallet );
 };
 
 } //wallet_content_handler
