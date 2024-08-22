@@ -153,10 +153,13 @@ keys_details wallet_manager_impl::list_keys_impl( const std::string& name, const
   auto _wallet = content_deliverer.find( token, name );
   FC_ASSERT( _wallet, "Wallet not found: ${w}", ("w", name));
 
-  FC_ASSERT( !_wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+  auto __wallet = *_wallet;
+  FC_ASSERT( __wallet );
+
+  FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
   if( password_is_required )
-    _wallet->get_content()->check_password( password ); //throws if bad password
-  return _wallet->get_content()->get_keys_details();
+    __wallet->get_content()->check_password( password ); //throws if bad password
+  return __wallet->get_content()->get_keys_details();
 }
 
 keys_details wallet_manager_impl::list_keys( const std::string& name, const std::string& password )
@@ -184,7 +187,12 @@ keys_details wallet_manager_impl::get_public_keys( const std::optional<std::stri
   {
     auto _found = content_deliverer.find( token, *wallet_name );
     if( _found )
-      _process_wallet( *_found );
+    {
+      auto __found = *_found;
+      FC_ASSERT( __found );
+
+      _process_wallet( *__found );
+    }
   }
   else
   {
@@ -268,9 +276,12 @@ std::string wallet_manager_impl::import_key( const std::string& name, const std:
   auto _wallet = content_deliverer.find( token, name );
   FC_ASSERT( _wallet, "Wallet not found: ${w}", ("w", name));
 
-  FC_ASSERT( !_wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+  auto __wallet = *_wallet;
+  FC_ASSERT( __wallet );
 
-  return _wallet->get_content()->import_key( wif_key, prefix );
+  FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+
+  return __wallet->get_content()->import_key( wif_key, prefix );
 }
 
 std::vector<std::string> wallet_manager_impl::import_keys( const std::string& name, const std::vector<std::string>& wif_keys, const std::string& prefix )
@@ -278,9 +289,12 @@ std::vector<std::string> wallet_manager_impl::import_keys( const std::string& na
   auto _wallet = content_deliverer.find( token, name );
   FC_ASSERT( _wallet, "Wallet not found: ${w}", ("w", name));
 
-  FC_ASSERT( !_wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+  auto __wallet = *_wallet;
+  FC_ASSERT( __wallet );
 
-  return _wallet->get_content()->import_keys( wif_keys, prefix );
+  FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+
+  return __wallet->get_content()->import_keys( wif_keys, prefix );
 }
 
 void wallet_manager_impl::remove_key( const std::string& name, const public_key_type& public_key )
@@ -288,9 +302,12 @@ void wallet_manager_impl::remove_key( const std::string& name, const public_key_
   auto _wallet = content_deliverer.find( token, name );
   FC_ASSERT( _wallet, "Wallet not found: ${w}", ("w", name));
 
-  FC_ASSERT( !_wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+  auto __wallet = *_wallet;
+  FC_ASSERT( __wallet );
 
-  _wallet->get_content()->remove_key( public_key );
+  FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", name));
+
+  __wallet->get_content()->remove_key( public_key );
 }
 
 signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const wallet_content_handler_session&)>&& sign_method, const std::optional<std::string>& wallet_name, const public_key_type& public_key, const std::string& prefix )
@@ -309,7 +326,10 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
       auto _wallet = content_deliverer.find( token, *wallet_name );
       if( _wallet )
       {
-        auto _sig = _process_wallet( *_wallet );
+        auto __wallet = *_wallet;
+        FC_ASSERT( __wallet );
+
+        auto _sig = _process_wallet( *__wallet );
         if( _sig )
           return *_sig;
       }
@@ -345,9 +365,12 @@ bool wallet_manager_impl::has_matching_private_key( const std::string& wallet_na
   auto _wallet = content_deliverer.find( token, wallet_name );
   FC_ASSERT( _wallet, "Wallet not found: ${w}", ("w", wallet_name));
 
-  FC_ASSERT( !_wallet->is_locked(), "Wallet is locked: ${w}", ("w", wallet_name));
+  auto __wallet = *_wallet;
+  FC_ASSERT( __wallet );
 
-  return _wallet->get_content()->has_matching_private_key( public_key );
+  FC_ASSERT( !__wallet->is_locked(), "Wallet is locked: ${w}", ("w", wallet_name));
+
+  return __wallet->get_content()->has_matching_private_key( public_key );
 }
 
 std::string wallet_manager_impl::encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix )
