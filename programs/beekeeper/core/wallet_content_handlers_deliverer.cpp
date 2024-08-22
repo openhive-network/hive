@@ -66,8 +66,6 @@ void wallet_content_handlers_deliverer::create( const std::string& token, const 
   _new_item->set_password( password );
   _new_item->set_wallet_filename( wallet_file_name );
   _new_item->unlock( password );
-  _new_item->lock();
-  _new_item->unlock( password );
 
   _new_item->save_wallet_file();
 
