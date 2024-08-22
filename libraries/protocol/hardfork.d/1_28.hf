@@ -19,5 +19,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN (HIVE_HARDFORK_1_28)
 // use max mana instead of current when determining strength of vote (issue #609)
 #define HIVE_HARDFORK_1_28_STABLE_VOTE (HIVE_HARDFORK_1_28)
+// block setting of maximum_block_size above limit
+#define HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE (HIVE_HARDFORK_1_28)
 
 #endif

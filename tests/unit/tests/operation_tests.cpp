@@ -8372,6 +8372,12 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     BOOST_TEST_MESSAGE( "--- success when account subsidy decay is one hour" );
     prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / ((60*60)/HIVE_BLOCK_INTERVAL) ) );
     prop_op.validate();
+
+    BOOST_TEST_MESSAGE( "--- failure when setting maximum_block_size above HIVE_MAX_BLOCK_SIZE" );
+    prop_op.props.clear();
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key() );
+    prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE + 1 );
+    HIVE_REQUIRE_ASSERT( push_transaction( prop_op, signing_key ), "props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE" );
   }
   FC_LOG_AND_RETHROW()
 }
