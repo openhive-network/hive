@@ -130,6 +130,13 @@ export class BeekeeperInstanceHelper {
     return value.exists;
   }
 
+  hasWallet(token, walletName) {
+    const returnedValue = this.instance.has_wallet(token, walletName);
+    const value = this.#extract(returnedValue);
+
+    return value.exists;
+  }
+
   create(sessionToken, walletName) {
     const returnedValue = this.instance.create(sessionToken, walletName);
 

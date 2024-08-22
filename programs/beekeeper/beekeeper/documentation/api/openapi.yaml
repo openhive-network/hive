@@ -328,6 +328,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/list_created_wallets_response'
+  beekeeper_api.has_wallet:
+    post:
+      tags:
+        - wallets
+      summary: Check if a wallet exists
+      description: Tests if a wallet exists
+      operationId: has_wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/has_wallet'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/has_wallet_response'
   beekeeper_api.import_key:
     post:
       tags:
@@ -852,6 +872,26 @@ components:
         exists:
           type: boolean
           description: A `true` value if a private key exists otherwise `false`
+    has_wallet:
+      required:
+        - token
+        - wallet_name
+      type: object
+      properties:
+        token:
+          type: string
+          example: c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913
+          description: Session's identifier
+        wallet_name:
+          type: string
+          example: my_second_wallet
+          description: A name of a wallet
+    has_wallet_response:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          description: A `true` value if a wallet exists otherwise `false`
     sign_digest:
       required:
         - token

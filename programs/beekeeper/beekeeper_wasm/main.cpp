@@ -294,6 +294,17 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         decrypted_content: an decrypted string
     */
     .function("decrypt_data(token, from_public_key, to_public_key, wallet_name, encrypted_content)", &beekeeper_api::decrypt_data)
+
+    /*
+      ****testing if a wallet exists****
+      PARAMS:
+        token:        a token representing a session
+        wallet_name:  a name of wallet
+      RESULT:
+        {"exists":true}
+        exists: true if a wallet exists otherwise false
+    */
+    .function("has_wallet(token, wallet_name)", &beekeeper_api::has_wallet)
     ;
 }
 

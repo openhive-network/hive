@@ -265,6 +265,15 @@ public:
    */
   std::string decrypt_data( const std::string& token, const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
 
+  /**
+   * 
+   * Tests if a wallet exists
+   * @param token       Session's identifier.
+   * @param wallet_name A name of a wallet.
+   * @returns           A `true` value if a wallet exists otherwise `false`.
+   */
+  bool has_wallet( const std::string& token, const std::string& wallet_name );
+
 private:
 
   seconds_type unlock_timeout = 900;

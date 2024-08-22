@@ -125,10 +125,8 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::v
   return _result;
 }
 
-std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const
+bool wallet_manager_impl::scan_directory( std::function<bool( const std::string& )>&& processor, const boost::filesystem::path& directory, const std::string& extension ) const
 {
-  std::vector< std::string > _result;
-
   boost::filesystem::directory_iterator _end_itr;
   for( boost::filesystem::directory_iterator itr( directory ); itr != _end_itr; ++itr )
   {
@@ -142,12 +140,24 @@ std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const
         {
           auto _end = *_path_parts.rbegin();
           auto _found = _end.rfind( extension );
-          if( _found != std::string::npos ) 
-              _result.emplace_back( _end.substr( 0, _found ) );
+          if( _found != std::string::npos )
+          {
+            if( processor( _end.substr( 0, _found ) ) )
+              return true;
+          }
         }
       }
     }
   }
+  return false;
+}
+
+std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const
+{
+  std::vector< std::string > _result;
+
+  scan_directory( [&_result]( const std::string& current_wallet_name ){ _result.emplace_back( current_wallet_name ); return false; }, directory, extension );
+
   return _result;
 }
 
@@ -359,6 +369,14 @@ std::string wallet_manager_impl::decrypt_data( const public_key_type& from_publi
     from_public_key, to_public_key,
     encrypted_content
   );
+}
+
+bool wallet_manager_impl::has_wallet( const std::string& wallet_name )
+{
+  if( wallets.find( wallet_name ) != wallets.end() )
+    return true;
+  else
+    return scan_directory( [&wallet_name]( const std::string& current_wallet_name ){ return wallet_name == current_wallet_name; }, get_wallet_directory(), get_extension() );
 }
 
 } //beekeeper

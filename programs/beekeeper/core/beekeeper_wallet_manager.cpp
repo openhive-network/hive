@@ -166,4 +166,10 @@ std::string beekeeper_wallet_manager::decrypt_data( const std::string& token, co
   return sessions->get_wallet_manager( token )->decrypt_data( from_public_key, to_public_key, wallet_name, encrypted_content );
 }
 
+bool beekeeper_wallet_manager::has_wallet( const std::string& token, const std::string& wallet_name )
+{
+  sessions->check_timeout( token );
+  return sessions->get_wallet_manager( token )->has_wallet( wallet_name );
+}
+
 } //beekeeper
