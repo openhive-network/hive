@@ -135,6 +135,7 @@ class colony_plugin_impl
 
     void start();
 
+    void end_of_sync();
     void post_apply_transaction( const transaction_notification& note );
     void post_apply_block( const block_notification& note );
 
@@ -144,6 +145,7 @@ class colony_plugin_impl
     colony_plugin&                _self;
     appbase::application&         theApp;
 
+    boost::signals2::connection   _end_of_sync_conn;
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _post_apply_block_conn;
 
@@ -655,6 +657,24 @@ void colony_plugin_impl::start()
     thread.init();
 }
 
+void colony_plugin_impl::end_of_sync()
+{
+  if( _start_at_block <= _db.head_block_num() )
+    start(); // while not under write lock, we can still call it safely, since it is called from writer thread
+
+  if( not theApp.is_interrupt_request() )
+  {
+    // only now attach to main signals
+    _post_apply_transaction_conn = _db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
+      { post_apply_transaction( note ); }, _self, 0 );
+    _post_apply_block_conn = _db.add_post_apply_block_handler( [&]( const block_notification& note )
+      { post_apply_block( note ); }, _self, 0 );
+  }
+
+  // it won't retrigger anyway, but just in case we should detach from this signal
+  chain::util::disconnect_signal( _end_of_sync_conn );
+}
+
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
   if( _db.is_reapplying_one_tx() )
@@ -798,10 +818,10 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
     my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
     my->_disable_broadcast = options.at( "colony-no-broadcast" ).as<bool>();
 
-    my->_post_apply_transaction_conn = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
-      { my->post_apply_transaction( note ); }, *this, 0 );
-    my->_post_apply_block_conn = my->_db.add_post_apply_block_handler( [&]( const block_notification& note )
-      { my->post_apply_block( note ); }, *this, 0 );
+    // only attach to end of sync for now, so colony does not start producing during replay/sync
+    // even if _start_at_block is not set/set too low
+    my->_end_of_sync_conn = my->_db.add_end_of_syncing_handler( [&]()
+      { my->end_of_sync(); }, *this, 0 );
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -813,6 +833,7 @@ void colony_plugin::plugin_shutdown()
   for( const auto& thread : my->_threads )
     thread.print_stats();
 
+  chain::util::disconnect_signal( my->_end_of_sync_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
 }
