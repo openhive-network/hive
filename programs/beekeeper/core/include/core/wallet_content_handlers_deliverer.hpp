@@ -63,7 +63,7 @@ struct by_token_wallet_name;
 
 class wallet_content_handlers_deliverer
 {
-  public:
+   private:
 
     typedef multi_index_container<
       wallet_content_handler_session,
@@ -81,8 +81,6 @@ class wallet_content_handlers_deliverer
       >
     > wallet_content_handler_session_index;
 
-   private:
-
       void emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content );
 
    public:
@@ -90,7 +88,7 @@ class wallet_content_handlers_deliverer
       wallet_content_handler_session_index items;
 
       bool empty( const std::string& token );
-      std::optional<wallet_content_handler_session> find( const std::string& token, const std::string& wallet_name );
+      std::optional<const wallet_content_handler_session*> find( const std::string& token, const std::string& wallet_name );
       void erase( const std::string& token, const std::string& wallet_name );
 
       void create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
