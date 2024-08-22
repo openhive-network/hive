@@ -173,12 +173,12 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "1.25.2rc0.dev4326+d202b8b83"
+version = "1.25.2rc0.dev4331+3853dd405"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "beekeepy-1.25.2rc0.dev4326+d202b8b83-py3-none-any.whl", hash = "sha256:da3928e4819268ec99b1db1b190271b7a9e2dfe9c1211d117e2d371a06099cf0"},
+    {file = "beekeepy-1.25.2rc0.dev4331+3853dd405-py3-none-any.whl", hash = "sha256:93432d6c67431f224a83e6c3ad9da2867f9ff46b9e89515976f7e821fb951d96"},
 ]
 
 [package.dependencies]
@@ -1627,7 +1627,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "1.25.2rc0.dev4326+d202b8b83"
+beekeepy = "1.25.2rc0.dev4331+3853dd405"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
