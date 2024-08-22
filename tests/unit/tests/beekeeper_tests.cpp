@@ -2048,6 +2048,59 @@ BOOST_AUTO_TEST_CASE(import_keys)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(has_wallet)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+
+    const std::string _wallet_name = "wallet";
+    const std::string _wallet_name_2 = "wallet-2";
+    const std::string _wallet_name_3 = "wallet-3";
+    const std::string _password = "avocado";
+
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_3 ), false );
+    _beekeeper.create( _token, _wallet_name_3, _password, true );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_3 ), true );
+
+    _beekeeper.close( _token, _wallet_name_3 );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_3 ), false );
+
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), false );
+    _beekeeper.create( _token, _wallet_name, _password );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
+
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_2 ), false );
+    _beekeeper.create( _token, _wallet_name_2, _password );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
+
+    _beekeeper.close( _token, _wallet_name );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
+
+    _beekeeper.close( _token, _wallet_name_2 );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_2 ), true );
+
+    _beekeeper.unlock( _token, _wallet_name, _password );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
+
+    _beekeeper.lock( _token, _wallet_name );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
+    BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_2 ), true );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

@@ -13,6 +13,7 @@ class wallet_manager_impl {
   private:
 
     std::vector<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );
+    bool scan_directory( std::function<bool( const std::string& )>&& processor, const boost::filesystem::path& directory, const std::string& extension ) const;
     std::vector< std::string > list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const;
 
     fc::optional<private_key_type> find_private_key_in_given_wallet( const public_key_type& public_key, const string& wallet_name );
@@ -39,6 +40,7 @@ class wallet_manager_impl {
     bool has_matching_private_key( const std::string& wallet_name, const public_key_type& public_key );
     std::string encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix );
     std::string decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
+    bool has_wallet( const std::string& wallet_name );
 
   private:
 

@@ -363,4 +363,14 @@ namespace beekeeper {
     };
     return exception_handler( _method );
   }
+
+  std::string beekeeper_api::has_wallet( const std::string& token, const std::string& wallet_name )
+  {
+    auto _method = [&, this]()
+    {
+      has_wallet_return _result{ _impl->app.get_wallet_manager()->has_wallet( token, wallet_name ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
 };

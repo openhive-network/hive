@@ -121,4 +121,10 @@ namespace fc
   {
     to_variant( var.cipher_keys, vo );
   }
+
+  void to_variant( const beekeeper::has_wallet_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "exists", var.exists );
+    vo = v;
+  }
 } // fc

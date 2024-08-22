@@ -89,6 +89,8 @@ class beekeeper_api final
     std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content );
     std::string encrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& content, unsigned int nonce );
     std::string decrypt_data( const std::string& token, const std::string& from_public_key, const std::string& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
+
+    std::string has_wallet( const std::string& token, const std::string& wallet_name );
 };
 
 }

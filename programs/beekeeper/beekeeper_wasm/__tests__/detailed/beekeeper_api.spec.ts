@@ -157,7 +157,11 @@ test.describe('WASM beekeeper_api tests', () => {
       /** @type {BeekeeperInstanceHelper} */
       const api = new beekeper(args);
 
+      assert.equal(api.hasWallet(api.implicitSessionToken, walletNames[0]), false);
+
       api.create(api.implicitSessionToken, walletNames[0]);
+  
+      assert.equal(api.hasWallet(api.implicitSessionToken, walletNames[0]), true);
 
       api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
 
