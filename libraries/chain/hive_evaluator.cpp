@@ -153,6 +153,11 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   if( flags.max_block_changed )
   {
     fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
+    FC_TODO( "Check and move this to validate after HF 28" );
+    if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE ) )
+    {
+      FC_ASSERT( props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
+    }
   }
 
   itr = o.props.find( "sbd_interest_rate" );
