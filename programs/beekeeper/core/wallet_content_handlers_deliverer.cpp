@@ -10,15 +10,15 @@ bool wallet_content_handlers_deliverer::empty( const std::string& token )
   return _idx.find( token ) == _idx.end();
 }
 
-std::optional<wallet_content_handler_session> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
+std::optional<const wallet_content_handler_session*> wallet_content_handlers_deliverer::find( const std::string& token, const std::string& wallet_name )
 {
   const auto& _idx = items.get<by_token_wallet_name>();
   auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
 
   if( _itr == _idx.end() )
-    return std::optional<wallet_content_handler_session>();
+    return std::optional<const wallet_content_handler_session*>();
   else
-    return std::optional<wallet_content_handler_session>( *_itr );
+    return std::optional<const wallet_content_handler_session*>( &( *_itr ) );
 }
 
 void wallet_content_handlers_deliverer::erase( const std::string& token, const std::string& wallet_name )
