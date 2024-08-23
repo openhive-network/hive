@@ -91,7 +91,7 @@ def test_crate_claim_account_token_with_insufficient_fee(
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee + tt.Asset.Test(1))
 
-    assert "Cannot pay more than account creation fee." in exception.value.error
+    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."
@@ -109,8 +109,7 @@ def test_claim_account_creation_token_with_excessive_fee(
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee - tt.Asset.Test(1))
 
-    # fixme: change assert after repair: https://gitlab.syncad.com/hive/hive/-/issues/696
-    assert "Cannot pay more than account creation fee." in exception.value.error
+    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."
