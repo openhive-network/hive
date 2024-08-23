@@ -40,7 +40,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 1ce04340ebfe838fd7fa09aebdde3bd7e1218bce
+    ref: b815ab817eed8e640e206a97f704aa7d56d6ef50
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'

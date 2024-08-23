@@ -54,4 +54,4 @@ export { MainModule, StringList, beekeeper_api } from 'beekeeper_wasm/beekeeper_
 
 export type beekeepermodule = () => Promise<BeekeeperModule>;
 
-export default beekeeper as beekeepermodule;
+export default beekeeper as unknown as beekeepermodule;
