@@ -12,12 +12,13 @@ namespace bfs = boost::filesystem;
 
 beekeeper_wasm_app::beekeeper_wasm_app()
 {
+  old_log_level = fc::logger::get( "default" ).get_log_level();
 }
 
 beekeeper_wasm_app::~beekeeper_wasm_app()
 {
   if( enable_logs )
-    fc::configure_logging( fc::logging_config() );//destroy explicitly created appenders
+    fc::logger::get( "default" ).set_log_level( old_log_level );
 }
 
 void beekeeper_wasm_app::set_program_options()
@@ -59,7 +60,7 @@ void beekeeper_wasm_app::setup( const boost::program_options::variables_map& arg
   if( enable_logs )
     fc::configure_logging( fc::logging_config::default_config( "stdout" ) );
   else
-    fc::configure_logging( fc::logging_config() );
+    fc::logger::get( "default" ).set_log_level( fc::log_level::off );
 }
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )

@@ -9,6 +9,7 @@ class beekeeper_wasm_app: public beekeeper_app_base
   private:
 
     bool enable_logs = true;
+    fc::log_level old_log_level = fc::log_level::off;
 
     boost::program_options::variables_map args;
 
