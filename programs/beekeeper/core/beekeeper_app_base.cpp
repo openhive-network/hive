@@ -43,8 +43,8 @@ init_data beekeeper_app_base::initialize_program_options()
   try {
       const boost::program_options::variables_map& _args = get_args();
 
-      ilog("initializing options");
       setup( _args );
+      ilog("Options are set.");
 
       FC_ASSERT( _args.count("wallet-dir") );
       boost::filesystem::path _dir( _args.at("wallet-dir").as<std::string>() );
