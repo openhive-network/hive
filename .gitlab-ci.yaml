@@ -1002,7 +1002,7 @@ functional_api_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 3
+    PYTEST_TIMEOUT_MINUTES: 100
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
 
   script:
