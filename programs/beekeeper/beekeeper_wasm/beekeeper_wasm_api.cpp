@@ -143,11 +143,11 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password )
+  std::string beekeeper_api::create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary )
   {
     auto _method = [&, this]()
     {
-      create_return _result{ _impl->app.get_wallet_manager()->create( token, wallet_name, password ) };
+      create_return _result{ _impl->app.get_wallet_manager()->create( token, wallet_name, password, is_temporary ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -155,12 +155,17 @@ namespace beekeeper {
 
   std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name )
   {
-    return create_impl( token, wallet_name, std::optional<std::string>() );
+    return create_impl( token, wallet_name, std::optional<std::string>(), std::optional<bool>() );
   }
 
   std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password )
   {
-    return create_impl( token, wallet_name, std::optional<std::string>( password ) );
+    return create_impl( token, wallet_name, std::optional<std::string>( password ), std::optional<bool>() );
+  }
+
+  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password, bool is_temporary )
+  {
+    return create_impl( token, wallet_name, std::optional<std::string>( password ), std::optional<bool>( is_temporary ) );
   }
 
   std::string beekeeper_api::unlock( const std::string& token, const std::string& wallet_name, const std::string& password )

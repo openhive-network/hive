@@ -169,6 +169,22 @@ export class BeekeeperInstanceHelper {
     }
   }
 
+  create_temporary_wallet_with_password(sessionToken, walletName, explicitPassword, isTemporary) {
+    const returnedValue = this.instance.create(sessionToken, walletName, explicitPassword, isTemporary);
+
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+      BeekeeperInstanceHelper.#setPassword(walletName, value.password);
+
+      return value.password;
+    }
+  }
+
   importKey(sessionToken, walletName, key) {
     const returnedValue = this.instance.import_key(sessionToken, walletName, key);
 

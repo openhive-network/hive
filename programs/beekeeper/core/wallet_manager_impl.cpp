@@ -30,26 +30,40 @@ void wallet_manager_impl::valid_filename( const string& name )
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );
 }
 
-std::string wallet_manager_impl::create( const std::string& wallet_name, const std::optional<std::string>& password )
+std::string wallet_manager_impl::create( const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary )
 {
   FC_ASSERT( !password || password->size() < max_password_length,
             "Got ${password_size} bytes, but a password limit has ${max_password_length} bytes", ("password_size", password->size())(max_password_length) );
 
   valid_filename( wallet_name );
 
-  auto wallet_filename = create_wallet_filename( wallet_name );
-  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path(wallet_filename)) );
+  boost::filesystem::path _wallet_path_name;
+
+  _wallet_path_name = create_wallet_filename( wallet_name );
+  FC_ASSERT( !bfs::exists( _wallet_path_name ), "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( _wallet_path_name )) );
+
+  if( is_temporary )
+  {
+    auto it = wallets.find( wallet_name );
+    if (it != wallets.end())
+    {
+      if( it->second->is_wallet_temporary() )
+      {
+        FC_ASSERT( false, "Wallet with name: '${n}' is temporary and already exists", ("n", wallet_name) );
+      }
+    }
+  }
 
   std::string _password = password ? ( *password ) : gen_password();
 
-  auto wallet = make_unique<beekeeper_wallet>();
+  auto wallet = make_unique<beekeeper_wallet>( is_temporary ? *is_temporary : false );
   wallet->set_password( _password );
-  wallet->set_wallet_filename(wallet_filename.string());
+  wallet->set_wallet_name( is_temporary ? wallet_name : _wallet_path_name.string() );
   wallet->unlock( _password );
   wallet->lock();
   wallet->unlock( _password );
 
-  // Explicitly save the wallet file here, to ensure it now exists.
+  // Explicitly save the wallet file here, to ensure it now exists. Only when is not temporary (in memory).
   wallet->save_wallet_file();
 
   // If we have name in our map then remove it since we want the emplace below to replace.
@@ -68,16 +82,20 @@ void wallet_manager_impl::open( const std::string& wallet_name )
 {
   valid_filename( wallet_name );
 
-  auto wallet = std::make_unique<beekeeper_wallet>();
-  auto wallet_filename = create_wallet_filename( wallet_name );
-  wallet->set_wallet_filename(wallet_filename.string());
-  FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
-
-  // If we have name in our map then remove it since we want the emplace below to replace.
-  // This can happen if the wallet file is added while a wallet is running.
   auto it = wallets.find( wallet_name );
-  if (it != wallets.end())
+
+  if( it != wallets.end() && it->second->is_wallet_temporary() )
+    return;
+
+  auto wallet = std::make_unique<beekeeper_wallet>();
+  auto _wallet_name = create_wallet_filename( wallet_name );
+  wallet->set_wallet_name( _wallet_name.string() );
+  FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", _wallet_name.string()));
+
+  if( it != wallets.end() )
   {
+    // If we have name in our map then remove it since we want the emplace below to replace.
+    // This can happen if the wallet file is added while a wallet is running.
     wallets.erase(it);
   }
   wallets.emplace( wallet_name, std::move(wallet) );

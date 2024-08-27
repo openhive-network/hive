@@ -129,10 +129,10 @@ struct wallet_password_args: public session_token_type
   std::string password;
 };
 
-struct create_args: public session_token_type
+struct create_args: public wallet_args
 {
-  std::string wallet_name;
   std::optional<std::string> password;
+  std::optional<bool> is_temporary;
 };
 struct create_return
 {
@@ -341,7 +341,7 @@ FC_REFLECT( beekeeper::void_type, )
 FC_REFLECT( beekeeper::session_token_type, (token) )
 FC_REFLECT_DERIVED( beekeeper::wallet_args, (beekeeper::session_token_type), (wallet_name) )
 FC_REFLECT_DERIVED( beekeeper::wallet_password_args, (beekeeper::session_token_type), (wallet_name)(password) )
-FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::session_token_type), (wallet_name)(password) )
+FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::wallet_args), (password)(is_temporary) )
 FC_REFLECT( beekeeper::create_return, (password) )
 FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
 FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )

@@ -12,6 +12,11 @@ class beekeeper_wallet_base
       virtual ~beekeeper_wallet_base() {}
 
       /**
+       * Gives information if a wallet is temporary (exists only in memory).
+       */
+      virtual bool is_wallet_temporary() const = 0;
+
+      /**
        * Get the private key corresponding to a public key.  The
        * private key must already be in the wallet.
        */

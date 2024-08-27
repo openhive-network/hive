@@ -56,7 +56,7 @@ public:
     return _checksum == fc::sha512();
   }
 
-  string get_wallet_filename() const { return _wallet_filename; }
+  const string& get_wallet_name() const { return _wallet_name; }
 
   std::optional<private_key_type> try_get_private_key(const public_key_type& id)const
   {
@@ -144,7 +144,7 @@ public:
     // TODO:  Merge imported wallet with existing wallet,
     //    instead of replacing it
     if( wallet_filename == "" )
-      wallet_filename = _wallet_filename;
+      wallet_filename = _wallet_name;
 
     if( ! fc::exists( wallet_filename ) )
       return false;
@@ -166,7 +166,7 @@ public:
     encrypt_keys();
 
     if( wallet_filename == "" )
-      wallet_filename = _wallet_filename;
+      wallet_filename = _wallet_name;
 
     wlog( "saving wallet to file ${fn}", ("fn", wallet_filename) );
 
@@ -198,7 +198,7 @@ public:
     }
   }
 
-  string        _wallet_filename;
+  string        _wallet_name;
   wallet_data   _wallet;
 
   keys_details  _keys;
@@ -212,15 +212,15 @@ public:
 
 }
 
-beekeeper_wallet::beekeeper_wallet()
-  : my(new detail::beekeeper_impl( *this ))
+beekeeper_wallet::beekeeper_wallet( bool is_temporary )
+  : is_temporary( is_temporary ), my(new detail::beekeeper_impl( *this ))
 {}
 
 beekeeper_wallet::~beekeeper_wallet() {}
 
-string beekeeper_wallet::get_wallet_filename() const
+const string& beekeeper_wallet::get_wallet_name() const
 {
-  return my->get_wallet_filename();
+  return my->get_wallet_name();
 }
 
 string beekeeper_wallet::import_key( const string& wif_key, const string& prefix )
@@ -261,12 +261,16 @@ bool beekeeper_wallet::remove_key( const public_key_type& public_key )
 
 bool beekeeper_wallet::load_wallet_file( string wallet_filename )
 {
-  return my->load_wallet_file( wallet_filename );
+  if( is_wallet_temporary() )
+    return true;
+  else
+    return my->load_wallet_file( wallet_filename );
 }
 
 void beekeeper_wallet::save_wallet_file( string wallet_filename )
 {
-  my->save_wallet_file( wallet_filename );
+  if( !is_wallet_temporary() )
+    my->save_wallet_file( wallet_filename );
 }
 
 bool beekeeper_wallet::is_locked() const
@@ -324,7 +328,7 @@ void beekeeper_wallet::unlock(string password)
   }
   catch(...)
   {
-    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_filename()) );
+    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_name()) );
   }
 
   plain_keys _pk;
@@ -353,7 +357,7 @@ void beekeeper_wallet::check_password(string password)
   }
   catch(...)
   {
-    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_filename()) );
+    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_name()) );
   }
 }
 
@@ -396,9 +400,9 @@ pair<public_key_type,private_key_type> beekeeper_wallet::get_private_key_from_pa
   return std::make_pair( public_key_type( priv.get_public_key() ), priv );
 }
 
-void beekeeper_wallet::set_wallet_filename(string wallet_filename)
+void beekeeper_wallet::set_wallet_name( const string& wallet_name )
 {
-  my->_wallet_filename = wallet_filename;
+  my->_wallet_name = wallet_name;
 }
 
 bool beekeeper_wallet::has_matching_private_key( const public_key_type& public_key )
