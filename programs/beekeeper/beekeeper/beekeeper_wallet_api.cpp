@@ -72,7 +72,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, create )
 {
   std::unique_lock guard( mtx );
 
-  return { _wallet_mgr->create( args.token, args.wallet_name, args.password ) };
+  return { _wallet_mgr->create( args.token, args.wallet_name, args.password, args.is_temporary ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, open )

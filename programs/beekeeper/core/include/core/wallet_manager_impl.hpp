@@ -23,7 +23,7 @@ class wallet_manager_impl {
 
     wallet_manager_impl( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory ){}
 
-    std::string create( const std::string& wallet_name, const std::optional<std::string>& password );
+    std::string create( const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary );
     void open( const std::string& wallet_name );
     void close( const std::string& wallet_name );
     std::vector<wallet_details> list_wallets();

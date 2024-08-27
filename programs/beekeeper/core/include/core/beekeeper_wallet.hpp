@@ -18,21 +18,25 @@ class beekeeper_impl;
  */
 class beekeeper_wallet final : public beekeeper_wallet_base
 {
+   bool is_temporary = false;
+
    bool is_checksum_valid( const fc::sha512& old_checksum, const vector<char>& content );
 
    public:
-      beekeeper_wallet();
+      beekeeper_wallet( bool is_temporary = false );
 
       ~beekeeper_wallet() override;
+
+      bool is_wallet_temporary() const override { return is_temporary; };
 
       /** Returns the current wallet filename.
        *
        * This is the filename that will be used when automatically saving the wallet.
        *
-       * @see set_wallet_filename()
-       * @return the wallet filename
+       * @see set_wallet_name()
+       * @return if a wallet is temporary returns a wallet name otherwise a wallet file name
        */
-      string                            get_wallet_filename() const;
+      const string& get_wallet_name() const;
 
       /**
        * Get the WIF private key corresponding to a public key.  The
@@ -139,7 +143,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *
        * @param wallet_filename the new filename to use for future saves
        */
-      void    set_wallet_filename(string wallet_filename);
+      void set_wallet_name( const string& wallet_name );
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *

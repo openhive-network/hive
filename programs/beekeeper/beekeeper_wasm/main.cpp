@@ -67,15 +67,17 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         token:        a token representing a session
         wallet_name:  a name of wallet
         password:     a password used for creation of a wallet. Not required and in this case a password is automatically generated.
-                      If the password is:
-                       - not given, chosen is a version (1)
-                       -     given, chosen is a version (2)
+                      If the password exists, chosen is a version (1)
+                      If the password exists and the is_temporary doesn't exist, chosen is a version (2)
+                      If the password exists and the is_temporary exists, chosen is a version (3)
+        is_temporary: If `true` the wallet exists only in memory otherwise is saved into a file.
       RESULT:
         {"password":"PW5KNCWdnMZFKzrvVyA2xwKLRxcAZWxPoyGVSN9r38te3p1ceEjo1"}
         password: a password of newly created a wallet
     */
     .function("create(token, wallet_name)", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::create))                     //(1)
     .function("create(token, wallet_name, password)", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::create)) //(2)
+    .function("create(token, wallet_name, password, is_temporary)", select_overload<std::string(const std::string&, const std::string&, const std::string&, bool)>(&beekeeper_api::create)) //(3)
 
     /*
       ****unlocking of a wallet****

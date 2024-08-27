@@ -147,6 +147,22 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     /** @type {BeekeeperInstanceHelper} */
     const api = new beekeper(WALLET_OPTIONS_NODE);
 
+    api.create_temporary_wallet_with_password(api.implicitSessionToken, walletNames[0], "this_is_password", true );
+    {
+      const wallets = api.listWallets(api.implicitSessionToken);
+      requireWalletsIn(wallets, 1, 0, true);
+    }
+    api.importKey(api.implicitSessionToken, walletNames[0], keys[3][0]);
+    {
+      const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys, 3);
+    }
+    api.close(api.implicitSessionToken, walletNames[0])
+    {
+      const wallets = api.listWallets(api.implicitSessionToken);
+      requireWalletsIn(wallets, 0);
+    }
+
     assert.equal(api.hasWallet(api.implicitSessionToken, walletNames[0]), false);
 
     api.create(api.implicitSessionToken, walletNames[0]);

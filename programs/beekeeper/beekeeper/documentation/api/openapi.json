@@ -810,6 +810,11 @@
             "type": "string",
             "example": "this_my_password",
             "description": "A password for a wallet, if not given will be automatically generated. Maximum length 128."
+          },
+          "is_temporary": {
+            "type": "boolean",
+            "example": false,
+            "description": "If `true` the wallet exists only in memory otherwise is saved into a file."
           }
         }
       },
