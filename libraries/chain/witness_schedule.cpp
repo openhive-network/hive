@@ -36,6 +36,22 @@ void reset_virtual_schedule_time( database& db )
   }
 } FC_CAPTURE_AND_RETHROW() }
 
+void update_global_witness_properties( database& db, const witness_schedule_object& wso )
+{ try {
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+  if( dgpo.maximum_block_size != wso.median_props.maximum_block_size )
+  {
+    db.push_virtual_operation( hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
+      "Changing maximum block size from ${old} to ${new}",
+      ( "old", dgpo.maximum_block_size )( "new", wso.median_props.maximum_block_size ) ).get_message() ) );
+  }
+  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
+  {
+    _dgpo.maximum_block_size = wso.median_props.maximum_block_size;
+    _dgpo.hbd_interest_rate = wso.median_props.hbd_interest_rate;
+  } );
+} FC_CAPTURE_AND_RETHROW() }
+
 void update_median_witness_props(database& db, const witness_schedule_object& wso)
 { try {
   /// fetch all witness objects
@@ -125,17 +141,8 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
     _wso.account_subsidy_witness_rd.min_decay = min_decay;
   } );
 
-  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
-  if( dgpo.maximum_block_size != median_maximum_block_size )
-  {
-    db.push_virtual_operation( hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
-      "Changing maximum block size from ${old} to ${new}", ( "old", dgpo.maximum_block_size )( "new", median_maximum_block_size ) ).get_message() ) );
-  }
-  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
-  {
-    _dgpo.maximum_block_size = median_maximum_block_size;
-    _dgpo.hbd_interest_rate  = median_hbd_interest_rate;
-  } );
+  update_global_witness_properties( db, wso );
+
 } FC_CAPTURE_AND_RETHROW() }
 
 void update_witness_schedule4(database& db, const witness_schedule_object& wso)
