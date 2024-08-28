@@ -65,7 +65,7 @@ inline void pack(Stream& s, const chainbase::oid<T>& id)
 }
 
 template<typename Stream, typename T>
-inline void unpack(Stream& s, chainbase::oid<T>& id, uint32_t depth = 0)
+inline void unpack(Stream& s, chainbase::oid<T>& id, uint32_t depth = 0, bool limit_is_disabled = false)
 {
   s.read((char*)&id, sizeof(id));
 }
@@ -77,7 +77,7 @@ void pack(Stream& s, const chainbase::oid_ref<T>& id)
 }
 
 template<typename Stream, typename T>
-void unpack(Stream& s, chainbase::oid_ref<T>& id, uint32_t depth = 0)
+void unpack(Stream& s, chainbase::oid_ref<T>& id, uint32_t depth = 0, bool limit_is_disabled = false)
 {
   s.read((char*)&id, sizeof(id));
 }

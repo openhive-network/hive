@@ -2249,7 +2249,7 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization)
 
     const std::string _wallet_name = "wallet-0";
 
-    _beekeeper.create( _token_00, _wallet_name, "avocado" );
+    _beekeeper.create( _token_00, _wallet_name, "avocado", std::optional<bool>() );
     _beekeeper.unlock( _token_01, _wallet_name, "avocado" );
 
     std::vector<std::pair<std::string, std::string>> _keys =

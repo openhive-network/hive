@@ -230,7 +230,7 @@ inline void pack( Stream& s, const hive::protocol::fixed_string_impl< Storage >&
 }
 
 template< typename Stream, typename Storage >
-inline void unpack( Stream& s, hive::protocol::fixed_string_impl< Storage >& u, uint32_t depth )
+inline void unpack( Stream& s, hive::protocol::fixed_string_impl< Storage >& u, uint32_t depth, bool limit_is_disabled )
 {
   depth++;
   std::string str;

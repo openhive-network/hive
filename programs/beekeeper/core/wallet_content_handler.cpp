@@ -195,7 +195,7 @@ public:
     }
   }
 
-  string        _wallet_name;
+  std::string   _wallet_name;
   wallet_data   _wallet;
 
   keys_details  _keys;
@@ -250,7 +250,7 @@ bool wallet_content_handler::remove_key( const public_key_type& public_key )
   return false;
 }
 
-bool wallet_content_handler::load_wallet_file( std::string wallet_filename )
+bool wallet_content_handler::load_wallet_file( const std::string& wallet_filename )
 {
   if( is_wallet_temporary() )
     return true;
@@ -258,7 +258,7 @@ bool wallet_content_handler::load_wallet_file( std::string wallet_filename )
     return my->load_wallet_file( wallet_filename );
 }
 
-void wallet_content_handler::save_wallet_file( std::string wallet_filename )
+void wallet_content_handler::save_wallet_file( const std::string& wallet_filename )
 {
   if( !is_wallet_temporary() )
     my->save_wallet_file( wallet_filename );
@@ -316,7 +316,7 @@ void wallet_content_handler::unlock(std::string password)
   }
 
   plain_keys _pk;
-  fc::raw::unpack_from_vector<plain_keys>( _decrypted, _pk );
+  fc::raw::unpack_from_vector<plain_keys>( _decrypted, _pk, 0/*depth*/, true/*limit_is_disabled*/ );
 
   my->_keys     = std::move( _pk.keys );
   my->_checksum = _pk.checksum;

@@ -45,7 +45,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
   auto _wallet_file_name = create_wallet_filename( wallet_name );
   std::string _password = password ? ( *password ) : gen_password();
 
-  content_deliverer.create( token, wallet_name, _wallet_file_name.string(), _password );
+  content_deliverer.create( token, wallet_name, _wallet_file_name.string(), _password, is_temporary ? ( *is_temporary ) : false );
 
   return _password;
 }
@@ -90,7 +90,7 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::v
       open( wallet_file_name );
   }
 
-  const auto& _idx = content_deliverer.items.get<by_token>();
+  const auto& _idx = content_deliverer.items.get<by_token_wallet_name>();
   auto _itr = _idx.find( token );
 
   while( _itr != _idx.end() && _itr->get_token() == token )
@@ -401,7 +401,8 @@ std::string wallet_manager_impl::decrypt_data( const public_key_type& from_publi
 
 bool wallet_manager_impl::has_wallet( const std::string& wallet_name )
 {
-  if( wallets.find( wallet_name ) != wallets.end() )
+  auto _wallet = content_deliverer.find( token, wallet_name );
+  if( _wallet )
     return true;
   else
     return scan_directory( [&wallet_name]( const std::string& current_wallet_name ){ return wallet_name == current_wallet_name; }, get_wallet_directory(), get_extension() );

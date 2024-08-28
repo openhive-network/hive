@@ -91,7 +91,7 @@ class wallet_content_handlers_deliverer
       std::optional<const wallet_content_handler_session*> find( const std::string& token, const std::string& wallet_name );
       void erase( const std::string& token, const std::string& wallet_name );
 
-      void create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password );
+      void create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password, const bool is_temporary );
       void open( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name );
 };
 

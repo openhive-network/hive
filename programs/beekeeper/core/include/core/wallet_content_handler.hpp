@@ -34,13 +34,12 @@ class wallet_content_handler
 
       ~wallet_content_handler();
 
-      bool is_wallet_temporary() const override { return is_temporary; };
+      bool is_wallet_temporary() const { return is_temporary; };
 
       /** Returns the current wallet filename.
        *
        * This is the filename that will be used when automatically saving the wallet.
        *
-       * @see set_wallet_name()
        * @return if a wallet is temporary returns a wallet name otherwise a wallet file name
        */
       const std::string& get_wallet_name() const;
@@ -107,26 +106,14 @@ class wallet_content_handler
        *
        * @warning This does not change the filename that will be used for future
        * wallet writes, so this may cause you to overwrite your original
-       * wallet unless you also call \c set_wallet_filename()
+       * wallet unless you also call \c set_wallet_name()
        *
        * @param wallet_filename the filename of the wallet JSON file to load.
        *                        If \c wallet_filename is empty, it reloads the
        *                        existing wallet file
        * @returns true if the specified wallet is loaded
        */
-      bool    load_wallet_file(std::string wallet_filename = "");
-
-      /** Saves the current wallet to the given filename.
-       *
-       * @warning This does not change the wallet filename that will be used for future
-       * writes, so think of this function as 'Save a Copy As...' instead of
-       * 'Save As...'.  Use \c set_wallet_filename() to make the filename
-       * persist.
-       * @param wallet_filename the filename of the new wallet JSON file to create
-       *                        or overwrite.  If \c wallet_filename is empty,
-       *                        save to the current filename.
-       */
-      void    save_wallet_file(std::string wallet_filename = "");
+      bool    load_wallet_file( const std::string& wallet_filename = "" );
 
       /** Sets the wallet filename used for future writes.
        *
@@ -135,7 +122,19 @@ class wallet_content_handler
        *
        * @param wallet_filename the new filename to use for future saves
        */
-      void set_wallet_name( const std:string& wallet_name );
+      void    set_wallet_name( const std::string& wallet_name );
+
+      /** Saves the current wallet to the given filename.
+       *
+       * @warning This does not change the wallet filename that will be used for future
+       * writes, so think of this function as 'Save a Copy As...' instead of
+       * 'Save As...'.  Use \c set_wallet_name() to make the filename
+       * persist.
+       * @param wallet_filename the filename of the new wallet JSON file to create
+       *                        or overwrite.  If \c wallet_filename is empty,
+       *                        save to the current filename.
+       */
+      void    save_wallet_file( const std::string& wallet_filename = "" );
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *
