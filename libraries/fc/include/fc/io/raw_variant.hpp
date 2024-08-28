@@ -53,7 +53,7 @@ namespace fc { namespace raw {
        v.visit( variant_packer<Stream>(s) );
     }
     template<typename Stream> 
-    inline void unpack( Stream& s, variant& v, uint32_t depth )
+    inline void unpack( Stream& s, variant& v, uint32_t depth, bool limit_is_disabled )
     {
       depth++;
       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
@@ -129,7 +129,7 @@ namespace fc { namespace raw {
        }
     }
     template<typename Stream> 
-    inline void unpack( Stream& s, variant_object& v, uint32_t depth )
+    inline void unpack( Stream& s, variant_object& v, uint32_t depth, bool limit_is_disabled )
     {
        depth++;
        FC_ASSERT( depth <= MAX_RECURSION_DEPTH );

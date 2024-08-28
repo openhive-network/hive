@@ -312,7 +312,7 @@ void wallet_content_handler::unlock(std::string password)
   }
 
   plain_keys _pk;
-  fc::raw::unpack_from_vector<plain_keys>( _decrypted, _pk );
+  fc::raw::unpack_from_vector<plain_keys>( _decrypted, _pk, 0/*depth*/, true/*limit_is_disabled*/ );
 
   my->_keys     = std::move( _pk.keys );
   my->_checksum = _pk.checksum;
