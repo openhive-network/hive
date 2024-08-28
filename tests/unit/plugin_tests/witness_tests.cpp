@@ -1190,7 +1190,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
   try
   {
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
-    const uint32_t COLONY_START = 16;
+    const uint32_t COLONY_START = 42; // at the start of third schedule
     bool test_passed = false;
 
     initialize( 1, {}, { "initminer" }, {
@@ -1226,21 +1226,27 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         uint32_t block_num = 0;
         db->with_read_lock( [&]()
         {
-          tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+          tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION / 2 );
           tx.set_reference_block( db->head_block_id() );
           block_num = db->head_block_num();
         } );
 
-        // start with setting block size to 2MB (otherwise it will change to default 128kB on first schedule)
+        auto set_block_size = [&]( uint32_t value )
         {
           witness_set_properties_operation witness_props;
           witness_props.owner = "initminer";
           witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
-          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( value );
           tx.operations.emplace_back( witness_props );
+          tx.set_expiration( tx.expiration + HIVE_BLOCK_INTERVAL ); // shifting expiration to avoid tx duplicates
           schedule_transaction( tx );
           tx.clear();
-        }
+          ilog( "#${b} sending block size change (${v}) to witness (activates in future schedule)",
+            ( "b", block_num )( "v", value ) );
+        };
+
+        // start with setting block size to 2MB (it will temporarily change to default 128kB on first schedule)
+        set_block_size( HIVE_MAX_BLOCK_SIZE );
 
         for( size_t i = 0; i < ACCOUNTS; ++i )
         {
@@ -1290,15 +1296,21 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
 
         block_num = get_block_num();
         BOOST_REQUIRE_LT( block_num, COLONY_START ); // check that we've managed to prepare before activation of colony
-        ilog( "Sleeping until block #${b}", ( "b", COLONY_START ) );
-        fc::sleep_until( get_genesis_time() + COLONY_START * HIVE_BLOCK_INTERVAL );
+        ilog( "Sleeping until block #${b}", ( "b", COLONY_START - 2 ) );
+        fc::sleep_until( get_genesis_time() + ( COLONY_START - 2 ) * HIVE_BLOCK_INTERVAL );
         block_num = get_block_num();
+        ilog( "#${b} initial block size should soon set to 2MB", ( "b", block_num ) );
+
+        // reduce block size to 1MB so colony is forced to adjust production rate (in future schedule);
+        // note that we need the margin (2 blocks) before colony starts, because otherwise we'd
+        // not be able to be sure the following setting of block size will actually fit in nearest block
+        set_block_size( HIVE_MAX_BLOCK_SIZE / 2 );
 
         const auto& block_reader = get_chain_plugin().block_reader();
 
         const uint32_t FULL_RATE_BLOCKS = ( COLONY_START + 20 + 10 ) / 21 * 21 - 3;
           // there needs to be 2 blocks of margin before next schedule
-        uint32_t start = block_num + 5; // 5 blocks of margin
+        uint32_t start = COLONY_START + 5; // 5 blocks of margin
         do
         {
           block_num = wait_for_block_change( block_num, [&]()
@@ -1315,17 +1327,12 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         }
         while( block_num < FULL_RATE_BLOCKS );
 
-        // reduce block size to 1MB so colony is forced to adjust production rate
-        {
-          witness_set_properties_operation witness_props;
-          witness_props.owner = "initminer";
-          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
-          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE / 2 );
-          tx.operations.emplace_back( witness_props );
-          schedule_transaction( tx );
-          tx.clear();
-          ilog( "Changing block size to 1MB - colony production rate should be reduced" );
-        }
+        ilog( "#${b} block size should soon change to 1MB - colony production rate should be reduced", ( "b", block_num ) );
+
+        // reduce block size to 64kB so colony is forced to drastically adjust production rate
+        // (in future schedule), even stop producing for a while; block stats should show a lot
+        // of pending transactions and no new incoming until almost all the pending are exhausted
+        set_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
 
         // rate adjustment should happen next block after start of schedule (should be future
         // schedule, but there is currently a bug where such change activates when future schedule
@@ -1355,19 +1362,10 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         }
         while( block_num < REDUCED_RATE_BLOCKS );
 
-        // reduce block size to 64kB so colony is forced to drastically adjust production rate,
-        // even stop producing for a while; block stats should show a lot of pending transactions
-        // and no new incoming until almost all the pending are exhausted
-        {
-          witness_set_properties_operation witness_props;
-          witness_props.owner = "initminer";
-          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
-          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT );
-          tx.operations.emplace_back( witness_props );
-          schedule_transaction( tx );
-          tx.clear();
-          ilog( "Changing block size to 64kB - colony production rate should be drastically reduced" );
-        }
+        ilog( "#${b} block size should soon change to 64kB - colony production rate should be drastically reduced", ( "b", block_num ) );
+
+        // increase block size back to 2MB, so colony can ramp up production again (in future schedule)
+        set_block_size( HIVE_MAX_BLOCK_SIZE );
 
         const uint32_t MINIMAL_RATE_BLOCKS = ( REDUCED_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21 - 3;
           // there needs to be 2 blocks of margin before next schedule
@@ -1388,20 +1386,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         }
         while( block_num < MINIMAL_RATE_BLOCKS );
 
-        // increase block size back to 2MB, so colony can ramp up production again
-        {
-          witness_set_properties_operation witness_props;
-          witness_props.owner = "initminer";
-          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
-          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
-          tx.operations.emplace_back( witness_props );
-          // we need to change at least expiration time, or this transaction would be a duplicate
-          // of the one we made previously when setting 2MB blocks
-          tx.set_expiration( tx.expiration + HIVE_BLOCK_INTERVAL );
-          schedule_transaction( tx );
-          tx.clear();
-          ilog( "Changing block size back to 2MB - colony production rate should return to full" );
-        }
+        ilog( "#${b} block size should soon change back to 2MB - colony production rate should return to full", ( "b", block_num ) );
 
         const uint32_t FULL2_RATE_BLOCKS = ( MINIMAL_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21;
         start = block_num + 5; // 5 blocks of margin
