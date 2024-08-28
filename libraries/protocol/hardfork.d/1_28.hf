@@ -21,5 +21,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_STABLE_VOTE (HIVE_HARDFORK_1_28)
 // block setting of maximum_block_size above limit
 #define HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE (HIVE_HARDFORK_1_28)
+// max block size and HBD APR activated with schedule activation instead of with schedule creation
+#define HIVE_HARDFORK_1_28_GLOBAL_WITNESS_PROPS (HIVE_HARDFORK_1_28)
 
 #endif
