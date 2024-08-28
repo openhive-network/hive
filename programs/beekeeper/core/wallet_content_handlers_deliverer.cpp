@@ -45,7 +45,7 @@ void wallet_content_handlers_deliverer::emplace_or_modify( const std::string& to
     });
 }
 
-void wallet_content_handlers_deliverer::create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password )
+void wallet_content_handlers_deliverer::create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password, const bool is_temporary )
 {
   FC_ASSERT( !fc::exists( wallet_file_name ), "Wallet with name: '${n}' already exists at ${path}", ("n", wallet_name)("path", fc::path( wallet_file_name )) );
 
@@ -55,16 +55,21 @@ void wallet_content_handlers_deliverer::create( const std::string& token, const 
   {
     while( _itr != _idx.end() && _itr->get_wallet_name() == wallet_name )
     {
+      if( _itr->get_content()->is_wallet_temporary() )
+      {
+        FC_ASSERT( false, "Wallet with name: '${n}' is temporary and already exists", ("n", wallet_name) );
+      }
+
       auto __itr = _itr;
       ++_itr;
       _idx.erase( __itr );
     }
   }
 
-  auto _new_item = std::make_shared<wallet_content_handler>();
+  auto _new_item = std::make_shared<wallet_content_handler>( is_temporary );
 
   _new_item->set_password( password );
-  _new_item->set_wallet_filename( wallet_file_name );
+  _new_item->set_wallet_name( wallet_file_name );
   _new_item->unlock( password );
 
   _new_item->save_wallet_file();
@@ -83,7 +88,7 @@ void wallet_content_handlers_deliverer::open( const std::string& token, const st
   }
 
   auto _new_item = std::make_shared<wallet_content_handler>();
-  _new_item->set_wallet_filename( wallet_file_name );
+  _new_item->set_wallet_name( wallet_file_name );
   FC_ASSERT( _new_item->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_file_name) );
 
   emplace_or_modify( token, wallet_name, true, _new_item );

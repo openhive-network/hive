@@ -82,7 +82,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t )
+inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t, bool )
 {
   //  994240:        "account_creation_fee": "0.1 HIVE"
   // 1021529:        "account_creation_fee": "10.0 HIVE"

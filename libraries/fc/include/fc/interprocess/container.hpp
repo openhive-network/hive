@@ -135,16 +135,16 @@ namespace fc {
          }
        }
        template<typename Stream, typename T, typename... A>
-       inline void unpack( Stream& s, bip::vector<T,A...>& value, uint32_t depth = 0 ) {
+       inline void unpack( Stream& s, bip::vector<T,A...>& value, uint32_t depth = 0, bool limit_is_disabled = false ) {
          depth++;
          FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
          unsigned_int size;
-         unpack( s, size, depth );
+         unpack( s, size, depth, limit_is_disabled );
          value.clear();
          for ( size_t i = 0; i < size.value; i++ )
          {
             T tmp;
-            fc::raw::unpack( s, tmp, depth );
+            fc::raw::unpack( s, tmp, depth, limit_is_disabled );
             value.emplace_back( std::move( tmp ) );
          }
        }

@@ -17,18 +17,18 @@ namespace raw {
 template<typename Stream>
 inline void pack( Stream& s, const chainbase::shared_string& ss );
 template<typename Stream>
-inline void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth = 0  );
+inline void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth = 0, bool limit_is_disabled = false );
 #endif
 
 template<typename Stream, typename E, typename A>
 void pack( Stream& s, const boost::interprocess::deque< E, A >& value );
 template<typename Stream, typename E, typename A>
-void unpack( Stream& s, boost::interprocess::deque< E, A >& value, uint32_t depth = 0  );
+void unpack( Stream& s, boost::interprocess::deque< E, A >& value, uint32_t depth = 0, bool limit_is_disabled = false );
 
 template<typename Stream, typename K, typename V, typename C, typename A>
 void pack( Stream& s, const boost::interprocess::flat_map< K, V, C, A >& value );
 template<typename Stream, typename K, typename V, typename C, typename A>
-void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint32_t depth = 0  );
+void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint32_t depth = 0, bool limit_is_disabled = false );
 
 /*
 inline void pack_to_slice
