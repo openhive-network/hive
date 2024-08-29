@@ -1114,6 +1114,329 @@ BOOST_AUTO_TEST_CASE( genesis_account_authorities )
   FC_LOG_AND_RETHROW()
 }
 
+void set_witness_properties( database_fixture& fixture, uint32_t block_size, uint16_t hbd_apr, const asset& fee )
+{
+  decltype( witness_set_properties_operation::props ) props;
+  props[ "key" ] = fc::raw::pack_to_vector( fixture.init_account_pub_key );
+  props[ "maximum_block_size" ] = fc::raw::pack_to_vector( block_size );
+  props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( hbd_apr );
+  props[ "account_creation_fee" ] = fc::raw::pack_to_vector( fee );
+  fixture.set_witness_props( props, false );
+  ilog( "#${b} setting new witness values: maximum_block_size = ${s}, hbd_interest_rate = ${h}, account_creation_fee = ${f}",
+    ( "b", fixture.db->head_block_num() )( "s", block_size )( "h", hbd_apr )( "f", legacy_asset( fee ).to_string() ) );
+};
+
+const uint32_t default_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+static_assert( default_block_size != HIVE_MAX_BLOCK_SIZE );
+const uint16_t default_hbd_apr = HIVE_DEFAULT_HBD_INTEREST_RATE;
+static_assert( default_hbd_apr != 0 );
+const asset default_fee = HIVE_asset( HIVE_MIN_ACCOUNT_CREATION_FEE );
+
+BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
+{
+  try
+  {
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    const auto& wso = db->get_witness_schedule_object();
+    const auto& future_wso = db->get_future_witness_schedule_object();
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const auto& witness = db->get_witness( HIVE_INIT_MINER_NAME );
+
+    // default global block size and interest rate are initially different than default wso value and witness value
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, HIVE_MAX_BLOCK_SIZE );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, default_block_size );
+
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, 0 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, default_hbd_apr );
+
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, default_fee.amount.value );
+
+    // generate three schedules worth of blocks so we know all the mechanisms had a chance to activate
+    // (that is, default global properties that are used in first schedule, default witness schedule
+    // which values are used in second schedule and future witness schedule which values are built from
+    // from default witness values)
+    generate_blocks( db->head_block_time() + 63 * HIVE_BLOCK_INTERVAL, false );
+
+    // the global values should propagate all the way from witness(es)
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, dgpo.maximum_block_size );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, dgpo.hbd_interest_rate );
+
+    // change witness properties
+    uint32_t new_block_size1 = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
+    uint16_t new_hbd_apr1 = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
+    asset new_fee1 = ASSET( "1.500 TESTS" );
+    set_witness_properties( *this, new_block_size1, new_hbd_apr1, new_fee1 );
+
+    // run one schedule so changed properties are included in future wso
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // witness has new values
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+
+    // future wso has new values
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+
+    // wso still has old values
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+
+    // dgpo incorrectly has new values, because they were activated when future wso was filled
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+
+    // run one schedule to make the state consistent (future wso activated)
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
+    // all objects have new values
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+
+    // change witness properties again
+    uint32_t new_block_size2 = HIVE_MIN_BLOCK_SIZE_LIMIT * 5;
+    uint16_t new_hbd_apr2 = HIVE_DEFAULT_HBD_INTEREST_RATE * 4;
+    asset new_fee2 = ASSET( "2.500 TESTS" );
+    set_witness_properties( *this, new_block_size2, new_hbd_apr2, new_fee2 );
+
+    // run one schedule so changed properties are included in future wso
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // witness has new values
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+
+    // future wso has new values
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+
+    // wso still has previous values
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+
+    // dgpo also has previous values
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+
+    // run one schedule so changed properties are propagated to wso and activated
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // all objects have new values
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr2 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
+{
+  try
+  {
+    // this test changes witness values before hardfork, but first schedule update happens after
+
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    const auto& wso = db->get_witness_schedule_object();
+    const auto& future_wso = db->get_future_witness_schedule_object();
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const auto& witness = db->get_witness( HIVE_INIT_MINER_NAME );
+
+    generate_blocks( db->head_block_time() + 63 * HIVE_BLOCK_INTERVAL, false );
+
+    // run to the start of nearest schedule plus couple blocks
+    uint32_t block_num = db->head_block_num();
+    uint32_t block_num_of_change = ( block_num - 5 + 20 ) / 21 * 21 + 5;
+    while( block_num < block_num_of_change )
+    {
+      generate_block();
+      ++block_num;
+    }
+
+    // change witness properties
+    uint32_t new_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
+    uint16_t new_hbd_apr = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
+    asset new_fee = ASSET( "1.500 TESTS" );
+    set_witness_properties( *this, new_block_size, new_hbd_apr, new_fee );
+
+    generate_block();
+
+    // values only changed on witness
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
+    // new values still only on witness
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+
+    // run one schedule
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // new values are now on witness and future wso, but not in active wso nor in dgpo (HF28 behavior)
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee.amount.value );
+
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
+{
+  try
+  {
+    // this test changes witness values before hardfork and future schedule is also built with them
+    // before hardfork, but they become officially active after
+
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    const auto& wso = db->get_witness_schedule_object();
+    const auto& future_wso = db->get_future_witness_schedule_object();
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const auto& witness = db->get_witness( HIVE_INIT_MINER_NAME );
+
+    generate_blocks( db->head_block_time() + 63 * HIVE_BLOCK_INTERVAL, false );
+
+    // run to the start of nearest schedule plus couple blocks
+    uint32_t block_num = db->head_block_num();
+    uint32_t block_num_of_change = ( block_num - 5 + 20 ) / 21 * 21 + 5;
+    while( block_num < block_num_of_change )
+    {
+      generate_block();
+      ++block_num;
+    }
+
+    // change witness properties
+    uint32_t new_block_size1 = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
+    uint16_t new_hbd_apr1 = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
+    asset new_fee1 = ASSET( "1.500 TESTS" );
+    set_witness_properties( *this, new_block_size1, new_hbd_apr1, new_fee1 );
+
+    generate_block();
+
+    // run one schedule
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // values changed on witness and future wso, but also copied to dgpo (old behavior)
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
+    // activation of hardfork itself changes nothing
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+
+    // change witness properties again
+    uint32_t new_block_size2 = HIVE_MIN_BLOCK_SIZE_LIMIT * 5;
+    uint16_t new_hbd_apr2 = HIVE_DEFAULT_HBD_INTEREST_RATE * 4;
+    asset new_fee2 = ASSET( "2.500 TESTS" );
+    set_witness_properties( *this, new_block_size2, new_hbd_apr2, new_fee2 );
+
+    // run one schedule again
+    generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
+
+    // values that were previously in future wso (and also copied to dgpo due to old behavior)
+    // are now propagated to wso (and copied again to dgpo, although it changes nothing) while
+    // newer values are only on witness and future wso (new behavior)
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+
+    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
