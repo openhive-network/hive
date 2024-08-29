@@ -10,8 +10,8 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory )
-                    : app( app )
+  beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::shared_ptr<status>& app_status )
+                    : app( app ), app_status( app_status )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
     connection_file = wallet_directory / "beekeeper.connection";
@@ -135,6 +135,11 @@ namespace beekeeper {
 
     if( instance_started )
       save_pid();
+    else
+    {
+      FC_ASSERT( app_status );
+      app_status->status = "opening beekeeper failed";
+    }
 
     return instance_started;
   }
