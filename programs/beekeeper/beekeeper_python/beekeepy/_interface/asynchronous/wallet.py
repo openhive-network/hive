@@ -74,3 +74,7 @@ class UnlockedWallet(Wallet, UnlockedWalletInterface):
     @wallet_unlocked
     async def has_matching_private_key(self, *, key: PublicKey) -> bool:
         return (await self._beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=key)).exists
+
+    @property
+    async def lock_time(self) -> datetime:
+        return (await self._beekeeper.api.get_info()).timeout_time

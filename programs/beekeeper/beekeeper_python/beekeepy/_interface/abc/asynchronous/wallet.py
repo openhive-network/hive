@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from beekeepy._interface.common import ContainsWalletName
@@ -46,6 +47,10 @@ class UnlockedWallet(Wallet, ContextAsync["UnlockedWallet"], ABC):
 
     @abstractmethod
     async def has_matching_private_key(self, *, key: PublicKey) -> bool: ...
+
+    @property
+    @abstractmethod
+    async def lock_time(self) -> datetime: ...
 
     async def _aenter(self) -> UnlockedWallet:
         return self
