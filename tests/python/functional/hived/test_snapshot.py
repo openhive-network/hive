@@ -7,28 +7,30 @@ import test_tools as tt
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from test_tools import Snapshot
+
 
 def test_snapshots_content_binary(block_log: Path) -> None:
-    node = [None]
-    snap = [None]
+    node: list[tt.ApiNode] = []
+    snap: list[Snapshot] = []
 
     node.append(tt.ApiNode())
-    node[1].config.plugin.append("state_snapshot")
-    node[1].run(exit_before_synchronization=True, replay_from=block_log)
+    node[0].config.plugin.append("state_snapshot")
+    node[0].run(exit_before_synchronization=True, replay_from=block_log)
 
-    snap.append(node[1].dump_snapshot(close=True))
+    snap.append(node[0].dump_snapshot(name="snapshot1", close=True))
 
     node.append(tt.ApiNode())
-    node[2].run(load_snapshot_from=snap[1], exit_before_synchronization=True)
+    node[1].run(load_snapshot_from=snap[0], exit_before_synchronization=True)
 
-    snap.append(node[2].dump_snapshot(close=True))
+    snap.append(node[1].dump_snapshot(name="snapshot2", close=True))
 
-    # recursive file (md5) checksum check
-    assert snap[1] == snap[2]
+
+    assert snap[0] == snap[1]
 
 
 def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
-    def clear_state(node):
+    def clear_state(node: tt.InitNode):
         from os.path import join as join_paths
         from shutil import rmtree
 
