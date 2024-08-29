@@ -44,7 +44,7 @@ PackedBeekeeper = Packed[SynchronousBeekeeperInterface]
 PackedAsyncBeekeeper = Packed[AsynchronousBeekeeperInterface]
 
 
-def _update_settings(settings: HelpySettings) -> Settings:
+def _prepare_settings_for_packing(settings: HelpySettings) -> Settings:
     settings = cast(Settings, settings)
     if not isinstance(settings, Url):
         settings.notification_endpoint = None
@@ -53,13 +53,13 @@ def _update_settings(settings: HelpySettings) -> Settings:
 
 class _SynchronousBeekeeperImpl(SynchronousBeekeeper):
     def pack(self) -> PackedBeekeeper:
-        return Packed(settings=_update_settings(self._get_instance().settings), unpack_factory=beekeeper_remote_factory)
+        return Packed(settings=_prepare_settings_for_packing(self._get_instance().settings), unpack_factory=beekeeper_remote_factory)
 
 
 class _AsynchronousBeekeeperImpl(AsynchronousBeekeeper):
     def pack(self) -> PackedAsyncBeekeeper:
         return Packed(
-            settings=_update_settings(self._get_instance().settings), unpack_factory=async_beekeeper_remote_factory
+            settings=_prepare_settings_for_packing(self._get_instance().settings), unpack_factory=async_beekeeper_remote_factory
         )
 
 
