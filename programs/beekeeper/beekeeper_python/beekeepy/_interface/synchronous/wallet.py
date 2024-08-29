@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
@@ -11,6 +12,12 @@ from beekeepy._interface.abc.synchronous.wallet import (
     Wallet as WalletInterface,
 )
 from beekeepy._interface.common import WalletCommons
+from beekeepy._interface.exceptions import (
+    InvalidPrivateKeyError,
+    InvalidPublicKeyError,
+    MissingSTMPrefixError,
+    RemovingNotExistingKeyError,
+)
 from helpy import wax
 
 if TYPE_CHECKING:
@@ -57,11 +64,13 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     @wallet_unlocked
     def import_key(self, *, private_key: str) -> PublicKey:
-        return self._beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
+        with InvalidPrivateKeyError(wif=private_key):
+            return self._beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
 
     @wallet_unlocked
     def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
-        self._beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
+        with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
+            self._beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
 
     @wallet_unlocked
     def lock(self) -> None:
@@ -69,7 +78,8 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     @wallet_unlocked
     def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
-        return self._beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, wallet_name=self.name).signature
+        with MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
+            return self._beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, wallet_name=self.name).signature
 
     @wallet_unlocked
     def has_matching_private_key(self, *, key: PublicKey) -> bool:

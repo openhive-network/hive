@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Any
 
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
 from beekeepy._interface.abc.synchronous.session import Session as SessionInterface
-from beekeepy._interface.exceptions import NoWalletWithSuchNameError
+from beekeepy._interface.exceptions import (
+    InvalidWalletError,
+    NoWalletWithSuchNameError,
+    WalletWithSuchNameAlreadyExistsError,
+)
 from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
@@ -35,7 +39,8 @@ class Session(SessionInterface):
     def create_wallet(  # type: ignore[override]
         self, *, name: str, password: str | None = None
     ) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
-        create_result = self.__beekeeper.api.create(wallet_name=name, password=password)
+        with WalletWithSuchNameAlreadyExistsError(wallet_name=name), InvalidWalletError(wallet_name=name):
+            create_result = self.__beekeeper.api.create(wallet_name=name, password=password)
         wallet = self.__construct_unlocked_wallet(name)
         return wallet if password is not None else (wallet, create_result.password)
 

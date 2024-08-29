@@ -8,7 +8,11 @@ from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from beekeepy._interface.exceptions import NoWalletWithSuchNameError
+from beekeepy._interface.exceptions import (
+    InvalidWalletError,
+    NoWalletWithSuchNameError,
+    WalletWithSuchNameAlreadyExistsError,
+)
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.wallet import (
@@ -35,7 +39,8 @@ class Session(SessionInterface):
     async def create_wallet(  # type: ignore[override]
         self, *, name: str, password: str | None = None
     ) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
-        create_result = await self.__beekeeper.api.create(wallet_name=name, password=password)
+        with WalletWithSuchNameAlreadyExistsError(wallet_name=name), InvalidWalletError(wallet_name=name):
+            create_result = await self.__beekeeper.api.create(wallet_name=name, password=password)
         wallet = self.__construct_unlocked_wallet(name)
         return wallet if password is not None else (wallet, create_result.password)
 
