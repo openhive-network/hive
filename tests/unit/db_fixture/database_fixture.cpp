@@ -588,18 +588,27 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
   ); // the check fails if you call set_price_feed more than once with different price
 }
 
-void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props )
+void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props, bool wait_for_activation )
 {
-  for( size_t i=0; i<HIVE_MAX_WITNESSES; i++ )
-  {
-    witness_set_properties_operation op;
-    op.owner = HIVE_INIT_MINER_NAME + (i == 0 ? "" : fc::to_string( i ));
-    op.props = props;
-    if( props.find( "key" ) == props.end() )
-      op.props["key"] = fc::raw::pack_to_vector( init_account_pub_key );
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.set_reference_block( db->head_block_id() );
 
-    push_transaction( op, init_account_priv_key );
+  witness_set_properties_operation op;
+  op.owner = HIVE_INIT_MINER_NAME;
+  op.props = props;
+  if( props.find( "key" ) == props.end() )
+    op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+  tx.operations.emplace_back( op );
+  for( int i = 1; i < HIVE_MAX_WITNESSES; ++i )
+  {
+    op.owner = HIVE_INIT_MINER_NAME + fc::to_string( i );
+    tx.operations.emplace_back( op );
   }
+  push_transaction( tx, init_account_priv_key );
+
+  if( !wait_for_activation )
+    return;
 
   const witness_schedule_object* wso = &(db->get_witness_schedule_object());
   uint32_t old_next_shuffle = wso->next_shuffle_block_num;
