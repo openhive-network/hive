@@ -19,8 +19,6 @@ class beekeeper_app: public beekeeper_app_base
 
     std::shared_ptr<beekeeper_instance> instance;
 
-    boost::signals2::connection webserver_connection;
-
     std::unique_ptr<beekeeper::beekeeper_wallet_api> api_ptr;
 
     appbase::application app;
