@@ -1270,3 +1270,38 @@ colony_tests:
     - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
+
+Vtest_job:
+  stage: test
+  variables:
+    AAAA:
+      a0
+      a1
+      a2
+    BBBB:
+      b0
+      b1
+      b2
+    CCCC:
+      c0
+      c1
+      c2
+    DDDD:
+      d0
+      d1
+      d2
+  script:
+    - echo "AAAA == ${AAAA[@]}"
+    - echo "BBBB == ${BBBB[@]}"
+    - echo "CCCC == ${CCCC[@]}"
+    - echo "DDDD == ${DDDD[@]}"
+
+    # Konwersja tablic YAML na tablice bashowe
+    - BBBB_array=(${BBBB[@]})
+    - CCCC_array=(${CCCC[@]})
+    - DDDD_array=(${DDDD[@]})
+
+    # Wyświetlenie elementów tablicy
+    - echo "BBBB array: ${BBBB_array[@]}"
+    - echo "CCCC array: ${CCCC_array[@]}"
+    - echo "DDDD array: ${DDDD_array[@]}"
