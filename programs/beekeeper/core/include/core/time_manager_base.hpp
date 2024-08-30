@@ -49,16 +49,12 @@ class time_manager_base
 
   public:
 
-    time_manager_base();
-    virtual ~time_manager_base();
+    void add( const std::string& token, types::lock_method_type&& lock_method );
+    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
 
-    virtual void add( const std::string& token, types::lock_method_type&& lock_method );
-    virtual void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
+    void run( const std::string& token );
 
-    virtual void run();
-    virtual void run( const std::string& token );
-
-    virtual void close( const std::string& token );
+    void close( const std::string& token );
 };
 
 } //beekeeper
