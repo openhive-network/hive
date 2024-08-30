@@ -1,5 +1,4 @@
 #include <core/session_manager_base.hpp>
-#include <core/beekeeper_instance_base.hpp>
 
 #include <core/time_manager_base.hpp>
 
