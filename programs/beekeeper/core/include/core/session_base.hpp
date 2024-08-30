@@ -8,8 +8,6 @@
 
 namespace beekeeper {
 
-class beekeeper_instance_base;
-
 class session_base
 {
   private:
