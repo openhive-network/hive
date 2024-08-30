@@ -2,14 +2,6 @@
 
 namespace beekeeper {
 
-time_manager_base::time_manager_base()
-{
-}
-
-time_manager_base::~time_manager_base()
-{
-}
-
 bool time_manager_base::run( const types::timepoint_t& now, const session_data& s_data, std::vector<std::string>& modified_items )
 {
   if( now >= s_data.time )
@@ -54,25 +46,6 @@ void time_manager_base::modify_times( const std::vector<std::string>& modified_i
                                                 return "";
                                               }
                                             );
-}
-
-void time_manager_base::run()
-{
-  std::vector<std::string> _modified_items;
-
-  auto& _idx_time = items.get<by_time>();
-  auto _it = _idx_time.begin();
-
-  const auto& _now = std::chrono::system_clock::now();
-
-  while( _it != _idx_time.end() )
-  {
-    if( !run( _now, *_it, _modified_items ) )
-      return;
-    ++_it;
-  }
-
-  modify_times( _modified_items );
 }
 
 void time_manager_base::run( const std::string& token )
