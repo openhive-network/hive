@@ -47,10 +47,6 @@ class time_manager_base
   bool run( const types::timepoint_t& now, const session_data& s_data, std::vector<std::string>& modified_items );
   void modify_times( const std::vector<std::string>& modified_items );
 
-  protected:
-
-    virtual void send_auto_lock_error_message( const std::string& message ){ /*not implemented here*/ };
-
   public:
 
     time_manager_base();
