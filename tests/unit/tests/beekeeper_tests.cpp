@@ -23,7 +23,6 @@
 #include <beekeeper_wasm/beekeeper_wasm_api.hpp>
 #include <beekeeper_wasm/beekeeper_wasm_app.hpp>
 
-#include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/extended_api.hpp>
 
