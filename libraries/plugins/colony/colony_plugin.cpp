@@ -677,8 +677,8 @@ void colony_plugin_impl::end_of_sync()
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
-  if( _db.is_reapplying_one_tx() )
-    ++_overflowing_tx; // the counter will not cover postponed transactions, but it is better than nothing
+  // if( _db.is_reapplying_one_tx() )
+    // ++_overflowing_tx; // the counter will not cover postponed transactions, but it is better than nothing
 }
 
 void colony_plugin_impl::post_apply_block( const block_notification& note )
@@ -775,7 +775,7 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
     {
       fc::variant var = fc::json::from_string( options.at( "colony-reply" ).as<std::string>(), fc::json::format_validation_mode::full, fc::json::strict_parser );
       my->_params[ REPLY ] = var.as< operation_params >();
-      my->_params[ REPLY ].validate( 20000 );
+      my->_params[ REPLY ].validate( 60000 );
       total_weight += my->_params[ REPLY ].weight;
     }
     if( options.count( "colony-vote" ) )
