@@ -13,8 +13,6 @@ namespace beekeeper {
   beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::shared_ptr<status>& app_status )
                     : app( app ), app_status( app_status )
   {
-    pid_file        = wallet_directory / "beekeeper.pid";
-    connection_file = wallet_directory / "beekeeper.connection";
     lock_path_file  = wallet_directory / "beekeeper.wallet.lock";
   }
 
@@ -24,9 +22,6 @@ namespace beekeeper {
     {
       if( wallet_dir_lock )
           bfs::remove( lock_path_file );
-
-      bfs::remove( pid_file );
-      bfs::remove( connection_file );
     }
   }
 
@@ -75,67 +70,11 @@ namespace beekeeper {
     start_lock_watch(timer);
   }
 
-
-  template<typename content_type>
-  void beekeeper_instance::write_to_file( const boost::filesystem::path& file_name, const content_type& content )
-  {
-    std::ofstream _file( file_name.string() );
-    _file << content;
-    _file.flush();
-    _file.close();
-  }
-
-  fc::variant beekeeper_instance::read_file( const boost::filesystem::path& file_name )
-  {
-    try
-    {
-      return fc::json::from_file( file_name.string(), fc::json::format_validation_mode::full );
-    }
-    catch ( const boost::exception& e )
-    {
-      auto _message = boost::diagnostic_information(e);
-      elog(_message);
-      return _message;
-    }
-    catch ( const fc::exception& e )
-    {
-      auto _message = e.to_detail_string();
-      elog(_message);
-      return _message;
-    }
-    catch ( const std::exception& e )
-    {
-      auto _message = e.what();
-      elog(_message);
-      return _message;
-    }
-    catch ( ... )
-    {
-      auto _message = "unknown exception\n";
-      elog(_message);
-      return _message;
-    }
-  }
-
-  void beekeeper_instance::save_pid()
-  {
-    std::stringstream ss;
-    ss << getpid();
-
-    std::map<std::string, std::string> _map;
-    _map["pid"] = ss.str();
-
-    auto _json = fc::json::to_string( _map );
-    write_to_file( pid_file, _json );
-  }
-
   bool beekeeper_instance::start()
   {
     initialize_lock();
 
-    if( instance_started )
-      save_pid();
-    else
+    if( !instance_started )
     {
       FC_ASSERT( app_status );
       app_status->status = "opening beekeeper failed";
@@ -144,12 +83,4 @@ namespace beekeeper {
     return instance_started;
   }
 
-  void beekeeper_instance::save_connection_details( const collector_t& values )
-  {
-    if( instance_started )
-    {
-      auto _json = fc::json::to_string( values.value );
-      write_to_file( connection_file, _json );
-    }
-  }
 }
