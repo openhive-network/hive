@@ -27,7 +27,6 @@ bool time_manager_base::run( const types::timepoint_t& now, const session_data& 
                                               );
     if( !_result.second )
     {
-      send_auto_lock_error_message( _result.first );
       return false; //First error during locking finishes whole procedure
     }
   }
@@ -55,8 +54,6 @@ void time_manager_base::modify_times( const std::vector<std::string>& modified_i
                                                 return "";
                                               }
                                             );
-  if( !_result.second )
-    send_auto_lock_error_message( _result.first );
 }
 
 void time_manager_base::run()
