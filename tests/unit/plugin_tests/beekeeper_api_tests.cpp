@@ -7,7 +7,6 @@
 
 #include <core/beekeeper_wallet_manager.hpp>
 
-#include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/beekeeper_wallet_api.hpp>
 #include <beekeeper/mutex_handler.hpp>
@@ -20,7 +19,7 @@
 using namespace hive::chain;
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
-using session_manager           = beekeeper::session_manager;
+using session_manager           = beekeeper::session_manager_base;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 using beekeeper_wallet_api      = beekeeper::beekeeper_wallet_api;
 

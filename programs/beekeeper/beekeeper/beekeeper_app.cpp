@@ -1,5 +1,4 @@
 #include <beekeeper/beekeeper_app.hpp>
-#include <beekeeper/session_manager.hpp>
 
 #include <core/beekeeper_wallet_manager.hpp>
 
