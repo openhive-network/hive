@@ -24,8 +24,6 @@ namespace beekeeper
 
       appbase::application& app;
 
-      boost::filesystem::path pid_file;
-      boost::filesystem::path connection_file;
       boost::filesystem::path lock_path_file;
 
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
@@ -35,20 +33,11 @@ namespace beekeeper
       void start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t );
       void initialize_lock();
 
-      template<typename content_type>
-      void write_to_file( const boost::filesystem::path& file_name, const content_type& content );
-
-      fc::variant read_file( const boost::filesystem::path& file_name );
-
-      void save_pid();
-
     public:
 
       beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::shared_ptr<status>& app_status );
       ~beekeeper_instance() override;
 
       bool start() override;
-
-      void save_connection_details( const collector_t& values );
   };
 }
