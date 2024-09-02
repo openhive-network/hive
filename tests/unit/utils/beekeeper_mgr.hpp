@@ -54,7 +54,7 @@ namespace test_utils
     beekeeper_wallet_manager create_wallet( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){}, std::shared_ptr<beekeeper::mutex_handler> mtx_handler = std::make_shared<beekeeper::mutex_handler>() )
     {
       return beekeeper_wallet_manager(  std::make_shared<session_manager_base>(),
-                                        std::make_shared<beekeeper_instance>( app, dir, std::shared_ptr<status>() ),
+                                        std::make_shared<beekeeper_instance>( app, dir ),
                                         dir,
                                         cmd_unlock_timeout,
                                         cmd_session_limit,
@@ -65,7 +65,7 @@ namespace test_utils
     std::shared_ptr<beekeeper_wallet_manager> create_wallet_ptr( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){}, std::shared_ptr<beekeeper::mutex_handler> mtx_handler = std::make_shared<beekeeper::mutex_handler>() )
     {
       return std::shared_ptr<beekeeper_wallet_manager>( new beekeeper_wallet_manager( std::make_shared<session_manager_base>(),
-                                                                                      std::make_shared<beekeeper_instance>( app, dir, std::shared_ptr<status>() ),
+                                                                                      std::make_shared<beekeeper_instance>( app, dir ),
                                                                                       dir,
                                                                                       cmd_unlock_timeout,
                                                                                       cmd_session_limit,
