@@ -125,6 +125,11 @@ version beekeeper_wallet_manager::get_version()
   return { utility::get_revision() };
 }
 
+status beekeeper_wallet_manager::get_status()
+{
+  return *( instance->get_app_status() );
+}
+
 std::string beekeeper_wallet_manager::create_session( const std::optional<std::string>& salt )
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
