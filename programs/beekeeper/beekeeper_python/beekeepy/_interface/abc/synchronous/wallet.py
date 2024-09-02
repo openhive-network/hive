@@ -59,6 +59,6 @@ class UnlockedWallet(Wallet, ContextSync["UnlockedWallet"], ABC):
         self.lock()
 
     def __contains__(self, obj: object) -> bool:
-        if isinstance(obj, str):
+        if isinstance(obj, str | PublicKey):
             return self.has_matching_private_key(key=PublicKey(obj))
         raise TypeError(f"Object `{obj}` is not str which can't be check for matchin private key in wallet.")

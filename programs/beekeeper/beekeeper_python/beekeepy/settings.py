@@ -27,5 +27,8 @@ class Settings(HandleSettings):
     propagate_sigint: bool = True
     """If set to True (default), sigint will be sent to beekeeper without controll of this library."""
 
+    close_process: bool = True
+    """If set to True (default), beekeeper will close before application, otherwise it will be started as daemon process."""
+
     close_timeout: timedelta = Field(default_factory=lambda: timedelta(seconds=10.0))
     """This timeout varriable affects time handle waits before beekeepy closes."""

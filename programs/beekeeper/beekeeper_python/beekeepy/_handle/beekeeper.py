@@ -50,12 +50,18 @@ class RunnableBeekeeper(ContextSync[EnterReturnT], Generic[EnterReturnT]):
     def _finally(self) -> None:
         self.close()
 
+    @abstractmethod
+    def detach(self) -> None: ...
+
 
 class SyncRemoteBeekeeper(RunnableBeekeeper["SyncRemoteBeekeeper"], helpy.Beekeeper):
     def run(self) -> None:
         """There is no need to do anythng, it's remote handle."""
 
     def close(self) -> None:
+        """There is no need to do anything, it's remote handle."""
+
+    def detach(self) -> None:
         """There is no need to do anything, it's remote handle."""
 
 
@@ -66,6 +72,8 @@ class AsyncRemoteBeekeeper(RunnableBeekeeper["AsyncRemoteBeekeeper"], helpy.Asyn
     def close(self) -> None:
         """There is no need to do anything, it's remote handle."""
 
+    def detach(self) -> None:
+        """There is no need to do anything, it's remote handle."""
 
 class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterReturnT]):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
@@ -160,6 +168,11 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
             ],
             propagate_sigint=settings.propagate_sigint,
         )
+
+    def detach(self) -> None:
+        self.__exec.detach()
+        self.__close_notification_server()
+
 
     def close(self) -> None:
         self._close_application()

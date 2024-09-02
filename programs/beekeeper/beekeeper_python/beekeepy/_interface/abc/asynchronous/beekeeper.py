@@ -25,3 +25,6 @@ class Beekeeper(ContextAsync["Beekeeper"], ABC):
 
     @abstractmethod
     def pack(self) -> Packed[Beekeeper]: ...
+
+    @abstractmethod
+    def detach(self) -> None: ...

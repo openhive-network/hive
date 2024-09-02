@@ -39,6 +39,27 @@ if TYPE_CHECKING:
 def _get_logger() -> Logger:
     return logger
 
+def _is_running(pid: int) -> bool:
+    """
+    Check whether pid exists in the current process table.
+
+    Source: https://stackoverflow.com/a/7654102
+
+    Args:
+    ----
+    pid: The Process ID to check.
+
+    Returns:
+    -------
+    True if process with the given pid is running else False.
+    """
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            return False
+    return True
+
 
 PackedBeekeeper = Packed[SynchronousBeekeeperInterface]
 PackedAsyncBeekeeper = Packed[AsynchronousBeekeeperInterface]
@@ -125,7 +146,7 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
     def wait_for_pid_to_die(pid: int, *, timeout_secs: float = 5.0) -> None:
         sleep_time = min(1.0, timeout_secs)
         already_waited = 0.0
-        while not is_running(pid):
+        while not _is_running(pid):
             if timeout_secs - already_waited <= 0:
                 raise TimeoutError(f"Process with pid {pid} didn't die in {timeout_secs} seconds.")
 
@@ -151,23 +172,3 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
     else:
         logger.debug("BeekeeperAlreadyRunningError did not raise, is other beekeeper running?")
 
-    def is_running(pid: int) -> bool:
-        """
-        Check whether pid exists in the current process table.
-
-        Source: https://stackoverflow.com/a/7654102
-
-        Args:
-        ----
-        pid: The Process ID to check.
-
-        Returns:
-        -------
-        True if process with the given pid is running else False.
-        """
-        try:
-            os.kill(pid, 0)
-        except OSError as err:
-            if err.errno == errno.ESRCH:
-                return False
-        return True

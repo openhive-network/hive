@@ -25,3 +25,6 @@ class Beekeeper(ContextSync["Beekeeper"], ABC):
 
     @abstractmethod
     def pack(self) -> Packed[Beekeeper]: ...
+
+    @abstractmethod
+    def detach(self) -> None: ...

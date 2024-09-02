@@ -11,3 +11,8 @@ def generate_wallet_password(number: int = 0) -> str:
 
 def generate_account_name(number: int = 0) -> str:
     return f"account-{number}"
+
+
+def default_wallet_credentials() -> tuple[str, str]:
+    """Returns wallet name and password."""
+    return ("wallet", "password")

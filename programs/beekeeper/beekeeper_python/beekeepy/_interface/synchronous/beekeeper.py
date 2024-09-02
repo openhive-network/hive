@@ -25,3 +25,6 @@ class Beekeeper(BeekeeperInterface):
 
     def delete(self) -> None:
         self.__instance.close()
+
+    def detach(self) -> None:
+        self.__instance.detach()

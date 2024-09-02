@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from beekeepy._executable.streams import StreamsHolder
+from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from helpy._interfaces.config import Config
 from helpy._interfaces.context import ContextSync
 
@@ -95,7 +96,7 @@ class Executable(Closeable, Generic[ConfigT]):
             env=environment_variables,
             stdout=self.__files.stdout.open_stream(),
             stderr=self.__files.stderr.open_stream(),
-            preexec_fn=(os.setpgrp if not propagate_sigint else None),  # noqa: PLW1509
+            preexec_fn=(os.setpgrp if not propagate_sigint else None),  # noqa: PLW1509 create new process group, so signals won't be passed to child process
         )
 
         return AutoCloser(self)
@@ -129,12 +130,19 @@ class Executable(Closeable, Generic[ConfigT]):
 
         return command, environment_variables
 
-    def __raise_warning(self) -> None:
+    def __raise_warning_if_timeout_on_close(self) -> None:
         warnings.warn(
             # break because of formatting
-            "Process was force-closed with SIGKILL," + "because didn't close before timeout",
+            "Process was force-closed with SIGKILL, because didn't close before timeout",
             stacklevel=2,
         )
+
+    def detach(self) -> None:
+        if self.__process is None:
+            return
+
+        self.__process = None
+        self.__files.close()
 
     def close(self, timeout_secs: float = 10.0) -> None:
         if self.__process is None:
@@ -145,20 +153,22 @@ class Executable(Closeable, Generic[ConfigT]):
             return_code = self.__process.wait(timeout=timeout_secs)
             self._logger.debug(f"Closed with {return_code} return code")
         except subprocess.TimeoutExpired:
-            self.__raise_warning()
+            self.__raise_warning_if_timeout_on_close()
             self.__process.kill()
             self.__process.wait()
         self.__process = None
         self.__files.close()
-        self.__warn_if_pid_file_exists()
+        self.__warn_if_pid_files_exists()
 
-    def __warn_if_pid_file_exists(self) -> None:
-        pid_files = list(self.working_directory.glob("*.pid"))
-        if len(pid_files) > 0:
+    def __warn_if_pid_files_exists(self) -> None:
+        if self.__pid_files_exists():
             warnings.warn(
                 f"PID file has not been removed, malfunction may occur. Working directory: {self.working_directory}",
                 stacklevel=2,
             )
+
+    def __pid_files_exists(self) -> bool:
+        return len(list(self.working_directory.glob("*.pid"))) > 0
 
     def is_running(self) -> bool:
         if not self.__process:

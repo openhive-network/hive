@@ -8,6 +8,7 @@ from beekeepy._handle import Beekeeper
 
 import test_tools as tt
 from hive_local_tools.beekeeper.generators import (
+    default_wallet_credentials,
     generate_account_name,
     generate_wallet_name,
     generate_wallet_password,
@@ -34,14 +35,14 @@ def beekeeper(beekeeper_not_started: Beekeeper) -> Iterator[Beekeeper]:
 
 @pytest.fixture()
 def wallet(beekeeper: Beekeeper) -> WalletInfo:
-    name, password = "wallet", "password"
+    name, password = default_wallet_credentials()
     beekeeper.api.create(wallet_name=name, password=password)
     return WalletInfo(name=name, password=password)
 
 
 @pytest.fixture()
 def account(beekeeper: Beekeeper, wallet: WalletInfo) -> tt.Account:
-    acc = tt.Account("account")
+    acc = tt.Account(generate_account_name())
     beekeeper.api.import_key(wallet_name=wallet.name, wif_key=acc.private_key)
     return acc
 
