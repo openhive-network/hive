@@ -679,6 +679,7 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
   }
   else
   {
+    FC_ASSERT( !use_block_log_head_num || ( use_block_log_head_num && source_block_provider.head() ), "block_log.artifacts and block_log files do not match, since block_log is empty" );
     first_block_to_verify = use_block_log_head_num ? source_block_provider.head()->get_block_num() - 1 : _header.head_block_num - 1;
     last_block_num_to_verify = std::max<uint32_t>(first_block_to_verify - BLOCKS_SAMPLE_AMOUNT, calculate_tail_block_num(1));
   }
