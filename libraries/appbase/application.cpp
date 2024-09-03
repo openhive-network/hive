@@ -464,7 +464,7 @@ void application::write_default_config(const bfs::path& cfg_file)
       if( example.empty() )
       {
         // This is a boolean switch
-        out_cfg << od->long_name() << " = " << "false\n";
+        out_cfg <<  "# " << od->long_name() << " = " << "false\n";
       }
       else if( example.length() <= 7 )
       {
@@ -480,7 +480,7 @@ void application::write_default_config(const bfs::path& cfg_file)
         {
           example.erase(0, space_pos + 3);
           example.erase(example.length()-1);
-          out_cfg << od->long_name() << " = " << example << "\n";
+          out_cfg << "# " << od->long_name() << " = " << example << "\n";
         }
       }
     }
