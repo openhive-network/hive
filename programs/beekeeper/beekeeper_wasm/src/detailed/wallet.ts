@@ -36,6 +36,10 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     return this.locked.name;
   }
 
+  get isTemporary(): boolean {
+    return this.locked.isTemporary;
+  }
+
   public lock(): BeekeeperLockedWallet {
     this.api.extract(this.api.api.lock(this.session.token, this.locked.name) as string);
     this.locked.unlocked = undefined;
@@ -107,7 +111,8 @@ export class BeekeeperLockedWallet implements IBeekeeperWallet {
   public constructor(
     private readonly api: BeekeeperApi,
     private readonly session: BeekeeperSession,
-    public readonly name: string
+    public readonly name: string,
+    public readonly isTemporary: boolean
   ) {}
 
   public unlock(password: string): IBeekeeperUnlockedWallet {

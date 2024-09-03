@@ -45,9 +45,9 @@ export class BeekeeperSession implements IBeekeeperSession {
     return wallets;
   }
 
-  public async createWallet(name: string, password?: string): Promise<IWalletCreated> {
+  public async createWallet(name: string, password: string | undefined, isTemporary: boolean = false): Promise<IWalletCreated> {
     if(typeof password === 'string')
-      this.api.extract(this.api.api.create(this.token, name, password) as string);
+      this.api.extract(this.api.api.create(this.token, name, password, isTemporary) as string);
     else {
       const result = this.api.extract(this.api.api.create(this.token, name) as string) as IBeekeeperWalletPassword;
       ({ password } = result);
@@ -55,7 +55,7 @@ export class BeekeeperSession implements IBeekeeperSession {
 
     await this.api.fs.sync();
 
-    const wallet = new BeekeeperLockedWallet(this.api, this, name);
+    const wallet = new BeekeeperLockedWallet(this.api, this, name, isTemporary);
     wallet.unlocked = new BeekeeperUnlockedWallet(this.api, this, wallet);
 
     this.wallets.set(name, wallet);
@@ -71,7 +71,7 @@ export class BeekeeperSession implements IBeekeeperSession {
       return this.wallets.get(name) as IBeekeeperWallet;
 
     this.api.extract(this.api.api.open(this.token, name) as string);
-    const wallet = new BeekeeperLockedWallet(this.api, this, name);
+    const wallet = new BeekeeperLockedWallet(this.api, this, name, false);
 
     this.wallets.set(name, wallet);
 

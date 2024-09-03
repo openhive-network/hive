@@ -21,6 +21,14 @@ export interface IWallet {
    * @readonly
    */
   readonly name: string;
+
+  /**
+   * Indicates if wallet exists only in memory or is saved into a file.
+   *
+   * @type {boolean}
+   * @readonly
+   */
+  readonly isTemporary: boolean;
 };
 
 export interface IBeekeeperInfo {
@@ -216,6 +224,19 @@ export interface IBeekeeperSession {
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
   createWallet(name: string, password?: string): Promise<IWalletCreated>;
+
+  /**
+   * Creates a new Beekeeper wallet object owned by this session
+   *
+   * @param {string} name name of wallet
+   * @param {?string} password password used for creation of a wallet. Not required and in this case a password is automatically generated and returned
+   * @param {?boolean} isTemporary If `true` the wallet exists only in memory otherwise is saved into a file. (defaults to `false`)
+   *
+   * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
+   *
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  createWallet(name: string, password: string, isTemporary: boolean): Promise<IWalletCreated>;
 
   /**
    * Opens Beekeeper wallet object owned by this session
