@@ -7,6 +7,10 @@ interface IBeekeeperWalletPassword {
   password: string;
 }
 
+interface IBeekeeperHasWallet {
+  exists: boolean;
+}
+
 interface IBeekeeperWallets {
   wallets: Array<{
     name: string;
@@ -43,6 +47,12 @@ export class BeekeeperSession implements IBeekeeperSession {
     }
 
     return wallets;
+  }
+
+  public hasWallet(name: string): boolean {
+    const result = this.api.extract(this.api.api.has_wallet(this.token, name) as string) as IBeekeeperHasWallet;
+
+    return result.exists;
   }
 
   public async createWallet(name: string, password: string | undefined, isTemporary: boolean = false): Promise<IWalletCreated> {
