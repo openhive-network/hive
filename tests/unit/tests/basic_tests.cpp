@@ -1686,4 +1686,101 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   ilog( "regular exception end after ${t}us", ( "t", ( fc::time_point::now() - time ).count() ) );
 }
 
+BOOST_AUTO_TEST_CASE( authorization_redirections )
+{
+  auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+  auto keygen = [&]( const account_name_type& name, authority::classification role )
+  {
+    return generate_private_key( std::string( name ) +
+      fc::reflector< authority::classification >::to_string( role ) ).get_public_key();
+  };
+  auto create_account = [&]( const account_name_type& name, const authority& owner,
+    const authority& active, const authority& posting )
+  {
+    account_create_operation op;
+    op.new_account_name = name;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee;
+    op.owner = owner;
+    op.active = active;
+    op.posting = posting;
+    push_transaction( op, init_account_priv_key );
+  };
+#define CREATE_ACCOUNT( name ) \
+  create_account( BOOST_PP_STRINGIZE( name ), \
+    authority( 1, keygen( BOOST_PP_STRINGIZE( name ), authority::owner ), 1 ), \
+    authority( 1, keygen( BOOST_PP_STRINGIZE( name ), authority::active ), 1 ), \
+    authority( 1, keygen( BOOST_PP_STRINGIZE( name ), authority::posting ), 1 ) )
+
+  CREATE_ACCOUNT( bob );
+  CREATE_ACCOUNT( carol );
+  CREATE_ACCOUNT( dan );
+  create_account( "alice",
+    authority( 1, keygen( "alice", authority::owner ), 1, "dan", 1 ),
+    authority( 1, keygen( "alice", authority::active ), 1 , "carol", 1 ),
+    authority( 1, keygen( "alice", authority::posting ), 1, "bob", 1 ) );
+
+  generate_block();
+
+  const auto& alice_auth = db->get< account_authority_object, by_account >( "alice" );
+  const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
+  const auto& carol_auth = db->get< account_authority_object, by_account >( "carol" );
+  const auto& dan_auth = db->get< account_authority_object, by_account >( "dan" );
+
+  // alice has her own keys for each role, but she also redirects to bob for posting,
+  // carol for active and dan for owner
+
+  auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
+  auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
+  auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+  auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+  required_authorities_type required_authorities;
+
+  auto has_authorization = [&]( const public_key_type& key )
+  {
+    if( hive::protocol::has_authorization( db->has_hardfork( HIVE_HARDFORK_1_28_AUTHORITY_NO_REDIRECTION ), required_authorities, { key }, get_active, get_owner, get_posting, get_witness_key ) )
+      return "true";
+    else
+      return "false";
+  };
+
+  auto check_authorizations = [&]()
+  {
+    ilog( "alice_posting_key: ${x}", ( "x", has_authorization( alice_auth.posting.key_auths.begin()->first ) ) );
+    ilog( "alice_active_key: ${x}", ( "x", has_authorization( alice_auth.active.key_auths.begin()->first ) ) );
+    ilog( "alice_owner_key: ${x}", ( "x", has_authorization( alice_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "bob is redirected to from alice posting role" );
+    ilog( "bob_posting_key: ${x}", ( "x", has_authorization( bob_auth.posting.key_auths.begin()->first ) ) );
+    ilog( "bob_active_key: ${x}", ( "x", has_authorization( bob_auth.active.key_auths.begin()->first ) ) );
+    ilog( "bob_owner_key: ${x}", ( "x", has_authorization( bob_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "carol is redirected to from alice active role" );
+    ilog( "carol_posting_key: ${x}", ( "x", has_authorization( carol_auth.posting.key_auths.begin()->first ) ) );
+    ilog( "carol_active_key: ${x}", ( "x", has_authorization( carol_auth.active.key_auths.begin()->first ) ) );
+    ilog( "carol_owner_key: ${x}", ( "x", has_authorization( carol_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "dan is redirected to from alice owner role" );
+    ilog( "dan_posting_key: ${x}", ( "x", has_authorization( dan_auth.posting.key_auths.begin()->first ) ) );
+    ilog( "dan_active_key: ${x}", ( "x", has_authorization( dan_auth.active.key_auths.begin()->first ) ) );
+    ilog( "dan_owner_key: ${x}", ( "x", has_authorization( dan_auth.owner.key_auths.begin()->first ) ) );
+  };
+
+  ilog( "" );
+  ilog( "check authorization when alice@posting is required" );
+  required_authorities.required_posting.insert( "alice" );
+  check_authorizations();
+  required_authorities.required_posting.clear();
+  ilog( "" );
+  ilog( "check authorization when alice@active is required" );
+  required_authorities.required_active.insert( "alice" );
+  check_authorizations();
+  required_authorities.required_active.clear();
+  ilog( "" );
+  ilog( "check authorization when alice@owner is required" );
+  required_authorities.required_owner.insert( "alice" );
+  check_authorizations();
+  required_authorities.required_owner.clear();
+
+#undef CREATE_ACCOUNT
+}
+
 BOOST_AUTO_TEST_SUITE_END()
