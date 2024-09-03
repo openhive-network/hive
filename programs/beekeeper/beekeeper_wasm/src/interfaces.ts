@@ -205,6 +205,17 @@ export interface IBeekeeperSession {
   getInfo(): IBeekeeperInfo;
 
   /**
+   * Checks if wallet with given name exists
+   *
+   * @param {string} name name of the wallet
+   *
+   * @returns {boolean} `true` if a wallet exists otherwise `false`
+   *
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  hasWallet(name: string): boolean;
+
+  /**
    * Lists all of the opened wallets
    *
    * @returns {Array<IBeekeeperWallet>} array of opened Beekeeper wallets (either unlocked or locked)
