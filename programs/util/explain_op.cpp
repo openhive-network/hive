@@ -361,4 +361,5 @@ int main()
       std::cerr << "Unknown exception" << '\n';
     }
   }
+  return 0;
 }
