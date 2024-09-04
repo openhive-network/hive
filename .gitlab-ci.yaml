@@ -534,7 +534,7 @@ deploy_beekeepy_wheel_to_gitlab:
   before_script:
     - !reference [.python_based, before_script]
     # beekeepy is installed from whl so beekeeper is included in package
-    - cd "$BEEKEEPY_DIR" && poetry install --no-root
+    - cd "$BEEKEEPY_DIR" && poetry install --only dev
     - pip install $(find "$CI_PROJECT_DIR/dist" -name *.whl)
 
 .beem_tests_base:
