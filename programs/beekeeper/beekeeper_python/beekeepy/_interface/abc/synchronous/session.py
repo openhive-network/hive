@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, TypeAlias, overload
 
 from helpy import ContextSync
 
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
 
+Password: TypeAlias = str
 
 class Session(ContextSync["Session"], ABC):
     @abstractmethod
@@ -22,7 +23,7 @@ class Session(ContextSync["Session"], ABC):
 
     @overload
     @abstractmethod
-    def create_wallet(self, *, name: str, password: None) -> tuple[UnlockedWallet, str]: ...
+    def create_wallet(self, *, name: str, password: None) -> tuple[UnlockedWallet, Password]: ...
 
     @abstractmethod
     def create_wallet(

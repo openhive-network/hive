@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from beekeepy._interface.validators import validate_wallet_name, validate_seconds, validate_public_keys
-from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
+from beekeepy._interface.abc.asynchronous.session import Password
 from beekeepy._interface.abc.asynchronous.session import Session as SessionInterface
 from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
@@ -41,6 +40,7 @@ class Session(SessionInterface):
 
     async def create_wallet(  # type: ignore[override]
         self, *, name: str, password: str | None = None
+    ) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, Password]:
         validate_wallet_name(wallet_name=name)
         with WalletWithSuchNameAlreadyExistsError(wallet_name=name), InvalidWalletError(wallet_name=name):
             create_result = await self.__beekeeper.api.create(wallet_name=name, password=password)
