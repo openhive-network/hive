@@ -7,8 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from beekeepy._handle import Beekeeper
-from beekeepy.settings import Settings
+from beekeepy import Beekeeper, Settings
 from helpy import KeyPair, wax
 
 import test_tools as tt

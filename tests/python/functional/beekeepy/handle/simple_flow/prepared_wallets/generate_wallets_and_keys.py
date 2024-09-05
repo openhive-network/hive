@@ -6,8 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+from beekeepy import Settings
 from beekeepy._handle import AsyncBeekeeper
-from beekeepy.settings import Settings
 
 import test_tools as tt
 from hive_local_tools.beekeeper.models import WalletInfoWithImportedAccounts

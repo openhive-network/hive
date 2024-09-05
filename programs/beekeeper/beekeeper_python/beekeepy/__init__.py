@@ -11,6 +11,7 @@ from beekeepy.beekeeper_factory import (
     beekeeper_remote_factory,
     close_already_running_beekeeper,
 )
+from beekeepy._interface.settings import Settings
 
 __all__ = [
     "beekeeper_factory",
@@ -22,4 +23,5 @@ __all__ = [
     "AsyncBeekeeper",
     "PackedBeekeeper",
     "PackedAsyncBeekeeper",
+    "Settings",
 ]

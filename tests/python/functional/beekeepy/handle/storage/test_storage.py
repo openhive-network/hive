@@ -5,9 +5,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from beekeepy._handle import Beekeeper
+from beekeepy import Beekeeper, Settings
 from beekeepy.exceptions import BeekeeperAlreadyRunningError
-from beekeepy.settings import Settings
 from helpy import HttpUrl
 
 import test_tools as tt

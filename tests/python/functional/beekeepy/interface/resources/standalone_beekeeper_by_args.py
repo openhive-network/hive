@@ -3,8 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from sys import argv
 
-from beekeepy import beekeeper_factory, close_already_running_beekeeper
-from beekeepy.settings import Settings
+from beekeepy import Settings, beekeeper_factory, close_already_running_beekeeper
 
 settings = Settings(working_directory=Path(argv[1]))
 

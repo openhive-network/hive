@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from beekeepy.settings import Settings
+    from beekeepy import Settings
     from loguru import Logger
 
     import test_tools as tt

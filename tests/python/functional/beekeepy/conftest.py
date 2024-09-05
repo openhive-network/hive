@@ -4,7 +4,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Iterator
 
 import pytest
-from beekeepy.settings import Settings
+from beekeepy import Settings
 from loguru import logger
 
 import test_tools as tt

@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import loguru
+from beekeepy import Settings
 from beekeepy._executable.beekeeper_executable import BeekeeperExecutable
-from beekeepy.settings import Settings
 
 if __name__ == "__main__":
     help_text = BeekeeperExecutable(settings=Settings(), logger=loguru.logger).get_help_text()

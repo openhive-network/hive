@@ -7,8 +7,8 @@ import helpy
 from beekeepy._executable import BeekeeperArguments, BeekeeperExecutable
 from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
+from beekeepy._interface.settings import Settings
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
-from beekeepy.settings import Settings
 from helpy import ContextAsync, ContextSync
 from helpy._communication.universal_notification_server import (
     UniversalNotificationServer,

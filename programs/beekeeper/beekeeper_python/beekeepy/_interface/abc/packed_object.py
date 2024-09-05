@@ -10,7 +10,7 @@ from beekeepy._interface.abc.synchronous.beekeeper import (
 )
 
 if TYPE_CHECKING:
-    from beekeepy.settings import Settings
+    from beekeepy._interface.settings import Settings
     from helpy import HttpUrl
 
 T_co = TypeVar("T_co", bound=SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface, covariant=True)
