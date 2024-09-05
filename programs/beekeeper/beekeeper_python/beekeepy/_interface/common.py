@@ -82,9 +82,9 @@ class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
     def _raise_wallet_is_locked_error(self, wallet_name: str) -> NoReturn:
         raise WalletIsLockedError(wallet_name=wallet_name)
 
-    async def _async_call_callback_if_locked(self, *, wallet_name: str) -> None:
+    async def _async_call_callback_if_locked(self, *, wallet_name: str, token: str) -> None:
         assert isinstance(self._beekeeper, AsyncRemoteBeekeeper), "invalid beekeeper type, require asynchronous"
-        wallets = (await self._beekeeper.api.list_wallets()).wallets
+        wallets = (await self._beekeeper.api.list_wallets(token=token)).wallets
         if self._is_wallet_locked(wallet_name=wallet_name, wallets=wallets):
             if self._last_lock_state is False:
                 wallet_names = [w.name for w in wallets if w.unlocked is False]
@@ -97,9 +97,9 @@ class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
                 )
             self._raise_wallet_is_locked_error(wallet_name=wallet_name)
 
-    def _sync_call_callback_if_locked(self, *, wallet_name: str) -> None:
+    def _sync_call_callback_if_locked(self, *, wallet_name: str, token: str) -> None:
         assert isinstance(self._beekeeper, SyncRemoteBeekeeper), "invalid beekeeper type, require synchronous"
-        wallets = self._beekeeper.api.list_wallets().wallets
+        wallets = self._beekeeper.api.list_wallets(token=token).wallets
         if self._is_wallet_locked(wallet_name=wallet_name, wallets=wallets):
             if self._last_lock_state is False:
                 wallet_names = [w.name for w in wallets if w.unlocked is False]
@@ -124,7 +124,7 @@ class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
             @wraps(wrapped_function)
             async def async_impl(*args: P.args, **kwrags: P.kwargs) -> ResultT:
                 this: WalletCommons[AsyncRemoteBeekeeper, AsyncWalletLocked] = args[0]  # type: ignore
-                await this._async_call_callback_if_locked(wallet_name=this.name)
+                await this._async_call_callback_if_locked(wallet_name=this.name, token=this.session_token)
                 return await wrapped_function(*args, **kwrags)  # type: ignore[no-any-return]
 
             return async_impl
@@ -132,7 +132,7 @@ class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
         @wraps(wrapped_function)
         def sync_impl(*args: P.args, **kwrags: P.kwargs) -> ResultT:
             this: WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked] = args[0]  # type: ignore
-            this._sync_call_callback_if_locked(wallet_name=this.name)
+            this._sync_call_callback_if_locked(wallet_name=this.name, token=this.session_token)
             return wrapped_function(*args, **kwrags)  # type: ignore[return-value]
 
         return sync_impl
