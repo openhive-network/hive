@@ -25,7 +25,6 @@ def test_api_remove_key(
         # ACT
         beekeeper.api.remove_key(
             wallet_name=wallet.name,
-            password=wallet.password,
             public_key=account.public_key,
         )
 
@@ -42,7 +41,6 @@ def test_api_remove_key_from_locked(beekeeper: Beekeeper, wallet: WalletInfo, ac
     with pytest.raises(RequestError, match=f"Wallet is locked: {wallet.name}"):
         beekeeper.api.remove_key(
             wallet_name=wallet.name,
-            password=wallet.password,
             public_key=account.public_key,
         )
 
@@ -56,7 +54,6 @@ def test_api_remove_key_from_closed(beekeeper: Beekeeper, wallet: WalletInfo, ac
     with pytest.raises(RequestError, match=f"Wallet not found: {wallet.name}"):
         beekeeper.api.remove_key(
             wallet_name=wallet.name,
-            password=wallet.password,
             public_key=account.public_key,
         )
 
@@ -78,7 +75,6 @@ def test_api_remove_key_simple_scenario(beekeeper: Beekeeper, setup_wallets: Wal
     # ACT
     beekeeper.api.remove_key(
         wallet_name=wallet.name,
-        password=wallet.password,
         public_key=key_to_remove.public_key,
     )
 

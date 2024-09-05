@@ -90,7 +90,6 @@ def test_remove_key(
     assert_keys((beekeeper.api.get_public_keys()).keys, [public_key])
     beekeeper.api.remove_key(
         wallet_name=wallet.name,
-        password=wallet.password,
         public_key=public_key,
     )
     assert_keys((beekeeper.api.get_public_keys()).keys)

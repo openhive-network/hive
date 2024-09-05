@@ -66,7 +66,6 @@ def test_api_sign_digest_with_deleted_key(beekeeper: Beekeeper, wallet: WalletIn
 
     beekeeper.api.remove_key(
         wallet_name=wallet.name,
-        password=wallet.password,
         public_key=PUBLIC_KEY,
     )
 

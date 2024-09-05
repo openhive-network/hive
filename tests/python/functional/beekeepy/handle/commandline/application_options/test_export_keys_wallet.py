@@ -6,31 +6,29 @@ from typing import TYPE_CHECKING, Final
 from beekeepy._handle import Beekeeper
 from helpy import KeyPair
 
-from schemas.fields.basic import PrivateKey, PublicKey
-
 if TYPE_CHECKING:
     from pathlib import Path
 
 PRIVATE_AND_PUBLIC_KEYS: Final[list[KeyPair]] = [
     KeyPair(
-        private_key=PrivateKey("5JqStPwQgnXBdyRDDxCDyjfC8oNjgJuZsBkT6MMz6FopydAebbC"),
-        public_key=PublicKey("STM5EjyFcCNidBSivAtTKvWWwWRNjakcRMB79QrbwMKprcTRBHtXz"),
+        private_key="5JqStPwQgnXBdyRDDxCDyjfC8oNjgJuZsBkT6MMz6FopydAebbC",
+        public_key="STM5EjyFcCNidBSivAtTKvWWwWRNjakcRMB79QrbwMKprcTRBHtXz",
     ),
     KeyPair(
-        private_key=PrivateKey("5J7m49WCKnRBTo1HyJisBinn8Lk3syYaXsrzdFmfDxkejHLwZ1m"),
-        public_key=PublicKey("STM5hjCkhcMKcXQMppa97XUbDR5dWC3c2K8h23P1ajEi2fT9YuagW"),
+        private_key="5J7m49WCKnRBTo1HyJisBinn8Lk3syYaXsrzdFmfDxkejHLwZ1m",
+        public_key="STM5hjCkhcMKcXQMppa97XUbDR5dWC3c2K8h23P1ajEi2fT9YuagW",
     ),
     KeyPair(
-        private_key=PrivateKey("5HwHC7y2WtCL18J9QMqX7awDe1GDsUTg7cfw734m2qFkdMQK92q"),
-        public_key=PublicKey("STM6jACfK3P5xYFJQvavCwz5M8KR5EW3TcmSesArj9LJVGAq85qor"),
+        private_key="5HwHC7y2WtCL18J9QMqX7awDe1GDsUTg7cfw734m2qFkdMQK92q",
+        public_key="STM6jACfK3P5xYFJQvavCwz5M8KR5EW3TcmSesArj9LJVGAq85qor",
     ),
     KeyPair(
-        private_key=PrivateKey("5Khrc9PX4S8wAUUmX4h2JpBgf4bhvPyFT5RQ6tGfVpKEudwpYjZ"),
-        public_key=PublicKey("STM77P1n96ojdXcKpd5BRUhVmk7qFTfM2q2UkWSKg63Xi7NKyK2Q1"),
+        private_key="5Khrc9PX4S8wAUUmX4h2JpBgf4bhvPyFT5RQ6tGfVpKEudwpYjZ",
+        public_key="STM77P1n96ojdXcKpd5BRUhVmk7qFTfM2q2UkWSKg63Xi7NKyK2Q1",
     ),
     KeyPair(
-        private_key=PrivateKey("5JowdvuiDxoeLhzoSEKK74TCiwTaUHvxtRH3fkbweVEJZEsQJoc"),
-        public_key=PublicKey("STM8RgQ3yexUZjcVGxQ2i3cKywwKwhxqzwtCHPQznGUYvQ15ZvahW"),
+        private_key="5JowdvuiDxoeLhzoSEKK74TCiwTaUHvxtRH3fkbweVEJZEsQJoc",
+        public_key="STM8RgQ3yexUZjcVGxQ2i3cKywwKwhxqzwtCHPQznGUYvQ15ZvahW",
     ),
 ]
 

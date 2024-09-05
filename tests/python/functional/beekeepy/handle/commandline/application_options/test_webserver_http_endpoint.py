@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 import requests
-from beekeepy import Beekeeper, Settings
+from beekeepy import Settings
+from beekeepy._handle import Beekeeper
 from helpy import HttpUrl
 
 from hive_local_tools.beekeeper.network import get_port

@@ -5,9 +5,11 @@ import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy import Beekeeper, Settings
+from beekeepy import Settings
+from beekeepy._handle import Beekeeper
 from helpy import KeyPair, wax
 
 import test_tools as tt
@@ -17,7 +19,9 @@ from hive_local_tools.beekeeper.generators import (
     generate_wallet_password,
 )
 from hive_local_tools.beekeeper.models import WalletInfo
-from schemas.fields.basic import PrivateKey
+
+if TYPE_CHECKING:
+    from schemas.fields.basic import PrivateKey
 
 
 @dataclass
@@ -42,7 +46,7 @@ class WalletInfoWithKeysToImport(WalletInfo):
             result.keys.append(
                 KeyPair(
                     public_key=wax_result,
-                    private_key=PrivateKey(private_key),
+                    private_key=private_key,
                 )
             )
         return result
@@ -210,7 +214,6 @@ def test_simple_flow(
             for keys in wallet.keys:
                 beekeeper.api.remove_key(
                     wallet_name=wallet.name,
-                    password=wallet.password,
                     public_key=keys.public_key,
                 )
         assert_keys_empty(beekeeper)
