@@ -1271,3 +1271,27 @@ colony_tests:
     - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
+
+.default_script: &default_script
+  - |
+    echo "This is the default script"
+    echo "Custom variable is: $MY_TEST_VARIABLE"
+    echo "Custom variable2 is: $MY_TEST_VARIABLE2"
+    echo "Custom variable3 is: $MY_TEST_VARIABLE3"
+
+test_job:
+  stage: test
+  variables:
+    MY_TEST_VARIABLE: "This is a test variable"
+  script:
+    - |
+      export MY_TEST_VARIABLE2=2  # Eksportowanie zmiennej
+      export MY_TEST_VARIABLE3=3  # Eksportowanie zmiennej
+      # Uruchomienie skryptu z anchor
+      echo "This is the default script"
+      echo "Custom variable is: $MY_TEST_VARIABLE"
+      echo "Custom variable2 is: $MY_TEST_VARIABLE2"
+      echo "Custom variable3 is: $MY_TEST_VARIABLE3"
+    - echo "This is an additional script in the test job"
+  tags:
+    - public-runner-docker
