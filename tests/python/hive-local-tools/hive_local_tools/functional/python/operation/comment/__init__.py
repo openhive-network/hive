@@ -16,7 +16,6 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.fields.assets.hive import AssetHiveHF26
 from schemas.jsonrpc import get_response_model
 from schemas.operations import (
     ClaimRewardBalanceOperationLegacy,
@@ -77,24 +76,22 @@ def get_reward_operations(node, mode: Literal["author", "curation", "comment_ben
 
 def convert_hbd_to_hive(node: tt.AnyNode, hbd: tt.Asset.HbdT) -> tt.Asset.HiveT:
     hbd_to_hive_feed = node.api.database.get_current_price_feed()
-    calculated_hive = wax.calculate_hbd_to_hive(
-        tt.Asset.Hbd(int(hbd.amount)),
-        tt.Asset.Hbd(int(hbd_to_hive_feed.base.amount)),
-        tt.Asset.Hive(int(hbd_to_hive_feed.quote.amount)),
+    return wax.calculate_hbd_to_hive(
+        hbd=hbd,
+        base=hbd_to_hive_feed.base,
+        quote=hbd_to_hive_feed.quote,
     )
-    return AssetHiveHF26(amount=calculated_hive.amount, precision=calculated_hive.precision, nai=calculated_hive.nai)
 
 
 def convert_vesting_to_hive(node: tt.AnyNode, vesting: tt.Asset.VestT) -> tt.Asset.HiveT:
     gdgp = node.api.database.get_dynamic_global_properties()
     total_vesting_fund_hive = gdgp.total_vesting_fund_hive
     total_vesting_shares = gdgp.total_vesting_shares
-    calculated_hp = wax.calculate_vests_to_hp(
-        tt.Asset.Vest(int(vesting.amount)),
-        tt.Asset.Hive(int(total_vesting_fund_hive.amount)),
-        tt.Asset.Vest(int(total_vesting_shares.amount)),
+    return wax.calculate_vests_to_hp(
+        vesting,
+        total_vesting_fund_hive,
+        total_vesting_shares,
     )
-    return AssetHiveHF26(amount=calculated_hp.amount, precision=calculated_hp.precision, nai=calculated_hp.nai)
 
 
 class Comment:
