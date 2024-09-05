@@ -63,6 +63,17 @@ def _is_running(pid: int) -> bool:
     return True
 
 
+def _wait_for_pid_to_die(pid: int, *, timeout_secs: float = 5.0) -> None:
+    sleep_time = min(1.0, timeout_secs)
+    already_waited = 0.0
+    while not _is_running(pid):
+        if timeout_secs - already_waited <= 0:
+            raise TimeoutError(f"Process with pid {pid} didn't die in {timeout_secs} seconds.")
+
+        time.sleep(sleep_time)
+        already_waited += sleep_time
+
+
 PackedBeekeeper = Packed[SynchronousBeekeeperInterface]
 PackedAsyncBeekeeper = Packed[AsynchronousBeekeeperInterface]
 
@@ -156,32 +167,25 @@ def async_beekeeper_remote_factory(*, url_or_settings: HttpUrl | Settings) -> As
 
 def close_already_running_beekeeper(*, working_directory: Path) -> None:
     """If beekeeper has been started and explicitly not closed, this function allows to close it basing on workdir."""
-
-    def wait_for_pid_to_die(pid: int, *, timeout_secs: float = 5.0) -> None:
-        sleep_time = min(1.0, timeout_secs)
-        already_waited = 0.0
-        while not _is_running(pid):
-            if timeout_secs - already_waited <= 0:
-                raise TimeoutError(f"Process with pid {pid} didn't die in {timeout_secs} seconds.")
-
-            time.sleep(sleep_time)
-            already_waited += sleep_time
-
     try:
         with SynchronousBeekeeperHandle(settings=Settings(working_directory=working_directory), logger=_get_logger()):
-            pass
+            """
+            While trying to start new beekeeper instance in same directory,
+            there will be send notification with informations about already existing process.
+            """
     except BeekeeperAlreadyRunningError as err:
-        sig = signal.SIGINT
-        pid = err.pid
-        os.kill(pid, sig)
+        sig = signal.SIGINT  # signal type which will be used to kill beekeeper
+        pid = err.pid  # PID extracted from error, which comes from notification
+        os.kill(pid, sig)   # try to kill it
 
         try:
-            wait_for_pid_to_die(pid, timeout_secs=10)
+            _wait_for_pid_to_die(pid, timeout_secs=10)  # check is process actually dead
             logger.debug("Process was closed with SIGINT")
         except TimeoutError:
-            sig = signal.SIGKILL
+            sig = signal.SIGKILL  # in case of no reaction to ^C, kill process hard way
             os.kill(pid, sig)
-            wait_for_pid_to_die(pid)
+            _wait_for_pid_to_die(pid)  # confirm is hard way take effect
             logger.debug("Process was force-closed with SIGKILL")
     else:
-        logger.debug("BeekeeperAlreadyRunningError did not raise, is other beekeeper running?")
+        # If notification did not arrived, report it to user
+        logger.warning("BeekeeperAlreadyRunningError did not raise, is other beekeeper running?")
