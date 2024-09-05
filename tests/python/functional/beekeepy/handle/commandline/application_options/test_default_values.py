@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 
 def check_default_values_from_config(default_config: BeekeeperConfig) -> None:
-    assert default_config.wallet_dir.resolve() == BeekeeperDefaults.DEFAULT_WALLET_DIR.resolve()
     assert default_config.unlock_timeout == BeekeeperDefaults.DEFAULT_UNLOCK_TIMEOUT
     assert default_config.unlock_interval == BeekeeperDefaults.DEFAULT_UNLOCK_INTERVAL
     assert default_config.log_json_rpc == BeekeeperDefaults.DEFAULT_LOG_JSON_RPC

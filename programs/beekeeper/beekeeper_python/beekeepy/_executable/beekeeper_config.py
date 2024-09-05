@@ -10,7 +10,7 @@ from helpy._interfaces.config import Config
 
 
 def http_webserver_default() -> HttpUrl:
-    return HttpUrl("0.0.0.0:0", protocol="http")
+    return HttpUrl("0.0.0.0:0")
 
 
 class BeekeeperConfig(Config):

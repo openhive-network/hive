@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 import helpy
-from beekeepy._executable import BeekeeperExecutable
+from beekeepy._executable import BeekeeperArguments, BeekeeperExecutable
 from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
@@ -158,14 +158,11 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
         assert settings.http_endpoint is not None
         self.__exec.run(
             blocking=False,
-            arguments=[
-                "--notifications-endpoint",
-                settings.notification_endpoint.as_string(with_protocol=False),
-                "--webserver-http-endpoint",
-                settings.http_endpoint.as_string(with_protocol=False),
-                "-d",
-                settings.working_directory.as_posix(),
-            ],
+            arguments=BeekeeperArguments(
+                notifications_endpoint=settings.notification_endpoint,
+                webserver_http_endpoint=settings.http_endpoint,
+                data_dir=settings.working_directory
+            ),
             propagate_sigint=settings.propagate_sigint,
         )
 

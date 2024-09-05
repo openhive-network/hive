@@ -7,8 +7,8 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
+from beekeepy._executable.arguments.arguments import Arguments
 from beekeepy._executable.streams import StreamsHolder
-from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from helpy._interfaces.config import Config
 from helpy._interfaces.context import ContextSync
 
@@ -37,9 +37,10 @@ class AutoCloser(ContextSync[None]):
 
 
 ConfigT = TypeVar("ConfigT", bound=Config)
+ArgumentT = TypeVar("ArgumentT", bound=Arguments)
 
 
-class Executable(Closeable, Generic[ConfigT]):
+class Executable(Closeable, Generic[ConfigT, ArgumentT]):
     def __init__(self, executable_path: Path, working_directory: Path, logger: Logger) -> None:
         if working_directory.exists():
             assert working_directory.is_dir(), "Given path is not pointing to directory"
@@ -53,6 +54,7 @@ class Executable(Closeable, Generic[ConfigT]):
         self.__files = StreamsHolder()
         self.__files.set_paths_for_dir(self.__working_directory)
         self.__config: ConfigT = self._construct_config()
+        self.__arguments: ArgumentT = self._construct_arguments()
 
     @property
     def pid(self) -> int:
@@ -71,7 +73,7 @@ class Executable(Closeable, Generic[ConfigT]):
         self,
         *,
         blocking: bool,
-        arguments: list[str] | None = None,
+        arguments: ArgumentT | None = None,
         environ: dict[str, str] | None = None,
         propagate_sigint: bool = True,
     ) -> AutoCloser:
@@ -102,20 +104,20 @@ class Executable(Closeable, Generic[ConfigT]):
         return AutoCloser(self)
 
     def run_and_get_output(
-        self, arguments: list[str], environ: dict[str, str] | None = None, timeout: float | None = None
+        self, arguments: ArgumentT, environ: dict[str, str] | None = None, timeout: float | None = None
     ) -> str:
         command, environment_variables = self.__prepare(arguments=arguments, environ=environ)
         result = subprocess.check_output(command, stderr=subprocess.STDOUT, env=environment_variables, timeout=timeout)
         return result.decode().strip()
 
     def __prepare(
-        self, arguments: list[str] | None, environ: dict[str, str] | None
+        self, arguments: ArgumentT | None, environ: dict[str, str] | None
     ) -> tuple[list[str], dict[str, str]]:
-        arguments = arguments or []
+        arguments = arguments or self.__arguments
         environ = environ or {}
 
         self.__working_directory.mkdir(exist_ok=True)
-        command: list[str] = [self.__executable_path.as_posix(), *arguments]
+        command: list[str] = [self.__executable_path.as_posix(), *(arguments.process())]
         self._logger.debug(
             f"Starting {self.__executable_path.name} in {self.working_directory} with arguments: " + " ".join(command)
         )
@@ -182,13 +184,17 @@ class Executable(Closeable, Generic[ConfigT]):
     @abstractmethod
     def _construct_config(self) -> ConfigT: ...
 
+    @abstractmethod
+    def _construct_arguments(self) -> ArgumentT: ...
+
     def generate_default_config(self) -> ConfigT:
-        path_to_config = self.working_directory / (Config.DEFAULT_FILE_NAME + ".tmp")
-        self.run(blocking=True, arguments=["--dump-config", "-c", path_to_config.as_posix()])
-        return self.config.load(path_to_config)
+        path_to_config = self.working_directory / (Config.DEFAULT_FILE_NAME)
+        self.run(blocking=True, arguments=self.__arguments.just_dump_config())
+        temp_path_to_file = path_to_config.rename(Config.DEFAULT_FILE_NAME + ".tmp")
+        return self.config.load(temp_path_to_file)
 
     def get_help_text(self) -> str:
-        return self.run_and_get_output(arguments=["--help"])
+        return self.run_and_get_output(arguments=self.__arguments.just_get_help())
 
     def version(self) -> str:
-        return self.run_and_get_output(arguments=["--version"])
+        return self.run_and_get_output(arguments=self.__arguments.just_get_version())
