@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from beekeepy._executable.arguments.arguments import Arguments
 from beekeepy._executable.streams import StreamsHolder
+from beekeepy._interface.exceptions import TimeoutReachWhileCloseError
 from helpy._interfaces.config import Config
 from helpy._interfaces.context import ContextSync
 
@@ -129,11 +130,7 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
         return command, environment_variables
 
     def __raise_warning_if_timeout_on_close(self) -> None:
-        warnings.warn(
-            # break because of formatting
-            "Process was force-closed with SIGKILL, because didn't close before timeout",
-            stacklevel=2,
-        )
+        raise TimeoutReachWhileCloseError()
 
     def detach(self) -> None:
         if self.__process is None:

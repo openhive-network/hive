@@ -138,7 +138,10 @@ class NotPositiveTimeError(BeekeepyError):
     def __init__(self, time: int) -> None:
         super().__init__(f"Given time value is not positive: `{time}`.")
 
-# class InvalidWalletNameError(BeekeepyError):
-class InvalidWalletNameError(Exception):
+class InvalidWalletNameError(BeekeepyError):
     def __init__(self, wallet_name: str) -> None:
         super().__init__(f"Given wallet name is invalid: `{wallet_name}`. Can be only alphanumeric or contain `._-@` charachters.")
+
+class TimeoutReachWhileCloseError(BeekeepyError):
+    def __init__(self) -> None:
+        super().__init__("Process was force-closed with SIGKILL, because didn't close before timeout")
