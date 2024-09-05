@@ -30,7 +30,13 @@ if TYPE_CHECKING:
 
 
 class Session(SessionInterface):
-    def __init__(self, *args: Any, beekeeper: AsynchronousRemoteBeekeeperHandle, use_session_token: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        beekeeper: AsynchronousRemoteBeekeeperHandle,
+        use_session_token: str | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = beekeeper
         self.__session_token = use_session_token or ""
@@ -75,9 +81,7 @@ class Session(SessionInterface):
 
     @property
     async def public_keys(self) -> list[PublicKey]:
-        return [
-            item.public_key for item in (await self.__beekeeper.api.get_public_keys(token=await self.token)).keys
-        ]
+        return [item.public_key for item in (await self.__beekeeper.api.get_public_keys(token=await self.token)).keys]
 
     @property
     async def token(self) -> str:
@@ -87,17 +91,21 @@ class Session(SessionInterface):
 
     @property
     async def wallets(self) -> list[WalletInterface]:
-        return await asyncio.gather(*[
-            self.__construct_wallet(name=wallet.name)
-            for wallet in (await self.__beekeeper.api.list_wallets(token=await self.token)).wallets
-        ])
+        return await asyncio.gather(
+            *[
+                self.__construct_wallet(name=wallet.name)
+                for wallet in (await self.__beekeeper.api.list_wallets(token=await self.token)).wallets
+            ]
+        )
 
     @property
     async def wallets_created(self) -> list[WalletInterface]:
-        return await asyncio.gather(*[
-            self.__construct_wallet(name=wallet.name)
-            for wallet in (await self.__beekeeper.api.list_created_wallets(token=await self.token)).wallets
-        ])
+        return await asyncio.gather(
+            *[
+                self.__construct_wallet(name=wallet.name)
+                for wallet in (await self.__beekeeper.api.list_created_wallets(token=await self.token)).wallets
+            ]
+        )
 
     async def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
         return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token)

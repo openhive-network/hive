@@ -39,27 +39,32 @@ __all__ = [
     "AsyncBeekeeper",
     "run_if_possible",
     "close_if_possible",
-    "detach_if_possible"
+    "detach_if_possible",
 ]
 
 
-def run_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+def run_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper) -> None:
     if isinstance(handle, Beekeeper | AsyncBeekeeper):
         handle.run()
 
-def close_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+
+def close_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper) -> None:
     if isinstance(handle, Beekeeper | AsyncBeekeeper):
         handle.close()
 
-def detach_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+
+def detach_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper) -> None:
     if isinstance(handle, Beekeeper | AsyncBeekeeper):
         handle.detach()
+
 
 class SyncRemoteBeekeeper(helpy.Beekeeper):
     pass
 
+
 class AsyncRemoteBeekeeper(helpy.AsyncBeekeeper):
     pass
+
 
 class BeekeeperCommon(BeekeeperNotificationCallbacks):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
@@ -147,7 +152,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
             arguments=BeekeeperArguments(
                 notifications_endpoint=settings.notification_endpoint,
                 webserver_http_endpoint=settings.http_endpoint,
-                data_dir=settings.working_directory
+                data_dir=settings.working_directory,
             ),
             propagate_sigint=settings.propagate_sigint,
         )
@@ -155,7 +160,6 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
     def detach(self) -> None:
         self.__exec.detach()
         self.__close_notification_server()
-
 
     def close(self) -> None:
         self._close_application()
@@ -189,7 +193,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
 
 class Beekeeper(BeekeeperCommon, SyncRemoteBeekeeper, ContextSync["Beekeeper"]):
     def run(self) -> None:
-        self._clear_session_token()
+        self._clear_session()
         with self.update_settings() as settings:
             self._run(settings=cast(Settings, settings))
         self.http_endpoint = self._get_http_endpoint_from_event()
@@ -212,7 +216,7 @@ class Beekeeper(BeekeeperCommon, SyncRemoteBeekeeper, ContextSync["Beekeeper"]):
 
 class AsyncBeekeeper(BeekeeperCommon, AsyncRemoteBeekeeper, ContextAsync["AsyncBeekeeper"]):
     def run(self) -> None:
-        self._clear_session_token()
+        self._clear_session()
         with self.update_settings() as settings:
             self._run(settings=cast(Settings, settings))
         self.http_endpoint = self._get_http_endpoint_from_event()

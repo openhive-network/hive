@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 def _get_logger() -> Logger:
     return logger
 
+
 def _is_running(pid: int) -> bool:
     """
     Check whether pid exists in the current process table.
@@ -72,19 +73,27 @@ def _prepare_settings_for_packing(settings: HelpySettings) -> Settings:
         settings.notification_endpoint = None
     return settings
 
-def _use_existing_session_token(settings: Settings, handle: SynchronousRemoteBeekeeperHandle | AsynchronousRemoteBeekeeperHandle):
+
+def _use_existing_session_token(
+    settings: Settings, handle: SynchronousRemoteBeekeeperHandle | AsynchronousRemoteBeekeeperHandle
+) -> None:
     if settings.use_existing_session is not None:
         handle.set_session_token(settings.use_existing_session)
 
+
 class _SynchronousBeekeeperImpl(SynchronousBeekeeper):
     def pack(self) -> PackedBeekeeper:
-        return Packed(settings=_prepare_settings_for_packing(self._get_instance().settings), unpack_factory=beekeeper_remote_factory)
+        return Packed(
+            settings=_prepare_settings_for_packing(self._get_instance().settings),
+            unpack_factory=beekeeper_remote_factory,
+        )
 
 
 class _AsynchronousBeekeeperImpl(AsynchronousBeekeeper):
     def pack(self) -> PackedAsyncBeekeeper:
         return Packed(
-            settings=_prepare_settings_for_packing(self._get_instance().settings), unpack_factory=async_beekeeper_remote_factory
+            settings=_prepare_settings_for_packing(self._get_instance().settings),
+            unpack_factory=async_beekeeper_remote_factory,
         )
 
 
@@ -176,4 +185,3 @@ def close_already_running_beekeeper(*, working_directory: Path) -> None:
             logger.debug("Process was force-closed with SIGKILL")
     else:
         logger.debug("BeekeeperAlreadyRunningError did not raise, is other beekeeper running?")
-

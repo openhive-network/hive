@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from beekeepy._interface.common import ContainsWalletName
 from helpy import ContextAsync
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
 

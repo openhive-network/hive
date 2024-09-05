@@ -20,6 +20,7 @@ class BeekeeperArgumentsDefaults:
     DEFAULT_WEBSERVER_THREAD_POOL_SIZE: ClassVar[int] = 32
     DEFAULT_WEBSERVER_HTTP_ENDPOINT: ClassVar[HttpUrl | None] = None
 
+
 @dataclass
 class ExportKeysWalletParams:
     wallet_name: str

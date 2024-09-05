@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 Password: TypeAlias = str
 
+
 class Session(ContextSync["Session"], ABC):
     @abstractmethod
     def get_info(self) -> GetInfo: ...

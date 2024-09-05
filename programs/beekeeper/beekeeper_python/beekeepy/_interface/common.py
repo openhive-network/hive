@@ -113,7 +113,7 @@ class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
 
     @overload
     @classmethod
-    def check_wallet(cls, wrapped_function: Callable[P, Awaitable[ResultT]]) -> Callable[P, Awaitable[ResultT]]: ...
+    def check_wallet(cls, wrapped_function: Callable[P, Awaitable[ResultT]]) -> Callable[P, Awaitable[ResultT]]: ...  # type: ignore[misc]
 
     @classmethod  # type: ignore[misc]
     def check_wallet(

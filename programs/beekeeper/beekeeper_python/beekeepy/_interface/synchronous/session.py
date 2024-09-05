@@ -29,7 +29,9 @@ if TYPE_CHECKING:
 
 
 class Session(SessionInterface):
-    def __init__(self, *args: Any, beekeeper: SyncRemoteBeekeeper, use_session_token: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, *args: Any, beekeeper: SyncRemoteBeekeeper, use_session_token: str | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = beekeeper
         self.__session_token = use_session_token or ""
@@ -66,9 +68,7 @@ class Session(SessionInterface):
 
     def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
         validate_public_keys(key=key)
-        return self.__beekeeper.api.sign_digest(
-            sig_digest=sig_digest, public_key=key, token=self.token
-        ).signature
+        return self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, token=self.token).signature
 
     @property
     def token(self) -> str:

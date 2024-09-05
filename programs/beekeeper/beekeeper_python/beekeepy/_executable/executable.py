@@ -99,7 +99,9 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
             env=environment_variables,
             stdout=self.__files.stdout.open_stream(),
             stderr=self.__files.stderr.open_stream(),
-            preexec_fn=(os.setpgrp if not propagate_sigint else None),  # noqa: PLW1509 create new process group, so signals won't be passed to child process
+            preexec_fn=(  # noqa: PLW1509
+                os.setpgrp if not propagate_sigint else None
+            ),  # create new process group, so signals won't be passed to child process
         )
 
         return AutoCloser(self)
@@ -130,7 +132,7 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
         return command, environment_variables
 
     def __raise_warning_if_timeout_on_close(self) -> None:
-        raise TimeoutReachWhileCloseError()
+        raise TimeoutReachWhileCloseError
 
     def detach(self) -> None:
         if self.__process is None:

@@ -16,6 +16,7 @@ from beekeepy._interface.exceptions import (
     InvalidPublicKeyError,
     MissingSTMPrefixError,
     RemovingNotExistingKeyError,
+    UnknownDecisionPathError,
 )
 from beekeepy._interface.validators import validate_private_keys, validate_public_keys
 from helpy import wax
@@ -74,6 +75,7 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
             return self._beekeeper.api.import_key(
                 wallet_name=self.name, wif_key=private_key, token=self.session_token
             ).public_key
+        raise UnknownDecisionPathError
 
     @wallet_unlocked
     def remove_key(self, *, key: str, confirmation_password: str) -> None:
@@ -96,6 +98,7 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
             return self._beekeeper.api.sign_digest(
                 sig_digest=sig_digest, public_key=key, wallet_name=self.name, token=self.session_token
             ).signature
+        raise UnknownDecisionPathError
 
     @wallet_unlocked
     def has_matching_private_key(self, *, key: str) -> bool:

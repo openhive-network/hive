@@ -37,8 +37,7 @@ class Arguments(PreconfiguredBaseModel, ABC):
         raise TypeError("Invalid type")
 
     @abstractmethod
-    def _convert_member_value_to_string_default(self, member_value: Any) -> str | Any:
-        ...
+    def _convert_member_value_to_string_default(self, member_value: Any) -> str | Any: ...
 
     def __prepare_arguments(self, pattern: str) -> list[str]:
         data = self.dict(by_alias=True, exclude_none=True, exclude_unset=True, exclude_defaults=True)
@@ -54,7 +53,7 @@ class Arguments(PreconfiguredBaseModel, ABC):
 
     @classmethod
     def just_get_help(cls) -> Self:
-        return cls(help=True)
+        return cls(help_=True)
 
     @classmethod
     def just_get_version(cls) -> Self:
@@ -63,4 +62,3 @@ class Arguments(PreconfiguredBaseModel, ABC):
     @classmethod
     def just_dump_config(cls) -> Self:
         return cls(dump_config=True)
-
