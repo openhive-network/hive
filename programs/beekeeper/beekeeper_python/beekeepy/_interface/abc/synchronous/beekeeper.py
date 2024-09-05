@@ -14,6 +14,10 @@ class Beekeeper(ContextSync["Beekeeper"], ABC):
     @abstractmethod
     def create_session(self, *, salt: str | None = None) -> Session: ...
 
+    @property
+    @abstractmethod
+    def session(self) -> Session: ...
+
     def _enter(self) -> Beekeeper:
         return self
 

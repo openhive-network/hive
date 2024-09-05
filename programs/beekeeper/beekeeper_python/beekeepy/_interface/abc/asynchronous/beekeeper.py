@@ -14,6 +14,10 @@ class Beekeeper(ContextAsync["Beekeeper"], ABC):
     @abstractmethod
     async def create_session(self, *, salt: str | None = None) -> Session: ...
 
+    @property
+    @abstractmethod
+    async def session(self) -> Session: ...
+
     async def _aenter(self) -> Beekeeper:
         return self
 

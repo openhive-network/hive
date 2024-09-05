@@ -30,7 +30,10 @@ if TYPE_CHECKING:
 class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterface):
     @property
     def public_keys(self) -> list[PublicKey]:
-        return [key.public_key for key in self._beekeeper.api.get_public_keys(wallet_name=self.name).keys]
+        return [
+            key.public_key
+            for key in self._beekeeper.api.get_public_keys(wallet_name=self.name, token=self.session_token).keys
+        ]
 
     @property
     def unlocked(self) -> UnlockedWallet | None:
@@ -40,11 +43,11 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterfa
 
     def unlock(self, password: str) -> UnlockedWallet:
         if not self.__is_unlocked():
-            self._beekeeper.api.unlock(wallet_name=self.name, password=password)
+            self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
         return self.__construct_unlocked_wallet()
 
     def __is_unlocked(self) -> bool:
-        for wallet in self._beekeeper.api.list_wallets().wallets:
+        for wallet in self._beekeeper.api.list_wallets(token=self.session_token).wallets:
             if wallet.name == self.name:
                 self._last_lock_state = wallet.unlocked
                 return self._last_lock_state
@@ -52,7 +55,7 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterfa
         return self._last_lock_state
 
     def __construct_unlocked_wallet(self) -> UnlockedWallet:
-        wallet = UnlockedWallet(name=self.name, beekeeper=self._beekeeper)
+        wallet = UnlockedWallet(name=self.name, beekeeper=self._beekeeper, session_token=self.session_token)
         wallet._last_lock_state = False
         return wallet
 
@@ -68,29 +71,39 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
     def import_key(self, *, private_key: str) -> PublicKey:
         validate_private_keys(private_key=private_key)
         with InvalidPrivateKeyError(wif=private_key):
-            return self._beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
+            return self._beekeeper.api.import_key(
+                wallet_name=self.name, wif_key=private_key, token=self.session_token
+            ).public_key
 
     @wallet_unlocked
     def remove_key(self, *, key: str, confirmation_password: str) -> None:
         validate_public_keys(key=key)
-        with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
-            self._beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
+        with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(
+            public_key=key
+        ):
+            self._beekeeper.api.remove_key(
+                wallet_name=self.name, password=confirmation_password, public_key=key, token=self.session_token
+            )
 
     @wallet_unlocked
     def lock(self) -> None:
-        self._beekeeper.api.lock(wallet_name=self.name)
+        self._beekeeper.api.lock(wallet_name=self.name, token=self.session_token)
 
     @wallet_unlocked
     def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
         validate_public_keys(key=key)
         with MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
-            return self._beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, wallet_name=self.name).signature
+            return self._beekeeper.api.sign_digest(
+                sig_digest=sig_digest, public_key=key, wallet_name=self.name, token=self.session_token
+            ).signature
 
     @wallet_unlocked
     def has_matching_private_key(self, *, key: str) -> bool:
         validate_public_keys(key=key)
-        return self._beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=key).exists
+        return self._beekeeper.api.has_matching_private_key(
+            wallet_name=self.name, public_key=key, token=self.session_token
+        ).exists
 
     @property
     def lock_time(self) -> datetime:
-        return self._beekeeper.api.get_info().timeout_time
+        return self._beekeeper.api.get_info(token=self.session_token).timeout_time

@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 ResultT = TypeVar("ResultT")
 BeekeeperT = TypeVar("BeekeeperT", bound=SyncRemoteBeekeeper | AsyncRemoteBeekeeper)
-
 CallbackT = TypeVar("CallbackT", bound=AsyncWalletLocked | SyncWalletLocked)
 
 
@@ -29,12 +28,13 @@ class ContainsWalletName(ABC):
 
 
 class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
-    def __init__(self, *args: Any, name: str, beekeeper: BeekeeperT, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, name: str, beekeeper: BeekeeperT, session_token: str, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__name = name
         self.__beekeeper = beekeeper
         self.__last_check_is_locked = True
         self.__wallet_close_callbacks: list[CallbackT] = []
+        self.session_token = session_token
 
     def register_wallet_close_callback(self, callback: CallbackT) -> None:
         self._wallet_close_callbacks.append(callback)

@@ -21,6 +21,10 @@ class Beekeeper(BeekeeperInterface):
     async def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
         return Session(beekeeper=self._get_instance())
 
+    @property
+    async def session(self) -> SessionInterface:
+        return Session(beekeeper=self._get_instance(), use_session_token=(await self._get_instance().session).token)
+
     def _get_instance(self) -> AsyncRemoteBeekeeper:
         return self.__instance
 

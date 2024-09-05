@@ -72,6 +72,9 @@ def _prepare_settings_for_packing(settings: HelpySettings) -> Settings:
         settings.notification_endpoint = None
     return settings
 
+def _use_existing_session_token(settings: Settings, handle: SynchronousRemoteBeekeeperHandle | AsynchronousRemoteBeekeeperHandle):
+    if settings.use_existing_session is not None:
+        handle.set_session_token(settings.use_existing_session)
 
 class _SynchronousBeekeeperImpl(SynchronousBeekeeper):
     def pack(self) -> PackedBeekeeper:
@@ -94,6 +97,7 @@ def _beekeeper_factory_impl(
 ) -> SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface:
     settings = settings or Settings()
     beekeeper = handle_t(settings=settings, logger=_get_logger())
+    _use_existing_session_token(settings, beekeeper)
     try:
         run_if_possible(beekeeper)
     except BeekeeperAlreadyRunningError as err:
@@ -105,11 +109,11 @@ def _beekeeper_factory_impl(
 def _beekeeper_remote_factory_impl(
     impl_t: type[_SynchronousBeekeeperImpl | _AsynchronousBeekeeperImpl],
     handle_t: type[SynchronousRemoteBeekeeperHandle | AsynchronousRemoteBeekeeperHandle],
-    url_or_settings: HttpUrl | Settings | None = None,
+    url_or_settings: HttpUrl | Settings,
 ) -> SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface:
-    if isinstance(url_or_settings, Url):
-        url_or_settings = Settings(http_endpoint=url_or_settings)
+    settings = Settings(http_endpoint=url_or_settings) if isinstance(url_or_settings, Url) else url_or_settings
     handle = handle_t(settings=url_or_settings)  # type: ignore[arg-type]
+    _use_existing_session_token(settings, handle)
     run_if_possible(handle)
     return impl_t(handle=handle)  # type: ignore
 

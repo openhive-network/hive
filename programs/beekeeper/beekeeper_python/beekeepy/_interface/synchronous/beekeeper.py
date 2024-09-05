@@ -21,6 +21,10 @@ class Beekeeper(BeekeeperInterface):
     def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
         return Session(beekeeper=self._get_instance())
 
+    @property
+    def session(self) -> SessionInterface:
+        return Session(beekeeper=self._get_instance(), use_session_token=self._get_instance().session.token)
+
     def _get_instance(self) -> SyncRemoteBeekeeper:
         return self.__instance
 
