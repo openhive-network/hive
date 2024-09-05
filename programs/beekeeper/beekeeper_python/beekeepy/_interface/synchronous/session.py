@@ -79,17 +79,9 @@ class Session(SessionInterface):
         return [self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_wallets().wallets]
 
     @property
-    def created_wallets(self) -> list[WalletInterface]:
+    def wallets_created(self) -> list[WalletInterface]:
         return [
             self.__construct_wallet(name=wallet.name) for wallet in self.__beekeeper.api.list_created_wallets().wallets
-        ]
-
-    @property
-    def opened_wallets(self) -> list[WalletInterface]:
-        return [
-            self.__construct_wallet(name=wallet.name)
-            for wallet in self.__beekeeper.api.list_wallets().wallets
-            if wallet.unlocked
         ]
 
     @property
