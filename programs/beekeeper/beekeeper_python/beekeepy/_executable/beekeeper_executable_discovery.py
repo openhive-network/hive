@@ -6,11 +6,15 @@ from typing import Final
 BEEKEEPER_BINARY_NAME: Final[str] = "beekeeper"
 
 
-def get_beekeeper_binary_path() -> Path:
+def get_root_package_directory() -> Path:
     me = Path(__file__).absolute()
     _process_dir = me.parent
-    main_package_dir = _process_dir.parent
-    glob_results = list(main_package_dir.glob(BEEKEEPER_BINARY_NAME))
+    return _process_dir.parent
+
+
+def get_beekeeper_binary_path() -> Path:
+    root_package_dir = get_root_package_directory()
+    glob_results = list(root_package_dir.glob(BEEKEEPER_BINARY_NAME))
     found_beekeeper_executable = len(glob_results)
     assert (
         found_beekeeper_executable == 1
