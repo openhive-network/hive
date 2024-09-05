@@ -124,10 +124,6 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
 
         environment_variables = dict(os.environ)
         environment_variables.update(environ)
-
-        if self.__files.requires_backup():
-            self.__files.backup()
-
         self.config.save(self.working_directory)
 
         return command, environment_variables

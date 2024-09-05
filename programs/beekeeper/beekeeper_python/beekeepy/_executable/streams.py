@@ -13,27 +13,25 @@ if TYPE_CHECKING:
 @dataclass
 class StreamRepresentation(ContextSync[TextIO]):
     filename: str
-    path: Path | None = None
+    dirpath: Path | None = None
     stream: TextIO | None = None
     _backup_count: int = 0
+    _current_filename: str | None = None
 
     def __get_path(self) -> Path:
-        assert self.path is not None, "Path is not specified"
-        return self.path
+        assert self.dirpath is not None, "Path is not specified"
+        if self._current_filename is None:
+            self._current_filename = self.__next_filename()  # dummy for mypy
+        return self.dirpath / self._current_filename
 
     def __get_stream(self) -> TextIO:
         assert self.stream is not None, "Unable to get stream, as it is not opened"
         return self.stream
 
-    def backup(self) -> None:
-        """Can be called only when streams are closed. No support for backng up opened files."""
-        path = self.__get_path()
-        assert self.stream is None, "Cannot back up opened file"
-        move(path, path.with_name(f"{self.filename}_{self._backup_count}.log"))
-        self._backup_count += 1
-
     def open_stream(self, mode: str = "wt") -> TextIO:
         assert self.stream is None, "Stream is already opened"
+        self.__next_filename()
+        self.__ceate_user_friendly_link()
         self.stream = cast(TextIO, self.__get_path().open(mode))
         assert not self.stream.closed, f"Failed to open stream: `{self.stream.errors}`"
         return self.stream
@@ -43,7 +41,7 @@ class StreamRepresentation(ContextSync[TextIO]):
         self.stream = None
 
     def set_path_for_dir(self, dir_path: Path) -> None:
-        self.path = dir_path / f"{self.filename}.log"
+        self.dirpath = dir_path
 
     def _enter(self) -> TextIO:
         return self.open_stream()
@@ -51,8 +49,20 @@ class StreamRepresentation(ContextSync[TextIO]):
     def _finally(self) -> None:
         self.close_stream()
 
+    def __ceate_user_friendly_link(self) -> None:
+        assert self.dirpath is not None, "dirpath is not set"
+        user_friendly_link_dst = self.dirpath / f"{self.filename}.log"
+        if user_friendly_link_dst.exists() and user_friendly_link_dst.is_symlink():
+            user_friendly_link_dst.unlink()
+        user_friendly_link_dst.symlink_to(self.__get_path())
+
+    def __next_filename(self) -> str:
+        self._current_filename = f"{self.filename}_{self._backup_count}.log"
+        self._backup_count += 1
+        return self._current_filename
+
     def __contains__(self, text: str) -> bool:
-        if self.path is None:
+        if not self.__get_path().exists():
             return False
 
         with self.open_stream("rt") as file:
@@ -71,19 +81,9 @@ class StreamsHolder:
         self.stdout.set_path_for_dir(dir_path)
         self.stderr.set_path_for_dir(dir_path)
 
-    def backup(self) -> None:
-        """Can be called only when streams are closed. No support for backng up opened files."""
-        self.stdout.backup()
-        self.stderr.backup()
-
     def close(self) -> None:
         self.stdout.close_stream()
         self.stderr.close_stream()
-
-    def requires_backup(self) -> bool:
-        if self.stderr.path is None or self.stdout.path is None:
-            return False
-        return self.stdout.path.exists() or self.stderr.path.exists()
 
     def __contains__(self, text: str) -> bool:
         return (text in self.stderr) or (text in self.stdout)
