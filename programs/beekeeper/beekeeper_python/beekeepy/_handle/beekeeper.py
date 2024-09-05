@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import helpy
 from beekeepy._executable import BeekeeperArguments, BeekeeperExecutable
@@ -9,7 +9,7 @@ from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
 from beekeepy.settings import Settings
-from helpy import ContextSync
+from helpy import ContextAsync, ContextSync
 from helpy._communication.universal_notification_server import (
     UniversalNotificationServer,
 )
@@ -32,50 +32,36 @@ if TYPE_CHECKING:
 EnterReturnT = TypeVar("EnterReturnT", bound=helpy.Beekeeper | helpy.AsyncBeekeeper)
 
 
-class RunnableBeekeeper(ContextSync[EnterReturnT], Generic[EnterReturnT]):
-    @abstractmethod
-    def run(self) -> None: ...
-
-    @abstractmethod
-    def close(self) -> None: ...
-
-    def restart(self) -> None:
-        self.close()
-        self.run()
-
-    def _enter(self) -> EnterReturnT:
-        self.run()
-        return cast(EnterReturnT, self)
-
-    def _finally(self) -> None:
-        self.close()
-
-    @abstractmethod
-    def detach(self) -> None: ...
+__all__ = [
+    "SyncRemoteBeekeeper",
+    "AsyncRemoteBeekeeper",
+    "Beekeeper",
+    "AsyncBeekeeper",
+    "run_if_possible",
+    "close_if_possible",
+    "detach_if_possible"
+]
 
 
-class SyncRemoteBeekeeper(RunnableBeekeeper["SyncRemoteBeekeeper"], helpy.Beekeeper):
-    def run(self) -> None:
-        """There is no need to do anythng, it's remote handle."""
+def run_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+    if isinstance(handle, Beekeeper | AsyncBeekeeper):
+        handle.run()
 
-    def close(self) -> None:
-        """There is no need to do anything, it's remote handle."""
+def close_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+    if isinstance(handle, Beekeeper | AsyncBeekeeper):
+        handle.close()
 
-    def detach(self) -> None:
-        """There is no need to do anything, it's remote handle."""
+def detach_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper):
+    if isinstance(handle, Beekeeper | AsyncBeekeeper):
+        handle.detach()
 
+class SyncRemoteBeekeeper(helpy.Beekeeper):
+    pass
 
-class AsyncRemoteBeekeeper(RunnableBeekeeper["AsyncRemoteBeekeeper"], helpy.AsyncBeekeeper):
-    def run(self) -> None:
-        """There is no need to do anythng, it's remote handle."""
+class AsyncRemoteBeekeeper(helpy.AsyncBeekeeper):
+    pass
 
-    def close(self) -> None:
-        """There is no need to do anything, it's remote handle."""
-
-    def detach(self) -> None:
-        """There is no need to do anything, it's remote handle."""
-
-class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterReturnT]):
+class BeekeeperCommon(BeekeeperNotificationCallbacks):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, **kwargs)
         self.__exec = BeekeeperExecutable(settings, logger)
@@ -201,7 +187,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks, RunnableBeekeeper[EnterRet
     def _get_settings(self) -> Settings: ...
 
 
-class Beekeeper(BeekeeperCommon["Beekeeper"], SyncRemoteBeekeeper):
+class Beekeeper(BeekeeperCommon, SyncRemoteBeekeeper, ContextSync["Beekeeper"]):
     def run(self) -> None:
         self._clear_session_token()
         with self.update_settings() as settings:
@@ -216,8 +202,15 @@ class Beekeeper(BeekeeperCommon["Beekeeper"], SyncRemoteBeekeeper):
     def settings(self) -> Settings:
         return cast(Settings, super().settings)
 
+    def _enter(self) -> Beekeeper:
+        self.run()
+        return self
 
-class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], AsyncRemoteBeekeeper):
+    def _finally(self) -> None:
+        self.close()
+
+
+class AsyncBeekeeper(BeekeeperCommon, AsyncRemoteBeekeeper, ContextAsync["AsyncBeekeeper"]):
     def run(self) -> None:
         self._clear_session_token()
         with self.update_settings() as settings:
@@ -231,3 +224,10 @@ class AsyncBeekeeper(BeekeeperCommon["AsyncBeekeeper"], AsyncRemoteBeekeeper):
     @property
     def settings(self) -> Settings:
         return cast(Settings, super().settings)
+
+    async def _aenter(self) -> AsyncBeekeeper:
+        self.run()
+        return self
+
+    async def _afinally(self) -> None:
+        self.close()

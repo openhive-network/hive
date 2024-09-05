@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from beekeepy._handle.beekeeper import close_if_possible, detach_if_possible
 from beekeepy._interface.abc.asynchronous.beekeeper import Beekeeper as BeekeeperInterface
 from beekeepy._interface.asynchronous.session import Session
 
@@ -24,7 +25,7 @@ class Beekeeper(BeekeeperInterface):
         return self.__instance
 
     def delete(self) -> None:
-        self.__instance.close()
+        close_if_possible(self.__instance)
 
     def detach(self) -> None:
-        self.__instance.detach()
+        detach_if_possible(self.__instance)

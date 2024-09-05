@@ -12,6 +12,7 @@ from beekeepy._handle.beekeeper import AsyncBeekeeper as AsynchronousBeekeeperHa
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
 from beekeepy._handle.beekeeper import Beekeeper as SynchronousBeekeeperHandle
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper as SynchronousRemoteBeekeeperHandle
+from beekeepy._handle.beekeeper import run_if_possible
 from beekeepy._interface.abc.asynchronous.beekeeper import (
     Beekeeper as AsynchronousBeekeeperInterface,
 )
@@ -94,7 +95,7 @@ def _beekeeper_factory_impl(
     settings = settings or Settings()
     beekeeper = handle_t(settings=settings, logger=_get_logger())
     try:
-        beekeeper.run()
+        run_if_possible(beekeeper)
     except BeekeeperAlreadyRunningError as err:
         settings.http_endpoint = err.address
         return remote_factory(url_or_settings=settings)
@@ -109,7 +110,7 @@ def _beekeeper_remote_factory_impl(
     if isinstance(url_or_settings, Url):
         url_or_settings = Settings(http_endpoint=url_or_settings)
     handle = handle_t(settings=url_or_settings)  # type: ignore[arg-type]
-    handle.run()
+    run_if_possible(handle)
     return impl_t(handle=handle)  # type: ignore
 
 
