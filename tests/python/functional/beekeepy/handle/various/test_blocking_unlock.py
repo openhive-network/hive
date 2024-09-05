@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 # We have 500ms time period protection on ulocking wallet.
-WALLET_UNLOCK_INTERVAL: Final[float] = 0.5
+WALLET_UNLOCK_INTERVAL: Final[float] = 0.6
 AES_DECRYPTION_ERROR: Final[str] = "Invalid password for wallet"
 WALLET_UNACCESSIBLE_ERROR: Final[str] = "Assert Exception:false: unlock is not accessible"
 
@@ -86,5 +86,5 @@ def test_wallet_blocking_timeout(beekeeper: Beekeeper, wallet: WalletInfo, force
         assert len(errors_correctly_raised) == len(results), "Not every call raised the expected error."
     else:
         for unlock_json in good_unlock_calls:
-            time.sleep(0.6)
+            time.sleep(WALLET_UNLOCK_INTERVAL)
             raise_if_exception(call_and_raise_if_error(http_endpoint=beekeeper.http_endpoint, data=unlock_json))
