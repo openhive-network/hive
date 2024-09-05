@@ -16,7 +16,7 @@ def test_sign_digest_response_uniques(beekeeper: Beekeeper, wallet: WalletInfo, 
     """Test test_sign_digest_response_uniques will check if signature returned from sign_digest call is unique."""
     # ARRANGE
     expected_signature_amount = 2
-    token = beekeeper.session_token
+    token = beekeeper.session.token
 
     digests = [
         "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff",

@@ -19,10 +19,10 @@ def test_api_close_session(beekeeper: Beekeeper) -> None:
     beekeeper.api.close_session()
 
     # ASSERT
-    close_log_entry = f'"id":0,"jsonrpc":"2.0","method":"beekeeper_api.close_session","params":{{"token":"{beekeeper.session_token}"}}'
+    close_log_entry = f'"id":0,"jsonrpc":"2.0","method":"beekeeper_api.close_session","params":{{"token":"{beekeeper.session.token}"}}'
     with pytest.raises(
         RequestError,
-        match=f"A session attached to {beekeeper.session_token} doesn't exist",
+        match=f"A session attached to {beekeeper.session.token} doesn't exist",
     ):
         beekeeper.api.close_session()
 
@@ -56,7 +56,7 @@ def test_api_close_session_double(beekeeper: Beekeeper) -> None:
     # ASSERT
     with pytest.raises(
         RequestError,
-        match=f"A session attached to {beekeeper.session_token} doesn't exist",
+        match=f"A session attached to {beekeeper.session.token} doesn't exist",
     ):
         beekeeper.api.close_session()
 
@@ -73,6 +73,6 @@ def test_api_close_session_not_existing(create_session: bool, beekeeper: Beekeep
         )
 
     # ACT & ASSERT
-    beekeeper._set_session_token(WRONG_TOKEN)  # noqa: SLF001
+    beekeeper.set_session_token(WRONG_TOKEN)
     with pytest.raises(RequestError, match=f"A session attached to {WRONG_TOKEN} doesn't exist"):
         beekeeper.api.close_session()

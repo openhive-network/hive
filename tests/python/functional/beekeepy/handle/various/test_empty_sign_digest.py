@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 def test_empty_sign_digest(beekeeper: Beekeeper, wallet: WalletInfo, account: tt.Account) -> None:
     """Test test_empty_sign_digest will check if response from sign_digest is empty."""
     # ARRANGE
-    token = beekeeper.session_token
+    token = beekeeper.session.token
 
     sign_digest = JSONRPCRequest(
         method="beekeeper_api.sign_digest",
