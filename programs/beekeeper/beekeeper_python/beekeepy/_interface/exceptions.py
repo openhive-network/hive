@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from helpy._interfaces.context import ContextSync
 from helpy.exceptions import RequestError
+from pydantic import StrRegexError
+
+from beekeepy.exceptions import BeekeepyError
 
 if TYPE_CHECKING:
     from types import TracebackType
 
 
-class DetectableError(ContextSync[None], Exception):
+class DetectableError(ContextSync[None], BeekeepyError):
     @abstractmethod
     def _is_exception_handled(self, ex: BaseException) -> bool: ...
 
@@ -105,3 +108,37 @@ class InvalidWalletError(DetectableError):
                 f"Name of wallet is incorrect. Name: {self.wallet_name}. File creation with given name is impossible."
             ]
         )
+
+class SchemaDetectableError(DetectableError, ABC):
+    def __init__(self, arg_name: str, arg_value: str) -> None:
+        self._arg_name = arg_name
+        self._arg_value = arg_value
+        super().__init__(self._error_message())
+
+    def _is_exception_handled(self, ex: BaseException) -> bool:
+        return isinstance(ex, StrRegexError)
+
+    @abstractmethod
+    def _error_message(self) -> str: ...
+
+
+class InvalidAccountNameError(SchemaDetectableError):
+    def _error_message(self) -> str:
+        return f"Value given for argument `{self._arg_name}` is invalid account name: `{self._arg_value}`."
+
+class InvalidSchemaPublicKeyError(SchemaDetectableError):
+    def _error_message(self) -> str:
+        return f"Value given for argument `{self._arg_name}` is invalid public key: `{self._arg_value}`."
+
+class InvalidSchemaPrivateKeyError(SchemaDetectableError):
+    def _error_message(self) -> str:
+        return f"Value given for argument `{self._arg_name}` is invalid private key: `{self._arg_value}`."
+
+class NotPositiveTimeError(BeekeepyError):
+    def __init__(self, time: int) -> None:
+        super().__init__(f"Given time value is not positive: `{time}`.")
+
+# class InvalidWalletNameError(BeekeepyError):
+class InvalidWalletNameError(Exception):
+    def __init__(self, wallet_name: str) -> None:
+        super().__init__(f"Given wallet name is invalid: `{wallet_name}`. Can be only alphanumeric or contain `._-@` charachters.")

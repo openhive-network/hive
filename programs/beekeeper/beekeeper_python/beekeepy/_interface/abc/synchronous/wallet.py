@@ -37,16 +37,16 @@ class UnlockedWallet(Wallet, ContextSync["UnlockedWallet"], ABC):
     def import_key(self, *, private_key: str) -> PublicKey: ...
 
     @abstractmethod
-    def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None: ...
+    def remove_key(self, *, key: str, confirmation_password: str) -> None: ...
 
     @abstractmethod
     def lock(self) -> None: ...
 
     @abstractmethod
-    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature: ...
+    def sign_digest(self, *, sig_digest: str, key: str) -> Signature: ...
 
     @abstractmethod
-    def has_matching_private_key(self, *, key: PublicKey) -> bool: ...
+    def has_matching_private_key(self, *, key: str) -> bool: ...
 
     @property
     @abstractmethod
@@ -59,6 +59,6 @@ class UnlockedWallet(Wallet, ContextSync["UnlockedWallet"], ABC):
         self.lock()
 
     def __contains__(self, obj: object) -> bool:
-        if isinstance(obj, str | PublicKey):
+        if isinstance(obj, str):
             return self.has_matching_private_key(key=PublicKey(obj))
         raise TypeError(f"Object `{obj}` is not str which can't be check for matchin private key in wallet.")

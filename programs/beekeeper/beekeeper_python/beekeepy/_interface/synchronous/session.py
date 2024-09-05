@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from beekeepy._interface.validators import validate_wallet_name, validate_seconds, validate_public_keys
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
 from beekeepy._interface.abc.synchronous.session import Session as SessionInterface
 from beekeepy._interface.exceptions import (
@@ -13,6 +14,7 @@ from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
+from beekeepy._interface.validators import validate_public_keys, validate_seconds, validate_wallet_name
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.wallet import (
@@ -38,13 +40,14 @@ class Session(SessionInterface):
 
     def create_wallet(  # type: ignore[override]
         self, *, name: str, password: str | None = None
-    ) -> UnlockedWalletInterface | tuple[UnlockedWalletInterface, str]:
+        validate_wallet_name(wallet_name=name)
         with WalletWithSuchNameAlreadyExistsError(wallet_name=name), InvalidWalletError(wallet_name=name):
             create_result = self.__beekeeper.api.create(wallet_name=name, password=password)
         wallet = self.__construct_unlocked_wallet(name)
         return wallet if password is not None else (wallet, create_result.password)
 
     def open_wallet(self, *, name: str) -> WalletInterface:
+        validate_wallet_name(wallet_name=name)
         with NoWalletWithSuchNameError(name):
             self.__beekeeper.api.open(wallet_name=name)
         return self.__construct_wallet(name=name)
@@ -59,6 +62,7 @@ class Session(SessionInterface):
         return self.wallets
 
     def set_timeout(self, seconds: int) -> None:
+        validate_seconds(time=seconds)
         self.__beekeeper.api.set_timeout(seconds=seconds)
 
     @property

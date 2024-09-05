@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
@@ -18,9 +17,12 @@ from beekeepy._interface.exceptions import (
     MissingSTMPrefixError,
     RemovingNotExistingKeyError,
 )
+from beekeepy._interface.validators import validate_private_keys, validate_public_keys
 from helpy import wax
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
 
@@ -64,11 +66,13 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
 
     @wallet_unlocked
     def import_key(self, *, private_key: str) -> PublicKey:
+        validate_private_keys(private_key=private_key)
         with InvalidPrivateKeyError(wif=private_key):
             return self._beekeeper.api.import_key(wallet_name=self.name, wif_key=private_key).public_key
 
     @wallet_unlocked
-    def remove_key(self, *, key: PublicKey, confirmation_password: str) -> None:
+    def remove_key(self, *, key: str, confirmation_password: str) -> None:
+        validate_public_keys(key=key)
         with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
             self._beekeeper.api.remove_key(wallet_name=self.name, password=confirmation_password, public_key=key)
 
@@ -77,12 +81,14 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         self._beekeeper.api.lock(wallet_name=self.name)
 
     @wallet_unlocked
-    def sign_digest(self, *, sig_digest: str, key: PublicKey) -> Signature:
+    def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
+        validate_public_keys(key=key)
         with MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
             return self._beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, wallet_name=self.name).signature
 
     @wallet_unlocked
-    def has_matching_private_key(self, *, key: PublicKey) -> bool:
+    def has_matching_private_key(self, *, key: str) -> bool:
+        validate_public_keys(key=key)
         return self._beekeeper.api.has_matching_private_key(wallet_name=self.name, public_key=key).exists
 
     @property
