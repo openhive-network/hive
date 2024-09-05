@@ -12,9 +12,6 @@ Application Options:
   --webserver-ws-deflate arg (=0)
           Enable the RFC-7692 permessage-deflate extension for the WebSocket server (only used if the client requests 
           it).  This may save bandwidth at the expense of CPU
-  --rpc-endpoint arg
-          Local http and websocket endpoint for webserver requests. Deprecated in favor of webserver-http-endpoint and 
-          webserver-ws-endpoint
   --webserver-thread-pool-size arg (=32)
           Number of threads used to handle queries. Default: 32.
   --webserver-https-certificate-file-name arg
@@ -66,3 +63,4 @@ Application Command Line Options:
           Directory containing configuration file config.ini. Default location: $HOME/.beekeeper or CWD/. beekeeper
   -c [ --config ] filename (="config.ini")
           Configuration file name relative to data-dir
+
