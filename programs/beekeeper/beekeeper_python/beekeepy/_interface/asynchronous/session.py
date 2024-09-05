@@ -9,12 +9,12 @@ from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from beekeepy._interface.exceptions import (
+from beekeepy._interface.validators import validate_public_keys, validate_seconds, validate_wallet_name
+from beekeepy.exceptions import (
     InvalidWalletError,
     NoWalletWithSuchNameError,
     WalletWithSuchNameAlreadyExistsError,
 )
-from beekeepy._interface.validators import validate_public_keys, validate_seconds, validate_wallet_name
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle

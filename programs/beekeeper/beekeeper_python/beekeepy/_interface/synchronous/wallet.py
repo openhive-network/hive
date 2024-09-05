@@ -11,7 +11,8 @@ from beekeepy._interface.abc.synchronous.wallet import (
     Wallet as WalletInterface,
 )
 from beekeepy._interface.common import WalletCommons
-from beekeepy._interface.exceptions import (
+from beekeepy._interface.validators import validate_private_keys, validate_public_keys
+from beekeepy.exceptions import (
     InvalidPasswordError,
     InvalidPrivateKeyError,
     InvalidPublicKeyError,
@@ -19,7 +20,6 @@ from beekeepy._interface.exceptions import (
     RemovingNotExistingKeyError,
     UnknownDecisionPathError,
 )
-from beekeepy._interface.validators import validate_private_keys, validate_public_keys
 from helpy import wax
 
 if TYPE_CHECKING:
@@ -85,9 +85,7 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
         with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(
             public_key=key
         ):
-            self._beekeeper.api.remove_key(
-                wallet_name=self.name, public_key=key, token=self.session_token
-            )
+            self._beekeeper.api.remove_key(wallet_name=self.name, public_key=key, token=self.session_token)
 
     @wallet_unlocked
     def lock(self) -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Final, Pattern
 
-from beekeepy._interface.exceptions import (
+from beekeepy.exceptions import (
     InvalidAccountNameError,
     InvalidSchemaPrivateKeyError,
     InvalidSchemaPublicKeyError,

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from beekeepy._executable.arguments.arguments import Arguments
 from beekeepy._executable.streams import StreamsHolder
-from beekeepy._interface.exceptions import TimeoutReachWhileCloseError
+from beekeepy.exceptions import TimeoutReachWhileCloseError
 from helpy._interfaces.config import Config
 from helpy._interfaces.context import ContextSync
 
