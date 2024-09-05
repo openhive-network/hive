@@ -12,6 +12,7 @@ from beekeepy._interface.abc.synchronous.wallet import (
 )
 from beekeepy._interface.common import WalletCommons
 from beekeepy._interface.exceptions import (
+    InvalidPasswordError,
     InvalidPrivateKeyError,
     InvalidPublicKeyError,
     MissingSTMPrefixError,
@@ -44,7 +45,8 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterfa
 
     def unlock(self, password: str) -> UnlockedWallet:
         if not self.__is_unlocked():
-            self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
+            with InvalidPasswordError(wallet_name=self.name):
+                self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
         return self.__construct_unlocked_wallet()
 
     def __is_unlocked(self) -> bool:

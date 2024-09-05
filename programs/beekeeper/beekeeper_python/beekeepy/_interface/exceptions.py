@@ -110,6 +110,19 @@ class InvalidWalletError(DetectableError):
         )
 
 
+class InvalidPasswordError(DetectableError):
+    def __init__(self, wallet_name: str) -> None:
+        self.wallet_name = wallet_name
+        super().__init__(f"given password is invalid for {self.wallet_name}")
+
+    def _is_exception_handled(self, ex: BaseException) -> bool:
+        return (
+            isinstance(ex, RequestError)
+            and "Assert Exception:false: Invalid password for wallet:" in ex.error
+            and f"{self.wallet_name}.walletrethrow" in ex.error
+        )
+
+
 class SchemaDetectableError(DetectableError, ABC):
     def __init__(self, arg_name: str, arg_value: str) -> None:
         self._arg_name = arg_name
