@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.wallet import UnlockedWallet, Wallet
     from schemas.apis.beekeeper_api import GetInfo
     from schemas.fields.basic import PublicKey
+    from schemas.fields.hex import Signature
 
 
 class Session(ContextAsync["Session"], ABC):
@@ -39,6 +40,9 @@ class Session(ContextAsync["Session"], ABC):
 
     @abstractmethod
     async def set_timeout(self, seconds: int) -> None: ...
+
+    @abstractmethod
+    async def sign_digest(self, *, sig_digest: str, key: str) -> Signature: ...
 
     @property
     @abstractmethod

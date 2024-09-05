@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     )
     from schemas.apis.beekeeper_api import GetInfo
     from schemas.fields.basic import PublicKey
+    from schemas.fields.hex import Signature
 
 
 class Session(SessionInterface):
@@ -64,6 +65,10 @@ class Session(SessionInterface):
     async def set_timeout(self, seconds: int) -> None:
         validate_seconds(time=seconds)
         await self.__beekeeper.api.set_timeout(seconds=seconds)
+
+    async def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
+        validate_public_keys(key=key)
+        return (await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key)).signature
 
     @property
     async def public_keys(self) -> list[PublicKey]:
