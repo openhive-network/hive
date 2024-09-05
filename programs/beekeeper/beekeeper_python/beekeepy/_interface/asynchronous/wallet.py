@@ -80,13 +80,13 @@ class UnlockedWallet(Wallet, UnlockedWalletInterface):
         raise UnknownDecisionPathError
 
     @wallet_unlocked
-    async def remove_key(self, *, key: str, confirmation_password: str) -> None:
+    async def remove_key(self, *, key: str) -> None:
         validate_public_keys(key=key)
         with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(
             public_key=key
         ):
             await self._beekeeper.api.remove_key(
-                wallet_name=self.name, password=confirmation_password, public_key=key, token=self.session_token
+                wallet_name=self.name, public_key=key, token=self.session_token
             )
 
     @wallet_unlocked
