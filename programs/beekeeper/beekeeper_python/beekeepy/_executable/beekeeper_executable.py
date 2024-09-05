@@ -31,7 +31,7 @@ class BeekeeperExecutable(Executable[BeekeeperConfig, BeekeeperArguments]):
         self, wallet_name: str, wallet_password: str, extract_to: Path | None = None
     ) -> list[KeyPair]:
         with tempfile.TemporaryDirectory() as tempdir:
-            tempdir_path = Path(tempdir) if not isinstance(tempdir, Path) else tempdir
+            tempdir_path = Path(tempdir)
             wallet_file_name = f"{wallet_name}.wallet"
             shutil.copyfile(self.working_directory / wallet_file_name, tempdir_path / wallet_file_name)
             bk = BeekeeperExecutable(
