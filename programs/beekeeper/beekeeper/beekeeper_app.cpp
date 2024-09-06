@@ -1,4 +1,5 @@
 #include <beekeeper/beekeeper_app.hpp>
+#include <beekeeper/time_manager.hpp>
 
 #include <core/beekeeper_wallet_manager.hpp>
 
@@ -231,7 +232,7 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
 {
   instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir );
-  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>(), instance,
+  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>( std::make_shared<time_manager>() ), instance,
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
                                                                        [this]() { app.kill(); } );
 }

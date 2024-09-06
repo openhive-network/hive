@@ -6,9 +6,8 @@
 
 namespace beekeeper {
 
-session_manager_base::session_manager_base()
+session_manager_base::session_manager_base( const time_manager_base::ptr_time_manager_base& time ): time( time )
 {
-  time = std::make_shared<time_manager_base>();
 }
 
 std::shared_ptr<session_base> session_manager_base::get_session( const std::string& token )
@@ -19,7 +18,7 @@ std::shared_ptr<session_base> session_manager_base::get_session( const std::stri
   return _found->second;
 }
 
-std::shared_ptr<session_base> session_manager_base::create_session( const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
+std::shared_ptr<session_base> session_manager_base::create_session( const std::string& token, const boost::filesystem::path& wallet_directory )
 {
   return std::make_shared<session_base>( content_deliverer, token, time, wallet_directory );
 }
@@ -28,7 +27,7 @@ std::string session_manager_base::create_session( const std::optional<std::strin
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
-  std::shared_ptr<session_base> _session = create_session( _token, time, wallet_directory );
+  std::shared_ptr<session_base> _session = create_session( _token, wallet_directory );
   sessions.emplace( _token, _session );
 
   FC_ASSERT( time );
