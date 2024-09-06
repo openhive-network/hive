@@ -20,6 +20,10 @@ namespace beekeeper {
 
 class time_manager_base
 {
+  public:
+
+    using ptr_time_manager_base = std::shared_ptr<time_manager_base>;
+
   private:
 
     struct session_data
@@ -49,12 +53,12 @@ class time_manager_base
 
   public:
 
-    void add( const std::string& token, types::lock_method_type&& lock_method );
-    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
+    virtual ~time_manager_base(){};
 
-    void run( const std::string& token );
-
-    void close( const std::string& token );
+    virtual void add( const std::string& token, types::lock_method_type&& lock_method );
+    virtual void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
+    virtual void run( const std::string& token );
+    virtual void close( const std::string& token );
 };
 
 } //beekeeper
