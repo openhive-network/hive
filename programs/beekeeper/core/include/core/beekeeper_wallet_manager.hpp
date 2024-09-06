@@ -79,7 +79,7 @@ public:
    * @return            A plaintext password that is needed to unlock a wallet. A caller is responsible for saving the password otherwise it's impossible to unlock the wallet.
    * @throws            An exception `fc`::exception if wallet with name already exists (or filename already exists).
    */
-  std::string create( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary );
+  std::string create( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const bool is_temporary );
 
   /**
    *
