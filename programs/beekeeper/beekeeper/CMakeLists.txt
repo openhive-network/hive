@@ -7,6 +7,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       beekeeper_app.cpp
                       beekeeper_instance.cpp
                       beekeeper_wallet_api.cpp
+                      time_manager.cpp
                       extended_api.cpp
                       LIBRARIES appbase webserver_plugin hive_utilities beekeeper_core
 )
