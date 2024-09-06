@@ -43,7 +43,7 @@ class beekeeper_api final
 
     std::string create_session_impl( const std::optional<std::string>& salt );
 
-    std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary );
+    std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const bool is_temporary );
     std::string get_public_keys_impl( const std::string& token, const std::optional<std::string>& wallet_name );
     std::string sign_digest_impl( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name );
 

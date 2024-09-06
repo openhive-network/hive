@@ -132,7 +132,7 @@ struct wallet_password_args: public session_token_type
 struct create_args: public wallet_args
 {
   std::optional<std::string> password;
-  std::optional<bool> is_temporary;
+  bool is_temporary = false;
 };
 struct create_return
 {

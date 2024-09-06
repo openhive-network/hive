@@ -27,7 +27,7 @@ void beekeeper_wallet_manager::set_timeout_impl( const std::string& token, secon
   sessions->set_timeout( token, std::chrono::seconds( seconds ) );
 }
 
-std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary )
+std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password, const bool is_temporary )
 {
   sessions->check_timeout( token );
 

@@ -35,7 +35,7 @@ void wallet_manager_impl::valid_filename( const std::string& name )
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );
 }
 
-std::string wallet_manager_impl::create( const std::string& wallet_name, const std::optional<std::string>& password, const std::optional<bool>& is_temporary )
+std::string wallet_manager_impl::create( const std::string& wallet_name, const std::optional<std::string>& password, const bool is_temporary )
 {
   FC_ASSERT( !password || password->size() < max_password_length,
             "Got ${password_size} bytes, but a password limit has ${max_password_length} bytes", ("password_size", password->size())(max_password_length) );
@@ -45,7 +45,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
   auto _wallet_file_name = create_wallet_filename( wallet_name );
   std::string _password = password ? ( *password ) : gen_password();
 
-  content_deliverer.create( token, wallet_name, _wallet_file_name.string(), _password, is_temporary ? ( *is_temporary ) : false );
+  content_deliverer.create( token, wallet_name, _wallet_file_name.string(), _password, is_temporary );
 
   return _password;
 }

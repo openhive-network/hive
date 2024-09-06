@@ -129,25 +129,25 @@ BOOST_AUTO_TEST_CASE(wallet_name_test)
   BOOST_REQUIRE( wm.start() );
   std::string _token = wm.create_session( "this is salt", std::optional<std::string>() );
 
-  wm.create(_token, "wallet.wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet_wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet-wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet@wallet", std::optional<std::string>(), std::optional<bool>() );
+  wm.create(_token, "wallet.wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet_wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet-wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet@wallet", std::optional<std::string>(), false/*is_temporary*/ );
 
-  wm.create(_token, ".wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "_wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "-wallet", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "@wallet", std::optional<std::string>(), std::optional<bool>() );
+  wm.create(_token, ".wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "_wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "-wallet", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "@wallet", std::optional<std::string>(), false/*is_temporary*/ );
 
-  wm.create(_token, "wallet.", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet_", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet-", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "wallet@", std::optional<std::string>(), std::optional<bool>() );
+  wm.create(_token, "wallet.", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet_", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet-", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "wallet@", std::optional<std::string>(), false/*is_temporary*/ );
 
-  wm.create(_token, ".wallet.", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "_wallet_", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "-wallet-", std::optional<std::string>(), std::optional<bool>() );
-  wm.create(_token, "@wallet@", std::optional<std::string>(), std::optional<bool>() );
+  wm.create(_token, ".wallet.", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "_wallet_", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "-wallet-", std::optional<std::string>(), false/*is_temporary*/ );
+  wm.create(_token, "@wallet@", std::optional<std::string>(), false/*is_temporary*/ );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(wallet_complex_name_test)
 
   std::string _wallet_name = "small.minion.wallet";
 
-  wm.create( _token, _wallet_name, std::optional<std::string>(), std::optional<bool>() );
+  wm.create( _token, _wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
   BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
   BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
 
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", "pw"), fc::exception);
   BOOST_REQUIRE_THROW(wm.import_key(_token, "test", "pw", _prefix), fc::exception);
 
-  auto pw = wm.create(_token, "test", std::optional<std::string>(), std::optional<bool>() );
+  auto pw = wm.create(_token, "test", std::optional<std::string>(), false/*is_temporary*/ );
   BOOST_REQUIRE(!pw.empty());
   BOOST_REQUIRE_EQUAL(0u, pw.find("PW")); // starts with PW
   BOOST_REQUIRE_EQUAL(1u, wm.list_wallets(_token).size());
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
   BOOST_REQUIRE(!wm.list_wallets(_token)[0].unlocked);
 
-  auto pw2 = wm.create(_token, "test2", std::optional<std::string>(), std::optional<bool>() );
+  auto pw2 = wm.create(_token, "test2", std::optional<std::string>(), false/*is_temporary*/ );
   BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
@@ -306,11 +306,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   wm.set_timeout(_token, 15);
 
-  wm.create(_token, "testgen", std::optional<std::string>(), std::optional<bool>() );
+  wm.create(_token, "testgen", std::optional<std::string>(), false/*is_temporary*/ );
   wm.lock(_token, "testgen");
   fc::remove( b_mgr.dir / "testgen.wallet" );
 
-  pw = wm.create(_token, "testgen", std::optional<std::string>(), std::optional<bool>() );
+  pw = wm.create(_token, "testgen", std::optional<std::string>(), false/*is_temporary*/ );
 
   wm.lock(_token, "testgen");
   BOOST_REQUIRE(fc::exists( b_mgr.dir / "testgen.wallet" ));
@@ -332,39 +332,39 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
     std::string _token = wm.create_session( "this is salt", std::optional<std::string>() );
     auto _prefix = "STM";
 
-    wm.create(_token, "test", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, "test", std::optional<std::string>(), false/*is_temporary*/ );
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
     wm.import_key(_token, "test", key1, _prefix);
-    BOOST_REQUIRE_THROW(wm.create(_token, "test",       std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "./test",     std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "../../test", std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/test",  std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/",      std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/",          std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",/",         std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",",          std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "<<",         std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "<",          std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",<",         std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",<<",        std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "",           std::optional<std::string>(), std::optional<bool>() ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "test",       std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "./test",     std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "../../test", std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/test",  std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/",      std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "/",          std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, ",/",         std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, ",",          std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "<<",         std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "<",          std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, ",<",         std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, ",<<",        std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
+    BOOST_REQUIRE_THROW(wm.create(_token, "",           std::optional<std::string>(), false/*is_temporary*/ ),  fc::exception);
 
-    wm.create(_token, ".test", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, ".test", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / ".test.wallet" ));
 
-    wm.create(_token, "..test", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, "..test", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / "..test.wallet" ));
 
-    wm.create(_token, "...test", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, "...test", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / "...test.wallet" ));
 
-    wm.create(_token, ".", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, ".", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / "..wallet" ));
 
-    wm.create(_token, "__test_test", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, "__test_test", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / "__test_test.wallet" ));
 
-    wm.create(_token, "t-t", std::optional<std::string>(), std::optional<bool>() );
+    wm.create(_token, "t-t", std::optional<std::string>(), false/*is_temporary*/ );
     BOOST_REQUIRE(fc::exists( b_mgr.dir / "t-t.wallet" ));
   } FC_LOG_AND_RETHROW()
 }
@@ -407,9 +407,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
       auto _token_00 = wm.create_session( "aaaa", std::optional<std::string>() );
       auto _token_01 = wm.create_session( "bbbb", std::optional<std::string>() );
 
-      std::string _pass_00 = wm.create(_token_00, "avocado", std::optional<std::string>(), std::optional<bool>() );
-      std::string _pass_01 = wm.create(_token_01, "banana", std::optional<std::string>(), std::optional<bool>() );
-      std::string _pass_02 = wm.create(_token_01, "cherry", std::optional<std::string>(), std::optional<bool>() );
+      std::string _pass_00 = wm.create(_token_00, "avocado", std::optional<std::string>(), false/*is_temporary*/ );
+      std::string _pass_01 = wm.create(_token_01, "banana", std::optional<std::string>(), false/*is_temporary*/ );
+      std::string _pass_02 = wm.create(_token_01, "cherry", std::optional<std::string>(), false/*is_temporary*/ );
 
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_created_wallets( "not existed token" ), fc::exception );
@@ -457,11 +457,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_wallets_with_dots)
 
       auto _token = wm.create_session( "aaaa", std::optional<std::string>() );
 
-      wm.create(_token, "...watermelon", std::optional<std::string>(), std::optional<bool>() );
-      wm.create(_token, ".lemon", std::optional<std::string>(), std::optional<bool>() );
-      wm.create(_token, ".peach.pear", std::optional<std::string>(), std::optional<bool>() );
-      wm.create(_token, ".plum.", std::optional<std::string>(), std::optional<bool>() );
-      wm.create(_token, "avocado.banana", std::optional<std::string>(), std::optional<bool>() );
+      wm.create(_token, "...watermelon", std::optional<std::string>(), false/*is_temporary*/ );
+      wm.create(_token, ".lemon", std::optional<std::string>(), false/*is_temporary*/ );
+      wm.create(_token, ".peach.pear", std::optional<std::string>(), false/*is_temporary*/ );
+      wm.create(_token, ".plum.", std::optional<std::string>(), false/*is_temporary*/ );
+      wm.create(_token, "avocado.banana", std::optional<std::string>(), false/*is_temporary*/ );
 
       BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 5 );
       BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 5 );
@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
 
     {
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
-      wm.create(_token, wallet_name_0, std::optional<std::string>(), std::optional<bool>() );
+      wm.create(_token, wallet_name_0, std::optional<std::string>(), false/*is_temporary*/ );
 
       auto _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 1 );
@@ -611,7 +611,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
 
-      wm.create(_token, wallet_name_1, std::optional<std::string>(), std::optional<bool>() );
+      wm.create(_token, wallet_name_1, std::optional<std::string>(), false/*is_temporary*/ );
 
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       fc::remove( b_mgr.dir / "1.wallet" );
 
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
-      wm.create(_token, wallet_name_0, std::optional<std::string>(), std::optional<bool>() );
+      wm.create(_token, wallet_name_0, std::optional<std::string>(), false/*is_temporary*/ );
 
       wm.lock_all( _token );
 
@@ -647,8 +647,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       fc::remove( b_mgr.dir / "1.wallet" );
 
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
-      wm.create(_token, wallet_name_0, std::optional<std::string>(), std::optional<bool>() );
-      wm.create(_token, wallet_name_1, std::optional<std::string>(), std::optional<bool>() );
+      wm.create(_token, wallet_name_0, std::optional<std::string>(), false/*is_temporary*/ );
+      wm.create(_token, wallet_name_1, std::optional<std::string>(), false/*is_temporary*/ );
 
       wm.lock( _token, wallet_name_1 );
 
@@ -705,7 +705,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       BOOST_REQUIRE( wm.start() );
 
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
-      auto _password = wm.create(_token, _wallet_name, std::optional<std::string>(), std::optional<bool>() );
+      auto _password = wm.create(_token, _wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
       auto _imported_public_key = wm.import_key( _token, _wallet_name, _private_key_str, _prefix );
       BOOST_REQUIRE( _imported_public_key != _public_key_str );
       BOOST_REQUIRE( _imported_public_key == std::string( HIVE_ADDRESS_PREFIX ) + _public_key_str );
@@ -1222,7 +1222,7 @@ std::string timeout_simulation<beekeeper_api>::create( beekeeper_api& beekeeper_
 template<>
 std::string timeout_simulation<beekeeper_wallet_manager>::create( beekeeper_wallet_manager& beekeeper_obj, const std::string& token, const std::string& name )
 {
-  return beekeeper_obj.create( token, name, std::optional<std::string>(), std::optional<bool>() );
+  return beekeeper_obj.create( token, name, std::optional<std::string>(), false );
 }
 
 template<>
@@ -1442,7 +1442,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
       BOOST_REQUIRE( _beekeeper.start() );
 
       auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
-      auto _password = _beekeeper.create( _token, "0", std::optional<std::string>(), std::optional<bool>()  );
+      auto _password = _beekeeper.create( _token, "0", std::optional<std::string>(), false/*is_temporary*/ );
       _beekeeper.set_timeout( _token, 1 );
 
       for( uint32_t i = 0; i < 12; ++i )
@@ -1486,7 +1486,7 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
     BOOST_REQUIRE( wm.start() );
 
     auto _token = wm.create_session( "salt", _host );
-    auto _password = wm.create( _token, "0", std::optional<std::string>(), std::optional<bool>()  );
+    auto _password = wm.create( _token, "0", std::optional<std::string>(), false/*is_temporary*/ );
 
     wm.import_key( _token, "0", _private_key_str, _prefix );
 
@@ -1534,7 +1534,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
 
     for( auto& wallet : _wallets )
     {
-      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), std::optional<bool>()  );
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), false/*is_temporary*/ );
       _beekeeper.close( _token, wallet.name );
     }
     {
@@ -1625,7 +1625,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
 
     for( auto& wallet : _wallets )
     {
-      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), std::optional<bool>()  );
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), false/*is_temporary*/ );
       for( auto& item : _keys_a )
       {
         _beekeeper.import_key( _token, wallet.name, item.private_key, _prefix );
@@ -1765,7 +1765,7 @@ BOOST_AUTO_TEST_CASE(encrypt_decrypt_data)
     auto _cnt = 0;
     for( auto& wallet : _wallets )
     {
-      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), std::optional<bool>()  );
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), false/*is_temporary*/ );
       switch( _cnt )
       {
         case 0:
@@ -2021,7 +2021,7 @@ BOOST_AUTO_TEST_CASE(import_keys)
 
     const std::string _wallet_name = "wallet-0";
 
-    _beekeeper.create( _token, _wallet_name, std::optional<std::string>(), std::optional<bool>()  );
+    _beekeeper.create( _token, _wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
 
     const size_t _nr_keys = 20'000;
     std::vector<std::string> _keys( _nr_keys );
@@ -2080,11 +2080,11 @@ BOOST_AUTO_TEST_CASE(has_wallet)
     BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_3 ), false );
 
     BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), false );
-    _beekeeper.create( _token, _wallet_name, _password, std::optional<bool>()  );
+    _beekeeper.create( _token, _wallet_name, _password, false/*is_temporary*/ );
     BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
 
     BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name_2 ), false );
-    _beekeeper.create( _token, _wallet_name_2, _password, std::optional<bool>()  );
+    _beekeeper.create( _token, _wallet_name_2, _password, false/*is_temporary*/ );
     BOOST_REQUIRE_EQUAL( _beekeeper.has_wallet( _token, _wallet_name ), true );
 
     _beekeeper.close( _token, _wallet_name );
@@ -2140,7 +2140,7 @@ BOOST_AUTO_TEST_CASE(temporary_wallets)
     const std::string _wallet_name_2 = "wallet-2";
     const std::string _password = "avocado";
 
-    _beekeeper.create( _token, _wallet_name_0, _password, std::optional<bool>()  );
+    _beekeeper.create( _token, _wallet_name_0, _password, false/*is_temporary*/ );
     {
       std::vector<wallet_details> _wallets = _beekeeper.list_created_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 1 );
@@ -2249,7 +2249,7 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization)
 
     const std::string _wallet_name = "wallet-0";
 
-    _beekeeper.create( _token_00, _wallet_name, "avocado", std::optional<bool>() );
+    _beekeeper.create( _token_00, _wallet_name, "avocado", false/*is_temporary*/ );
     _beekeeper.unlock( _token_01, _wallet_name, "avocado" );
 
     std::vector<std::pair<std::string, std::string>> _keys =
