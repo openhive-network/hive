@@ -610,6 +610,15 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
     {
       con->set_body( api->call( body ) );
       con->append_header( "Content-Type", "application/json" );
+
+      /*
+        HTTP/1.1 applications that do not support persistent connections MUST include the "close" connection option in every message. 
+        See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+
+        Additional details: https://github.com/zaphoyd/websocketpp/issues/890
+      */
+      con->append_header( "Connection", "close" );
+
       con->set_status( websocketpp::http::status_code::ok );
     }
     catch( fc::exception& e )
