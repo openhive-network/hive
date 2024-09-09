@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArguments
 from helpy import HttpUrl
 
 if TYPE_CHECKING:
@@ -30,6 +31,6 @@ def test_notifications_endpoint(beekeeper_not_started: Beekeeper, notifications_
     #   point beekeeper where to send notifications.
 
     # ARRANGE & ACT & ASSERT
-    beekeeper_not_started.settings.notification_endpoint = notifications_endpoint
-    with beekeeper_not_started:
-        pass
+    beekeeper_not_started.run(
+        additional_cli_arguments=BeekeeperArguments(notifications_endpoint=notifications_endpoint)
+    )

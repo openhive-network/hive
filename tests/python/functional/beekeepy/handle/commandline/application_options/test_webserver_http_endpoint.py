@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import requests
-from beekeepy import Settings
-from beekeepy._handle import Beekeeper
+from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArguments
 from helpy import HttpUrl
 
 from hive_local_tools.beekeeper.network import get_port
@@ -14,7 +13,7 @@ from schemas.apis import beekeeper_api
 from schemas.jsonrpc import get_response_model
 
 if TYPE_CHECKING:
-    from hive_local_tools.beekeeper.models import SettingsLoggerFactory
+    from beekeepy._handle import Beekeeper
 
 
 def check_webserver_http_endpoint(*, nofification_endpoint: HttpUrl, webserver_http_endpoint: HttpUrl) -> None:
@@ -42,14 +41,16 @@ def check_webserver_http_endpoint(*, nofification_endpoint: HttpUrl, webserver_h
         HttpUrl(f"127.0.0.1:{get_port()}", protocol="http"),
     ],
 )
-def test_webserver_http_endpoint(settings_with_logger: SettingsLoggerFactory, webserver_http_endpoint: HttpUrl) -> None:
+def test_webserver_http_endpoint(beekeeper_not_started: Beekeeper, webserver_http_endpoint: HttpUrl) -> None:
     """Test will check command line flag --webserver_http_endpoint."""
     # ARRANGE & ACT
-    settings, logger = settings_with_logger(Settings(http_endpoint=webserver_http_endpoint))
-    with Beekeeper(settings=settings, logger=logger) as beekeeper:
-        # ASSERT
-        assert beekeeper.settings.notification_endpoint is not None
-        check_webserver_http_endpoint(
-            nofification_endpoint=beekeeper.settings.notification_endpoint,
-            webserver_http_endpoint=webserver_http_endpoint,
-        )
+    beekeeper_not_started.run(
+        additional_cli_arguments=BeekeeperArguments(webserver_http_endpoint=webserver_http_endpoint)
+    )
+
+    # ASSERT
+    assert beekeeper_not_started.settings.notification_endpoint is not None
+    check_webserver_http_endpoint(
+        nofification_endpoint=beekeeper_not_started.settings.notification_endpoint,
+        webserver_http_endpoint=webserver_http_endpoint,
+    )

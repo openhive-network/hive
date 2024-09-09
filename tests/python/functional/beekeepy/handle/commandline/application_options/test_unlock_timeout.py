@@ -4,6 +4,7 @@ import time
 from typing import TYPE_CHECKING
 
 import pytest
+from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArguments
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import Beekeeper
@@ -20,13 +21,12 @@ def check_wallet_lock(beekeeper: Beekeeper, required_status: bool) -> None:
 def test_unlock_time(beekeeper_not_started: Beekeeper, unlock_timeout: int) -> None:
     """Test will check command line flag --unlock-time."""
     # ARRANGE
-    beekeeper_not_started.config.unlock_timeout = unlock_timeout
-    with beekeeper_not_started:
-        beekeeper_not_started.api.create(wallet_name="wallet_name")
-        check_wallet_lock(beekeeper_not_started, True)
+    beekeeper_not_started.run(additional_cli_arguments=BeekeeperArguments(unlock_timeout=unlock_timeout))
+    beekeeper_not_started.api.create(wallet_name="wallet_name")
+    check_wallet_lock(beekeeper_not_started, True)
 
-        # ACT
-        time.sleep(unlock_timeout)
+    # ACT
+    time.sleep(unlock_timeout)
 
-        # ASSERT
-        check_wallet_lock(beekeeper_not_started, False)
+    # ASSERT
+    check_wallet_lock(beekeeper_not_started, False)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArguments
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -21,11 +23,10 @@ def test_log_json_rpc(beekeeper_not_started: Beekeeper) -> None:
     """Test will check command line flag --log-json-rpc."""
     # ARRANGE
     path_to_jsonrpc_logs = beekeeper_not_started.settings.working_directory
-    beekeeper_not_started.config.log_json_rpc = path_to_jsonrpc_logs
 
     # ACT
-    with beekeeper_not_started:
-        beekeeper_not_started.api.get_info()
+    beekeeper_not_started.run(additional_cli_arguments=BeekeeperArguments(log_json_rpc=path_to_jsonrpc_logs))
+    beekeeper_not_started.api.get_info()
 
-        # ASSERT
-        check_log_json_rpc(path_to_jsonrpc_logs)
+    # ASSERT
+    check_log_json_rpc(path_to_jsonrpc_logs)
