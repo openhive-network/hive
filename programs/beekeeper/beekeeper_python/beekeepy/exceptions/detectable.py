@@ -1,45 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 from pydantic import StrRegexError
 
-from beekeepy.exceptions.base import BeekeepyError
-from helpy._interfaces.context import ContextSync
+from beekeepy.exceptions.base import DetectableError
 from helpy.exceptions import RequestError
-
-if TYPE_CHECKING:
-    from types import TracebackType
-
-
-class DetectableError(ContextSync[None], BeekeepyError, ABC):
-    """
-    Base class for conditionally raised exception using `with` statement based detection.
-
-    Example:
-    ```
-    with DividsionByZeroException(a, b):
-        print(a / b)
-    ```
-
-    Raises:
-        self: If conditions specified by child classes in `_is_exception_handled` are met
-    """
-
-    @abstractmethod
-    def _is_exception_handled(self, ex: BaseException) -> bool: ...
-
-    def _enter(self) -> None:
-        return None
-
-    def _finally(self) -> None:
-        return None
-
-    def _handle_exception(self, ex: BaseException, tb: TracebackType | None) -> bool:
-        if self._is_exception_handled(ex):
-            raise self
-        return super()._handle_exception(ex, tb)
 
 
 class NoWalletWithSuchNameError(DetectableError):

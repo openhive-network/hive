@@ -13,7 +13,7 @@ from beekeepy.exceptions import BeekeeperAlreadyRunningError
 from helpy._interfaces.url import Url
 
 if TYPE_CHECKING:
-    from beekeepy._factories.models import _AsynchronousBeekeeperImpl, _SynchronousBeekeeperImpl
+    from beekeepy._factories.beekeeper_factories import _AsynchronousBeekeeperImpl, _SynchronousBeekeeperImpl
     from beekeepy._interface.abc.asynchronous.beekeeper import (
         Beekeeper as AsynchronousBeekeeperInterface,
     )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import helpy
@@ -67,7 +67,7 @@ class AsyncRemoteBeekeeper(helpy.AsyncBeekeeper):
     pass
 
 
-class BeekeeperCommon(BeekeeperNotificationCallbacks):
+class BeekeeperCommon(BeekeeperNotificationCallbacks, ABC):
     def __init__(self, *args: Any, settings: Settings, logger: Logger, **kwargs: Any) -> None:
         super().__init__(*args, settings=settings, **kwargs)
         self.__exec = BeekeeperExecutable(settings, logger)

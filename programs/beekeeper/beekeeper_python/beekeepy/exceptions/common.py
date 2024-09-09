@@ -2,14 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from beekeepy.exceptions.base import BeekeepyError
+from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeepyError
 
 if TYPE_CHECKING:
     from helpy import HttpUrl
-
-
-class BeekeeperExecutableError(BeekeepyError):
-    """Base class for exceptions related to starting/closing beekeeper executable."""
 
 
 class BeekeeperIsNotRunningError(BeekeeperExecutableError):

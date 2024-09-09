@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from abc import ABC
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class NotificationCallback(Protocol):
     def __call__(self, notification: Notification[Any]) -> None: ...
 
 
-class BeekeeperNotificationCallbacks:
+class BeekeeperNotificationCallbacks(ABC):  # noqa: B024
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
