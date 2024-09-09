@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Final
 import pytest
 from helpy.exceptions import CommunicationError, RequestError
 
-from hive_local_tools.beekeeper import checkers
+from hive_local_tools.beekeeper import checkers, waiters
 
 if TYPE_CHECKING:
     from beekeepy._handle import Beekeeper
@@ -37,7 +37,7 @@ def test_if_beekeeper_closes_after_last_session_termination(
     """Test test_api_close_session will test if beekeeper closes after closing last session."""
     # ARRANGE & ACT
     beekeeper.api.close_session()
-    beekeeper.close()
+    waiters.wait_for_beekeeper_to_close(beekeeper=beekeeper)
 
     # ASSERT
     with pytest.raises(CommunicationError, match="no response available"):
