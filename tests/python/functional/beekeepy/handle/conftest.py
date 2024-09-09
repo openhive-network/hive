@@ -22,9 +22,14 @@ from hive_local_tools.beekeeper.models import (
 
 
 @pytest.fixture()
-def beekeeper_not_started(settings_with_logger: SettingsLoggerFactory) -> Beekeeper:
+def beekeeper_not_started(settings_with_logger: SettingsLoggerFactory) -> Iterator[Beekeeper]:
     incoming_settings, logger = settings_with_logger()
-    return Beekeeper(settings=incoming_settings, logger=logger)
+    bk = Beekeeper(settings=incoming_settings, logger=logger)
+
+    yield bk
+
+    if bk.is_running:
+        bk.close()
 
 
 @pytest.fixture()
