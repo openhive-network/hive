@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import helpy
 from beekeepy._executable import BeekeeperArguments, BeekeeperExecutable
+from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArgumentsDefaults
 from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
 from beekeepy._interface.settings import Settings
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
-from helpy import ContextAsync, ContextSync
+from helpy import ContextAsync, ContextSync, HttpUrl
 from helpy._communication.universal_notification_server import (
     UniversalNotificationServer,
 )
@@ -94,7 +95,7 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
     def is_running(self) -> bool:
         return self.__exec is not None and self.__exec.is_running()
 
-    def __setup_notification_server(self) -> None:
+    def __setup_notification_server(self, *, address_from_cli_arguments: HttpUrl | None = None) -> None:
         assert self.__notification_server is None, "Notification server already exists, previous hasn't been close?"
         assert (
             self.__notification_event_handler is None
@@ -103,7 +104,8 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
         self.__notification_event_handler = NotificationHandler(self)
         self.__notification_server = UniversalNotificationServer(
             self.__notification_event_handler,
-            notification_endpoint=self._get_settings().notification_endpoint,  # this has to be accessed directly from settings
+            notification_endpoint=address_from_cli_arguments
+            or self._get_settings().notification_endpoint,  # this has to be accessed directly from settings
         )
 
     def __close_notification_server(self) -> None:
@@ -131,28 +133,37 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
     def _handle_status_change(self, status: Status) -> None:
         self.__logger.info(f"Beekeeper status change to: `{status.current_status}`")
 
-    def _run(self, settings: Settings) -> None:
-        self.__setup_notification_server()
+    def _run(self, settings: Settings, additional_cli_arguments: BeekeeperArguments | None = None) -> None:
+        aca = additional_cli_arguments or BeekeeperArguments()
+        self.__setup_notification_server(address_from_cli_arguments=aca.notifications_endpoint)
         assert self.__notification_server is not None, "Creation of notification server failed"
         settings.notification_endpoint = helpy.HttpUrl(f"127.0.0.1:{self.__notification_server.run()}", protocol="http")
-        settings.http_endpoint = settings.http_endpoint or helpy.HttpUrl("127.0.0.1:0", protocol="http")
-        settings.working_directory = self.__exec.working_directory
-        self._run_application(settings=settings)
+        settings.http_endpoint = (
+            aca.webserver_http_endpoint or settings.http_endpoint or helpy.HttpUrl("127.0.0.1:0", protocol="http")
+        )
+        settings.working_directory = (
+            aca.data_dir
+            if aca.data_dir != BeekeeperArgumentsDefaults.DEFAULT_DATA_DIR
+            else self.__exec.working_directory
+        )
+        self._run_application(settings=settings, additional_cli_arguments=aca)
         try:
             self.__wait_till_ready()
         except BeekeeperAlreadyRunningError:
             self.close()
             raise
 
-    def _run_application(self, settings: Settings) -> None:
+    def _run_application(self, settings: Settings, additional_cli_arguments: BeekeeperArguments) -> None:
         assert settings.notification_endpoint is not None
         assert settings.http_endpoint is not None
         self.__exec.run(
             blocking=False,
-            arguments=BeekeeperArguments(
-                notifications_endpoint=settings.notification_endpoint,
-                webserver_http_endpoint=settings.http_endpoint,
-                data_dir=settings.working_directory,
+            arguments=additional_cli_arguments.copy(
+                update={
+                    "notifications_endpoint": settings.notification_endpoint,
+                    "webserver_http_endpoint": settings.http_endpoint,
+                    "data_dir": settings.working_directory,
+                }
             ),
             propagate_sigint=settings.propagate_sigint,
         )
@@ -192,10 +203,10 @@ class BeekeeperCommon(BeekeeperNotificationCallbacks):
 
 
 class Beekeeper(BeekeeperCommon, SyncRemoteBeekeeper, ContextSync["Beekeeper"]):
-    def run(self) -> None:
+    def run(self, *, additional_cli_arguments: BeekeeperArguments | None = None) -> None:
         self._clear_session()
         with self.update_settings() as settings:
-            self._run(settings=cast(Settings, settings))
+            self._run(settings=cast(Settings, settings), additional_cli_arguments=additional_cli_arguments)
         self.http_endpoint = self._get_http_endpoint_from_event()
 
     def _get_settings(self) -> Settings:
@@ -215,10 +226,10 @@ class Beekeeper(BeekeeperCommon, SyncRemoteBeekeeper, ContextSync["Beekeeper"]):
 
 
 class AsyncBeekeeper(BeekeeperCommon, AsyncRemoteBeekeeper, ContextAsync["AsyncBeekeeper"]):
-    def run(self) -> None:
+    def run(self, *, additional_cli_arguments: BeekeeperArguments | None = None) -> None:
         self._clear_session()
         with self.update_settings() as settings:
-            self._run(settings=cast(Settings, settings))
+            self._run(settings=cast(Settings, settings), additional_cli_arguments=additional_cli_arguments)
         self.http_endpoint = self._get_http_endpoint_from_event()
 
     def _get_settings(self) -> Settings:
