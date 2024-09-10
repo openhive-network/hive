@@ -2,7 +2,7 @@ include:
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
 
 variables:
-  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 82000000
+  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 88800000
 
 block-conversion:
   extends: .block-conversion-job-template
