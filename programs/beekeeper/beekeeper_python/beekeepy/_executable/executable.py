@@ -131,7 +131,7 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
 
         return command, environment_variables
 
-    def __raise_warning_if_timeout_on_close(self) -> None:
+    def __raise_exception_if_timeout_on_close(self) -> None:
         raise TimeoutReachWhileCloseError
 
     def detach(self) -> None:
@@ -150,7 +150,7 @@ class Executable(Closeable, Generic[ConfigT, ArgumentT]):
             return_code = self.__process.wait(timeout=timeout_secs)
             self._logger.debug(f"Closed with {return_code} return code")
         except subprocess.TimeoutExpired:
-            self.__raise_warning_if_timeout_on_close()
+            self.__raise_exception_if_timeout_on_close()
             self.__process.kill()
             self.__process.wait()
         self.__process = None
