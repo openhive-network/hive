@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING, Any
 
 from beekeepy._handle.beekeeper import close_if_possible, detach_if_possible
 from beekeepy._interface.abc.synchronous.beekeeper import Beekeeper as BeekeeperInterface
+from beekeepy._interface.delay_guard import SyncDelayGuard
 from beekeepy._interface.synchronous.session import Session
+from beekeepy.exceptions.common import UnknownDecisionPathError
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
@@ -17,13 +19,19 @@ class Beekeeper(BeekeeperInterface):
     def __init__(self, *args: Any, handle: SyncRemoteBeekeeper, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__instance = handle
+        self.__guard = SyncDelayGuard()
 
     def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
-        return Session(beekeeper=self._get_instance())
+        while self.__guard.error_occured():
+            with self.__guard:
+                session = self.__create_session()
+                session.get_info()
+                return session
+        raise UnknownDecisionPathError
 
     @property
     def session(self) -> SessionInterface:
-        return Session(beekeeper=self._get_instance(), use_session_token=self._get_instance().session.token)
+        return self.__create_session(self._get_instance().session.token)
 
     def _get_instance(self) -> SyncRemoteBeekeeper:
         return self.__instance
@@ -33,3 +41,6 @@ class Beekeeper(BeekeeperInterface):
 
     def detach(self) -> None:
         detach_if_possible(self.__instance)
+
+    def __create_session(self, token: str | None = None) -> SessionInterface:
+        return Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)

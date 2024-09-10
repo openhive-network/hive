@@ -8,12 +8,14 @@ from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from beekeepy._interface.validators import validate_public_keys, validate_seconds, validate_wallet_name
+from beekeepy._interface.validators import validate_digest, validate_public_keys, validate_seconds, validate_wallet_name
 from beekeepy.exceptions import (
     InvalidWalletError,
     NoWalletWithSuchNameError,
     WalletWithSuchNameAlreadyExistsError,
 )
+from beekeepy.exceptions.common import UnknownDecisionPathError
+from beekeepy.exceptions.detectable import NotExistingKeyError
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
@@ -23,6 +25,7 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.wallet import (
         Wallet as WalletInterface,
     )
+    from beekeepy._interface.delay_guard import SyncDelayGuard
     from schemas.apis.beekeeper_api import GetInfo
     from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
@@ -30,11 +33,17 @@ if TYPE_CHECKING:
 
 class Session(SessionInterface):
     def __init__(
-        self, *args: Any, beekeeper: SyncRemoteBeekeeper, use_session_token: str | None = None, **kwargs: Any
+        self,
+        *args: Any,
+        beekeeper: SyncRemoteBeekeeper,
+        guard: SyncDelayGuard,
+        use_session_token: str | None = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = beekeeper
         self.__session_token = use_session_token or ""
+        self.__guard = guard
 
     def get_info(self) -> GetInfo:
         return self.__beekeeper.api.get_info(token=self.token)
@@ -98,7 +107,7 @@ class Session(SessionInterface):
         return [key.public_key for key in self.__beekeeper.api.get_public_keys(token=self.token).keys]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
-        return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=self.token)
+        return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)
 
     def __construct_wallet(self, name: str) -> Wallet:
-        return Wallet(name=name, beekeeper=self.__beekeeper, session_token=self.token)
+        return Wallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)

@@ -11,13 +11,14 @@ from beekeepy._interface.abc.synchronous.wallet import (
     Wallet as WalletInterface,
 )
 from beekeepy._interface.common import WalletCommons
+from beekeepy._interface.delay_guard import SyncDelayGuard
 from beekeepy._interface.validators import validate_private_keys, validate_public_keys
 from beekeepy.exceptions import (
     InvalidPasswordError,
     InvalidPrivateKeyError,
     InvalidPublicKeyError,
     MissingSTMPrefixError,
-    RemovingNotExistingKeyError,
+    NotExistingKeyError,
     UnknownDecisionPathError,
 )
 from helpy import wax
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
     from schemas.fields.hex import Signature
 
 
-class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterface):
+class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked, SyncDelayGuard], WalletInterface):
     @property
     def public_keys(self) -> list[PublicKey]:
         return [
@@ -45,8 +46,9 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterfa
 
     def unlock(self, password: str) -> UnlockedWallet:
         if not self.__is_unlocked():
-            with InvalidPasswordError(wallet_name=self.name):
-                self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
+            while self._guard.error_occured():
+                with self._guard, InvalidPasswordError(wallet_name=self.name):
+                    self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
         return self.__construct_unlocked_wallet()
 
     def __is_unlocked(self) -> bool:
@@ -58,7 +60,9 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked], WalletInterfa
         return self._last_lock_state
 
     def __construct_unlocked_wallet(self) -> UnlockedWallet:
-        wallet = UnlockedWallet(name=self.name, beekeeper=self._beekeeper, session_token=self.session_token)
+        wallet = UnlockedWallet(
+            name=self.name, beekeeper=self._beekeeper, session_token=self.session_token, guard=self._guard
+        )
         wallet._last_lock_state = False
         return wallet
 

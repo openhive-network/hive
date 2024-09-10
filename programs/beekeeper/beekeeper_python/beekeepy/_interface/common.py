@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Generic, NoReturn, ParamSpec, TypeVar, ov
 
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper, SyncRemoteBeekeeper
 from beekeepy._handle.callbacks_protocol import AsyncWalletLocked, SyncWalletLocked
+from beekeepy._interface.delay_guard import AsyncDelayGuard, SyncDelayGuard
 from beekeepy.exceptions import WalletIsLockedError
 
 if TYPE_CHECKING:
@@ -19,22 +20,27 @@ P = ParamSpec("P")
 ResultT = TypeVar("ResultT")
 BeekeeperT = TypeVar("BeekeeperT", bound=SyncRemoteBeekeeper | AsyncRemoteBeekeeper)
 CallbackT = TypeVar("CallbackT", bound=AsyncWalletLocked | SyncWalletLocked)
+GuardT = TypeVar("GuardT", bound=SyncDelayGuard | AsyncDelayGuard)
 
 
 class ContainsWalletName(ABC):
     @property
     @abstractmethod
-    def name(self) -> str: ...
+    def name(self) -> str:
+        ...
 
 
-class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT]):
-    def __init__(self, *args: Any, name: str, beekeeper: BeekeeperT, session_token: str, **kwargs: Any) -> None:
+class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT, GuardT]):
+    def __init__(
+        self, *args: Any, name: str, beekeeper: BeekeeperT, session_token: str, guard: GuardT, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.__name = name
         self.__beekeeper = beekeeper
         self.__last_check_is_locked = True
         self.__wallet_close_callbacks: list[CallbackT] = []
         self.session_token = session_token
+        self._guard = guard
 
     def register_wallet_close_callback(self, callback: CallbackT) -> None:
         self._wallet_close_callbacks.append(callback)

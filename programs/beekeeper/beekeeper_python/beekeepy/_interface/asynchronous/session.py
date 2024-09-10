@@ -9,12 +9,14 @@ from beekeepy._interface.asynchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from beekeepy._interface.validators import validate_public_keys, validate_seconds, validate_wallet_name
+from beekeepy._interface.validators import validate_digest, validate_public_keys, validate_seconds, validate_wallet_name
 from beekeepy.exceptions import (
     InvalidWalletError,
     NoWalletWithSuchNameError,
     WalletWithSuchNameAlreadyExistsError,
 )
+from beekeepy.exceptions.common import UnknownDecisionPathError
+from beekeepy.exceptions.detectable import NotExistingKeyError
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
@@ -24,6 +26,7 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.wallet import (
         Wallet as WalletInterface,
     )
+    from beekeepy._interface.delay_guard import AsyncDelayGuard
     from schemas.apis.beekeeper_api import GetInfo
     from schemas.fields.basic import PublicKey
     from schemas.fields.hex import Signature
@@ -34,12 +37,14 @@ class Session(SessionInterface):
         self,
         *args: Any,
         beekeeper: AsynchronousRemoteBeekeeperHandle,
+        guard: AsyncDelayGuard,
         use_session_token: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.__beekeeper = beekeeper
         self.__session_token = use_session_token or ""
+        self.__guard = guard
 
     async def get_info(self) -> GetInfo:
         return await self.__beekeeper.api.get_info(token=await self.token)
@@ -111,7 +116,7 @@ class Session(SessionInterface):
         )
 
     async def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
-        return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token)
+        return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token, guard=self.__guard)
 
     async def __construct_wallet(self, name: str) -> WalletInterface:
-        return Wallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token)
+        return Wallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token, guard=self.__guard)
