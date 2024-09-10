@@ -82,7 +82,7 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
     @wallet_unlocked
     def remove_key(self, *, key: str) -> None:
         validate_public_keys(key=key)
-        with RemovingNotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(
+        with NotExistingKeyError(public_key=key), MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(
             public_key=key
         ):
             self._beekeeper.api.remove_key(wallet_name=self.name, public_key=key, token=self.session_token)
@@ -94,7 +94,9 @@ class UnlockedWallet(UnlockedWalletInterface, Wallet):
     @wallet_unlocked
     def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
         validate_public_keys(key=key)
-        with MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key):
+        with MissingSTMPrefixError(public_key=key), InvalidPublicKeyError(public_key=key), NotExistingKeyError(
+            public_key=key
+        ):
             return self._beekeeper.api.sign_digest(
                 sig_digest=sig_digest, public_key=key, wallet_name=self.name, token=self.session_token
             ).signature

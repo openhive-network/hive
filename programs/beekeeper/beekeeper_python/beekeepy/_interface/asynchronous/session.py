@@ -75,9 +75,12 @@ class Session(SessionInterface):
 
     async def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
         validate_public_keys(key=key)
-        return (
-            await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, token=await self.token)
-        ).signature
+        validate_digest(sig_digest=sig_digest)
+        with NotExistingKeyError(public_key=key):
+            return (
+                await self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, token=await self.token)
+            ).signature
+        raise UnknownDecisionPathError
 
     @property
     async def public_keys(self) -> list[PublicKey]:

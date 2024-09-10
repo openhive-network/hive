@@ -68,7 +68,10 @@ class Session(SessionInterface):
 
     def sign_digest(self, *, sig_digest: str, key: str) -> Signature:
         validate_public_keys(key=key)
-        return self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, token=self.token).signature
+        validate_digest(sig_digest=sig_digest)
+        with NotExistingKeyError(public_key=key):
+            return self.__beekeeper.api.sign_digest(sig_digest=sig_digest, public_key=key, token=self.token).signature
+        raise UnknownDecisionPathError
 
     @property
     def token(self) -> str:

@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-
-from pydantic import StrRegexError
-
-from beekeepy.exceptions.base import DetectableError
+from beekeepy.exceptions.base import DetectableError, SchemaDetectableError
 from helpy.exceptions import RequestError
 
 
@@ -63,16 +59,16 @@ class InvalidPrivateKeyError(DetectableError):
         return isinstance(ex, RequestError) and "Assert Exception:false: Key can't be constructed" in ex.error
 
 
-class RemovingNotExistingKeyError(DetectableError):
+class NotExistingKeyError(DetectableError):
     """Raises when user tries to remove key that not exists."""
 
     def __init__(self, public_key: str) -> None:
         """Constructor.
 
         Args:
-            public_key (str): key that user tries to remove, but it already does not exist
+            public_key (str): key that user tries to use, but it does not exist
         """
-        super().__init__(f"cannot remove key that does not exist: `{public_key}`")
+        super().__init__(f"cannot use key that does not exist: `{public_key}`")
 
     def _is_exception_handled(self, ex: BaseException) -> bool:
         return isinstance(ex, RequestError) and "Assert Exception:false: Key not in wallet" in ex.error
@@ -158,27 +154,6 @@ class InvalidPasswordError(DetectableError):
         )
 
 
-class SchemaDetectableError(DetectableError, ABC):
-    """Base class for errors that bases on schema exceptions."""
-
-    def __init__(self, arg_name: str, arg_value: str) -> None:
-        """Constructor.
-
-        Args:
-            arg_name (str): name of argument which was invalid
-            arg_value (str): value of argument which was invalid
-        """
-        self._arg_name = arg_name
-        self._arg_value = arg_value
-        super().__init__(self._error_message())
-
-    def _is_exception_handled(self, ex: BaseException) -> bool:
-        return isinstance(ex, StrRegexError)
-
-    @abstractmethod
-    def _error_message(self) -> str: ...
-
-
 class InvalidAccountNameError(SchemaDetectableError):
     """Raises when given user name does not match regex."""
 
@@ -198,3 +173,13 @@ class InvalidSchemaPrivateKeyError(SchemaDetectableError):
 
     def _error_message(self) -> str:
         return f"Value given for argument `{self._arg_name}` is invalid private key: `{self._arg_value}`."
+
+
+class InvalidSchemaHexError(SchemaDetectableError):
+    """Raises when given hex does not match regex."""
+
+    def _error_message(self) -> str:
+        return (
+            f"Value given for argument `{self._arg_name}` contains forbidden charachters for hex value:"
+            f" `{self._arg_value}`."
+        )

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from beekeepy.exceptions.base import BeekeepyError
+from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeepyError, DetectableError, SchemaDetectableError
 from beekeepy.exceptions.common import (
     BeekeeperAlreadyRunningError,
-    BeekeeperExecutableError,
     BeekeeperIsNotRunningError,
     InvalidWalletNameError,
     NotPositiveTimeError,
     TimeoutReachWhileCloseError,
+    TimeTooBigError,
     UnknownDecisionPathError,
     WalletIsLockedError,
 )
@@ -16,13 +16,13 @@ from beekeepy.exceptions.detectable import (
     InvalidPasswordError,
     InvalidPrivateKeyError,
     InvalidPublicKeyError,
+    InvalidSchemaHexError,
     InvalidSchemaPrivateKeyError,
     InvalidSchemaPublicKeyError,
     InvalidWalletError,
     MissingSTMPrefixError,
+    NotExistingKeyError,
     NoWalletWithSuchNameError,
-    RemovingNotExistingKeyError,
-    SchemaDetectableError,
     WalletWithSuchNameAlreadyExistsError,
 )
 
@@ -31,20 +31,23 @@ __all__ = [
     "BeekeeperExecutableError",
     "BeekeeperIsNotRunningError",
     "BeekeepyError",
+    "DetectableError",
     "InvalidAccountNameError",
     "InvalidPasswordError",
     "InvalidPrivateKeyError",
     "InvalidPublicKeyError",
+    "InvalidSchemaHexError",
     "InvalidSchemaPrivateKeyError",
     "InvalidSchemaPublicKeyError",
     "InvalidWalletError",
     "InvalidWalletNameError",
     "MissingSTMPrefixError",
+    "NotExistingKeyError",
     "NotPositiveTimeError",
     "NoWalletWithSuchNameError",
-    "RemovingNotExistingKeyError",
     "SchemaDetectableError",
     "TimeoutReachWhileCloseError",
+    "TimeTooBigError",
     "UnknownDecisionPathError",
     "WalletIsLockedError",
     "WalletWithSuchNameAlreadyExistsError",
