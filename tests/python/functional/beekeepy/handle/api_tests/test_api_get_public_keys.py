@@ -35,7 +35,7 @@ def test_api_get_public_keys(
     bk_public_keys = [pub.public_key for pub in response]
 
     # ASSERT
-    assert sorted(bk_public_keys) == sorted(wallet.get_all_public_keys()), "All keys should be available."
+    assert bk_public_keys == wallet.get_all_public_keys(), "All keys should be available."
 
 
 def test_api_get_public_keys_with_different_wallet_name(beekeeper: Beekeeper, wallet: WalletInfo) -> None:
@@ -70,9 +70,7 @@ def test_api_get_public_keys_with_many_wallets(beekeeper: Beekeeper, setup_walle
     beekeeper.api.lock(wallet_name=wallet_2.name)
     # Now only keys from wallet 1 should be available
     bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
-    assert sorted(bk_pub_keys_1) == sorted(
-        wallet_1.get_all_public_keys()
-    ), "Only keys from wallet 1 should be available."
+    assert bk_pub_keys_1 == wallet_1.get_all_public_keys(), "Only keys from wallet 1 should be available."
 
     # ACT & ASSERT 2
     # Lock wallet 1
@@ -105,9 +103,7 @@ def test_api_get_public_keys_with_many_wallets_closed(beekeeper: Beekeeper, setu
     # Close wallet 2
     beekeeper.api.close(wallet_name=wallet_2.name)
     bk_pub_keys_1 = [pub.public_key for pub in (beekeeper.api.get_public_keys()).keys]
-    assert sorted(bk_pub_keys_1) == sorted(
-        wallet_1.get_all_public_keys()
-    ), "Only keys from wallet 1 should be available."
+    assert bk_pub_keys_1 == wallet_1.get_all_public_keys(), "Only keys from wallet 1 should be available."
 
     # ACT & ASSERT 2
     # Close wallet 1,

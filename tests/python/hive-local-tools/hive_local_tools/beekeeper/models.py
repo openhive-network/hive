@@ -22,7 +22,7 @@ class WalletInfoWithImportedAccounts(WalletInfo):
     accounts: list[tt.Account]
 
     def get_all_public_keys(self) -> list[PublicKey]:
-        return [acc.public_key for acc in self.accounts]
+        return sorted([acc.public_key for acc in self.accounts])
 
 
 class WalletsGeneratorT(Protocol):
