@@ -28,10 +28,10 @@ variables:
     - |
       set -e
       echo "Converting block log to mirrornet format"
-      sudo mkdir -p "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      sudo mkdir -p "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet"
       sudo chown -Rf $(id -u):$(id -g) "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       ls -lah "$BLOCK_LOG_OUTPUT_DIR"
-      MAINNET_BLOCK_LOG_PATH="$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log"
+      MAINNET_BLOCK_LOG_PATH="$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet/block_log"
       rm -f "$MAINNET_BLOCK_LOG_PATH"
       rm -f "$MAINNET_BLOCK_LOG_PATH.artifacts"
       ln "$BLOCK_LOG_SOURCE_DIR/block_log" "$MAINNET_BLOCK_LOG_PATH"
