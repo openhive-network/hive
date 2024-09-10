@@ -20,7 +20,7 @@ class StreamRepresentation(ContextSync[TextIO]):
     def __get_path(self) -> Path:
         assert self.dirpath is not None, "Path is not specified"
         if self._current_filename is None:
-            self._current_filename = self.__next_filename()  # dummy for mypy
+            self._current_filename = self.__next_filename()
         return self.dirpath / self._current_filename
 
     def __get_stream(self) -> TextIO:
@@ -30,7 +30,7 @@ class StreamRepresentation(ContextSync[TextIO]):
     def open_stream(self, mode: str = "wt") -> TextIO:
         assert self.stream is None, "Stream is already opened"
         self.__next_filename()
-        self.__ceate_user_friendly_link()
+        self.__create_user_friendly_link()
         self.stream = cast(TextIO, self.__get_path().open(mode))
         assert not self.stream.closed, f"Failed to open stream: `{self.stream.errors}`"
         return self.stream
@@ -48,11 +48,11 @@ class StreamRepresentation(ContextSync[TextIO]):
     def _finally(self) -> None:
         self.close_stream()
 
-    def __ceate_user_friendly_link(self) -> None:
+    def __create_user_friendly_link(self) -> None:
         assert self.dirpath is not None, "dirpath is not set"
         user_friendly_link_dst = self.dirpath / f"{self.filename}.log"
-        if user_friendly_link_dst.exists() and user_friendly_link_dst.is_symlink():
-            user_friendly_link_dst.unlink()
+        if user_friendly_link_dst.is_symlink():
+            user_friendly_link_dst.unlink(missing_ok=True)
         user_friendly_link_dst.symlink_to(self.__get_path())
 
     def __next_filename(self) -> str:
