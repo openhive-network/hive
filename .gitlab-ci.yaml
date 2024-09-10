@@ -561,6 +561,7 @@ beekeepy_tests:
       artifacts: true
   variables:
     JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/beekeepy/report.xml"
+    PYTEST_ARGS: "--asyncio-mode=auto"
     PYTEST_TIMEOUT_MINUTES: 5
   script:
     - cd "$CI_PROJECT_DIR/tests/python/functional/beekeepy"
