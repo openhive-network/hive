@@ -46,7 +46,9 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked, SyncDelayGuard
 
     def unlock(self, password: str) -> UnlockedWallet:
         if not self.__is_unlocked():
-            while self._guard.error_occured():
+            first_try = True
+            while first_try or self._guard.error_occured():
+                first_try = False
                 with self._guard, InvalidPasswordError(wallet_name=self.name):
                     self._beekeeper.api.unlock(wallet_name=self.name, password=password, token=self.session_token)
         return self.__construct_unlocked_wallet()

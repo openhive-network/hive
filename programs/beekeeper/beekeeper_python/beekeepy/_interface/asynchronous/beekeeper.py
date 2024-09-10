@@ -22,7 +22,8 @@ class Beekeeper(BeekeeperInterface):
         self.__guard = AsyncDelayGuard()
 
     async def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
-        while self.__guard.error_occured():
+        session: SessionInterface | None = None
+        while session is None or self.__guard.error_occured():
             async with self.__guard:
                 session = self.__create_session()
                 await session.get_info()
