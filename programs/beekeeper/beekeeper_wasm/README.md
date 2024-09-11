@@ -54,7 +54,7 @@ and then compile the project:
 
 ```bash
 ./scripts/build_wasm_beekeeper.sh
-cd hive/programs/beekeeper/beekeeper_wasm
+cd ./programs/beekeeper/beekeeper_wasm
 sudo npm install -g pnpm
 pnpm install --frozen-lockfile
 ```
