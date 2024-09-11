@@ -157,6 +157,107 @@ test.describe('Beekeeper factory tests', () => {
     expect(retVal).toBe(input);
   });
 
+  test('Should be able to create temporary wallet', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      const { wallet } = await session.createWallet('w0', 'mypassword', true);
+
+      return wallet.isTemporary;
+    });
+
+    expect(retVal).toBeTruthy();
+  });
+
+  test('Should not be a temporary wallet', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      const { wallet } = await session.createWallet('w0', 'mypassword');
+
+      return wallet.isTemporary;
+    });
+
+    expect(retVal).toBeFalsy();
+  });
+
+  test('Should be able to import key in a temporary wallet', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      const { wallet } = await session.createWallet('w0', 'mypassword', true);
+
+     const key = await wallet.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT');
+
+     wallet.signDigest(key, '614e645c13b351b56d9742b358e3c3da58fa1a6a0036a01d3163c21aa2c8a99c')
+
+      return wallet.getPublicKeys();
+    });
+
+    expect(retVal).toEqual(['STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh']);
+  });
+
+  test('Temporary wallet should not exist', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      await session.createWallet('w0', 'mypassword', true);
+
+      beekeeper.delete();
+
+      const beekeeper2 = await factory();
+
+      const session2 = beekeeper2.createSession("my.salt2");
+
+      try {
+        session2.openWallet("w0"); // This should fail
+
+        return false;
+      } catch (error) {
+        return true;
+      }
+    });
+
+    expect(retVal).toBeTruthy();
+  });
+
+  test('Should has a wallet', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      await session.createWallet('w0', 'mypassword');
+
+      return session.hasWallet('w0');
+    });
+
+    expect(retVal).toBeTruthy();
+  });
+
+  test('Should not have a wallet', async ({ page }) => {
+    const retVal = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = beekeeper.createSession("my.salt");
+
+      await session.createWallet('w0', 'mypassword');
+
+      return session.hasWallet('w1');
+    });
+
+    expect(retVal).toBeFalsy();
+  });
+
+
   test.afterAll(async () => {
     await browser.close();
   });
