@@ -4,6 +4,7 @@
 #include <core/beekeeper_wallet_manager.hpp>
 
 #include <fc/value_set.hpp>
+#include <fc/sigbus_info.hpp>
 
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 
@@ -13,6 +14,7 @@ namespace beekeeper {
 
 beekeeper_app::beekeeper_app()
 {
+  fc::print_information_on_sigbus();
   app.init_signals_handler();
 }
 

@@ -21,6 +21,7 @@
 #include <fc/interprocess/signals.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/stacktrace.hpp>
+#include <fc/sigbus_info.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
@@ -85,6 +86,8 @@ int main( int argc, char** argv )
   {
     appbase::application theApp;
     bool _started_loop = false;
+
+    fc::print_information_on_sigbus();
 
     theApp.init_signals_handler();
 

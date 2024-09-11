@@ -168,6 +168,7 @@ set( fc_minimal_sources
      src/variant_object.cpp
      src/filesystem.cpp
      src/stacktrace${FC_MINIMAL_FILE_SUFFIX}.cpp
+     src/sigbus_info.cpp
      src/time.cpp
      src/string.cpp
      src/shared_ptr.cpp
