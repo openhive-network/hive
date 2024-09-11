@@ -55,7 +55,7 @@ class Session(ContextSync["Session"], ABC):
     def wallets_created(self) -> list[Wallet]: ...
 
     @property
-    def wallets_opened(self) -> list[Wallet]:
+    def wallets_unlocked(self) -> list[Wallet]:
         return [wallet for wallet in self.wallets if wallet.unlocked is not None]
 
     @property
