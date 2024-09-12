@@ -8,7 +8,7 @@ from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
 )
-from beekeepy._interface.validators import validate_digest, validate_public_keys, validate_seconds, validate_wallet_name
+from beekeepy._interface.validators import validate_digest, validate_public_keys, validate_timeout, validate_wallet_name
 from beekeepy.exceptions import (
     InvalidWalletError,
     NoWalletWithSuchNameError,
@@ -72,7 +72,7 @@ class Session(SessionInterface):
         return self.wallets
 
     def set_timeout(self, seconds: int) -> None:
-        validate_seconds(time=seconds)
+        validate_timeout(time=seconds)
         self.__beekeeper.api.set_timeout(seconds=seconds, token=self.token)
 
     def sign_digest(self, *, sig_digest: str, key: str) -> Signature:

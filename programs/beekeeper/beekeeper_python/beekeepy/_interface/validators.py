@@ -24,7 +24,7 @@ __all__ = [
     "validate_account_names",
     "validate_private_keys",
     "validate_public_keys",
-    "validate_seconds",
+    "validate_timeout",
     "validate_wallet_name",
     "validate_digest",
 ]
@@ -56,7 +56,7 @@ def validate_digest(**kwargs: str) -> None:
     _generic_kwargs_validator(kwargs, InvalidSchemaHexError, Hex)
 
 
-def validate_seconds(time: int) -> None:
+def validate_timeout(time: int) -> None:
     if time <= 0:
         raise NotPositiveTimeError(time=time)
 
