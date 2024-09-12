@@ -9,13 +9,17 @@
   <script type="importmap">
     {
       "imports": {
+        "../../dist/node": "dist/node.js",
+        "../../build/beekeeper_wasm.web": "build/beekeeper_wasm.web.js",
+        <!-- XXX -->
         "@hiveio/beekeeper": "/build/beekeeper_wasm.web.js",
         "@hiveio/beekeeperfactory": "/dist/bundle/web.js",
         "helper": "/__tests__/assets/run_node_helper.js"
       }
     }
   </script>
-  <script type="module">
+  <script type="module" src=""></script>
+  <!-- <script type="module">
     import BeekeeperModule from '@hiveio/beekeeper';
     import beekeeperFactory from '@hiveio/beekeeperfactory';
     import { ExtractError, BeekeeperInstanceHelper } from 'helper';
@@ -64,6 +68,6 @@
         }
       }
     });
-  </script>
+  </script> -->
 </body>
 </html>
