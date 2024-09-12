@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Final, Iterator
 
 import pytest
 from beekeepy._handle import AsyncBeekeeper
+from beekeepy._interface.delay_guard import DelayGuardBase
 
 from hive_local_tools.beekeeper.generators import default_wallet_credentials
 from hive_local_tools.beekeeper.models import SettingsLoggerFactory, WalletInfo
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 
 # We have 500ms time period protection on ulocking wallet.
-WALLET_UNLOCK_INTERVAL: Final[float] = 0.6
+WALLET_UNLOCK_INTERVAL: Final[float] = DelayGuardBase.DELAY_TIME.total_seconds()
 AES_DECRYPTION_ERROR: Final[str] = "Invalid password for wallet"
 WALLET_UNACCESSIBLE_ERROR: Final[str] = "Assert Exception:false: unlock is not accessible"
 
