@@ -51,3 +51,6 @@ class Beekeeper(BeekeeperInterface):
 
     def __create_session(self, token: str | None = None) -> SessionInterface:
         return Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)
+
+    def pack(self) -> Packed[BeekeeperInterface]:
+        return Packed(settings=self._get_instance().settings, unpack_factory=self.__unpack_factory)

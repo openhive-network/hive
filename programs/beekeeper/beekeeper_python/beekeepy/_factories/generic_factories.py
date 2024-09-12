@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from helpy._interfaces.url import Url
+
 from beekeepy._factories.helpers import _get_logger, _use_existing_session_token
 from beekeepy._handle.beekeeper import AsyncBeekeeper as AsynchronousBeekeeperHandle
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper as AsynchronousRemoteBeekeeperHandle
@@ -10,10 +12,10 @@ from beekeepy._handle.beekeeper import SyncRemoteBeekeeper as SynchronousRemoteB
 from beekeepy._handle.beekeeper import run_if_possible
 from beekeepy._interface.settings import Settings
 from beekeepy.exceptions import BeekeeperAlreadyRunningError
-from helpy._interfaces.url import Url
 
 if TYPE_CHECKING:
-    from beekeepy._factories.beekeeper_factories import _AsynchronousBeekeeperImpl, _SynchronousBeekeeperImpl
+    from helpy import HttpUrl
+
     from beekeepy._interface.abc.asynchronous.beekeeper import (
         Beekeeper as AsynchronousBeekeeperInterface,
     )
@@ -21,11 +23,10 @@ if TYPE_CHECKING:
     from beekeepy._interface.abc.synchronous.beekeeper import (
         Beekeeper as SynchronousBeekeeperInterface,
     )
-    from helpy import HttpUrl
 
 
 def _beekeeper_factory_impl(
-    impl_t: type[_SynchronousBeekeeperImpl | _AsynchronousBeekeeperImpl],
+    impl_t: type[SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface],
     handle_t: type[SynchronousBeekeeperHandle | AsynchronousBeekeeperHandle],
     remote_factory: (
         _RemoteFactoryCallable[SynchronousBeekeeperInterface] | _RemoteFactoryCallable[AsynchronousBeekeeperInterface]
@@ -44,7 +45,7 @@ def _beekeeper_factory_impl(
 
 
 def _beekeeper_remote_factory_impl(
-    impl_t: type[_SynchronousBeekeeperImpl | _AsynchronousBeekeeperImpl],
+    impl_t: type[SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface],
     handle_t: type[SynchronousRemoteBeekeeperHandle | AsynchronousRemoteBeekeeperHandle],
     url_or_settings: HttpUrl | Settings,
 ) -> SynchronousBeekeeperInterface | AsynchronousBeekeeperInterface:
