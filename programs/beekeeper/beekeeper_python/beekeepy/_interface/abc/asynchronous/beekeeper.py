@@ -22,10 +22,10 @@ class Beekeeper(ContextAsync["Beekeeper"], ABC):
         return self
 
     async def _afinally(self) -> None:
-        self.delete()
+        self.teardown()
 
     @abstractmethod
-    def delete(self) -> None: ...
+    def teardown(self) -> None: ...
 
     @abstractmethod
     def pack(self) -> Packed[Beekeeper]: ...

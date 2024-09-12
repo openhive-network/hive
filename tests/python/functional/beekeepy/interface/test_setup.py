@@ -26,7 +26,7 @@ def test_closing_with_delete(settings: SettingsFactory) -> None:
     bk = beekeeper_factory(settings=sets)
 
     # ACT & ASSERT (no throw)
-    bk.delete()
+    bk.teardown()
     assert not (sets.working_directory / "beekeeper.pid").exists()
 
 

@@ -41,7 +41,7 @@ class Beekeeper(BeekeeperInterface):
     def _get_instance(self) -> AsyncRemoteBeekeeper:
         return self.__instance
 
-    def delete(self) -> None:
+    def teardown(self) -> None:
         close_if_possible(self.__instance)
 
     def detach(self) -> None:
