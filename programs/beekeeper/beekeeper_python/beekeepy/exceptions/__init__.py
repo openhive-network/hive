@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeepyError, DetectableError, SchemaDetectableError
+from beekeepy.exceptions.base import (
+    BeekeeperExecutableError,
+    BeekeeperHandleError,
+    BeekeepyError,
+    DetectableError,
+    SchemaDetectableError,
+)
 from beekeepy.exceptions.common import (
     BeekeeperAlreadyRunningError,
     BeekeeperIsNotRunningError,
+    DetachRemoteBeekeeperError,
     InvalidWalletNameError,
     NotPositiveTimeError,
     TimeoutReachWhileCloseError,
@@ -29,8 +36,10 @@ from beekeepy.exceptions.detectable import (
 __all__ = [
     "BeekeeperAlreadyRunningError",
     "BeekeeperExecutableError",
+    "BeekeeperHandleError",
     "BeekeeperIsNotRunningError",
     "BeekeepyError",
+    "DetachRemoteBeekeeperError",
     "DetectableError",
     "InvalidAccountNameError",
     "InvalidPasswordError",

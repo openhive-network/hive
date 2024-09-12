@@ -3,10 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from pydantic import StrRegexError
-
 from helpy import ContextSync
 from helpy.exceptions import HelpyError
+from pydantic import StrRegexError
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -19,6 +18,9 @@ class BeekeepyError(HelpyError, ABC):
 class BeekeeperExecutableError(BeekeepyError, ABC):
     """Base class for exceptions related to starting/closing beekeeper executable."""
 
+
+class BeekeeperHandleError(BeekeepyError, ABC):
+    """Base class for exceptions related to beekeeper handle."""
 
 class DetectableError(ContextSync[None], BeekeepyError, ABC):
     """
@@ -35,8 +37,7 @@ class DetectableError(ContextSync[None], BeekeepyError, ABC):
     """
 
     @abstractmethod
-    def _is_exception_handled(self, ex: BaseException) -> bool:
-        ...
+    def _is_exception_handled(self, ex: BaseException) -> bool: ...
 
     def _enter(self) -> None:
         return None
@@ -68,5 +69,4 @@ class SchemaDetectableError(DetectableError, ABC):
         return isinstance(ex, StrRegexError)
 
     @abstractmethod
-    def _error_message(self) -> str:
-        ...
+    def _error_message(self) -> str: ...

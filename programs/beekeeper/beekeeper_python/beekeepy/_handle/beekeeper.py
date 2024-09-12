@@ -4,24 +4,25 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import helpy
+from helpy import ContextAsync, ContextSync, HttpUrl
+from helpy._communication.universal_notification_server import (
+    UniversalNotificationServer,
+)
+
 from beekeepy._executable import BeekeeperArguments, BeekeeperExecutable
 from beekeepy._executable.arguments.beekeeper_arguments import BeekeeperArgumentsDefaults
 from beekeepy._handle.beekeeper_callbacks import BeekeeperNotificationCallbacks
 from beekeepy._handle.beekeeper_notification_handler import NotificationHandler
 from beekeepy._interface.settings import Settings
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, BeekeeperIsNotRunningError
-from helpy import ContextAsync, ContextSync, HttpUrl
-from helpy._communication.universal_notification_server import (
-    UniversalNotificationServer,
-)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from helpy import KeyPair
     from loguru import Logger
 
     from beekeepy._executable.beekeeper_config import BeekeeperConfig
-    from helpy import KeyPair
     from schemas.notifications import (
         Error,
         Notification,
@@ -40,7 +41,6 @@ __all__ = [
     "AsyncBeekeeper",
     "run_if_possible",
     "close_if_possible",
-    "detach_if_possible",
 ]
 
 
@@ -53,10 +53,6 @@ def close_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beeke
     if isinstance(handle, Beekeeper | AsyncBeekeeper):
         handle.close()
 
-
-def detach_if_possible(handle: SyncRemoteBeekeeper | AsyncRemoteBeekeeper | Beekeeper | AsyncBeekeeper) -> None:
-    if isinstance(handle, Beekeeper | AsyncBeekeeper):
-        handle.detach()
 
 
 class SyncRemoteBeekeeper(helpy.Beekeeper):

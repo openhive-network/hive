@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from beekeepy._handle.beekeeper import close_if_possible, detach_if_possible
+from beekeepy._handle.beekeeper import AsyncBeekeeper as AsyncLocalBeekeeper
+from beekeepy._handle.beekeeper import close_if_possible
 from beekeepy._interface.abc.asynchronous.beekeeper import Beekeeper as BeekeeperInterface
+from beekeepy._interface.abc.packed_object import Packed, _RemoteFactoryCallable
 from beekeepy._interface.asynchronous.session import Session
 from beekeepy._interface.delay_guard import AsyncDelayGuard
 from beekeepy.exceptions import UnknownDecisionPathError
+from beekeepy.exceptions.common import DetachRemoteBeekeeperError
 
 if TYPE_CHECKING:
     from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper
@@ -16,10 +19,11 @@ if TYPE_CHECKING:
 
 
 class Beekeeper(BeekeeperInterface):
-    def __init__(self, *args: Any, handle: AsyncRemoteBeekeeper, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, handle: AsyncRemoteBeekeeper, unpack_factory: _RemoteFactoryCallable[BeekeeperInterface], **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__instance = handle
         self.__guard = AsyncDelayGuard()
+        self.__unpack_factory = unpack_factory
 
     async def create_session(self, *, salt: str | None = None) -> SessionInterface:  # noqa: ARG002
         session: SessionInterface | None = None
@@ -41,7 +45,9 @@ class Beekeeper(BeekeeperInterface):
         close_if_possible(self.__instance)
 
     def detach(self) -> None:
-        detach_if_possible(self.__instance)
+        if isinstance(self.__instance, AsyncLocalBeekeeper):
+            self.__instance.detach()
+        raise DetachRemoteBeekeeperError
 
     def __create_session(self, token: str | None = None) -> SessionInterface:
         return Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)

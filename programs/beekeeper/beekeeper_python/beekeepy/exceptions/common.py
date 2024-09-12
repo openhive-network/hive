@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeepyError
+from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeeperHandleError, BeekeepyError
 
 if TYPE_CHECKING:
     from helpy import HttpUrl
@@ -81,3 +81,11 @@ class InvalidWalletNameError(BeekeepyError):
         super().__init__(
             f"Given wallet name is invalid: `{wallet_name}`. Can be only alphanumeric or contain `._-@` charachters."
         )
+
+
+class DetachRemoteBeekeeperError(BeekeeperHandleError):
+    """Raises when user tries to detach beekeeper that is remote."""
+
+    def __init__(self):
+        """Constructor"""
+        super().__init__("Cannot detach remote beekeeper, as this handle does not own process and cannot manage process of beekeeper that is refering through web")
