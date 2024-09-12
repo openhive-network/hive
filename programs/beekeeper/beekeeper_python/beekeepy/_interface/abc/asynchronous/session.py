@@ -55,8 +55,13 @@ class Session(ContextAsync["Session"], ABC):
     async def wallets_created(self) -> list[Wallet]: ...
 
     @property
-    async def wallets_unlocked(self) -> list[Wallet]:
-        return [wallet for wallet in await self.wallets if wallet.unlocked is not None]
+    async def wallets_unlocked(self) -> list[UnlockedWallet]:
+        result = []
+        for wallet in await self.wallets:
+            unlocked_wallet = await wallet.unlocked
+            if unlocked_wallet:
+                result.append(unlocked_wallet)
+        return result
 
     @property
     @abstractmethod
