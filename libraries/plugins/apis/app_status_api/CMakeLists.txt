@@ -4,7 +4,7 @@ add_library( app_status_api_plugin
              app_status_api_plugin.cpp
              ${HEADERS} )
 
-target_link_libraries( app_status_api_plugin chain_plugin json_rpc_plugin appbase )
+target_link_libraries( app_status_api_plugin json_rpc_plugin appbase )
 target_include_directories( app_status_api_plugin PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
