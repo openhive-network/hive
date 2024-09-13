@@ -226,6 +226,16 @@ namespace appbase {
       */
       std::mutex app_mtx;
 
+    private:
+
+      using notify_status_handler_t = std::function<void(const std::string&, const std::string&)>;
+      using notify_status_t = boost::signals2::signal<void(const std::string&, const std::string&)>;
+      notify_status_t notify_status_signal;
+
+    public:
+
+      boost::signals2::connection add_notify_status_handler( const notify_status_handler_t& func );
+
     public:
 
       finish_request_type finish_request;
