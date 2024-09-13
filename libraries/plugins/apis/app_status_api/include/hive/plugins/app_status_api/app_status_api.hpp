@@ -26,8 +26,8 @@ typedef void_type get_app_status_args;
 struct get_app_status_return
 {
   current_status  value;
-  fc::time_point  time;
   std::string     name;
+  fc::time_point  time;
 };
 
 namespace detail{ class app_status_api_impl; }
@@ -47,4 +47,4 @@ class app_status_api
 } } } // hive::plugins::app_status_api
 
 FC_REFLECT(hive::plugins::app_status_api::current_status, (current_status))
-FC_REFLECT(hive::plugins::app_status_api::get_app_status_return, (value)(time)(name))
+FC_REFLECT(hive::plugins::app_status_api::get_app_status_return, (value)(name)(time))
