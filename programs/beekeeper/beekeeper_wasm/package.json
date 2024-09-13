@@ -10,7 +10,6 @@
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
     "postbuild": "rollup -c",
-    "build:test": "tsc --project ./configs/tsconfig.tests.json",
     "pretest": "playwright install",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
