@@ -1,6 +1,5 @@
 #pragma once
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
-#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <appbase/application.hpp>
 
@@ -13,8 +12,7 @@ using namespace appbase;
 class app_status_api_plugin : public appbase::plugin< app_status_api_plugin >
 {
   public:
-    APPBASE_PLUGIN_REQUIRES((hive::plugins::json_rpc::json_rpc_plugin)
-                            (hive::plugins::chain::chain_plugin))
+    APPBASE_PLUGIN_REQUIRES((hive::plugins::json_rpc::json_rpc_plugin))
 
     app_status_api_plugin();
     virtual ~app_status_api_plugin();
