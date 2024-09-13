@@ -2104,7 +2104,7 @@ BOOST_AUTO_TEST_CASE(has_wallet)
     beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
     BOOST_REQUIRE( _beekeeper.start() );
 
-    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name = "wallet";
     const std::string _wallet_name_2 = "wallet-2";
@@ -2172,7 +2172,7 @@ BOOST_AUTO_TEST_CASE(temporary_wallets)
       {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"}
     };
 
-    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name_0 = "wallet-0";
     const std::string _wallet_name_1 = "wallet-1";
@@ -2286,8 +2286,8 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization)
     beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
     BOOST_REQUIRE( _beekeeper.start() );
 
-    auto _token_00 = _beekeeper.create_session( "salt", std::optional<std::string>() );
-    auto _token_01 = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token_00 = _beekeeper.create_session( "salt" );
+    auto _token_01 = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name = "wallet-0";
 
