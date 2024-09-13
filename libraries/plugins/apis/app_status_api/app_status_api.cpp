@@ -26,7 +26,7 @@ namespace detail
 
     public:
 
-      app_status_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin>().db() )
+      app_status_api_impl( appbase::application& app )
       {
         _on_notify_status_conn = app.add_notify_status_handler(
           [&]( const std::string& current_status, const std::string& name )
@@ -38,12 +38,10 @@ namespace detail
 
       ~app_status_api_impl()
       {
-        chain::util::disconnect_signal( _on_notify_status_conn );
+        //chain::util::disconnect_signal( _on_notify_status_conn );
       }
 
       DECLARE_API_IMPL((get_app_status))
-
-      hive::chain::database& _db;
   };
 
   DEFINE_API_IMPL(app_status_api_impl, get_app_status)
