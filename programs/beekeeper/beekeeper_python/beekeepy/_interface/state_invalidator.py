@@ -23,11 +23,11 @@ class StateInvalidator:
         self.__objects_to_invalidate.append(obj)
 
     def __getattribute__(self, name: str) -> Any:
-        if name != "_StateInvalidator__invalidated" and not self.__invalidated:
+        if name != "_StateInvalidator__invalidated" and self.__invalidated is not None:
             raise self.__invalidated
         return super().__getattribute__(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name != "_StateInvalidator__invalidated" and not self.__invalidated:
+        if name != "_StateInvalidator__invalidated" and self.__invalidated is not None:
             raise self.__invalidated
         return super().__setattr__(name, value)

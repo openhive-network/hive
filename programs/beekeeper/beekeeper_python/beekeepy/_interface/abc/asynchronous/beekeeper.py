@@ -3,11 +3,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from helpy import ContextAsync
+from helpy import ContextAsync, HttpUrl
 
 if TYPE_CHECKING:
     from beekeepy._interface.abc.asynchronous.session import Session
-    from beekeepy._interface.abc.packed_object import Packed
+    from beekeepy._interface.abc.packed_object import PackedAsyncBeekeeper
+    from beekeepy._interface.settings import Settings
 
 
 class Beekeeper(ContextAsync["Beekeeper"], ABC):
@@ -28,7 +29,15 @@ class Beekeeper(ContextAsync["Beekeeper"], ABC):
     def teardown(self) -> None: ...
 
     @abstractmethod
-    def pack(self) -> Packed[Beekeeper]: ...
+    def pack(self) -> PackedAsyncBeekeeper: ...
 
     @abstractmethod
     def detach(self) -> None: ...
+
+    @classmethod
+    async def factory(cls, *, settings: Settings | None = None) -> Beekeeper:
+        raise NotImplementedError
+
+    @classmethod
+    async def remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
+        raise NotImplementedError

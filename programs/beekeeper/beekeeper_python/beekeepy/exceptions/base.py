@@ -3,9 +3,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from pydantic import StrRegexError
+
 from helpy import ContextSync
 from helpy.exceptions import HelpyError
-from pydantic import StrRegexError
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -22,8 +23,10 @@ class BeekeeperExecutableError(BeekeepyError, ABC):
 class BeekeeperHandleError(BeekeepyError, ABC):
     """Base class for exceptions related to beekeeper handle."""
 
+
 class BeekeeperInterfaceError(BeekeepyError, ABC):
     """Base class for exceptions related to beekeeper interface."""
+
 
 class DetectableError(ContextSync[None], BeekeeperInterfaceError, ABC):
     """
@@ -79,6 +82,9 @@ class InvalidatedStateError(BeekeeperInterfaceError):
     """Raised if state has been invalidated."""
 
     def __init__(self, invalidated_by: str | None = None, how_to: str | None = None) -> None:
-        super().__init__("Object is now in invalidated state, it can no longer be used." +
-                        (f"It was invalidated by {invalidated_by}." if invalidated_by else "") +
-                        (f"To gain access again, you have to {how_to}." if how_to else ""))
+        """Constructor."""
+        super().__init__(
+            "Object is now in invalidated state, it can no longer be used."
+            + (f"It was invalidated by {invalidated_by}." if invalidated_by else "")
+            + (f"To gain access again, you have to {how_to}." if how_to else "")
+        )

@@ -118,7 +118,9 @@ class Session(SessionInterface, StateInvalidator):
         )
 
     async def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
-        wallet = UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=await self.token, guard=self.__guard)
+        wallet = UnlockedWallet(
+            name=name, beekeeper=self.__beekeeper, session_token=await self.token, guard=self.__guard
+        )
         self.register_invalidable(wallet)
         return wallet
 

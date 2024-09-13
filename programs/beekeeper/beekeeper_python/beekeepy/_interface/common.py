@@ -27,8 +27,7 @@ GuardT = TypeVar("GuardT", bound=SyncDelayGuard | AsyncDelayGuard)
 class ContainsWalletName(ABC):
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
 
 class WalletCommons(ContainsWalletName, StateInvalidator, Generic[BeekeeperT, CallbackT, GuardT]):
