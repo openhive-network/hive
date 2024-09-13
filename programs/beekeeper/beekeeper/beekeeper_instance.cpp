@@ -13,7 +13,6 @@ namespace beekeeper {
   beekeeper_instance::beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory )
                     : app( app )
   {
-    app_status = std::optional<status>( status() );
     lock_path_file  = wallet_directory / "beekeeper.wallet.lock";
   }
 
@@ -71,18 +70,12 @@ namespace beekeeper {
     start_lock_watch(timer);
   }
 
-  void beekeeper_instance::change_app_status( const std::string& new_status )
-  {
-    FC_ASSERT( app_status );
-    app_status->status = new_status;
-  }
-
   bool beekeeper_instance::start()
   {
     initialize_lock();
 
     if( !instance_started )
-      change_app_status( "opening beekeeper failed" );
+      app.notify_status( "opening beekeeper failed" );
 
     return instance_started;
   }
