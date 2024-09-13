@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class DelayGuardBase:
-    DELAY_TIME: Final[timedelta] = timedelta(seconds=0.6)
+    BEEKEEPER_DELAY_TIME: Final[timedelta] = timedelta(seconds=0.6)
 
     def __init__(self) -> None:
         self._wait_time: Final[float] = 0.1
@@ -25,7 +25,7 @@ class DelayGuardBase:
 
     def _handle_exception_impl(self, ex: BaseException, _: TracebackType | None) -> bool:
         self._exception_occured = isinstance(ex, RequestError)
-        self._next_time_unlock = datetime.now() + self.DELAY_TIME
+        self._next_time_unlock = datetime.now() + self.BEEKEEPER_DELAY_TIME
         return True
 
     def _handle_no_exception_impl(self) -> None:

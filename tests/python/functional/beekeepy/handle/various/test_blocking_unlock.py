@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 # We have 500ms time period protection on ulocking wallet.
-WALLET_UNLOCK_INTERVAL: Final[float] = DelayGuardBase.DELAY_TIME.total_seconds()
+WALLET_UNLOCK_INTERVAL: Final[float] = DelayGuardBase.BEEKEEPER_DELAY_TIME.total_seconds()
 AES_DECRYPTION_ERROR: Final[str] = "Invalid password for wallet"
 WALLET_UNACCESSIBLE_ERROR: Final[str] = "Assert Exception:false: unlock is not accessible"
 
