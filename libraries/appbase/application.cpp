@@ -626,14 +626,19 @@ std::set< std::string > application::get_plugins_names() const
   return res;
 }
 
+boost::signals2::connection application::add_notify_status_handler( const notify_status_handler_t& func )
+{
+  return notify_status_signal.connect( func );
+}
+
 void application::notify_status(const fc::string& current_status) const noexcept
 {
-  notify("hived_status", "current_status", current_status);
+  notify_status_signal( "hived_status", current_status );
 }
 
 void application::notify_error(const fc::string& error_message) const noexcept
 {
-  notify("error", "message", error_message);
+  notify_status_signal( "error", error_message );
 }
 
 void application::setup_notifications(const boost::program_options::variables_map &args) const
