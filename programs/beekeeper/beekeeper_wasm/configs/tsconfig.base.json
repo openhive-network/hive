@@ -25,9 +25,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
 
-    "rootDir": "src",
+    "rootDir": "../src",
 
-    "outDir": "./dist",
+    "outDir": "../dist",
 
     "removeComments": false,
     "checkJs": false,
@@ -49,7 +49,7 @@
 
     "paths": {
       "beekeeper_wasm/*": [
-        "./build/*"
+        "../build/*"
       ]
     }
   },
@@ -58,6 +58,6 @@
     "verbose": true
   },
   "include": [
-    "src/**/*.ts"
+    "../src/**/*.ts"
   ]
 }
