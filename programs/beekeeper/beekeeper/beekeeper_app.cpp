@@ -6,6 +6,7 @@
 #include <fc/value_set.hpp>
 
 #include <hive/plugins/webserver/webserver_plugin.hpp>
+#include <hive/plugins/app_status_api/app_status_api_plugin.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -152,9 +153,11 @@ init_data beekeeper_app::initialize( int argc, char** argv )
   app.set_version_string( check_version() );
 
   app.register_plugin<hive::plugins::webserver::webserver_plugin>();
+  app.register_plugin<hive::plugins::app_status_api::app_status_api_plugin>();
 
   auto initializationResult = app.initialize<
-                                hive::plugins::webserver::webserver_plugin >
+                                hive::plugins::webserver::webserver_plugin,
+                                hive::plugins::app_status_api::app_status_api_plugin>
                               ( argc, argv );
   start_loop = initializationResult.should_start_loop();
 
@@ -171,7 +174,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
 
-    instance->change_app_status( "beekeeper is starting" );
+    instance->get_app().notify_status( "beekeeper is starting" );
 
     return _initialization;
   }
@@ -188,7 +191,7 @@ void beekeeper_app::start()
   {
     _webserver_plugin.start_webserver();
   }
-  instance->change_app_status( "beekeeper is ready" );
+  instance->get_app().notify_status( "beekeeper is ready" );
 
   ilog("beekeeper is waiting");
   app.wait( true/*log*/ );
