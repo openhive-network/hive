@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     )
 
 
+PackedBeekeeper = Packed[BeekeeperInterface]
+
 class Beekeeper(BeekeeperInterface, StateInvalidator):
     def __init__(self, *args: Any, handle: SyncRemoteBeekeeper, unpack_factory: _RemoteFactoryCallable[BeekeeperInterface], **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
         Session as SessionInterface,
     )
 
+PackedAsyncBeekeeper = Packed[BeekeeperInterface]
 
 class Beekeeper(BeekeeperInterface, StateInvalidator):
     def __init__(self, *args: Any, handle: AsyncRemoteBeekeeper, unpack_factory: _RemoteFactoryCallable[BeekeeperInterface], **kwargs: Any) -> None:
@@ -56,5 +57,5 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
         self.register_invalidable(session)
         return session
 
-    def pack(self) -> Packed[BeekeeperInterface]:
+    def pack(self) -> PackedAsyncBeekeeper:
         return Packed(settings=self._get_instance().settings, unpack_factory=self.__unpack_factory)
