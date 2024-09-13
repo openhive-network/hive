@@ -9,65 +9,13 @@
   <script type="importmap">
     {
       "imports": {
-        "../../dist/node": "dist/node.js",
-        "../../build/beekeeper_wasm.web": "build/beekeeper_wasm.web.js",
-        <!-- XXX -->
-        "@hiveio/beekeeper": "/build/beekeeper_wasm.web.js",
-        "@hiveio/beekeeperfactory": "/dist/bundle/web.js",
-        "helper": "/__tests__/assets/run_node_helper.js"
+        "../../dist/bundle/node": "/dist/bundle/node.js",
+        "../../dist/bundle/web": "/dist/bundle/web.js",
+        "../../build/beekeeper_wasm.web": "/build/beekeeper_wasm.web.js",
+        "./run_node_helper.js": "/__tests__/assets/run_node_helper.js"
       }
     }
   </script>
-  <script type="module" src=""></script>
-  <!-- <script type="module">
-    import BeekeeperModule from '@hiveio/beekeeper';
-    import beekeeperFactory from '@hiveio/beekeeperfactory';
-    import { ExtractError, BeekeeperInstanceHelper } from 'helper';
-
-    Object.defineProperties(window, {
-      ExtractError: {
-        get() {
-          return ExtractError;
-        }
-      },
-      BeekeeperInstanceHelper: {
-        get() {
-          return BeekeeperInstanceHelper;
-        }
-      },
-      beekeeper: {
-        get() {
-          return BeekeeperModule;
-        }
-      },
-      factory: {
-        get() {
-          return beekeeperFactory;
-        }
-      },
-      assert: {
-        get() {
-          return {
-            equal(lhs, rhs, msg) {
-              if(lhs !== rhs)
-                throw new Error(msg || "lhs !== rhs");
-            },
-            ok(val, msg) {
-              if(!val)
-                throw new Error(msg || "val is falsy");
-            },
-            throws(fn, error) {
-              try {
-                fn();
-                return false;
-              } catch (error) {
-                return error instanceof Error;
-              }
-            }
-          };
-        }
-      }
-    });
-  </script> -->
+  <script type="module" src="/__tests__/assets/globals.js"></script>
 </body>
 </html>
