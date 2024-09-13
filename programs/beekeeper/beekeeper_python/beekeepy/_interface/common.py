@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Generic, NoReturn, ParamSpec, TypeVar, ov
 from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper, SyncRemoteBeekeeper
 from beekeepy._handle.callbacks_protocol import AsyncWalletLocked, SyncWalletLocked
 from beekeepy._interface.delay_guard import AsyncDelayGuard, SyncDelayGuard
+from beekeepy._interface.state_invalidator import StateInvalidator
 from beekeepy.exceptions import WalletIsLockedError
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ class ContainsWalletName(ABC):
         ...
 
 
-class WalletCommons(ContainsWalletName, Generic[BeekeeperT, CallbackT, GuardT]):
+class WalletCommons(ContainsWalletName, StateInvalidator, Generic[BeekeeperT, CallbackT, GuardT]):
     def __init__(
         self, *args: Any, name: str, beekeeper: BeekeeperT, session_token: str, guard: GuardT, **kwargs: Any
     ) -> None:

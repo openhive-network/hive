@@ -66,6 +66,7 @@ class Wallet(WalletCommons[SyncRemoteBeekeeper, SyncWalletLocked, SyncDelayGuard
             name=self.name, beekeeper=self._beekeeper, session_token=self.session_token, guard=self._guard
         )
         wallet._last_lock_state = False
+        self.register_invalidable(wallet)
         return wallet
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeeperHandleError, BeekeepyError
+from beekeepy.exceptions.base import BeekeeperExecutableError, BeekeeperHandleError, BeekeepyError, InvalidatedStateError
 
 if TYPE_CHECKING:
     from helpy import HttpUrl
@@ -89,3 +89,23 @@ class DetachRemoteBeekeeperError(BeekeeperHandleError):
     def __init__(self):
         """Constructor"""
         super().__init__("Cannot detach remote beekeeper, as this handle does not own process and cannot manage process of beekeeper that is refering through web")
+
+
+class InvalidatedStateByClosingBeekeeperError(InvalidatedStateError):
+    """Raises when beekeeper user want to interact with beekeeper, but it was invalidated by closing beekeeper."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            invalidated_by="calling teardown on beekeeper object",
+            how_to="call again one of beekeeper_factory functions to create new beekeeper"
+        )
+
+
+class InvalidatedStateByClosingSessionError(InvalidatedStateError):
+    """Raises when beekeeper user want to interact with session dependent objects, but it was invalidated by closing session."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            invalidated_by="calling close_session on session objecct",
+            how_to="creating new session again by calling beekeeper.create_session"
+        )

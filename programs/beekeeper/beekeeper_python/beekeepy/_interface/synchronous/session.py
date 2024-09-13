@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from beekeepy._interface.abc.synchronous.session import Password
 from beekeepy._interface.abc.synchronous.session import Session as SessionInterface
+from beekeepy._interface.state_invalidator import StateInvalidator
 from beekeepy._interface.synchronous.wallet import (
     UnlockedWallet,
     Wallet,
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from schemas.fields.hex import Signature
 
 
-class Session(SessionInterface):
+class Session(SessionInterface, StateInvalidator):
     def __init__(
         self,
         *args: Any,
@@ -66,6 +67,7 @@ class Session(SessionInterface):
     def close_session(self) -> None:
         if self.__beekeeper.is_session_token_set():
             self.__beekeeper.api.close_session(token=self.token)
+            self.invalidate()
 
     def lock_all(self) -> list[WalletInterface]:
         self.__beekeeper.api.lock_all(token=self.token)
@@ -107,7 +109,11 @@ class Session(SessionInterface):
         return [key.public_key for key in self.__beekeeper.api.get_public_keys(token=self.token).keys]
 
     def __construct_unlocked_wallet(self, name: str) -> UnlockedWallet:
-        return UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)
+        wallet = UnlockedWallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)
+        self.register_invalidable(wallet)
+        return wallet
 
     def __construct_wallet(self, name: str) -> Wallet:
-        return Wallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)
+        wallet = Wallet(name=name, beekeeper=self.__beekeeper, session_token=self.token, guard=self.__guard)
+        self.register_invalidable(wallet)
+        return wallet

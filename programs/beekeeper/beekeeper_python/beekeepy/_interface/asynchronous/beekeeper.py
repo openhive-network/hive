@@ -8,6 +8,7 @@ from beekeepy._interface.abc.asynchronous.beekeeper import Beekeeper as Beekeepe
 from beekeepy._interface.abc.packed_object import Packed, _RemoteFactoryCallable
 from beekeepy._interface.asynchronous.session import Session
 from beekeepy._interface.delay_guard import AsyncDelayGuard
+from beekeepy._interface.state_invalidator import StateInvalidator
 from beekeepy.exceptions import UnknownDecisionPathError
 from beekeepy.exceptions.common import DetachRemoteBeekeeperError
 
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     )
 
 
-class Beekeeper(BeekeeperInterface):
+class Beekeeper(BeekeeperInterface, StateInvalidator):
     def __init__(self, *args: Any, handle: AsyncRemoteBeekeeper, unpack_factory: _RemoteFactoryCallable[BeekeeperInterface], **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__instance = handle
@@ -43,6 +44,7 @@ class Beekeeper(BeekeeperInterface):
 
     def teardown(self) -> None:
         close_if_possible(self.__instance)
+        self.invalidate()
 
     def detach(self) -> None:
         if isinstance(self.__instance, AsyncLocalBeekeeper):
@@ -50,7 +52,9 @@ class Beekeeper(BeekeeperInterface):
         raise DetachRemoteBeekeeperError
 
     def __create_session(self, token: str | None = None) -> SessionInterface:
-        return Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)
+        session = Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)
+        self.register_invalidable(session)
+        return session
 
     def pack(self) -> Packed[BeekeeperInterface]:
         return Packed(settings=self._get_instance().settings, unpack_factory=self.__unpack_factory)
