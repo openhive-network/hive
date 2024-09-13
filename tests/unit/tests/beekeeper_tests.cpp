@@ -2104,7 +2104,7 @@ BOOST_AUTO_TEST_CASE(has_wallet)
     beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
     BOOST_REQUIRE( _beekeeper.start() );
 
-    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name = "wallet";
     const std::string _wallet_name_2 = "wallet-2";

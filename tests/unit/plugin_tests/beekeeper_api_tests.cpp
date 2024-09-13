@@ -723,7 +723,7 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization_threads)
     std::vector<std::string> _tokens;
 
     for( size_t i = 0; i < _nr_threads; ++i )
-      _tokens.emplace_back( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+      _tokens.emplace_back( _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token );
 
     auto _password  = _api.create( beekeeper::create_args{ _tokens[0], _wallet_name } ).password;
 

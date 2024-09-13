@@ -1,16 +1,10 @@
 #pragma once
-#include <hive/protocol/block.hpp>
 
-#include <hive/plugins/chain/chain_plugin.hpp>
+#include <appbase/application.hpp>
+
 #include <hive/plugins/json_rpc/utility.hpp>
 
-#include <fc/optional.hpp>
-#include <fc/variant.hpp>
-#include <fc/vector.hpp>
 #include <fc/time.hpp>
-#include <fc/network/ip.hpp>
-
-#include <boost/thread/mutex.hpp>
 
 namespace hive { namespace plugins { namespace app_status_api {
 
