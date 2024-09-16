@@ -2,6 +2,8 @@
 #include <appbase/plugin.hpp>
 #include <appbase/signals_handler.hpp>
 
+#include <fc/io/json.hpp>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
@@ -228,8 +230,8 @@ namespace appbase {
 
     private:
 
-      using notify_status_handler_t = std::function<void(const std::string&, const std::string&)>;
-      using notify_status_t = boost::signals2::signal<void(const std::string&, const std::string&)>;
+      using notify_status_handler_t = std::function<void(const hive::utilities::notifications::notification_t&)>;
+      using notify_status_t = boost::signals2::signal<void(const hive::utilities::notifications::notification_t&)>;
       notify_status_t notify_status_signal;
 
     public:
@@ -240,7 +242,7 @@ namespace appbase {
 
       finish_request_type finish_request;
 
-      void notify_status(const fc::string& current_status) const noexcept;
+      void notify_status(const fc::string& message) const noexcept;
       void notify_error(const fc::string& error_message) const noexcept;
       void setup_notifications(const boost::program_options::variables_map &args) const;
 
@@ -249,38 +251,9 @@ namespace appbase {
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
-        hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
-        });
+        hive::utilities::notifications::notification_t _items( name, std::forward<KeyValuesTypes>( key_value_pairs )... );
+        notify_status_signal( _items );
       }
-
-      inline void notify(
-          const fc::string &name,
-          hive::utilities::notifications::collector_t&& collector) const noexcept
-      {
-
-        hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
-          );
-        });
-      }
-
-      template <typename... KeyValuesTypes>
-      static inline void dynamic_notify(
-          hive::utilities::notifications::notification_handler_wrapper& handler,
-          const fc::string &name,
-          KeyValuesTypes &&...key_value_pairs)
-      {
-        hive::utilities::notifications::error_handler([&]{
-          handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
-        });
-      }
-
   };
 
   template< typename Impl >
