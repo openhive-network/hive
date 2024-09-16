@@ -15,6 +15,8 @@
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/index.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <boost/thread/future.hpp>
 #include <boost/thread/sync_bounded_queue.hpp>
 
@@ -335,8 +337,8 @@ void block_data_export_plugin::plugin_shutdown()
   if( !my->_enabled )
     return;
 
-  chain::util::disconnect_signal( my->_pre_apply_block_conn );
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_pre_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_block_conn );
 
   my->stop_threads();
 }
