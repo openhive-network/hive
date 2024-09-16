@@ -13,7 +13,6 @@ git_describe("${CMAKE_CURRENT_SOURCE_DIR}" HIVE_GIT_REVISION_DESCRIPTION --tags)
 file(GLOB HEADERS "include/hive/utilities/*.hpp")
 
 set(sources
-   notifications.cpp
    benchmark_dumper.cpp
    string_escape.cpp
    tempdir.cpp
