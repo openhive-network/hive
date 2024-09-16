@@ -15,13 +15,11 @@ namespace detail
   
       boost::signals2::connection      _on_notify_status_conn;
 
-      get_app_status_return app_status;
+      hive::utilities::notifications::notification_t app_status;
 
-      void on_notify_status( const std::string& current_status, const std::string& name )
+      void on_notify_status( const hive::utilities::notifications::notification_t& current_app_status )
       {
-        app_status.value.current_status = current_status;
-        app_status.name                 = name;
-        app_status.time                 = fc::time_point::now();
+        app_status = current_app_status;
       }
 
     public:
@@ -29,9 +27,9 @@ namespace detail
       app_status_api_impl( appbase::application& app )
       {
         _on_notify_status_conn = app.add_notify_status_handler(
-          [&]( const std::string& current_status, const std::string& name )
+          [&]( const hive::utilities::notifications::notification_t& current_app_status )
           {
-            on_notify_status( current_status, name );
+            on_notify_status( current_app_status );
           }
         );
       }
