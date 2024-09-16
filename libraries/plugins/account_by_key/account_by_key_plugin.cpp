@@ -10,6 +10,8 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <hive/protocol/hive_operations.hpp>
 
 namespace hive { namespace plugins { namespace account_by_key {
@@ -307,8 +309,8 @@ void account_by_key_plugin::plugin_startup() {}
 
 void account_by_key_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_pre_apply_operation_conn );
-  chain::util::disconnect_signal( my->_post_apply_operation_conn );
+  hive::utilities::disconnect_signal( my->_pre_apply_operation_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_operation_conn );
 }
 
 } } } // hive::plugins::account_by_key

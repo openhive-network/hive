@@ -7,6 +7,8 @@
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/io/json.hpp>
 
 #define MH_BUCKET_SIZE "market-history-bucket-size"
@@ -204,7 +206,7 @@ void market_history_plugin::plugin_startup() {}
 
 void market_history_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_post_apply_operation_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_operation_conn );
 }
 
 const flat_set< uint32_t >& market_history_plugin::get_tracked_buckets() const
