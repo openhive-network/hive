@@ -174,7 +174,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
 
-    instance->get_app().notify_status( "beekeeper is starting" );
+    instance->get_app().save_status( "beekeeper is starting", "beekeeper_status" );
 
     return _initialization;
   }
@@ -188,7 +188,7 @@ void beekeeper_app::start()
 
   app.startup();
 
-  instance->get_app().notify_status( "beekeeper is ready" );
+  instance->get_app().save_status( "beekeeper is ready", "beekeeper_status" );
 
   ilog("beekeeper is waiting");
   app.wait( true/*log*/ );
