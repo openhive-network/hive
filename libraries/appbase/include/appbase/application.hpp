@@ -217,8 +217,6 @@ namespace appbase {
 
       std::atomic_bool _is_interrupt_request{false};
 
-      mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
-
       bool is_finished = false;
 
       /*
@@ -244,7 +242,6 @@ namespace appbase {
 
       void notify_status(const fc::string& message) const noexcept;
       void notify_error(const fc::string& error_message) const noexcept;
-      void setup_notifications(const boost::program_options::variables_map &args) const;
 
       template <typename... KeyValuesTypes>
       inline void notify(
