@@ -20,6 +20,7 @@
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
+#include <hive/utilities/signal.hpp>
 
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>
@@ -138,9 +139,9 @@ class chain_plugin_impl
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
 
-      chain::util::disconnect_signal(_on_irreversible_block_conn);
-      chain::util::disconnect_signal(_on_prepare_snapshot_supplement_conn);
-      chain::util::disconnect_signal(_on_load_snapshot_supplement_conn);
+      hive::utilities::disconnect_signal(_on_irreversible_block_conn);
+      hive::utilities::disconnect_signal(_on_prepare_snapshot_supplement_conn);
+      hive::utilities::disconnect_signal(_on_load_snapshot_supplement_conn);
 
       if( rocksdb_processor )
         rocksdb_processor->shutdown();

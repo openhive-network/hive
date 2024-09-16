@@ -14,6 +14,8 @@
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
@@ -217,8 +219,8 @@ void reputation_plugin::plugin_startup() {}
 
 void reputation_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_pre_apply_operation_conn );
-  chain::util::disconnect_signal( my->_post_apply_operation_conn );
+  hive::utilities::disconnect_signal( my->_pre_apply_operation_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_operation_conn );
 }
 
 } } } // hive::plugins::reputation

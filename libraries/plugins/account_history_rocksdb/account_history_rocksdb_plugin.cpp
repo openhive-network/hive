@@ -19,6 +19,7 @@
 #include <hive/plugins/account_history_rocksdb/rocksdb_ah_storage_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
+#include <hive/utilities/signal.hpp>
 
 #include <appbase/application.hpp>
 
@@ -178,10 +179,10 @@ public:
 
   ~impl()
   {
-    chain::util::disconnect_signal(_on_pre_apply_operation_con);
-    chain::util::disconnect_signal(_on_irreversible_block_conn);
-    chain::util::disconnect_signal(_on_post_apply_block_conn);
-    chain::util::disconnect_signal(_on_fail_apply_block_conn);
+    hive::utilities::disconnect_signal(_on_pre_apply_operation_con);
+    hive::utilities::disconnect_signal(_on_irreversible_block_conn);
+    hive::utilities::disconnect_signal(_on_post_apply_block_conn);
+    hive::utilities::disconnect_signal(_on_fail_apply_block_conn);
 
     _provider->shutdownDb();
   }
