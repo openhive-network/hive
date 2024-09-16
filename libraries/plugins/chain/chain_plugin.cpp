@@ -698,7 +698,7 @@ void chain_plugin_impl::start_write_processing()
           is_syncing = false;
           db.notify_end_of_syncing();
           default_block_writer->set_is_at_live_sync();
-          theApp.notify_status("entering live mode");
+          theApp.save_status("entering live mode");
           wlog("entering live mode");
         }
 
@@ -753,7 +753,7 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
-  theApp.notify_status("finished syncing");
+  theApp.save_status("finished syncing");
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     running = false;
@@ -770,7 +770,7 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( 
+bool chain_plugin_impl::start_replay_processing(
   std::shared_ptr< block_write_i > reindex_block_writer,
   hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
@@ -780,10 +780,10 @@ bool chain_plugin_impl::start_replay_processing(
     this_->db.set_block_writer( this_->default_block_writer.get() );
   } BOOST_SCOPE_EXIT_END
 
-  theApp.notify_status("replaying");
-  bool replay_is_last_operation = 
+  theApp.save_status("replaying");
+  bool replay_is_last_operation =
     replay_blockchain( reindex_block_writer->get_block_reader(), thread_pool );
-  theApp.notify_status("finished replaying");
+  theApp.save_status("finished replaying");
 
   if( replay_is_last_operation )
   {
@@ -917,7 +917,7 @@ void chain_plugin_impl::open()
   {
     if( was_error )
     {
-      /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash 
+      /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
       thread_pool.shutdown();
 
       wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
@@ -968,7 +968,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              default_block_writer->switch_forks( 
+              default_block_writer->switch_forks(
                 new_head_block_id,
                 new_head_block_num,
                 skip,
@@ -980,7 +980,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
                 [&] ( const block_id_type end_block ) -> uint32_t
                   { return db.pop_block_extended( end_block ); }
                 );
-              theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
+              theApp.save_information("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
 
               // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
               // on the new fork, so we don't need to mark the block as irreversible here
@@ -1149,7 +1149,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     default_block_writer->on_reindex_start();
 
     auto start_time = fc::time_point::now();
-    HIVE_ASSERT( _head, block_log_exception, 
+    HIVE_ASSERT( _head, block_log_exception,
       "No blocks in ${block_storage_type} block storage (as specified by 'block-log-split' option). Cannot reindex an empty chain.",
       ("block_storage_type", block_log_split == 0 ? "memory only" : "file") );
 
@@ -1520,13 +1520,13 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
   std::string block_storage_description( "single block in memory" );
-  if( my->block_log_split < 0 ) 
+  if( my->block_log_split < 0 )
     block_storage_description = "legacy monolithic file";
   else if( my->block_log_split > 0 )
     block_storage_description = "split into multiple files";
   ilog("Block storage is configured to be ${bs}.", ("bs", block_storage_description));
   my->block_storage = block_storage_i::create_storage( my->block_log_split, get_app(), my->thread_pool );
-  my->default_block_writer = 
+  my->default_block_writer =
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
 
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
@@ -1785,7 +1785,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
           ("cm", measure.current_mem)
           ("pm", measure.peak_mem) );
 
-        get_app().notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+        get_app().save_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
     }, *this, 0);
   }
@@ -1861,7 +1861,7 @@ void chain_plugin::plugin_shutdown()
   my->block_storage->close_storage();
 
   ilog("database closed successfully");
-  get_app().notify_status("finished syncing");
+  get_app().save_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
