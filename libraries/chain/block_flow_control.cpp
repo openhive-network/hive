@@ -104,7 +104,7 @@ void block_flow_control::on_worker_done( appbase::application& app ) const
   {
   case report_output::BOTH:
   case report_output::NOTIFY:
-    app.notify( "Block stats", "block_stats", report );
+    app.save_information( "Block stats", "block_stats", report );
     if( auto_report_output != report_output::BOTH )
       break;
     //else
