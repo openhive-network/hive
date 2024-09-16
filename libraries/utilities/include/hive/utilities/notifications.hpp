@@ -26,9 +26,6 @@ public:
 
   std::map<key_t, value_t> value;
 
-  collector_t() = default;
-  collector_t(collector_t&& collector) = default;
-
   template <typename... Values>
   collector_t(Values &&...values)
   {
@@ -59,6 +56,10 @@ public:
 
   fc::time_point_sec time;
   fc::string name;
+
+  notification_t()
+  {
+  }
 
   template <typename... Values>
   notification_t(const fc::string &name, Values &&...values):
