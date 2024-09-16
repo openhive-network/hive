@@ -10,6 +10,8 @@
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -175,7 +177,7 @@ void block_log_info_plugin::plugin_startup() {}
 
 void block_log_info_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_block_conn );
 }
 
 } } } // hive::plugins::block_log_info

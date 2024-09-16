@@ -1,6 +1,8 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive::chain;
@@ -66,7 +68,7 @@ struct trigger_bug : appbase::plugin< trigger_bug >
   }
   virtual ~trigger_bug()
   {
-    chain::util::disconnect_signal( _post_apply_block );
+    hive::utilities::disconnect_signal( _post_apply_block );
   }
 
   static const std::string& name() { static std::string name = "bug"; return name; }
