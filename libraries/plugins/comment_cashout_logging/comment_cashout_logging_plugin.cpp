@@ -3,6 +3,8 @@
 #include <hive/chain/util/impacted.hpp>
 #include <hive/protocol/config.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
 #include <boost/format.hpp>
@@ -289,7 +291,7 @@ void comment_cashout_logging_plugin::plugin_startup() {}
 
 void comment_cashout_logging_plugin::plugin_shutdown()
 {
-   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
+   hive::utilities::disconnect_signal( my->_pre_apply_operation_conn );
 }
 
 } } } // hive::plugins::comment_cashout_logging

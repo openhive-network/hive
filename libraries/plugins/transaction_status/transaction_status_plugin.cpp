@@ -8,6 +8,8 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 #include <hive/protocol/config.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/io/json.hpp>
 
 #define TRANSACTION_STATUS_BLOCK_DEPTH_KEY            "transaction-status-block-depth"
@@ -225,9 +227,9 @@ void transaction_status_plugin::plugin_startup()
 
 void transaction_status_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->post_apply_transaction_connection );
-  chain::util::disconnect_signal( my->pre_apply_block_connection );
-  chain::util::disconnect_signal( my->post_apply_block_connection );
+  hive::utilities::disconnect_signal( my->post_apply_transaction_connection );
+  hive::utilities::disconnect_signal( my->pre_apply_block_connection );
+  hive::utilities::disconnect_signal( my->post_apply_block_connection );
 }
 
 bool transaction_status_plugin::is_tracking()
