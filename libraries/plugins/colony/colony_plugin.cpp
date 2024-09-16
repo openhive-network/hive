@@ -11,6 +11,7 @@
 #include <hive/chain/comment_object.hpp>
 
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/utilities/signal.hpp>
 
 #include <fc/thread/thread.hpp>
 
@@ -740,7 +741,7 @@ void colony_plugin_impl::end_of_sync()
   }
 
   // it won't retrigger anyway, but just in case we should detach from this signal
-  chain::util::disconnect_signal( _end_of_sync_conn );
+  hive::utilities::disconnect_signal( _end_of_sync_conn );
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
@@ -925,9 +926,9 @@ void colony_plugin::plugin_pre_shutdown()
 {
   ilog( "Shutting down colony plugin" );
 
-  chain::util::disconnect_signal( my->_end_of_sync_conn );
-  chain::util::disconnect_signal( my->_post_apply_transaction_conn );
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  chain::utilities::disconnect_signal( my->_end_of_sync_conn );
+  chain::utilities::disconnect_signal( my->_post_apply_transaction_conn );
+  chain::utilities::disconnect_signal( my->_post_apply_block_conn );
 
   for( auto& thread : my->_threads )
     thread.finalize();

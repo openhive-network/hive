@@ -8,6 +8,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <hive/plugins/database_api/database_api_objects.hpp>
 
 #include <fstream>
@@ -153,7 +155,7 @@ void stats_export_plugin::plugin_startup() {}
 
 void stats_export_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_block_conn );
 }
 
 } } } // hive::plugins::stats_export
