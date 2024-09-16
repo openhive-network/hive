@@ -23,14 +23,17 @@ pushd "${submodule_path}"
 short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
-img=$( build_image_name $IMGNAME "$short_commit" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$short_commit" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$short_commit" "$REGISTRY" )
+prefix_tag="universal-block-log"
+tag=$prefix_tag-$short_commit
+
+img=$( build_image_name $IMGNAME "$tag" "$REGISTRY" )
+img_path=$( build_image_registry_path $IMGNAME "$tag" "$REGISTRY" )
+img_tag=$( build_image_registry_tag $IMGNAME "$tag" "$REGISTRY" )
 
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
-docker_image_exists $IMGNAME "$short_commit" "$REGISTRY" image_exists
+docker_image_exists $IMGNAME "$tag" "$REGISTRY" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
