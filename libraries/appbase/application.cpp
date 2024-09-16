@@ -607,7 +607,6 @@ void application::add_logging_program_options()
 {
   hive::utilities::options_description_ex options;
   hive::utilities::set_logging_program_options( options );
-  hive::utilities::notifications::add_program_options(options);
 
   add_program_options( hive::utilities::options_description_ex(), options );
 }
@@ -642,11 +641,6 @@ void application::notify_error(const fc::string& error_message) const noexcept
 {
   hive::utilities::notifications::notification_t _items( error_message, "current_status", "error" );
   notify_status_signal( _items );
-}
-
-void application::setup_notifications(const boost::program_options::variables_map &args) const
-{
-  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
 void application::kill()
