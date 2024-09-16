@@ -24,10 +24,19 @@ public:
   using key_t   = fc::string;
   using value_t = fc::variant;
 
+  fc::time_point_sec time;
+  fc::string name;
+
   std::map<key_t, value_t> value;
 
+  collector_t()
+  {
+  }
+
   template <typename... Values>
-  collector_t(Values &&...values)
+  collector_t(const fc::string &name, Values &&...values):
+    time{fc::time_point::now()},
+    name{name}
   {
     static_assert(sizeof...(values) % 2 == 0, "Inconsistency in amount of variadic arguments, expected even number ( series of pairs: [ fc::string, fc::variant ] )");
     assign_values(values...);
@@ -50,36 +59,9 @@ private:
   }
 };
 
-class notification_t : public collector_t
-{
-public:
-
-  fc::time_point_sec time;
-  fc::string name;
-
-  notification_t()
-  {
-  }
-
-  template <typename... Values>
-  notification_t(const fc::string &name, Values &&...values):
-    collector_t{values...},
-    time{fc::time_point::now()},
-    name{name}
-  {
-  }
-
-  notification_t(const fc::string &name, collector_t&& collector):
-    collector_t{std::forward<collector_t>( collector )},
-    time{fc::time_point::now()},
-    name{name}
-  {
-  }
-};
 
 } } // utilities::notifications
 
 } // hive
 
-FC_REFLECT(hive::utilities::notifications::collector_t, (value));
-FC_REFLECT_DERIVED(hive::utilities::notifications::notification_t, (hive::utilities::notifications::collector_t), (time)(name));
+FC_REFLECT(hive::utilities::notifications::collector_t, (time)(name)(value));
