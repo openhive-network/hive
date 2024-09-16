@@ -632,7 +632,7 @@ boost::signals2::connection application::add_notify_status_handler( const notify
 
 void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
 {
-  hive::utilities::notifications::notification_t _items( status, "current_status", status_description );
+  hive::utilities::notifications::collector_t _items( status, "current_status", status_description );
   notify_status_signal( _items );
 }
 
