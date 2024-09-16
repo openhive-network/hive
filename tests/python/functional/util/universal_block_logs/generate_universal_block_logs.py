@@ -48,7 +48,7 @@ def prepare_block_log(
     This script generate block_log with specific conditions:
       1) start blockchain with hardfork: 18 ( before introduction RC ),
       2) set and stabilize price hive to vest ( ~1800 vest per 1 hive ),
-      3) activate 21 witnesses (witnesses-0 - witnesses-19 + initminer),
+      3) activate 21 witnesses ( witnesses-0 - witnesses-19 + initminer ),
       4) change block size to maximum value 2mb,
       5) create accounts - the number is specified in a constant - NUMBER_OF_ACCOUNTS,
       6) fund accounts - each account is credited with HIVE and HBD ( from initminer ),
