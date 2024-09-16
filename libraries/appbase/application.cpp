@@ -631,14 +631,16 @@ boost::signals2::connection application::add_notify_status_handler( const notify
   return notify_status_signal.connect( func );
 }
 
-void application::notify_status(const fc::string& current_status) const noexcept
+void application::notify_status(const fc::string& message) const noexcept
 {
-  notify_status_signal( "hived_status", current_status );
+  hive::utilities::notifications::notification_t _items( message, "current_status", "hived_status" );
+  notify_status_signal( _items );
 }
 
 void application::notify_error(const fc::string& error_message) const noexcept
 {
-  notify_status_signal( "error", error_message );
+  hive::utilities::notifications::notification_t _items( error_message, "current_status", "error" );
+  notify_status_signal( _items );
 }
 
 void application::setup_notifications(const boost::program_options::variables_map &args) const
