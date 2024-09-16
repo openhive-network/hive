@@ -240,11 +240,10 @@ namespace appbase {
 
       finish_request_type finish_request;
 
-      void notify_status(const fc::string& message) const noexcept;
-      void notify_error(const fc::string& error_message) const noexcept;
+      void save_status( const fc::string& status, const fc::string& status_description = "hived_status" ) const noexcept;
 
       template <typename... KeyValuesTypes>
-      inline void notify(
+      inline void save_information(
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
