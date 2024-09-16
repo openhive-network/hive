@@ -1,7 +1,7 @@
 #include <hive/plugins/app_status_api/app_status_api.hpp>
 #include <hive/plugins/app_status_api/app_status_api_plugin.hpp>
 
-#include <hive/chain/database.hpp>
+#include <hive/utilities/signal.hpp>
 
 #include <appbase/application.hpp>
 
@@ -38,7 +38,7 @@ namespace detail
 
       ~app_status_api_impl()
       {
-        //chain::util::disconnect_signal( _on_notify_status_conn );
+        hive::utilities::disconnect_signal( _on_notify_status_conn );
       }
 
       DECLARE_API_IMPL((get_app_status))

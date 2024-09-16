@@ -9,6 +9,8 @@
 
 #include <hive/chain/rc/rc_utility.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <fc/io/buffered_iostream.hpp>
 #include <fc/io/fstream.hpp>
 #include <fc/io/json.hpp>
@@ -519,8 +521,8 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 
 void debug_node_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_pre_apply_transaction_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_block_conn );
   /*if( _json_object_stream )
   {
     _json_object_stream->close();
