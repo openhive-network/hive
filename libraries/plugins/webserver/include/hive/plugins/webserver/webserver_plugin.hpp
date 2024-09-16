@@ -42,8 +42,6 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
 
     void start_webserver();
 
-    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func );
-
   protected:
     virtual void plugin_initialize(const variables_map& options) override;
     virtual void plugin_startup() override;
