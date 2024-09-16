@@ -5,6 +5,8 @@
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -190,7 +192,7 @@ struct curation_rewards_handler
 
   ~curation_rewards_handler()
   {
-    chain::util::disconnect_signal( _comment_reward_con );
+    hive::utilities::disconnect_signal( _comment_reward_con );
   }
 
   void prepare_author( std::set<uint32_t> _authors )
