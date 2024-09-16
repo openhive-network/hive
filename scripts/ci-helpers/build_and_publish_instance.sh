@@ -97,7 +97,7 @@ CI_PROJECT_NAME="${CI_REGISTRY_IMAGE##*/}"
 echo "Logging to Docker Hub, $CI_REGISTRY and registry.hive.blog"
 docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" <<< "$CI_REGISTRY_PASSWORD"
 docker login -u "$DOCKER_HUB_USER" --password-stdin <<< "$DOCKER_HUB_PASSWORD"
-docker login -u "$BLOG_REGISTRY_USER" --password-stdin "registry.hive.blog" <<< "$BLOG_REGISTRY_PASSWORD"
+docker login -u "$BLOG_REGISTRY_USER" --password-stdin "registry-upload.hive.blog" <<< "$BLOG_REGISTRY_PASSWORD"
 
 echo "Building an instance image in the source directory $SRC_DIR"
 "$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
@@ -110,7 +110,7 @@ HIVEIO_IMG="hiveio/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
 echo "Tagging the image built in the previous step as ${HIVEIO_IMG}"
 docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "${HIVEIO_IMG}"
 
-HIVEBLOG_IMG="registry.hive.blog/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
+HIVEBLOG_IMG="registry-upload.hive.blog/${CI_PROJECT_NAME}:$CI_COMMIT_TAG"
 
 echo "Tagging the image built in the previous step as ${HIVEBLOG_IMG}"
 docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "${HIVEBLOG_IMG}"
