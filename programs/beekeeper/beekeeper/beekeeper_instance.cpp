@@ -77,7 +77,7 @@ namespace beekeeper {
     initialize_lock();
 
     if( !instance_started )
-      app.notify_status( "opening beekeeper failed" );
+      app.save_status( "opening beekeeper failed", "beekeeper_status" );
 
     return instance_started;
   }
