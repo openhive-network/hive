@@ -4,6 +4,8 @@
 
 #include <hive/protocol/exceptions.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <hive/chain/database_exceptions.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
@@ -96,7 +98,7 @@ struct expectation_set : appbase::plugin< expectation_set >
   virtual ~expectation_set()
   {
     for( auto& connection : connections )
-      chain::util::disconnect_signal( connection );
+      hive::utilities::disconnect_signal( connection );
   }
 
   void expect( expectation&& x ) { current_expectations.emplace_back( std::move( x ) ); }

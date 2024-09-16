@@ -2,7 +2,7 @@
 
 #include <fc/signals.hpp>
 
-namespace hive { namespace chain { namespace util {
+namespace hive { namespace utilities {
 
 inline void disconnect_signal( boost::signals2::connection& signal )
 {
@@ -11,4 +11,4 @@ inline void disconnect_signal( boost::signals2::connection& signal )
   FC_ASSERT( !signal.connected() );
 }
 
-} } }
+} }

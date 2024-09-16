@@ -13,9 +13,10 @@
 #include <hive/chain/rc/rc_utility.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
-#include <hive/chain/util/signal.hpp>
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
+
+#include <hive/utilities/notifications.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
