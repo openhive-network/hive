@@ -501,7 +501,7 @@ void chain_plugin_impl::start_write_processing()
 
       const int64_t time_fragments = nr_seconds * 2;
 
-      theApp.notify_status( "syncing" );
+      theApp.save_status( "syncing" );
       ilog( "Write processing thread started." );
       bool is_syncing = is_p2p_enabled;
       if( !is_syncing )
@@ -509,7 +509,7 @@ void chain_plugin_impl::start_write_processing()
         db.notify_end_of_syncing();
         //don't switch to live in writer (doesn't make a difference for API calls, but does for queen)
         //default_block_writer->set_is_at_live_sync();
-        theApp.notify_status( "entering API mode" );
+        theApp.save_status( "entering API mode" );
         wlog( "entering API mode" );
       }
       write_request_visitor req_visitor( *this );
@@ -635,7 +635,7 @@ void chain_plugin_impl::start_write_processing()
                   is_syncing = false;
                   db.notify_end_of_syncing();
                 }
-                theApp.notify_status( "entering API mode" );
+                theApp.save_status( "entering API mode" );
                 wlog( "entering API mode" );
               }
             }
@@ -704,7 +704,7 @@ void chain_plugin_impl::start_write_processing()
           is_syncing = false;
           db.notify_end_of_syncing();
           default_block_writer->set_is_at_live_sync();
-          theApp.notify_status("entering live mode");
+          theApp.save_status("entering live mode");
           wlog("entering live mode");
         }
 
@@ -759,7 +759,7 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
-  theApp.notify_status("finished syncing");
+  theApp.save_status("finished syncing");
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     running = false;
@@ -786,10 +786,10 @@ bool chain_plugin_impl::start_replay_processing(
     this_->db.set_block_writer( this_->default_block_writer.get() );
   } BOOST_SCOPE_EXIT_END
 
-  theApp.notify_status("replaying");
+  theApp.save_status("replaying");
   bool replay_is_last_operation = 
     replay_blockchain( reindex_block_writer->get_block_reader(), thread_pool );
-  theApp.notify_status("finished replaying");
+  theApp.save_status("finished replaying");
 
   if( replay_is_last_operation )
   {
@@ -928,7 +928,7 @@ void chain_plugin_impl::open()
       thread_pool.shutdown();
 
       wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-      theApp.notify_status("exitting with open database error");
+      theApp.save_status("exitting with open database error");
     }
   } BOOST_SCOPE_EXIT_END
 
@@ -987,7 +987,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
                 [&] ( const block_id_type end_block ) -> uint32_t
                   { return db.pop_block_extended( end_block ); }
                 );
-              theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
+              theApp.save_information("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
 
               // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
               // on the new fork, so we don't need to mark the block as irreversible here
@@ -1804,7 +1804,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
           ("cm", measure.current_mem)
           ("pm", measure.peak_mem) );
 
-        get_app().notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+        get_app().save_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
     }, *this, 0);
   }
@@ -1888,7 +1888,7 @@ void chain_plugin::plugin_shutdown()
   my->block_storage->close_storage();
 
   ilog("database closed successfully");
-  get_app().notify_status("finished syncing");
+  get_app().save_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)

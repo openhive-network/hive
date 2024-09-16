@@ -72,12 +72,12 @@ application::~application() { }
 void application::init_signals_handler()
 {
   handler_wrapper.init();
-  notify_status("signals attached");
+  save_status("signals attached");
 }
 
 void application::generate_interrupt_request()
 {
-  notify_status("interrupted");
+  save_status("interrupted");
   _is_interrupt_request = true;
 }
 
@@ -127,7 +127,7 @@ void application::startup() {
         break;
     }
   }
-  notify_status("chain API ready");
+  save_status("chain API ready");
 }
 
 void application::set_program_options()
@@ -584,7 +584,7 @@ abstract_plugin& application::get_plugin(const string& name)const
   auto ptr = find_plugin(name);
   if(!ptr)
   {
-    notify_error("Unable to find plugin: " + name);
+    save_status( "Unable to find plugin: " + name, "error" );
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
   }
   return *ptr;
@@ -630,15 +630,9 @@ boost::signals2::connection application::add_notify_status_handler( const notify
   return notify_status_signal.connect( func );
 }
 
-void application::notify_status(const fc::string& message) const noexcept
+void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
 {
-  hive::utilities::notifications::notification_t _items( message, "current_status", "hived_status" );
-  notify_status_signal( _items );
-}
-
-void application::notify_error(const fc::string& error_message) const noexcept
-{
-  hive::utilities::notifications::notification_t _items( error_message, "current_status", "error" );
+  hive::utilities::notifications::notification_t _items( status, "current_status", status_description );
   notify_status_signal( _items );
 }
 
