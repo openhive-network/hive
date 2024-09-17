@@ -123,6 +123,7 @@ r_advanced_benchmark.json
 results.json
 results.xml
 programs/beekeeper/beekeeper_wasm/LICENSE.md
+programs/beekeeper/beekeeper_wasm/.beekeeper
 programs/beekeeper/beekeeper_wasm/dist
 programs/beekeeper/beekeeper_wasm/storage_root-node
 
