@@ -2,3 +2,4 @@
 
 import "./detailed/base";
 import "./detailed/factory";
+import "./detailed/beekeeper_api";
