@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace hive { namespace utilities { namespace notifications {
+namespace hive { namespace utilities {
 
 class collector_t
 {
@@ -60,8 +60,8 @@ private:
 };
 
 
-} } // utilities::notifications
+} // utilities
 
 } // hive
 
-FC_REFLECT(hive::utilities::notifications::collector_t, (time)(name)(value));
+FC_REFLECT(hive::utilities::collector_t, (time)(name)(value));
