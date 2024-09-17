@@ -15,7 +15,7 @@
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/type_registrar.hpp>
 
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
