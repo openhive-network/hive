@@ -35,9 +35,19 @@ class Beekeeper(ContextSync["Beekeeper"], ABC):
     def detach(self) -> None: ...
 
     @classmethod
+    @abstractmethod
+    def _factory(cls, *, settings: Settings | None = None) -> Beekeeper: ...
+
+    @classmethod
     def factory(cls, *, settings: Settings | None = None) -> Beekeeper:
-        raise NotImplementedError
+        from beekeepy._interface.synchronous.beekeeper import Beekeeper as BeekeeperImplementation
+        return BeekeeperImplementation._factory(settings=settings)  # noqa: SLF001
+
+    @classmethod
+    @abstractmethod
+    def _remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper: ...
 
     @classmethod
     def remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
-        raise NotImplementedError
+        from beekeepy._interface.synchronous.beekeeper import Beekeeper as BeekeeperImplementation
+        return BeekeeperImplementation._remote_factory(url_or_settings=url_or_settings)  # noqa: SLF001

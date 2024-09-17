@@ -16,11 +16,12 @@ from beekeepy._interface.state_invalidator import StateInvalidator
 from beekeepy.exceptions import BeekeeperAlreadyRunningError, DetachRemoteBeekeeperError, UnknownDecisionPathError
 
 if TYPE_CHECKING:
+    from helpy import HttpUrl
+
     from beekeepy._handle.beekeeper import AsyncRemoteBeekeeper
     from beekeepy._interface.abc.asynchronous.session import (
         Session as SessionInterface,
     )
-    from helpy import HttpUrl
 
 
 class Beekeeper(BeekeeperInterface, StateInvalidator):
@@ -60,10 +61,10 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
         return session
 
     def pack(self) -> PackedAsyncBeekeeper:
-        return PackedAsyncBeekeeper(settings=self._get_instance().settings, unpack_factory=Beekeeper.remote_factory)
+        return PackedAsyncBeekeeper(settings=self._get_instance().settings, unpack_factory=Beekeeper._remote_factory)
 
     @classmethod
-    async def factory(cls, *, settings: Settings | None = None) -> Beekeeper:
+    async def _factory(cls, *, settings: Settings | None = None) -> Beekeeper:
         settings = settings or Settings()
         handle = AsynchronousBeekeeperHandle(settings=settings, logger=logger)
         cls.__apply_existing_session_token(settings=settings, handle=handle)
@@ -71,11 +72,11 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
             handle.run()
         except BeekeeperAlreadyRunningError as err:
             settings.http_endpoint = err.address
-            return await cls.remote_factory(url_or_settings=settings)
+            return await cls._remote_factory(url_or_settings=settings)
         return cls(handle=handle)
 
     @classmethod
-    async def remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
+    async def _remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
         settings = url_or_settings if isinstance(url_or_settings, Settings) else Settings(http_endpoint=url_or_settings)
         handle = AsynchronousRemoteBeekeeperHandle(settings=settings)
         cls.__apply_existing_session_token(settings=settings, handle=handle)

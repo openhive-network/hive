@@ -20,11 +20,12 @@ from beekeepy.exceptions import (
 )
 
 if TYPE_CHECKING:
+    from helpy import HttpUrl
+
     from beekeepy._handle.beekeeper import SyncRemoteBeekeeper
     from beekeepy._interface.abc.synchronous.session import (
         Session as SessionInterface,
     )
-    from helpy import HttpUrl
 
 
 class Beekeeper(BeekeeperInterface, StateInvalidator):
@@ -64,10 +65,10 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
         return session
 
     def pack(self) -> PackedSyncBeekeeper:
-        return PackedSyncBeekeeper(settings=self._get_instance().settings, unpack_factory=Beekeeper.remote_factory)
+        return PackedSyncBeekeeper(settings=self._get_instance().settings, unpack_factory=Beekeeper._remote_factory)
 
     @classmethod
-    def factory(cls, *, settings: Settings | None = None) -> Beekeeper:
+    def _factory(cls, *, settings: Settings | None = None) -> Beekeeper:
         settings = settings or Settings()
         handle = SynchronousBeekeeperHandle(settings=settings, logger=logger)
         cls.__apply_existing_session_token(settings=settings, handle=handle)
@@ -75,11 +76,11 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
             handle.run()
         except BeekeeperAlreadyRunningError as err:
             settings.http_endpoint = err.address
-            return cls.remote_factory(url_or_settings=settings)
+            return cls._remote_factory(url_or_settings=settings)
         return cls(handle=handle)
 
     @classmethod
-    def remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
+    def _remote_factory(cls, *, url_or_settings: Settings | HttpUrl) -> Beekeeper:
         settings = url_or_settings if isinstance(url_or_settings, Settings) else Settings(http_endpoint=url_or_settings)
         handle = SynchronousRemoteBeekeeperHandle(settings=settings)
         cls.__apply_existing_session_token(settings=settings, handle=handle)
