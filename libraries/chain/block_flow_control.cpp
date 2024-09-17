@@ -2,7 +2,7 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 
 namespace hive { namespace chain {
 
