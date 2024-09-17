@@ -17,7 +17,7 @@
 
 namespace hive { namespace utilities {
 
-class collector_t
+class data_collector
 {
 public:
 
@@ -29,12 +29,12 @@ public:
 
   std::map<key_t, value_t> value;
 
-  collector_t()
+  data_collector()
   {
   }
 
   template <typename... Values>
-  collector_t(const fc::string &name, Values &&...values):
+  data_collector(const fc::string &name, Values &&...values):
     time{fc::time_point::now()},
     name{name}
   {
@@ -64,4 +64,4 @@ private:
 
 } // hive
 
-FC_REFLECT(hive::utilities::collector_t, (time)(name)(value));
+FC_REFLECT(hive::utilities::data_collector, (time)(name)(value));

@@ -17,7 +17,7 @@
 
 #include <hive/plugins/statsd/utility.hpp>
 
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/signal.hpp>

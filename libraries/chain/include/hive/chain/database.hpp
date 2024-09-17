@@ -16,7 +16,7 @@
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
 
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
