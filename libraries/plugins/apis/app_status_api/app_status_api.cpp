@@ -15,9 +15,9 @@ namespace detail
   
       boost::signals2::connection      _on_notify_status_conn;
 
-      hive::utilities::notifications::collector_t app_status;
+      hive::utilities::collector_t app_status;
 
-      void on_notify_status( const hive::utilities::notifications::collector_t& current_app_status )
+      void on_notify_status( const hive::utilities::collector_t& current_app_status )
       {
         app_status = current_app_status;
       }
@@ -27,7 +27,7 @@ namespace detail
       app_status_api_impl( appbase::application& app )
       {
         _on_notify_status_conn = app.add_notify_status_handler(
-          [&]( const hive::utilities::notifications::collector_t& current_app_status )
+          [&]( const hive::utilities::collector_t& current_app_status )
           {
             on_notify_status( current_app_status );
           }

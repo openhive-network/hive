@@ -228,8 +228,8 @@ namespace appbase {
 
     private:
 
-      using notify_status_handler_t = std::function<void(const hive::utilities::notifications::collector_t&)>;
-      using notify_status_t = boost::signals2::signal<void(const hive::utilities::notifications::collector_t&)>;
+      using notify_status_handler_t = std::function<void(const hive::utilities::collector_t&)>;
+      using notify_status_t = boost::signals2::signal<void(const hive::utilities::collector_t&)>;
       notify_status_t notify_status_signal;
 
     public:
@@ -247,7 +247,7 @@ namespace appbase {
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
-        hive::utilities::notifications::collector_t _items( name, std::forward<KeyValuesTypes>( key_value_pairs )... );
+        hive::utilities::collector_t _items( name, std::forward<KeyValuesTypes>( key_value_pairs )... );
         notify_status_signal( _items );
       }
   };
