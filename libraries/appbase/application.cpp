@@ -1,7 +1,7 @@
 #include <appbase/application.hpp>
 
 #include <hive/utilities/logging_config.hpp>
-#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/data_collector.hpp>
 #include <hive/utilities/options_description_ex.hpp>
 
 #include <fc/thread/thread.hpp>
@@ -633,7 +633,7 @@ boost::signals2::connection application::add_notify_status_handler( const notify
 
 void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
 {
-  hive::utilities::collector_t _items( status, "current_status", status_description );
+  hive::utilities::data_collector _items( status, "current_status", status_description );
   notify_status_signal( _items );
 }
 
