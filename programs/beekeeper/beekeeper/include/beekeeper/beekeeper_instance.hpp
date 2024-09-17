@@ -13,7 +13,7 @@
 
 namespace beekeeper
 {
-  using collector_t = hive::utilities::notifications::collector_t;
+  using collector_t = hive::utilities::collector_t;
 
   class beekeeper_instance: public beekeeper_instance_base
   {
