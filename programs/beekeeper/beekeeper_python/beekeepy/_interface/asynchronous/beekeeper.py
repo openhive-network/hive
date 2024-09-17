@@ -51,9 +51,9 @@ class Beekeeper(BeekeeperInterface, StateInvalidator):
         self.invalidate()
 
     def detach(self) -> None:
-        if isinstance(self.__instance, AsynchronousBeekeeperHandle):
-            self.__instance.detach()
-        raise DetachRemoteBeekeeperError
+        if not isinstance(self.__instance, AsynchronousBeekeeperHandle):
+            raise DetachRemoteBeekeeperError
+        self.__instance.detach()
 
     def __create_session(self, token: str | None = None) -> SessionInterface:
         session = Session(beekeeper=self._get_instance(), use_session_token=token, guard=self.__guard)

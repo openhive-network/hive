@@ -47,7 +47,7 @@ class Packed(UniqueSettingsHolder[Settings], Generic[FactoryT]):
 
 class PackedSyncBeekeeper(Packed[_SyncRemoteFactoryCallable]):
     def unpack(self) -> SynchronousBeekeeperInterface:
-        return self._unpack_factory(url_or_settings=self.__settings)
+        return self._unpack_factory(url_or_settings=self.settings)
 
 
 class PackedAsyncBeekeeper(Packed[_AsyncRemoteFactoryCallable]):
