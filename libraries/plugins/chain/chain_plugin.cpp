@@ -826,6 +826,20 @@ bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader
 
 void chain_plugin_impl::open()
 {
+  bool was_error = true;
+
+  BOOST_SCOPE_EXIT(&was_error, &thread_pool, &theApp)
+  {
+    if( was_error )
+    {
+      /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash 
+      thread_pool.shutdown();
+
+      wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
+      theApp.notify_status("exitting with open database error");
+    }
+  } BOOST_SCOPE_EXIT_END
+
   try
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
@@ -842,16 +856,9 @@ void chain_plugin_impl::open()
       setup_benchmark_dumper();
       dumper.dump( true, get_indexes_memory_details );
     }
-  }
-  FC_CAPTURE_CALL_LOG_AND_RETHROW(([&, this]()
-    {
-    /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
-    thread_pool.shutdown();
+  } FC_LOG_AND_RETHROW()
 
-    wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-    theApp.notify_status("exitting with open database error");
-    }), ()
-  );
+  was_error = false;
 }
 
 void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
