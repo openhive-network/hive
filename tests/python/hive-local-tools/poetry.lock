@@ -1615,7 +1615,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "1.25.2rc0.dev4548+c468a8e91"
+beekeepy = "^1.25"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
@@ -1870,4 +1870,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "de4ee7bbc1387bd58edcddf668bf7338429bb41740d853a25b253aeb3b9a3961"
+content-hash = "0cebb747a60ddaa14e98038030bd411d9662a743861f9d796f6b08d13ba9de5b"
