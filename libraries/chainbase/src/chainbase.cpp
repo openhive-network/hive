@@ -5,6 +5,8 @@
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
 
+#include <filesystem>
+
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -214,12 +216,21 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
-    
+
+    auto _size_checker = [&dir]( size_t size )
+    {
+      std::filesystem::space_info _space_info = std::filesystem::space( dir.generic_string().c_str() );
+      ilog( "Free space available: ${available}. Shared file size: ${shared_file_size}",("available", _space_info.available)(size) );
+      if( size > _space_info.available )
+        BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to create shared memory file. Free space available is less than declared size of shared memory file." ) );
+    };
+
     if( bfs::exists( abs_path ) )
     {
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
+        _size_checker( shared_file_size - _file_size );
         if( !bip::managed_mapped_file::grow( abs_path.generic_string().c_str(), shared_file_size - _file_size ) )
           BOOST_THROW_EXCEPTION( std::runtime_error( "could not grow database file to requested size." ) );
 
@@ -246,6 +257,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       ilog( "Compiler and build environment read from persistent storage: `${storage}'", ( "storage", env.first->dump() ) );
     } else {
+      _size_checker( shared_file_size );
       _file_size = shared_file_size;
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
