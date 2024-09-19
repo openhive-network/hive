@@ -620,3 +620,10 @@ def assert_account_was_created(node: tt.AnyNode, account_name: str) -> None:
         created_accounts.append(operation.op.value.new_account_name)
 
     assert account_name in created_accounts, f"Account named {account_name} was not created"
+
+
+def generate_large_amount_of_blocks(node: tt.AnyNode, block_signer: tt.Account, count: int) -> None:
+    with node.temporarily_change_timeout(seconds=30):
+        node.api.debug_node.debug_generate_blocks(
+            debug_key=block_signer.private_key, count=count, skip=0, miss_blocks=0, edit_if_needed=True
+        )

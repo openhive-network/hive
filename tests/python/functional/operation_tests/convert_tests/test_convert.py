@@ -12,6 +12,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
+    generate_large_amount_of_blocks,
     publish_feeds,
 )
 
@@ -20,7 +21,9 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.testnet()
-def test_convert_hbd_to_hive(create_node_and_wallet_for_convert_tests: tuple, alice: ConvertAccount) -> None:
+def test_convert_hbd_to_hive(
+    create_node_and_wallet_for_convert_tests: tuple[tt.InitNode, tt.Wallet], alice: ConvertAccount
+) -> None:
     # test case 1 from: https://gitlab.syncad.com/hive/hive/-/issues/478
     node, wallet = create_node_and_wallet_for_convert_tests
     publish_feeds(node, wallet, base=1000, quote=400)
@@ -35,9 +38,7 @@ def test_convert_hbd_to_hive(create_node_and_wallet_for_convert_tests: tuple, al
     alice.check_if_current_rc_mana_was_reduced(transaction)
     alice.check_if_funds_to_convert_were_subtracted(transaction)
     # generate enough block to jump HIVE_COLLATERALIZED_CONVERSION_DELAY interval
-    node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account("initminer").private_key, count=1680, skip=0, miss_blocks=0, edit_if_needed=True
-    )
+    generate_large_amount_of_blocks(node=node, block_signer=tt.Account("initminer"), count=1680)
     alice.check_if_right_amount_was_converted_and_added_to_balance(transaction)
     alice.assert_fill_convert_request_operation(expected_amount=1)
 
@@ -93,17 +94,13 @@ def test_convert_hbd_to_hive_during_few_days(
             alice.assert_fill_convert_request_operation(expected_amount=vops_counter)
             convert_transactions_it += 1
 
-        node.api.debug_node.debug_generate_blocks(
-            debug_key=tt.Account("initminer").private_key,
-            count=blocks_to_generate,
-            skip=0,
-            miss_blocks=0,
-            edit_if_needed=True,
-        )
+        generate_large_amount_of_blocks(node, tt.Account("initminer"), count=blocks_to_generate)
 
 
 @pytest.mark.testnet()
-def test_convert_hive_to_hbd(create_node_and_wallet_for_convert_tests: tuple, alice: ConvertAccount) -> None:
+def test_convert_hive_to_hbd(
+    create_node_and_wallet_for_convert_tests: tuple[tt.InitNode, tt.Wallet], alice: ConvertAccount
+) -> None:
     # test case 1 from: https://gitlab.syncad.com/hive/hive/-/issues/481
     node, wallet = create_node_and_wallet_for_convert_tests
     publish_feeds(node, wallet, base=1000, quote=400)
@@ -123,9 +120,7 @@ def test_convert_hive_to_hbd(create_node_and_wallet_for_convert_tests: tuple, al
     alice.assert_collateralized_conversion_requests(trx=transaction, state="create")
 
     # generate enough blocks to jump HIVE_COLLATERALIZED_CONVERSION_DELAY interval
-    node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account("initminer").private_key, count=1680, skip=0, miss_blocks=0, edit_if_needed=True
-    )
+    generate_large_amount_of_blocks(node=node, block_signer=tt.Account("initminer"), count=1680)
     alice.assert_if_right_amount_of_hives_came_back_after_collateral_conversion(transaction)
     alice.assert_collateralized_conversion_requests(trx=transaction, state="delete")
     alice.assert_fill_collateralized_convert_request_operation(expected_amount=1)
@@ -185,13 +180,7 @@ def test_convert_hive_to_hbd_during_few_days(
             )
             alice.assert_fill_collateralized_convert_request_operation(expected_amount=vops_counter)
             convert_transactions_it += 1
-        node.api.debug_node.debug_generate_blocks(
-            debug_key=tt.Account("initminer").private_key,
-            count=blocks_to_generate,
-            skip=0,
-            miss_blocks=0,
-            edit_if_needed=True,
-        )
+        generate_large_amount_of_blocks(node, tt.Account("initminer"), count=blocks_to_generate)
 
 
 @pytest.mark.parametrize(
@@ -221,7 +210,7 @@ def test_convert_hive_to_hbd_during_few_days(
     ],
 )
 def test_convert_hive_into_hbd_with_changing_median_current_price_during_conversion(
-    create_node_and_wallet_for_convert_tests: tuple,
+    create_node_and_wallet_for_convert_tests: tuple[tt.InitNode, tt.Wallet],
     alice: ConvertAccount,
     initial_feed_base_value: int,
     further_feed_base_value: int,
@@ -242,9 +231,7 @@ def test_convert_hive_into_hbd_with_changing_median_current_price_during_convers
     publish_feeds(node, wallet, further_feed_base_value, 1000)
 
     # generate enough block to jump HIVE_COLLATERALIZED_CONVERSION_DELAY interval
-    node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account("initminer").private_key, count=1680, skip=0, miss_blocks=0, edit_if_needed=True
-    )
+    generate_large_amount_of_blocks(node=node, block_signer=tt.Account("initminer"), count=1680)
     alice.assert_if_right_amount_of_hives_came_back_after_collateral_conversion(transaction)
     alice.assert_collateralized_conversion_requests(trx=transaction, state="delete")
     alice.assert_fill_collateralized_convert_request_operation(expected_amount=1)
@@ -258,7 +245,9 @@ def test_convert_hive_into_hbd_with_changing_median_current_price_during_convers
     ],
 )
 def test_minimal_feed_price_greater_than_median_feed_price(
-    create_node_and_wallet_for_convert_tests: tuple, alice: ConvertAccount, feed_base_values: tuple
+    create_node_and_wallet_for_convert_tests: tuple[tt.InitNode, tt.Wallet],
+    alice: ConvertAccount,
+    feed_base_values: tuple,
 ) -> None:
     # test case from Excel file (sheet TC2 - columns D, F) https://gitlab.syncad.com/hive/hive/-/issues/481#note_154312
     node, wallet = create_node_and_wallet_for_convert_tests
@@ -301,13 +290,7 @@ def test_minimal_feed_price_greater_than_median_feed_price(
             trx = publish_feeds(node, wallet, next(feeds_it), 1000, broadcast=False)
             node.api.network_broadcast.broadcast_transaction(trx=trx)
 
-        node.api.debug_node.debug_generate_blocks(
-            debug_key=tt.Account("initminer").private_key,
-            count=blocks_to_generate,
-            skip=0,
-            miss_blocks=0,
-            edit_if_needed=True,
-        )
+        generate_large_amount_of_blocks(node=node, block_signer=tt.Account("initminer"), count=blocks_to_generate)
 
 
 @pytest.mark.parametrize(
@@ -318,7 +301,9 @@ def test_minimal_feed_price_greater_than_median_feed_price(
     ],
 )
 def test_median_feed_price_greater_than_minimal_feed_price(
-    create_node_and_wallet_for_convert_tests: tuple, alice: ConvertAccount, feed_base_values: tuple
+    create_node_and_wallet_for_convert_tests: tuple[tt.InitNode, tt.Wallet],
+    alice: ConvertAccount,
+    feed_base_values: tuple,
 ) -> None:
     # test case from Excel file (sheet TC2 - columns C, E) https://gitlab.syncad.com/hive/hive/-/issues/481#note_154312
     node, wallet = create_node_and_wallet_for_convert_tests
@@ -363,10 +348,4 @@ def test_median_feed_price_greater_than_minimal_feed_price(
             alice.assert_fill_collateralized_convert_request_operation(expected_amount=vops_counter)
             convert_transactions_it += 1
 
-        node.api.debug_node.debug_generate_blocks(
-            debug_key=tt.Account("initminer").private_key,
-            count=blocks_to_generate,
-            skip=0,
-            miss_blocks=0,
-            edit_if_needed=True,
-        )
+        generate_large_amount_of_blocks(node=node, block_signer=tt.Account("initminer"), count=blocks_to_generate)
