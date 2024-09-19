@@ -16,10 +16,9 @@ packages = [
 
 source = [
     { name = "PyPI", priority = "primary" },
-    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-wax", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-helpy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-schemas",        url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-wax",            url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-helpy-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
 ]
 
 
@@ -35,7 +34,6 @@ tavern = "2.2.0"
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
 test-tools = { path = "test-tools", develop = true }
-beekeepy = "1.25.2rc0.dev4548+c468a8e91"  # this needs to be specified because of wide version range of test-tools for beekeepy
 tests_api = { path = "tests_api", develop = true }
 
 
