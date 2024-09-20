@@ -289,6 +289,10 @@ initialization_result application::initialize_impl( int argc, char** argv,
       return { initialization_result::ok, false };
     }
 
+    for (const auto& plugin : autostart_plugins)
+      if (plugin != nullptr && plugin->get_state() == abstract_plugin::registered)
+        plugin->initialize(my->_args);
+
     if(my->_args.count("plugin") > 0)
     {
       auto plugins = my->_args.at("plugin").as<std::vector<std::string>>();
@@ -300,9 +304,6 @@ initialization_result application::initialize_impl( int argc, char** argv,
           get_plugin(name).initialize(my->_args);
       }
     }
-    for (const auto& plugin : autostart_plugins)
-      if (plugin != nullptr && plugin->get_state() == abstract_plugin::registered)
-        plugin->initialize(my->_args);
 
     bpo::notify(my->_args);
 
