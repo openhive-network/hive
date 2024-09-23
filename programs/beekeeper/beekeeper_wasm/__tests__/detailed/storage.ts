@@ -1,23 +1,18 @@
-import { ChromiumBrowser, ConsoleMessage, Page, chromium } from 'playwright';
-import { expect, test } from '@playwright/test';
+/**
+ * This file tests only the web browser storage functionality of the beekeeper-wasm library.
+ */
+
+import { ChromiumBrowser, Page, chromium } from 'playwright';
+import { expect } from '@playwright/test';
+import { IBeekeeperTest, test } from '../assets/jest-helper';
 
 import { STORAGE_ROOT, WALLET_OPTIONS } from '../assets/data';
 
 let browser: ChromiumBrowser;
 let page1: Page, page2: Page, page3: Page;
 
-const handlePageLoad = async(page: Page) => {
-  page.on('console', (msg: ConsoleMessage) => {
-    console.log('>>', msg.type(), msg.text())
-  });
-
-  await page.goto(`http://localhost:8080/__tests__/assets/test.html`);
-  await page.waitForURL('**/test.html', { waitUntil: 'load' });
-}
-
-const saveKeys = (page: Page, options: { walletDir: string, args: string[], close: boolean }) =>
-  page.evaluate(async({ walletDir, args, close }) => {
-    const provider = await beekeeper();
+const saveKeys = async(beekeeperWasmTestWebOnlyWithPage: IBeekeeperTest['beekeeperWasmTestWebOnlyWithPage'], page: Page, options: { walletDir: string, args: string[], close: boolean }) =>
+  await beekeeperWasmTestWebOnlyWithPage(page, async({ provider, BeekeeperInstanceHelper }, { walletDir, args, close }) => {
     const fs = provider.FS;
     fs.mkdir(walletDir);
     fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -52,9 +47,8 @@ const saveKeys = (page: Page, options: { walletDir: string, args: string[], clos
     return fs.readdir(walletDir);
   }, options);
 
-const retrieveKeys = (page: Page, options: { walletDir: string, args: string[], close: boolean }) =>
-  page.evaluate(async({ walletDir, args, close }) => {
-    const provider = await beekeeper();
+const retrieveKeys = async(beekeeperWasmTestWebOnlyWithPage: IBeekeeperTest['beekeeperWasmTestWebOnlyWithPage'], page: Page, options: { walletDir: string, args: string[], close: boolean }) =>
+  await beekeeperWasmTestWebOnlyWithPage(page, async({ provider, BeekeeperInstanceHelper }, { walletDir, args, close }) => {
     const fs = provider.FS;
     fs.mkdir(walletDir);
     fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -99,44 +93,34 @@ test.describe('WASM storage tests', () => {
     page1 = await context1.newPage();
     page2 = await context1.newPage();
     page3 = await context2.newPage();
-    await handlePageLoad(page1);
-    await handlePageLoad(page2);
-    await handlePageLoad(page3);
   });
 
-  test.beforeEach(async({ page }) => {
-    await handlePageLoad(page);
-  });
-
-  test('Should have filesystem in the provider', async ({ page }) => {
-    const fsType = await page.evaluate(async () => {
-      const provider = await beekeeper();
+  test('Should have filesystem in the provider', async ({ beekeeperWasmTestWebOnly }) => {
+    const fsType = await beekeeperWasmTestWebOnly(async ({ provider }) => {
       return typeof provider.FS;
     });
 
     expect(fsType).toBe('object');
   });
 
-  test('Should be able to mount and sync the filesystem', async ({ page }) => {
-    await page.evaluate(async (walletDir) => {
-      const provider = await beekeeper();
+  test('Should be able to mount and sync the filesystem', async ({ beekeeperWasmTestWebOnly }) => {
+    await expect(beekeeperWasmTestWebOnly(async ({ provider }, walletDir) => {
       const fs = provider.FS;
       fs.mkdir(walletDir);
       fs.mount(fs.filesystems.IDBFS, {}, walletDir);
 
-      await new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         fs.syncfs(true, (err?: unknown) => {
           if (err) reject(err);
 
-          resolve(undefined);
+          resolve(true);
         });
       });
-    }, STORAGE_ROOT);
+    }, STORAGE_ROOT)).resolves.toBeTruthy();
   });
 
-  test('Should be able to create a directory and make it available in the same session', async () => {
-    const dir = await page1.evaluate(async (walletDir) => {
-      const provider = await beekeeper();
+  test('Should be able to create a directory and make it available in the same session', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const dir = await beekeeperWasmTestWebOnlyWithPage(page1, async ({ provider }, walletDir) => {
       const fs = provider.FS;
       fs.mkdir(walletDir);
       fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -161,9 +145,8 @@ test.describe('WASM storage tests', () => {
     expect(dir).toStrictEqual([ '.', '..', 'beekeeper' ]);
   });
 
-  test('Should not contain any data from the previous test in a new context', async ({ page }) => {
-    const dir = await page.evaluate(async (walletDir) => {
-      const provider = await beekeeper();
+  test('Should not contain any data from the previous test in a new context', async ({ beekeeperWasmTestWebOnly }) => {
+    const dir = await beekeeperWasmTestWebOnly(async ({ provider }, walletDir) => {
       const fs = provider.FS;
       fs.mkdir(walletDir);
       fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -182,9 +165,8 @@ test.describe('WASM storage tests', () => {
     expect(dir).toStrictEqual([ '.', '..' ]);
   });
 
-  test('Should contain data from the previous test in the same context', async () => {
-    const dir = await page2.evaluate(async (walletDir) => {
-      const provider = await beekeeper();
+  test('Should contain data from the previous test in the same context', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const dir = await beekeeperWasmTestWebOnlyWithPage(page2, async ({ provider }, walletDir) => {
       const fs = provider.FS;
       fs.mkdir(walletDir);
       fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -203,20 +185,20 @@ test.describe('WASM storage tests', () => {
     expect(dir).toStrictEqual([ '.', '..', 'beekeeper' ]);
   });
 
-  test('Should be able to init beekeeper and save the wallet file with explicitly closing the instance of beekeeper', async () => {
-    const dir = await saveKeys(page1, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
+  test('Should be able to init beekeeper and save the wallet file with explicitly closing the instance of beekeeper', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const dir = await saveKeys(beekeeperWasmTestWebOnlyWithPage, page1, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
     expect(dir).toStrictEqual([ '.', '..', 'beekeeper', 'directory with spaces' ]);
   });
 
-  test('Should be able to init beekeeper and save the wallet file without explicitly closing the instance of beekeeper', async () => {
-    const dir = await saveKeys(page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
+  test('Should be able to init beekeeper and save the wallet file without explicitly closing the instance of beekeeper', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const dir = await saveKeys(beekeeperWasmTestWebOnlyWithPage, page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
+
     expect(dir).toStrictEqual([ '.', '..', 'directory with spaces' ]);
   });
 
-  test('Should not be able to list the previously imported key from other context', async ({ page }) => {
-    const keys = await page.evaluate(async ({ walletDir, args }) => {
-      const provider = await beekeeper();
+  test('Should not be able to list the previously imported key from other context', async ({ beekeeperWasmTestWebOnly }) => {
+    const keys = await beekeeperWasmTestWebOnly(async ({ provider, BeekeeperInstanceHelper }, { walletDir, args }) => {
       const fs = provider.FS;
       fs.mkdir(walletDir);
       fs.mount(fs.filesystems.IDBFS, {}, walletDir);
@@ -241,14 +223,14 @@ test.describe('WASM storage tests', () => {
     expect(keys).toStrictEqual({"wallets": []});
   });
 
-  test('Should be able to list the previously imported key from another page with the same browser context with explicitly closing the instance of beekeeper', async () => {
-    const keys = await retrieveKeys(page2, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
+  test('Should be able to list the previously imported key from another page with the same browser context with explicitly closing the instance of beekeeper', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const keys = await retrieveKeys(beekeeperWasmTestWebOnlyWithPage, page2, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
     expect(keys).toStrictEqual({"keys": [{"public_key": "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
   });
 
-  test('Should be able to list the previously imported key without explicitly closing the instance of beekeeper', async () => {
-    const keys = await retrieveKeys(page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
+  test('Should be able to list the previously imported key without explicitly closing the instance of beekeeper', async ({ beekeeperWasmTestWebOnlyWithPage }) => {
+    const keys = await retrieveKeys(beekeeperWasmTestWebOnlyWithPage, page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
     expect(keys).toStrictEqual({"keys": [{"public_key": "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]});
   });
