@@ -1507,6 +1507,46 @@ BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(beekeeper_timeout_unlock)
+{
+  try {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt" );
+
+    struct wallet
+    {
+      std::string name;
+      std::string password;
+    };
+    std::vector<wallet> _wallets{ { "0" }, { "1" } };
+
+    for( auto& wallet : _wallets )
+    {
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>(), false/*is_temporary*/ );
+    }
+    {
+      _beekeeper.set_timeout( _token, 1 );
+      std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
+    }
+    {
+      for( auto& wallet : _wallets )
+      {
+        _beekeeper.unlock( _token, wallet.name, wallet.password );
+      }
+    }
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
 {
   try {
