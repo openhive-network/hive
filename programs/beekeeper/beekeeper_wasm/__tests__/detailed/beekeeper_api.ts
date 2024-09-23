@@ -438,7 +438,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Try to create new sessions, but due to the limit creating the last one fails', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       const noSessions = 63; // + 1 implicit session that we create in run_node_helper.
@@ -645,7 +645,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as wallet name cannot be empty', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -657,7 +657,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as wallet name contains invalid characters', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -669,7 +669,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as wallet with the same name already exists', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create(api.implicitSessionToken, walletNames[9]);
@@ -683,7 +683,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the password is empty', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -695,7 +695,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the password is too long', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -709,7 +709,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet does not exist', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -721,7 +721,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as there is no opened wallet', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -733,7 +733,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet is locked', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -746,7 +746,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet is already locked', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -759,7 +759,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the password is incorrect', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -771,7 +771,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet is already unlocked', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
@@ -785,7 +785,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet is not found', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -797,7 +797,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the key is invalid', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
@@ -811,7 +811,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the wallet cannot be found', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -823,7 +823,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the key does not have STM prefix', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
@@ -837,7 +837,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the key is not in the wallet', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
@@ -851,7 +851,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw because of invalid hex character in the digest', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -863,7 +863,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the base58 cannot be decoded', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -875,7 +875,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should throw as the public key is not found in the unlocked wallets', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -924,7 +924,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Check `encrypt_data` endpoint when wallet not found', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
@@ -936,7 +936,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Check `encrypt_data` endpoint when public key not found in the wallet', async ({ beekeeperWasmTest }) => {
-    expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
