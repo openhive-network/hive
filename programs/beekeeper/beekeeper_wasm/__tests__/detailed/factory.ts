@@ -56,13 +56,15 @@ test.describe('Beekeeper factory tests for Node.js', () => {
 
       const sesInfo = session.getInfo();
 
-      return {
+      const data = {
         actual: new Date(sesInfo.timeout_time).getTime(),
         expected: new Date(sesInfo.now).getTime() + (5 * 1000)
       };
+
+      return data.actual === data.expected;
     });
 
-    expect(retVal.actual).toBe(retVal.expected);
+    expect(retVal).toBeTruthy();
   });
 
   test('Should be able to create multiple sessions with wallets and delete the beekeeper instance', async ({ beekeeperTest }) => {
