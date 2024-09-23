@@ -1,7 +1,6 @@
-import { chromium, ChromiumBrowser, ConsoleMessage, expect } from '@playwright/test';
+import { chromium, ChromiumBrowser, expect } from '@playwright/test';
 import { test } from '../assets/jest-helper.js'
-import fs from 'fs';
-import { STORAGE_ROOT_NODE, WALLET_OPTIONS_NODE } from '../assets/data.js';
+import { WALLET_OPTIONS_NODE } from '../assets/data.js';
 
 let browser!: ChromiumBrowser;
 
@@ -10,17 +9,6 @@ test.describe('WASM Base tests', () => {
     browser = await chromium.launch({
       headless: true
     });
-  });
-
-  test.beforeEach(async ({ page }) => {
-    page.on('console', (msg: ConsoleMessage) => {
-      console.log('>>', msg.type(), msg.text())
-    });
-
-    if(fs.existsSync(STORAGE_ROOT_NODE))
-      fs.rmdirSync(STORAGE_ROOT_NODE, { recursive: true });
-
-    await page.goto("http://localhost:8080/__tests__/assets/test.html", { waitUntil: "load" });
   });
 
   test('Should be able to create instance of StringList', async ({ beekeeperWasmTest }) => {
