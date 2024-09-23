@@ -15,8 +15,7 @@ class time_manager: public time_manager_base
     ~time_manager() override {};
 
     void add( const std::string& token, types::lock_method_type&& lock_method ) override;
-    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active ) override;
-    void run( const std::string& token ) override;
+    void run( const std::string& token, const types::timepoint_t& new_time, bool move_time_forward, bool allow_lock ) override;
     void close( const std::string& token ) override;
 };
 
