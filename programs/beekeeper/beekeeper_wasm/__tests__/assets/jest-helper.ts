@@ -1,7 +1,10 @@
-import { Page, test as base, expect } from '@playwright/test';
+import { ConsoleMessage, Page, test as base, expect } from '@playwright/test';
 
 import './globals';
 import type { IBeekeeperGlobals, IBeekeeperWasmGlobals, TEnvType } from './globals';
+import { STORAGE_ROOT_NODE } from './data';
+// @ts-ignore
+import fs from 'fs';
 
 type TBeekeeperTestCallable<R, Args extends any[]> = (gloabls: IBeekeeperGlobals, ...args: Args) => (R | Promise<R>);
 type TBeekeeperWasmTestCallable<R, Args extends any[]> = (gloabls: IBeekeeperWasmGlobals, ...args: Args) => (R | Promise<R>);
@@ -44,11 +47,19 @@ export interface IBeekeeperTest {
   beekeeperWasmTestWebOnly: (<R, Args extends any[]>(fn: TBeekeeperWasmTestCallable<R, Args>, ...args: Args) => Promise<R>);
 
   /**
+   * Runs given function in web-only environment
+   * Created specifically for testing WASM code
+   */
+  beekeeperWasmTestWebOnlyWithPage: (<R, Args extends any[]>(page: Page, fn: TBeekeeperWasmTestCallable<R, Args>, ...args: Args) => Promise<R>);
+
+  /**
    * Runs given function in Node-only environment
    * Created specifically for testing Node code
    */
   beekeeperWasmTestNodeOnly: (<R, Args extends any[]>(fn: TBeekeeperWasmTestCallable<R, Args>, ...args: Args) => Promise<R>);
 }
+
+const alreadyConsoleLogInitialized = new WeakSet<Page>();
 
 /**
  * @param page Current playwright page
@@ -63,16 +74,29 @@ const envTestFor = <GlobalType extends IBeekeeperGlobals | IBeekeeperWasmGlobals
   const runner = async <R, Args extends any[]> (checkEqual: Boolean, fn: GlobalType extends IBeekeeperGlobals ? TBeekeeperTestCallable<R, Args> : TBeekeeperWasmTestCallable<R, Args>, ...args: Args): Promise<R> => {
     let nodeData: any, webData: any;
 
-    if (forceEnv === undefined || forceEnv === 'node')
+    if (forceEnv === undefined || forceEnv === 'node') {
+      if(fs.existsSync(STORAGE_ROOT_NODE))
+        fs.rmdirSync(STORAGE_ROOT_NODE, { recursive: true });
+
       nodeData = await fn(await (globalFunction as Function)('node'), ...args);
+    }
 
+    if (forceEnv === undefined || forceEnv === 'web') {
+      if(!alreadyConsoleLogInitialized.has(page)) {
+        page.on('console', (msg: ConsoleMessage) => {
+          console.log('>>', msg.type(), msg.text())
+        });
 
-    if (forceEnv === undefined || forceEnv === 'web')
+        alreadyConsoleLogInitialized.add(page);
+      }
+      await page.goto(`http://localhost:8080/__tests__/assets/test.html`, { waitUntil: 'load' });
+
       webData = await page.evaluate(async ({ args, globalFunction, webFn }) => {
         eval(`window.webEvalFn = ${webFn};`);
 
         return (window as Window & typeof globalThis & { webEvalFn: Function }).webEvalFn(await globalThis[globalFunction]('web'), ...args);
       }, { args, globalFunction: globalFunction.name, webFn: fn.toString() });
+    }
 
     if(typeof nodeData === "object") // Remove prototype data from the node result to match webData
       nodeData = JSON.parse(JSON.stringify(nodeData));
@@ -101,6 +125,10 @@ export const test = base.extend<IBeekeeperTest>({
   },
   beekeeperWasmTestWebOnly: async({ page }, use) => {
     use(envTestFor(page, createBeekeeperWasmTestFor, 'web'));
+  },
+  beekeeperWasmTestWebOnlyWithPage: async({}, use) => {
+    use(<R, Args extends any[]>(page: Page, fn: TBeekeeperWasmTestCallable<R, Args>, ...args: Args) =>
+      envTestFor(page, createBeekeeperWasmTestFor, 'web')(fn, ...args));
   },
   beekeeperWasmTestNodeOnly: async({ page }, use) => {
     use(envTestFor(page, createBeekeeperWasmTestFor, 'node'));

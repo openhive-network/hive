@@ -1,8 +1,5 @@
-import { chromium, ChromiumBrowser, ConsoleMessage, expect } from '@playwright/test';
+import { chromium, ChromiumBrowser, expect } from '@playwright/test';
 import { test } from '../assets/jest-helper.js';
-import fs from 'fs';
-
-import { STORAGE_ROOT_NODE } from '../assets/data.js';
 
 let browser!: ChromiumBrowser;
 
@@ -11,17 +8,6 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     browser = await chromium.launch({
       headless: true
     });
-  });
-
-  test.beforeEach(async({ page }) => {
-    page.on('console', (msg: ConsoleMessage) => {
-      console.log('>>', msg.type(), msg.text())
-    });
-
-    if(fs.existsSync(STORAGE_ROOT_NODE))
-      fs.rmdirSync(STORAGE_ROOT_NODE, { recursive: true });
-
-    await page.goto("http://localhost:8080/__tests__/assets/test.html", { waitUntil: "load" });
   });
 
   test('Should be able to init the beekeeper factory', async ({ beekeeperTest }) => {
