@@ -61,14 +61,9 @@ void session_manager_base::set_timeout( const std::string& token, const std::chr
   get_session( token )->set_timeout( t );
 }
 
-void session_manager_base::check_timeout( const std::string& token )
+void session_manager_base::check_timeout( const std::string& token, bool move_time_forward )
 {
-  get_session( token )->check_timeout();
-}
-
-void session_manager_base::refresh_timeout( const std::string& token )
-{
-  get_session( token )->refresh_timeout();
+  get_session( token )->check_timeout( move_time_forward );
 }
 
 info session_manager_base::get_info( const std::string& token )
