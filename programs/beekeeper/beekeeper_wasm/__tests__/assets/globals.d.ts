@@ -12,7 +12,7 @@ export interface IBeekeeperGlobals {
 }
 
 export interface IBeekeeperWasmGlobals {
-  provider: MainModule;
+  provider: MainModule & { FS: any };
   ExtractError: typeof ExtractError;
   BeekeeperInstanceHelper: typeof BeekeeperInstanceHelper;
 }
