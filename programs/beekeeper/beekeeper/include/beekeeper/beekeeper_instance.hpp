@@ -35,6 +35,8 @@ namespace beekeeper
       beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory );
       ~beekeeper_instance() override;
 
+      bool is_instance_started() const { return instance_started; };
+
       appbase::application& get_app()
       {
         return app;
