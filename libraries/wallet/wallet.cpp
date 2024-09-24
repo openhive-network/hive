@@ -9,6 +9,7 @@
 #include <hive/protocol/crypto_memo.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/version.hpp>
+#include <hive/protocol/hive_collateral.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
 #include <hive/wallet/reflect_util.hpp>
@@ -2163,14 +2164,11 @@ wallet_serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_colla
   //must reflect calculations from collateralized_convert_evaluator::do_apply
 
   auto fhistory = get_feed_history().value;
-  FC_ASSERT( !static_cast<price>( fhistory.current_median_history ).is_null(), "Cannot estimate conversion collateral because there is no price feed." );
 
-  auto needed_hive = multiply_with_fee( hbd_amount_to_get.value, fhistory.current_min_history,
-    HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
-  uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
-  asset required_collateral = asset( fc::uint128_to_uint64(_amount), HIVE_SYMBOL );
-
-  return { required_collateral };
+  return { hive::protocol::hive_collateral::estimate_hive_collateral(
+      fhistory.current_median_history,
+      fhistory.current_min_history,
+      hbd_amount_to_get.value ) };
 }
 
 wallet_signed_transaction wallet_api::publish_feed(
