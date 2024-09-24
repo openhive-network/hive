@@ -74,6 +74,26 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     expect(retVal.signDigest).toBe(retVal.expected);
   });
 
+  test('Should be able to list wallets', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      api.create_with_password(session, 'w3', 'pass');
+      api.create_with_password(session, 'w4', 'pass');
+      api.create_with_password(session, 'w5', 'pass');
+
+      return api.listWallets(session).wallets;
+    }, WALLET_OPTIONS_NODE);
+
+    expect(retVal).toEqual([
+      { name: 'w3', unlocked: true },
+      { name: 'w4', unlocked: true },
+      { name: 'w5', unlocked: true }
+    ]);
+  });
+
   test('Should require keys in wallet', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
@@ -270,6 +290,30 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     expect(retVal.w1.unlocked).toBeFalsy();
   });
 
+  test('Should be able to lock and unlock a wallet', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      api.create_with_password(session, walletNames[1], 'cherry');
+
+      api.lock(session, walletNames[1]);
+      const locked = api.listWallets(session).wallets[0].unlocked;
+
+      api.unlock(session, walletNames[1], 'cherry');
+      const unlocked = api.listWallets(session).wallets[0].unlocked;
+
+      return {
+        locked,
+        unlocked
+      };
+    }, WALLET_OPTIONS_NODE, walletNames);
+
+    expect(retVal.locked).toBeFalsy();
+    expect(retVal.unlocked).toBeTruthy();
+  });
+
   test('Should be able to lock all wallets', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
@@ -292,6 +336,44 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     expect(retVal.w1.unlocked).toBeFalsy();
   });
 
+  test('Should be able to close only one wallet from many', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      api.create_with_password(session, walletNames[1], 'cherry');
+      api.create_with_password(session, walletNames[2], 'pass');
+      api.create_with_password(session, walletNames[3], 'pass');
+
+      api.close(session, walletNames[2]);
+
+      return api.listWallets(session).wallets;
+    }, WALLET_OPTIONS_NODE, walletNames);
+
+    expect(retVal).toEqual([
+      { name: 'w1', unlocked: true },
+      { name: 'w2', unlocked: false },
+      { name: 'w3', unlocked: true }
+    ]);
+  });
+
+  test('Should not be able to open a wallet without the password', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      api.create(session, walletNames[1]);
+
+      api.open(session, walletNames[1]);
+
+      return api.listWallets(session).wallets[0].unlocked;
+    }, WALLET_OPTIONS_NODE, walletNames);
+
+    expect(retVal).toBeFalsy();
+  });
+
   test('Should be able to remove a key', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
@@ -309,6 +391,32 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     expect(retVal).toHaveLength(0);
   });
 
+  test('should be able to import a few keys at once from a string list', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      const setOfKeys = new provider.StringList();
+
+      setOfKeys.push_back(keys[10][0]);
+      setOfKeys.push_back(keys[11][0]);
+      setOfKeys.push_back(keys[12][0]);
+
+
+      api.create_with_password(session, walletNames[1], 'cherry');
+      api.importKeys(session, walletNames[1], setOfKeys);
+
+      return api.getPublicKeys(session).keys;
+    }, WALLET_OPTIONS_NODE, keys, walletNames);
+
+    expect(retVal).toEqual([
+      { public_key: 'STM6SKxp2eB7Zc4bFGVwQPNijyWouNidPWvyFsSALvavQWjRhqJXf' },
+      { public_key: 'STM6iEHkB8ohBUCGWfftcEWmNyRtqZhu4m8sbc5c2QYv2AWuMHt5k' },
+      { public_key: 'STM7FMWqA7f5oYov4pmhfUDd4JJENRguZ4Sv7d3i2jt6Rz2Sg37fh' }
+    ]);
+  });
+
   test('Should be able to delete an api instance', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
@@ -322,6 +430,30 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     }, WALLET_OPTIONS_NODE);
 
     expect(retVal).toBeTruthy();
+  });
+
+  test('Should be able to get session info', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const session = api.createSession('pear');
+
+      const info = api.getInfo(session);
+
+      const now = new Date(info.now);
+      const timeoutTime = new Date(info.timeout_time);
+
+      const nowCheck = Number.isNaN(now.getTime());
+      const timeoutTimeCheck = Number.isNaN(timeoutTime.getTime());
+
+      return {
+        nowCheck,
+        timeoutTimeCheck
+      };
+    }, WALLET_OPTIONS_NODE);
+
+    expect(retVal.nowCheck).toBeFalsy();
+    expect(retVal.timeoutTimeCheck).toBeFalsy();
   });
 
   test('Create 3 wallets and add to every wallet 3 the same keys. Every key should be displayed only once', async ({ beekeeperWasmTest }) => {
