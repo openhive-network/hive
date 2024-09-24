@@ -58,15 +58,19 @@ init_data beekeeper_app_base::initialize_program_options()
 
       wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit );
 
-      if( !wallet_manager_ptr->start() )
-        return { false, "" };
-
       FC_ASSERT( _args.count("backtrace") );
       if( _args.at( "backtrace" ).as<std::string>() == "yes" )
       {
         fc::print_stacktrace_on_segfault();
         ilog( "Backtrace on segfault is enabled." );
       }
+
+      /*
+        When two beekeepers try to get access to the same directory, a second beekeeper should start, but without the beekeeper API.
+        It is enough, that `app_status_api` plugin is enabled because has to inform that the beekeeper doesn't work properly.
+      */
+      if( !wallet_manager_ptr->start() )
+        return { true, "" };
 
       return save_keys( _args );
 

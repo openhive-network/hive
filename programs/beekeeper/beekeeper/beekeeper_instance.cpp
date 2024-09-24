@@ -18,7 +18,7 @@ namespace beekeeper {
 
   beekeeper_instance::~beekeeper_instance()
   {
-    if( instance_started )
+    if( is_instance_started() )
     {
       if( wallet_dir_lock )
           bfs::remove( lock_path_file );
@@ -60,7 +60,7 @@ namespace beekeeper {
     if( !wallet_dir_lock->try_lock() )
     {
         wallet_dir_lock.reset();
-        wlog( "Failed to lock access to wallet directory; is another `beekeeper` running?" );
+        wlog( "Failed to lock access to a wallet directory. Probably another beekeeper instance is running. Beekeeper API is disabled." );
         return;
     }
 
@@ -74,10 +74,7 @@ namespace beekeeper {
   {
     initialize_lock();
 
-    if( !instance_started )
-      app.save_status( "opening beekeeper failed", "beekeeper_status" );
-
-    return instance_started;
+    return is_instance_started();
   }
 
 }
