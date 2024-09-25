@@ -19,7 +19,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
   });
 
   test('Should be able to get_info based on the created session', async ({ beekeeperTest }) => {
-    const retVal = await beekeeperTest(async ({ beekeeper }) => {
+    const retVal = await beekeeperTest.dynamic(async ({ beekeeper }) => {
       const session = beekeeper.createSession("my.salt");
 
       return session.getInfo();
@@ -54,7 +54,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
   });
 
   test('Should be able to create multiple sessions with wallets and delete the beekeeper instance', async ({ beekeeperTest }) => {
-    await beekeeperTest(async ({ beekeeper }) => {
+    await expect(beekeeperTest(async ({ beekeeper }) => {
       const session1 = beekeeper.createSession("avocado1");
       const session2 = beekeeper.createSession("avocado2");
 
@@ -62,7 +62,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
       await session2.createWallet('w1');
 
       beekeeper.delete();
-    });
+    })).resolves.toBeUndefined();
   });
 
   test('Should be able to create a wallet and import and remove keys', async ({ beekeeperTest }) => {
@@ -124,23 +124,15 @@ test.describe('Beekeeper factory tests for Node.js', () => {
   });
 
   test('Should not be able to import keys after closing a wallet', async ({ beekeeperTest }) => {
-    const retVal = await beekeeperTest(async ({ beekeeper }) => {
+    await expect(beekeeperTest(async ({ beekeeper }) => {
       const session = beekeeper.createSession("my.salt");
 
       const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
 
       unlocked.close();
 
-      try {
-        await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT'); // This should fail
-
-        return false;
-      } catch {
-        return true;
-      }
-    });
-
-    expect(retVal).toBeTruthy();
+      await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT'); // This should fail
+    })).rejects.toThrow(/Wallet not found: w0/);
   });
 
   test('Should be able to create multiple wallets and access them using listWallets references', async ({ beekeeperTest }) => {

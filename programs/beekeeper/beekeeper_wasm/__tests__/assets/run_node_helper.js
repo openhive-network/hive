@@ -1,6 +1,6 @@
 export class ExtractError extends Error {
   constructor(parsed) {
-    super("Response resulted with error");
+    super(`Response resulted with error: "${JSON.stringify(parsed)}"`);
     this.name = 'ExtractError';
     this.parsed = parsed;
   }

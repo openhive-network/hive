@@ -1,11 +1,9 @@
 import { chromium, ChromiumBrowser, expect } from '@playwright/test';
 import { test } from '../assets/jest-helper.js'
 
-import { STORAGE_ROOT_NODE, WALLET_OPTIONS_NODE } from '../assets/data.js';
+import { WALLET_OPTIONS_NODE } from '../assets/data.js';
 
 const walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"];
-
-// const limitDisplay = (str, max) => str.length > max ? (str.slice(0, max - 3) + '...') : str;
 
 const keys =
 [
@@ -87,7 +85,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return api.listWallets(session).wallets;
     }, WALLET_OPTIONS_NODE);
 
-    expect(retVal).toEqual([
+    expect(retVal).toStrictEqual([
       { name: 'w3', unlocked: true },
       { name: 'w4', unlocked: true },
       { name: 'w5', unlocked: true }
@@ -109,7 +107,9 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return publicKeys.keys;
     }, WALLET_OPTIONS_NODE);
 
-    expect(retVal).toHaveLength(1);
+    expect(retVal).toStrictEqual([
+      { public_key: "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4" }
+    ]);
     expect(retVal[0].public_key).toBe('STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4');
   });
 
@@ -179,7 +179,10 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return publicKeys.keys;
     }, WALLET_OPTIONS_NODE, keys, walletNames);
 
-    expect(retVal).toHaveLength(2);
+    expect(retVal).toStrictEqual([
+      { public_key: "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4" },
+      { public_key: "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm" }
+    ]);
   });
 
   test('Should be able to close a wallet', async ({ beekeeperWasmTest }) => {
@@ -388,7 +391,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return api.getPublicKeys(session).keys;
     }, WALLET_OPTIONS_NODE, keys, walletNames);
 
-    expect(retVal).toHaveLength(0);
+    expect(retVal).toStrictEqual([]);
   });
 
   test('should be able to import a few keys at once from a string list', async ({ beekeeperWasmTest }) => {
@@ -418,18 +421,11 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Should be able to delete an api instance', async ({ beekeeperWasmTest }) => {
-    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.deleteInstance();
-        return true;
-      } catch {
-        return false;
-      }
-    }, WALLET_OPTIONS_NODE);
-
-    expect(retVal).toBeTruthy();
+      api.deleteInstance();
+    }, WALLET_OPTIONS_NODE)).resolves.toBeUndefined()
   });
 
   test('Should be able to get session info', async ({ beekeeperWasmTest }) => {
@@ -472,10 +468,11 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return api.getPublicKeys(api.implicitSessionToken).keys;
     }, WALLET_OPTIONS_NODE, walletNames, keys);
 
-    expect(retVal).toHaveLength(3);
-    expect(retVal[0].public_key).toBe('STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45');
-    expect(retVal[1].public_key).toBe('STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4');
-    expect(retVal[2].public_key).toBe('STM8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5');
+    expect(retVal).toStrictEqual([
+      { public_key: 'STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45' },
+      { public_key: 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4' },
+      { public_key: 'STM8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5' }
+    ]);
   });
 
   test('Remove all keys from 3 wallets. As a result all keys are removed in mentioned wallets', async ({ beekeeperWasmTest }) => {
@@ -499,7 +496,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return api.getPublicKeys(api.implicitSessionToken).keys;
     }, WALLET_OPTIONS_NODE, walletNames, keys);
 
-    expect(retVal).toHaveLength(0);
+    expect(retVal).toStrictEqual([]);
   });
 
   test('Close implicitly created session. Create 3 new sessions. Every session has a 1 wallet. Every wallet has unique 1 key. As a result there are 3 keys', async ({ beekeeperWasmTest }) => {
@@ -531,7 +528,11 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return publicKeys;
     }, WALLET_OPTIONS_NODE, walletNames, keys);
 
-    expect(retVal).toHaveLength(3);
+    expect(retVal).toStrictEqual([
+      [ { public_key: "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm" } ],
+      [ { public_key: "STM6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW" } ],
+      [ { public_key: "STM8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME" } ]
+    ]);
   });
 
   test('Create 4 new sessions. All sessions create a wallet', async ({ beekeeperWasmTest }) => {
@@ -566,7 +567,10 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return publicKeys;
     }, WALLET_OPTIONS_NODE, walletNames, keys);
 
-    expect(retVal).toHaveLength(2);
+    expect(retVal).toStrictEqual([
+      [ { public_key: "STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh" } ],
+      [ { public_key: "STM7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH" } ]
+    ]);
   });
 
   test('Try to create new sessions, but due to the limit creating the last one fails', async ({ beekeeperWasmTest }) => {
@@ -618,112 +622,96 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return publicKeys.keys;
     }, WALLET_OPTIONS_NODE, walletNames, keys);
 
-    expect(retVal).toHaveLength(0);
+    expect(retVal).toStrictEqual([]);
   });
 
   test('Create new sessions, close them + implicitly created session. Create again sessions and close them', async ({ beekeeperWasmTest }) => {
-    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
-      try {
-        const noSessions = 64;
+      const noSessions = 64;
 
-        const sessionTokens = [ api.implicitSessionToken ];
+      const sessionTokens = [ api.implicitSessionToken ];
 
-        for(let i = 0; i < noSessions - 1; ++i)
-          sessionTokens.push(api.createSession(i.toString()));
+      for(let i = 0; i < noSessions - 1; ++i)
+        sessionTokens.push(api.createSession(i.toString()));
 
-        for(let i = 0; i < noSessions; ++i)
-          api.closeSession(sessionTokens.pop()!);
+      for(let i = 0; i < noSessions; ++i)
+        api.closeSession(sessionTokens.pop()!);
 
-        for(let i = 0; i < noSessions; ++i)
-          sessionTokens.push(api.createSession(i.toString()));
+      for(let i = 0; i < noSessions; ++i)
+        sessionTokens.push(api.createSession(i.toString()));
 
-        for(let i = 0; i < noSessions; ++i)
-          api.closeSession(sessionTokens.pop()!);
-
-        return true;
-      } catch {
-        return false;
-      }
-    }, WALLET_OPTIONS_NODE);
-
-    expect(retVal).toBeTruthy();
+      for(let i = 0; i < noSessions; ++i)
+        api.closeSession(sessionTokens.pop()!);
+    }, WALLET_OPTIONS_NODE)).resolves.toBeUndefined();
   });
 
   test('Try to sign transactions, but they fail. Unlock wallet. Import key. Sign transactions. Delete instance. Create instance again', async ({ beekeeperWasmTest }) => {
-    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames, signData, keys) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames, signData, keys) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       try {
         api.signDigest(api.implicitSessionToken, signData[0].sig_digest, signData[0].public_key);
         api.signDigest(api.implicitSessionToken, signData[1].sig_digest, signData[1].public_key);
+
+        return false;
       } catch {
-        console.log('Expected error');
+        // console.log('Expected error here - do nothing');
 
-        try {
-          api.create_with_password(api.implicitSessionToken, walletNames[3], 'pass');
-          const key = api.importKey(api.implicitSessionToken, walletNames[3], keys[3][0]);
+        api.create_with_password(api.implicitSessionToken, walletNames[3], 'pass');
+        const key = api.importKey(api.implicitSessionToken, walletNames[3], keys[3][0]);
 
-          api.signDigest(api.implicitSessionToken, signData[0].sig_digest, key);
-          api.signDigest(api.implicitSessionToken, signData[1].sig_digest, key);
+        api.signDigest(api.implicitSessionToken, signData[0].sig_digest, key);
+        api.signDigest(api.implicitSessionToken, signData[1].sig_digest, key);
 
-          return true;
-        } catch {
-          return false;
-        }
+        return true;
       } finally {
         api.deleteInstance();
       }
-    }, WALLET_OPTIONS_NODE, walletNames, signData, keys);
-
-    expect(retVal).toBeTruthy();
+    }, WALLET_OPTIONS_NODE, walletNames, signData, keys)).resolves.toBeTruthy();
   });
 
   test('Unlock 10 wallets. Every wallet has own session. Import the same key into every wallet. Sign transactions using the key from every wallet', async ({ beekeeperWasmTest }) => {
-    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames, signData) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames, signData) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       // Lock even wallets. Sign transactions using the key from: every odd wallet (passes), every even wallet (fails).
       // Lock odd wallets. Sign transactions using the key from every wallet (always fails).
 
-      try {
-        const noWallets = 10;
+      const noWallets = 10;
 
-        const sessionTokens: string[] = []
+      const sessionTokens: string[] = []
 
-        for(let i = 0; i < noWallets; ++i) {
-          sessionTokens.push(api.createSession(i.toString()));
+      for(let i = 0; i < noWallets; ++i) {
+        sessionTokens.push(api.createSession(i.toString()));
 
-          api.create_with_password(sessionTokens[i], walletNames[i], 'pass');
-          const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0]);
+        api.create_with_password(sessionTokens[i], walletNames[i], 'pass');
+        const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0]);
 
+        api.signDigest(sessionTokens[i], signData[1].sig_digest, key);
+      }
+
+      for(let i = 0; i < noWallets; i += 2)
+        api.lock(sessionTokens[i], walletNames[i]);
+
+      for(let i = 0; i < noWallets; ++i)
+        if(i % 2 === 0)
+          try {
+            const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0]);
+            api.signDigest(sessionTokens[i], signData[1].sig_digest, key);
+
+            return false
+          } catch {
+            // console.log('Expected error here - do nothing');
+          }
+        else {
+          const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0])
           api.signDigest(sessionTokens[i], signData[1].sig_digest, key);
+          api.lock(sessionTokens[i], walletNames[i]); // For the next stage
         }
 
-        for(let i = 0; i < noWallets; i += 2)
-          api.lock(sessionTokens[i], walletNames[i]);
-
-        for(let i = 0; i < noWallets; ++i)
-          if(i % 2 === 0)
-            try {
-              const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0]);
-              api.signDigest(sessionTokens[i], signData[1].sig_digest, key);
-            } catch {
-              console.log('Expected error');
-            }
-          else {
-            const key = api.importKey(sessionTokens[i], walletNames[i], keys[3][0])
-            api.signDigest(sessionTokens[i], signData[1].sig_digest, key);
-            api.lock(sessionTokens[i], walletNames[i]); // For the next stage
-          }
-
-        return true;
-      } catch {
-        return false;
-      }
-    }, WALLET_OPTIONS_NODE, keys, walletNames, signData);
-
-    expect(retVal).toBeTruthy();
+      return true;
+    }, WALLET_OPTIONS_NODE, keys, walletNames, signData)).resolves.toBeTruthy();
   });
 
   test('Check endpoints related to timeout: "set_timeout", "get_info"', async ({ beekeeperWasmTest }) => {
@@ -744,47 +732,36 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
   });
 
   test('Different false tests for sign* endpoints', async ({ beekeeperWasmTest }) => {
-    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames, keys) => {
+    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames, keys) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        const walletNo = 9;
-        api.create_with_password(api.implicitSessionToken, walletNames[walletNo], 'pass');
+      const walletNo = 9;
+      api.create_with_password(api.implicitSessionToken, walletNames[walletNo], 'pass');
 
-        const length = 1e7; // 10M
-        const longStr = 'a'.repeat(length);
-        // This should not throw as it is used only for signing (does not deserialize data)
-        const key = api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[3][0])
-        api.signDigest(api.implicitSessionToken, longStr, key);
-
-        return true;
-      } catch {
-        return false;
-      }
-    }, WALLET_OPTIONS_NODE, walletNames, keys);
-
-    expect(retVal).toBeTruthy();
+      const length = 1e7; // 10M
+      const longStr = 'a'.repeat(length);
+      // This should not throw as it is used only for signing (does not deserialize data)
+      const key = api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[3][0])
+      api.signDigest(api.implicitSessionToken, longStr, key);
+    }, WALLET_OPTIONS_NODE, walletNames, keys)).resolves.toBeUndefined();
   });
 
   test('Check if an instance of beekeeper has a version', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      return (api.version as unknown as string).length;
+      return api.version;
     }, WALLET_OPTIONS_NODE);
 
-    expect(retVal).toBeGreaterThan(0);
+    // Should be a commit hash
+    expect(retVal).toMatch(/^[a-f0-9]{40}$/);
   });
 
   test('Should throw as wallet name cannot be empty', async ({ beekeeperWasmTest }) => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.open(api.implicitSessionToken, '');
-      } catch {
-        throw new Error('Name of wallet is incorrect. Is empty.');
-      }
+      api.open(api.implicitSessionToken, '');
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError('Name of wallet is incorrect. Is empty.');
   });
 
@@ -792,11 +769,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.open(api.implicitSessionToken, '%$%$');
-      } catch {
-        throw new Error("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-@' chars are allowed");
-      }
+      api.open(api.implicitSessionToken, '%$%$');
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-@' chars are allowed");
   });
 
@@ -806,11 +779,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create(api.implicitSessionToken, walletNames[9]);
 
-      try {
-        api.create(api.implicitSessionToken, walletNames[9]);
-      } catch {
-        throw new Error(`Wallet with name: '${walletNames[9]}' already exists at`);
-      }
+      api.create(api.implicitSessionToken, walletNames[9]);
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError(`Wallet with name: 'w9' already exists at`);
   });
 
@@ -818,11 +787,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.create_with_password(api.implicitSessionToken, walletNames[9], '');
-      } catch {
-        throw new Error('password.size() > 0');
-      }
+      api.create_with_password(api.implicitSessionToken, walletNames[9], '');
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError('password.size() > 0');
   });
 
@@ -830,13 +795,9 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        const length = 1e7; // 10M
-        const longStr = 'a'.repeat(length);
-        api.create_with_password(api.implicitSessionToken, walletNames[9], longStr);
-      } catch {
-        throw new Error('!password || password->size() < max_password_length');
-      }
+      const length = 1e7; // 10M
+      const longStr = 'a'.repeat(length);
+      api.create_with_password(api.implicitSessionToken, walletNames[9], longStr);
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError('!password || password->size() < max_password_length');
   });
 
@@ -844,11 +805,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.close(api.implicitSessionToken, 'abc');
-      } catch {
-        throw new Error('Wallet not found: abc');
-      }
+      api.close(api.implicitSessionToken, 'abc');
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError('Wallet not found: abc');
   });
 
@@ -856,11 +813,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.getPublicKeys(api.implicitSessionToken);
-      } catch {
-        throw new Error("You don't have any wallet");
-      }
+      api.getPublicKeys(api.implicitSessionToken);
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("You don't have any wallet");
   });
 
@@ -868,38 +821,26 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.open(api.implicitSessionToken, walletNames[9]);
-        api.getPublicKeys(api.implicitSessionToken);
-      } catch {
-        throw new Error("You don't have any unlocked wallet");
-      }
-    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("You don't have any unlocked wallet");
+      api.open(api.implicitSessionToken, walletNames[9]);
+      api.getPublicKeys(api.implicitSessionToken);
+    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError(/Unable to open file:.*?w9\.wallet/);
   });
 
   test('Should throw as the wallet is already locked', async ({ beekeeperWasmTest }) => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.lock(api.implicitSessionToken, walletNames[9]);
-        api.lock(api.implicitSessionToken, walletNames[9]);
-      } catch {
-        throw new Error("Unable to lock a locked wallet");
-      }
-    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Unable to lock a locked wallet");
+      api.lock(api.implicitSessionToken, walletNames[9]);
+      api.lock(api.implicitSessionToken, walletNames[9]);
+    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Wallet not found: w9");
   });
 
   test('Should throw as the password is incorrect', async ({ beekeeperWasmTest }) => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.unlock(api.implicitSessionToken, walletNames[9], 'incorrect');
-      } catch {
-        throw new Error("Invalid password for wallet");
-      }
-    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Invalid password for wallet");
+      api.unlock(api.implicitSessionToken, walletNames[9], 'incorrect');
+    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError(/Unable to open file:.*?w9\.wallet/);
   });
 
   test('Should throw as the wallet is already unlocked', async ({ beekeeperWasmTest }) => {
@@ -908,11 +849,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
 
-      try {
-        api.unlock(api.implicitSessionToken, walletNames[9], 'pass');
-      } catch {
-        throw new Error("Wallet is already unlocked");
-      }
+      api.unlock(api.implicitSessionToken, walletNames[9], 'pass');
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Wallet is already unlocked");
   });
 
@@ -920,11 +857,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.importKey(api.implicitSessionToken, 'pear', 'key');
-      } catch {
-        throw new Error("Wallet not found: pear");
-      }
+      api.importKey(api.implicitSessionToken, 'pear', 'key');
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Wallet not found: pear");
   });
 
@@ -934,23 +867,15 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
 
-      try {
-        api.importKey(api.implicitSessionToken, walletNames[9], 'key');
-      } catch {
-        throw new Error("Invalid key");
-      }
-    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Invalid key");
+      api.importKey(api.implicitSessionToken, walletNames[9], 'key');
+    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Key can't be constructed");
   });
 
   test('Should throw as the wallet cannot be found', async ({ beekeeperWasmTest }) => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.removeKey(api.implicitSessionToken, 'nonexisting-wallet', 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4');
-      } catch {
-        throw new Error("Wallet not found: nonexisting-wallet");
-      }
+      api.removeKey(api.implicitSessionToken, 'nonexisting-wallet', 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4');
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Wallet not found: nonexisting-wallet");
   });
 
@@ -960,12 +885,8 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
 
-      try {
-        api.removeKey(api.implicitSessionToken, walletNames[9], '6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm');
-      } catch {
-        throw new Error("Public key requires STM prefix");
-      }
-    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Public key requires STM prefix");
+      api.removeKey(api.implicitSessionToken, walletNames[9], '6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm');
+    }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("public key requires STM prefix, but was given");
   });
 
   test('Should throw as the key is not in the wallet', async ({ beekeeperWasmTest }) => {
@@ -974,11 +895,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
 
-      try {
-        api.removeKey(api.implicitSessionToken, walletNames[9], 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4');
-      } catch {
-        throw new Error("Key not in wallet");
-      }
+      api.removeKey(api.implicitSessionToken, walletNames[9], 'STM8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4');
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError("Key not in wallet");
   });
 
@@ -986,11 +903,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.signDigest(api.implicitSessionToken, "#", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-      } catch {
-        throw new Error("Invalid hex character '#'");
-      }
+      api.signDigest(api.implicitSessionToken, "#", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Invalid hex character '#'");
   });
 
@@ -998,11 +911,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.signDigest(api.implicitSessionToken, "abCDe", "STMlemon");
-      } catch {
-        throw new Error("Unable to decode base58 string lemon");
-      }
+      api.signDigest(api.implicitSessionToken, "abCDe", "STMlemon");
     }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Unable to decode base58 string lemon");
   });
 
@@ -1010,12 +919,8 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.signDigest(api.implicitSessionToken, "abCDe", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-      } catch {
-        throw new Error("Public key not found in unlocked wallets");
-      }
-    }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Public key not found in unlocked wallets");
+      api.signDigest(api.implicitSessionToken, "abCDe", "STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+    }, WALLET_OPTIONS_NODE)).rejects.toThrowError("Public key STM6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets");
   });
 
   test('An incorrect initialization should block all API calls', async ({ beekeeperWasmTest }) => {
@@ -1060,11 +965,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, keys, walletNames) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
-      try {
-        api.encryptData(api.implicitSessionToken, keys[0][1], keys[1][1], walletNames[9], 'content');
-      } catch {
-        throw new Error("Wallet not found: w9");
-      }
+      api.encryptData(api.implicitSessionToken, keys[0][1], keys[1][1], walletNames[9], 'content');
     }, WALLET_OPTIONS_NODE, keys, walletNames)).rejects.toThrowError("Wallet not found: w9");
   });
 
@@ -1074,12 +975,8 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
       api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
 
-      try {
-        api.encryptData(api.implicitSessionToken, keys[0][1], keys[1][1], walletNames[9], 'content');
-      } catch {
-        throw new Error("Public key STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet");
-      }
-    }, WALLET_OPTIONS_NODE, keys, walletNames)).rejects.toThrowError("Public key STM6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45 not found in w9 wallet");
+      api.encryptData(api.implicitSessionToken, keys[0][1], keys[1][1], walletNames[9], 'content');
+    }, WALLET_OPTIONS_NODE, keys, walletNames)).rejects.toThrowError("Public key STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh not found in w9 wallet");
   });
 
   test('Should encrypt and decrypt data', async ({ beekeeperWasmTest }) => {
