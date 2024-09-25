@@ -36,7 +36,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
 
   test('Should set a proper timeout', async ({ beekeeperTest }) => {
     const retVal = await beekeeperTest(async ({ provider }) => {
-      const beekeeper = await provider.default({ unlockTimeout: 5 });
+      const beekeeper = await provider.default({ unlockTimeout: 5, enableLogs: false });
 
       const session = beekeeper.createSession("my.salt");
 

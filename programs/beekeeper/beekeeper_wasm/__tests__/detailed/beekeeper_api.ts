@@ -1020,6 +1020,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
 
   test('An incorrect initialization should block all API calls', async ({ beekeeperWasmTest }) => {
     const retVal = await beekeeperWasmTest(async ({ provider }) => {
+        // We are unable to disable logs for this test
         const params = new provider.StringList();
         params.push_back("--invalid-param");
         params.push_back("true");
