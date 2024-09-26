@@ -14,7 +14,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     await beekeeperTest(async ({ beekeeper }) => {
       beekeeper.createSession("my.salt");
 
-      beekeeper.delete();
+      await beekeeper.delete();
     });
   });
 
@@ -61,7 +61,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
       await session1.createWallet('w0');
       await session2.createWallet('w1');
 
-      beekeeper.delete();
+      await beekeeper.delete();
     })).resolves.toBeUndefined();
   });
 
