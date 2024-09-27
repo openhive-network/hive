@@ -6,6 +6,7 @@
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
 #include "../db_fixture/snapshots_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -20,7 +21,13 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
 
     clear_snapshot("additional_allocation_after_snapshot_load");
     {
-      postponed_init();
+      postponed_init(
+        {
+          hived_fixture::config_line_t({ "shared-file-size",
+            { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_in_mb_64) } }
+          )
+        }
+      );
 
       generate_block();
       db()->set_hardfork( 24 );
