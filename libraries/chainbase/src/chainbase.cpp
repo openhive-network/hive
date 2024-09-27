@@ -220,7 +220,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     auto _size_checker = [&dir]( size_t size )
     {
       std::filesystem::space_info _space_info = std::filesystem::space( dir.generic_string().c_str() );
-      ilog( "Free space available: ${available}. Shared file size: ${shared_file_size}",("available", _space_info.available)(size) );
+      ilog( "Free space available: ${available}. Shared file size: ${size}",("available", _space_info.available)(size) );
       if( size > _space_info.available )
         BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to create shared memory file. Free space available is less than declared size of shared memory file." ) );
     };
