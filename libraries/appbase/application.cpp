@@ -1,4 +1,5 @@
 #include <appbase/application.hpp>
+#include <appbase/options_dumper.hpp>
 
 #include <hive/utilities/logging_config.hpp>
 #include <hive/utilities/notifications.hpp>
@@ -155,7 +156,8 @@ void application::set_program_options()
       ("generate-completions", "Generate bash auto-complete script (try: eval \"$(hived --generate-completions)\")")
 #endif
       ("data-dir,d", bpo::value<bfs::path>()->value_name("dir"), data_dir_ss.str().c_str() )
-      ("config,c", bpo::value<bfs::path>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir");
+      ("config,c", bpo::value<bfs::path>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir")
+      ("dump-options", "Dump information about all supported command line and config options in JSON format and exit");
 
   my->_cfg_options.add(app_cfg_opts);
   my->_app_options.add(app_cfg_opts);
@@ -285,6 +287,18 @@ initialization_result application::initialize_impl( int argc, char** argv,
       {
         std::cout << plugin.first << "\n";
       }
+
+      return { initialization_result::ok, false };
+    }
+
+    if( my->_args.count("dump-options") > 0 )
+    {
+      options_dumper dumper = {
+        { "command_line", my->_app_options },
+        { "config_file", my->_cfg_options }
+      };
+
+      std::cout << dumper.dump_to_string() << "\n";
 
       return { initialization_result::ok, false };
     }
