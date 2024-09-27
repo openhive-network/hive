@@ -63,7 +63,7 @@ long next_hf_time()
 #ifdef IS_TEST_NET
     1675818000; // Wednesday, February 8, 2023 1:00:00 AM
 #else
-    1726653600; // Wed Sep 18 2024 10:00:00 GMT+0000
+    1733918400; // Wednesday, December 11, 2024 12:00:00 PM
 #endif /// IS_TEST_NET
 
   const char* value = getenv("HIVE_HF28_TIME");
