@@ -71,7 +71,7 @@ struct hived_fixture : public database_fixture
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
   private:
-    void postponed_init_impl( bool remove_db_files, const config_arg_override_t& config_arg_overrides );
+    void postponed_init_impl( bool remove_db_files, config_arg_override_t config_arg_overrides );
   private:
     hive::plugins::chain::chain_plugin* _chain = nullptr;
     const hive::chain::block_read_i* _block_reader = nullptr;
