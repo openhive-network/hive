@@ -29,6 +29,7 @@ endif()
 add_library( appbase STATIC
              signals_handler.cpp
              application.cpp
+             options_dumper.cpp
              ${HEADERS}
            )
 
