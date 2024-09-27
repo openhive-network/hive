@@ -53,8 +53,7 @@ void hived_fixture::set_logging_config( const fc::optional< fc::logging_config >
   }
 }
 
-void hived_fixture::postponed_init_impl( bool remove_db_files,
-  const config_arg_override_t& config_arg_overrides )
+void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_override_t config_arg_overrides )
 {
   try
   {
@@ -76,6 +75,14 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
         // turn off RC stats reports by default - specific tests/fixtures can turn it on later
         { "rc-stats-report-type", { "NONE" } }
       };
+
+      if (std::find_if(config_arg_overrides.cbegin(), config_arg_overrides.cend(),
+          [=](const config_arg_override_t::value_type& item) -> bool { return item.first == "shared-file-size"; }) == config_arg_overrides.cend())
+      {
+        /// By default limit shm size to 64MB for unit tests.
+        config_arg_overrides.emplace_back(config_arg_override_t::value_type(
+          { "shared-file-size", { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_in_mb_64) } }));
+      }
 
       if( not config_arg_overrides.empty() )
         std::copy_if( config_arg_overrides.begin(),
