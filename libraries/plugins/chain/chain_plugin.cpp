@@ -568,9 +568,10 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                    "held lock for ${write_lock_held_duration}μs",
-                    (write_lock_hold_time)
-                    ("write_lock_held_duration", write_lock_held_duration.count()));
+                  "held lock for ${write_lock_held_duration}μs, ${i} items left in queue",
+                  (write_lock_hold_time)
+                  ("write_lock_held_duration", write_lock_held_duration.count())
+                  ("i", write_queue.size()));
 
                 if ( is_running() ) {
                   break;
