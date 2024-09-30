@@ -1157,7 +1157,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< pow2_work >().create( v );
+      return extended_variant_creator_functor< pow2_work >().create( v, pow2_work::tag<T>::value );
     }
   };
 

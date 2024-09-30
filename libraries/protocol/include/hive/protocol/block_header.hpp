@@ -51,7 +51,7 @@ struct variant_creator_functor< block_header_extensions >
   template<typename T>
   fc::variant operator()( const T& v ) const
   {
-    return extended_variant_creator_functor< block_header_extensions >().create( v );
+    return extended_variant_creator_functor< block_header_extensions >().create( v, block_header_extensions::tag<T>::value );
   }
 };
 
