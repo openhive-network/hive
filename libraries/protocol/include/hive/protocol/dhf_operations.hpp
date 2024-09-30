@@ -162,7 +162,7 @@ namespace fc
     template<typename T>
     fc::variant operator()( const T& v ) const
     {
-      return extended_variant_creator_functor< update_proposal_extension >().create( v );
+      return extended_variant_creator_functor< update_proposal_extension >().create( v, update_proposal_extension::tag<T>::value );
     }
   };
 }

@@ -111,7 +111,7 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
 
         op = response[0]["op"]
         extensions = op[1]["extensions"][0]
-        return extensions[0] == "update_proposal_end_date" and extensions[1]["end_date"] == end_date
+        return extensions[0] == 1 and extensions[1]["end_date"] == end_date
 
     author = funded_account.account
     current_daily_pay = tt.Asset.Tbd(10)
