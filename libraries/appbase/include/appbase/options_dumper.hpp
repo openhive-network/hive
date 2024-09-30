@@ -32,7 +32,7 @@ namespace appbase {
 
     private:
 
-      std::unordered_map<std::string, bpo> option_groups;
+      std::map<std::string, bpo> option_groups;
 
       std::optional<value_info> get_value_info( const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const;
       option_entry serialize_option( const boost::program_options::option_description& option ) const;
