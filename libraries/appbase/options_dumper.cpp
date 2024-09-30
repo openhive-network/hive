@@ -7,6 +7,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/variant_object.hpp>
+#include <fc/exception/exception.hpp>
 
 #include <vector>
 
@@ -126,19 +127,55 @@ options_dumper::option_entry options_dumper::serialize_option( const boost::prog
 
 std::string options_dumper::dump_to_string() const
 {
-  fc::mutable_variant_object _obj;
+  using _items_type = std::map<std::string, option_entry>;
+
+  std::map<std::string, _items_type> processed_option_groups;
+
+  std::map<std::string, size_t> _names;
 
   for( const auto& group : option_groups )
   {
-    std::vector<option_entry> _entries;
+    _items_type _entries;
 
     for( const auto& option : group.second.options() ) 
-      _entries.emplace_back( serialize_option( *option ) );
+    {
+      auto _status = _names.insert( std::make_pair( option->long_name(), 1 ) );
+      if( !_status.second )
+        ++_status.first->second;
+      _entries.emplace( std::make_pair(option->long_name(), serialize_option( *option ) ) );
+    }
 
-    _obj[group.first] = std::move( _entries );
+    processed_option_groups.emplace( std::make_pair( group.first, _entries ) );
   }
 
-  return fc::json::to_pretty_string( _obj );
+  const std::string _common = "common";
+
+  std::map<std::string, std::vector<option_entry>> _result;
+
+  const auto _nr_groups = processed_option_groups.size();
+  for( auto& name : _names )
+  {
+    bool _saved = false;
+    for( auto& group : processed_option_groups )
+    {
+      auto _found = group.second.find( name.first );
+
+      if( name.second == _nr_groups )
+      {
+        FC_ASSERT( _found != group.second.end() );
+        if( !_saved )
+          _result[ _common ].emplace_back( _found->second );
+        _saved = true;
+      }
+      else
+      {
+        if( _found != group.second.end() )
+          _result[ group.first ].emplace_back( _found->second );
+      }
+    }
+  }
+
+  return fc::json::to_pretty_string( _result );
 }
 
 };
