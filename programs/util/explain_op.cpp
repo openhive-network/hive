@@ -9,6 +9,7 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/io/varint.hpp>
 #include <fc/string.hpp>
+#include <fc/uint128.hpp>
 
 #include <iostream>
 #include <string>
@@ -22,6 +23,7 @@ std::string to_string(uint8_t v);
 std::string to_string(uint16_t v);
 std::string to_string(uint32_t v);
 std::string to_string(uint64_t v);
+std::string to_string(fc::uint128_t v);
 std::string to_string(const fc::unsigned_int& v);
 template<size_t N>
 std::string to_string(const hive::protocol::fixed_string<N>& v);
@@ -42,6 +44,8 @@ std::string to_string(const fc::safe<T>& v);
 template<typename T, size_t N>
 std::string to_string(const fc::array<T, N>& v);
 std::string to_string(const std::vector<char>& v);
+template<typename T>
+auto to_string(const T& v) -> std::enable_if_t<fc::reflector<T>::is_defined::value && fc::reflector<T>::is_enum::value, std::string>;
 
 template <typename, typename = void>
 struct is_to_string_invocable : std::false_type {};
@@ -235,6 +239,11 @@ std::string to_string(uint64_t v)
   return std::to_string(v);
 }
 
+std::string to_string(fc::uint128_t v)
+{
+  return std::to_string(v);
+}
+
 std::string to_string(const fc::unsigned_int& v)
 {
   return std::to_string(v.value);
@@ -326,6 +335,12 @@ std::string to_string(const fc::array<T, N>& v)
 std::string to_string(const std::vector<char>& v)
 {
   return fc::to_hex(v);
+}
+
+template<typename T>
+auto to_string(const T& v) -> std::enable_if_t<fc::reflector<T>::is_defined::value && fc::reflector<T>::is_enum::value, std::string>
+{
+  return fc::reflector<T>::to_string(v);
 }
 
 void chop(std::string& s, char prefix)
