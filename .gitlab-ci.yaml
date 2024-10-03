@@ -665,17 +665,20 @@ broadcast_tests:
 test_tools_tests:
   stage: test
   extends: .test_tools_based
-
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: copy_testing_block_logs_to_cache
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/testing_block_logs
   script:
-    - cd tests/python/hive-local-tools/test-tools/tests
+    - cp -r $TESTING_BLOCK_LOGS_CACHE_DIR/* $TESTING_BLOCK_LOGS_DESTINATION
+    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
     - !reference [.run-pytest, script]
   tags:
-    - public-runner-docker
+    - data-cache-storage
 
 rc_direct_delegations_tests:
   stage: test
@@ -1183,6 +1186,61 @@ authority_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+
+generate_testing_block_logs_and_save_image:
+  stage: build
+  extends: [.extended_block_log_creation, .test_tools_based]
+  timeout: 1h
+  variables:
+    GIT_DEPTH: 0
+    TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
+  script:
+  - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh
+  artifacts:
+     reports:
+       dotenv:
+         - testing_block_log_latest_version.env
+         - testing_block_log_latest_commit_short_sha.env
+  tags:
+  - public-runner-docker
+  - hived-for-tests
+
+copy_testing_block_logs_to_cache:
+  stage: build
+  extends: .docker_image_builder_job
+  needs:
+    - job: generate_testing_block_logs_and_save_image
+      artifacts: true
+  variables:
+    TESTING_BLOCK_LOGS_CACHE_DIR: "/cache/testing_block_logs_${TESTING_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA}"
+  script:
+    - echo $TESTING_BLOCK_LOGS_CACHE_DIR
+    - echo "TESTING_BLOCK_LOGS_CACHE_DIR=$TESTING_BLOCK_LOGS_CACHE_DIR" > $CI_PROJECT_DIR/testing_block_log_cache_dir.env
+    - |
+      if [ -d "$TESTING_BLOCK_LOGS_CACHE_DIR" ]; then
+        echo "Directory $TESTING_BLOCK_LOGS_CACHE_DIR exists. Skipping copy from image process..."
+      else
+        echo "Start copy testing block logs from image - $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+        mkdir -p $TESTING_BLOCK_LOGS_CACHE_DIR && cd $TESTING_BLOCK_LOGS_CACHE_DIR
+        echo "Start copy block_logs from - $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+        docker pull $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE
+        $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE $TESTING_BLOCK_LOGS_CACHE_DIR --image-path=/
+        checksum_from_image=$(docker inspect --format='{{ index .Config.Labels "testing_block_logs_checksum" }}' $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE)
+        echo "Checksum from image: $checksum_from_image"
+        checksum_after_copy=$(find $TESTING_BLOCK_LOGS_CACHE_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
+        echo "Checksum after copy: $checksum_after_copy"
+        if [[ "$checksum_from_image" != "$checksum_after_copy" ]]; then
+          echo "Checksum mismatch detected! The checksum from the container does not match the checksum after copying."
+          exit 1
+        fi
+      fi
+    - tree $TESTING_BLOCK_LOGS_CACHE_DIR
+  artifacts:
+    reports:
+      dotenv:
+        - testing_block_log_cache_dir.env
+  tags:
+    - data-cache-storage
 
 generate_universal_block_logs_and_save_image:
   stage: build
