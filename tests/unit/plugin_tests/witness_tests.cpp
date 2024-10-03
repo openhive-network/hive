@@ -4,12 +4,16 @@
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/full_transaction.hpp>
 
+#include <hive/chain/util/signal.hpp>
+
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/transaction_util.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
 #include <hive/plugins/colony/colony_plugin.hpp>
+
+#include <fc/log/appender.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -1169,6 +1173,81 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
         block_header = &get_block_reader().head_block()->get_block_header();
         BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num + 1 );
         BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( slow_obi_test )
+{
+  // the test emulates situation from flood testing (before it was corrected) when sending out
+  // fast confirm (OBI) transactions took more than 50ms which allowed witness thread to return
+  // to block production before data on next production slot was updated
+
+  try
+  {
+    initialize();
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      struct tcatcher : public fc::appender
+      {
+        virtual void log( const fc::log_message& m )
+        {
+          if( m.get_context().get_log_level() == fc::log_level::error )
+          {
+            const char* PROBLEM_MSG = "Got exception while generating block";
+            BOOST_CHECK_NE( std::memcmp( m.get_message().c_str(), PROBLEM_MSG, std::strlen( PROBLEM_MSG ) ), 0 );
+          }
+        }
+      };
+      //the only way to see if we run into problem checked by this test is to observe elog messages
+      BOOST_REQUIRE( fc::logger::get( DEFAULT_LOGGER ).is_enabled( fc::log_level::error ) );
+      auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
+      fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
+
+      boost::signals2::connection _finish_push_block_conn;
+
+      BOOST_SCOPE_EXIT( this_, _finish_push_block_conn, catcher )
+      {
+        fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher );
+        hive::chain::util::disconnect_signal( _finish_push_block_conn );
+        this_->theApp.generate_interrupt_request();
+      } BOOST_SCOPE_EXIT_END
+
+      try
+      {
+        ilog( "Starting test thread" );
+
+        // hook to end of block processing with high priority
+        db->add_finish_push_block_handler( [&]( const hive::chain::block_notification& note )
+        {
+          ilog( "start sleeping to trigger problem" );
+          // sleep long enough to trigger problem - why 200 when we were talking about 50ms? because
+          // original problem showed during heavy load - we need to compensate for that as well
+          // (witness plugin wants to reschedule itself every 200ms but not for time shorter than
+          // 50ms)
+          fc::usleep( fc::milliseconds( 200 ) );
+          ilog( "problem should already occur (unless it was fixed)" );
+        }, get_chain_plugin(), -1 );
+
+        // produce couple blocks
+        fc::time_point_sec stop_time = db->head_block_time() + 4 * HIVE_BLOCK_INTERVAL;
+        fc::sleep_until( stop_time );
 
         ilog( "'API' thread finished" );
         test_passed = true;
