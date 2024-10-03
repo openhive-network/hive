@@ -23,5 +23,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE (HIVE_HARDFORK_1_28)
 // max block size and HBD APR activated with schedule activation instead of with schedule creation
 #define HIVE_HARDFORK_1_28_GLOBAL_WITNESS_PROPS (HIVE_HARDFORK_1_28)
+// expiration time for a transaction is longer
+#define HIVE_HARDFORK_1_28_EXPIRATION_TIME (HIVE_HARDFORK_1_28)
 
 #endif

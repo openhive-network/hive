@@ -22,8 +22,23 @@
 using namespace hive::chain;
 using namespace hive::protocol;
 
+#define CATCH( thread_name )                                                  \
+catch( const fc::exception& ex )                                              \
+{                                                                             \
+  elog( "Unhandled fc::exception thrown from '" thread_name "' thread: ${r}", \
+    ( "r", ex.to_detail_string() ) );                                         \
+  BOOST_CHECK( false && "Unhandled fc::exception" );                          \
+}                                                                             \
+catch( ... )                                                                  \
+{                                                                             \
+  elog( "Unhandled exception thrown from '" thread_name "' thread" );         \
+  BOOST_CHECK( false && "Unhandled exception" );                              \
+}
+
 struct witness_fixture : public hived_fixture
 {
+  size_t expiration = HIVE_MAX_TIME_UNTIL_EXPIRATION;
+
   witness_fixture( bool remove_db = true ) : hived_fixture( remove_db, false ) {}
   virtual ~witness_fixture() { configuration_data = configuration(); }
 
@@ -93,23 +108,36 @@ struct witness_fixture : public hived_fixture
     return block_num;
   }
 
-  void schedule_transaction( const operation& op ) const
+  full_transaction_ptr schedule_transaction( const operation& op, size_t current_expiration, bool accept_transaction = true ) const
   {
     signed_transaction tx;
     db->with_read_lock( [&]()
     {
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + current_expiration );
       tx.set_reference_block( db->head_block_id() );
     } );
     tx.operations.emplace_back( op );
-    schedule_transaction( tx );
+    return schedule_transaction( tx, accept_transaction );
   }
 
-  void schedule_transaction( const signed_transaction& tx ) const
+  void schedule_transaction( const operation& op ) const
+  {
+    schedule_transaction( op, expiration, true/*accept_transaction*/ );
+  }
+
+  full_transaction_ptr schedule_transaction( const signed_transaction& tx, bool accept_transaction = true ) const
   {
     full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
     _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), serialization_type::hf26 );
-    get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
+    if( accept_transaction )
+      get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
+
+    return _tx;
+  }
+
+  void accept_transaction( const full_transaction_ptr& tx )
+  {
+    get_chain_plugin().accept_transaction( tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
 
   void schedule_blocks( uint32_t count ) const
@@ -153,15 +181,21 @@ struct witness_fixture : public hived_fixture
     schedule_transaction( fund );
   }
 
-  void schedule_transfer( const account_name_type& from, const account_name_type& to,
-    const asset& amount, const std::string& memo ) const
+  full_transaction_ptr schedule_transfer( const account_name_type& from, const account_name_type& to,
+    const asset& amount, const std::string& memo, size_t current_expiration, bool accept_transaction = true ) const
   {
     transfer_operation transfer;
     transfer.from = from;
     transfer.to = to;
     transfer.amount = amount;
     transfer.memo = memo;
-    schedule_transaction( transfer );
+    return schedule_transaction( transfer, current_expiration, accept_transaction );
+  }
+
+  void schedule_transfer( const account_name_type& from, const account_name_type& to,
+    const asset& amount, const std::string& memo ) const
+  {
+    schedule_transfer( from, to, amount, memo, expiration );
   }
 
   void schedule_vote( const account_name_type& voter, const account_name_type& author,
@@ -183,39 +217,17 @@ struct witness_fixture : public hived_fixture
 private:
   fc::time_point_sec genesis_time;
   hive::plugins::witness::witness_plugin* witness_plugin = nullptr;
-};
 
-struct restart_witness_fixture : public witness_fixture
-{
-  restart_witness_fixture() : witness_fixture( false ) {}
-  virtual ~restart_witness_fixture() {}
-};
+public:
 
-BOOST_FIXTURE_TEST_SUITE( witness_tests, witness_fixture )
-
-#define CATCH( thread_name )                                                  \
-catch( const fc::exception& ex )                                              \
-{                                                                             \
-  elog( "Unhandled fc::exception thrown from '" thread_name "' thread: ${r}", \
-    ( "r", ex.to_detail_string() ) );                                         \
-  BOOST_CHECK( false && "Unhandled fc::exception" );                          \
-}                                                                             \
-catch( ... )                                                                  \
-{                                                                             \
-  elog( "Unhandled exception thrown from '" thread_name "' thread" );         \
-  BOOST_CHECK( false && "Unhandled exception" );                              \
-}
-
-BOOST_AUTO_TEST_CASE( witness_basic_test )
-{
-  try
+  void witness_basic()
   {
     initialize();
     bool test_passed = false;
 
     fc::thread api_thread;
     api_thread.async( [&]()
-    { 
+    {
       BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
       try
       {
@@ -268,6 +280,369 @@ BOOST_AUTO_TEST_CASE( witness_basic_test )
         {
           BOOST_REQUIRE_EQUAL( get_hbd_balance( "carol" ).amount.value, 2100 );
         } );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+};
+
+struct restart_witness_fixture : public witness_fixture
+{
+  restart_witness_fixture() : witness_fixture( false ) {}
+  virtual ~restart_witness_fixture() {}
+};
+
+BOOST_FIXTURE_TEST_SUITE( witness_tests, witness_fixture )
+
+BOOST_AUTO_TEST_CASE( witness_basic_test )
+{
+  try
+  {
+    witness_basic();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_00_test )
+{
+  try
+  {
+    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+    witness_basic();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
+{
+  try
+  {
+    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+
+    initialize();
+    bool test_passed = false;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        db->_log_hardforks = true;
+
+        ilog( "Starting 'API' thread that will be sending transactions" );
+
+        uint32_t current_block_num = get_block_num();
+        uint32_t saved_block_num = current_block_num;
+
+        schedule_account_create( "alice" );
+        schedule_vest( "alice", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "alice", ASSET( "1.000 TBD" ) );
+
+        schedule_account_create( "bob" );
+        schedule_vest( "bob", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "bob", ASSET( "1.000 TBD" ) );
+
+        ilog( "waiting for the block to consume all account preparation transactions" );
+        fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+        current_block_num = get_block_num();
+        BOOST_REQUIRE_GT( current_block_num, saved_block_num ); // at least one block should have been generated
+        saved_block_num = current_block_num;
+
+        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+
+        db->with_read_lock( [&]()
+        {
+          BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1200 );
+        } );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
+{
+  try
+  {
+    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+
+    initialize();
+    bool test_passed = false;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        db->_log_hardforks = true;
+
+        ilog( "Starting 'API' thread that will be sending transactions" );
+
+        uint32_t current_block_num = get_block_num();
+        uint32_t saved_block_num = current_block_num;
+
+        schedule_account_create( "alice" );
+        schedule_vest( "alice", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "alice", ASSET( "1.000 TBD" ) );
+
+        schedule_account_create( "bob" );
+        schedule_vest( "bob", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "bob", ASSET( "1.000 TBD" ) );
+
+        ilog( "waiting for the block to consume all account preparation transactions" );
+        fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+        current_block_num = get_block_num();
+        BOOST_REQUIRE_GT( current_block_num, saved_block_num ); // at least one block should have been generated
+        saved_block_num = current_block_num;
+
+        auto _scheduling =[this]( size_t current_expression, bool pass = true, bool msg_duplicate = true )
+        {
+          auto _passed_op = [this, &current_expression]()
+          {
+            schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", current_expression );
+          };
+
+          auto _failed_op = [&_passed_op, &msg_duplicate]()
+          {
+            try
+            {
+              _passed_op();
+            }
+            catch( const fc::assert_exception& ex )
+            {
+              BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+              if( msg_duplicate )
+                BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+              else
+                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= _max_runtime_expiration" )  != std::string::npos );
+            }
+          };
+
+          if( pass )
+            _passed_op();
+          else
+            _failed_op();
+
+          _failed_op();
+        };
+
+        {
+          _scheduling( HIVE_MAX_TIME_UNTIL_EXPIRATION );
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1001 );
+          } );
+        }
+
+        {
+          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1002 );
+          } );
+        }
+
+        {
+          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION / 2 );
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1003 );
+          } );
+        }
+
+        {
+          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION + 1, false/*pass*/, false/*msg_duplicate*/ );
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1003 );
+          } );
+        }
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
+{
+  try
+  {
+    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+
+    initialize();
+    bool test_passed = false;
+
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "Wait for first block after genesis" );
+        fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+
+        db->_log_hardforks = true;
+
+        ilog( "Starting 'API' thread that will be sending transactions" );
+
+        uint32_t current_block_num = get_block_num();
+        uint32_t saved_block_num = current_block_num;
+
+        schedule_account_create( "alice" );
+        schedule_vest( "alice", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "alice", ASSET( "1.000 TBD" ) );
+
+        schedule_account_create( "bob" );
+        schedule_vest( "bob", ASSET( "1000.000 TESTS" ) );
+        schedule_fund( "bob", ASSET( "1.000 TBD" ) );
+
+        ilog( "waiting for the block to consume all account preparation transactions" );
+        fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+        current_block_num = get_block_num();
+        BOOST_REQUIRE_GT( current_block_num, saved_block_num ); // at least one block should have been generated
+        saved_block_num = current_block_num;
+
+        {
+          const size_t _max_trxs = 100;
+          const size_t _start = HIVE_MAX_TIME_UNTIL_EXPIRATION - 50;
+
+          for( size_t i = 0; i < _max_trxs; ++i )
+          {
+            schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", _start + i );
+          }
+
+          schedule_block();
+
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1000 + _max_trxs );
+          } );
+        }
+        {
+          auto _trx_00 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 12 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+
+          auto _trx_01 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+
+          auto _trx_01_a = schedule_transfer( "alice", "bob", ASSET( "0.002 TBD" ), "",
+                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+
+          auto _trx_02 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 4 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+
+          schedule_blocks( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION / HIVE_BLOCK_INTERVAL - 12 );
+
+          bool _accept_transaction_passed = false;
+          try
+          {
+            accept_transaction( _trx_00 );
+            _accept_transaction_passed = true;
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "now < trx.expiration" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_accept_transaction_passed );
+
+          schedule_blocks( 3 );
+
+          accept_transaction( _trx_01 );
+
+          schedule_blocks( 1 );
+
+          _accept_transaction_passed = false;
+          try
+          {
+            accept_transaction( _trx_01 );
+            _accept_transaction_passed = true;
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_accept_transaction_passed );
+
+          _accept_transaction_passed = false;
+          try
+          {
+            accept_transaction( _trx_01_a );
+            _accept_transaction_passed = true;
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "now < trx.expiration" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_accept_transaction_passed );
+
+          accept_transaction( _trx_02 );
+
+          schedule_blocks( 1 );
+
+          _accept_transaction_passed = false;
+          try
+          {
+            accept_transaction( _trx_02 );
+            _accept_transaction_passed = true;
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_accept_transaction_passed );
+
+          db->with_read_lock( [&]()
+          {
+            BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1100 + 2 );
+          } );
+
+        }
 
         ilog( "'API' thread finished" );
         test_passed = true;
