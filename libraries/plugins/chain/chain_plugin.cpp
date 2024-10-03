@@ -987,8 +987,8 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
       try
       {
         result = _push_block( block_ctrl );
-        block_ctrl.on_end_of_apply_block();
         db.notify_finish_push_block( full_block );
+        block_ctrl.on_end_of_apply_block();
       }
       FC_CAPTURE_AND_RETHROW((new_block))
 
