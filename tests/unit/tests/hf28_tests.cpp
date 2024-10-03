@@ -5,6 +5,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -586,6 +587,225 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( basic_expiration_test )
+{
+  try
+  {
+    std::vector<bool> _statuses;
+    std::vector<bool> _additional_statuses;
+
+    auto _content = [&_statuses, &_additional_statuses]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: transactions with different expiration time" );
+
+      ACTORS_EXT( (*executor), (alice)(bob) );
+      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
+      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
+      executor->issue_funds( "alice", ASSET( "200.000 TESTS" ) );
+      executor->issue_funds( "bob", ASSET( "200.000 TESTS" ) );
+
+      executor->generate_blocks( 60 / HIVE_BLOCK_INTERVAL );
+
+      size_t _test_cnt = 0;
+
+      transfer_operation _op;
+      _op.from = "alice";
+      _op.to = "bob";
+      _op.amount = asset(1,HIVE_SYMBOL);
+      _op.memo = "";
+
+      {
+        BOOST_TEST_MESSAGE( "0) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION`" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "1) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` - 1" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 1 );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "2) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` + 1" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION + 1 );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "3) Test with expiration: `HIVE_MAX_TIME_UNTIL_EXPIRATION` + earlier generate blocks for 5 hours" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        ilog("db->head_block_time() ${a} _trx.expiration: ${b}", ("a", executor->db->head_block_time())("b", _trx.expiration));
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::hours( 5 ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "4) Test with expiration: `HIVE_MAX_TIME_UNTIL_EXPIRATION` + earlier generate blocks for 30 minutes" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::minutes( 30 ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "5) Test with expiration: `HIVE_MAX_TIME_UNTIL_EXPIRATION` + earlier generate blocks for ( `HIVE_MAX_TIME_UNTIL_EXPIRATION` - `HIVE_BLOCK_INTERVAL` ) seconds" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "6) Test with expiration: `HIVE_MAX_TIME_UNTIL_EXPIRATION` + earlier generate blocks for `HIVE_MAX_TIME_UNTIL_EXPIRATION` seconds" );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "7) Test with expiration: `HIVE_MAX_TIME_UNTIL_EXPIRATION`. Try to add duplicated transactions." );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->push_transaction( _trx, alice_private_key );
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+        {
+          bool _passed = true;
+          try
+          {
+            executor->push_transaction( _trx, alice_private_key );
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            _passed = false;
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_passed );
+        }
+        ++_test_cnt;
+      }
+      {
+        BOOST_TEST_MESSAGE( "8) Test with expiration: 2 * `HIVE_MAX_TIME_UNTIL_EXPIRATION`. Try to add duplicated transactions." );
+
+        signed_transaction _trx;
+        _trx.operations.push_back( _op );
+        _trx.set_expiration( executor->db->head_block_time() + 2 * HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        if( _additional_statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+          HIVE_REQUIRE_THROW( executor->push_transaction( _trx, alice_private_key ), hive::chain::transaction_expiration_exception );
+
+        executor->generate_blocks( executor->db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+        if( _statuses[_test_cnt] )
+          executor->push_transaction( _trx, alice_private_key );
+        else
+        {
+          bool _passed = true;
+          try
+          {
+            executor->push_transaction( _trx, alice_private_key );
+          }
+          catch( const fc::assert_exception& ex )
+          {
+            _passed = false;
+
+            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
+            if( _additional_statuses[_test_cnt] )
+              BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+            else
+              BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now" )  != std::string::npos );
+          }
+          BOOST_REQUIRE( !_passed );
+        }
+        ++_test_cnt;
+      }
+    };
+
+    const size_t _max = 9;
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+
+    _statuses.resize( _max, false );
+    _statuses[4] = _statuses[5] = true;
+
+    _additional_statuses.resize( _max, false );
+
+    execute_hardfork<27>( _content );
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+
+    _statuses.resize( _max, false );
+    _statuses[0] = _statuses[1] = _statuses[4] = _statuses[5] = true;
+
+    _additional_statuses.resize( _max, false );
+    _additional_statuses[8] = true;
+
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
@@ -1434,6 +1654,7 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
   }
+ 
   FC_LOG_AND_RETHROW()
 }
 
