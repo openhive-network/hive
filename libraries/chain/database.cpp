@@ -4336,8 +4336,21 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
   {
     fc::time_point_sec now = head_block_time();
 
-    HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
-                "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
+    if( has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) )
+    {
+      auto _max_runtime_expiration = now + fc::seconds(HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION);
+      HIVE_ASSERT(trx.expiration <= _max_runtime_expiration, transaction_expiration_exception,
+                  "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION));
+
+      if( trx.expiration > now + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ) )
+        full_transaction->set_runtime_expiration( now + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+    }
+    else
+    {
+      HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
+                  "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
+    }
+
     if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
       HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
     else
