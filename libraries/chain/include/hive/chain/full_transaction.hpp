@@ -34,6 +34,9 @@ using full_transaction_ptr = std::shared_ptr<full_transaction_type>;
 struct full_transaction_type
 {
   private:
+
+    std::optional<fc::time_point_sec> runtime_expiration;
+
     mutable std::mutex results_mutex; // single mutex used to guard writes to any data
 
     mutable hive::protocol::digest_type merkle_digest; // transaction hash used for calculating block's merkle root
@@ -139,6 +142,9 @@ struct full_transaction_type
     /// Allows to sign transaction and append signature to the underlying signed_transaction::signatures container;
     void sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const chain_id_type& chain_id,
       hive::protocol::pack_type serialization_type, bool cache = false);
+
+    void set_runtime_expiration( fc::time_point_sec expiration_time ){ runtime_expiration = expiration_time; }
+    fc::time_point_sec get_runtime_expiration( bool is_hf_28 ) const;
 
     static full_transaction_ptr create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, uint32_t index_in_block,
                                                   const serialized_transaction_data& serialized_transaction, bool use_transaction_cache);

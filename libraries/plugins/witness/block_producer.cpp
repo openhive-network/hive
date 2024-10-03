@@ -147,10 +147,9 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
     if( unused_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT )
       break;
 
-    const hive::protocol::signed_transaction& tx = full_transaction->get_transaction();
     // Only include transactions that have not expired yet for currently generating block,
     // this should clear problem transactions and allow block production to continue
-    if( tx.expiration < when )
+    if( full_transaction->get_runtime_expiration( _db.has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) ) < when )
     {
       ++failed_tx_count;
       continue;

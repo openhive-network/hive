@@ -682,7 +682,13 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     //since new reality contains small transfer from alice, making further transfers too big
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
-    //last transaction (from block 2) has its expiration too far into the future, so it fails prior to notification
+    /*
+      Before `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` was introduced
+        last transaction (from block 2) has its expiration too far into the future, so it fails prior to notification
+      After:
+        last transaction wasn't expired
+    */
+    check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     generate_block(); //0'
     check.check_empty();
 

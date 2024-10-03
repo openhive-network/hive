@@ -339,6 +339,19 @@ void full_transaction_type::sign_transaction(const std::vector<hive::protocol::p
   }
 }
 
+fc::time_point_sec full_transaction_type::get_runtime_expiration( bool is_hf_28 ) const
+{
+  if( is_hf_28 )
+  {
+    if( runtime_expiration )
+      return *runtime_expiration;
+    else
+      return get_transaction().expiration;
+  }
+  else
+    return get_transaction().expiration;
+}
+
 /* static */ full_transaction_ptr full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
                                                                            uint32_t index_in_block, 
                                                                            const serialized_transaction_data& serialized_transaction,

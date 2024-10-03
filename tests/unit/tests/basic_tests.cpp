@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //smt_token_emissions_object
   //smt_contribution_object
 
-  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 456 ); //not a chain object but potentially very numerous
+  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 464 ); //not a chain object but potentially very numerous
 
 }
 #endif
