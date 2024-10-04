@@ -20,7 +20,7 @@ test_generate_artifacts_from_scratch_by_hived() {
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   # Note that both block_log.artifacts & block_log_part.0001.artifacts are created below
   # due to a combination of hived's default split setting & auto-split feature
-  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
+  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync --shared-file-size=1G
   "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
   "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log_part.0001" --do-full-artifacts-verification-match-check --header-only
 }
@@ -35,7 +35,7 @@ test_generate_artifacts_override_old_file_by_hived() {
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_0_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
   cp "$SOURCE_ARTIFACTS_V_1_0_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log_part.0001.artifacts"
-  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
+  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync --shared-file-size=1G
   "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
   "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log_part.0001" --do-full-artifacts-verification-match-check --header-only
 }
@@ -47,7 +47,7 @@ test_resume_artifacts_generating_process_by_hived() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_1_INTERRUPTED_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
-  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync
+  "$HIVED_BINARY_PATH" -d "$TEST_DATA_DIR" --replay --exit-before-sync --shared-file-size=1G
   "$BLOCK_LOG_UTIL_BINARY_PATH" --get-block-artifacts --block-log "$TEST_BLOCKCHAIN_DIR/block_log" --do-full-artifacts-verification-match-check --header-only
 }
 
