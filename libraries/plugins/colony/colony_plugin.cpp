@@ -76,23 +76,23 @@ class colony_plugin_impl;
 
 struct transaction_builder
 {
-  const colony_plugin_impl&                                                        _common;
-  fc::thread                                                                       _worker;
-  std::set< hive::protocol::account_name_type >                                    _accounts;
-  uint8_t                                                                          _id;
-  decltype( _accounts )::iterator                                                  _current_account;
-  std::array< operation_stats, NUMBER_OF_OPERATIONS >                              _stats;
-  uint32_t                                                                         _reply_substitutions = 0;
-  uint32_t                                                                         _vote_substitutions = 0;
-  uint32_t                                                                         _failed_transactions = 0;
-  uint32_t                                                                         _failed_rc = 0;
-  uint32_t                                                                         _tx_num = 0;
-  uint32_t                                                                         _block_num = 0;
-  uint32_t                                                                         _tx_to_produce = 0;
-  uint32_t                                                                         _concurrent_tx_count = 0;
+  const colony_plugin_impl&                           _common;
+  fc::thread                                          _worker;
+  std::vector< const account_object* >                _accounts;
+  uint8_t                                             _id;
+  decltype( _accounts )::iterator                     _current_account;
+  std::array< operation_stats, NUMBER_OF_OPERATIONS > _stats;
+  uint32_t                                            _reply_substitutions = 0;
+  uint32_t                                            _vote_substitutions = 0;
+  uint32_t                                            _failed_transactions = 0;
+  uint32_t                                            _failed_rc = 0;
+  uint32_t                                            _tx_num = 0;
+  uint32_t                                            _block_num = 0;
+  uint32_t                                            _tx_to_produce = 0;
+  uint32_t                                            _concurrent_tx_count = 0;
 
-  hive::protocol::signed_transaction                                               _tx;
-  std::atomic_bool                                                                 _tx_needs_update = { true };
+  hive::protocol::signed_transaction                  _tx;
+  std::atomic_bool                                    _tx_needs_update = { true };
 
   transaction_builder( const colony_plugin_impl& my, uint8_t id )
     : _common( my ), _id( id ), _current_account( _accounts.end() )
@@ -113,11 +113,11 @@ struct transaction_builder
   void build_transaction();
   void fill_string( std::string& str, size_t size );
   std::string form_permlink( const account_name_type& author, const std::string& postfix, bool is_article );
-  void build_article( const account_name_type& actor, uint64_t nonce );
-  void build_reply( const account_name_type& actor, uint64_t nonce );
-  void build_vote( const account_name_type& actor, uint64_t nonce );
-  void build_transfer( const account_name_type& actor, uint64_t nonce );
-  void build_custom( const account_name_type& actor, uint64_t nonce );
+  void build_article( const account_object& actor, uint64_t nonce );
+  void build_reply( const account_object& actor, uint64_t nonce );
+  void build_vote( const account_object& actor, uint64_t nonce );
+  void build_transfer( const account_object& actor, uint64_t nonce );
+  void build_custom( const account_object& actor, uint64_t nonce );
 };
 
 class colony_plugin_impl
@@ -329,7 +329,7 @@ void transaction_builder::build_transaction()
   }
 
   uint32_t randomTx = std::rand() % _common._total_weight;
-  const auto& account = *_current_account;
+  const auto& account = *(*_current_account);
   ++_current_account;
   if( _current_account == _accounts.end() )
     _current_account = _accounts.begin();
@@ -412,15 +412,15 @@ std::string transaction_builder::form_permlink( const account_name_type& author,
   return result;
 }
 
-void transaction_builder::build_article( const account_name_type& actor, uint64_t nonce )
+void transaction_builder::build_article( const account_object& actor, uint64_t nonce )
 {
   ++_stats[ ARTICLE ].count;
 
   comment_operation article;
   article.title = std::to_string( nonce );
   article.parent_permlink = "category" + std::to_string( nonce % 101 );
-  article.author = actor;
-  article.permlink = form_permlink( actor, article.title, true );
+  article.author = actor.get_name();
+  article.permlink = form_permlink( actor.get_name(), article.title, true );
   auto extra_size = _common._params[ ARTICLE ].randomize();
   _stats[ ARTICLE ].extra_size += extra_size;
   fill_string( article.body, extra_size );
@@ -435,7 +435,7 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
     auto beneficiaryI = _current_account;
     for( int i = 0; i < beneficiaries_count; ++i )
     {
-      extension.beneficiaries.emplace_back( *beneficiaryI, HIVE_1_PERCENT * 5 );
+      extension.beneficiaries.emplace_back( (*beneficiaryI)->get_name(), HIVE_1_PERCENT * 5 );
       ++beneficiaryI;
       if( beneficiaryI == _accounts.end() )
         break; // we are using the fact that accounts are sorted, so we can't wrap around
@@ -446,7 +446,7 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
   push_transaction( ARTICLE );
 }
 
-void transaction_builder::build_reply( const account_name_type& actor, uint64_t nonce )
+void transaction_builder::build_reply( const account_object& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
   if( _common._comments[ random_comment ].first == account_name_type() )
@@ -462,8 +462,8 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
   reply.title = std::to_string( nonce );
   reply.parent_author = _common._comments[ random_comment ].first;
   reply.parent_permlink = _common._comments[ random_comment ].second;
-  reply.author = actor;
-  reply.permlink = form_permlink( actor, reply.title, false );
+  reply.author = actor.get_name();
+  reply.permlink = form_permlink( actor.get_name(), reply.title, false );
   auto extra_size = _common._params[ REPLY ].randomize();
   _stats[ REPLY ].extra_size += extra_size;
   fill_string( reply.body, extra_size );
@@ -471,7 +471,7 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
   push_transaction( REPLY );
 }
 
-void transaction_builder::build_vote( const account_name_type& actor, uint64_t nonce )
+void transaction_builder::build_vote( const account_object& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
   if( _common._comments[ random_comment ].first == account_name_type() )
@@ -484,7 +484,7 @@ void transaction_builder::build_vote( const account_name_type& actor, uint64_t n
   ++_stats[ VOTE ].count;
 
   vote_operation vote;
-  vote.voter = actor;
+  vote.voter = actor.get_name();
   vote.author = _common._comments[ random_comment ].first;
   vote.permlink = _common._comments[ random_comment ].second;
   // there is no other place to use nonce - place it in weight
@@ -494,13 +494,13 @@ void transaction_builder::build_vote( const account_name_type& actor, uint64_t n
   push_transaction( VOTE );
 }
 
-void transaction_builder::build_transfer( const account_name_type& actor, uint64_t nonce )
+void transaction_builder::build_transfer( const account_object& actor, uint64_t nonce )
 {
   ++_stats[ TRANSFER ].count;
 
   transfer_operation transfer;
-  transfer.from = actor;
-  transfer.to = *_current_account;
+  transfer.from = actor.get_name();
+  transfer.to = (*_current_account)->get_name();
   transfer.amount = HBD_asset( 1 );
   transfer.memo = std::to_string( nonce );
   auto extra_size = _common._params[ TRANSFER ].randomize();
@@ -516,12 +516,12 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
   push_transaction( TRANSFER );
 }
 
-void transaction_builder::build_custom( const account_name_type& actor, uint64_t nonce )
+void transaction_builder::build_custom( const account_object& actor, uint64_t nonce )
 {
   ++_stats[ CUSTOM_JSON ].count;
 
   custom_json_operation custom;
-  custom.required_auths.emplace( actor );
+  custom.required_auths.emplace( actor.get_name() );
   custom.id = "id" + std::to_string( nonce );
   auto extra_size = _common._params[ CUSTOM_JSON ].randomize();
   _stats[ CUSTOM_JSON ].extra_size += extra_size;
@@ -615,7 +615,7 @@ void colony_plugin_impl::start()
     {
       if( i < _max_threads )
         threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
-      threadI->_accounts.insert( account.get_name() );
+      threadI->_accounts.emplace_back( &account );
       ++i;
       ++threadI;
       if( threadI == _threads.end() )
