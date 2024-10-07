@@ -819,7 +819,7 @@ bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader
     }
     else
     {
-      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      elog( "Error: Headblock and statefile are inconsistent, need to start hived with --replay-blockchain. Aborting hived! { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
       theApp.generate_interrupt_request();
       return false;
     }
