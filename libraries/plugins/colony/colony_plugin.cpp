@@ -84,6 +84,7 @@ struct transaction_builder
   std::array< operation_stats, NUMBER_OF_OPERATIONS > _stats;
   uint32_t                                            _reply_substitutions = 0;
   uint32_t                                            _vote_substitutions = 0;
+  uint32_t                                            _transfer_substitutions = 0;
   uint32_t                                            _failed_transactions = 0;
   uint32_t                                            _failed_rc = 0;
   uint32_t                                            _tx_num = 0;
@@ -188,6 +189,11 @@ void transaction_builder::print_stats() const
   {
     ilog( "${r} replies and ${v} votes substituted with articles due to lack of proper target comment",
       ( "r", _reply_substitutions )( "v", _vote_substitutions ) );
+  }
+  if( _transfer_substitutions )
+  {
+    ilog( "${r} transfers substituted with custom jsons due to lack of funds",
+      ( "r", _transfer_substitutions ) );
   }
   if( _failed_transactions )
   {
@@ -496,18 +502,33 @@ void transaction_builder::build_vote( const account_object& actor, uint64_t nonc
 
 void transaction_builder::build_transfer( const account_object& actor, uint64_t nonce )
 {
+  bool use_hive = false;
+  if( actor.get_hbd_balance().amount.value == 0 )
+  {
+    if( actor.get_balance().amount.value == 0 )
+    {
+      ++_transfer_substitutions;
+      build_custom( actor, nonce );
+      return;
+    }
+    use_hive = true;
+  }
+
   ++_stats[ TRANSFER ].count;
 
   transfer_operation transfer;
   transfer.from = actor.get_name();
   transfer.to = (*_current_account)->get_name();
-  transfer.amount = HBD_asset( 1 );
+  if( use_hive )
+    transfer.amount = HIVE_asset( 1 );
+  else
+    transfer.amount = HBD_asset( 1 );
   transfer.memo = std::to_string( nonce );
   auto extra_size = _common._params[ TRANSFER ].randomize();
   _stats[ TRANSFER ].extra_size += extra_size;
   if( extra_size > (int64_t)transfer.memo.size() + 1 )
   {
-    extra_size -= ( int64_t ) transfer.memo.size() + 1;
+    extra_size -= (int64_t)transfer.memo.size() + 1;
     std::string fill;
     fill_string( fill, extra_size );
     transfer.memo = transfer.memo + ":" + fill;
