@@ -107,7 +107,7 @@ struct transaction_builder
 
   void print_stats() const;
 
-  void init(); // first task of worker thread
+  void init( int starting_point = 0 ); // first task of worker thread
   bool accept_transaction( full_transaction_ptr full_tx );
   void push_transaction( kind_of_operation kind );
   void build_transaction();
@@ -195,9 +195,10 @@ void transaction_builder::print_stats() const
   }
 }
 
-void transaction_builder::init()
+void transaction_builder::init( int starting_point )
 {
   _current_account = _accounts.begin();
+  std::advance( _current_account, starting_point % _accounts.size() );
   _worker.async( [this]()
   {
     std::srand( std::time( 0 ) + _id );
@@ -631,8 +632,12 @@ void colony_plugin_impl::start()
       _p2p_ptr = _p2p_plugin;
   }
 
+  std::srand( std::time( 0 ) );
   for( auto& thread : _threads )
-    thread.init();
+  {
+    // randomize starting point to make it easier for multiple colony nodes to run concurrently on the same set of accounts
+    thread.init( std::rand() );
+  }
 }
 
 void colony_plugin_impl::end_of_sync()
