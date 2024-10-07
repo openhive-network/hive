@@ -589,8 +589,20 @@ void colony_plugin_impl::start()
   decltype( _threads )::iterator threadI;
   int i = 0;
   int not_matching_accounts = 0;
+  fc::time_point_sec lib_ts = HIVE_GENESIS_TIME;
+  {
+    auto lib = _db.get_last_irreversible_block_data();
+    if( lib.get() != nullptr )
+      lib_ts = lib->get_block_header().timestamp;
+  }
   for( const auto& account : accounts )
   {
+    if( account.get_block_creation_time() > lib_ts )
+    {
+      dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
+      continue;
+    }
+
     auto get_active = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); };
     auto get_owner = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).owner ); };
     auto get_posting = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).posting ); };
