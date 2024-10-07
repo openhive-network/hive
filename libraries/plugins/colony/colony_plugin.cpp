@@ -12,7 +12,7 @@
 
 #include <fc/thread/thread.hpp>
 
-#define COLONY_COMMENT_BUFFER 5000 // number of recent comments kept as targets for replies/votes
+#define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
 #define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // number of transactions per thread that can be sent with no wait
 #define COLONY_DEFAULT_THREADS 4 // number of working threads used by default (threads have separate pools of users)
 #define COLONY_DEFAULT_MAX_TRANSACTIONS 1000 // number of max transactions per block used by default when there is
@@ -79,9 +79,6 @@ struct transaction_builder
   const colony_plugin_impl&                                                        _common;
   fc::thread                                                                       _worker;
   std::set< hive::protocol::account_name_type >                                    _accounts;
-  typedef std::pair< hive::protocol::account_name_type, std::string > comment_data;
-  std::array< comment_data, COLONY_COMMENT_BUFFER >                                _comments;
-  uint32_t                                                                         _last_comment = 0;
   uint8_t                                                                          _id;
   decltype( _accounts )::iterator                                                  _current_account;
   std::array< operation_stats, NUMBER_OF_OPERATIONS >                              _stats;
@@ -112,11 +109,9 @@ struct transaction_builder
 
   void init(); // first task of worker thread
   bool accept_transaction( full_transaction_ptr full_tx );
-  template< typename post_action >
-  void push_transaction( kind_of_operation kind, post_action action );
+  void push_transaction( kind_of_operation kind );
   void build_transaction();
   void fill_string( std::string& str, size_t size );
-  void remember_comment( const account_name_type& author, const std::string& permlink );
   void build_article( const account_name_type& actor, uint64_t nonce );
   void build_reply( const account_name_type& actor, uint64_t nonce );
   void build_vote( const account_name_type& actor, uint64_t nonce );
@@ -159,6 +154,12 @@ class colony_plugin_impl
     uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
     bool                                                 _disable_broadcast = false;
+    bool                                                 _fill_comment_buffers = false;
+
+    typedef std::pair< hive::protocol::account_name_type, std::string > comment_data;
+    // comments that are target for other comments and votes are shared between threads
+    std::array< comment_data, COLONY_COMMENT_BUFFER >    _comments;
+    uint32_t                                             _last_comment = 0;
 };
 
 void transaction_builder::print_stats() const
@@ -200,16 +201,8 @@ void transaction_builder::init()
   _worker.async( [this]()
   {
     std::srand( std::time( 0 ) + _id );
-    std::string initial_comments = std::to_string( _last_comment );
-    if( _last_comment == 0 )
-    {
-      if( _comments[0].first == account_name_type() )
-        initial_comments = "no";
-      else
-        initial_comments = "full buffer (" + std::to_string( COLONY_COMMENT_BUFFER ) + ") of";
-    }
-    ilog( "Starting thread ${n} with ${w} workers and ${c} initial comments.",
-      ( "n", _worker.name() )( "w", _accounts.size() )( "c", initial_comments ) );
+    ilog( "Starting thread ${n} with ${w} workers.",
+      ( "n", _worker.name() )( "w", _accounts.size() ) );
     build_transaction();
   } );
 }
@@ -266,8 +259,7 @@ bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
   return result;
 }
 
-template< typename post_action >
-void transaction_builder::push_transaction( kind_of_operation kind, post_action action )
+void transaction_builder::push_transaction( kind_of_operation kind )
 {
   full_transaction_ptr full_tx = full_transaction_type::create_from_signed_transaction( _tx, serialization_type::hf26, false );
   _tx.clear();
@@ -277,8 +269,7 @@ void transaction_builder::push_transaction( kind_of_operation kind, post_action 
   {
     // when there is too many concurrent transactions next one becomes blocking which should
     // act as "cool down" and let other threads (like witness) process their requests
-    if( accept_transaction( full_tx ) )
-      action();
+    accept_transaction( full_tx );
     // since all previously sent transactions are earlier in queue than this one, once it
     // returns here all transacions should already be processed (taken out of writer queue);
     // _concurrent_tx_count might still be > 0 because, while transactions were already processed,
@@ -286,10 +277,9 @@ void transaction_builder::push_transaction( kind_of_operation kind, post_action 
   }
   else
   {
-    _worker.async( [ this, full_tx = std::move(full_tx), action = std::move(action) ]()
+    _worker.async( [ this, full_tx = std::move(full_tx) ]()
     {
-      if( accept_transaction( full_tx ) )
-        action();
+      accept_transaction( full_tx );
     } );
   }
 }
@@ -410,13 +400,6 @@ void transaction_builder::fill_string( std::string& str, size_t size )
   }
 }
 
-void transaction_builder::remember_comment( const account_name_type& author, const std::string& permlink )
-{
-  _comments[ _last_comment ].first = author;
-  _comments[ _last_comment ].second = permlink;
-  _last_comment = ( _last_comment + 1 ) % COLONY_COMMENT_BUFFER;
-}
-
 void transaction_builder::build_article( const account_name_type& actor, uint64_t nonce )
 {
   ++_stats[ ARTICLE ].count;
@@ -448,16 +431,13 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
     options.extensions.emplace( extension );
     _tx.operations.emplace_back( options );
   }
-  push_transaction( ARTICLE, [ this, author = article.author, permlink = article.permlink ]()
-  {
-    remember_comment( author, permlink );
-  } );
+  push_transaction( ARTICLE );
 }
 
 void transaction_builder::build_reply( const account_name_type& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
-  if( _comments[ random_comment ].first == account_name_type() )
+  if( _common._comments[ random_comment ].first == account_name_type() )
   {
     ++_reply_substitutions;
     build_article( actor, nonce );
@@ -468,24 +448,21 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
 
   comment_operation reply;
   reply.title = std::to_string( nonce );
-  reply.parent_author = _comments[ random_comment ].first;
-  reply.parent_permlink = _comments[ random_comment ].second;
+  reply.parent_author = _common._comments[ random_comment ].first;
+  reply.parent_permlink = _common._comments[ random_comment ].second;
   reply.author = actor;
   reply.permlink = actor + "r" + reply.title;
   auto extra_size = _common._params[ REPLY ].randomize();
   _stats[ REPLY ].extra_size += extra_size;
   fill_string( reply.body, extra_size );
   _tx.operations.emplace_back( reply );
-  push_transaction( REPLY, [ this, author = reply.author, permlink = reply.permlink ]()
-  {
-    remember_comment( author, permlink );
-  } );
+  push_transaction( REPLY );
 }
 
 void transaction_builder::build_vote( const account_name_type& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
-  if( _comments[ random_comment ].first == account_name_type() )
+  if( _common._comments[ random_comment ].first == account_name_type() )
   {
     ++_vote_substitutions;
     build_article( actor, nonce );
@@ -496,13 +473,13 @@ void transaction_builder::build_vote( const account_name_type& actor, uint64_t n
 
   vote_operation vote;
   vote.voter = actor;
-  vote.author = _comments[ random_comment ].first;
-  vote.permlink = _comments[ random_comment ].second;
+  vote.author = _common._comments[ random_comment ].first;
+  vote.permlink = _common._comments[ random_comment ].second;
   // there is no other place to use nonce - place it in weight
   nonce >>= 8; // but remove id part for better uniqueness
   vote.weight = ( std::rand() > 0 ? 1 : -1 ) * ( ( nonce % HIVE_100_PERCENT ) + 1 );
   _tx.operations.emplace_back( vote );
-  push_transaction( VOTE, [](){} );
+  push_transaction( VOTE );
 }
 
 void transaction_builder::build_transfer( const account_name_type& actor, uint64_t nonce )
@@ -524,7 +501,7 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
     transfer.memo = transfer.memo + ":" + fill;
   }
   _tx.operations.emplace_back( transfer );
-  push_transaction( TRANSFER, [](){} );
+  push_transaction( TRANSFER );
 }
 
 void transaction_builder::build_custom( const account_name_type& actor, uint64_t nonce )
@@ -540,7 +517,7 @@ void transaction_builder::build_custom( const account_name_type& actor, uint64_t
   fill_string( fill, extra_size );
   custom.json = "{\"v\":\"" + fill + "\"}";
   _tx.operations.emplace_back( custom );
-  push_transaction( CUSTOM_JSON, [](){} );
+  push_transaction( CUSTOM_JSON );
 }
 
 void colony_plugin_impl::start()
@@ -557,12 +534,11 @@ void colony_plugin_impl::start()
 
   const auto& accounts = _db.get_index< account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
-  bool fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
-  if( fill_comment_buffers )
+  _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
+  if( _fill_comment_buffers )
   {
+    // get some initial comments to be used as targets for replies/votes
     bool shortfall = comments.size() < COLONY_COMMENT_BUFFER;
-    if( comments.size() == 0 )
-      fill_comment_buffers = false;
     if( shortfall )
     {
       wlog( "Not enough initial comments to act as targets for replies/votes (${s} short). "
@@ -575,6 +551,28 @@ void colony_plugin_impl::start()
           "node has no data on their permlinks.", ( "c", paid_comment_count ) );
       }
     }
+    _last_comment = 0;
+    for( const auto& comment : comments )
+    {
+      auto& comment_data = _comments[ _last_comment ];
+      comment_data.first = _db.get_account( comment.get_author_id() ).get_name();
+      comment_data.second = comment.get_permlink();
+      ++_last_comment;
+      if( _last_comment >= COLONY_COMMENT_BUFFER )
+      {
+        _last_comment = 0;
+        break;
+      }
+    }
+    std::string initial_comments = std::to_string( _last_comment );
+    if( _last_comment == 0 )
+    {
+      if( _comments[0].first == account_name_type() )
+        initial_comments = "no";
+      else
+        initial_comments = "full buffer (" + std::to_string( COLONY_COMMENT_BUFFER ) + ") of";
+    }
+    ilog( "Colony threads have ${initial_comments} initial comments to use.", ( initial_comments ) );
   }
   decltype( _threads )::iterator threadI;
   int i = 0;
@@ -592,27 +590,7 @@ void colony_plugin_impl::start()
     if( hive::protocol::has_authorization( required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
     {
       if( i < _max_threads )
-      {
         threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
-        // get some initial comments to be used as targets for replies/votes;
-        // note that in case there is not enough or no comments, generation of replies/votes will
-        // be initially replaced with generation of articles
-        if( fill_comment_buffers )
-        {
-          for( const auto& comment : comments )
-          {
-            auto& comment_data = threadI->_comments[ threadI->_last_comment ];
-            comment_data.first = _db.get_account( comment.get_author_id() ).get_name();
-            comment_data.second = comment.get_permlink();
-            ++threadI->_last_comment;
-            if( threadI->_last_comment >= COLONY_COMMENT_BUFFER )
-            {
-              threadI->_last_comment = 0;
-              break;
-            }
-          }
-        }
-      }
       threadI->_accounts.insert( account.get_name() );
       ++i;
       ++threadI;
@@ -707,6 +685,25 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
   // we can't compute final rate per thread because we don't know yet how many transactions will
   // remain in pending after reapplication
   _overflowing_tx = 0;
+
+  if( _fill_comment_buffers )
+  {
+    // ABW: it is not fully thread safe, because despite _tx_needs_update being set
+    // for each thread, they could still be producing previous transaction and accessing
+    // data that we are updating below
+    for( const auto& tx : note.full_block->get_full_transactions() )
+    {
+      const operation& op = tx->get_transaction().operations.front();
+      if( op.which() == operation::tag<comment_operation>::value )
+      {
+        const comment_operation& comment = op.get< comment_operation >();
+        // remember comment
+        _comments[ _last_comment ].first = comment.author;
+        _comments[ _last_comment ].second = comment.permlink;
+        _last_comment = ( _last_comment + 1 ) % COLONY_COMMENT_BUFFER;
+      }
+    }
+  }
 }
 
 } // detail
