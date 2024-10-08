@@ -30,6 +30,33 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( key_convert key_convert.cpp )
+
+target_link_libraries( key_convert
+                       PRIVATE hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+
+install( TARGETS
+   key_convert
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
+
+add_executable( sign_convert sign_convert.cpp )
+
+target_link_libraries( sign_convert
+                       PRIVATE hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+
+install( TARGETS
+   sign_convert
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
 add_executable( sign_transaction sign_transaction.cpp )
 
 # needed to correctly print crash stacktrace

@@ -175,7 +175,7 @@ namespace fc { namespace ecc {
     {
       int nV = c.data[0];
       if (nV < 27 || nV >= 35)
-        FC_THROW_EXCEPTION(exception, "unable to reconstruct public key from signature");
+        FC_THROW_EXCEPTION(exception, "unable to reconstruct public key from signature, nV: ${nV}", (nV));
 
       FC_ASSERT(is_canonical(c), "signature is not canonical");
 
@@ -582,4 +582,5 @@ namespace fc { namespace ecc {
 
       return result;
     }
-} }
+
+} } /// fc::ecc
