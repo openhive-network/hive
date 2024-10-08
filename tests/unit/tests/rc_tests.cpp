@@ -848,35 +848,31 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
       push_block( block );
       //t1 was applied as part of block, then popped version of t1 was skipped as duplicate and t2 was
-      //applied as pending; since lack of RC does not block transaction when it is pending, it remains
-      //as pending; we can check that by looking at balances
-      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
-      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+      //applied as pending, however lack of RC caused it to be dropped; we can check that by looking at balances
+      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
 
       generate_block();
-      //testing fix for former 'is_producing() == false' when building new block; now witness actually
-      //'is_in_control()' when producing block, which means pending t2 was not included during block production
-      //however it remains pending
-      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
-      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+      //due to change that makes pending transactions drop from list due to lack of RC, testing fix for
+      //former 'is_producing() == false' when building new block is no longer possible; nevertheless witness actually
+      //'is_in_control()' when producing block, which means pending t2 would not be included during block production
+      //(due to lack of RC)
+      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
       block = get_block_reader().get_block_by_number( db->head_block_num() );
       BOOST_REQUIRE( block );
-      //check that block is indeed empty, without t2 and that tx2 waits as pending
-      BOOST_REQUIRE( block->get_block().transactions.empty() && !db->_pending_tx.empty() );
+      //check that block is indeed empty, without t2 and that tx2 waits as pending <- no longer true; tx2 was dropped above
+      //BOOST_REQUIRE( block->get_block().transactions.empty() && !db->_pending_tx.empty() );
 
-      //transaction is going to wait in pending until alice gains enough RC or transaction expires
-      int i = 0;
-      do
-      {
-        generate_block();
-        ++i;
-      }
-      while( !db->_pending_tx.empty() );
+      //previously transaction was waiting in pending until alice gained enough RC or transaction expired; since now
+      //it was dropped, we can send it again after couple blocks, because it won't be treated as duplicate
+      generate_block();
+      generate_block();
+      push_transaction( tx2, alice_private_key, 0 );
 
-      //check that t2 did not expire but waited couple blocks for RC and finally got accepted
+      //check that t2 did not expire while RC was regenerating and got accepted when send second time
       BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
       BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
-      BOOST_REQUIRE_EQUAL( i, 2 );
     }
 
     validate_database();

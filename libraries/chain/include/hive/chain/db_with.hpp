@@ -110,6 +110,10 @@ struct pending_transactions_restorer
             ++applied_txs;
           }
         }
+        catch( const not_enough_rc_exception& e )
+        {
+          ++failed_txs;
+        }
         catch( const transaction_check_exception& e )
         {
           dlog("Pending transaction became invalid after switching to block ${b} ${n} ${t}",
@@ -145,7 +149,11 @@ struct pending_transactions_restorer
       //verified by witness during block production;
       //3. there is no point in skipping tapos check - it is cheap and might let us drop transactions
       //from pending in case of fork (maybe we should not skip it only when _popped_tx is not empty?);
-      //4. while we have duplication check pulled outside, skip_transaction_dupe_check flag also
+      //4. transactions can become invalid due to RC - either other transaction of the same payer drained
+      //RC so next one is no longer affordable or costs were pushed upward by other payers - the latter
+      //rarely happens unless payer is running on fumes but can happen a lot when pools are almost empty
+      //(mostly in flood scenarios; note that new account token pool is frequently drained)
+      //5. while we have duplication check pulled outside, skip_transaction_dupe_check flag also
       //governs creation of transaction_objects - those contain packed version of transaction that is
       //used by p2p, so we can't skip that
 
