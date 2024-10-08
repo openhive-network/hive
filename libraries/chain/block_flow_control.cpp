@@ -72,9 +72,9 @@ void block_flow_control::on_end_of_apply_block() const
   current_phase = phase::APPLIED;
 }
 
-void block_flow_control::on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const
+void block_flow_control::on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _drop_txs, size_t _mempool_size, uint32_t _lib ) const
 {
-  stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
+  stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _drop_txs, _mempool_size, _lib );
   if( !except && current_phase == phase::APPLIED )
     current_phase = phase::END;
 }
@@ -173,7 +173,13 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
       ( "exp", stats.get_txs_expired_after_block() )
       ( "fail", stats.get_txs_failed_after_block() )
       ( "appl", stats.get_txs_reapplied_after_block() )
-      ( "post", stats.get_txs_postponed_after_block() );
+      ( "post", stats.get_txs_postponed_after_block() )
+      ( "drop", stats.get_txs_dropped_after_block() );
+    if( rt == report_type::FULL )
+    {
+      after
+        ( "size", stats.get_size_of_txs_left_after_block() );
+    }
     report( "after", after.get() );
   }
   if( rt != report_type::MINIMAL )

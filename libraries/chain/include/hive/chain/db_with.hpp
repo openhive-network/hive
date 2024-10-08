@@ -195,7 +195,7 @@ struct pending_transactions_restorer
       _db._popped_tx.clear();
     } );
 
-    _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, _db.get_last_irreversible_block_num() );
+    _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, dropped_txs, pending_size, _db.get_last_irreversible_block_num() );
     if( in_sync && ( postponed_txs || expired_txs ) )
     {
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",

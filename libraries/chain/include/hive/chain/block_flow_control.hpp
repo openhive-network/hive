@@ -34,13 +34,15 @@ public:
     end_work = fc::time_point::now();
   }
 
-  void on_cleanup( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib )
+  void on_cleanup( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _drop_txs, size_t _mempool_size, uint32_t _lib )
   {
     end_cleanup = fc::time_point::now();
     txs_expired = _exp_txs;
     txs_failed = _fail_txs;
     txs_reapplied = _ok_txs;
     txs_postponed = _post_txs;
+    txs_dropped = _drop_txs;
+    txs_size = _mempool_size;
     last_irreversible_block_num = _lib;
   }
 
@@ -62,6 +64,9 @@ public:
   uint32_t get_txs_failed_after_block() const { return txs_failed; }
   uint32_t get_txs_reapplied_after_block() const { return txs_reapplied; }
   uint32_t get_txs_postponed_after_block() const { return txs_postponed; }
+  uint32_t get_txs_dropped_after_block() const { return txs_dropped; }
+
+  size_t get_size_of_txs_left_after_block() const { return txs_size; }
 
   uint32_t get_last_irreversible_block_num() const { return last_irreversible_block_num; }
 
@@ -91,6 +96,12 @@ private:
   uint32_t txs_reapplied = 0;
   //number of transactions that were not touched during pending reapplication due to time limit
   uint32_t txs_postponed = 0;
+  //number of would-be-postponed transactions that were dropped during pending reapplication due to mempool size limit
+  uint32_t txs_dropped = 0;
+
+  //sum of packed sizes of transactions left in mempool after pending reapplication
+  size_t txs_size = 0;
+
   //last irreversible block at the time block work was done
   uint32_t last_irreversible_block_num = 0;
 };
@@ -150,7 +161,7 @@ public:
   virtual void on_end_of_apply_block() const;
 
   // after reapplication of pending transactions (only overridden in tests)
-  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const;
+  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _drop_txs, size_t _mempool_size, uint32_t _lib ) const;
 
   // in case of exception
   virtual void on_failure( const fc::exception& e ) const;
