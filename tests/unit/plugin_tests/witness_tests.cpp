@@ -1282,7 +1282,8 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
       config_line_t( { "colony-reply", { R"~({"min":30,"max":1000,"weight":110,"exponent":5})~" } } ),
       config_line_t( { "colony-vote", { R"~({"weight":2070})~" } } ),
       config_line_t( { "colony-transfer", { R"~({"min":0,"max":350,"weight":87,"exponent":4})~" } } ),
-      config_line_t( { "colony-custom", { R"~({"min":20,"max":400,"weight":6006,"exponent":1})~" } } )
+      config_line_t( { "colony-custom", { R"~({"min":20,"max":400,"weight":6006,"exponent":1})~" } } ),
+      config_line_t( { "max-mempool-size", { "0" } } ),
     }, "1G" );
 
     fc::thread api_thread;

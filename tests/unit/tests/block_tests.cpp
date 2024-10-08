@@ -1471,11 +1471,11 @@ public:
     verify( expectation::END_OF_BLOCK );
   }
 
-  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const override
+  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _drop_txs, size_t _mempool_size, uint32_t _lib ) const override
   {
     // pending transactions are actually reapplied even after failed block and that is before exception
     // is passed to the block flow control; it means we can't be sure on what is current phase
-    BASE::on_end_of_processing( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
+    BASE::on_end_of_processing( _exp_txs, _fail_txs, _ok_txs, _post_txs, _drop_txs, _mempool_size, _lib );
     verify( expectation::END_PROCESSING );
   }
 
