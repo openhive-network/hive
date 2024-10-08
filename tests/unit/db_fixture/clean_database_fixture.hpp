@@ -11,11 +11,20 @@ struct clean_database_fixture : public hived_fixture
   clean_database_fixture( 
     uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512,
     fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
-    bool init_ah_plugin = true );
+    bool init_ah_plugin = true, int block_log_split = 9999 );
   virtual ~clean_database_fixture();
 
   void validate_database();
   void inject_hardfork( uint32_t hardfork );
+};
+
+struct pruned_database_fixture : public clean_database_fixture
+{
+  pruned_database_fixture(
+    uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512,
+    fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
+    bool init_ah_plugin = true );
+  virtual ~pruned_database_fixture();
 };
 
 struct hardfork_database_fixture : public clean_database_fixture

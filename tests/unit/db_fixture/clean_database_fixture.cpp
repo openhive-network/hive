@@ -16,7 +16,7 @@ namespace hive { namespace chain {
 
 
 clean_database_fixture::clean_database_fixture( 
-  uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin )
+  uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin, int block_log_split )
 {
   try {
 
@@ -33,6 +33,9 @@ clean_database_fixture::clean_database_fixture(
         ),
         config_line_t( { "shared-file-size",
           { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
+        ),
+        config_line_t( { "block-log-split",
+          { std::to_string( block_log_split ) } }
         )
       },
       &ah_plugin
@@ -47,6 +50,9 @@ clean_database_fixture::clean_database_fixture(
         ),
         config_line_t( { "shared-file-size",
           { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
+        ),
+        config_line_t( { "block-log-split",
+          { std::to_string( block_log_split ) } }
         )
       }
     );
@@ -102,6 +108,15 @@ void clean_database_fixture::inject_hardfork( uint32_t hardfork )
   generate_block();
   db->set_hardfork( hardfork );
   generate_block();
+}
+
+pruned_database_fixture::pruned_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin )
+  : clean_database_fixture( shared_file_size_in_mb, hardfork, init_ah_plugin, 1 )
+{
+}
+
+pruned_database_fixture::~pruned_database_fixture()
+{
 }
 
 hardfork_database_fixture::hardfork_database_fixture( uint16_t shared_file_size_in_mb, uint32_t hardfork )
