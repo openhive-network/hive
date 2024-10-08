@@ -3122,7 +3122,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
  FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( recurrent_transfer_consecutive_failure_deletion )
+BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned_database_fixture )
 {
   try
   {
