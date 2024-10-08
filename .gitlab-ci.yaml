@@ -40,7 +40,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b815ab817eed8e640e206a97f704aa7d56d6ef50
+    ref: 682ba2e16cfc4ef192478d2d21c4b5a52bbd4678
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
@@ -443,6 +443,7 @@ verify_poetry_lock_sanity:
   variables:
     PACKAGES_TO_CHECK: "$CI_PROJECT_DIR/tests/python/"
     PYPROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/tests/python/hive-local-tools/pyproject.toml"
+    PRE_COMMIT_CONFIG: "$CI_PROJECT_DIR/tests/python/hive-local-tools/.pre-commit-config.yaml"
   before_script:
     - !reference [.python_based, before_script]
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
