@@ -131,15 +131,11 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   _db.pending_transaction_session().reset();
   _db.pending_transaction_session() = _db.start_undo_session();
 
-  FC_TODO( "Safe to remove after HF20 occurs because no more pre HF20 blocks will be generated" );
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  /// modify current witness so transaction evaluators can know who included the transaction
+  _db.modify(_db.get_dynamic_global_properties(), [&]( chain::dynamic_global_property_object& dgp )
   {
-    /// modify current witness so transaction evaluators can know who included the transaction
-    _db.modify(_db.get_dynamic_global_properties(), [&]( chain::dynamic_global_property_object& dgp )
-    {
-      dgp.current_witness = witness_owner;
-    } );
-  }
+    dgp.current_witness = witness_owner;
+  } );
 
   BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
   // the flag also covers time of processing of required and optional actions
@@ -147,7 +143,6 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
   uint32_t postponed_tx_count = 0;
   uint32_t failed_tx_count = 0;
-  // pop pending state (reset to head block state)
   for( const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : _db._pending_tx )
   {
     const hive::protocol::signed_transaction& tx = full_transaction->get_transaction();
