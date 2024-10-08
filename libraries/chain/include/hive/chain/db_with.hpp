@@ -81,10 +81,14 @@ struct pending_transactions_restorer
     bool in_sync = true;
 #endif
     bool apply_trxs = in_sync;
+    uint32_t known_txs = 0;
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
     uint32_t failed_txs = 0;
+    uint32_t dropped_txs = 0;
+    size_t   pending_size = 0;
+    bool stop = false;
 
     auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
     {
@@ -102,12 +106,17 @@ struct pending_transactions_restorer
           {
             ++expired_txs;
           }
-          else if (!_db.is_known_transaction(full_transaction->get_transaction_id()))
+          else if (_db.is_known_transaction(full_transaction->get_transaction_id()))
+          {
+            ++known_txs; // transaction already part of block
+          }
+          else
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction(full_transaction);
             ++applied_txs;
+            pending_size += full_transaction->get_transaction_size();
           }
         }
         catch( const not_enough_rc_exception& e )
@@ -135,8 +144,16 @@ struct pending_transactions_restorer
       }
       else
       {
-        _db._pending_tx.emplace_back(full_transaction);
-        ++postponed_txs;
+        if( pending_size >= _db._max_mempool_size )
+        {
+          stop = true; // too many transactions in mempool - stop rewriting postponed transactions and just drop them
+        }
+        else
+        {
+          _db._pending_tx.emplace_back(full_transaction);
+          ++postponed_txs;
+          pending_size += full_transaction->get_transaction_size();
+        }
       }
     };
 
@@ -163,11 +180,19 @@ struct pending_transactions_restorer
       _db.set_tx_status( database::TX_STATUS_PENDING );
 
       for( auto& tx : _db._popped_tx )
+      {
+        if( stop )
+          break;
         handle_tx( tx );
-      _db._popped_tx.clear();
-
+      }
       for (auto& tx : _pending_transactions)
+      {
+        if( stop )
+          break;
         handle_tx(tx);
+      }
+      dropped_txs = _db._popped_tx.size() + _pending_transactions.size() - ( known_txs + applied_txs + postponed_txs + expired_txs + failed_txs );
+      _db._popped_tx.clear();
     } );
 
     _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, _db.get_last_irreversible_block_num() );
