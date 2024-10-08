@@ -53,8 +53,7 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
   apply_pending_transactions(witness_owner, when, pending_block_header, full_transactions);
 
   // We have temporarily broken the invariant that
-  // _pending_tx_session is the result of applying _pending_tx, as
-  // _pending_tx now consists of the set of postponed transactions.
+  // _pending_tx_session is the result of applying _pending_tx.
   // However, the push_block() call below will re-create the
   // _pending_tx_session.
 
@@ -141,17 +140,16 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   // the flag also covers time of processing of required and optional actions
   _db.set_tx_status( chain::database::TX_STATUS_GEN_BLOCK );
 
-  uint32_t postponed_tx_count = 0;
+  uint32_t unused_tx_count = 0;
   uint32_t failed_tx_count = 0;
   for( const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : _db._pending_tx )
   {
+    if( unused_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT )
+      break;
+
     const hive::protocol::signed_transaction& tx = full_transaction->get_transaction();
     // Only include transactions that have not expired yet for currently generating block,
     // this should clear problem transactions and allow block production to continue
-
-    if( postponed_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT )
-      break;
-
     if( tx.expiration < when )
     {
       ++failed_tx_count;
@@ -160,10 +158,10 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
     uint64_t new_total_size = total_block_size + full_transaction->get_transaction_size();
 
-    // postpone transaction if it would make block too big
+    // ignore transaction if it would make block too big
     if( new_total_size >= maximum_block_size )
     {
-      ++postponed_tx_count;
+      ++unused_tx_count;
       continue;
     }
 
@@ -185,10 +183,10 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
       //wlog( "The transaction was ${t}", ("t", tx) );
     }
   }
-  if (postponed_tx_count > 0 || failed_tx_count > 0)
+  if (unused_tx_count > 0 || failed_tx_count > 0)
   {
-    wlog("Postponed ${postponed_count} transactions during block production (${failed_tx_count} failed/expired)", 
-         ("postponed_count", _db._pending_tx.size() - full_transactions.size())(failed_tx_count));
+    wlog( "${x} transactions could not fit in newly produced block (${failed_tx_count} failed/expired)",
+      ( "x", _db._pending_tx.size() - full_transactions.size() )( failed_tx_count ) );
   }
 
   _db.pending_transaction_session().reset();
