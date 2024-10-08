@@ -478,7 +478,7 @@ void resource_credits::use_account_rcs( int64_t rc )
       {
         FC_TODO( "Add || db.has_hardfork( X ) to make RC part of consensus since X" );
           //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
-        if( db.is_in_control() )
+        if( db.is_in_control() || db.is_reapplying_one_tx() )
         {
           HIVE_ASSERT( has_mana, not_enough_rc_exception,
             "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
