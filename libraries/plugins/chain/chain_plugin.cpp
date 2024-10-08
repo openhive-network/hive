@@ -205,6 +205,7 @@ class chain_plugin_impl
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
     bool                             stop_at_block_interrupt_request = false;
+    uint64_t                         max_mempool_size = 0;
 
 
     uint32_t allow_future_time = 5;
@@ -754,6 +755,8 @@ void chain_plugin_impl::initial_settings()
   db.set_flush_interval( flush_interval );
   add_checkpoints( loaded_checkpoints, thread_pool  );
   db.set_require_locking( check_locks );
+
+  db._max_mempool_size = max_mempool_size;
 
   const auto& abstract_index_cntr = db.get_abstract_index_cntr();
 
@@ -1399,6 +1402,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
       ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
+      ("max-mempool-size", bpo::value<string>()->default_value( "1G" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1696,6 +1700,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       }
     }, *this, 0);
   }
+
+  my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
+
 } FC_LOG_AND_RETHROW() }
 
 void chain_plugin::plugin_startup()

@@ -582,6 +582,7 @@ namespace chain {
         * can be reapplied at the proper time */
       std::deque<std::shared_ptr<full_transaction_type>>       _popped_tx;
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
+      size_t                                                   _max_mempool_size = 0;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
@@ -799,7 +800,7 @@ namespace chain {
 
       optional< block_id_type >     _currently_processing_block_id;
 
-      node_property_object              _node_property_object;
+      node_property_object          _node_property_object;
 
       uint32_t                      _flush_blocks = 0;
       uint32_t                      _next_flush_block = 0;
