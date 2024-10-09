@@ -46,6 +46,20 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( serialize_transaction serialize_transaction.cpp )
+
+target_link_libraries( serialize_transaction 
+                       PRIVATE hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+
+install( TARGETS
+   serialize_transaction
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
+
 add_executable( serialize_set_properties serialize_set_properties.cpp )
 
 target_link_libraries( serialize_set_properties
