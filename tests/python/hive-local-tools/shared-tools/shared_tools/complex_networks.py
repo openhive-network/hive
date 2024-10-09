@@ -342,7 +342,7 @@ def prepare_time_offsets(limit: int):
     return time_offsets
 
 
-def create_block_log_directory_name(block_log_directory_name: str):
+def create_block_log_directory_name(block_log_directory_name: str) -> Path:
     return Path(__file__).parent.absolute() / "block_logs" / block_log_directory_name
 
 
