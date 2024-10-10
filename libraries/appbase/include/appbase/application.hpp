@@ -25,7 +25,7 @@ namespace appbase {
 
   class application;
 
-  class initialization_result 
+  class initialization_result
   {
     public:
       enum result {
@@ -85,7 +85,7 @@ namespace appbase {
         * @return true if the application and plugins were initialized, false or exception on error
         */
       template< typename... Plugin >
-      initialization_result initialize( int argc, char** argv, 
+      initialization_result initialize( int argc, char** argv,
         const bpo::variables_map& arg_overrides = bpo::variables_map() )
       {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... }, arg_overrides );
@@ -177,7 +177,7 @@ namespace appbase {
       template< typename Impl >
       friend class plugin;
 
-      initialization_result initialize_impl( int argc, char** argv, 
+      initialization_result initialize_impl( int argc, char** argv,
         vector< abstract_plugin* > autostart_plugins, const bpo::variables_map& arg_overrides );
 
       abstract_plugin* find_plugin( const string& name )const;
@@ -226,30 +226,10 @@ namespace appbase {
       */
       std::mutex app_mtx;
 
-    private:
-
-      using notify_status_handler_t = std::function<void(const hive::utilities::data_collector&)>;
-      using notify_status_t = boost::signals2::signal<void(const hive::utilities::data_collector&)>;
-      notify_status_t notify_status_signal;
-
-    public:
-
-      boost::signals2::connection add_notify_status_handler( const notify_status_handler_t& func );
-
     public:
 
       finish_request_type finish_request;
-
-      void save_status( const fc::string& status, const fc::string& status_description = "hived_status" ) const noexcept;
-
-      template <typename... KeyValuesTypes>
-      inline void save_information(
-          const fc::string &name,
-          KeyValuesTypes &&...key_value_pairs) const noexcept
-      {
-        hive::utilities::data_collector _items( name, std::forward<KeyValuesTypes>( key_value_pairs )... );
-        notify_status_signal( _items );
-      }
+      hive::utilities::statuses_signal_manager status;
   };
 
   template< typename Impl >

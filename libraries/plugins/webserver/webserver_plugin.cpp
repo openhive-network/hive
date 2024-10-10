@@ -328,10 +328,10 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::save_information( const std::string& type, const optional< tcp::endpoint >& endpoint )
 {
-  theApp.save_information( "webserver listening",
-    "type",     type,
-    "address",  endpoint->address().to_string(),
-    "port",     endpoint->port()
+  theApp.status.save_webserver(
+    type,
+    endpoint->address().to_string(),
+    endpoint->port()
   );
 };
 
@@ -601,7 +601,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
       con->append_header( "Content-Type", "application/json" );
 
       /*
-        HTTP/1.1 applications that do not support persistent connections MUST include the "close" connection option in every message. 
+        HTTP/1.1 applications that do not support persistent connections MUST include the "close" connection option in every message.
         See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
 
         Additional details: https://github.com/zaphoyd/websocketpp/issues/890
