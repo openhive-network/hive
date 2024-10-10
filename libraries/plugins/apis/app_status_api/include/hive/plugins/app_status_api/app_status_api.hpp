@@ -12,7 +12,7 @@ using hive::plugins::json_rpc::void_type;
 
 /* get_app_status */
 typedef void_type get_app_status_args;
-using get_app_status_return = hive::utilities::data_collector;
+using get_app_status_return = hive::utilities::statuses;
 
 namespace detail{ class app_status_api_impl; }
 

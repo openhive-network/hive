@@ -87,7 +87,7 @@ bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string
     {
       return keys_container{ beekeeper::utility::public_key::to_string( item ), item.second.first.key_to_wif() };
     } );
-    
+
     ilog( "Save keys into `${_filename}` file", (_filename) );
     fc::path _file( _filename );
     fc::json::save_to_file( _v, _file );
@@ -174,7 +174,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
 
-    instance->get_app().save_status( "beekeeper is starting", "beekeeper_status" );
+    instance->get_app().status.save_status( "beekeeper is starting" );
 
     return _initialization;
   }
@@ -188,7 +188,7 @@ void beekeeper_app::start()
 
   app.startup();
 
-  instance->get_app().save_status( "beekeeper is ready", "beekeeper_status" );
+  instance->get_app().status.save_status( "beekeeper is ready" );
 
   ilog("beekeeper is waiting");
   app.wait( true/*log*/ );
