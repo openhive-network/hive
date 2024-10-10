@@ -1,5 +1,6 @@
 #! /bin/bash
 set -xeuo pipefail
+shopt -s nullglob
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -33,27 +34,39 @@ else
   mkdir -p $DATA_BASE_DIR/shm_dir
 fi
 
+function handle_single_file_of_block_log() {
+  local FILE_PATH=$1
+  local FILE_NAME=$(basename -- "$FILE_PATH")
 
-if [ -n "$BLOCK_LOG_SOURCE_DIR" ] && [ -e $BLOCK_LOG_SOURCE_DIR/block_log ];
-then
   mkdir -p $DATA_BASE_DIR/datadir/blockchain
 
   if [ -n "${HIVE_NETWORK_TYPE+x}" ] && [ "$HIVE_NETWORK_TYPE" = mirrornet ];
   then
-    echo "creating copy of block_log as mirrornet block_log can't be shared between pipelines"
-    cp "$BLOCK_LOG_SOURCE_DIR/block_log" "$DATA_BASE_DIR/datadir/blockchain/block_log"
+    echo "creating copy of block log file as mirrornet block log can't be shared between pipelines"
+    cp "$FILE_PATH" "$DATA_BASE_DIR/datadir/blockchain/"
   else
-    BLOCK_LOG_TARGET_DIR="$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR"
-    echo "using $BLOCK_LOG_TARGET_DIR/block_log as hardlink target"
-    mkdir -p "$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR"
-    cp -u "$BLOCK_LOG_SOURCE_DIR/block_log" "$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR/block_log"
-    echo "creating hardlink of $DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR/block_log in $DATA_BASE_DIR/datadir/blockchain/block_log"
-    ln "$BLOCK_LOG_TARGET_DIR/block_log" "$DATA_BASE_DIR/datadir/blockchain/block_log"
+    local BLOCK_LOG_TARGET_DIR="$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR"
+    echo "using $BLOCK_LOG_TARGET_DIR/$FILE_NAME as hardlink target"
+    mkdir -p "$BLOCK_LOG_TARGET_DIR"
+    cp -u "$FILE_PATH" "$BLOCK_LOG_TARGET_DIR/$FILE_NAME"
+    echo "creating hardlink of $BLOCK_LOG_TARGET_DIR/$FILE_NAME in $DATA_BASE_DIR/datadir/blockchain/"
+    ln "$BLOCK_LOG_TARGET_DIR/$FILE_NAME" "$DATA_BASE_DIR/datadir/blockchain/$FILE_NAME"
   fi
 
-  if [ -e $BLOCK_LOG_SOURCE_DIR/block_log.artifacts ];
+  if [ -e $FILE_PATH.artifacts ];
   then
-    cp $BLOCK_LOG_SOURCE_DIR/block_log.artifacts $DATA_BASE_DIR/datadir/blockchain/block_log.artifacts
+    cp $FILE_PATH.artifacts $DATA_BASE_DIR/datadir/blockchain/$FILE_NAME.artifacts
+  fi
+}
+
+if [ -n "$BLOCK_LOG_SOURCE_DIR" ]; then
+  if [ -e $BLOCK_LOG_SOURCE_DIR/block_log ]; then
+    handle_single_file_of_block_log "$BLOCK_LOG_SOURCE_DIR/block_log"
+  fi
+  if ls $BLOCK_LOG_SOURCE_DIR/block_log_part.???? 1>/dev/null 2>&1; then
+    for TARGET_FILE in $BLOCK_LOG_SOURCE_DIR/block_log_part.????; do
+      handle_single_file_of_block_log "$TARGET_FILE"
+    done
   fi
 fi
 
