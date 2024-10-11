@@ -20,6 +20,11 @@ namespace fc
          _size += len;
          return len;
       }
+      virtual size_t     writesome( const std::shared_ptr<const char>& buf, size_t len, size_t offset )
+      {
+         _size += len;
+         return len;
+      }
 
       virtual void       close(){}
       virtual void       flush(){}
