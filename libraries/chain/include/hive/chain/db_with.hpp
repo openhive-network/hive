@@ -73,6 +73,7 @@ struct pending_transactions_restorer
   {
     auto head_block_time = _db.head_block_time();
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
+    _db._pending_tx_size = 0;
 
     auto start = fc::time_point::now();
 #if !defined IS_TEST_NET
@@ -87,7 +88,6 @@ struct pending_transactions_restorer
     uint32_t expired_txs = 0;
     uint32_t failed_txs = 0;
     uint32_t dropped_txs = 0;
-    size_t   pending_size = 0;
     bool stop = false;
 
     auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
@@ -116,7 +116,6 @@ struct pending_transactions_restorer
             // the operation_results field will be ignored.
             _db._push_transaction(full_transaction);
             ++applied_txs;
-            pending_size += full_transaction->get_transaction_size();
           }
         }
         catch( const not_enough_rc_exception& e )
@@ -144,15 +143,15 @@ struct pending_transactions_restorer
       }
       else
       {
-        if( pending_size >= _db._max_mempool_size )
+        if( _db._pending_tx_size >= _db._max_mempool_size )
         {
           stop = true; // too many transactions in mempool - stop rewriting postponed transactions and just drop them
         }
         else
         {
           _db._pending_tx.emplace_back(full_transaction);
+          _db._pending_tx_size += full_transaction->get_transaction_size();
           ++postponed_txs;
-          pending_size += full_transaction->get_transaction_size();
         }
       }
     };
@@ -195,7 +194,7 @@ struct pending_transactions_restorer
       _db._popped_tx.clear();
     } );
 
-    _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, dropped_txs, pending_size, _db.get_last_irreversible_block_num() );
+    _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, dropped_txs, _db._pending_tx_size, _db.get_last_irreversible_block_num() );
     if( in_sync && ( postponed_txs || expired_txs ) )
     {
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",

@@ -582,6 +582,7 @@ namespace chain {
         * can be reapplied at the proper time */
       std::deque<std::shared_ptr<full_transaction_type>>       _popped_tx;
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
+      size_t                                                   _pending_tx_size = 0;
       size_t                                                   _max_mempool_size = 0;
 
       bool apply_order( const limit_order_object& new_order_object );
