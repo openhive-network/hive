@@ -745,7 +745,6 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
   _apply_transaction(full_transaction);
   _pending_tx.push_back(full_transaction);
 
-  notify_changed_objects();
   // The transaction applied successfully. Merge its changes into the pending block session.
   temp_session.squash();
 }
@@ -3795,35 +3794,6 @@ void database::init_genesis()
   FC_CAPTURE_AND_RETHROW()
 }
 
-void database::notify_changed_objects()
-{
-  try
-  {
-    /*vector< chainbase::generic_id > ids;
-    get_changed_ids( ids );
-    HIVE_TRY_NOTIFY( changed_objects, ids )*/
-    /*
-    if( _undo_db.enabled() )
-    {
-      const auto& head_undo = _undo_db.head();
-      vector<object_id_type> changed_ids;  changed_ids.reserve(head_undo.old_values.size());
-      for( const auto& item : head_undo.old_values ) changed_ids.push_back(item.first);
-      for( const auto& item : head_undo.new_ids ) changed_ids.push_back(item);
-      vector<const object*> removed;
-      removed.reserve( head_undo.removed.size() );
-      for( const auto& item : head_undo.removed )
-      {
-        changed_ids.push_back( item.first );
-        removed.emplace_back( item.second.get() );
-      }
-      HIVE_TRY_NOTIFY( changed_objects, changed_ids )
-    }
-    */
-  }
-  FC_CAPTURE_AND_RETHROW()
-
-}
-
 void database::set_flush_interval( uint32_t flush_blocks )
 {
   _flush_blocks = flush_blocks;
@@ -4121,8 +4091,6 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   // notify observers that the block has been applied
   notify_post_apply_block( note );
-
-  notify_changed_objects();
 
   // This moves newly irreversible blocks from the fork db to the block log
   // and commits irreversible state to the database. This should always be the

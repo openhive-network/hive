@@ -653,10 +653,6 @@ namespace chain {
         fc::time_point_sec last_processed_block_time;
       };
       node_status_t get_node_status();
-    protected:
-      //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
-      //void pop_undo() { object_database::pop_undo(); }
-      void notify_changed_objects();
 
     private:
       struct irreversible_block_data_type *last_irreversible_object = nullptr;
