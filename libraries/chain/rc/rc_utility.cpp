@@ -18,6 +18,9 @@ using fc::uint128_t;
 resource_credits::report_type resource_credits::auto_report_type = resource_credits::report_type::REGULAR;
 resource_credits::report_output resource_credits::auto_report_output = resource_credits::report_output::ILOG;
 
+uint16_t resource_credits::flood_level = 20;
+uint16_t resource_credits::flood_surcharge = HIVE_100_PERCENT;
+
 void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 {
   if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
@@ -221,6 +224,17 @@ fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_
     report( "payers", payers );
   }
   return report.get();
+}
+
+void resource_credits::set_flood_limiters( uint16_t flood_level, uint16_t flood_surcharge_factor )
+{
+  if( flood_surcharge_factor > HIVE_100_PERCENT )
+  {
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "rc-flood-surcharge value has to be between 0 and ${x}",
+      ( "x", HIVE_100_PERCENT ) );
+  }
+  resource_credits::flood_level = flood_level;
+  resource_credits::flood_surcharge = flood_surcharge_factor;
 }
 
 int64_t resource_credits::compute_cost(
@@ -470,7 +484,20 @@ void resource_credits::use_account_rcs( int64_t rc )
     {
       acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
       tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
-      bool has_mana = acc.rc_manabar.has_mana( rc );
+      int64_t surcharge = 0;
+      if( db.is_validating_one_tx() || db.is_reapplying_one_tx() )
+      {
+        uint64_t blocks_in_mempool = db._pending_tx_size / dgpo.maximum_block_size;
+        if( blocks_in_mempool > flood_level )
+        {
+          uint128_t sc = ( blocks_in_mempool - flood_level ) * flood_surcharge;
+          sc *= rc;
+          sc /= HIVE_100_PERCENT;
+          FC_ASSERT( sc <= static_cast< uint64_t >( std::numeric_limits<int64_t>::max() - rc ) );
+          surcharge = static_cast< int64_t >( sc );
+        }
+      }
+      bool has_mana = acc.rc_manabar.has_mana( rc + surcharge );
 
 #ifdef USE_ALTERNATE_CHAIN_ID
       if( configuration_data.allow_not_enough_rc == false )
@@ -480,11 +507,17 @@ void resource_credits::use_account_rcs( int64_t rc )
           //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
         if( db.is_in_control() || db.is_reapplying_one_tx() )
         {
+          if( surcharge && acc.rc_manabar.has_mana( rc ) )
+          {
+            HIVE_ASSERT( has_mana, not_enough_rc_exception,
+              "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC with ${surcharge} flood prevention surcharge. "
+              "Please wait to transact, power up HIVE or ask your witnesses to increase block size to deal with increased traffic.",
+              ( account_name )( "rc_current", tx_info.rc )( rc )( surcharge )
+            );
+          }
           HIVE_ASSERT( has_mana, not_enough_rc_exception,
-            "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
-            ( "account", account_name )
-            ( "rc_needed", rc )
-            ( "rc_current", tx_info.rc )
+            "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC. Please wait to transact or power up HIVE.",
+            ( account_name )( "rc_current", tx_info.rc )( rc )
           );
         }
         else
@@ -510,7 +543,7 @@ void resource_credits::use_account_rcs( int64_t rc )
         }
       }
 
-      acc.rc_manabar.use_mana( rc );
+      acc.rc_manabar.use_mana( rc + surcharge );
       tx_info.rc = acc.rc_manabar.current_mana;
     } );
   } FC_CAPTURE_AND_RETHROW( (tx_info) )

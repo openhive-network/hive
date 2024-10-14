@@ -1402,7 +1402,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
       ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
-      ("max-mempool-size", bpo::value<string>()->default_value( "1G" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool." )
+      ("max-mempool-size", bpo::value<string>()->default_value( "1G" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool.")
+      ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
+      ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1679,6 +1681,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
                                       options.at("block-stats-report-output").as<std::string>());
   resource_credits::set_auto_report(options.at("rc-stats-report-type").as<std::string>(),
                                     options.at("rc-stats-report-output").as<std::string>());
+  resource_credits::set_flood_limiters(options.at("rc-flood-level").as<uint16_t>(),
+                                       options.at("rc-flood-surcharge").as<uint16_t>());
 
   if(my->benchmark_interval > 0)
   {
