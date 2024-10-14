@@ -298,6 +298,7 @@ void transaction_builder::build_transaction()
     ilog( "Thread ${t} stopped building new transactions (${p} pending).",
       ( "t", _worker.name() )( "p", _concurrent_tx_count ) );
     _worker.quit();
+    return;
   }
   else if( _tx_needs_update.load( std::memory_order_relaxed ) )
   {
