@@ -738,7 +738,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
 
   // Create a temporary undo session as a child of _pending_tx_session.
   // The temporary session will be discarded by the destructor if
-  // _apply_transaction fails.  If we make it to merge(), we
+  // _apply_transaction fails.  If we make it to squash(), we
   // apply the changes.
 
   auto temp_session = start_undo_session();

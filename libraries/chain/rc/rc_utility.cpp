@@ -658,27 +658,6 @@ void resource_credits::initialize_evaluators()
   }
 }
 
-// equivalent of previous call through signal
-#define ISOLATE_RC_CALL( _context, _name, _call, ... )   \
-{                                                        \
-  if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )           \
-    return;                                              \
-                                                         \
-  std::string name;                                      \
-                                                         \
-  auto& benchmark = db.get_benchmark_dumper();           \
-  if( benchmark.is_enabled() )                           \
-  {                                                      \
-    name = _name;                                        \
-    benchmark.begin();                                   \
-  }                                                      \
-                                                         \
-  HIVE_TRY_NOTIFY( _call, __VA_ARGS__ );                 \
-                                                         \
-  if( benchmark.is_enabled() )                           \
-    benchmark.end( _context, name );                     \
-}
-
 void resource_credits::finalize_block() const
 {
   if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )
