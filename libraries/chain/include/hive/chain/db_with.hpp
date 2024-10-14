@@ -72,6 +72,11 @@ struct pending_transactions_restorer
   ~pending_transactions_restorer()
   {
     auto head_block_time = _db.head_block_time();
+    if( _db._pending_tx.size() > 0 )
+    {
+      elog( "NOTIFYALERT! ${x} transactions in pending when there should be none (example tx: ${tx})",
+        ( "x", _db._pending_tx.size() )( "tx", _db._pending_tx.front()->get_transaction() ) );
+    }
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
     _db._pending_tx_size = 0;
 
