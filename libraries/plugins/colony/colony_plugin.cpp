@@ -113,7 +113,6 @@ struct transaction_builder
   void push_transaction( kind_of_operation kind );
   void build_transaction();
   void fill_string( std::string& str, size_t size );
-  std::string form_permlink( const account_name_type& author, const std::string& postfix, bool is_article );
   void build_article( const account_object& actor, uint64_t nonce );
   void build_reply( const account_object& actor, uint64_t nonce );
   void build_vote( const account_object& actor, uint64_t nonce );
@@ -408,16 +407,6 @@ void transaction_builder::fill_string( std::string& str, size_t size )
   }
 }
 
-std::string transaction_builder::form_permlink( const account_name_type& author, const std::string& postfix, bool is_article )
-{
-  std::string result = author;
-  // account name can contain '.', but it is not valid in permlink
-  std::replace( result.begin(), result.end(), '.', '-' );
-  result += is_article ? 'a' : 'r';
-  result += postfix;
-  return result;
-}
-
 void transaction_builder::build_article( const account_object& actor, uint64_t nonce )
 {
   ++_stats[ ARTICLE ].count;
@@ -426,7 +415,7 @@ void transaction_builder::build_article( const account_object& actor, uint64_t n
   article.title = std::to_string( nonce );
   article.parent_permlink = "category" + std::to_string( nonce % 101 );
   article.author = actor.get_name();
-  article.permlink = form_permlink( actor.get_name(), article.title, true );
+  article.permlink = "a" + article.title;
   auto extra_size = _common._params[ ARTICLE ].randomize();
   _stats[ ARTICLE ].extra_size += extra_size;
   fill_string( article.body, extra_size );
@@ -469,7 +458,7 @@ void transaction_builder::build_reply( const account_object& actor, uint64_t non
   reply.parent_author = _common._comments[ random_comment ].first;
   reply.parent_permlink = _common._comments[ random_comment ].second;
   reply.author = actor.get_name();
-  reply.permlink = form_permlink( actor.get_name(), reply.title, false );
+  reply.permlink = "r" + reply.title;
   auto extra_size = _common._params[ REPLY ].randomize();
   _stats[ REPLY ].extra_size += extra_size;
   fill_string( reply.body, extra_size );
