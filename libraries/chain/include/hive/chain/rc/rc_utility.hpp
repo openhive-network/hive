@@ -62,6 +62,9 @@ class resource_credits
     // builds JSON (variant) representation of given RC stats
     static fc::variant_object get_report( report_type rt, const rc_stats_object& stats );
 
+    // sets parameters that can temporarily increase RC cost for new transactions during flood
+    static void set_flood_limiters( uint16_t flood_level, uint16_t flood_surcharge_factor );
+
     // scans transaction for used resources
     static void count_resources(
       const hive::protocol::signed_transaction& tx,
@@ -174,6 +177,9 @@ class resource_credits
 
     static report_type auto_report_type; //type of automatic daily rc stats reports
     static report_output auto_report_output; //output of automatic daily rc stat reports
+
+    static uint16_t flood_level; //how many full blocks in mempool before surcharge kicks in
+    static uint16_t flood_surcharge; //RC cost multiplication factor
 };
 
   using namespace hive::protocol;
