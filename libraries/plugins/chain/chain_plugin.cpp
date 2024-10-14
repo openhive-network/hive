@@ -944,6 +944,7 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
 {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const signed_block& new_block = full_block->get_block();
+  const signed_block_header& new_block_header = new_block;
 
   uint32_t block_num = full_block->get_block_num();
   if( checkpoints.size() && checkpoints.rbegin()->second != block_id_type() )
@@ -993,7 +994,12 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
         db.notify_finish_push_block( full_block );
         block_ctrl.on_end_of_apply_block();
       }
-      FC_CAPTURE_AND_RETHROW((new_block))
+      catch( unlinkable_block_exception& er )
+      {
+        // we only need header (if anything at all) in most common case of block from unknown fork
+        FC_RETHROW_EXCEPTION( er, warn, "", FC_FORMAT_ARG_PARAMS( (new_block_header) ) );
+      }
+      FC_CAPTURE_AND_RETHROW( (new_block) )
 
       db.check_free_memory( false, full_block->get_block_num() );
     });
