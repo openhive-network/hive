@@ -1274,6 +1274,7 @@ namespace graphene { namespace net {
             items_by_peer.insert(peer_and_items_to_fetch(peer));
 
         // now loop over all items we want to fetch
+        size_t expired_items = 0;
         for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
         {
           if (item_iter->timestamp < oldest_timestamp_to_fetch)
@@ -1281,8 +1282,9 @@ namespace graphene { namespace net {
             // this item has probably already fallen out of our peers' caches, we'll just ignore it.
             // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
             // with a bunch of items that we'll never be able to request from any peer
-            wlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
+            dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
             item_iter = _items_to_fetch.erase(item_iter);
+            ++expired_items;
           }
           else
           {
@@ -1316,6 +1318,8 @@ namespace graphene { namespace net {
               ++item_iter;
           }
         }
+        if (expired_items > 0)
+          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
 
         // we've figured out which peer will be providing each item, now send the messages.
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
