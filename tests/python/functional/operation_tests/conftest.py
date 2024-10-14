@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
-    from test_tools.__private.wallet import BeekeepyResponse
+    from test_tools.__private.wallet.constants import WalletResponse
 
 
 class UnknownKeyAuthsFormatError(Exception):
@@ -191,7 +191,7 @@ class ConvertAccount(Account):
         self._added_hbds_by_convert.append(hbds_after_operation - hbds_before_operation)
 
     @staticmethod
-    def extract_amount_from_convert_operation(transaction: dict | BeekeepyResponse) -> tt.Asset.HiveT | tt.Asset.TbdT:
+    def extract_amount_from_convert_operation(transaction: dict | WalletResponse) -> tt.Asset.HiveT | tt.Asset.TbdT:
         ops_in_transaction = transaction["operations"]
         # get amount to convert from transaction
         for operation in ops_in_transaction:
