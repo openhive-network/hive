@@ -575,8 +575,8 @@ void p2p_plugin::plugin_shutdown()
 void p2p_plugin::broadcast_block(const std::shared_ptr<hive::chain::full_block_type>& full_block)
 {
   uint32_t block_num = full_block->get_block_num();
-  size_t transction_count = full_block->get_full_transactions().size();
-  ulog("Broadcasting block #${block_num} with ${transction_count} transactions", (block_num)(transction_count));
+  size_t transaction_count = full_block->get_full_transactions().size();
+  ulog("Broadcasting block #${block_num} with ${transaction_count} transactions", (block_num)(transaction_count));
   my->node->broadcast(full_block);
 }
 
