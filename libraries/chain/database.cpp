@@ -744,6 +744,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
   auto temp_session = start_undo_session();
   _apply_transaction(full_transaction);
   _pending_tx.push_back(full_transaction);
+  _pending_tx_size += full_transaction->get_transaction_size();
 
   // The transaction applied successfully. Merge its changes into the pending block session.
   temp_session.squash();
