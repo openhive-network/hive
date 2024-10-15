@@ -26,6 +26,14 @@ EOF
 
 set -e
 
+BUILD_INSTANCE_ADDITIONAL_ARGS=()
+
+add_build_instance_arg() {
+  local arg="$1"
+  BUILD_INSTANCE_ADDITIONAL_ARGS+=("$arg")
+}
+
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --registry-user=*)
@@ -64,6 +72,10 @@ while [ $# -gt 0 ]; do
         arg="${1#*=}"
         BLOG_REGISTRY_PASSWORD="$arg"
         ;;
+    --build-instance-arg=*)
+        arg="${1#*=}"
+        add_build_instance_arg "${arg}"
+        ;;
     --help)
         print_help
         exit 0
@@ -100,7 +112,7 @@ docker login -u "$DOCKER_HUB_USER" --password-stdin <<< "$DOCKER_HUB_PASSWORD"
 docker login -u "$BLOG_REGISTRY_USER" --password-stdin "registry-upload.hive.blog" <<< "$BLOG_REGISTRY_PASSWORD"
 
 echo "Building an instance image in the source directory $SRC_DIR"
-"$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
+"$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE" "${BUILD_INSTANCE_ADDITIONAL_ARGS[@]}"
 
 echo "Tagging the image built in the previous step as ${CI_REGISTRY_IMAGE}"
 docker tag "$CI_REGISTRY_IMAGE/minimal-instance:$CI_COMMIT_TAG" "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
