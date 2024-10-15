@@ -114,7 +114,12 @@ def get_part_of_witness_details(witness_details: list, start, length: int):
     return new_witness_details
 
 
-def info(msg: str, wallet: tt.Wallet):
+def info(msg: str, wallet: tt.OldWallet | tt.Wallet):
+    if isinstance(wallet, tt.OldWallet):
+        info = wallet.api.info()
+        hb = info["head_block_number"]
+        lib = info["last_irreversible_block_num"]
+        current_witness = info["current_witness"]
     hb = wallet.connected_node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
     lib = wallet.connected_node.api.wallet_bridge.get_dynamic_global_properties().last_irreversible_block_num
     current_witness = wallet.connected_node.api.wallet_bridge.get_dynamic_global_properties().current_witness
