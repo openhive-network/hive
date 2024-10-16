@@ -55,9 +55,10 @@ else
   pwd
 
   cat <<EOF > Dockerfile
-FROM scratch
+FROM nginx:alpine3.20-slim
 LABEL testing_block_logs_checksum=${checksum}
-COPY block_logs_for_testing /testing_block_logs
+COPY block_logs_for_testing /usr/share/nginx/html/testing_block_logs
+EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing testing_block_logs"

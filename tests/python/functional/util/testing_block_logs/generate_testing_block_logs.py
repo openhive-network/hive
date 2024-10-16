@@ -33,7 +33,7 @@ def prepare_empty_logs(
     logger.disable("helpy")
     logger.disable("test_tools")
 
-    # Initial 30 blocks are needed to have at least 10 irreversible ones.
+    # Initial 30 blocks are needed to have at least 10 irreversible ones
     block_log_directory_30 = output_block_log_directory / "empty_30"
     block_log_directory_30.mkdir(parents=True, exist_ok=True)
     generate_and_copy_empty_log(9999, 30, block_log_directory_30)
