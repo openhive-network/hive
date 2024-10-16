@@ -59,26 +59,45 @@ cmake_policy(SET CMP0041 NEW)
 
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol STATIC ${SOURCES} )
+add_library( hive_protocol_pic STATIC ${SOURCES} )
+set_target_properties( hive_protocol_pic PROPERTIES POSITION_INDEPENDENT_CODE ON )
 
 target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
+target_link_libraries( hive_protocol_pic PUBLIC hive_schema_core fc_core_pic )
 
 target_link_libraries ( hive_protocol PUBLIC
+   $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, hive_schema_shared_boost, hive_schema>
+)
+target_link_libraries ( hive_protocol_pic PUBLIC
    $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, hive_schema_shared_boost, hive_schema>
 )
 
 target_link_libraries ( hive_protocol PUBLIC
 $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, fc_shared_boost, fc>
 )
+target_link_libraries ( hive_protocol_pic PUBLIC
+$<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, fc_shared_boost_pic, fc_pic>
+)
 
 target_include_directories( hive_protocol
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
+target_include_directories( hive_protocol_pic
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
    set_target_properties( hive_protocol PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}" )
+   set_target_properties( hive_protocol_pic PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}" )
 endif( CLANG_TIDY_EXE )
 
 INSTALL( TARGETS
    hive_protocol
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+INSTALL( TARGETS
+   hive_protocol_pic
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

@@ -275,6 +275,8 @@ endif()
 add_subdirectory( vendor/equihash )
 
 setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
+setup_library( fc_core_pic SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
+SET_TARGET_PROPERTIES( fc_core_pic PROPERTIES POSITION_INDEPENDENT_CODE ON )
 
 # begin readline stuff
 find_package(Curses)
@@ -286,6 +288,7 @@ file(GLOB HEADERS "include/bts/cli/*.hpp")
 
 if (READLINE_FOUND)
   target_compile_definitions (fc_core PRIVATE HAVE_READLINE)
+  target_compile_definitions (fc_core_pic PRIVATE HAVE_READLINE)
   if (CURSES_FOUND)
     list(APPEND Readline_LIBRARIES ${CURSES_LIBRARY})
   endif()
@@ -293,6 +296,7 @@ if (READLINE_FOUND)
 endif()
 if(WIN32)
   target_compile_definitions( fc_core PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
+  target_compile_definitions( fc_core_pic PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
 # end readline stuff
 
@@ -306,10 +310,20 @@ IF(WIN32)
     # autodetecting code to do the right thing.
     _WEBSOCKETPP_CPP11_CHRONO_
   )
+  target_compile_definitions(fc_core_pic PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
+    _SCL_SERCURE_NO_WARNINGS
+    # Needed to disable MSVC autolinking feature (#pragma comment)
+    BOOST_ALL_NO_LIB
+    # The current version of websockets doesn't correctly guess what 'chrono' implementation boost::asio uses
+    # on the recommended build platform of VC++12/boost_1.58.  Force it here until websocket gets their
+    # autodetecting code to do the right thing.
+    _WEBSOCKETPP_CPP11_CHRONO_
+  )
   if( MSVC )
     # Activate C++ exception handling, assume extern C calls don't throw
     # Add /U options to be sure settings specific to dynamic boost link are ineffective
     target_compile_options(fc_core PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
+    target_compile_options(fc_core_pic PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
   elseif( MINGW )
      # Put MinGW specific compiler settings here
   endif()
@@ -321,6 +335,7 @@ ELSE()
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
       target_compile_options(fc_core PUBLIC -Wall -fnon-call-exceptions)
+      target_compile_options(fc_core_pic PUBLIC -Wall -fnon-call-exceptions)
     endif()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fnon-call-exceptions")
   ENDIF()
@@ -376,8 +391,10 @@ endif()
 include_directories( vendor/equihash )
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
+target_include_directories(fc_core_pic PUBLIC ${public_includes} PRIVATE ${private_includes})
 
 target_link_libraries( fc_core PUBLIC ${fc_dependencies} )
+target_link_libraries( fc_core_pic PUBLIC ${fc_dependencies} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -395,6 +412,7 @@ ENDIF()
 if(WIN32)
    # add addtional import library on windows platform
    target_link_libraries( fc_core PUBLIC crypt32.lib)
+   target_link_libraries( fc_core_pic PUBLIC crypt32.lib)
 
    # now generate a list of the DLLs we're using to use during the install process
    include (ParseLibraryList)
@@ -472,6 +490,11 @@ if(WIN32)
    set_property(TARGET fc_core PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
    set_property(TARGET fc_core PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
 
+   set_property(TARGET fc_core_pic PROPERTY INTERFACE_LINK_PDB_RELEASE ${INTERFACE_LINK_PDB_RELEASE})
+   set_property(TARGET fc_core_pic PROPERTY INTERFACE_LINK_PDB_DEBUG ${INTERFACE_LINK_PDB_DEBUG})
+   set_property(TARGET fc_core_pic PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
+   set_property(TARGET fc_core_pic PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
+
 endif(WIN32)
 
 ADD_LIBRARY( CommonBuildOptions INTERFACE)
@@ -480,6 +503,7 @@ TARGET_COMPILE_OPTIONS( CommonBuildOptions INTERFACE $<$<CONFIG:Asan>:${HIVE_ASA
 TARGET_LINK_OPTIONS( CommonBuildOptions INTERFACE $<$<CONFIG:Asan>:${HIVE_ASAN_LINK_OPTIONS}>)
 
 TARGET_LINK_LIBRARIES( fc_core PUBLIC CommonBuildOptions )
+TARGET_LINK_LIBRARIES( fc_core_pic PUBLIC CommonBuildOptions )
 
 ADD_LIBRARY( STATIC_BOOST INTERFACE )
 SET_TARGET_PROPERTIES( STATIC_BOOST PROPERTIES POSITION_INDEPENDENT_CODE OFF )
@@ -500,6 +524,10 @@ ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL TRUE)
 add_library ( fc STATIC )
 target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
 
+add_library ( fc_pic INTERFACE )
+target_link_libraries ( fc_pic INTERFACE fc )
+set_target_properties( fc_pic PROPERTIES POSITION_INDEPENDENT_CODE ON )
+
 if(NOT HIVE_BUILD_ON_MINIMAL_FC)
   ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
   ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
@@ -508,6 +536,10 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
   target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
   ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost ZLIB FALSE )
   ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost BZip2 FALSE )
+
+  add_library ( fc_shared_boost_pic INTERFACE )
+  target_link_libraries ( fc_shared_boost_pic INTERFACE fc_shared_boost )
+  set_target_properties( fc_shared_boost_pic PROPERTIES POSITION_INDEPENDENT_CODE ON )
 endif()
 
 option( USE_VALGRIND "Build with extra valgrind code annotations" OFF )
@@ -515,6 +547,7 @@ MESSAGE( STATUS "USE_VALGRIND: ${USE_VALGRIND}" )
 IF(USE_VALGRIND)
   target_compile_definitions(fc PRIVATE -DUSE_VALGRIND)
   target_compile_definitions(fc_core PRIVATE -DUSE_VALGRIND)
+  target_compile_definitions(fc_core_pic PRIVATE -DUSE_VALGRIND)
 ENDIF()
 
 SET(OPENSSL_CONF_TARGET )
