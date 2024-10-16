@@ -45,9 +45,6 @@ else
   python3 generate_testing_block_logs.py --output-block-log-directory="$TESTING_BLOCK_LOGS_DIR/block_logs_for_testing"
   echo "Block logs saved in: $TESTING_BLOCK_LOGS_DIR"
 
-  checksum=$(find $TESTING_BLOCK_LOGS_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
-  echo "Checksum of the generated testing block logs: $checksum"
-
   echo "Build a Dockerfile"
 
   pwd
@@ -55,9 +52,10 @@ else
   pwd
 
   cat <<EOF > Dockerfile
-FROM scratch
-LABEL testing_block_logs_checksum=${checksum}
-COPY block_logs_for_testing /testing_block_logs
+FROM nginx:alpine3.20-slim
+COPY block_logs_for_testing /usr/share/nginx/html/testing_block_logs
+RUN sed -i "/index  index.html index.htm;/a \    autoindex on;" /etc/nginx/conf.d/default.conf
+EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing testing_block_logs"
