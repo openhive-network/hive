@@ -220,7 +220,7 @@ def prepare_block_log(
     assert node.api.database.get_hardfork_properties().last_hardfork == current_hardfork_number
     tt.logger.info(f"Finish waiting for current hardfork! @Block: {node.get_last_block_number()}")
 
-    # To avoid a missed block wait +128 blocks ( at least 33% of the blocks should be correct )
+    # To avoid a missed block wait +128 blocks ( at least 33% of the blocks should be correct ).
     node.wait_for_block_with_number(headblock + 250)
 
     # waiting for the block with the last transaction to become irreversible

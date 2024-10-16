@@ -45,8 +45,12 @@ else
   python3 generate_universal_block_logs.py --output-block-log-directory="$UNIVERSAL_BLOCK_LOGS_DIR"
   echo "Block logs saved in: $UNIVERSAL_BLOCK_LOGS_DIR"
 
-  checksum=$(find $UNIVERSAL_BLOCK_LOGS_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
-  echo "Checksum of the generated universal block logs: $checksum"
+  # Note that checksum generation (and check in jobs which get the block logs from docker image)
+  # has been removed when the image created below has been turned into http server thus eliminating
+  # the intermediate step of runner-based cache directories.
+  #
+  # checksum=$(find $UNIVERSAL_BLOCK_LOGS_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
+  # echo "Checksum of the generated universal block logs: $checksum"
 
   echo "Build a Dockerfile"
 
@@ -55,11 +59,12 @@ else
   pwd
 
   cat <<EOF > Dockerfile
-FROM scratch
-LABEL universal_block_logs_checksum=${checksum}
-COPY block_log_open_sign /block_log_open_sign
-COPY block_log_single_sign /block_log_single_sign
-COPY block_log_multi_sign /block_log_multi_sign
+FROM nginx:alpine3.20-slim
+COPY block_log_open_sign /usr/share/nginx/html/universal_block_logs/block_log_open_sign
+COPY block_log_single_sign /usr/share/nginx/html/universal_block_logs/block_log_single_sign
+COPY block_log_multi_sign /usr/share/nginx/html/universal_block_logs/block_log_multi_sign
+RUN sed -i "/index  index.html index.htm;/a \    autoindex on;" /etc/nginx/conf.d/default.conf
+EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing universal_block_logs"

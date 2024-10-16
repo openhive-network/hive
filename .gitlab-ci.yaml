@@ -420,6 +420,14 @@ plugin_test:
       LOG_FILE: $CI_JOB_NAME.log
     command: ["--replay-blockchain", "--stop-at-block=5000000"]
 
+.test-block-log-service: &test-block-log-service
+  - name: $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE
+    alias: test-block-log-server
+
+.universal-block-log-service: &universal-block-log-service
+  - name: $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
+    alias: universal-block-log-server
+
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends:
@@ -668,18 +676,23 @@ test_tools_tests:
   extends: .test_tools_based
   needs:
     - !reference [.test_tools_based, needs]
-    - job: copy_testing_block_logs_to_cache
+    - job: generate_testing_block_logs_and_save_image
   variables:
+    NODE_ADDRESS: "test-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/testing_block_logs
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+  services:
+    - *test-block-log-service
   script:
-    - cp -r $TESTING_BLOCK_LOGS_CACHE_DIR/* $TESTING_BLOCK_LOGS_DESTINATION
+    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
+    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
     - !reference [.run-pytest, script]
   tags:
-    - data-cache-storage
+    - public-runner-docker
 
 rc_direct_delegations_tests:
   stage: test
@@ -1206,43 +1219,6 @@ generate_testing_block_logs_and_save_image:
   - public-runner-docker
   - hived-for-tests
 
-copy_testing_block_logs_to_cache:
-  stage: build
-  extends: .docker_image_builder_job
-  needs:
-    - job: generate_testing_block_logs_and_save_image
-      artifacts: true
-  variables:
-    TESTING_BLOCK_LOGS_CACHE_DIR: "/cache/testing_block_logs_${TESTING_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA}"
-  script:
-    - echo $TESTING_BLOCK_LOGS_CACHE_DIR
-    - echo "TESTING_BLOCK_LOGS_CACHE_DIR=$TESTING_BLOCK_LOGS_CACHE_DIR" > $CI_PROJECT_DIR/testing_block_log_cache_dir.env
-    - |
-      if [ -d "$TESTING_BLOCK_LOGS_CACHE_DIR" ]; then
-        echo "Directory $TESTING_BLOCK_LOGS_CACHE_DIR exists. Skipping copy from image process..."
-      else
-        echo "Start copy testing block logs from image - $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-        mkdir -p $TESTING_BLOCK_LOGS_CACHE_DIR && cd $TESTING_BLOCK_LOGS_CACHE_DIR
-        echo "Start copy block_logs from - $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-        docker pull $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE
-        $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE $TESTING_BLOCK_LOGS_CACHE_DIR --image-path=/
-        checksum_from_image=$(docker inspect --format='{{ index .Config.Labels "testing_block_logs_checksum" }}' $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE)
-        echo "Checksum from image: $checksum_from_image"
-        checksum_after_copy=$(find $TESTING_BLOCK_LOGS_CACHE_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
-        echo "Checksum after copy: $checksum_after_copy"
-        if [[ "$checksum_from_image" != "$checksum_after_copy" ]]; then
-          echo "Checksum mismatch detected! The checksum from the container does not match the checksum after copying."
-          exit 1
-        fi
-      fi
-    - tree $TESTING_BLOCK_LOGS_CACHE_DIR
-  artifacts:
-    reports:
-      dotenv:
-        - testing_block_log_cache_dir.env
-  tags:
-    - data-cache-storage
-
 generate_universal_block_logs_and_save_image:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
@@ -1261,55 +1237,24 @@ generate_universal_block_logs_and_save_image:
   - public-runner-docker
   - hived-for-tests
 
-copy_universal_block_logs_to_cache:
-  stage: build
-  extends: .docker_image_builder_job
-  needs:
-    - job: generate_universal_block_logs_and_save_image
-      artifacts: true
-  variables:
-    UNIVERSAL_BLOCK_LOGS_CACHE_DIR: "/cache/universal_block_logs_${UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA}"
-  script:
-    - echo $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
-    - echo "UNIVERSAL_BLOCK_LOGS_CACHE_DIR=$UNIVERSAL_BLOCK_LOGS_CACHE_DIR" > $CI_PROJECT_DIR/universal_block_log_cache_dir.env
-    - |
-      if [ -d "$UNIVERSAL_BLOCK_LOGS_CACHE_DIR" ]; then
-        echo "Directory $UNIVERSAL_BLOCK_LOGS_CACHE_DIR exists. Skipping copy from image process..."
-      else
-        echo "Start copy universal block logs from image - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-        mkdir -p $UNIVERSAL_BLOCK_LOGS_CACHE_DIR && cd $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
-        echo "Start copy block_logs from - $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-        docker pull $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
-        $CI_PROJECT_DIR/scripts/ci-helpers/export-data-from-docker-image.sh $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE $UNIVERSAL_BLOCK_LOGS_CACHE_DIR --image-path=/
-        checksum_from_image=$(docker inspect --format='{{ index .Config.Labels "universal_block_logs_checksum" }}' $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE)
-        echo "Checksum from image: $checksum_from_image"
-        checksum_after_copy=$(find $UNIVERSAL_BLOCK_LOGS_CACHE_DIR -type f | sort | xargs cat | md5sum |cut -d ' ' -f 1)
-        echo "Checksum after copy: $checksum_after_copy"
-        if [[ "$checksum_from_image" != "$checksum_after_copy" ]]; then
-          echo "Checksum mismatch detected! The checksum from the container does not match the checksum after copying."
-          exit 1
-        fi
-      fi
-    - tree $UNIVERSAL_BLOCK_LOGS_CACHE_DIR
-  artifacts:
-    reports:
-      dotenv:
-        - universal_block_log_cache_dir.env
-  tags:
-    - data-cache-storage
-
 universal_block_log_tests:
   stage: test
   extends: .test_tools_based
   needs:
     - !reference [.test_tools_based, needs]
-    - job: copy_universal_block_logs_to_cache
+    - job: generate_universal_block_logs_and_save_image
       artifacts: true
   variables:
+    NODE_ADDRESS: "universal-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
+    UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+  services:
+    - *universal-block-log-service
   script:
-    - cp -r $UNIVERSAL_BLOCK_LOGS_CACHE_DIR/* $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+    - test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service universal-block-log-server" && false)
+    - wget -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 universal-block-log-server:80/universal_block_logs/
     - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
     - !reference [.run-pytest, script]
   tags:
@@ -1320,12 +1265,18 @@ colony_tests:
   extends: .test_tools_based
   needs:
     - !reference [.test_tools_based, needs]
-    - job: copy_universal_block_logs_to_cache
+    - job: generate_universal_block_logs_and_save_image
   variables:
+    NODE_ADDRESS: "universal-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 10
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
+    UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+  services:
+    - *universal-block-log-service
   script:
-    - cp -r $UNIVERSAL_BLOCK_LOGS_CACHE_DIR/* $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+    - test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service universal-block-log-server" && false)
+    - wget -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 universal-block-log-server:80/universal_block_logs/
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
   tags:
