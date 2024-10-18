@@ -133,6 +133,9 @@ else ( MSVC )
      DEPENDERS configure
     )
 
+    # both projects are running configure in the source tree and therefore cannot be run in parallel
+    add_dependencies(project_secp256k1_pic project_secp256k1)
+
     ExternalProject_Get_Property(project_secp256k1_pic binary_dir)
     set(binary_pic_dir "${binary_dir}")
     ExternalProject_Get_Property(project_secp256k1 binary_dir)
