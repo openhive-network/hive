@@ -819,6 +819,7 @@ void database::clear_pending()
   {
     assert( _pending_tx.empty() || _pending_tx_session.valid() );
     _pending_tx.clear();
+    _pending_tx_size = 0;
     _pending_tx_session.reset();
   }
   FC_CAPTURE_AND_RETHROW()
