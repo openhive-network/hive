@@ -84,6 +84,7 @@ struct full_transaction_type
 
     mutable bool is_packed_in_legacy_format = false;
     mutable bool is_in_cache = false; // true if this is tracked in the global transaction cache; if so, we need to remove ourselves upon garbage collection
+    mutable bool is_privileged = false; // true if transaction is supposed to be put in front of pending list
 
     mutable std::atomic<bool> has_merkle_digest = { false };
     mutable std::atomic<bool> has_legacy_transaction_message_hash = { false };
@@ -124,10 +125,12 @@ struct full_transaction_type
     void precompute_validation(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void set_rc_cost( int64_t cost ) const { rc_cost = cost; } // can only be called under main lock of write thread
+    void set_privilege() const { is_privileged = true; } // marks transaction as high priority to be put in front of pending
 
     const serialized_transaction_data& get_serialized_transaction() const;
     size_t get_transaction_size() const;
     int64_t get_rc_cost() const { return rc_cost; }
+    bool check_privilege() const { return is_privileged; }
 
     template <class DataStream>
     void dump_serialized_transaction(DataStream& datastream) const

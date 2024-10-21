@@ -138,8 +138,8 @@ class resource_credits
     const rc_block_info& get_block_info() const { return block_info; }
 
   private:
-    // consumes RC mana from payer account (or throws exception if not enough), supplements tx_info with RC mana
-    void use_account_rcs( int64_t rc );
+    // consumes RC mana from payer account (or throws exception if not enough), supplements tx_info with RC mana, returns true for high priority op
+    bool use_account_rcs( int64_t rc );
 
     // registers evaluator for custom rc operations
     void initialize_evaluators();
