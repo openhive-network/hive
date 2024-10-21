@@ -72,13 +72,14 @@ struct pending_transactions_restorer
   ~pending_transactions_restorer()
   {
     auto head_block_time = _db.head_block_time();
-    if( _db._pending_tx.size() > 0 )
+    if( _db._pending_tx.size() > 0 || _db._pending_tx_size > 0 )
     {
-      elog( "NOTIFYALERT! ${x} transactions in pending when there should be none (example tx: ${tx})",
-        ( "x", _db._pending_tx.size() )( "tx", _db._pending_tx.front()->get_transaction() ) );
+      elog( "NOTIFYALERT! ${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
+        ( "x", _db._pending_tx.size() )( "s", _db._pending_tx_size )( "tx", _db._pending_tx.front()->get_transaction() ) );
+      _db._pending_tx.clear();
+      _db._pending_tx_size = 0;
     }
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
-    _db._pending_tx_size = 0;
 
     auto start = fc::time_point::now();
 #if !defined IS_TEST_NET
@@ -223,6 +224,7 @@ void without_pending_transactions(database& db,
                                   const block_flow_control& block_ctrl,
                                   Lambda callback)
 {
+  db._pending_tx_size = 0;
   pending_transactions_restorer restorer( db, block_ctrl, std::move( db._pending_tx ) );
   callback();
 }
