@@ -880,7 +880,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
       try
       {
         hive::chain::detail::without_pending_transactions( db, existing_block_flow_control( new_head_block ),
-          std::move( db._pending_tx ), [&]() {
+          [&]() {
             try
             {
               const block_id_type& new_head_block_id = new_head_block->get_block_id();
@@ -986,7 +986,7 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
   bool result;
   hive::chain::detail::with_skip_flags( db, skip, [&]()
   {
-    hive::chain::detail::without_pending_transactions( db, block_ctrl, std::move(db._pending_tx), [&]()
+    hive::chain::detail::without_pending_transactions( db, block_ctrl, [&]()
     {
       try
       {
