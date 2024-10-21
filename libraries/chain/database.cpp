@@ -743,8 +743,17 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
 
   auto temp_session = start_undo_session();
   _apply_transaction(full_transaction);
-  _pending_tx.push_back(full_transaction);
-  _pending_tx_size += full_transaction->get_transaction_size();
+  if( full_transaction->check_privilege() && is_validating_one_tx() )
+  {
+    // reuse mechanism used for forks to make sure privileged transaction gets rewritten to the start
+    // of pendling list and therefore won't be delayed indefinitely by the transaction flood
+    _popped_tx.emplace_front( full_transaction );
+  }
+  else
+  {
+    _pending_tx.push_back( full_transaction );
+    _pending_tx_size += full_transaction->get_transaction_size();
+  }
 
   // The transaction applied successfully. Merge its changes into the pending block session.
   temp_session.squash();

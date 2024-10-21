@@ -457,14 +457,14 @@ void resource_credits::update_rc_for_custom_action( std::function<void()>&& call
   update_account_after_vest_change( account, now );
 }
 
-void resource_credits::use_account_rcs( int64_t rc )
+bool resource_credits::use_account_rcs( int64_t rc )
 {
   const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
   {
     if( db.is_in_control() )
       HIVE_ASSERT( false, plugin_exception, "Tried to execute transaction with no resource user", );
-    return;
+    return false;
   }
 
   const account_object& account = db.get_account( account_name );
@@ -476,10 +476,10 @@ void resource_credits::use_account_rcs( int64_t rc )
   tx_info.max = max_mana;
   tx_info.rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
+  bool is_privileged = false;
 
   try
   {
-
     db.modify( account, [&]( account_object& acc )
     {
       acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
@@ -490,11 +490,32 @@ void resource_credits::use_account_rcs( int64_t rc )
         uint64_t blocks_in_mempool = db._pending_tx_size / dgpo.maximum_block_size;
         if( blocks_in_mempool > flood_level )
         {
-          uint128_t sc = ( blocks_in_mempool - flood_level ) * flood_surcharge;
-          sc *= rc;
-          sc /= HIVE_100_PERCENT;
-          FC_ASSERT( sc <= static_cast< uint64_t >( std::numeric_limits<int64_t>::max() - rc ) );
-          surcharge = static_cast< int64_t >( sc );
+          // check if transaction might be privileged - top witness transaction containing only
+          // one witness related operation is privileged because its execution might fix flood problem
+          // and is at the very least important for chain to function properly
+          if( tx_info.op.valid() )
+          {
+            auto op = tx_info.op.value();
+            switch( op )
+            {
+              case operation::tag<feed_publish_operation>::value:
+              case operation::tag<witness_update_operation>::value:
+              case operation::tag<witness_set_properties_operation>::value:
+              {
+                const auto* witness = db.find_witness( tx_info.payer );
+                is_privileged = ( witness != nullptr ) && ( witness->schedule == witness_object::elected );
+              } break;
+            }
+          }
+
+          if( !is_privileged )
+          {
+            uint128_t sc = ( blocks_in_mempool - flood_level ) * flood_surcharge;
+            sc *= rc;
+            sc /= HIVE_100_PERCENT;
+            FC_ASSERT( sc <= static_cast< uint64_t >( std::numeric_limits<int64_t>::max() - rc ) );
+            surcharge = static_cast< int64_t >( sc );
+          }
         }
       }
       bool has_mana = acc.rc_manabar.has_mana( rc + surcharge );
@@ -547,6 +568,7 @@ void resource_credits::use_account_rcs( int64_t rc )
       tx_info.rc = acc.rc_manabar.current_mana;
     } );
   } FC_CAPTURE_AND_RETHROW( (tx_info) )
+  return is_privileged;
 }
 
 bool resource_credits::has_expired_delegation( const account_object& account ) const
@@ -775,7 +797,8 @@ void resource_credits::finalize_transaction( const full_transaction_type& full_t
 
   // note: since transaction can influence amount of RC the payer has, we can't check if the payer has
   // enough RC mana prior to actual execution of transaction
-  use_account_rcs( total_cost );
+  if( use_account_rcs( total_cost ) )
+    full_tx.set_privilege();
 
   if( db.is_validating_block() || db.is_replaying_block() )
   {
