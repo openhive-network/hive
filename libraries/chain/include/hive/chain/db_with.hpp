@@ -221,12 +221,10 @@ struct pending_transactions_restorer
 template<typename Lambda>
 void without_pending_transactions(database& db,
                                   const block_flow_control& block_ctrl,
-                                  std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions,
                                   Lambda callback)
 {
-    pending_transactions_restorer restorer( db, block_ctrl, std::move(pending_transactions) );
-    callback();
-    return;
+  pending_transactions_restorer restorer( db, block_ctrl, std::move( db._pending_tx ) );
+  callback();
 }
 
 } } } // hive::chain::detail
