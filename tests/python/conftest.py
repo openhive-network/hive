@@ -5,6 +5,7 @@ import operator
 from typing import TYPE_CHECKING, NoReturn
 
 import pytest
+from loguru import logger
 
 import test_tools as tt
 from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
@@ -15,6 +16,11 @@ if TYPE_CHECKING:
 
 def pytest_addoption(parser: pytest.Parser):
     parser.addoption("--http-endpoint", action="store", type=str, help="specifies http_endpoint of reference node")
+
+
+@pytest.fixture(autouse=True)
+def _disable_logging() -> None:
+    logger.disable("helpy")
 
 
 @pytest.fixture()
