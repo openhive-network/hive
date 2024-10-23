@@ -41,7 +41,12 @@ def block_range(request):
 
 
 def compare(ref_node: tt.RemoteNode, test_node: tt.RemoteNode, foo: Callable):
-    assert foo(ref_node) == foo(test_node)
+    ref_out = foo(ref_node).json(sort_keys=True)
+    test_out = foo(test_node).json(sort_keys=True)
+    if ref_out != test_out:
+        tt.logger.error(f"{ref_out=}")
+        tt.logger.error(f"{test_out=}")
+        pytest.fail("ref_out != test_out")
 
 
 def test_get_transactions(ref_node: tt.RemoteNode, test_node: tt.RemoteNode, transactions: list):
