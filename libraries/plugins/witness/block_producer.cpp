@@ -149,7 +149,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
     // Only include transactions that have not expired yet for currently generating block,
     // this should clear problem transactions and allow block production to continue
-    if( full_transaction->get_runtime_expiration( _db.has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) ) < when )
+    if( full_transaction->get_runtime_expiration() < when )
     {
       ++failed_tx_count;
       continue;

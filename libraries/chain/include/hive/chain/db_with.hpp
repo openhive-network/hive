@@ -108,7 +108,7 @@ struct pending_transactions_restorer
         const signed_transaction& tx = full_transaction->get_transaction();
         try
         {
-          if( full_transaction->get_runtime_expiration( _db.has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) ) <= head_block_time )
+          if( full_transaction->get_runtime_expiration() <= head_block_time )
           {
             ++expired_txs;
           }

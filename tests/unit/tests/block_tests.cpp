@@ -344,6 +344,19 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
     db1.get_index< account_index >();
 
+    {
+      //Generate an empty block, because `runtime_expiration` for every transaction is set only when `head_block_num() > 0`
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin1, b );
+    }
+    {
+      //Generate an empty block, because `runtime_expiration` for every transaction is set only when `head_block_num() > 0`
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin2, b );
+    }
+
     //*
     signed_transaction trx;
     account_create_operation cop;
@@ -753,6 +766,13 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
+
+    {
+      //Generate an empty block, because `runtime_expiration` for every transaction is set only when `head_block_num() > 0`
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+        init_account_priv_key, skip_sigs );
+      PUSH_BLOCK( chain_plugin2, b, skip_sigs );
+    }
 
     signed_transaction trx;
     account_create_operation cop;
