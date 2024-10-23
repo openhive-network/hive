@@ -700,7 +700,6 @@ message_format_testnet_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 25
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     NODE_TYPE: "testnet"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
   script:

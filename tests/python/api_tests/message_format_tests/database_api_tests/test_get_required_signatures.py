@@ -6,7 +6,7 @@ from hive_local_tools import run_for
 
 @run_for("testnet")
 def test_get_required_signatures_in_testnet(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     keys = node.api.database.get_required_signatures(
         trx=transaction, available_keys=[tt.Account("initminer").public_key]
