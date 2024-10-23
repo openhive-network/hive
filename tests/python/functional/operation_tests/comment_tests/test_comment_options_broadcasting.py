@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import test_tools as tt
+from test_tools.__private.wallet.constants import SimpleTransaction
 
 
 def test_nai_format_comment_options_with_beneficiaries(node):
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
@@ -41,7 +42,7 @@ def test_nai_format_comment_options_with_beneficiaries(node):
         "signatures": [],
     }
 
-    transaction = wallet.api.sign_transaction(trx, broadcast=False)
+    transaction = wallet.api.sign_transaction(SimpleTransaction(**trx), broadcast=False)
     node.api.wallet_bridge.broadcast_transaction(transaction)
 
 

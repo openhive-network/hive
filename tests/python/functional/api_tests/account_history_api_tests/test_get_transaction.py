@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from json import dumps
-
 import pytest
 
 import test_tools as tt
@@ -17,16 +15,16 @@ from hive_local_tools import run_for
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversible: bool) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.create_account("alice")
     if not include_reversible:
         node.wait_for_irreversible_block()
     # delete one additional key to compare transactions
-    del transaction["rc_cost"]
+    del transaction.rc_cost
     response = node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=include_reversible
     )
-    assert response.json(by_alias=True, sort_keys=True) == dumps(transaction, sort_keys=True)
+    assert transaction == response
 
 
 @pytest.mark.parametrize(
