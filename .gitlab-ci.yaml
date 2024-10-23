@@ -424,9 +424,12 @@ plugin_test:
   - name: $TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE
     alias: test-block-log-server
 
-.universal-block-log-service: &universal-block-log-service
-  - name: $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
-    alias: universal-block-log-server
+.universal-block-log-service:
+  variables:
+    UNIVERSAL_BLOCK_LOG_SERVER: "http://universal-block-log-server:80"
+  services:
+    - name: $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
+      alias: universal-block-log-server
 
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
@@ -1237,24 +1240,36 @@ generate_universal_block_logs_and_save_image:
   - public-runner-docker
   - hived-for-tests
 
+.fetch_universal_block_logs:
+  # Usage:
+  # 1. Add - !reference [.fetch_universal_block_logs, script] at the beginning of your test script section.
+  # 2. Set the appropriate values for:
+  #    - UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE (required, should be set in universal_block_log_image_generator.sh)
+  #    - UNIVERSAL_BLOCK_LOG_SERVER (required, should be set in .universal-block-log-service)
+  #    - UNIVERSAL_BLOCK_LOGS_DESTINATION (required, should be set in test job)
+  script:
+    - |
+      test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
+      test -n "$UNIVERSAL_BLOCK_LOG_SERVER"
+      test -n "$UNIVERSAL_BLOCK_LOGS_DESTINATION"
+      curl -I $UNIVERSAL_BLOCK_LOG_SERVER || (echo "error connecting to service universal-block-log-server" && false)
+      wget -q -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 $UNIVERSAL_BLOCK_LOG_SERVER/universal_block_logs/
+
 universal_block_log_tests:
   stage: test
-  extends: .test_tools_based
+  extends:
+    - .test_tools_based
+    - .universal-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
     - job: generate_universal_block_logs_and_save_image
       artifacts: true
   variables:
-    NODE_ADDRESS: "universal-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
     UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
-  services:
-    - *universal-block-log-service
   script:
-    - test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service universal-block-log-server" && false)
-    - wget -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 universal-block-log-server:80/universal_block_logs/
+    - !reference [.fetch_universal_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
     - !reference [.run-pytest, script]
   tags:
@@ -1262,21 +1277,18 @@ universal_block_log_tests:
 
 colony_tests:
   stage: test
-  extends: .test_tools_based
+  extends:
+    - .test_tools_based
+    - .universal-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
     - job: generate_universal_block_logs_and_save_image
   variables:
-    NODE_ADDRESS: "universal-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 10
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
     UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
-  services:
-    - *universal-block-log-service
   script:
-    - test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service universal-block-log-server" && false)
-    - wget -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 universal-block-log-server:80/universal_block_logs/
+    - !reference [.fetch_universal_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
   tags:
