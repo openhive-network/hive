@@ -41,11 +41,18 @@ def block_range(request):
 
 
 def compare(ref_node: tt.RemoteNode, test_node: tt.RemoteNode, foo: Callable):
-    ref_out = foo(ref_node).json(sort_keys=True)
-    test_out = foo(test_node).json(sort_keys=True)
+    ref_out = foo(ref_node)
+    test_out = foo(test_node)
     if ref_out != test_out:
-        tt.logger.error(f"{ref_out=}")
-        tt.logger.error(f"{test_out=}")
+        ref_out_json = ref_out.json()
+        test_out_json = test_out.json()
+        if ref_out_json != test_out_json:
+            tt.logger.warning("models and jsons are different")
+        else:
+            tt.logger.warning("only models are different, jsons are same")
+
+        tt.logger.error(ref_out_json)
+        tt.logger.error(test_out_json)
         pytest.fail("ref_out != test_out")
 
 
