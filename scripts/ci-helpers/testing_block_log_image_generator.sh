@@ -64,5 +64,5 @@ EOF
   echo "Created and push docker image with testing block logs: $img"
 fi
 
-echo "TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > "$CI_PROJECT_DIR/testing_block_log_latest_version.env"
-echo "TESTING_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > "$CI_PROJECT_DIR/testing_block_log_latest_commit_short_sha.env"
+echo "TEST_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/testing_block_log_latest_version.env
+echo "TEST_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/testing_block_log_latest_commit_short_sha.env
