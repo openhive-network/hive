@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
               if( msg_duplicate )
                 BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
               else
-                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= _max_runtime_expiration" )  != std::string::npos );
+                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION)" )  != std::string::npos );
             }
           };
 
