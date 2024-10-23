@@ -27,7 +27,7 @@ class PowerDown(Operation):
         self._transaction = self._wallet.api.withdraw_vesting(self._name, self._total_power_down_vesting_shares)
         self._timestamp = get_transaction_timestamp(node, self._transaction)
         self._rc_cost = self._transaction["rc_cost"]
-        self._vests_to_power_down = tt.Asset.from_legacy(self._transaction["operations"][0][1]["vesting_shares"])
+        self._vests_to_power_down = self._transaction.operations[0].value.vesting_shares
 
         self._weekly_vest_reduction = tt.Asset.Vest(
             (int(self._vests_to_power_down.amount) / VESTING_WITHDRAW_INTERVALS) / 1000000
