@@ -50,15 +50,17 @@ class CreateClaimedAccount(Operation):
         public_key = tt.Account(new_account_name).public_key
         return create_transaction_with_any_operation(
             self._wallet,
-            CreateClaimedAccountOperation(
-                creator=creator,
-                new_account_name=new_account_name,
-                owner=basic_authority(public_key),
-                active=basic_authority(public_key),
-                posting=basic_authority(public_key),
-                memo_key=public_key,
-                json_metadata="{}",
-            ),
+            [
+                CreateClaimedAccountOperation(
+                    creator=creator,
+                    new_account_name=new_account_name,
+                    owner=basic_authority(public_key),
+                    active=basic_authority(public_key),
+                    posting=basic_authority(public_key),
+                    memo_key=public_key,
+                    json_metadata="{}",
+                )
+            ],
             broadcast=True,
         )
 

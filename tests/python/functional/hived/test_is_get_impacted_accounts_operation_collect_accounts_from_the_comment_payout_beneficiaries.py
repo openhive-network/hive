@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import test_tools as tt
 from hive_local_tools import run_for
+from test_tools.__private.wallet.constants import SimpleTransaction
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
@@ -16,40 +17,39 @@ def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_pa
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
+
     transaction = {
         "ref_block_num": 34005,
         "ref_block_prefix": 3818165156,
         "expiration": "2022-07-04T12:16:06",
         "operations": [
-            [
-                "comment_options",
-                {
+            {
+                "type": "comment_options_operation",
+                "value": {
                     "author": "initminer",
                     "permlink": "test-post",
-                    "max_accepted_payout": "1000000.000 TBD",
+                    "max_accepted_payout": {"amount": "100000000", "precision": 3, "nai": "@@000000013"},
                     "percent_hbd": 10000,
                     "allow_votes": True,
                     "allow_curation_rewards": True,
                     "extensions": [
-                        [
-                            "comment_payout_beneficiaries",
-                            {
+                        {
+                            "type": "comment_payout_beneficiaries",
+                            "value": {
                                 "beneficiaries": [
                                     {"account": "alice", "weight": 100},
                                 ]
                             },
-                        ]
+                        }
                     ],
                 },
-            ]
+            },
         ],
         "extensions": [],
         "signatures": [],
-        "transaction_id": "9c8455cdf0e3ab1ab9a54ce3301848fed27bc820",
-        "block_num": 0,
-        "transaction_num": 0,
     }
-    wallet.api.sign_transaction(transaction)
+
+    wallet.api.sign_transaction(SimpleTransaction(**transaction))
     node.wait_for_irreversible_block()
 
     alice_account_history = wallet.api.get_account_history("alice", -1, 100)

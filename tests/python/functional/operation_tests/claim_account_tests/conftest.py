@@ -34,7 +34,7 @@ def node(request, fee: tt.Asset.TestT) -> tt.InitNode:
     wallet = tt.Wallet(attach_to=init_node)
 
     if fee > tt.Asset.Test(0):
-        for witness in wallet.api.list_witnesses("", 100):
+        for witness in wallet.api.list_witnesses("", 100, only_names=True):
             wallet.api.update_witness(
                 witness,
                 "https://" + witness,
@@ -64,8 +64,6 @@ def alice(node: tt.InitNode, wallet: tt.Wallet) -> Account:
 @pytest.fixture()
 def wallet_alice(node: tt.InitNode) -> tt.Wallet:
     wallet = tt.Wallet(attach_to=node, preconfigure=False)
-    wallet.api.set_password(wallet.DEFAULT_PASSWORD)
-    wallet.api.unlock(wallet.DEFAULT_PASSWORD)
     wallet.api.import_key(tt.Account("alice").private_key)
     assert len(wallet.api.list_keys()) == 1, "Incorrect number of imported keys."
     return wallet

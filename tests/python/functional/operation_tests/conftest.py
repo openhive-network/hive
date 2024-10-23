@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
 import test_tools as tt
+import wax
 from hive_local_tools.constants import (
     HIVE_100_PERCENT,
     HIVE_COLLATERALIZED_CONVERSION_FEE,
@@ -25,7 +24,7 @@ from schemas.fields.compound import Authority, HbdExchangeRate
 from schemas.operations.account_update2_operation import AccountUpdate2Operation
 from schemas.operations.account_update_operation import AccountUpdateOperation
 from schemas.operations.limit_order_create2_operation import (
-    LimitOrderCreate2OperationLegacy,
+    LimitOrderCreate2Operation,
 )
 from schemas.operations.virtual.collateralized_convert_immediate_conversion_operation import (
     CollateralizedConvertImmediateConversionOperation,
@@ -196,7 +195,7 @@ class ConvertAccount(Account):
         # get amount to convert from transaction
         for operation in ops_in_transaction:
             if operation[0] == "convert" or operation[0] == "collateralized_convert":
-                to_convert = tt.Asset.from_legacy(operation[1]["amount"])
+                to_convert = operation[1]["amount"]
         assert (
             "to_convert" in locals()
         ), "Convert or collateralized_convert operation wasn't found in given transaction."
@@ -249,10 +248,11 @@ class EscrowAccount(Account):
         for op in ops:
             if op[0] == "escrow_transfer" or op[0] == "escrow_release":
                 trx_value = op[1]
-                fee = tt.Asset.from_legacy(trx_value["fee"]) if op[0] == "escrow_transfer" else tt.Asset.Tbd(0)
-                hbd_amount = tt.Asset.from_legacy(trx_value["hbd_amount"])
-                hive_amount = tt.Asset.from_legacy(trx_value["hive_amount"])
+                fee = trx_value["fee"] if op[0] == "escrow_transfer" else tt.Asset.Tbd(0)
+                hbd_amount = trx_value["hbd_amount"]
+                hive_amount = trx_value["hive_amount"]
                 return fee, hbd_amount, hive_amount
+
         return None
 
 
@@ -345,17 +345,19 @@ class LimitOrderAccount(Account):
 
         return create_transaction_with_any_operation(
             self._wallet,
-            LimitOrderCreate2OperationLegacy(
-                owner=self._name,
-                orderid=order_id,
-                amount_to_sell=base(amount_to_sell).as_legacy(),
-                exchange_rate=HbdExchangeRate(
-                    base=base(amount_to_sell).as_legacy(),
-                    quote=quote(min_to_receive).as_legacy(),
-                ),
-                fill_or_kill=fill_or_kill,
-                expiration=expiration_time,
-            ),
+            [
+                LimitOrderCreate2Operation(
+                    owner=self._name,
+                    orderid=order_id,
+                    amount_to_sell=base(amount_to_sell).as_nai(),
+                    exchange_rate=HbdExchangeRate(
+                        base=base(amount_to_sell).as_nai(),
+                        quote=quote(min_to_receive).as_nai(),
+                    ),
+                    fill_or_kill=fill_or_kill,
+                    expiration=expiration_time,
+                )
+            ],
         )
 
 
@@ -564,12 +566,12 @@ class UpdateAccount(Account):
         self,
         *,
         use_account_update2: bool = False,
-        json_metadata: str | None = None,
+        json_metadata: str = "",
         owner: str | None = None,
         active: str | None = None,
         posting: str | None = None,
         memo_key: str | None = None,
-        posting_json_metadata: str | None = None,
+        posting_json_metadata: str = "",
     ) -> dict:
         arguments = locals()
         to_pass = {
@@ -577,8 +579,12 @@ class UpdateAccount(Account):
             for element in arguments
             if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
         }
+        if use_account_update2 is False:
+            to_pass.pop("posting_json_metadata")
+        if memo_key is None and posting_json_metadata == "":
+            to_pass["memo_key"] = self._wallet.api.get_account(self.name).memo_key
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
-        return create_transaction_with_any_operation(self._wallet, operation(account=self.name, **to_pass))
+        return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 
     def update_single_account_detail(
         self,
@@ -738,18 +744,29 @@ class WitnessAccount(Account):
           Additionally public key (mandatory for changing any property)
           More details: https://gitlab.syncad.com/hive/hive/-/blob/master/doc/witness_parameters.md?ref_type=heads
         """
-        serialized_props = json.loads(
-            subprocess.check_output(
-                [os.environ["SERIALIZE_SET_PROPERTIES_PATH"]], input=f"{json.dumps(props_to_serialize)}".encode()
-            ).decode("utf-8")
+        if "account_creation_fee" in props_to_serialize:
+            props_to_serialize["account_creation_fee"] = wax.python_json_asset(
+                **props_to_serialize["account_creation_fee"]
+            )
+        if "hbd_exchange_rate" in props_to_serialize:
+            props_to_serialize["hbd_exchange_rate"] = wax.python_price(
+                base=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["base"]),
+                quote=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["quote"]),
+            )
+
+        serialized_props = wax.serialize_witness_set_properties(
+            wax.python_witness_set_properties_data(**props_to_serialize)
         )
+        serialized_props = [[key.decode("utf-8"), value.decode("utf-8")] for key, value in serialized_props.items()]
+
         return create_transaction_with_any_operation(
-            self._wallet, WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)
+            wallet=self._wallet,
+            operations=[WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)],
         )
 
     def witness_block_approve(self, *, block_id: int) -> dict:
         return create_transaction_with_any_operation(
-            self._wallet, WitnessBlockApproveOperation(witness=self._name, block_id=block_id)
+            self._wallet, [WitnessBlockApproveOperation(witness=self._name, block_id=block_id)]
         )
 
 

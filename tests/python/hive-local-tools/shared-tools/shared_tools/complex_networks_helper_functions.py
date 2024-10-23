@@ -23,8 +23,8 @@ def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     return count
 
 
-def check_account_history_duplicates(node, wallet):
-    last_irreversible_block = wallet.api.info()["last_irreversible_block_num"]
+def check_account_history_duplicates(node: tt.AnyNode):
+    last_irreversible_block = node.api.wallet_bridge.get_dynamic_global_properties().last_irreversible_block_num
     node_reward_operations = count_ops_by_type(node, "producer_reward_operation", last_irreversible_block, limit=50)
     assert sum(i == 1 for i in node_reward_operations.values()) == 50
 
@@ -32,12 +32,10 @@ def check_account_history_duplicates(node, wallet):
 def assert_no_duplicates(node, *nodes):
     _nodes = [node, *nodes]
     for _node in _nodes:
-        wallet = tt.Wallet(attach_to=_node)
-        check_account_history_duplicates(_node, wallet)
+        check_account_history_duplicates(_node)
     _node.wait_number_of_blocks(10)
     for _node in _nodes:
-        wallet = tt.Wallet(attach_to=_node)
-        check_account_history_duplicates(_node, wallet)
+        check_account_history_duplicates(_node)
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
@@ -78,7 +76,7 @@ def enable_witnesses(wallet: tt.Wallet, witness_details: list):
                 name,
                 "https://" + name,
                 tt.Account(name).public_key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "hbd_interest_rate": 0},
             )
 
 
@@ -90,7 +88,7 @@ def disable_witnesses(wallet: tt.Wallet, witness_details: list):
                 name,
                 "https://" + name,
                 key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "hbd_interest_rate": 0},
             )
 
 
@@ -116,11 +114,17 @@ def get_part_of_witness_details(witness_details: list, start, length: int):
     return new_witness_details
 
 
-def info(msg: str, wallet: tt.Wallet):
-    info = wallet.api.info()
-    hb = info["head_block_number"]
-    lib = info["last_irreversible_block_num"]
-    current_witness = info["current_witness"]
+def info(msg: str, wallet: tt.OldWallet | tt.Wallet):
+    if isinstance(wallet, tt.OldWallet):
+        info = wallet.api.info()
+        hb = info["head_block_number"]
+        lib = info["last_irreversible_block_num"]
+        current_witness = info["current_witness"]
+    else:
+        gdpo = wallet.connected_node.api.wallet_bridge.get_dynamic_global_properties()
+        hb = gdpo.head_block_number
+        lib = gdpo.last_irreversible_block_num
+        current_witness = gdpo.current_witness
     tt.logger.info(f"network: '{msg}' head: {hb} lib: {lib} current witness: {current_witness}")
     return hb, lib
 
@@ -238,12 +242,12 @@ def wait_for_specific_witnesses(node, logs, witness_name_patterns):
             tt.logger.info("Witnesses patterns can't be processed in the same schedule. Still waiting...")
 
 
-def display_info(wallet):
+def display_info(node):
     # Network should be set up at this time, with 21 active witnesses, enough participation rate
     # and irreversible block number lagging behind around 15-20 blocks head block number
-    result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
+    gdpo = node.api.wallet_bridge.get_dynamic_global_properties()
+    irreversible = gdpo.last_irreversible_block_num
+    head = gdpo.head_block_number
     tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
 

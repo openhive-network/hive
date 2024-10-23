@@ -7,7 +7,6 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
-    convert_from_mainnet_to_testnet_asset,
     get_reward_hbd_balance,
     get_reward_hive_balance,
     get_reward_vesting_balance,
@@ -63,7 +62,6 @@ def prepare_account_with_reward_balance(
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
     node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
-
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 1, 4)
 
@@ -117,7 +115,7 @@ def test_claim_all_calculated_reward(node: tt.InitNode, wallet: tt.Wallet, verif
 
     rewards = {}
     for reward_mode in verifying_reward_asset:
-        rewards[reward_mode] = convert_from_mainnet_to_testnet_asset(account.get_reward_balance(reward_mode))
+        rewards[reward_mode] = account.get_reward_balance(reward_mode)
 
     account.claim_reward_balance(**rewards)
 
