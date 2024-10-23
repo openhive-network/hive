@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from helpy import wax as wax_helpy
+
 import test_tools as tt
 from hive_local_tools import run_for
-from hive_local_tools.api.message_format.database_api import generate_sig_digest
 
 
 # verify_signatures tests cannot be performed on 5 million and live_mainnet. Generate_sig_digest function requires
@@ -10,9 +11,11 @@ from hive_local_tools.api.message_format.database_api import generate_sig_digest
 # is its owner.
 @run_for("testnet")
 def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
-    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
-    sig_digest = generate_sig_digest(transaction, tt.Account("initminer").private_key)
+    node_config = node.api.database.get_config()
+    sig_digest = wax_helpy.calculate_sig_digest(transaction, node_config.HIVE_CHAIN_ID)
+
     node.api.database.verify_signatures(
         hash=sig_digest,
         signatures=transaction["signatures"],
