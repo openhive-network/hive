@@ -8,22 +8,22 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional import connect_nodes
+from test_tools.__private.process.node_arguments import NodeArguments
+from test_tools.__private.process.node_config import NodeConfig
 
 
 def test_dump_config() -> None:
     node = tt.InitNode()
-    old_config = node.config.json(exclude={"notifications_endpoint"})
     node.run()
     node.wait_number_of_blocks(2)
     node.close()
-    node.dump_config()
-    assert node.config.json(exclude={"notifications_endpoint"}) == old_config
+    assert node.dump_config().json() == NodeConfig().json()
 
 
 @pytest.mark.parametrize(
     "way_to_stop",
     [
-        {"arguments": ["--exit-before-sync"]},
+        {"arguments": NodeArguments(exit_before_sync=True)},
         {"exit_before_synchronization": True},
     ],
 )
@@ -49,7 +49,7 @@ def test_stop_after_replay(way_to_stop: dict[str, Any], block_log: Path, block_l
 @pytest.mark.parametrize(
     "way_to_stop",
     [
-        {"arguments": ["--exit-before-sync"]},
+        {"arguments": NodeArguments(exit_before_sync=True)},
         {"exit_before_synchronization": True},
     ],
 )
@@ -135,6 +135,7 @@ def test_stop_live_mode_at_given_block() -> None:
     network = tt.Network()
     init_node = tt.InitNode(network=network)
     api_node = tt.ApiNode(network=network)
+    api_node.set_cleanup_policy(tt.constants.CleanupPolicy.DO_NOT_REMOVE_FILES)
     init_node.run()
     connect_nodes(init_node, api_node)
     api_node.run(stop_at_block=15)

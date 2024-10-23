@@ -916,7 +916,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
                 [&] ( const block_id_type end_block ) -> uint32_t
                   { return db.pop_block_extended( end_block ); }
                 );
-              theApp.status.save_information("switching_forks", "id", new_head_block_id.str(), "num", new_head_block_num);
+              theApp.status.save_fork(new_head_block_num, new_head_block_id.str());
 
               // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
               // on the new fork, so we don't need to mark the block as irreversible here

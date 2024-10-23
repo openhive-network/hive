@@ -89,12 +89,26 @@ private:
   }
 };
 
+struct fork_item : public collectable_item
+{
+  using block_num_t = uint32_t;
+  using block_id_t = fc::string;
+
+  block_num_t new_head_block_num;
+  block_id_t new_head_block_id;
+
+  fork_item(const block_num_t block_num, const block_id_t& block_id)
+    :new_head_block_num{block_num}, new_head_block_id{block_id}
+  {}
+};
+
 struct statuses
 {
   collectable_item::timestamp_t last_update{ fc::time_point::now() };
   std::map<information_item::key_t, information_item::value_t> records{};
   std::map<webserver_item::webserver_type_t, webserver_item> webservers{};
   std::vector<status_item> statuses{};
+  std::vector<fork_item> forks{};
 };
 
 struct threadsafe_statuses
@@ -123,12 +137,20 @@ struct threadsafe_statuses
     safely_update(statuses_mtx, [&](){ this->data.statuses.emplace_back(item); });
   }
 
+  void update(const fork_item& item)
+  {
+    std::shared_lock<std::shared_mutex> _{read_mtx};
+    update_last_update(item);
+    safely_update(forks_mtx, [&](){ this->data.forks.emplace_back(item); });
+  }
+
 private:
 
   std::mutex last_update_mtx;
   std::mutex records_mtx;
   std::mutex webservers_mtx;
   std::mutex statuses_mtx;
+  std::mutex forks_mtx;
 
   void update_last_update(const collectable_item& item)
   {
@@ -147,16 +169,19 @@ struct statuses_signal_manager
   using new_webserver_handler_t = std::function<void(const webserver_item&)>;
   using new_status_handler_t = std::function<void(const status_item&)>;
   using new_information_handler_t = std::function<void(const information_item&)>;
+  using new_fork_handler_t = std::function<void(const fork_item&)>;
 
   using new_webserver_signal_t = boost::signals2::signal<void(const webserver_item&)>;
   using new_status_signal_t = boost::signals2::signal<void(const status_item&)>;
   using new_information_signal_t = boost::signals2::signal<void(const information_item&)>;
+  using new_fork_signal_t = boost::signals2::signal<void(const fork_item&)>;
 
   using connection_t = boost::signals2::connection;
 
   connection_t add_new_webserver_handler( const new_webserver_handler_t& func ) { return new_webserver_signal.connect(func); }
   connection_t add_new_status_handler( const new_status_handler_t& func ) { return new_status_signal.connect(func); }
   connection_t add_new_information_handler( const new_information_handler_t& func ) { return new_information_signal.connect(func); }
+  connection_t add_new_fork_handler( const new_fork_handler_t& func ) { return new_fork_signal.connect(func); }
 
   void save_webserver(const webserver_item::webserver_type_t& type, const webserver_item::address_t& address, const webserver_item::port_t port) const
   {
@@ -177,11 +202,18 @@ struct statuses_signal_manager
       new_information_signal(information_item(name, std::forward<KeyValuesTypes>(values)...));
   }
 
+  void save_fork(const fork_item::block_num_t block_num, const fork_item::block_id_t& block_id) const
+  {
+    if(!new_fork_signal.empty())
+      new_fork_signal(fork_item{block_num, block_id});
+  }
+
 private:
 
   new_webserver_signal_t new_webserver_signal{};
   new_status_signal_t new_status_signal{};
   new_information_signal_t new_information_signal{};
+  new_fork_signal_t new_fork_signal{};
 
 };
 
@@ -193,4 +225,5 @@ private:
 FC_REFLECT(hive::utilities::collectable_item, (timestamp));
 FC_REFLECT_DERIVED(hive::utilities::status_item, (hive::utilities::collectable_item), (status));
 FC_REFLECT_DERIVED(hive::utilities::webserver_item, (hive::utilities::collectable_item), (address)(port));
-FC_REFLECT(hive::utilities::statuses, (last_update)(records)(statuses)(webservers));
+FC_REFLECT_DERIVED(hive::utilities::fork_item, (hive::utilities::collectable_item), (new_head_block_num)(new_head_block_id));
+FC_REFLECT(hive::utilities::statuses, (last_update)(records)(statuses)(webservers)(forks));
