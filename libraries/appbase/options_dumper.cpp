@@ -65,7 +65,7 @@ void handle_type( options_dumper::value_info& val_info, const boost::program_opt
   val_info.default_value  = get_default_value<T>( _def_value_any );
 }
 
-void try_handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed )
+void try_handle_type( const std::string& name, options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed )
 {
   if( typed->value_type() == typeid(bool) )
     handle_type<bool>( val_info, typed, "bool" );
@@ -86,7 +86,17 @@ void try_handle_type( options_dumper::value_info& val_info, const boost::program
   else if( typed->value_type() == typeid(uint64_t) )
     handle_type<uint64_t>( val_info, typed, "ulong" );
   else if( typed->value_type() == typeid(std::string) )
-    handle_type<std::string>( val_info, typed, "string" );
+  {
+    /*
+      Explanation:
+        https://stackoverflow.com/questions/68716288/q-boost-program-options-using-stdfilesystempath-as-option-fails-when-the-gi
+
+      The option `wallet-dir` can't have `boost::filesystem::path` type, but finally we want to represent `wallet-dir` like a path.
+      Below code is a workaround of presented problem.
+    */
+    const std::string _fixed_name = "wallet-dir";
+    handle_type<std::string>( val_info, typed, name == _fixed_name ? "path" : "string" );
+  }
   else if( typed->value_type() == typeid(fc::string) )
     handle_type<fc::string>( val_info, typed, "string" );
   else if( typed->value_type() == typeid(boost::filesystem::path) )
@@ -100,7 +110,7 @@ void try_handle_type( options_dumper::value_info& val_info, const boost::program
 options_dumper::options_dumper(std::initializer_list<entry_t> entries) 
   : option_groups( std::move(entries) ) {}
 
-std::optional<options_dumper::value_info> options_dumper::get_value_info( const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const
+std::optional<options_dumper::value_info> options_dumper::get_value_info( const std::string& name, const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const
 {
   if( !semantic )
     return std::nullopt;
@@ -110,7 +120,7 @@ std::optional<options_dumper::value_info> options_dumper::get_value_info( const 
     return std::nullopt;
 
   value_info _info;
-  try_handle_type( _info, _typed );
+  try_handle_type( name, _info, _typed );
 
   return _info;
 }
@@ -121,7 +131,7 @@ options_dumper::option_entry options_dumper::serialize_option( const boost::prog
     {
       option.long_name(),
       option.description(),
-      get_value_info( option.semantic() ),
+      get_value_info( option.long_name(), option.semantic() ),
     } ;
 }
 
