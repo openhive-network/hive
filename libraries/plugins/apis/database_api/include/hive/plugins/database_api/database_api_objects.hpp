@@ -563,7 +563,7 @@ struct api_account_object
     if( delayed_votes_active )
       delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
 
-    post_voting_power = db.get_effective_vesting_shares(a, VESTS_SYMBOL);
+    post_voting_power = VEST_asset(a.get_effective_vesting_shares());
   }
 
   api_account_object(){}
