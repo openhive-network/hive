@@ -309,8 +309,6 @@ namespace chain {
       const comment_object& get_comment( const comment_cashout_object& comment_cashout ) const;
       void remove_old_cashouts();
 
-      asset get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const;
-
       void max_bandwidth_per_share()const;
 
       /**

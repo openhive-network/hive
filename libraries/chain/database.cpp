@@ -661,27 +661,6 @@ void database::remove_old_cashouts()
   }
 }
 
-asset database::get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const
-{
-  if( vested_symbol == VESTS_SYMBOL )
-    return asset( account.get_effective_vesting_shares( false ), VESTS_SYMBOL );
-
-#ifdef HIVE_ENABLE_SMT
-  FC_ASSERT( vested_symbol.space() == asset_symbol_type::smt_nai_space );
-  FC_ASSERT( vested_symbol.is_vesting() );
-
-FC_TODO( "Update the code below when delegation is modified to support SMTs." )
-  const account_regular_balance_object* bo = find< account_regular_balance_object, by_owner_liquid_symbol >(
-    boost::make_tuple( account.get_id(), vested_symbol.get_paired_symbol() ) );
-  if( bo == nullptr )
-    return asset( 0, vested_symbol );
-
-  return bo->vesting;
-#else
-  FC_ASSERT( false, "Invalid symbol" );
-#endif
-}
-
 uint32_t database::witness_participation_rate()const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
