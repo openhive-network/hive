@@ -4331,13 +4331,17 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
         HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
                     "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
 
-        if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
-          HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
-        else
-          HIVE_ASSERT(now <= trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
-
         full_transaction->set_runtime_expiration( trx.expiration );
       }
+    }
+
+    if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
+    {
+      HIVE_ASSERT(now < full_transaction->get_runtime_expiration(), transaction_expiration_exception, "", (now)(full_transaction->get_runtime_expiration()));
+    }
+    else
+    {
+      HIVE_ASSERT(now <= full_transaction->get_runtime_expiration(), transaction_expiration_exception, "", (now)(full_transaction->get_runtime_expiration()));
     }
 
     if (!(skip & skip_tapos_check))
