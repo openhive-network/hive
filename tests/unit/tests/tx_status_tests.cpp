@@ -683,7 +683,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     /*
-      Before `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` was introduced
+      Before `HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION` was introduced
         last transaction (from block 2) has its expiration too far into the future, so it fails prior to notification
       After:
         last transaction wasn't expired

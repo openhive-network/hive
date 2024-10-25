@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_00_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
     witness_basic();
   }
   FC_LOG_AND_RETHROW()
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
 
     initialize();
     bool test_passed = false;
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
         saved_block_num = current_block_num;
 
         schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_EXPIRATION );
-        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
         db->with_read_lock( [&]()
         {
@@ -391,7 +391,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
 
     initialize();
     bool test_passed = false;
@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
               if( msg_duplicate )
                 BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
               else
-                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION)" )  != std::string::npos );
+                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION)" )  != std::string::npos );
             }
           };
 
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
         }
 
         {
-          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+          _scheduling( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
           db->with_read_lock( [&]()
           {
             BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1002 );
@@ -475,7 +475,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
         }
 
         {
-          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION / 2 );
+          _scheduling( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION / 2 );
           db->with_read_lock( [&]()
           {
             BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1003 );
@@ -483,7 +483,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
         }
 
         {
-          _scheduling( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION + 1, false/*pass*/, false/*msg_duplicate*/ );
+          _scheduling( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION + 1, false/*pass*/, false/*msg_duplicate*/ );
           db->with_read_lock( [&]()
           {
             BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 1003 );
@@ -510,7 +510,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION;
+    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
 
     initialize();
     bool test_passed = false;
@@ -565,18 +565,18 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
         }
         {
           auto _trx_00 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 12 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 12 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
 
           auto _trx_01 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
 
           auto _trx_01_a = schedule_transfer( "alice", "bob", ASSET( "0.002 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
 
           auto _trx_02 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 4 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 4 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
 
-          schedule_blocks( HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION / HIVE_BLOCK_INTERVAL - 12 );
+          schedule_blocks( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION / HIVE_BLOCK_INTERVAL - 12 );
 
           bool _accept_transaction_passed = false;
           try

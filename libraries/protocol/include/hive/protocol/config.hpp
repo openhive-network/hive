@@ -231,7 +231,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_HARDFORK_REQUIRED_WITNESSES      17 // 17 of the 21 dpos witnesses (20 elected and 1 virtual time) required for hardfork. This guarantees 75% participation on all subsequent rounds.
 #define HIVE_MAX_TIME_UNTIL_EXPIRATION        (60*60) // seconds,  aka: 1 hour
-#define HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION (24*60*60) // seconds,  aka: 1 day
+#define HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION (24*60*60) // seconds,  aka: 1 day
 #define HIVE_MAX_MEMO_SIZE                    2048
 #define HIVE_MAX_PROXY_RECURSION_DEPTH        4
 #define HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 104

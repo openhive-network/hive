@@ -615,11 +615,11 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
       _op.memo = "";
 
       {
-        BOOST_TEST_MESSAGE( "0) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION`" );
+        BOOST_TEST_MESSAGE( "0) Test with expiration: `HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION`" );
 
         signed_transaction _trx;
         _trx.operations.push_back( _op );
-        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
         if( _statuses[_test_cnt] )
           executor->push_transaction( _trx, alice_private_key );
@@ -628,11 +628,11 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
         ++_test_cnt;
       }
       {
-        BOOST_TEST_MESSAGE( "1) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` - 1" );
+        BOOST_TEST_MESSAGE( "1) Test with expiration: `HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION` - 1" );
 
         signed_transaction _trx;
         _trx.operations.push_back( _op );
-        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION - 1 );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 1 );
 
         if( _statuses[_test_cnt] )
           executor->push_transaction( _trx, alice_private_key );
@@ -641,11 +641,11 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
         ++_test_cnt;
       }
       {
-        BOOST_TEST_MESSAGE( "2) Test with expiration: `HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION` + 1" );
+        BOOST_TEST_MESSAGE( "2) Test with expiration: `HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION` + 1" );
 
         signed_transaction _trx;
         _trx.operations.push_back( _op );
-        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION + 1 );
+        _trx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION + 1 );
 
         if( _statuses[_test_cnt] )
           executor->push_transaction( _trx, alice_private_key );

@@ -454,7 +454,7 @@ public:
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds, bool is_hive_hardfork_1_28 )
   {
-    FC_ASSERT( tx_expiration_seconds < ( is_hive_hardfork_1_28 ? HIVE_MAX_TIME_UNTIL_RUNTIME_EXPIRATION : HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+    FC_ASSERT( tx_expiration_seconds < ( is_hive_hardfork_1_28 ? HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION : HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
     _tx_expiration_seconds = tx_expiration_seconds;
   }
 
