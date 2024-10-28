@@ -178,6 +178,23 @@ uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_bloc
   return result;
 }
 
+void block_log_wrapper::multi_append_raw( uint32_t first_block_num,
+  std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>& data)
+{
+  internal_append( first_block_num, [&]( block_log_ptr_t log ){
+    log->multi_append_raw( first_block_num, data );
+  });
+}
+
+std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>
+block_log_wrapper::multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num) const
+{
+  const block_log_ptr_t log = get_block_log_corresponding_to( first_block_num );
+  FC_ASSERT( log, 
+             "Unable to find block log corresponding to block number ${block_num}", (first_block_num));
+  return log->multi_read_raw_block_data(first_block_num, last_block_num);
+}
+
 void block_log_wrapper::flush_head_storage()
 {
   get_head_log()->flush();

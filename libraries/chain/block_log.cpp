@@ -311,8 +311,8 @@ namespace hive { namespace chain {
   {
     return my->_artifacts ? my->_artifacts->get_artifacts_file() : fc::path();
   }
-  
-  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)
+
+  block_id_type get_block_id(const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes)
   {
     std::unique_ptr<char[]> compressed_block_data(new char[raw_block_size]);
     memcpy(compressed_block_data.get(), raw_block_data, raw_block_size);
@@ -323,7 +323,13 @@ namespace hive { namespace chain {
     else
       full_block = full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), raw_block_size, attributes);
 
-    return append_raw(block_num, raw_block_data, raw_block_size, attributes, full_block->get_block_id(), is_at_live_sync);
+    return full_block->get_block_id();
+  }
+
+  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)
+  {
+    auto block_id = get_block_id(raw_block_data, raw_block_size, attributes);
+    return append_raw(block_num, raw_block_data, raw_block_size, attributes, block_id, is_at_live_sync);
   }
 
   uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const block_id_type& block_id, const bool is_at_live_sync)
@@ -348,6 +354,42 @@ namespace hive { namespace chain {
       return block_start_pos;
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num)(block_start_pos)(block_start_pos_with_flags)(attributes))
+  }
+
+  void block_log::multi_append_raw(uint32_t first_block_num,
+    std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>& data)
+  {
+    size_t buffer_offset = 0;
+    block_log_artifacts::artifact_data_container_t artifacts_data;
+    // We will override file position offsets bundled with raw block data
+    // with actual offsets of this file.
+    std::unique_ptr<char[]>& the_buffer = std::get<0>(data);
+    const block_log_artifacts::artifact_container_t& plural_of_artifacts = std::get<1>(data);
+    uint32_t block_num = first_block_num;
+    for(const block_log_artifacts::artifacts_t& artifacts : plural_of_artifacts)
+    {
+      size_t raw_block_size = artifacts.block_serialized_data_size;
+      uint64_t block_start_pos = my->block_log_size;
+      uint64_t block_start_pos_with_flags = detail::combine_block_start_pos_with_flags(block_start_pos, artifacts.attributes);
+      *(uint64_t*)(the_buffer.get() + buffer_offset + raw_block_size) = block_start_pos_with_flags;
+
+      size_t block_size_including_start_pos = raw_block_size + sizeof(uint64_t);
+      buffer_offset += block_size_including_start_pos;
+      my->block_log_size += block_size_including_start_pos;
+
+      block_id_type block_id = artifacts.block_id;
+      if(block_id == block_id_type())
+      {
+        block_id = get_block_id(the_buffer.get() + buffer_offset, raw_block_size, artifacts.attributes);
+        ilog("Block id is ${block_id}", (block_id));
+      }
+      artifacts_data.emplace_back(block_num, block_start_pos, artifacts.attributes, block_id);
+      ++block_num;
+    }
+
+    detail::block_log_impl::write_with_retry(my->block_log_fd, the_buffer.get(), buffer_offset);
+    //the_buffer.reset();
+    my->_artifacts->store_block_artifacts(artifacts_data, false/*is_at_live_sync*/);
   }
 
   std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log::read_raw_block_data_by_num(uint32_t block_num) const
@@ -462,6 +504,25 @@ namespace hive { namespace chain {
       full_block_type::create_from_compressed_block_data(std::move(serialized_data), size, attributes);
   }
 
+  std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>
+  block_log::multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num_from_disk) const
+  {
+    // then we need to read blocks from the disk
+    uint32_t number_of_blocks_to_read = last_block_num_from_disk - first_block_num + 1;
+
+    size_t size_of_all_blocks = 0;
+    auto plural_of_block_artifacts = my->_artifacts->read_block_artifacts(first_block_num, number_of_blocks_to_read, &size_of_all_blocks);
+
+    uint64_t first_block_offset = plural_of_block_artifacts.front().block_log_file_pos;
+
+    // then read all the blocks in one go
+    idump((size_of_all_blocks));
+    std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
+    detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks, first_block_offset);
+    
+    return std::make_tuple(std::move(block_data), std::move(plural_of_block_artifacts), first_block_offset);
+  }
+
   std::vector<std::shared_ptr<full_block_type>> block_log::read_block_range_by_num(uint32_t first_block_num, uint32_t count) const
   {
     try
@@ -485,18 +546,10 @@ namespace hive { namespace chain {
       {
         result.reserve(count);
 
-        // then we need to read blocks from the disk
-        uint32_t number_of_blocks_to_read = last_block_num_from_disk - first_block_num + 1;
-
-        size_t size_of_all_blocks = 0;
-        auto plural_of_block_artifacts = my->_artifacts->read_block_artifacts(first_block_num, number_of_blocks_to_read, &size_of_all_blocks);
-
-        uint64_t first_block_offset = plural_of_block_artifacts.front().block_log_file_pos;
-
-        // then read all the blocks in one go
-        idump((size_of_all_blocks));
-        std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
-        detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks, first_block_offset);
+        auto read_result = multi_read_raw_block_data(first_block_num, last_block_num_from_disk);
+        std::unique_ptr<char[]> block_data(std::move(std::get<0>(read_result)));
+        auto plural_of_block_artifacts(std::move(std::get<1>(read_result)));
+        uint64_t first_block_offset = std::get<2>(read_result);
 
         // now deserialize the blocks
         for (const block_log_artifacts::artifacts_t& block_artifacts : plural_of_block_artifacts)

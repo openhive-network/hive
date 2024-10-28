@@ -203,6 +203,7 @@ public:
   void process_block_artifacts(uint32_t block_num, uint32_t count, artifact_file_chunk_processor_t processor) const;
 
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes, const block_id_t& block_id);
+  void store_block_artifacts(artifact_data_container_t& artifacts_data);
 
   block_log_artifacts::artifacts_t read_block_artifacts(uint32_t block_num) const;
 
@@ -258,10 +259,16 @@ private:
     hive::utilities::perform_write(_storage_fd, buffer.data(), buffer.size(), offset, description);
   }
 
-  template <class Data, unsigned int N=1>
+  template <class Data>
   void write_data(const Data& buffer, off_t offset, const std::string& description) const
   {
-    hive::utilities::perform_write(_storage_fd, reinterpret_cast<const char*>(&buffer), N*sizeof(Data), offset, description);
+    hive::utilities::perform_write(_storage_fd, reinterpret_cast<const char*>(&buffer), sizeof(Data), offset, description);
+  }
+
+  template <class Data>
+  void write_data(const Data& buffer, size_t data_count, off_t offset, const std::string& description) const
+  {
+    hive::utilities::perform_write(_storage_fd, reinterpret_cast<const char*>(&buffer), data_count*sizeof(Data), offset, description);
   }
 
   template <class Data>
@@ -804,6 +811,38 @@ void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64
   write_data(data_chunk, write_position, "Wrting the artifact file datachunk");
 }
 
+void block_log_artifacts::impl::store_block_artifacts(artifact_data_container_t& artifacts_data)
+{
+  size_t count = artifacts_data.size();
+  try
+  {
+    ilog("Allocating buffer for batch artifact writing of ${count} blocks.", (count));
+    std::unique_ptr<artifact_file_chunk[]> the_buffer(new artifact_file_chunk[count]);
+    FC_ASSERT(the_buffer, "Could not allocate buffer to batch store artifacts");
+
+    size_t buffer_index = 0;
+    for(const auto& artifact_data : artifacts_data)
+    {
+      uint32_t block_num = std::get<0>(artifact_data);
+      uint64_t block_log_file_pos = std::get<1>(artifact_data);
+      const block_log::block_attributes_t& block_attrs = std::get<2>(artifact_data);
+      block_id_type block_id = std::get<3>(artifact_data);
+
+      artifact_file_chunk data_chunk;
+      data_chunk.pack_data(block_log_file_pos, block_attrs);
+      data_chunk.pack_block_id(block_num, block_id);
+
+      the_buffer.get()[buffer_index] = data_chunk;
+      ++buffer_index;
+    }
+
+    uint32_t first_block_num = std::get<0>(artifacts_data.front());
+    auto write_position = calculate_offset(first_block_num);
+    write_data<artifact_file_chunk>(*(the_buffer.get()), count, write_position, "Writing a batch of artifact file datachunks");
+  }
+  FC_CAPTURE_LOG_AND_RETHROW((count))
+}
+
 block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts(uint32_t block_num) const
 {
   artifacts_t artifacts;
@@ -896,11 +935,10 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
   return storage;
 }
 
-void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
-                                                const block_id_t& block_id, const bool is_at_live_sync)
+void block_log_artifacts::store_block_artifacts_epilogue(uint32_t new_head_block_num,
+  size_t stored_blocks_count, const bool is_at_live_sync)
 {
-  _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
-  _impl->update_head_block(block_num);
+  _impl->update_head_block(new_head_block_num);
 
   if (is_at_live_sync)
     _impl->flush_header();
@@ -908,7 +946,7 @@ void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t blo
   {
     constexpr uint32_t BLOCKS_COUNT_INTERVAL_FOR_FLUSH = 100000;
     static uint32_t stored_blocks_counter = 0;
-    ++stored_blocks_counter;
+    stored_blocks_counter += stored_blocks_count;
 
     if (stored_blocks_counter > BLOCKS_COUNT_INTERVAL_FOR_FLUSH)
     {
@@ -916,6 +954,21 @@ void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t blo
       stored_blocks_counter = 0;
     }
   }
+}
+
+void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
+                                                const block_id_t& block_id, const bool is_at_live_sync)
+{
+  _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
+  store_block_artifacts_epilogue(block_num, 1, is_at_live_sync);
+}
+
+void block_log_artifacts::store_block_artifacts(artifact_data_container_t& artifacts_data, const bool is_at_live_sync)
+{
+  _impl->store_block_artifacts(artifacts_data);
+  uint32_t last_block_num = std::get<0>(artifacts_data.back());
+  size_t stored_blocks_count = artifacts_data.size();
+  store_block_artifacts_epilogue(last_block_num, stored_blocks_count, is_at_live_sync);
 }
 
 void block_log_artifacts::truncate(uint32_t new_head_block_num)
