@@ -9,8 +9,10 @@
   // Note: the lower the number the more part files are generated but
   //       there can be only 9999 of them as there are 4 digits in their names.
   #define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE     400
+  #define BLOCKS_IN_BATCH_IO_MODE            400
 #else // is live HIVE network
   #define BLOCKS_IN_SPLIT_BLOCK_LOG_FILE 1000000
+  #define BLOCKS_IN_BATCH_IO_MODE          10000
 #endif
 
 namespace hive { namespace chain {
@@ -120,9 +122,13 @@ namespace hive { namespace chain {
       uint64_t append(const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync);
       uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync);
       uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const block_id_type& block_id, const bool is_at_live_sync);
+      void multi_append_raw(uint32_t first_block_num, 
+                            std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>& data);
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const;
+      std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>
+      multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num) const;
 
       /** Allows to read just block_id for block identified by given block number. 
       *   \warning Can return empty `block_id_type` if block_num is out of valid range.

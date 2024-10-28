@@ -98,6 +98,10 @@ public:
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
                              const block_id_t& block_id, const bool is_at_live_sync);
 
+  using artifact_data_t = std::tuple<uint32_t,uint64_t,block_attributes_t,block_id_t>;
+  using artifact_data_container_t = std::vector<artifact_data_t>;
+  void store_block_artifacts(artifact_data_container_t& artifacts_data, const bool is_at_live_sync);
+
   void truncate(uint32_t new_head_block_num);
 
   // for block_log_util
@@ -110,6 +114,9 @@ private:
   block_log_artifacts(block_log_artifacts&&) = delete;
   block_log_artifacts& operator=(const block_log_artifacts&) = delete;
   block_log_artifacts& operator=(block_log_artifacts&&) = delete;
+
+  void store_block_artifacts_epilogue(uint32_t new_head_block_num, size_t stored_blocks_count,
+                                      const bool is_at_live_sync);
 
 /// Class attributes:
 private:

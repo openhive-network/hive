@@ -11,6 +11,10 @@ using hive::chain::block_log_file_name_info;
 using hive::chain::block_log_wrapper;
 using hive::chain::blockchain_worker_thread_pool;
 
+using block_data_t = std::tuple<uint32_t,std::unique_ptr<char[]>,size_t,block_log_artifacts::artifacts_t>;
+using block_data_container_t = std::vector<block_data_t>;
+
+
 void split_block_log( fc::path monolith_path, uint32_t head_block_number, size_t part_count,
   appbase::application& app, blockchain_worker_thread_pool& thread_pool,
   const fc::optional<fc::path> split_block_log_destination_dir )
@@ -71,38 +75,40 @@ void split_block_log( fc::path monolith_path, uint32_t head_block_number, size_t
   ilog( "Splitting blocks ${starting_block_number} to ${stop_at_block}",
         (starting_block_number)(stop_at_block) );
 
-  uint32_t current_block_number = starting_block_number;
-
-  while( current_block_number <= stop_at_block )
+  uint32_t batch_first_block_num = starting_block_number;
+  uint32_t batch_stop_at_block = 
+    stop_at_block == source_head_block_num ? stop_at_block -1 : stop_at_block;
+  while( batch_first_block_num <= batch_stop_at_block )
   {
-    // read a block
-    std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> data_with_artifacts;
-    if (current_block_number == source_head_block_num)
-    {
-      std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> head_block_data =
-        mono_log->read_raw_head_block();
-      size_t block_size = std::get<1>(head_block_data);
-      block_log_artifacts::artifacts_t block_artifacts(std::get<2>(head_block_data), 0/*dummy*/, 0/*dummy*/);
-      data_with_artifacts = 
-        std::make_tuple(std::get<0>(std::move(head_block_data)), block_size, std::move(block_artifacts));
-    }
-    else
-    {
-      data_with_artifacts = mono_log->read_raw_block_data_by_num(current_block_number);
-    }
+    uint32_t batch_last_block_num = std::min<uint32_t>( batch_stop_at_block, batch_first_block_num + BLOCKS_IN_BATCH_IO_MODE -1 );
+    ilog( "Reading blocks #${batch_first_block_num} to #${batch_last_block_num}",
+          (batch_first_block_num)(batch_last_block_num) );
+    auto read_result = mono_log->multi_read_raw_block_data( batch_first_block_num, batch_last_block_num );
 
+    ilog( "Appending a batch of ${count} blocks, starting with block #${batch_first_block_num}",
+          ("count", std::get<1>(read_result).size())(batch_first_block_num) );
+    split_log->multi_append_raw( batch_first_block_num, read_result );
+
+    batch_first_block_num = batch_last_block_num + 1;
+  }
+
+  if( stop_at_block == source_head_block_num )
+  {
+    ilog("Handling source block log's head block #{source_head_block_num}", (source_head_block_num));
+    // read head block data
+    std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> head_block_data =
+      mono_log->read_raw_head_block();
+    size_t block_size = std::get<1>(head_block_data);
+    block_log_artifacts::artifacts_t block_artifacts(std::get<2>(head_block_data), 0/*dummy*/, 0/*dummy*/);
     // and write it
-    size_t raw_block_size                       = std::get<1>(data_with_artifacts);
-    const block_log::block_attributes_t& flags  = std::get<2>(data_with_artifacts).attributes;
-    split_log->append_raw(current_block_number,
-                          std::get<0>(std::move(data_with_artifacts)).get(),
-                          raw_block_size,
+    const block_log::block_attributes_t& flags  = block_artifacts.attributes;
+    split_log->append_raw(source_head_block_num,
+                          std::get<0>(std::move(head_block_data)).get(),
+                          block_size,
                           flags,
                           false /*is_at_live_sync*/);
-
-    ++current_block_number;
   }
-  
+
   ilog("Done spliting legacy monolithic block log file.");
   
   // Note that both block logs are closed when their shared_ptr is destructed.
