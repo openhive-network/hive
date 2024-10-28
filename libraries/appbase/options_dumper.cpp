@@ -94,8 +94,9 @@ void try_handle_type( const std::string& name, options_dumper::value_info& val_i
       The option `wallet-dir` can't have `boost::filesystem::path` type, but finally we want to represent `wallet-dir` like a path.
       Below code is a workaround of presented problem.
     */
-    const std::string _fixed_name = "wallet-dir";
-    handle_type<std::string>( val_info, typed, name == _fixed_name ? "path" : "string" );
+    const std::set<std::string> _fixed_names = { "wallet-dir", "log-json-rpc" };
+    auto _found = _fixed_names.find( name );
+    handle_type<std::string>( val_info, typed, _found != _fixed_names.end() ? "path" : "string" );
   }
   else if( typed->value_type() == typeid(fc::string) )
     handle_type<fc::string>( val_info, typed, "string" );
