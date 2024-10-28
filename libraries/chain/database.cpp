@@ -4468,7 +4468,8 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
     create<transaction_object>([&](transaction_object& transaction) {
       transaction.trx_id = trx_id;
-      transaction.expiration = full_transaction->get_runtime_expiration();
+      /// WARNING: here we have to use original expiration time (instead of runtime_expiration) since transaction is valid up to HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION
+      transaction.expiration = trx.expiration;
     });
 
     if( _benchmark_dumper.is_enabled() )
