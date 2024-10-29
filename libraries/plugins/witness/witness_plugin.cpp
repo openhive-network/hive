@@ -596,6 +596,12 @@ bool witness_plugin::is_fast_confirm_enabled() const
 void witness_plugin::set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses )
 {
   my->_witnesses = witnesses;
+  // recompute next block production data with new set of witnesses
+  {
+    auto data = my->get_produce_block_data( my->_db.get_slot_time( 1 ) );
+    std::unique_lock g( my->should_produce_block_mutex );
+    my->produce_block_data = std::move( data );
+  }
 }
 
 void witness_plugin::set_program_options(
