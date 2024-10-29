@@ -39,16 +39,15 @@ macro(generate_get_config path_to_config_hpp get_config_cpp_in get_config_cpp_ou
 
   # trim additional output from comiler till the comment from header file
   file(STRINGS ${OUT_FILE} config_hpp_content )
-  set(preamula_on 1)
+  set(preambula_on 1)
   set(list_of_new_lines)
   foreach(line in ${config_hpp_content})
-    if( ${preamula_on} EQUAL 1 )
-      string(FIND "${line}" "Steemit" steemit_found )
-      if( ${steemit_found} GREATER_EQUAL 0 )
-        set(preamula_on 0)
-      else()
-        continue()
+    if( ${preambula_on} EQUAL 1 )
+      string(FIND "${line}" "__HIVE_START_PROTOCOL_DEFINITIONS__" preambula_found )
+      if( ${preambula_found} GREATER_EQUAL 0 )
+        set(preambula_on 0)
       endif()
+      continue()
     endif()
 
     # parse defines
