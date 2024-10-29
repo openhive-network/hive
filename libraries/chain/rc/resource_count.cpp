@@ -678,9 +678,11 @@ void resource_credits::count_resources(
   if( vtor.market_op_count > 0 )
     result[ resource_market_bytes ] += tx_size;
 
+  uint32_t expiration_hours = ( tx.expiration.sec_since_epoch() - now.sec_since_epoch() + 3600 - 1 ) / 3600;
   result[ resource_state_bytes ] += vtor.state_bytes_count
-    + size_info.transaction_base_size; //we could also charge for data stored in full_transaction
-                                       //but its lifetime is not that long and it is not state data
+    + size_info.transaction_base_size * expiration_hours;
+  //we could also charge for data stored in full_transaction, but its lifetime is not that long and
+  //it is not state data
 
   result[ resource_execution_time ] += vtor.execution_time_count
     + exec_info.transaction_time + exec_info.verify_authority_time * tx.signatures.size();
