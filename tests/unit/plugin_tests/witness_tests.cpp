@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
               if( msg_duplicate )
                 BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
               else
-                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION)" )  != std::string::npos );
+                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION" )  != std::string::npos );
             }
           };
 
@@ -586,8 +586,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
           }
           catch( const fc::assert_exception& ex )
           {
-            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "now < trx.expiration" )  != std::string::npos );
+            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "now < full_transaction->get_runtime_expiration()" ) != std::string::npos );
           }
           BOOST_REQUIRE( !_accept_transaction_passed );
 
@@ -605,8 +605,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
           }
           catch( const fc::assert_exception& ex )
           {
-            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" ) != std::string::npos );
           }
           BOOST_REQUIRE( !_accept_transaction_passed );
 
@@ -619,7 +619,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
           catch( const fc::assert_exception& ex )
           {
             BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "now < trx.expiration" )  != std::string::npos );
+            BOOST_REQUIRE( ex.to_string().find( "now < full_transaction->get_runtime_expiration()" ) != std::string::npos );
           }
           BOOST_REQUIRE( !_accept_transaction_passed );
 
@@ -635,8 +635,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
           }
           catch( const fc::assert_exception& ex )
           {
-            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
+            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" ) != std::string::npos );
           }
           BOOST_REQUIRE( !_accept_transaction_passed );
 
