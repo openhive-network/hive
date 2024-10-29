@@ -10,6 +10,8 @@
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
+#define __HIVE_START_PROTOCOL_DEFINITIONS__
+
 #define HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR"
 
 #ifdef USE_ALTERNATE_CHAIN_ID
@@ -517,3 +519,4 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP         100
 
+#undef __HIVE_START_PROTOCOL_DEFINITIONS__
