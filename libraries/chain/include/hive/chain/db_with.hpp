@@ -105,7 +105,6 @@ struct pending_transactions_restorer
 
       if( apply_trxs )
       {
-        const signed_transaction& tx = full_transaction->get_transaction();
         try
         {
           if( full_transaction->get_runtime_expiration() <= head_block_time )
@@ -133,7 +132,7 @@ struct pending_transactions_restorer
           dlog("Pending transaction became invalid after switching to block ${b} ${n} ${t}",
                ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()));
           dlog("The invalid transaction caused exception ${e}", ("e", e.to_detail_string()));
-          dlog("${tx}", (tx));
+          dlog("${tx}", ("tx", full_transaction->get_transaction()));
           ++failed_txs;
         }
         catch( const fc::exception& e )
@@ -142,7 +141,7 @@ struct pending_transactions_restorer
           dlog( "Pending transaction became invalid after switching to block ${b} ${n} ${t}",
             ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()) );
           dlog( "The invalid pending transaction caused exception ${e}", ("e", e.to_detail_string() ) );
-          dlog( "${t}", ("t", tx) );
+          dlog( "${t}", ( "t", full_transaction->get_transaction() ) );
           */
           ++failed_txs;
         }
