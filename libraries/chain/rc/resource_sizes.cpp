@@ -116,7 +116,7 @@ state_object_size_info::state_object_size_info()
 
   // transaction
   transaction_base_size(
-    SIZE( transaction_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
+    SIZE( transaction_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 1 ), //multiply by signature expiration time (rounded up to full hours)
 
   // delegate vesting shares
   vesting_delegation_object_size(
