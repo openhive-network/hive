@@ -4319,30 +4319,25 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
     {
       if( has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) )
       {
-        HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
-
-        HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION), transaction_expiration_exception,
+        HIVE_ASSERT(trx.expiration <= now + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION, transaction_expiration_exception,
                     "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION));
 
-        full_transaction->set_runtime_expiration( now + std::min( fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ), trx.expiration - now ) );
+        full_transaction->set_runtime_expiration( std::min( trx.expiration, now + HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
       }
       else
       {
-        HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
+        HIVE_ASSERT(trx.expiration <= now + HIVE_MAX_TIME_UNTIL_EXPIRATION, transaction_expiration_exception,
                     "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
 
         full_transaction->set_runtime_expiration( trx.expiration );
       }
     }
 
+    // the hardfork check is needed, f.e. https://explore.openhive.network/transaction/3c1eae5754cc4f70cf0efb12f9e4f9671a8df2a0
     if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
-    {
       HIVE_ASSERT(now < full_transaction->get_runtime_expiration(), transaction_expiration_exception, "", (now)(full_transaction->get_runtime_expiration()));
-    }
     else
-    {
       HIVE_ASSERT(now <= full_transaction->get_runtime_expiration(), transaction_expiration_exception, "", (now)(full_transaction->get_runtime_expiration()));
-    }
 
     if (!(skip & skip_tapos_check))
     {
