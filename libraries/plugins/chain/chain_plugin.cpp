@@ -212,9 +212,10 @@ class chain_plugin_impl
 
     std::shared_ptr< std::thread >   write_processor_thread;
 
-    // `writequeue` and `running` are guarded by the queue_mutex
+    // `priority_write_queue`, `write_queue` and `running` are guarded by the queue_mutex
     std::mutex                       queue_mutex;
     std::condition_variable          queue_condition_variable;
+    std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
     bool                             running = true;
 
@@ -507,11 +508,11 @@ void chain_plugin_impl::start_write_processing()
 
           //divide `max_time_to_wait` into smaller fragments (~500ms) in order to check faster `is_running` status
           int64_t chunk_time = max_time_to_wait.count() / time_fragments;
-          while (is_running() && write_queue.empty() && !wait_timed_out)
+          while (is_running() && priority_write_queue.empty() && write_queue.empty() && !wait_timed_out)
           {
             size_t cnt = 0;
             size_t wait_timed_out_cnt = 0;
-            while( cnt < time_fragments && is_running() && write_queue.empty() && !wait_timed_out )
+            while( cnt < time_fragments && is_running() && priority_write_queue.empty() && write_queue.empty() && !wait_timed_out )
             {
               if( queue_condition_variable.wait_for(lock, std::chrono::microseconds(chunk_time)) == std::cv_status::timeout )
               {
@@ -527,9 +528,17 @@ void chain_plugin_impl::start_write_processing()
             break;
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
             continue;
-          // otherwise, we woke because the write_queue is non-empty
-          cxt = write_queue.front();
-          write_queue.pop();
+          // otherwise, we woke because the priority_write_queue or write_queue is non-empty
+          if( not priority_write_queue.empty() )
+          {
+            cxt = priority_write_queue.front();
+            priority_write_queue.pop();
+          }
+          else
+          {
+            cxt = write_queue.front();
+            write_queue.pop();
+          }
         }
 
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
@@ -572,7 +581,7 @@ void chain_plugin_impl::start_write_processing()
                   "held lock for ${write_lock_held_duration}μs, ${i} items left in queue",
                   (write_lock_hold_time)
                   ("write_lock_held_duration", write_lock_held_duration.count())
-                  ("i", write_queue.size()));
+                  ("i", priority_write_queue.size() + write_queue.size()));
 
                 if ( is_running() ) {
                   break;
@@ -594,7 +603,7 @@ void chain_plugin_impl::start_write_processing()
 
             {
               std::unique_lock<std::mutex> lock(queue_mutex);
-              if (!running || write_queue.empty())
+              if (!running || (priority_write_queue.empty() && write_queue.empty()))
               {
                 fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
                 //if (write_queue_processed_duration > fc::milliseconds(500))
@@ -603,12 +612,20 @@ void chain_plugin_impl::start_write_processing()
                           ("per_block", write_queue_processed_duration.count() / write_queue_items_processed));
                 break;
               }
-              cxt = write_queue.front();
-              write_queue.pop();
+              if( not priority_write_queue.empty() )
+              {
+                cxt = priority_write_queue.front();
+                priority_write_queue.pop();
+              }
+              else
+              {
+                cxt = write_queue.front();
+                write_queue.pop();
+              }
             }
 
             last_popped_item_time = fc::time_point::now();
-          } // while items in write_queue and time limit not exceeded for live sync
+          } // while items in priority_write_queue or write_queue and time limit not exceeded for live sync
           head_block_time = db.head_block_time();
         }); // with_write_lock
 
@@ -1858,7 +1875,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   block_ctrl->attach_promise( accept_block_promise );
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->write_queue.push(&cxt);
+    my->priority_write_queue.push(&cxt);
   }
   my->queue_condition_variable.notify_one();
   accept_block_future.wait();
@@ -1965,7 +1982,7 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->write_queue.push(&cxt);
+    my->priority_write_queue.push(&cxt);
   }
   my->queue_condition_variable.notify_one();
 
