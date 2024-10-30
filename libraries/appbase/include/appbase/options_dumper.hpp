@@ -22,6 +22,7 @@ namespace appbase {
         bool        composed    = false;
         std::string value_type;
         fc::variant default_value;
+        std::optional<uint32_t> fields_count;
       };
 
       struct option_entry {
