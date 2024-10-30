@@ -9,6 +9,15 @@ namespace hive { namespace chain {
 block_flow_control::report_type block_flow_control::auto_report_type = block_flow_control::report_type::FULL;
 block_flow_control::report_output block_flow_control::auto_report_output = block_flow_control::report_output::ILOG;
 
+void block_stats::recalculate_times( fc::time_point fake_creation )
+{
+  auto original_creation = creation;
+  creation = fake_creation;
+  start_work = fake_creation + ( start_work - original_creation );
+  end_work = fake_creation + ( end_work - original_creation );
+  end_cleanup = fake_creation + ( end_cleanup - original_creation );
+}
+
 void block_flow_control::set_auto_report( const std::string& _option_type, const std::string& _option_output )
 {
   if( _option_type == "NONE" )
@@ -268,7 +277,10 @@ void sync_block_flow_control::on_worker_done( appbase::application& app ) const
   //and the excess logging seems to be slowing down sync
   //...with exception to last couple blocks of syncing
   if( ( fc::time_point::now() - get_block_timestamp() ) < HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS )
+  {
+    stats.recalculate_times( get_block_timestamp() );
     block_flow_control::on_worker_done( app );
+  }
 }
 
 void existing_block_flow_control::on_end_of_apply_block() const
