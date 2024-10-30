@@ -70,6 +70,9 @@ public:
 
   uint32_t get_last_irreversible_block_num() const { return last_irreversible_block_num; }
 
+  // for special block stats that are related to blocks processed out of their time
+  void recalculate_times( fc::time_point fake_creation );
+
 private:
   //time of arrival for P2P, time of request for new block
   fc::time_point creation;
