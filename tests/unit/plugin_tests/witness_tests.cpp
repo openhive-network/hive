@@ -37,8 +37,6 @@ catch( ... )                                                                  \
 
 struct witness_fixture : public hived_fixture
 {
-  size_t expiration = HIVE_MAX_TIME_UNTIL_EXPIRATION;
-
   witness_fixture( bool remove_db = true ) : hived_fixture( remove_db, false ) {}
   virtual ~witness_fixture() { configuration_data = configuration(); }
 
@@ -108,36 +106,43 @@ struct witness_fixture : public hived_fixture
     return block_num;
   }
 
-  full_transaction_ptr schedule_transaction( const operation& op, size_t current_expiration, bool accept_transaction = true ) const
+  full_transaction_ptr build_transaction( const signed_transaction& tx ) const
+  {
+    full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
+    _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), serialization_type::hf26 );
+    return _tx;
+  }
+
+  full_transaction_ptr build_transaction( const operation& op, size_t expiration ) const
   {
     signed_transaction tx;
     db->with_read_lock( [&]()
     {
-      tx.set_expiration( db->head_block_time() + current_expiration );
+      tx.set_expiration( db->head_block_time() + expiration );
       tx.set_reference_block( db->head_block_id() );
     } );
     tx.operations.emplace_back( op );
-    return schedule_transaction( tx, accept_transaction );
+    return build_transaction( tx );
+  }
+
+  void schedule_transaction( const full_transaction_ptr& tx ) const
+  {
+    get_chain_plugin().accept_transaction( tx, hive::plugins::chain::chain_plugin::lock_type::fc );
+  }
+
+  void schedule_transaction( const signed_transaction& tx ) const
+  {
+    schedule_transaction( build_transaction( tx ) );
   }
 
   void schedule_transaction( const operation& op ) const
   {
-    schedule_transaction( op, expiration, true/*accept_transaction*/ );
+    schedule_transaction( build_transaction( op, default_expiration ) );
   }
 
-  full_transaction_ptr schedule_transaction( const signed_transaction& tx, bool accept_transaction = true ) const
+  void schedule_transaction( const operation& op, size_t expiration ) const
   {
-    full_transaction_ptr _tx = full_transaction_type::create_from_signed_transaction( tx, serialization_type::hf26, false );
-    _tx->sign_transaction( { init_account_priv_key }, db->get_chain_id(), serialization_type::hf26 );
-    if( accept_transaction )
-      get_chain_plugin().accept_transaction( _tx, hive::plugins::chain::chain_plugin::lock_type::fc );
-
-    return _tx;
-  }
-
-  void accept_transaction( const full_transaction_ptr& tx )
-  {
-    get_chain_plugin().accept_transaction( tx, hive::plugins::chain::chain_plugin::lock_type::fc );
+    schedule_transaction( build_transaction( op, expiration ) );
   }
 
   void schedule_blocks( uint32_t count ) const
@@ -181,21 +186,21 @@ struct witness_fixture : public hived_fixture
     schedule_transaction( fund );
   }
 
-  full_transaction_ptr schedule_transfer( const account_name_type& from, const account_name_type& to,
-    const asset& amount, const std::string& memo, size_t current_expiration, bool accept_transaction = true ) const
+  full_transaction_ptr build_transfer( const account_name_type& from, const account_name_type& to,
+    const asset& amount, const std::string& memo, size_t expiration ) const
   {
     transfer_operation transfer;
     transfer.from = from;
     transfer.to = to;
     transfer.amount = amount;
     transfer.memo = memo;
-    return schedule_transaction( transfer, current_expiration, accept_transaction );
+    return build_transaction( transfer, expiration );
   }
 
   void schedule_transfer( const account_name_type& from, const account_name_type& to,
     const asset& amount, const std::string& memo ) const
   {
-    schedule_transfer( from, to, amount, memo, expiration );
+    schedule_transaction( build_transfer( from, to, amount, memo, default_expiration ) );
   }
 
   void schedule_vote( const account_name_type& voter, const account_name_type& author,
@@ -212,10 +217,14 @@ struct witness_fixture : public hived_fixture
   void set_genesis_time( fc::time_point_sec time ) { genesis_time = time; }
   fc::time_point_sec get_genesis_time() const { return genesis_time; }
 
+  void set_default_expiration( size_t expiration ) { default_expiration = expiration; }
+  size_t get_default_expiration() const { return default_expiration; }
+
   hive::plugins::witness::witness_plugin& get_witness_plugin() const { return *witness_plugin; }
 
 private:
   fc::time_point_sec genesis_time;
+  size_t default_expiration = HIVE_MAX_TIME_UNTIL_EXPIRATION;
   hive::plugins::witness::witness_plugin* witness_plugin = nullptr;
 
 public:
@@ -317,7 +326,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_00_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
+    set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
     witness_basic();
   }
   FC_LOG_AND_RETHROW()
@@ -327,7 +336,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
+    set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
     bool test_passed = false;
@@ -363,8 +372,8 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
         BOOST_REQUIRE_GT( current_block_num, saved_block_num ); // at least one block should have been generated
         saved_block_num = current_block_num;
 
-        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_EXPIRATION );
-        schedule_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
+        schedule_transaction( build_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+        schedule_transaction( build_transfer( "alice", "bob", ASSET( "0.100 TBD" ), "", HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION ) );
 
         db->with_read_lock( [&]()
         {
@@ -391,7 +400,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
+    set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
     bool test_passed = false;
@@ -427,26 +436,24 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
         BOOST_REQUIRE_GT( current_block_num, saved_block_num ); // at least one block should have been generated
         saved_block_num = current_block_num;
 
-        auto _scheduling =[this]( size_t current_expression, bool pass = true, bool msg_duplicate = true )
+        auto _scheduling =[this]( size_t expiration, bool pass = true, bool msg_duplicate = true )
         {
-          auto _passed_op = [this, &current_expression]()
+          auto _passed_op = [this, &expiration]()
           {
-            schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", current_expression );
+            schedule_transaction( build_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", expiration ) );
           };
 
           auto _failed_op = [&_passed_op, &msg_duplicate]()
           {
-            try
+            if( msg_duplicate )
             {
-              _passed_op();
+              HIVE_REQUIRE_ASSERT( _passed_op(),
+                "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
             }
-            catch( const fc::assert_exception& ex )
+            else
             {
-              BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-              if( msg_duplicate )
-                BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
-              else
-                BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION" )  != std::string::npos );
+              HIVE_REQUIRE_ASSERT( _passed_op(),
+                "trx.expiration <= now + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION" );
             }
           };
 
@@ -510,7 +517,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 {
   try
   {
-    expiration = HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION;
+    set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
     bool test_passed = false;
@@ -553,7 +560,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 
           for( size_t i = 0; i < _max_trxs; ++i )
           {
-            schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", _start + i );
+            schedule_transaction( build_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "", _start + i ) );
           }
 
           schedule_block();
@@ -564,81 +571,40 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
           } );
         }
         {
-          auto _trx_00 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 12 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+          auto _trx_00 = build_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+            HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 12 * HIVE_BLOCK_INTERVAL );
 
-          auto _trx_01 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+          auto _trx_01 = build_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+            HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL );
 
-          auto _trx_01_a = schedule_transfer( "alice", "bob", ASSET( "0.002 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+          auto _trx_01_a = build_transfer( "alice", "bob", ASSET( "0.002 TBD" ), "",
+            HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 8 * HIVE_BLOCK_INTERVAL );
 
-          auto _trx_02 = schedule_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
-                                                                  HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 4 * HIVE_BLOCK_INTERVAL, false/*accept_transaction*/ );
+          auto _trx_02 = build_transfer( "alice", "bob", ASSET( "0.001 TBD" ), "",
+            HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION - 4 * HIVE_BLOCK_INTERVAL );
 
           schedule_blocks( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION / HIVE_BLOCK_INTERVAL - 12 );
 
-          bool _accept_transaction_passed = false;
-          try
-          {
-            accept_transaction( _trx_00 );
-            _accept_transaction_passed = true;
-          }
-          catch( const fc::assert_exception& ex )
-          {
-            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "now < full_transaction->get_runtime_expiration()" ) != std::string::npos );
-          }
-          BOOST_REQUIRE( !_accept_transaction_passed );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_00 ),
+            "now < full_transaction->get_runtime_expiration()" );
 
           schedule_blocks( 3 );
 
-          accept_transaction( _trx_01 );
+          schedule_transaction( _trx_01 );
 
-          schedule_blocks( 1 );
+          schedule_block();
 
-          _accept_transaction_passed = false;
-          try
-          {
-            accept_transaction( _trx_01 );
-            _accept_transaction_passed = true;
-          }
-          catch( const fc::assert_exception& ex )
-          {
-            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" ) != std::string::npos );
-          }
-          BOOST_REQUIRE( !_accept_transaction_passed );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_01 ),
+            "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_01_a ),
+            "now < full_transaction->get_runtime_expiration()" );
 
-          _accept_transaction_passed = false;
-          try
-          {
-            accept_transaction( _trx_01_a );
-            _accept_transaction_passed = true;
-          }
-          catch( const fc::assert_exception& ex )
-          {
-            BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "now < full_transaction->get_runtime_expiration()" ) != std::string::npos );
-          }
-          BOOST_REQUIRE( !_accept_transaction_passed );
+          schedule_transaction( _trx_02 );
 
-          accept_transaction( _trx_02 );
+          schedule_block();
 
-          schedule_blocks( 1 );
-
-          _accept_transaction_passed = false;
-          try
-          {
-            accept_transaction( _trx_02 );
-            _accept_transaction_passed = true;
-          }
-          catch( const fc::assert_exception& ex )
-          {
-            BOOST_TEST_MESSAGE( "Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" ) != std::string::npos );
-          }
-          BOOST_REQUIRE( !_accept_transaction_passed );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_02 ),
+            "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
 
           db->with_read_lock( [&]()
           {
