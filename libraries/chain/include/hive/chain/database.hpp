@@ -151,9 +151,14 @@ namespace chain {
 
       void set_tx_status(transaction_status s)
       {
-        if (_current_tx_status != TX_STATUS_NONE)
+        if( _current_tx_status != TX_STATUS_NONE )
         {
-          wlog("Nested tx processing: _current_tx_status==${cs}, incoming ${s}", ("cs", (int)_current_tx_status)("s", (int)s));
+          wlog( "Nested tx processing: _current_tx_status==${cs}, incoming ${s}",
+            ( "cs", (int)_current_tx_status )( "s", (int)s ) );
+#ifdef USE_ALTERNATE_CHAIN_ID
+          FC_ASSERT( false, "Nested tx processing: _current_tx_status==${cs}, incoming ${s}",
+            ( "cs", (int)_current_tx_status )( "s", (int)s ) );
+#endif
           // make sure to unconditionally call clear_tx_status() when processing ends or is broken
         }
         _current_tx_status = s;

@@ -362,6 +362,10 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
       //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
       wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
         ( "a", acc.get_name() )( "b", db.head_block_num() ) );
+#ifdef USE_ALTERNATE_CHAIN_ID
+      FC_ASSERT( false, "Account ${a} not regenerated prior to RC change, noticed on block ${b}",
+        ( "a", acc.get_name() )( "b", db.head_block_num() ) );
+#endif
     }
     //rc delegation changes are immediately reflected in current_mana in both directions;
     //if negative delta was not taking away delegated mana it would be easy to pump RC;
@@ -380,6 +384,10 @@ void resource_credits::update_account_after_vest_change( const account_object& a
     //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
     wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
       ( "a", account.get_name() )( "b", db.head_block_num() ) );
+#ifdef USE_ALTERNATE_CHAIN_ID
+    FC_ASSERT( false, "Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
+      ( "a", account.get_name() )( "b", db.head_block_num() ) );
+#endif
   }
 
   if( _check_for_rc_delegation_overflow && account.get_delegated_rc() > 0 )

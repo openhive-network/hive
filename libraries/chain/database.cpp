@@ -2132,6 +2132,10 @@ void database::process_vesting_withdrawals()
     {
       elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
         ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
+#ifdef USE_ALTERNATE_CHAIN_ID
+      FC_ASSERT( false, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
+        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
+#endif
       to_withdraw = from_account.get_vesting().amount;
     }
 
@@ -4434,6 +4438,9 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   if( _current_tx_status == TX_STATUS_NONE )
   {
     wlog( "Missing tx processing indicator" );
+#ifdef USE_ALTERNATE_CHAIN_ID
+    FC_ASSERT( false, "Missing tx processing indicator" );
+#endif
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
