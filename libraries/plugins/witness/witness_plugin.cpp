@@ -563,7 +563,7 @@ namespace detail {
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( data.next_slot_time,
       data.scheduled_witness, data.scheduled_private_key, _production_skip_flags, theApp );
-    _chain_plugin.generate_block( generate_block_ctrl );
+    _chain_plugin.push_generate_block_request( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 

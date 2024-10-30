@@ -394,10 +394,10 @@ struct chain_plugin_impl::write_request_visitor
       if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
-      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f, cp.theApp )
+      STATSD_START_TIMER( "chain", "write_time", "push_generate_block_request", 1.0f, cp.theApp )
       on_block( generate_block_ctrl.get() );
       cp.block_generator->generate_block( generate_block_ctrl.get() );
-      STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
+      STATSD_STOP_TIMER( "chain", "write_time", "push_generate_block_request" )
     }
     catch( const fc::exception& e )
     {
@@ -1954,7 +1954,7 @@ bool chain_plugin::push_block( const block_flow_control& block_ctrl, uint32_t sk
   return my->push_block( block_ctrl, skip );
 }
 
-void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
+void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
 {
   write_context cxt;
   cxt.req_ptr = generate_block_ctrl;
