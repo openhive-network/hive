@@ -17,7 +17,7 @@
    fun:store
    fun:store
 }
-# Signaling queue_condition_variable is safe in chain_plugin::push_generate_block_request, because we push to write_queue and thgen check in chain_plugin_impl::start_write_processing for write_queue.empty()
+# Signaling queue_condition_variable is safe in chain_plugin::push_generate_block_request, because we push to priority_write_queue and then check in chain_plugin_impl::start_write_processing for priority_write_queue.empty()
 {
    <insert_a_suppression_name_here>
    Helgrind:Dubious
