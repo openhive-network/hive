@@ -503,15 +503,15 @@ struct full_transaction_cache::impl
   // any contention out of the blockchain worker thread
   boost::lockfree::queue<hive::protocol::digest_type> digests_to_delete{1000};
 
-  std::atomic<uint32_t> total_lock_count = {0};
-  std::atomic<uint32_t> contended_lock_count = {0};
+//  std::atomic<uint32_t> total_lock_count = {0};
+//  std::atomic<uint32_t> contended_lock_count = {0};
 };
 
 full_transaction_cache::full_transaction_cache() : my(new impl) {}
 
 full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction_ptr& transaction)
 {
-  std::optional<fc::microseconds> wait_duration;
+  /*std::optional<fc::microseconds> wait_duration;
   BOOST_SCOPE_EXIT(&my, &wait_duration) {
     my->total_lock_count.fetch_add(1, std::memory_order_relaxed);
     if (wait_duration)
@@ -522,14 +522,14 @@ full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 
     }
-  } BOOST_SCOPE_EXIT_END
+  } BOOST_SCOPE_EXIT_END*/
 
   std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
   if (!lock)
   {
-    fc::time_point wait_start_time = fc::time_point::now();
+    //fc::time_point wait_start_time = fc::time_point::now();
     lock.lock();
-    wait_duration = fc::time_point::now() - wait_start_time;
+    //wait_duration = fc::time_point::now() - wait_start_time;
   }
 
   my->digests_to_delete.consume_all([&](const hive::protocol::digest_type& digest_to_delete) {
