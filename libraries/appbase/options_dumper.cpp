@@ -49,7 +49,7 @@ fc::variant get_default_value<std::vector<std::string>>(const boost::any& defaul
 }
 
 template<typename T>
-void handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed, const std::string& type_name )
+void handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed, const std::string& type_name, const std::optional<uint32_t>& fields_count = std::nullopt )
 {
   auto* _typed = dynamic_cast<const boost::program_options::typed_value<T>*>( typed );
   assert( _typed );
@@ -63,6 +63,7 @@ void handle_type( options_dumper::value_info& val_info, const boost::program_opt
   val_info.composed       = _typed->is_composing();
   val_info.value_type     = type_name;
   val_info.default_value  = get_default_value<T>( _def_value_any );
+  val_info.fields_count   = fields_count;
 }
 
 void try_handle_type( const std::string& name, options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed )
@@ -103,7 +104,11 @@ void try_handle_type( const std::string& name, options_dumper::value_info& val_i
   else if( typed->value_type() == typeid(boost::filesystem::path) )
     handle_type<boost::filesystem::path>( val_info, typed, "path" );
   else if( typed->value_type() == typeid(std::vector<std::string>) )
-    handle_type<std::vector<std::string>>( val_info, typed, "string_array" );
+  {
+    //Below parameter should be logically treated as a pair of values.
+    const std::string _fixed_name = "export-keys-wallet";
+    handle_type<std::vector<std::string>>( val_info, typed, "string_array", name == _fixed_name ? 2  : 1 );
+  }
   else
     val_info.value_type = "unknown";
 }
@@ -192,4 +197,4 @@ std::string options_dumper::dump_to_string() const
 };
 
 FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(value));
-FC_REFLECT(appbase::options_dumper::value_info, (required)(multitoken)(composed)(value_type)(default_value));
+FC_REFLECT(appbase::options_dumper::value_info, (required)(multitoken)(composed)(value_type)(default_value)(fields_count));
