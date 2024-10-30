@@ -17,12 +17,12 @@
    fun:store
    fun:store
 }
-# Signaling queue_condition_variable is safe in chain_plugin::generate_block, because we push to write_queue and thgen check in chain_plugin_impl::start_write_processing for write_queue.empty()
+# Signaling queue_condition_variable is safe in chain_plugin::push_generate_block_request, because we push to write_queue and thgen check in chain_plugin_impl::start_write_processing for write_queue.empty()
 {
    <insert_a_suppression_name_here>
    Helgrind:Dubious
    obj:/usr/pkg/libexec/valgrind/vgpreload_helgrind-amd64-linux.so
-   fun:_ZN4hive7plugins5chain12chain_plugin14generate_blockERKSt10shared_ptrINS_5chain27generate_block_flow_controlEE
+   fun:_ZN4hive7plugins5chain12chain_plugin14push_generate_block_requestERKSt10shared_ptrINS_5chain27generate_block_flow_controlEE
 }
 # Same, but in chain_plugin::accept_transaction
 {

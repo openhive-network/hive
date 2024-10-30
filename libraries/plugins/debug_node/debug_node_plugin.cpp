@@ -370,7 +370,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
     else
     {
-      my->_chain_plugin.generate_block(generate_block_ctrl);
+      my->_chain_plugin.push_generate_block_request(generate_block_ctrl);
     }
 
     ++produced;
