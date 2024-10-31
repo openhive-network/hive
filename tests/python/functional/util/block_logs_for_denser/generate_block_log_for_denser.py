@@ -88,7 +88,7 @@ def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
 
     wait_for_current_hardfork(node, current_hardfork_number)
 
-    wallet = tt.OldWallet(attach_to=node, additional_arguments=["--chain-id=44"])
+    wallet = tt.Wallet(attach_to=node, chain_id="44")
 
     for account_name, _ in ACCOUNT_DETAILS:
         import_keys(wallet, account_name)
@@ -131,7 +131,7 @@ def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
     tt.logger.info(f"Block_log created successfully. Save in {args.output_block_log_directory} Exiting...")
 
 
-def import_keys(wallet: tt.OldWallet, account_name: str) -> None:
+def import_keys(wallet: tt.Wallet, account_name: str) -> None:
     owner = tt.Account(account_name, secret="owner").private_key
     active = tt.Account(account_name, secret="active").private_key
     posting = tt.Account(account_name, secret="posting").private_key
