@@ -2,6 +2,7 @@ import { BeekeeperApi } from "./api.js";
 import { BeekeeperSession } from "./session.js";
 import { IBeekeeperUnlockedWallet, IBeekeeperSession, TPublicKey, IBeekeeperWallet, TSignature } from "../interfaces.js";
 import { StringList } from "../beekeeper.js";
+import { safeWasmCall } from '../util/wasm_error';
 
 interface IImportKeyResponse {
   public_key: string;
@@ -41,14 +42,14 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   }
 
   public lock(): BeekeeperLockedWallet {
-    this.api.extract(this.api.api.lock(this.session.token, this.locked.name) as string);
+    this.api.extract(safeWasmCall(() => this.api.api.lock(this.session.token, this.locked.name) as string));
     this.locked.unlocked = undefined;
 
     return this.locked;
   }
 
   public async importKey(wifKey: string): Promise<TPublicKey> {
-    const { public_key } = this.api.extract(this.api.api.import_key(this.session.token, this.locked.name, wifKey) as string) as IImportKeyResponse;
+    const { public_key } = this.api.extract(safeWasmCall(() => this.api.api.import_key(this.session.token, this.locked.name, wifKey) as string)) as IImportKeyResponse;
 
     await this.api.fs.sync();
 
@@ -56,7 +57,7 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   }
 
   public async importKeys(wifKeys: StringList): Promise<TPublicKey> {
-    const { public_key } = this.api.extract(this.api.api.import_keys(this.session.token, this.locked.name, wifKeys) as string) as IImportKeyResponse;
+    const { public_key } = this.api.extract(safeWasmCall(() => this.api.api.import_keys(this.session.token, this.locked.name, wifKeys) as string)) as IImportKeyResponse;
 
     await this.api.fs.sync();
 
@@ -64,19 +65,19 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   }
 
   public async removeKey(publicKey: TPublicKey): Promise<void> {
-    this.api.extract(this.api.api.remove_key(this.session.token, this.locked.name, publicKey) as string);
+    this.api.extract(safeWasmCall(() => this.api.api.remove_key(this.session.token, this.locked.name, publicKey) as string));
 
     await this.api.fs.sync();
   }
 
   public signDigest(publicKey: string, sigDigest: string): TSignature {
-    const result = this.api.extract(this.api.api.sign_digest(this.session.token, sigDigest, publicKey) as string) as IBeekeeperSignature;
+    const result = this.api.extract(safeWasmCall(() => this.api.api.sign_digest(this.session.token, sigDigest, publicKey) as string)) as IBeekeeperSignature;
 
     return result.signature;
   }
 
   public getPublicKeys(): TPublicKey[] {
-    const result = this.api.extract(this.api.api.get_public_keys(this.session.token) as string) as IBeekeeperKeys;
+    const result = this.api.extract(safeWasmCall(() => this.api.api.get_public_keys(this.session.token) as string)) as IBeekeeperKeys;
 
     return result.keys.map(value => value.public_key);
   }
@@ -85,9 +86,9 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     let call_result;
 
     if(typeof nonce === 'number')
-      call_result = this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content, nonce);
+      call_result = safeWasmCall(() => this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content, nonce));
     else
-      call_result = this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content);
+      call_result = safeWasmCall(() => this.api.api.encrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content));
 
     const result = this.api.extract(call_result) as IEncryptData;
 
@@ -95,7 +96,7 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   }
 
   public decryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string {
-    const result = this.api.extract(this.api.api.decrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content)) as IDecryptData;
+    const result = this.api.extract(safeWasmCall(() => this.api.api.decrypt_data(this.session.token, key, anotherKey || key, this.locked.name, content))) as IDecryptData;
 
     return result.decrypted_content;
   }
@@ -116,7 +117,7 @@ export class BeekeeperLockedWallet implements IBeekeeperWallet {
   ) {}
 
   public unlock(password: string): IBeekeeperUnlockedWallet {
-    this.api.extract(this.api.api.unlock(this.session.token, this.name, password) as string);
+    this.api.extract(safeWasmCall(() => this.api.api.unlock(this.session.token, this.name, password) as string));
     this.unlocked = new BeekeeperUnlockedWallet(this.api, this.session, this);
 
     return this.unlocked;
