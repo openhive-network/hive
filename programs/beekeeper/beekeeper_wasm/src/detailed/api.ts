@@ -4,6 +4,8 @@ import { BeekeeperError } from "../errors.js";
 import { BeekeeperFileSystem } from "./fs.js";
 import { IBeekeeperInstance, IBeekeeperOptions, IBeekeeperSession } from "../interfaces.js";
 import { BeekeeperSession } from "./session.js";
+import { safeAsyncWasmCall } from "../util/wasm_error.js";
+import { safeWasmCall } from '../util/wasm_error';
 
 // We would like to expose our api using BeekeeperInstance interface, but we would not like to expose users a way of creating instance of BeekeeperApi
 export class BeekeeperApi implements IBeekeeperInstance {
@@ -38,7 +40,7 @@ export class BeekeeperApi implements IBeekeeperInstance {
   }
 
   public async init({ storageRoot, enableLogs, unlockTimeout }: IBeekeeperOptions) {
-    await this.fs.init(storageRoot);
+    await safeAsyncWasmCall(() => this.fs.init(storageRoot));
 
     const WALLET_OPTIONS = ['--wallet-dir', `${storageRoot}/.beekeeper`, '--enable-logs', Boolean(enableLogs).toString(), '--unlock-timeout', String(unlockTimeout)];
 
@@ -46,13 +48,13 @@ export class BeekeeperApi implements IBeekeeperInstance {
     WALLET_OPTIONS.forEach((opt) => void beekeeperOptions.push_back(opt));
 
     this.api = new this.provider.beekeeper_api(beekeeperOptions);
-    beekeeperOptions.delete();
+    safeWasmCall(() => beekeeperOptions.delete());
 
-    this.extract(this.api.init() as string);
+    this.extract(safeWasmCall(() => this.api.init() as string));
   }
 
   public createSession(salt: string): IBeekeeperSession {
-    const { token } = this.extract(this.api.create_session(salt) as string) as { token: string };
+    const { token } = this.extract(safeWasmCall(() => this.api.create_session(salt) as string)) as { token: string };
     const session = new BeekeeperSession(this, token);
 
     this.sessions.set(token, session);
@@ -64,15 +66,15 @@ export class BeekeeperApi implements IBeekeeperInstance {
     if(!this.sessions.delete(token))
       throw new BeekeeperError(`This Beekeeper API instance is not the owner of session identified by token: "${token}"`);
 
-    this.extract(this.api.close_session(token) as string);
+    this.extract(safeWasmCall(() => this.api.close_session(token) as string));
   }
 
   public async delete(): Promise<void> {
     for(const session of this.sessions.values())
-      await session.close();
+      session.close();
 
-    this.api.delete();
+    safeWasmCall(() => this.api.delete());
 
-    await this.fs.sync();
+    await safeAsyncWasmCall(() => this.fs.sync());
   }
 }
