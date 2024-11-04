@@ -151,6 +151,7 @@ def run_networks(
     assigned_addresses = generate_free_addresses(number_of_nodes=len(nodes))
     cnt_node = 1
     for iteration, node in enumerate(nodes):
+        node.config.log_json_rpc = "json_rpc"
         node.config.p2p_endpoint = assigned_addresses[iteration]
         [
             node.config.p2p_seed_node.append(address)
