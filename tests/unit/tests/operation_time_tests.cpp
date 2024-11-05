@@ -40,18 +40,18 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
         const std::string& n,
         fc::ecc::private_key pk,
         fc::optional<asset> mpay = fc::optional<asset>() )
-        : name(n), private_key(pk), max_accepted_payout(mpay) {}
+        : name(n), post_key(pk), max_accepted_payout(mpay) {}
       std::string             name;
-      fc::ecc::private_key    private_key;
+      fc::ecc::private_key    post_key;
       fc::optional< asset >   max_accepted_payout;
     };
 
     struct voter_actor
     {
       voter_actor( const std::string& n, fc::ecc::private_key pk, std::string fa )
-        : name(n), private_key(pk), favorite_author(fa) {}
+        : name(n), post_key(pk), favorite_author(fa) {}
       std::string             name;
-      fc::ecc::private_key    private_key;
+      fc::ecc::private_key    post_key;
       std::string             favorite_author;
     };
 
@@ -59,12 +59,12 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     std::vector< author_actor > authors;
     std::vector< voter_actor > voters;
 
-    authors.emplace_back( "alice", alice_private_key );
-    authors.emplace_back( "bob"  , bob_private_key, ASSET( "0.000 TBD" ) );
-    authors.emplace_back( "dave" , dave_private_key );
-    voters.emplace_back( "ulysses", ulysses_private_key, "alice");
-    voters.emplace_back( "vivian" , vivian_private_key , "bob"  );
-    voters.emplace_back( "wendy"  , wendy_private_key  , "dave" );
+    authors.emplace_back( "alice", alice_post_key );
+    authors.emplace_back( "bob"  , bob_post_key, ASSET( "0.000 TBD" ) );
+    authors.emplace_back( "dave" , dave_post_key );
+    voters.emplace_back( "ulysses", ulysses_post_key, "alice");
+    voters.emplace_back( "vivian" , vivian_post_key , "bob"  );
+    voters.emplace_back( "wendy"  , wendy_post_key  , "dave" );
 
     // A,B,D : posters
     // U,V,W : voters
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       }
 
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      push_transaction( tx, author.private_key );
+      push_transaction( tx, author.post_key );
     }
 
     generate_blocks(1);
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       vote.weight = HIVE_100_PERCENT;
       tx.operations.push_back( vote );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      push_transaction( tx, voter.private_key );
+      push_transaction( tx, voter.post_key );
     }
 
     //auto& reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive();
@@ -176,14 +176,14 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     signed_transaction tx;
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
     validate_database();
 
     comment.author = "bob";
 
     tx.clear();
     tx.operations.push_back( comment );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
     validate_database();
 
     generate_blocks( db->head_block_time() + db->get_dynamic_global_properties().reverse_auction_seconds );
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     tx.clear();
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
     validate_database();
 
     vote.voter = "bob";
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
 
     tx.clear();
     tx.operations.push_back( vote );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
     validate_database();
 
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_net_rshares(),
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.clear();
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
 
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
 
@@ -2465,7 +2465,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
 
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     tx.operations.clear();
 
@@ -2474,7 +2474,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
     op.permlink = "test2";
 
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
@@ -2483,7 +2483,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
     op.permlink = "test3";
 
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
@@ -2492,7 +2492,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
     op.permlink = "test4";
 
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
@@ -2501,7 +2501,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
     op.permlink = "test5";
 
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2525,19 +2525,19 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     comment.permlink = "test";
     comment.parent_permlink = "test";
     comment.body = "test";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
 
     generate_block();
 
     comment.body = "test2";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
 
     vote_operation vote;
     vote.weight = HIVE_100_PERCENT;
     vote.voter = "bob";
     vote.author = "alice";
     vote.permlink = "test";
-    push_transaction( vote, bob_private_key );
+    push_transaction( vote, bob_post_key );
 
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::min() );
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::maximum() );
@@ -2552,7 +2552,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 
     vote.voter = "sam";
     /// Starting from HF25 voting for already paid posts is allowed again.
-    push_transaction( vote, sam_private_key );
+    push_transaction( vote, sam_post_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2563,7 +2563,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vote.voter = "bob";
     vote.weight = HIVE_100_PERCENT * -1;
     /// Starting from HF25 voting for already paid posts is allowed again.
-    push_transaction( vote, bob_private_key );
+    push_transaction( vote, bob_post_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2574,7 +2574,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vote.voter = "dave";
     vote.weight = 0;
     /// Starting from HF25 voting for already paid posts is allowed again.
-    push_transaction( vote, dave_private_key );
+    push_transaction( vote, dave_post_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2583,17 +2583,17 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     comment.body = "test4";
-    push_transaction( comment, alice_private_key ); // Works now in #1714
+    push_transaction( comment, alice_post_key ); // Works now in #1714
 
     comment.author = "alice";
     comment.parent_author = "";
     comment.permlink = "test-fast-vote";
     comment.parent_permlink = "test";
     comment.body = "test";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
 
     comment.author = "bob";
-    push_transaction( comment, bob_private_key );
+    push_transaction( comment, bob_post_key );
 
     generate_block();
 
@@ -2602,9 +2602,9 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vote.permlink = "test-fast-vote";
     vote.voter = "dave";
     vote.weight = HIVE_100_PERCENT;
-    push_transaction( vote, dave_private_key );
+    push_transaction( vote, dave_post_key );
     vote.author = "bob";
-    push_transaction( vote, dave_private_key );
+    push_transaction( vote, dave_post_key );
 
     generate_block();
   }
@@ -2645,7 +2645,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     signed_transaction tx;
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     vote_operation vote;
     vote.voter = "bob";
@@ -2656,7 +2656,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     tx.operations.clear();
 
     tx.operations.push_back( vote );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
@@ -2780,7 +2780,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 

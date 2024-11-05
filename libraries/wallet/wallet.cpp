@@ -562,7 +562,12 @@ public:
     {
       const signed_transaction& signature_source = new_tx->get_transaction();
 
+      protocol::hardfork_version _result = _remote_wallet_bridge_api->get_hardfork_version({}, LOCK);
+
+      bool _strict_authority_level = _result.minor_v() >= 28;
+      
       auto minimal_signing_keys = signature_source.minimize_required_signatures(
+        _strict_authority_level,
         _hive_chain_id,
         available_keys,
         [&]( const string& account_name ) { return collector.get_account( account_name ).active; },

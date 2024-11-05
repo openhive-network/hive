@@ -135,9 +135,9 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     const auto& proposal_idx = db->get_index< proposal_index, by_proposal_id >();
 
     //Needed basic operations
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
     generate_block();
-    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
     /*
@@ -306,9 +306,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     auto end_2 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((101));
     auto end_3 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((102));
 
-    int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key );
-    int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key );
-    int64_t proposal_3 = create_proposal( proposal_creator, "acc3",  start_3,  end_3, asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key, accp_post_key );
+    int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key, accp_post_key );
+    int64_t proposal_3 = create_proposal( proposal_creator, "acc3",  start_3,  end_3, asset( 100, HBD_SYMBOL ), accp_private_key, accp_post_key );
 
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
@@ -667,8 +667,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
     auto _start = db->head_block_time();
     auto _end = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days( 100 );
 
-    int64_t _id_proposal_00 = create_proposal( "propcreator", "propcreator", _start, _end, asset( 100, HBD_SYMBOL ), propcreator_private_key );
-    int64_t _id_proposal_01 = create_proposal( "propcreator2", "propcreator2", _start, _end, asset( 101, HBD_SYMBOL ), propcreator2_private_key );
+    int64_t _id_proposal_00 = create_proposal( "propcreator", "propcreator", _start, _end, asset( 100, HBD_SYMBOL ), propcreator_private_key, propcreator_post_key );
+    int64_t _id_proposal_01 = create_proposal( "propcreator2", "propcreator2", _start, _end, asset( 101, HBD_SYMBOL ), propcreator2_private_key, propcreator2_post_key );
 
     witness_create( "witness", witness_private_key, "http://something.com", witness_public_key, 1000 );
     witness_create( "witness2", witness2_private_key, "http://something.com", witness2_public_key, 1000 );
@@ -824,16 +824,17 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > users = {
-      {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key }, {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
-      {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key }, {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
-      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key }, {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key },
-      {"a30", a30_private_key }, {"a31", a31_private_key }, {"a32", a32_private_key }, {"a33", a33_private_key }, {"a34", a34_private_key }, {"a35", a35_private_key }, {"a36", a36_private_key }, {"a37", a37_private_key }, {"a38", a38_private_key }, {"a39", a39_private_key },
-      {"a40", a40_private_key }, {"a41", a41_private_key }, {"a42", a42_private_key }, {"a43", a43_private_key }, {"a44", a44_private_key }, {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key },
-      {"a50", a50_private_key }, {"a51", a51_private_key }, {"a52", a52_private_key }, {"a53", a53_private_key }, {"a54", a54_private_key }, {"a55", a55_private_key }, {"a56", a56_private_key }, {"a57", a57_private_key }, {"a58", a58_private_key }, {"a59", a59_private_key },
+      {"a00", a00_private_key, a00_post_key }, {"a01", a01_private_key, a01_post_key }, {"a02", a02_private_key, a02_post_key }, {"a03", a03_private_key, a03_post_key }, {"a04", a04_private_key, a04_post_key }, {"a05", a05_private_key, a05_post_key }, {"a06", a06_private_key, a06_post_key }, {"a07", a07_private_key, a07_post_key }, {"a08", a08_private_key, a08_post_key }, {"a09", a09_private_key, a09_post_key },
+      {"a10", a10_private_key, a10_post_key }, {"a11", a11_private_key, a11_post_key }, {"a12", a12_private_key, a12_post_key }, {"a13", a13_private_key, a13_post_key }, {"a14", a14_private_key, a14_post_key }, {"a15", a15_private_key, a15_post_key }, {"a16", a16_private_key, a16_post_key }, {"a17", a17_private_key, a17_post_key }, {"a18", a18_private_key, a18_post_key }, {"a19", a19_private_key, a19_post_key },
+      {"a20", a20_private_key, a20_post_key }, {"a21", a21_private_key, a21_post_key }, {"a22", a22_private_key, a22_post_key }, {"a23", a23_private_key, a23_post_key }, {"a24", a24_private_key, a24_post_key }, {"a25", a25_private_key, a25_post_key }, {"a26", a26_private_key, a26_post_key }, {"a27", a27_private_key, a27_post_key }, {"a28", a28_private_key, a28_post_key }, {"a29", a29_private_key, a29_post_key },
+      {"a30", a30_private_key, a30_post_key }, {"a31", a31_private_key, a31_post_key }, {"a32", a32_private_key, a32_post_key }, {"a33", a33_private_key, a33_post_key }, {"a34", a34_private_key, a34_post_key }, {"a35", a35_private_key, a35_post_key }, {"a36", a36_private_key, a36_post_key }, {"a37", a37_private_key, a37_post_key }, {"a38", a38_private_key, a38_post_key }, {"a39", a39_private_key, a39_post_key },
+      {"a40", a40_private_key, a40_post_key }, {"a41", a41_private_key, a41_post_key }, {"a42", a42_private_key, a42_post_key }, {"a43", a43_private_key, a43_post_key }, {"a44", a44_private_key, a44_post_key }, {"a45", a45_private_key, a45_post_key }, {"a46", a46_private_key, a46_post_key }, {"a47", a47_private_key, a47_post_key }, {"a48", a48_private_key, a48_post_key }, {"a49", a49_private_key, a49_post_key },
+      {"a50", a50_private_key, a50_post_key }, {"a51", a51_private_key, a51_post_key }, {"a52", a52_private_key, a52_post_key }, {"a53", a53_private_key, a53_post_key }, {"a54", a54_private_key, a54_post_key }, {"a55", a55_private_key, a55_post_key }, {"a56", a56_private_key, a56_post_key }, {"a57", a57_private_key, a57_post_key }, {"a58", a58_private_key, a58_post_key }, {"a59", a59_private_key, a59_post_key },
     };
 
     //HIVE_MAX_ACCOUNT_WITNESS_VOTES is 30 for now so only 30 witnesses.
@@ -846,7 +847,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     for (const auto& witness : witnesses)
     {
       private_key_type witness_key = generate_private_key( witness.account + "_key" );
-      witness_create( witness.account, witness.key, "foo.bar", witness_key.get_public_key(), 1000 );
+      witness_create( witness.account, witness.active_key, "foo.bar", witness_key.get_public_key(), 1000 );
     }
     generate_block();
 
@@ -866,7 +867,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     for(const auto& user : users )
     {
       ISSUE_FUNDS( user.account, ASSET( "100000.000 TBD" ) );
-      proposals.push_back(create_proposal( user.account, receiver,  proposals_start_time,  proposals_end_time, asset( 100, HBD_SYMBOL ), user.key));
+      proposals.push_back(create_proposal( user.account, receiver,  proposals_start_time,  proposals_end_time, asset( 100, HBD_SYMBOL ), user.active_key, user.post_key));
     }
 
     generate_block();
@@ -877,10 +878,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     for (const auto& user : users)
     {
       for (const auto proposal : proposals)
-        vote_proposal(user.account, {proposal}, true, user.key);
+        vote_proposal(user.account, {proposal}, true, user.active_key);
 
       for (const auto& witness : witnesses)
-        witness_vote(user.account, witness.account, user.key);
+        witness_vote(user.account, witness.account, user.active_key);
 
       generate_block();
     }
@@ -956,13 +957,13 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
       while( i<50 )
       {
         if( i < 30 || ( i >= 40 && i < 50 ) )
-          vote_proposal( userI->account, { proposals.front(), proposals[1], proposals.back() }, true, userI->key );
+          vote_proposal( userI->account, { proposals.front(), proposals[1], proposals.back() }, true, userI->active_key );
 
         for( const auto& witness : witnesses )
-          witness_vote( userI->account, witness.account, userI->key );
+          witness_vote( userI->account, witness.account, userI->active_key );
 
         if( i >= 10 && i < 40 )
-          proxy( userI->account, users[ i-10 ].account, userI->key );
+          proxy( userI->account, users[ i-10 ].account, userI->active_key );
 
         if( (++i % 10) == 0 )
           generate_block();
@@ -973,7 +974,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     generate_blocks( expiration_time - fc::seconds(HIVE_BLOCK_INTERVAL) );
     //couple of accounts do governance action almost at the last moment (removing of proposal vote, for some that was even inactive, for some there was no such vote anymore - still counts)
     for ( i = 0; i < 6; ++i )
-      vote_proposal( users[10*i].account, { proposals.front() }, false, users[10*i].key );
+      vote_proposal( users[10*i].account, { proposals.front() }, false, users[10*i].active_key );
 
     //check multiple accounts expiring in the same time
     {
@@ -1069,7 +1070,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     //=====================preparing=====================
 
     //Needed basic operations
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
     generate_blocks( 1 );
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
@@ -1138,15 +1139,16 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-                          {"tester001", tester001_private_key },
-                          {"tester002", tester002_private_key },
-                          {"tester003", tester003_private_key },
-                          {"tester004", tester004_private_key },
-                          {"tester005", tester005_private_key },
+                          {"tester001", tester001_private_key, tester001_post_key },
+                          {"tester002", tester002_private_key, tester002_post_key },
+                          {"tester003", tester003_private_key, tester003_post_key },
+                          {"tester004", tester004_private_key, tester004_post_key },
+                          {"tester005", tester005_private_key, tester005_post_key },
                           };
 
     for( auto item : inits )
@@ -1173,14 +1175,14 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      proposals_id.push_back( create_proposal( item.account, item.account, start_date, end_date, daily_pay, item.key ) );
+      proposals_id.push_back( create_proposal( item.account, item.account, start_date, end_date, daily_pay, item.active_key, item.post_key ) );
       generate_block();
     }
 
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      vote_proposal( item.account, proposals_id, true/*approve*/, item.key );
+      vote_proposal( item.account, proposals_id, true/*approve*/, item.active_key );
       generate_block();
     }
 
@@ -1229,20 +1231,21 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-      {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key },
-      {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
-      {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key },
-      {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
-      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key },
-      {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key },
-      {"a30", a30_private_key }, {"a31", a31_private_key }, {"a32", a32_private_key }, {"a33", a33_private_key }, {"a34", a34_private_key },
-      {"a35", a35_private_key }, {"a36", a36_private_key }, {"a37", a37_private_key }, {"a38", a38_private_key }, {"a39", a39_private_key },
-      {"a40", a40_private_key }, {"a41", a41_private_key }, {"a42", a42_private_key }, {"a43", a43_private_key }, {"a44", a44_private_key },
-      {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key }
+      {"a00", a00_private_key, a00_post_key }, {"a01", a01_private_key, a01_post_key }, {"a02", a02_private_key, a02_post_key }, {"a03", a03_private_key, a03_post_key }, {"a04", a04_private_key, a04_post_key },
+      {"a05", a05_private_key, a05_post_key }, {"a06", a06_private_key, a06_post_key }, {"a07", a07_private_key, a07_post_key }, {"a08", a08_private_key, a08_post_key }, {"a09", a09_private_key, a09_post_key },
+      {"a10", a10_private_key, a10_post_key }, {"a11", a11_private_key, a11_post_key }, {"a12", a12_private_key, a12_post_key }, {"a13", a13_private_key, a13_post_key }, {"a14", a14_private_key, a14_post_key },
+      {"a15", a15_private_key, a15_post_key }, {"a16", a16_private_key, a16_post_key }, {"a17", a17_private_key, a17_post_key }, {"a18", a18_private_key, a18_post_key }, {"a19", a19_private_key, a19_post_key },
+      {"a20", a20_private_key, a20_post_key }, {"a21", a21_private_key, a21_post_key }, {"a22", a22_private_key, a22_post_key }, {"a23", a23_private_key, a23_post_key }, {"a24", a24_private_key, a24_post_key },
+      {"a25", a25_private_key, a25_post_key }, {"a26", a26_private_key, a26_post_key }, {"a27", a27_private_key, a27_post_key }, {"a28", a28_private_key, a28_post_key }, {"a29", a29_private_key, a29_post_key },
+      {"a30", a30_private_key, a30_post_key }, {"a31", a31_private_key, a31_post_key }, {"a32", a32_private_key, a32_post_key }, {"a33", a33_private_key, a33_post_key }, {"a34", a34_private_key, a34_post_key },
+      {"a35", a35_private_key, a35_post_key }, {"a36", a36_private_key, a36_post_key }, {"a37", a37_private_key, a37_post_key }, {"a38", a38_private_key, a38_post_key }, {"a39", a39_private_key, a39_post_key },
+      {"a40", a40_private_key, a40_post_key }, {"a41", a41_private_key, a41_post_key }, {"a42", a42_private_key, a42_post_key }, {"a43", a43_private_key, a43_post_key }, {"a44", a44_private_key, a44_post_key },
+      {"a45", a45_private_key, a45_post_key }, {"a46", a46_private_key, a46_post_key }, {"a47", a47_private_key, a47_post_key }, {"a48", a48_private_key, a48_post_key }, {"a49", a49_private_key, a49_post_key }
     };
 
     for( auto item : inits )
@@ -1263,12 +1266,12 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     //=====================preparing=====================
     auto item_creator = inits[ 0 ];
-    create_proposal( item_creator.account, item_creator.account, start_date, end_date, ASSET( "24.000 TBD" ), item_creator.key );
+    create_proposal( item_creator.account, item_creator.account, start_date, end_date, ASSET( "24.000 TBD" ), item_creator.active_key, item_creator.post_key );
     generate_block();
 
     for( auto item : inits )
     {
-      vote_proposal( item.account, {0}, true/*approve*/, item.key);
+      vote_proposal( item.account, {0}, true/*approve*/, item.active_key );
       generate_block();
 
       const account_object& account = db->get_account( item.account );
@@ -1279,7 +1282,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     generate_blocks( db->get_dynamic_global_properties().next_maintenance_time - block_interval, false );
 
     {
-      remove_proposal( item_creator.account, {0}, item_creator.key );
+      remove_proposal( item_creator.account, {0}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, {0} );
       auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
       BOOST_REQUIRE( found_proposals == 1 );
@@ -1335,10 +1338,16 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     std::vector< int64_t > proposals_id;
     flat_map< std::string, asset > before_tbds;
 
-    flat_map< std::string, fc::ecc::private_key > inits;
-    inits[ "tester00" ] = tester00_private_key;
-    inits[ "tester01" ] = tester01_private_key;
-    inits[ "tester02" ] = tester02_private_key;
+    struct initial_data
+    {
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
+    };
+
+    flat_map< std::string, initial_data > inits;
+    inits[ "tester00" ] = { tester00_private_key, tester00_post_key };
+    inits[ "tester01" ] = { tester01_private_key, tester01_post_key };
+    inits[ "tester02" ] = { tester02_private_key, tester02_post_key };
 
     for( auto item : inits )
     {
@@ -1376,13 +1385,13 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     for( auto item : inits )
     {
       auto _pay = ( item.first == tester02_account ) ? huge_daily_pay : daily_pay;
-      proposals_id.push_back( create_proposal( item.first, item.first, start_date, end_date, _pay, item.second ) );
+      proposals_id.push_back( create_proposal( item.first, item.first, start_date, end_date, _pay, item.second.active_key, item.second.post_key ) );
       generate_block();
 
       if( item.first == tester02_account )
         continue;
 
-      vote_proposal( item.first, {i++}, true/*approve*/, item.second );
+      vote_proposal( item.first, {i++}, true/*approve*/, item.second.active_key );
       generate_block();
     }
 
@@ -1394,7 +1403,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     auto payment_checker = [&]( const std::vector< asset >& payouts )
     {
-      idump( (inits) );
+      //idump( (inits) );
       idump( (payouts) );
       uint16_t i = 0;
       for( const auto& item : inits )
@@ -1428,7 +1437,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     {
       BOOST_TEST_MESSAGE( "Setting proxy. The account `tester01` don't want to vote. Every decision is made by account `tester00`" );
-      proxy( tester01_account, tester00_account, inits[ tester01_account ] );
+      proxy( tester01_account, tester00_account, inits[ tester01_account ].active_key );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -1440,7 +1449,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     ilog("");
     payment_checker( { ASSET( "2.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) } );
 
-    vote_proposal( tester02_account, {2}, true/*approve*/, inits[ tester02_account ] );
+    vote_proposal( tester02_account, {2}, true/*approve*/, inits[ tester02_account ].active_key );
     generate_block();
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -1454,7 +1463,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
-      proxy( tester01_account, "", inits[ tester01_account ] );
+      proxy( tester01_account, "", inits[ tester01_account ].active_key );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -1508,7 +1517,7 @@ try
     //=====================preparing=====================
 
     //Needed basic operations
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
@@ -1596,7 +1605,7 @@ try
     //=====================preparing=====================
 
     //Needed basic operations
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
@@ -1678,13 +1687,13 @@ BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
     ISSUE_FUNDS( creator, ASSET( "100.000 TBD" ) );
     //=====================preparing=====================
 
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
-    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key );
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
-    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
     {
@@ -1757,13 +1766,13 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
     ISSUE_FUNDS( creator, ASSET( "100.000 TBD" ) );
     //=====================preparing=====================
 
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
-    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key );
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
-    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key, alice_post_key );
     generate_block();
 
     {
@@ -1837,7 +1846,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
 
@@ -1935,7 +1944,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
 
@@ -2029,7 +2038,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
 
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
 
     signed_transaction tx;
     update_proposal_votes_operation op;
@@ -2099,8 +2108,8 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
 
-    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay_00, alice_private_key );
-    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date, end_date, daily_pay_01, alice_private_key );
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay_00, alice_private_key, alice_post_key );
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date, end_date, daily_pay_01, alice_private_key, alice_post_key );
 
     signed_transaction tx;
     update_proposal_votes_operation op;
@@ -2131,7 +2140,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       BOOST_REQUIRE( cnt == 2 );
     }
 
-    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date, end_date, daily_pay_02, alice_private_key );
+    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date, end_date, daily_pay_02, alice_private_key, alice_post_key );
     std::string voter_02 = "dan";
     auto voter_02_key = dan_private_key;
 
@@ -2336,7 +2345,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
     {
-      int64_t proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+      int64_t proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
       BOOST_REQUIRE( proposal >= 0 );
     }
     validate_database();
@@ -2353,7 +2362,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_001 )
       ACTORS( (alice)(bob) )
       generate_block();
       ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
-      HIVE_REQUIRE_THROW( create_proposal( "", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+      HIVE_REQUIRE_THROW( create_proposal( "", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
 
     }
     validate_database();
@@ -2370,7 +2379,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_002 )
     ACTORS( (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
-    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, "", cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, "", cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2386,7 +2395,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_003 )
     generate_block();
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     cpd.start_date = cpd.end_date + fc::days(2);
-    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2402,7 +2411,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_004 )
     generate_block();
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     cpd.end_date = cpd.start_date - fc::days(2);
-    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2509,7 +2518,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
     generate_block();
     cpd.end_date = cpd.start_date + fc::days(20);
     cpd.daily_pay = asset( -10, HBD_SYMBOL );
-    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2528,7 +2537,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_009 )
     generate_block();
     cpd.end_date = cpd.start_date + fc::days(80);
     cpd.daily_pay = asset( 10, HBD_SYMBOL );
-    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2545,7 +2554,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     std::vector< int64_t > proposals = {proposal_1};
     vote_proposal("carol", proposals, true, carol_private_key);
@@ -2565,7 +2574,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     std::vector< int64_t > proposals = {proposal_1};
     vote_proposal("carol", proposals, false, carol_private_key);
@@ -2585,7 +2594,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     std::vector< int64_t > proposals;
     HIVE_REQUIRE_THROW( vote_proposal("carol", proposals, true, carol_private_key), fc::exception);
@@ -2623,7 +2632,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     std::vector< int64_t > proposals = {proposal_1};
     HIVE_REQUIRE_THROW(vote_proposal("urp", proposals, false, carol_private_key), fc::exception);
@@ -2695,7 +2704,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
@@ -2727,9 +2736,9 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
     generate_block();
 
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
-    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
-    int64_t proposal_3 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
+    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
+    int64_t proposal_3 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     BOOST_REQUIRE(proposal_2 >= 0);
     BOOST_REQUIRE(proposal_3 >= 0);
@@ -2782,7 +2791,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
     std::vector<int64_t> proposals;
 
     for(int i = 0; i < 6; i++) {
-      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
@@ -2829,7 +2838,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
     std::vector<int64_t> proposals;
 
     for(int i = 0; i < 2; i++) {
-      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
@@ -2876,7 +2885,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
     std::vector<int64_t> proposals;
 
     for(int i = 0; i < 6; i++) {
-      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+      proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
@@ -2937,7 +2946,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     auto& proposal_idx      = db->get_index< proposal_index >().indices().get< by_creator >();
@@ -2974,8 +2983,8 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
-    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
+    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     BOOST_REQUIRE(proposal_2 >= 0);
 
@@ -3012,8 +3021,8 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
 
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
-    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
+    int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     BOOST_REQUIRE(proposal_1 >= 0);
     BOOST_REQUIRE(proposal_2 >= 0);
 
@@ -3069,7 +3078,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_009 )
     generate_block();
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     flat_set<int64_t> proposals = { proposal_1 };
     HIVE_REQUIRE_THROW(remove_proposal(cpd.receiver, proposals, bob_private_key), fc::exception);
     validate_database();
@@ -3106,7 +3115,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
     generate_block();
     flat_set<int64_t> proposals;
     for(int i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
-      proposals.insert(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ));
+      proposals.insert(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ));
     }
     HIVE_REQUIRE_THROW(remove_proposal(cpd.creator, proposals, bob_private_key), fc::exception);
     validate_database();
@@ -3175,15 +3184,16 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-                          {"a00", a00_private_key },
-                          {"a01", a01_private_key },
-                          {"a02", a02_private_key },
-                          {"a03", a03_private_key },
-                          {"a04", a04_private_key },
+                          {"a00", a00_private_key, a00_post_key },
+                          {"a01", a01_private_key, a01_post_key },
+                          {"a02", a02_private_key, a02_post_key },
+                          {"a03", a03_private_key, a03_post_key },
+                          {"a04", a04_private_key, a04_post_key },
                           };
 
     for( auto item : inits )
@@ -3195,7 +3205,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.key ) );
+      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.active_key, item.post_key ) );
       generate_block();
     }
 
@@ -3265,15 +3275,16 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-                          {"a00", a00_private_key },
-                          {"a01", a01_private_key },
-                          {"a02", a02_private_key },
-                          {"a03", a03_private_key },
-                          {"a04", a04_private_key },
+                          {"a00", a00_private_key, a00_post_key },
+                          {"a01", a01_private_key, a01_post_key },
+                          {"a02", a02_private_key, a02_post_key },
+                          {"a03", a03_private_key, a03_post_key },
+                          {"a04", a04_private_key, a04_post_key },
                           };
 
     for( auto item : inits )
@@ -3285,7 +3296,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     for( auto i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.key ) );
+      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.active_key, item.post_key ) );
       generate_block();
     }
 
@@ -3295,9 +3306,9 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
 
     for( auto item : inits )
     {
-      vote_proposal( item.account, v1, true/*approve*/, item.key);
+      vote_proposal( item.account, v1, true/*approve*/, item.active_key);
       generate_blocks( 1 );
-      vote_proposal( item.account, v2, true/*approve*/, item.key);
+      vote_proposal( item.account, v2, true/*approve*/, item.active_key);
       generate_blocks( 1 );
     }
 
@@ -3372,15 +3383,16 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-                          {"a00", a00_private_key },
-                          {"a01", a01_private_key },
-                          {"a02", a02_private_key },
-                          {"a03", a03_private_key },
-                          {"a04", a04_private_key },
+                          {"a00", a00_private_key, a00_post_key },
+                          {"a01", a01_private_key, a01_post_key },
+                          {"a02", a02_private_key, a02_post_key },
+                          {"a03", a03_private_key, a03_post_key },
+                          {"a04", a04_private_key, a04_post_key },
                           };
 
     for( auto item : inits )
@@ -3392,13 +3404,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     auto item_creator = inits[ 0 ];
     for( auto i = 0; i < nr_proposals; ++i )
     {
-      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.key ) );
+      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.active_key, item_creator.post_key ) );
       generate_block();
     }
 
     for( auto item : inits )
     {
-      vote_proposal( item.account, proposals_id, true/*approve*/, item.key);
+      vote_proposal( item.account, proposals_id, true/*approve*/, item.active_key);
       generate_blocks( 1 );
     }
 
@@ -3417,7 +3429,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     flat_set< int64_t > _proposals_id( proposals_id.begin(), proposals_id.end() );
 
     {
-      remove_proposal( item_creator.account,  _proposals_id, item_creator.key );
+      remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_proposals == 2 );
@@ -3426,7 +3438,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     }
 
     {
-      remove_proposal( item_creator.account,  _proposals_id, item_creator.key );
+      remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_proposals == 0 );
@@ -3470,16 +3482,17 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-                          {"a00", a00_private_key },
-                          {"a01", a01_private_key },
-                          {"a02", a02_private_key },
-                          {"a03", a03_private_key },
-                          {"a04", a04_private_key },
-                          {"a05", a05_private_key },
+                          {"a00", a00_private_key, a00_post_key },
+                          {"a01", a01_private_key, a01_post_key },
+                          {"a02", a02_private_key, a02_post_key },
+                          {"a03", a03_private_key, a03_post_key },
+                          {"a04", a04_private_key, a04_post_key },
+                          {"a05", a05_private_key, a05_post_key },
                           };
 
     for( auto item : inits )
@@ -3491,7 +3504,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     auto item_creator = inits[ 0 ];
     for( auto i = 0; i < nr_proposals; ++i )
     {
-      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.key ) );
+      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.active_key, item_creator.post_key ) );
       generate_block();
     }
 
@@ -3501,9 +3514,9 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
 
     for( auto item : inits )
     {
-      vote_proposal( item.account, v1, true/*approve*/, item.key);
+      vote_proposal( item.account, v1, true/*approve*/, item.active_key);
       generate_block();
-      vote_proposal( item.account, v2, true/*approve*/, item.key);
+      vote_proposal( item.account, v2, true/*approve*/, item.active_key);
       generate_block();
     }
 
@@ -3556,7 +3569,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       v5 v5 v5 xx v5 v5 v5 v5 v5 v5
     */
     {
-      remove_proposal( item_creator.account, {3}, item_creator.key );
+      remove_proposal( item_creator.account, {3}, item_creator.active_key );
       generate_block();
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
@@ -3580,7 +3593,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       v5 xx xx oo v5 v5 v5 xx v5 v5
     */
     {
-      remove_proposal( item_creator.account, {1,2,7}, item_creator.key );
+      remove_proposal( item_creator.account, {1,2,7}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 7 ) && find_proposal( 7 )->removed );
@@ -3621,7 +3634,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       v5 oo oo oo v5 xx xx oo xx rr
     */
     {
-      remove_proposal( item_creator.account, {5,6,7/*doesn't exist*/,8,9}, item_creator.key );
+      remove_proposal( item_creator.account, {5,6,7/*doesn't exist*/,8,9}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 8 ) && find_proposal( 8 )->removed );
@@ -3645,7 +3658,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       xx oo oo oo xx oo oo oo oo xx
     */
     {
-      remove_proposal( item_creator.account, {0,4,8,9}, item_creator.key );
+      remove_proposal( item_creator.account, {0,4,8,9}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 9 ) && find_proposal( 9 )->removed );
@@ -3714,20 +3727,21 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
     struct initial_data
     {
       std::string account;
-      fc::ecc::private_key key;
+      fc::ecc::private_key active_key;
+      fc::ecc::private_key post_key;
     };
 
     std::vector< initial_data > inits = {
-      {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key },
-      {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
-      {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key },
-      {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
-      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key },
-      {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key },
-      {"a30", a30_private_key }, {"a31", a31_private_key }, {"a32", a32_private_key }, {"a33", a33_private_key }, {"a34", a34_private_key },
-      {"a35", a35_private_key }, {"a36", a36_private_key }, {"a37", a37_private_key }, {"a38", a38_private_key }, {"a39", a39_private_key },
-      {"a40", a40_private_key }, {"a41", a41_private_key }, {"a42", a42_private_key }, {"a43", a43_private_key }, {"a44", a44_private_key },
-      {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key }
+      {"a00", a00_private_key, a00_post_key }, {"a01", a01_private_key, a01_post_key }, {"a02", a02_private_key, a02_post_key }, {"a03", a03_private_key, a03_post_key }, {"a04", a04_private_key, a04_post_key },
+      {"a05", a05_private_key, a05_post_key }, {"a06", a06_private_key, a06_post_key }, {"a07", a07_private_key, a07_post_key }, {"a08", a08_private_key, a08_post_key }, {"a09", a09_private_key, a09_post_key },
+      {"a10", a10_private_key, a10_post_key }, {"a11", a11_private_key, a11_post_key }, {"a12", a12_private_key, a12_post_key }, {"a13", a13_private_key, a13_post_key }, {"a14", a14_private_key, a14_post_key },
+      {"a15", a15_private_key, a15_post_key }, {"a16", a16_private_key, a16_post_key }, {"a17", a17_private_key, a17_post_key }, {"a18", a18_private_key, a18_post_key }, {"a19", a19_private_key, a19_post_key },
+      {"a20", a20_private_key, a20_post_key }, {"a21", a21_private_key, a21_post_key }, {"a22", a22_private_key, a22_post_key }, {"a23", a23_private_key, a23_post_key }, {"a24", a24_private_key, a24_post_key },
+      {"a25", a25_private_key, a25_post_key }, {"a26", a26_private_key, a26_post_key }, {"a27", a27_private_key, a27_post_key }, {"a28", a28_private_key, a28_post_key }, {"a29", a29_private_key, a29_post_key },
+      {"a30", a30_private_key, a30_post_key }, {"a31", a31_private_key, a31_post_key }, {"a32", a32_private_key, a32_post_key }, {"a33", a33_private_key, a33_post_key }, {"a34", a34_private_key, a34_post_key },
+      {"a35", a35_private_key, a35_post_key }, {"a36", a36_private_key, a36_post_key }, {"a37", a37_private_key, a37_post_key }, {"a38", a38_private_key, a38_post_key }, {"a39", a39_private_key, a39_post_key },
+      {"a40", a40_private_key, a40_post_key }, {"a41", a41_private_key, a41_post_key }, {"a42", a42_private_key, a42_post_key }, {"a43", a43_private_key, a43_post_key }, {"a44", a44_private_key, a44_post_key },
+      {"a45", a45_private_key, a45_post_key }, {"a46", a46_private_key, a46_post_key }, {"a47", a47_private_key, a47_post_key }, {"a48", a48_private_key, a48_post_key }, {"a49", a49_private_key, a49_post_key }
     };
 
     for( auto item : inits )
@@ -3739,13 +3753,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
     auto item_creator = inits[ 0 ];
     for( auto i = 0; i < nr_proposals; ++i )
     {
-      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.key ) );
+      proposals_id.push_back( create_proposal( item_creator.account, receiver, start_date_00, end_date_00, daily_pay, item_creator.active_key, item_creator.post_key ) );
       generate_block();
     }
 
     for( auto item : inits )
     {
-      vote_proposal( item.account, proposals_id, true/*approve*/, item.key);
+      vote_proposal( item.account, proposals_id, true/*approve*/, item.active_key);
       generate_block();
     }
 
@@ -3792,7 +3806,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       P4    v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49
     */
     {
-      remove_proposal( item_creator.account, {0,3}, item_creator.key );
+      remove_proposal( item_creator.account, {0,3}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 0 ) && find_proposal( 0 )->removed );
@@ -3882,7 +3896,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       P4    v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49
     */
     {
-      remove_proposal( item_creator.account, {1}, item_creator.key );
+      remove_proposal( item_creator.account, {1}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 1 ) && find_proposal( 1 )->removed );
@@ -3898,7 +3912,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       P4    v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49
     */
     {
-      remove_proposal( item_creator.account, {2}, item_creator.key );
+      remove_proposal( item_creator.account, {2}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 1 ) && find_proposal( 1 )->removed );
@@ -3953,7 +3967,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       P4    xx xx xx xx xx xx xx xx xx xx xxx xxx xxx xxx xxx xxx xxx xxx xxx xxx v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49
     */
     {
-      remove_proposal( item_creator.account, {4}, item_creator.key );
+      remove_proposal( item_creator.account, {4}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 4 ) && find_proposal( 4 )->removed );
@@ -3961,7 +3975,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 30 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.key);
+        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 30 );
@@ -3985,7 +3999,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 0 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.key);
+        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 0 );
@@ -4020,8 +4034,8 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     auto permlink = "somethingpermlink";
     auto new_permlink = "somethingpermlink2";
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
-    post_comment_with_block_generation(creator, new_permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
+    post_comment_with_block_generation(creator, new_permlink, "title", "body", "test", alice_post_key);
 
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
 
@@ -4115,7 +4129,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4161,7 +4175,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4209,7 +4223,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4260,7 +4274,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4311,8 +4325,8 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
-    post_comment_with_block_generation("dave", "davepermlink", "title", "body", "test", dave_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
+    post_comment_with_block_generation("dave", "davepermlink", "title", "body", "test", dave_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4366,7 +4380,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     signed_transaction tx;
 
-    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_post_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4480,12 +4494,6 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     const auto nr_proposals = 200;
     std::vector< int64_t > proposals_id;
 
-    struct initial_data
-    {
-      std::string account;
-      fc::ecc::private_key key;
-    };
-
     for( auto item : inits )
     {
       ISSUE_FUNDS( item.account, ASSET( "10000.000 TBD" ) );
@@ -4495,7 +4503,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     for( auto i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i ];
-      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.key ) );
+      proposals_id.push_back( create_proposal( item.account, receiver, start_date_00, end_date_00, daily_pay, item.active_key, item.post_key ) );
       if( ( i + 1 ) % 10 == 0 )
         generate_block();
     }
@@ -4511,7 +4519,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
         for( auto item : inits )
         {
           ++i;
-          vote_proposal( item.account, ids, true/*approve*/, item.key );
+          vote_proposal( item.account, ids, true/*approve*/, item.active_key );
           if( ( i + 1 ) % 10 == 0 )
             generate_block();
         }
@@ -4630,14 +4638,14 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      proposals_id.push_back( create_proposal( item.account, item.account, start_date, end_date, daily_pay, item.key ) );
+      proposals_id.push_back( create_proposal( item.account, item.account, start_date, end_date, daily_pay, item.active_key, item.post_key ) );
       generate_block();
     }
 
     i = 0;
     for( auto item : inits )
     {
-      vote_proposal( item.account, proposals_id, true/*approve*/, item.key );
+      vote_proposal( item.account, proposals_id, true/*approve*/, item.active_key );
 
       call( i, 100, "${x} accounts voted" );
     }

@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
 
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
       executor->vote_proposal( "alice", { _id_proposal }, true, alice_private_key );
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
 
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
       if( is_hf28 )
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
       executor->generate_block();
 
       BOOST_TEST_MESSAGE( "Create some `update_proposal_votes_operation`" );
@@ -1327,9 +1327,9 @@ BOOST_AUTO_TEST_CASE( genesis_account_authorities )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
     HIVE_REQUIRE_ASSERT( transfer( OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
+      "s.check_authority( id )" );
     HIVE_REQUIRE_ASSERT( transfer( NEW_HIVE_TREASURY_ACCOUNT, OBSOLETE_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ), "", init_account_priv_key ),
-      "s.check_authority( id ) || s.check_authority( get_owner( id ) )" );
+      "s.check_authority( id )" );
   }
   FC_LOG_AND_RETHROW()
 }

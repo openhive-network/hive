@@ -136,8 +136,8 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   PREP_ACTOR( edgar0ah )
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
 
-  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_1_PERCENT * 51, false, true, comment_options_extensions_type(), edgar0ah_private_key );
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_post_key);
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_1_PERCENT * 51, false, true, comment_options_extensions_type(), edgar0ah_post_key );
 
   // Following operations can be checked now. They all appear in block 3 regardless of configurations settings of the fixture.
   // pow2_operation, account_created_operation (x2), pow_reward_operation, transfer_operation,
@@ -145,7 +145,7 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   check_point_1_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 
   vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
-  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
+  delete_comment( "edgar0ah", "permlink1", edgar0ah_post_key );
 
   // In following block (which number depends on how many were generated in check_point_1_tester) these operations appear
   // and can be checked: vote_operation, effective_comment_vote_operation, delete_comment_operation,
@@ -208,10 +208,10 @@ void condenser_api_fixture::comment_and_reward_scenario( check_point_tester_t ch
   beneficiaries.beneficiaries = { beneficiary };
   comment_options_extensions_type extensions = { beneficiaries };
 
-  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  set_comment_options( "edgar0ah", "permlink1", ASSET( "10000.000 TBD" ), HIVE_100_PERCENT, true, true, extensions, edgar0ah_private_key );
-  vote("edgar0ah", "permlink1", "dan0ah", - HIVE_1_PERCENT * 100, dan0ah_private_key);
-  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key); // Changed his mind
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_post_key);
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "10000.000 TBD" ), HIVE_100_PERCENT, true, true, extensions, edgar0ah_post_key );
+  vote("edgar0ah", "permlink1", "dan0ah", - HIVE_1_PERCENT * 100, dan0ah_post_key);
+  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_post_key); // Changed his mind
 
   // In check_point_1_tester generate as many blocks as needed for these virtual operations to appear in block:
   // curation_reward_operation, author_reward_operation, comment_benefactor_reward_operation,
@@ -220,7 +220,7 @@ void condenser_api_fixture::comment_and_reward_scenario( check_point_tester_t ch
   check_point_1_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 
   // The absolute minimum of claimed values is used here to allow greater flexibility for the tests using this scenario.
-  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "0.001 TBD" ), ASSET( "0.000001 VESTS" ), edgar0ah_private_key );
+  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "0.001 TBD" ), ASSET( "0.000001 VESTS" ), edgar0ah_post_key );
 
   // In following block (which number depends on how many were generated in check_point_1_tester) these operations appear
   // and can be checked:  claim_reward_balance_operation & producer_reward_operation.
@@ -356,7 +356,7 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
   transfer( "carol7ah", db->get_treasury_name(), ASSET( "30000.333 TESTS" ), "", carol7ah_private_key ); // <- trigger dhf_conversion_operation
 
   // Create the proposal for the first time to be updated and removed.
-  post_comment("alice7ah", "permlink0", "title", "body", "test", alice7ah_private_key);
+  post_comment("alice7ah", "permlink0", "title", "body", "test", alice7ah_post_key);
   int64_t proposal_id = 
   create_proposal( "alice7ah", "ben7ah", "0" /*subject*/, "permlink0", db->head_block_time() - fc::days( 1 ), 
                     db->head_block_time() + fc::days( 2 ), asset( 100, HBD_SYMBOL ), alice7ah_private_key );
@@ -433,7 +433,7 @@ void condenser_api_fixture::custom_scenario( check_point_tester_t check_point_te
   generate_block();
 
   push_custom_operation( { "alice9ah" }, 7, { 'D', 'A', 'T', 'A' }, alice9ah_private_key );
-  push_custom_json_operation( {}, { "alice9ah" }, "7id", R"~("{"type": "json"}")~", alice9ah_private_key );
+  push_custom_json_operation( {}, { "alice9ah" }, "7id", R"~("{"type": "json"}")~", alice9ah_post_key );
 
   // All operations mentioned above can be checked now in 4th block, regardless of the fixture configuration.
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
@@ -483,11 +483,13 @@ void condenser_api_fixture::combo_1_scenario( check_point_tester_t check_point_t
 
   PREP_ACTOR( alice12ah );
   account_create( "alice12ah", alice12ah_public_key );
+
   post_comment( "alice12ah", "permlink12-1", "Title 12-1", "Body 12-1", "parentpermlink12", alice12ah_private_key );
 
   PREP_ACTOR( ben12ah );
   account_create( "ben12ah", "alice12ah", alice12ah_private_key, 0, ben12ah_public_key, ben12ah_public_key, "{\"relation\":\"sibling\"}" );
-  delegate_vest( "alice12ah", "ben12ah", asset( 1507, VESTS_SYMBOL ), alice12ah_private_key );
+  delegate_vest( "alice12ah", "ben12ah", asset( 3003, VESTS_SYMBOL ), alice12ah_private_key );
+
   post_comment_to_comment( "ben12ah", "permlink12-2", "Title 12-1", "Body 12-1", "alice12ah", "permlink12-1", ben12ah_private_key );
 
   decline_voting_rights( "alice12ah", true, alice12ah_private_key );

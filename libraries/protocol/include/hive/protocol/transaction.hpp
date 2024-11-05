@@ -73,6 +73,7 @@ namespace hive { namespace protocol {
       )const;
 
     void verify_authority(
+      bool strict_authority_level,
       const chain_id_type& chain_id,
       const authority_getter& get_active,
       const authority_getter& get_owner,
@@ -85,6 +86,7 @@ namespace hive { namespace protocol {
       )const;
 
     set<public_key_type> minimize_required_signatures(
+      bool strict_authority_level,
       const chain_id_type& chain_id,
       const flat_set<public_key_type>& available_keys,
       const authority_getter& get_active,

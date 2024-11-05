@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         return _result;
       };
 
-      auto _op_transfer = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      auto _op_transfer = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& active_key, bool is_hf26 )
       {
         BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - transfer operation" );
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           auto _bob_balance_previous    = executor->get_balance( "bob" );
 
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
+          executor->push_transaction( _tx, active_key, 0, hive::protocol::pack_type::legacy );
 
           auto _alice_balance_after = executor->get_balance( "alice" );
           auto _bob_balance_after   = executor->get_balance( "bob" );
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           auto _bob_balance_previous    = executor->get_balance( "bob" );
 
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
+          executor->push_transaction( _tx, active_key, 0, hive::protocol::pack_type::hf26 );
 
           auto _alice_balance_after = executor->get_balance( "alice" );
           auto _bob_balance_after   = executor->get_balance( "bob" );
@@ -334,11 +334,11 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         else
         {
           signed_transaction _tx = _get_trx( executor, { _op } );
-          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, active_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
         }
       };
 
-      auto _op_comment_comment_options = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      auto _op_comment_comment_options = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& post_key, bool is_hf26 )
       {
         BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - comment operation" );
 
@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
         {
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
+          executor->push_transaction( _tx, post_key, 0, hive::protocol::pack_type::legacy );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "lemon" ) );
           BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "lemon" ) );
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           //It doesn't matter if it's hf26 or not because a `comment_operation` hasn't any asset.
           _op.permlink = "avocado";
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
+          executor->push_transaction( _tx, post_key, 0, hive::protocol::pack_type::hf26 );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
           BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
@@ -385,18 +385,18 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         if( is_hf26 )
         {
           signed_transaction _tx = _get_trx( executor, { _op2 } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
+          executor->push_transaction( _tx, post_key, 0, hive::protocol::pack_type::hf26 );
 
           executor->generate_block();
         }
         else
         {
           signed_transaction _tx = _get_trx( executor, { _op2 } );
-          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, post_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
         }
       };
 
-      auto _op_decline_voting_rights = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      auto _op_decline_voting_rights = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& active_key, bool is_hf26 )
       {
         BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - decline_voting_rights operation" );
 
@@ -405,7 +405,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
         {
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
+          executor->push_transaction( _tx, active_key, 0, hive::protocol::pack_type::legacy );
 
           executor->generate_block();
         }
@@ -414,14 +414,14 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           //It doesn't matter if it's hf26 or not because a `decline_voting_rights_operation` hasn't any asset.
           _op.decline = false;
           signed_transaction _tx = _get_trx( executor, { _op } );
-          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
+          executor->push_transaction( _tx, active_key, 0, hive::protocol::pack_type::hf26 );
 
           executor->generate_block();
         }
       };
 
       _op_transfer( executor, alice_private_key, is_hf26 );
-      _op_comment_comment_options( executor, alice_private_key, is_hf26 );
+      _op_comment_comment_options( executor, alice_post_key, is_hf26 );
       _op_decline_voting_rights( executor, alice_private_key, is_hf26 );
     };
 

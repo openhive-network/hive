@@ -382,7 +382,9 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
     //"steal" account also including agent as above
     auto victim_testA_private_key = generate_private_key( "victimA" );
+    auto victim_active_private_key = generate_private_key( "victimActive" );
     account_update.owner = authority( 3, "agent", 1, victim_testA_private_key.get_public_key(), 3 );
+    account_update.active = authority( 1, victim_active_private_key.get_public_key(), 1 );
     push_transaction( account_update, victim_new_private_key );
     generate_blocks( db->head_block_time() + ( HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2 ) );
     //ask agent for help to recover "stolen" account - again add agent
@@ -401,7 +403,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     recover.recent_owner_authority = authority( 3, "agent", 1, victim_new_private_key.get_public_key(), 3 );
     tx.operations.push_back( expensive );
     tx.operations.push_back( recover );
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_testA_private_key/*that key is needed for claim account*/, victim_testB_private_key} ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_active_private_key/*that key is needed for claim account*/, victim_testB_private_key} ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -409,7 +411,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( recover );
     tx.operations.push_back( expensive );
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_testA_private_key, victim_testB_private_key} ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_active_private_key, victim_testB_private_key} ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -422,7 +424,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     cheap.memo = "Thanks for help!";
     tx.operations.push_back( recover );
     tx.operations.push_back( cheap );
-    push_transaction( tx, {victim_new_private_key, victim_testA_private_key, victim_testB_private_key} );
+    push_transaction( tx, {victim_new_private_key, victim_active_private_key, victim_testB_private_key} );
     tx.clear();
     //RC consumed from victim - recovery is not free if mixed with other operations
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
@@ -943,9 +945,10 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     //not adding transfer to pending usage since it is already part of block before current head
 
     BOOST_TEST_MESSAGE( "Update active key to generate some usage" );
+    auto new_alice_private_key = generate_private_key( "alice_active" );
     account_update_operation update;
     update.account = "alice";
-    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
+    update.active = authority( 1, new_alice_private_key.get_public_key(), 1 );
     push_transaction( update, alice_private_key );
     //transaction info for pending transactions in no longer added to block info
     compare( db->rc.get_block_info().usage, empty );
@@ -960,15 +963,16 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     transfer.from = "alice";
     transfer.to = "bob";
     transfer.amount = ASSET( "10.000 TESTS" );
-    push_transaction( transfer, alice_private_key );
+    push_transaction( transfer, new_alice_private_key );
     tx_usage = db->rc.get_tx_info().usage;
     //another transfer (differences are just due to sizes of account names)
     compare( tx_usage, { 106, 0, 1060, 128, 94165 + 6622 + 5999 } );
     add( &pending_usage, tx_usage );
 
     BOOST_TEST_MESSAGE( "Update active key for second time - differential usage resets again to the same value" );
-    update.active = authority( 1, generate_private_key( "alice_active_2" ).get_public_key(), 1 );
-    push_transaction( update, alice_private_key );
+    auto new_alice_2_private_key = generate_private_key( "alice_active_2" );
+    update.active = authority( 1, new_alice_2_private_key.get_public_key(), 1 );
+    push_transaction( update, new_alice_private_key );
     tx_usage = db->rc.get_tx_info().usage;
     //same as with previous account update
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13322 } );
@@ -977,7 +981,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
 
     BOOST_TEST_MESSAGE( "Attempt to update active key for third time but fail - all values but tx info revert to previous" );
     update.active = authority( 1, "nonexistent", 1 );
-    HIVE_REQUIRE_ASSERT( push_transaction( update, alice_private_key ), "a != nullptr" );
+    HIVE_REQUIRE_ASSERT( push_transaction( update, new_alice_2_private_key ), "a != nullptr" );
     tx_usage = db->rc.get_tx_info().usage;
     //since transaction was stopped mid way, usage only contains part filled prior to failure (that is, a discount on state)
     compare( tx_usage, { 0, 0, 0, -1576800, 0 } );
@@ -1030,6 +1034,11 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     auto alice_owner_key = generate_private_key( "alice_owner" );
     auto bob_owner_key = generate_private_key( "bob_owner" );
 
+    auto alice_active_key  = generate_private_key( "alice_active" );
+    auto bob_active_key  = generate_private_key( "bob_active" );
+
+    auto alice_posting_key = generate_private_key( "alice_posting" );
+
     auto compare = [&]( const resource_count_type& v1, const resource_count_type& v2 )
     {
       for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
@@ -1037,13 +1046,13 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     };
     //rc_pending_data_reset test showed that differential usage is reset by transaction but not block
     //so let's make transfer to force reset to known usage values of that transfer
-    auto clean = [&]()
+    auto clean = [&]( const std::optional<fc::ecc::private_key>& current_active_key = std::optional<fc::ecc::private_key>() )
     {
       transfer_operation transfer;
       transfer.from = "alice";
       transfer.to = "bob";
       transfer.amount = ASSET( "0.001 TESTS" );
-      push_transaction( transfer, alice_owner_key );
+      push_transaction( transfer, current_active_key.has_value() ? current_active_key.value() : alice_active_key );
       generate_block();
       generate_block();
       auto tx_usage = db->rc.get_tx_info().usage;
@@ -1062,19 +1071,19 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     auto tx_usage = db->rc.get_tx_info().usage;
     //there is extra state for 30 days of holding historical owner key
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800 + 120960, 94165 + 6622 + 13322 } );
-    clean();
+    clean( alice_private_key );
 
     BOOST_TEST_MESSAGE( "Update active key with account_update_operation" );
-    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
-    push_transaction( update, alice_owner_key );
+    update.active = authority( 1, alice_active_key.get_public_key(), 1 );
+    push_transaction( update, alice_private_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13322 } );
     update.active.reset();
     clean();
 
     BOOST_TEST_MESSAGE( "Update posting key with account_update_operation" );
-    update.posting = authority( 1, generate_private_key( "alice_posting" ).get_public_key(), 1 );
-    push_transaction( update, alice_owner_key );
+    update.posting = authority( 1, alice_posting_key.get_public_key(), 1 );
+    push_transaction( update, alice_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13322 } );
     update.posting.reset();
@@ -1082,7 +1091,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update memo key with account_update_operation" );
     update.memo_key = generate_private_key( "alice_memo" ).get_public_key();
-    push_transaction( update, alice_owner_key );
+    push_transaction( update, alice_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //memo key does not allocate new state
     compare( tx_usage, { 122, 0, 0, 128, 94165 + 6622 + 13322 } );
@@ -1091,7 +1100,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update metadata with account_update_operation" );
     update.json_metadata = "{\"profile_image\":\"https://somewhere.com/myself.png\"}";
-    push_transaction( update, alice_owner_key );
+    push_transaction( update, alice_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //while metadata allocates state, it is optionally stored which means nodes that don't store it
     //would not be able to calculate differential usage; that's why metadata is not subject to
@@ -1111,8 +1120,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     clean();
 
     BOOST_TEST_MESSAGE( "Update active key with account_update2_operation" );
-    update2.active = authority( 1, generate_private_key( "bob_active" ).get_public_key(), 1 );
-    push_transaction( update2, bob_owner_key );
+    update2.active = authority( 1, bob_active_key.get_public_key(), 1 );
+    push_transaction( update2, bob_private_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 131, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13648 } );
     update2.active.reset();
@@ -1120,7 +1129,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update posting key with account_update2_operation" );
     update2.posting = authority( 1, generate_private_key( "bob_posting" ).get_public_key(), 1 );
-    push_transaction( update2, bob_owner_key );
+    push_transaction( update2, bob_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 131, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13648 } );
     update2.posting.reset();
@@ -1128,7 +1137,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update memo key with account_update2_operation" );
     update2.memo_key = generate_private_key( "bob_memo" ).get_public_key();
-    push_transaction( update2, bob_owner_key );
+    push_transaction( update2, bob_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //memo key does not allocate new state
     compare( tx_usage, { 123, 0, 0, 128, 94165 + 6622 + 13648 } );
@@ -1138,7 +1147,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Update metadata with account_update2_operation" );
     update2.json_metadata = "{\"profile_image\":\"https://somewhere.com/superman.png\"}";
     update2.posting_json_metadata = "{\"description\":\"I'm here just for test.\"}";
-    push_transaction( update2, bob_owner_key );
+    push_transaction( update2, bob_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //same as in case of account_update_operation
     compare( tx_usage, { 218, 0, 0, 128, 94165 + 6622 + 13648 } );
@@ -1155,7 +1164,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     witness.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
     witness.props.hbd_interest_rate = 0;
     witness.fee = asset( 0, HIVE_SYMBOL );
-    push_transaction( witness, alice_owner_key );
+    push_transaction( witness, alice_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //when witness is created there is no initial state to give discount
     compare( tx_usage, { 178, 0, 0, 128 + 23827200 + 919800, 94165 + 6622 + 4237 } );
@@ -1163,7 +1172,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update witness with witness_update_operation" );
     witness.url = "https://alice.wonder.land/my.cat";
-    push_transaction( witness, alice_owner_key );
+    push_transaction( witness, alice_active_key );
     tx_usage = db->rc.get_tx_info().usage;
     //when witness is updated differential usage kicks in
     compare( tx_usage, { 189, 0, 0, 128 - 23827200 - 919800 + 23827200 + 1401600, 94165 + 6622 + 4237 } );
@@ -1250,7 +1259,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     custom_json.required_posting_auths.insert( "alice" );
     custom_json.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
-    push_transaction( custom_json, alice_owner_key );
+    push_transaction( custom_json, alice_posting_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 203, 0, 0, 128 + 1927200, 94165 + 6622 + 1509 + 75000 } );
     generate_block(); //block generation is needed so the pending transaction cost is added to actual block cost
@@ -1263,7 +1272,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     rc_delegation.delegatees = { "bob", "sam" };
     rc_delegation.max_rc = 5000000;
     custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
-    push_transaction( custom_json, alice_owner_key );
+    push_transaction( custom_json, alice_posting_key );
     tx_usage = db->rc.get_tx_info().usage;
     //just one new delegation like in first case
     compare( tx_usage, { 208, 0, 0, 128 - 1927200 + 1927200 * 2, 94165 + 6622 + 1509 + 75000 } );
@@ -1276,7 +1285,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Update RC delegations with delegate_rc_operation" );
     rc_delegation.max_rc = 7500000;
     custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( rc_delegation ) );
-    push_transaction( custom_json, alice_owner_key );
+    push_transaction( custom_json, alice_posting_key );
     tx_usage = db->rc.get_tx_info().usage;
     //no extra state - all delegations are updates
     compare( tx_usage, { 208, 0, 0, 128 - 1927200 * 2 + 1927200 * 2, 94165 + 6622 + 1509 + 75000 } );
@@ -1289,7 +1298,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     //for comparison we're doing the same custom json but with dummy tag, so it is not interpreted
     BOOST_TEST_MESSAGE( "Fake RC delegation update with delegate_rc_operation under dummy tag" );
     custom_json.id = "dummy";
-    push_transaction( custom_json, alice_owner_key );
+    push_transaction( custom_json, alice_posting_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 211, 0, 0, 128, 94165 + 6622 + 1509 } ); //no differential usage
     generate_block();
@@ -1392,9 +1401,10 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
 
     BOOST_TEST_MESSAGE( "Changing authority and comparing RC usage" );
 
+    auto alice_active_private_key = generate_private_key( "alice_active" );
     account_update_operation update;
     update.account = "alice";
-    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
+    update.active = authority( 1, alice_active_private_key.get_public_key(), 1 );
     push_transaction( update, alice_private_key );
     auto tx_usage = db->rc.get_tx_info().usage;
     //state usage didn't end up being negative
@@ -1458,7 +1468,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     BOOST_TEST_MESSAGE( "Comparing state usage with delegation in separate transaction" );
     delegation.delegator = "alice";
     delegation.delegatee = "barry";
-    push_transaction( delegation, alice_private_key );
+    push_transaction( delegation, alice_active_private_key );
     tx_usage = db->rc.get_tx_info().usage;
     auto alice_delegation_state_usage = tx_usage[ resource_state_bytes ];
     //check if we tuned the test so single delegation uses more state than authority reducing update mixed with couple delegations

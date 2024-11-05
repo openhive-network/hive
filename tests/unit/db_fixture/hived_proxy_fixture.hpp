@@ -368,10 +368,10 @@ public:
   }
   int64_t create_proposal(   std::string creator, std::string receiver,
                     fc::time_point_sec start_date, fc::time_point_sec end_date,
-                    asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation = true )
+                    asset daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true )
   {
     FC_ASSERT(fixture);
-    return fixture->create_proposal(creator, receiver, start_date, end_date, daily_pay, key, with_block_generation);
+    return fixture->create_proposal(creator, receiver, start_date, end_date, daily_pay, active_key, post_key, with_block_generation);
   }
   void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key )
   {

@@ -179,6 +179,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 }
 
 set<public_key_type> signed_transaction::minimize_required_signatures(
+  bool strict_authority_level,
   const chain_id_type& chain_id,
   const flat_set< public_key_type >& available_keys,
   const authority_getter& get_active,
@@ -199,6 +200,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
     try
     {
       hive::protocol::verify_authority(
+        strict_authority_level,
         operations,
         result,
         get_active,
@@ -223,7 +225,8 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   return set<public_key_type>( result.begin(), result.end() );
 }
 
-void signed_transaction::verify_authority(const chain_id_type& chain_id,
+void signed_transaction::verify_authority(bool strict_authority_level,
+                                          const chain_id_type& chain_id,
                                           const authority_getter& get_active,
                                           const authority_getter& get_owner,
                                           const authority_getter& get_posting,
@@ -233,7 +236,8 @@ void signed_transaction::verify_authority(const chain_id_type& chain_id,
                                           uint32_t max_membership,
                                           uint32_t max_account_auths) const
 { try {
-  hive::protocol::verify_authority(operations,
+  hive::protocol::verify_authority(strict_authority_level,
+                                   operations,
                                    get_signature_keys(chain_id, pack),
                                    get_active,
                                    get_owner,

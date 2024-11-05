@@ -26,7 +26,8 @@ required_authorities_type get_required_authorities(const vector<AuthContainerTyp
   return result;
 } FC_CAPTURE_AND_RETHROW((auth_containers)) }
 
-void verify_authority(const required_authorities_type& required_authorities,
+void verify_authority(bool strict_authority_level,
+                      const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
                       const authority_getter& get_owner,
@@ -40,7 +41,8 @@ void verify_authority(const required_authorities_type& required_authorities,
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
 
-bool has_authorization( const required_authorities_type& required_authorities,
+bool has_authorization( bool strict_authority_level,
+                        const required_authorities_type& required_authorities,
                         const flat_set<public_key_type>& sigs,
                         const authority_getter& get_active,
                         const authority_getter& get_owner,
@@ -48,7 +50,8 @@ bool has_authorization( const required_authorities_type& required_authorities,
                         const witness_public_key_getter& get_witness_key );
 
 template< typename AuthContainerType >
-void verify_authority(const vector<AuthContainerType>& auth_containers, 
+void verify_authority(bool strict_authority_level,
+                      const vector<AuthContainerType>& auth_containers, 
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
                       const authority_getter& get_owner,
@@ -62,7 +65,8 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>())
 { 
-  verify_authority(get_required_authorities(auth_containers),
+  verify_authority(strict_authority_level,
+                   get_required_authorities(auth_containers),
                    sigs,
                    get_active,
                    get_owner,

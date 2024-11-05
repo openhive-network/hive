@@ -25,5 +25,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_GLOBAL_WITNESS_PROPS (HIVE_HARDFORK_1_28)
 // expiration time for a transaction is longer
 #define HIVE_HARDFORK_1_28_EXPIRATION_TIME (HIVE_HARDFORK_1_28)
+// accept only required authority. Redirection into stronger authorities is not accepted
+#define HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL (HIVE_HARDFORK_1_28)
 
 #endif

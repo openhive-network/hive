@@ -416,13 +416,13 @@ struct database_fixture {
   };
 
   int64_t create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
-                           time_point_sec start_date, time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key );
-  int64_t create_proposal(   std::string creator, std::string receiver,
-                    time_point_sec start_date, time_point_sec end_date,
-                    asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation = true );
-  void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
+                           const time_point_sec& start_date, const time_point_sec& end_date, const asset& daily_pay, const fc::ecc::private_key& active_key );
+  int64_t create_proposal( const std::string& creator, const std::string& receiver,
+                    const time_point_sec& start_date, const time_point_sec& end_date,
+                    const asset& daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true );
+  void vote_proposal( const std::string& voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
   void remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key);
-  void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
+  void update_proposal( uint64_t proposal_id, const std::string& creator, const asset& daily_pay, const std::string& subject, const std::string& permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
 
   bool exist_proposal( int64_t id );
   const proposal_object* find_proposal( int64_t id );
@@ -448,25 +448,25 @@ private:
 
 public:
 
-  void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key );
-  void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key);
+  void post_comment_with_block_generation( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _category, const fc::ecc::private_key& _post_key );
+  void post_comment( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _category, const fc::ecc::private_key& _post_key );
   void post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
-                                const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& key );
-  void delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key );
+                                const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& post_key );
+  void delete_comment( const std::string& _author, const std::string& _permlink, const fc::ecc::private_key& _key );
   void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
-                            bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key );
+                            bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& post_key );
   void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
-                            bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions, const fc::ecc::private_key& key );
-  void vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key );
+                            bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions, const fc::ecc::private_key& post_key );
+  void vote( const std::string& _author, const std::string& _permlink, const std::string& _voter, int16_t _weight, const fc::ecc::private_key& _key );
   void claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd, const asset& reward_vests,
                              const fc::ecc::private_key& key );
   /// @brief Creates proof of work and account for the worker.
   /// @param _name Name of the worker (and account to be created too).
   /// @param _public_key worker (account) public key
   /// @param _private_key worker (account) private key
-  void create_with_pow( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
+  void create_with_pow( const std::string& _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
   /// Same as create_with_pow but uses pow2 operation.
-  void create_with_pow2( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
+  void create_with_pow2( const std::string& _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
   void create_with_delegation( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
                                const fc::ecc::private_key& posting_key, const asset& delegation, const fc::ecc::private_key& key );
   void claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key );
@@ -525,7 +525,8 @@ namespace performance
   {
     std::string account;
 
-    fc::ecc::private_key key;
+    fc::ecc::private_key active_key;
+    fc::ecc::private_key post_key;
 
     initial_data( database_fixture* db, const std::string& _account );
   };

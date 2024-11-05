@@ -544,7 +544,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     tx.operations.push_back( op );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
     generate_blocks( 1 );
     tx.operations.clear();
 
@@ -560,7 +560,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
     generate_blocks( 1 );
     db->pop_block();
 
@@ -578,7 +578,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    push_transaction( tx, {dan_private_key, chuck_private_key} );
+    push_transaction( tx, {dan_post_key, chuck_post_key} );
     generate_blocks( 1 );
     db->pop_block();
 

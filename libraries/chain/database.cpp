@@ -4400,7 +4400,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
       const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
 
-      hive::protocol::verify_authority(required_authorities,
+      hive::protocol::verify_authority(has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+                                       required_authorities,
                                        signature_keys,
                                        get_active,
                                        get_owner,
