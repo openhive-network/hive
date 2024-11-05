@@ -173,14 +173,14 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     comment.body = "empty";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
     check.expect( expectation::new_transaction( expectation::POST_TX ) );
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Failed transaction" );
     comment.parent_author = "alice";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
 
-    HIVE_REQUIRE_ASSERT( push_transaction( comment, alice_private_key ), "comment_ptr != nullptr" );
+    HIVE_REQUIRE_ASSERT( push_transaction( comment, alice_post_key ), "comment_ptr != nullptr" );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating first block after transaction" );
@@ -207,17 +207,17 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
       comment.body += BODY_ELEMENT;
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
     check.expect( expectation::new_transaction( expectation::POST_TX ) );
-    push_transaction( comment, bob_private_key );
+    push_transaction( comment, bob_post_key );
     check.check_empty();
     comment.author = "carol";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
     check.expect( expectation::new_transaction( expectation::POST_TX ) );
-    push_transaction( comment, carol_private_key );
+    push_transaction( comment, carol_post_key );
     check.check_empty();
     comment.author = "dan";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
     check.expect( expectation::new_transaction( expectation::POST_TX ) );
-    push_transaction( comment, dan_private_key );
+    push_transaction( comment, dan_post_key );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating block with 1 of 3 large transactions" );

@@ -20,7 +20,7 @@ bool sign_state::check_authority( const string& id )
 {
   if( approved_by.find(id) != approved_by.end() ) return true;
   uint32_t account_auth_count = 1;
-  return check_authority_impl( get_active(id), 0, &account_auth_count );
+  return check_authority_impl( get_current_authority(id), 0, &account_auth_count );
 }
 
 bool sign_state::check_authority( const authority& auth, uint32_t depth, uint32_t account_auth_count )
@@ -62,7 +62,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
 
       (*account_auth_count)++;
 
-      if( check_authority_impl( get_active( a.first ), depth + 1, account_auth_count ) )
+      if( check_authority_impl( get_current_authority( a.first ), depth + 1, account_auth_count ) )
       {
         approved_by.insert( a.first );
         total_weight += a.second;
@@ -102,7 +102,7 @@ sign_state::sign_state(
   const flat_set<public_key_type>& sigs,
   const authority_getter& a,
   const flat_set<public_key_type>& keys
-  ) : get_active(a), available_keys(keys)
+  ) : get_current_authority(a), available_keys(keys)
 {
   for( const auto& key : sigs )
     provided_signatures[ key ] = false;

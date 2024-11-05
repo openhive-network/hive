@@ -73,7 +73,7 @@ def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice:
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
     if authority_level == "owner":
-        assert node.api.database.verify_account_authority(
+        assert not node.api.database.verify_account_authority(
             account=alice.name, signers=[tt.PublicKey(bob.name, secret="active")], level="active"
         ).valid
 
@@ -188,16 +188,22 @@ def test_signing_with_circular_account_authority(
            │                                           │
            ● posting                                   ● posting
     """
-    # bob as carols owner account authority set carols active authority to redirect to bob
+    # bob as carol's owner account authority can't set carol's active authority to redirect to bob
     bob.wallet.api.use_authority("active", bob.name)
-    bob.wallet.api.update_account_auth_account(carol.name, "active", bob.name, 1)
-    assert (
-        len(get_authority(node, carol.name, authority_level="active").account_auths) == 1
-    ), "Carol's active-account_auths is not set"
+    with pytest.raises(tt.exceptions.CommunicationError):
+        bob.wallet.api.update_account_auth_account(carol.name, "active", bob.name, 1)
 
-    # now bob can sign owner type operation (use active bob authority)
+    # bob can't sign owner type operation (use active bob authority)
     bob.wallet.api.use_authority("active", bob.name)
-    bob.wallet.api.sign_transaction(decline_voting_rights)
+    with pytest.raises(tt.exceptions.CommunicationError):
+        bob.wallet.api.sign_transaction(decline_voting_rights)
+
+    carol.wallet.api.import_key(tt.PrivateKey(account_name=carol.name, secret="owner"))
+    assert len(carol.wallet.api.list_keys()) == 1, "Carol's wallet has an incorrect number of imported keys. Expected 1"
+    carol.wallet.api.use_authority("owner", carol.name)
+    # carol can't sign owner type operation (use owner carol authority)
+    with pytest.raises(tt.exceptions.CommunicationError):
+        carol.wallet.api.sign_transaction(decline_voting_rights)
 
 
 @run_for("testnet")

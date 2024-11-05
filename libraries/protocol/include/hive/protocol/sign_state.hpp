@@ -29,7 +29,7 @@ struct sign_state
           const authority_getter& a,
           const flat_set<public_key_type>& keys );
 
-  const authority_getter&          get_active;
+  const authority_getter&          get_current_authority;
   const flat_set<public_key_type>& available_keys;
 
   flat_map<public_key_type,bool>   provided_signatures;

@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       comment.title = "test";
       comment.body = "Hello world";
       tx.operations.push_back( comment );
-      push_transaction( tx, alice_private_key );
+      push_transaction( tx, alice_post_key );
     }
     tx.clear();
 
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       op.allow_curation_rewards = false;
       op.extensions.insert( b );
       tx.operations.push_back( op );
-      push_transaction( tx, alice_private_key );
+      push_transaction( tx, alice_post_key );
     }
     tx.clear();
 
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       vote.voter = "alice";
       vote.weight = HIVE_100_PERCENT;
       tx.operations.push_back( vote );
-      push_transaction( tx, alice_private_key );
+      push_transaction( tx, alice_post_key );
     }
     tx.clear();
 

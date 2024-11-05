@@ -137,7 +137,8 @@ void print(std::ostream& stream, const curve_printer& cp)
   }
 }
 
-#define key(account) account ## _private_key
+#define active_key(account) account ## _private_key
+#define post_key(account) account ## _post_key
 
 using namespace hive::protocol::testnet_blockchain_configuration;
 
@@ -162,10 +163,11 @@ struct curation_rewards_handler
   std::vector<curve_printer>                curve_printers;
 
   std::map<uint32_t, std::string>           authors;
-  std::map<uint32_t, fc::ecc::private_key>  author_keys;
+  std::map<uint32_t, std::pair<fc::ecc::private_key, fc::ecc::private_key>>  author_keys;
 
   std::deque<std::string>                   voters;
-  std::deque<fc::ecc::private_key>          voter_keys;
+  std::deque<fc::ecc::private_key>          active_voter_keys;
+  std::deque<fc::ecc::private_key>          post_voter_keys;
 
   clean_database_fixture&                   test_object;
   chain::database&                          db;
@@ -203,25 +205,25 @@ struct curation_rewards_handler
       {
         ACTORS_EXT( test_object, (author3) );
         authors.insert( std::make_pair( 3, "author3" ) );
-        author_keys.insert( std::make_pair( 3, key(author3) ) );
+        author_keys.insert( std::make_pair( 3, std::make_pair( active_key(author3), post_key(author3) ) ) );
       }
       if( author == 2 )
       {
         ACTORS_EXT( test_object, (author2) );
         authors.insert( std::make_pair( 2, "author2" ) );
-        author_keys.insert( std::make_pair( 2, key(author2) ) );
+        author_keys.insert( std::make_pair( 2, std::make_pair( active_key(author2), post_key(author2) ) ) );
       }
       if( author == 1 )
       {
         ACTORS_EXT( test_object, (author1) );
         authors.insert( std::make_pair( 1, "author1" ) );
-        author_keys.insert( std::make_pair( 1, key(author1) ) );
+        author_keys.insert( std::make_pair( 1, std::make_pair( active_key(author1), post_key(author1) ) ) );
       }
       if( author == 0 )
       {
         ACTORS_EXT( test_object, (author0) );
         authors.insert( std::make_pair( 0, "author0" ) );
-        author_keys.insert( std::make_pair( 0, key(author0) ) );
+        author_keys.insert( std::make_pair( 0, std::make_pair( active_key(author0), post_key(author0) ) ) );
       }
     }
   }
@@ -254,19 +256,33 @@ struct curation_rewards_handler
       };
     std::copy( _voters.begin(), _voters.end(), std::back_inserter( voters ) );
 
-    auto _voter_keys =
+    auto _active_voter_keys =
       {
-        key(aoa00), key(aoa01), key(aoa02), key(aoa03), key(aoa04), key(aoa05), key(aoa06), key(aoa07), key(aoa08), key(aoa09),
-        key(aoa10), key(aoa11), key(aoa12), key(aoa13), key(aoa14), key(aoa15), key(aoa16), key(aoa17), key(aoa18), key(aoa19),
-        key(aoa20), key(aoa21), key(aoa22), key(aoa23), key(aoa24), key(aoa25), key(aoa26), key(aoa27), key(aoa28), key(aoa29),
-        key(aoa30), key(aoa31), key(aoa32), key(aoa33), key(aoa34), key(aoa35), key(aoa36), key(aoa37), key(aoa38), key(aoa39),
+        active_key(aoa00), active_key(aoa01), active_key(aoa02), active_key(aoa03), active_key(aoa04), active_key(aoa05), active_key(aoa06), active_key(aoa07), active_key(aoa08), active_key(aoa09),
+        active_key(aoa10), active_key(aoa11), active_key(aoa12), active_key(aoa13), active_key(aoa14), active_key(aoa15), active_key(aoa16), active_key(aoa17), active_key(aoa18), active_key(aoa19),
+        active_key(aoa20), active_key(aoa21), active_key(aoa22), active_key(aoa23), active_key(aoa24), active_key(aoa25), active_key(aoa26), active_key(aoa27), active_key(aoa28), active_key(aoa29),
+        active_key(aoa30), active_key(aoa31), active_key(aoa32), active_key(aoa33), active_key(aoa34), active_key(aoa35), active_key(aoa36), active_key(aoa37), active_key(aoa38), active_key(aoa39),
 
-        key(bob00), key(bob01), key(bob02), key(bob03), key(bob04), key(bob05), key(bob06), key(bob07), key(bob08), key(bob09),
-        key(bob10), key(bob11), key(bob12), key(bob13), key(bob14), key(bob15), key(bob16), key(bob17), key(bob18), key(bob19),
-        key(bob20), key(bob21), key(bob22), key(bob23), key(bob24), key(bob25), key(bob26), key(bob27), key(bob28), key(bob29),
-        key(bob30), key(bob31), key(bob32), key(bob33), key(bob34), key(bob35), key(bob36), key(bob37), key(bob38), key(bob39)
+        active_key(bob00), active_key(bob01), active_key(bob02), active_key(bob03), active_key(bob04), active_key(bob05), active_key(bob06), active_key(bob07), active_key(bob08), active_key(bob09),
+        active_key(bob10), active_key(bob11), active_key(bob12), active_key(bob13), active_key(bob14), active_key(bob15), active_key(bob16), active_key(bob17), active_key(bob18), active_key(bob19),
+        active_key(bob20), active_key(bob21), active_key(bob22), active_key(bob23), active_key(bob24), active_key(bob25), active_key(bob26), active_key(bob27), active_key(bob28), active_key(bob29),
+        active_key(bob30), active_key(bob31), active_key(bob32), active_key(bob33), active_key(bob34), active_key(bob35), active_key(bob36), active_key(bob37), active_key(bob38), active_key(bob39)
       };
-    std::copy( _voter_keys.begin(), _voter_keys.end(), std::back_inserter( voter_keys ) );
+    std::copy( _active_voter_keys.begin(), _active_voter_keys.end(), std::back_inserter( active_voter_keys ) );
+
+    auto _post_voter_keys =
+      {
+        post_key(aoa00), post_key(aoa01), post_key(aoa02), post_key(aoa03), post_key(aoa04), post_key(aoa05), post_key(aoa06), post_key(aoa07), post_key(aoa08), post_key(aoa09),
+        post_key(aoa10), post_key(aoa11), post_key(aoa12), post_key(aoa13), post_key(aoa14), post_key(aoa15), post_key(aoa16), post_key(aoa17), post_key(aoa18), post_key(aoa19),
+        post_key(aoa20), post_key(aoa21), post_key(aoa22), post_key(aoa23), post_key(aoa24), post_key(aoa25), post_key(aoa26), post_key(aoa27), post_key(aoa28), post_key(aoa29),
+        post_key(aoa30), post_key(aoa31), post_key(aoa32), post_key(aoa33), post_key(aoa34), post_key(aoa35), post_key(aoa36), post_key(aoa37), post_key(aoa38), post_key(aoa39),
+
+        post_key(bob00), post_key(bob01), post_key(bob02), post_key(bob03), post_key(bob04), post_key(bob05), post_key(bob06), post_key(bob07), post_key(bob08), post_key(bob09),
+        post_key(bob10), post_key(bob11), post_key(bob12), post_key(bob13), post_key(bob14), post_key(bob15), post_key(bob16), post_key(bob17), post_key(bob18), post_key(bob19),
+        post_key(bob20), post_key(bob21), post_key(bob22), post_key(bob23), post_key(bob24), post_key(bob25), post_key(bob26), post_key(bob27), post_key(bob28), post_key(bob29),
+        post_key(bob30), post_key(bob31), post_key(bob32), post_key(bob33), post_key(bob34), post_key(bob35), post_key(bob36), post_key(bob37), post_key(bob38), post_key(bob39)
+      };
+    std::copy( _post_voter_keys.begin(), _post_voter_keys.end(), std::back_inserter( post_voter_keys ) );
   }
 
   void prepare_voters_80_160()
@@ -297,20 +313,33 @@ struct curation_rewards_handler
       };
     std::copy( _voters.begin(), _voters.end(), std::back_inserter( voters ) );
 
-    auto _voter_keys =
+    auto _active_voter_keys =
       {
-        key(coc00), key(coc01), key(coc02), key(coc03), key(coc04), key(coc05), key(coc06), key(coc07), key(coc08), key(coc09),
-        key(coc10), key(coc11), key(coc12), key(coc13), key(coc14), key(coc15), key(coc16), key(coc17), key(coc18), key(coc19),
-        key(coc20), key(coc21), key(coc22), key(coc23), key(coc24), key(coc25), key(coc26), key(coc27), key(coc28), key(coc29),
-        key(coc30), key(coc31), key(coc32), key(coc33), key(coc34), key(coc35), key(coc36), key(coc37), key(coc38), key(coc39),
+        active_key(coc00), active_key(coc01), active_key(coc02), active_key(coc03), active_key(coc04), active_key(coc05), active_key(coc06), active_key(coc07), active_key(coc08), active_key(coc09),
+        active_key(coc10), active_key(coc11), active_key(coc12), active_key(coc13), active_key(coc14), active_key(coc15), active_key(coc16), active_key(coc17), active_key(coc18), active_key(coc19),
+        active_key(coc20), active_key(coc21), active_key(coc22), active_key(coc23), active_key(coc24), active_key(coc25), active_key(coc26), active_key(coc27), active_key(coc28), active_key(coc29),
+        active_key(coc30), active_key(coc31), active_key(coc32), active_key(coc33), active_key(coc34), active_key(coc35), active_key(coc36), active_key(coc37), active_key(coc38), active_key(coc39),
 
-        key(dod00), key(dod01), key(dod02), key(dod03), key(dod04), key(dod05), key(dod06), key(dod07), key(dod08), key(dod09),
-        key(dod10), key(dod11), key(dod12), key(dod13), key(dod14), key(dod15), key(dod16), key(dod17), key(dod18), key(dod19),
-        key(dod20), key(dod21), key(dod22), key(dod23), key(dod24), key(dod25), key(dod26), key(dod27), key(dod28), key(dod29),
-        key(dod30), key(dod31), key(dod32), key(dod33), key(dod34), key(dod35), key(dod36), key(dod37), key(dod38), key(dod39)
+        active_key(dod00), active_key(dod01), active_key(dod02), active_key(dod03), active_key(dod04), active_key(dod05), active_key(dod06), active_key(dod07), active_key(dod08), active_key(dod09),
+        active_key(dod10), active_key(dod11), active_key(dod12), active_key(dod13), active_key(dod14), active_key(dod15), active_key(dod16), active_key(dod17), active_key(dod18), active_key(dod19),
+        active_key(dod20), active_key(dod21), active_key(dod22), active_key(dod23), active_key(dod24), active_key(dod25), active_key(dod26), active_key(dod27), active_key(dod28), active_key(dod29),
+        active_key(dod30), active_key(dod31), active_key(dod32), active_key(dod33), active_key(dod34), active_key(dod35), active_key(dod36), active_key(dod37), active_key(dod38), active_key(dod39)
       };
-    std::copy( _voter_keys.begin(), _voter_keys.end(), std::back_inserter( voter_keys ) );
+    std::copy( _active_voter_keys.begin(), _active_voter_keys.end(), std::back_inserter( active_voter_keys ) );
 
+    auto _post_voter_keys =
+      {
+        post_key(coc00), post_key(coc01), post_key(coc02), post_key(coc03), post_key(coc04), post_key(coc05), post_key(coc06), post_key(coc07), post_key(coc08), post_key(coc09),
+        post_key(coc10), post_key(coc11), post_key(coc12), post_key(coc13), post_key(coc14), post_key(coc15), post_key(coc16), post_key(coc17), post_key(coc18), post_key(coc19),
+        post_key(coc20), post_key(coc21), post_key(coc22), post_key(coc23), post_key(coc24), post_key(coc25), post_key(coc26), post_key(coc27), post_key(coc28), post_key(coc29),
+        post_key(coc30), post_key(coc31), post_key(coc32), post_key(coc33), post_key(coc34), post_key(coc35), post_key(coc36), post_key(coc37), post_key(coc38), post_key(coc39),
+
+        post_key(dod00), post_key(dod01), post_key(dod02), post_key(dod03), post_key(dod04), post_key(dod05), post_key(dod06), post_key(dod07), post_key(dod08), post_key(dod09),
+        post_key(dod10), post_key(dod11), post_key(dod12), post_key(dod13), post_key(dod14), post_key(dod15), post_key(dod16), post_key(dod17), post_key(dod18), post_key(dod19),
+        post_key(dod20), post_key(dod21), post_key(dod22), post_key(dod23), post_key(dod24), post_key(dod25), post_key(dod26), post_key(dod27), post_key(dod28), post_key(dod29),
+        post_key(dod30), post_key(dod31), post_key(dod32), post_key(dod33), post_key(dod34), post_key(dod35), post_key(dod36), post_key(dod37), post_key(dod38), post_key(dod39)
+      };
+    std::copy( _post_voter_keys.begin(), _post_voter_keys.end(), std::back_inserter( post_voter_keys ) );
   }
 
   void prepare_voters()
@@ -331,18 +360,23 @@ struct curation_rewards_handler
       };
     std::copy( _voters.begin(), _voters.end(), std::back_inserter( voters ) );
 
-    auto _voter_keys =
+    auto _active_voter_keys =
       {
-        key(aoa00), key(aoa01), key(aoa02), key(aoa03), key(aoa04), key(aoa05), key(aoa06), key(aoa07), key(aoa08), key(aoa09)
+        active_key(aoa00), active_key(aoa01), active_key(aoa02), active_key(aoa03), active_key(aoa04), active_key(aoa05), active_key(aoa06), active_key(aoa07), active_key(aoa08), active_key(aoa09)
       };
-    std::copy( _voter_keys.begin(), _voter_keys.end(), std::back_inserter( voter_keys ) );
+    std::copy( _active_voter_keys.begin(), _active_voter_keys.end(), std::back_inserter( active_voter_keys ) );
 
+    auto _post_voter_keys =
+      {
+        post_key(aoa00), post_key(aoa01), post_key(aoa02), post_key(aoa03), post_key(aoa04), post_key(aoa05), post_key(aoa06), post_key(aoa07), post_key(aoa08), post_key(aoa09)
+      };
+    std::copy( _post_voter_keys.begin(), _post_voter_keys.end(), std::back_inserter( post_voter_keys ) );
   }
 
   uint64_t prepare_funds_impl( uint32_t idx, uint32_t amount )
   {
     test_object.fund( voters[idx], asset( amount, HIVE_SYMBOL ) );
-    test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
+    test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), active_voter_keys[idx] );
     return amount;
   }
 
@@ -390,7 +424,7 @@ struct curation_rewards_handler
     auto found_author = authors.find( creator_number );
     BOOST_REQUIRE( found_author != authors.end() );
 
-    test_object.post_comment( found_author->second, permlink, "title", "body", "test", found_keys->second );
+    test_object.post_comment( found_author->second, permlink, "title", "body", "test", found_keys->second.second );
   }
 
   void create_printer()
@@ -440,7 +474,7 @@ struct curation_rewards_handler
       if( time )
         test_object.generate_blocks( db.head_block_time() + fc::seconds( time ) );
 
-      test_object.vote( author, permlink, voters[ vote_counter ], vote_percent, voter_keys[ vote_counter ] );
+      test_object.vote( author, permlink, voters[ vote_counter ], vote_percent, post_voter_keys[ vote_counter ] );
 
       auto& cvo = db.get< comment_vote_object, by_comment_voter >( boost::make_tuple( comment_id, test_object.get_account_id( voters[ vote_counter ] ) ) );
 

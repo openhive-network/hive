@@ -15,6 +15,7 @@ enum class verify_authority_problem
 
 template< typename PROBLEM_HANDLER, typename OTHER_AUTH_PROBLEM_HANDLER >
 void verify_authority_impl(
+  bool strict_authority_level,
   const required_authorities_type& required_authorities,
   const flat_set<public_key_type>& sigs,
   const authority_getter& get_active,
@@ -73,8 +74,15 @@ FC_EXPAND_MACRO(                                        \
       s.approved_by.insert( id );
     for( const auto& id : required_authorities.required_posting )
     {
-      VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_active( id ) ) ||
-        s.check_authority( get_owner( id ) ), verify_authority_problem::missing_posting, id );
+      if( strict_authority_level )
+      {
+        VERIFY_AUTHORITY_CHECK( s.check_authority( id ), verify_authority_problem::missing_posting, id );
+      }
+      else
+      {
+        VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_active( id ) ) ||
+          s.check_authority( get_owner( id ) ), verify_authority_problem::missing_posting, id );
+      }
     }
     VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
       verify_authority_problem::unused_signature, account_name_type() );
@@ -99,8 +107,16 @@ FC_EXPAND_MACRO(                                        \
   // fetch all of the top level authorities
   for( const auto& id : required_authorities.required_active )
   {
-    VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_owner( id ) ),
-      verify_authority_problem::missing_active, id );
+    if( strict_authority_level )
+    {
+      VERIFY_AUTHORITY_CHECK( s.check_authority( id ),
+        verify_authority_problem::missing_active, id );
+    }
+    else
+    {
+      VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_owner( id ) ),
+        verify_authority_problem::missing_active, id );
+    }
   }
 
   for( const auto& id : required_authorities.required_owner )
@@ -132,7 +148,8 @@ FC_EXPAND_MACRO(                                        \
 #undef VERIFY_AUTHORITY_CHECK_OTHER_AUTH
 }
 
-void verify_authority(const required_authorities_type& required_authorities,
+void verify_authority(bool strict_authority_level,
+                      const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
                       const authority_getter& get_owner,
@@ -146,7 +163,7 @@ void verify_authority(const required_authorities_type& required_authorities,
                       const flat_set<account_name_type>& owner_approvals /* = flat_set<account_name_type>() */,
                       const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */)
 { try {
-  verify_authority_impl( required_authorities, sigs,
+  verify_authority_impl( strict_authority_level, required_authorities, sigs,
     get_active, get_owner, get_posting, get_witness_key,
     max_recursion_depth, max_membership, max_account_auths,
     active_approvals, owner_approvals, posting_approvals,
@@ -196,7 +213,8 @@ FC_EXPAND_MACRO(                                                      \
 #undef VERIFY_AUTHORITY_THROW
 } FC_CAPTURE_AND_RETHROW((sigs)) }
 
-bool has_authorization( const required_authorities_type& required_authorities,
+bool has_authorization( bool strict_authority_level,
+  const required_authorities_type& required_authorities,
   const flat_set<public_key_type>& sigs,
   const authority_getter& get_active,
   const authority_getter& get_owner,
@@ -204,7 +222,7 @@ bool has_authorization( const required_authorities_type& required_authorities,
   const witness_public_key_getter& get_witness_key )
 {
   bool result = true;
-  verify_authority_impl( required_authorities, sigs,
+  verify_authority_impl( strict_authority_level, required_authorities, sigs,
     get_active, get_owner, get_posting, get_witness_key,
     HIVE_MAX_SIG_CHECK_DEPTH, HIVE_MAX_AUTHORITY_MEMBERSHIP, HIVE_MAX_SIG_CHECK_ACCOUNTS,
     flat_set<account_name_type>(), flat_set<account_name_type>(), flat_set<account_name_type>(),

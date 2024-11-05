@@ -100,31 +100,31 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating less than the minimum should fail
     op.delegatees = {"bob"};
     op.max_rc = min_delegation - 1;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating to a non-existing account should fail
     op.delegatees = {"eve"};
     op.max_rc = min_delegation;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     op.delegatees = {"bob"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Successful delegation
     op.delegatees = {"bob"};
     op.max_rc = min_delegation + 1;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Decrease the delegation
     op.from = "alice";
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     op.delegatees = {"bob"};
     op.max_rc = min_delegation + 10;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     op.delegatees = {"bob"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -251,25 +251,25 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating to a non-existing account should fail
     op.delegatees = {"bob", "eve"};
     op.max_rc = min_delegation;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     op.delegatees = {"dave", "bob"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Successful delegations
     op.delegatees = {"bob", "dave"};
     op.max_rc = min_delegation * 2;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -288,14 +288,14 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     // dave/bob got a delegation but not dan so it should fail
     op.delegatees = {"dave", "bob", "dan"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_post_key), fc::exception );
 
     // Decrease the delegations
     op.from = "alice";
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     const rc_direct_delegation_object* delegation_decreased_bob = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
@@ -333,7 +333,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     op.delegatees = {"bob", "dan"};
     op.max_rc = min_delegation * 2;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     op.delegatees = {"bob", "dan", "dave"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
 
     generate_block();
 
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     //   see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
     //   it also means that even "delegating" to nonexistent account will pass since it is ignored
     // Now interpreter is more strict when node is_in_control()
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_private_key ), "!db.is_in_control()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "!db.is_in_control()" );
     // Let's put just the correct part into transaction so we don't have to change rest of the test
     json = "[";
     op.delegatees = { "bob" };
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     custom_op.json = json;
     ilog( "${json}", (json) );
 
-    push_transaction( custom_op, alice_private_key );
+    push_transaction( custom_op, alice_post_key );
 
     generate_block();
 
@@ -460,7 +460,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     custom_op.json = json; // use proper legacy format to remove delegation
     ilog( "${json}", (json) );
 
-    push_transaction( custom_op, alice_private_key );
+    push_transaction( custom_op, alice_post_key );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_RC_REGEN_TIME ) ); //regenerate mana
     generate_block();
@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     custom_op.json = json; // use alternative (even smaller) legacy format to add delegation
     ilog( "${json}", (json) );
 
-    push_transaction( custom_op, alice_private_key );
+    push_transaction( custom_op, alice_post_key );
 
     generate_block();
     delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
@@ -503,7 +503,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     custom_op.json = json;
     ilog( "${json}", (json) );
 
-    push_transaction( custom_op, alice_private_key );
+    push_transaction( custom_op, alice_post_key );
 
     generate_block();
     delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
@@ -559,16 +559,16 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key );
     op.delegatees = {"dave"};
     op.max_rc = vesting_amount - 10 + 1;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
     //check that it is not possible to dip into creation_rc, nor will it be accepted at the cost of dropping bob
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_private_key ), "from_delegable_rc >= delta_total" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "from_delegable_rc >= delta_total" );
 
     op.max_rc = vesting_amount - 10;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     const account_object& bob_rc_account_before = db->get_account( "bob" );
@@ -683,7 +683,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     for (int i = 0; i < NUM_ACTORS; i++) {
       op.delegatees.insert( "actor" + std::to_string(i) );
       if (count == 50 || i == NUM_ACTORS -1 ) {
-        push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( op ) ), alice_private_key );
+        push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( op ) ), alice_post_key );
         generate_block();
         op.delegatees = {};
         count = 0;
@@ -694,7 +694,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     // We delegate to bob last so that his delegation would be the last to be affected
     op.delegatees = {"bob"};
     op.max_rc = vesting_amount - NUM_ACTORS * 10 ;
-    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( op ) ), alice_private_key );
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( op ) ), alice_post_key );
     generate_block();
 
     const account_object& actor0_rc_account_before = db->get_account( "actor0" );
@@ -825,7 +825,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     drc_op.from = "alice";
     drc_op.delegatees = {"bob", "dave"};
     drc_op.max_rc = alice_account_initial.get_vesting().amount.value / 2;
-    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) ), alice_private_key );
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) ), alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Setting up withdrawal" );
@@ -994,7 +994,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     drc_op.from = "alice";
     drc_op.delegatees = {"bob", "dave"};
     drc_op.max_rc = delegated_rc;
-    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) ), alice_private_key );
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) ), alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Setting up withdrawal" );
@@ -1138,7 +1138,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     current_mana = burn_mana( "bob", 5000000, bob_private_key );
@@ -1149,7 +1149,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     BOOST_TEST_MESSAGE( "Reducing the RC delegation" );
     drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value / 2;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     current_mana = burn_mana( "bob", 5000000, bob_private_key );
@@ -1158,7 +1158,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     BOOST_TEST_MESSAGE( "Removing the RC delegation" );
     drc_op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     BOOST_REQUIRE( delta_delegation > delta_reduced_delegation);
@@ -1204,7 +1204,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     const account_object& bob_rc_account_initial = db->get_account( "bob" );
@@ -1226,7 +1226,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     BOOST_TEST_MESSAGE( "Removing the RC delegation" );
     drc_op.max_rc = 0;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_transaction(custom_op, alice_post_key);
     generate_block();
 
     const account_object& bob_rc_account = db->get_account( "bob" );
@@ -1276,7 +1276,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     comment.permlink = "test";
     comment.title = "test";
     comment.body = "test";
-    push_transaction( comment, pattern2_private_key );
+    push_transaction( comment, pattern2_post_key );
     generate_block();
     auto cashout_time = db->find_comment_cashout( db->get_comment( "pattern2", std::string( "test" ) ) )->get_cashout_time();
 
@@ -1285,24 +1285,24 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     vote.author = "pattern2";
     vote.permlink = "test";
     vote.weight = HIVE_100_PERCENT;
-    push_transaction( vote, delegator2_private_key );
+    push_transaction( vote, delegator2_post_key );
     generate_block();
 
     //wait a bit so the RC used for comment is restored
     generate_blocks( db->head_block_time() + fc::seconds( 150 ) );
 
     BOOST_TEST_MESSAGE( "All delegators make RC delegations to their delegatees with the same power" );
-    auto rc_delegate = [&]( const account_name_type& from, const account_name_type& to, int64_t amount, const fc::ecc::private_key& key )
+    auto rc_delegate = [&]( const account_name_type& from, const account_name_type& to, int64_t amount, const fc::ecc::private_key& post_key )
     {
       delegate_rc_operation delegate;
       delegate.from = from;
       delegate.delegatees = { to };
       delegate.max_rc = amount;
-      push_custom_json_operation( {}, { from }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( delegate ) ), key );
+      push_custom_json_operation( {}, { from }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( delegate ) ), post_key );
     };
-    rc_delegate( "delegator1", "delegatee", full_vest, delegator1_private_key );
-    rc_delegate( "delegator2", "pattern2", full_vest, delegator2_private_key );
-    rc_delegate( "delegator3", "pattern3", full_vest, delegator3_private_key );
+    rc_delegate( "delegator1", "delegatee", full_vest, delegator1_post_key );
+    rc_delegate( "delegator2", "pattern2", full_vest, delegator2_post_key );
+    rc_delegate( "delegator3", "pattern3", full_vest, delegator3_post_key );
     generate_block();
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
@@ -1333,7 +1333,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     power_down.vesting_shares = asset( full_vest, VESTS_SYMBOL );
     push_transaction( power_down, delegator1_private_key );
     int64_t undelegated = db->get_account( "delegator1" ).get_next_vesting_withdrawal().value;
-    rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_private_key );
+    rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_post_key );
     generate_block();
     //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed
     //we need to trigger regeneration manually
@@ -1388,16 +1388,16 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     custom_op.required_posting_auths.insert( "bob" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, bob_private_key);
+    push_transaction(custom_op, bob_post_key);
     op.delegatees = {"eve"};
     op.max_rc = vesting_amount - 10 + 1;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
     //check that it is not possible to dip into creation_rc, nor will it be accepted at the cost of dropping eve
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "from_delegable_rc >= delta_total" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "from_delegable_rc >= delta_total" );
 
     op.max_rc = vesting_amount - 10;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction(custom_op, bob_private_key);
+    push_transaction(custom_op, bob_post_key);
     generate_block();
 
     const account_object& alice_rc_before = db->get_account( "alice" );
@@ -1523,13 +1523,13 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
       custom_op.required_posting_auths.insert( "bob" );
       op.from = "bob";
       custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-      push_transaction( custom_op, bob_private_key );
+      push_transaction( custom_op, bob_post_key );
 
       custom_op.required_posting_auths.clear();
       custom_op.required_posting_auths.insert( "carol" );
       op.from = "carol";
       custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-      push_transaction( custom_op, carol_private_key );
+      push_transaction( custom_op, carol_post_key );
 
       generate_block();
     }
@@ -1581,12 +1581,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
 
     // but we can test that dedelegation while previous one did not end just adds to the object
     // (note that execution of dedelegation will in itself stop at removal limit and only excess
@@ -1606,12 +1606,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 5 * removal_limit );
@@ -1623,19 +1623,19 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    push_transaction( custom_op, bob_private_key );
+    push_transaction( custom_op, bob_post_key );
     // carol is still 2 blocks behind with delegation removal
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc.has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 7 * removal_limit + 1 );
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 1 );
-    push_transaction( custom_op, carol_private_key );
+    push_transaction( custom_op, carol_post_key );
 
     validate_database();
   }

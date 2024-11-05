@@ -1795,6 +1795,7 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
 DEFINE_API_IMPL( database_api_impl, verify_authority )
 {
   args.trx.verify_authority(
+    _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
     _db.get_chain_id(),
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
@@ -1827,6 +1828,7 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
   }
 
   bool ok = hive::protocol::has_authorization(
+    _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
     required_authorities,
     args.signers,
     [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active ); },
@@ -1856,6 +1858,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
   try
   {
     hive::protocol::verify_authority< verify_signatures_args >(
+      _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
       { args },
       sig_keys,
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },

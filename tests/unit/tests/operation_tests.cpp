@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test failure when containing additional incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key} ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {active_key, bob_private_key} ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure when containing duplicate signatures" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {active_key, active_key} ), tx_duplicate_sig );
@@ -279,8 +279,8 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     BOOST_TEST_MESSAGE( "--- Test success on active key" );
     push_transaction( tx, active_key );
 
-    BOOST_TEST_MESSAGE( "--- Test success on owner key alone" );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    BOOST_TEST_MESSAGE( "--- Test failure when wrong signature" );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "  Tests when owner authority is updated ---" );
     BOOST_TEST_MESSAGE( "--- Test failure when updating the owner authority with an active key" );
@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
     BOOST_TEST_MESSAGE( "--- Test Alice posting a root comment" );
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     const comment_object& alice_comment = db->get_comment( "alice", string( "lorem" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
@@ -467,14 +467,14 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
     tx.operations.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_post_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "--- Test Bob posting a comment on Alice's comment" );
     op.parent_permlink = "lorem";
 
     tx.operations.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
 
     const comment_object& bob_comment = db->get_comment( "bob", string( "ipsum" ) );
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
     tx.operations.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, sam_private_key );
+    push_transaction( tx, sam_post_key );
 
     const comment_object& sam_comment = db->get_comment( "sam", string( "dolor" ) );
     const comment_cashout_object* sam_comment_cashout = db->find_comment_cashout( sam_comment );
@@ -544,7 +544,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     op.json_metadata = "{\"bar\":\"foo\"}";
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, sam_private_key );
+    push_transaction( tx, sam_post_key );
 
     BOOST_REQUIRE( mod_sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( mod_sam_comment_cashout != nullptr );
@@ -560,9 +560,9 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     op.body = "edit";
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, sam_post_key ), fc::assert_exception );
     generate_block();
-    push_transaction( tx, sam_private_key );
+    push_transaction( tx, sam_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure posting withing 1 minute" );
 
@@ -572,7 +572,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    push_transaction( tx, sam_private_key );
+    push_transaction( tx, sam_post_key );
 
     generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL );
 
@@ -580,12 +580,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, sam_post_key ), fc::exception );
 
     validate_database();
 
     generate_block();
-    push_transaction( tx, sam_private_key );
+    push_transaction( tx, sam_post_key );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -621,7 +621,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test failue deleting a comment with positive rshares" );
 
@@ -630,7 +630,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     op.permlink = "test1";
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Test success deleting a comment with negative rshares" );
 
@@ -639,7 +639,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.clear();
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     auto test_comment = db->find_comment( "alice", string( "test1" ) );
     BOOST_REQUIRE( test_comment == nullptr );
@@ -651,7 +651,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.clear();
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL );
 
@@ -662,7 +662,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Test failure deleting a comment with a reply" );
@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.clear();
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     generate_blocks( HIVE_MIN_ROOT_COMMENT_INTERVAL.to_seconds() / HIVE_BLOCK_INTERVAL );
     comment.permlink = "test3";
@@ -681,12 +681,12 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.clear();
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     op.permlink = "test2";
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -736,9 +736,9 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
 
-    post_comment( "alice", "foo", "bar", "foo bar", "test", alice_private_key );
-    post_comment( "bob", "foo", "bar", "foo bar", "test", bob_private_key );
-    post_comment_to_comment( "sam", "foo", "bar", "foo bar", "alice", "foo", sam_private_key );
+    post_comment( "alice", "foo", "bar", "foo bar", "test", alice_post_key );
+    post_comment( "bob", "foo", "bar", "foo bar", "test", bob_post_key );
+    post_comment_to_comment( "sam", "foo", "bar", "foo bar", "alice", "foo", sam_post_key );
     generate_block();
     const auto& alice_comment = db->get_comment( alice_id, string( "foo" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
@@ -746,17 +746,17 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
 
     BOOST_TEST_MESSAGE( "--- Testing voting on a non-existent comment" );
-    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_private_key ), "comment_ptr != nullptr" );
+    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "comment_ptr != nullptr" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
-    HIVE_REQUIRE_ASSERT( vote( "alice", "foo", "bob", 0, bob_private_key ), "o.weight != 0" );
+    HIVE_REQUIRE_ASSERT( vote( "alice", "foo", "bob", 0, bob_post_key ), "o.weight != 0" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing success" );
 
     auto old_mana = _alice.voting_manabar.current_mana;
-    vote( "alice", "foo", "alice", HIVE_100_PERCENT, alice_private_key );
+    vote( "alice", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
 
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), alice_id ) );
     int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
@@ -776,7 +776,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     util::manabar_params params( _alice.get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
-    vote( "bob", "foo", "alice", HIVE_100_PERCENT / 2, alice_private_key );
+    vote( "bob", "foo", "alice", HIVE_100_PERCENT / 2, alice_post_key );
     itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice_id ) );
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == ( old_manabar.current_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -791,7 +791,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
 
-    vote( "alice", "foo", "bob", HIVE_100_PERCENT, bob_private_key );
+    vote( "alice", "foo", "bob", HIVE_100_PERCENT, bob_post_key );
     itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_id ) );
 
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_net_rshares + ( old_mana - _bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -807,7 +807,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     params.max_mana = _sam.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
-    vote( "bob", "foo", "sam", -1 * HIVE_100_PERCENT / 2, sam_private_key );
+    vote( "bob", "foo", "sam", -1 * HIVE_100_PERCENT / 2, sam_post_key );
     itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), sam_id ) );
 
     util::manabar old_downvote_manabar;
@@ -825,7 +825,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     int64_t regenerated_power = ( HIVE_100_PERCENT * ( db->head_block_time() - _alice.last_vote_time ).to_seconds() ) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
     int64_t used_power = ( get_voting_power( _alice ) + regenerated_power + max_vote_denom - 1 ) / max_vote_denom;
 
-    vote( "sam", "foo", "alice", HIVE_100_PERCENT, alice_private_key );
+    vote( "sam", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
 
     int64_t new_rshares = fc::uint128_to_uint64( ( fc::uint128_t( _alice.get_vesting().amount.value ) * used_power ) / HIVE_100_PERCENT ) - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -847,7 +847,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     params.max_mana = _alice.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
-    vote( "bob", "foo", "alice", HIVE_1_PERCENT * 25, alice_private_key );
+    vote( "bob", "foo", "alice", HIVE_1_PERCENT * 25, alice_post_key );
 
     new_rshares = old_manabar.current_mana - _alice.voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -876,7 +876,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     downvote_params.max_mana = _alice.get_effective_vesting_shares().value / 4;
     old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
 
-    vote( "bob", "foo", "alice", HIVE_1_PERCENT * -75, alice_private_key );
+    vote( "bob", "foo", "alice", HIVE_1_PERCENT * -75, alice_post_key );
 
     new_rshares = old_downvote_manabar.current_mana - _alice.downvote_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -894,7 +894,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     old_vote_rshares = alice_bob_vote->get_rshares();
     old_net_rshares = bob_comment_cashout->get_net_rshares();
 
-    vote( "bob", "foo", "alice", 0, alice_private_key );
+    vote( "bob", "foo", "alice", 0, alice_post_key );
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -929,7 +929,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     old_net_rshares = bob_comment_cashout->get_net_rshares();
 
-    vote( "bob", "foo", "alice", -1 * HIVE_100_PERCENT, alice_private_key );
+    vote( "bob", "foo", "alice", -1 * HIVE_100_PERCENT, alice_post_key );
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - alice_weight + HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( alice_bob_vote->get_rshares() == -1 * ( alice_weight - HIVE_VOTE_DUST_THRESHOLD ) );
@@ -947,7 +947,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     params.max_mana = _dave.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
-    vote( "bob", "foo", "dave", HIVE_100_PERCENT, dave_private_key );
+    vote( "bob", "foo", "dave", HIVE_100_PERCENT, dave_post_key );
 
     new_rshares = old_manabar.current_mana - _dave.voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
     new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
@@ -1002,28 +1002,28 @@ BOOST_AUTO_TEST_CASE( vote_weights )
       fc::ecc::private_key key;
     };
     TActor voters[] = {
-      {"voter0",voter0_private_key}, {"voter1",voter1_private_key}, {"voter2",voter2_private_key}, {"voter3",voter3_private_key},
-      {"voter4",voter4_private_key}, {"voter5",voter5_private_key}, {"voter6",voter6_private_key}, {"voter7",voter7_private_key},
-      {"voter01",voter01_private_key}, {"voter11",voter11_private_key}, {"voter21",voter21_private_key}, {"voter31",voter31_private_key},
-      {"voter41",voter41_private_key}, {"voter51",voter51_private_key}, {"voter61",voter61_private_key}, {"voter71",voter71_private_key},
-      {"voter02",voter02_private_key}, {"voter12",voter12_private_key}, {"voter22",voter22_private_key}, {"voter32",voter32_private_key},
-      {"voter42",voter42_private_key}, {"voter52",voter52_private_key}, {"voter62",voter62_private_key}, {"voter72",voter72_private_key},
-      {"voter03",voter03_private_key}, {"voter13",voter13_private_key}, {"voter23",voter23_private_key}, {"voter33",voter33_private_key},
-      {"voter43",voter43_private_key}, {"voter53",voter53_private_key}, {"voter63",voter63_private_key}, {"voter73",voter73_private_key},
-      {"voter04",voter04_private_key}, {"voter14",voter14_private_key}, {"voter24",voter24_private_key}, {"voter34",voter34_private_key},
-      {"voter44",voter44_private_key}, {"voter54",voter54_private_key}, {"voter64",voter64_private_key}, {"voter74",voter74_private_key}
+      {"voter0",voter0_post_key}, {"voter1",voter1_post_key}, {"voter2",voter2_post_key}, {"voter3",voter3_post_key},
+      {"voter4",voter4_post_key}, {"voter5",voter5_post_key}, {"voter6",voter6_post_key}, {"voter7",voter7_post_key},
+      {"voter01",voter01_post_key}, {"voter11",voter11_post_key}, {"voter21",voter21_post_key}, {"voter31",voter31_post_key},
+      {"voter41",voter41_post_key}, {"voter51",voter51_post_key}, {"voter61",voter61_post_key}, {"voter71",voter71_post_key},
+      {"voter02",voter02_post_key}, {"voter12",voter12_post_key}, {"voter22",voter22_post_key}, {"voter32",voter32_post_key},
+      {"voter42",voter42_post_key}, {"voter52",voter52_post_key}, {"voter62",voter62_post_key}, {"voter72",voter72_post_key},
+      {"voter03",voter03_post_key}, {"voter13",voter13_post_key}, {"voter23",voter23_post_key}, {"voter33",voter33_post_key},
+      {"voter43",voter43_post_key}, {"voter53",voter53_post_key}, {"voter63",voter63_post_key}, {"voter73",voter73_post_key},
+      {"voter04",voter04_post_key}, {"voter14",voter14_post_key}, {"voter24",voter24_post_key}, {"voter34",voter34_post_key},
+      {"voter44",voter44_post_key}, {"voter54",voter54_post_key}, {"voter64",voter64_post_key}, {"voter74",voter74_post_key}
     };
     TActor authors[] = {
-      {"author0",author0_private_key}, {"author1",author1_private_key}, {"author2",author2_private_key}, {"author3",author3_private_key},
-      {"author4",author4_private_key}, {"author5",author5_private_key}, {"author6",author6_private_key}, {"author7",author7_private_key},
-      {"author01",author01_private_key}, {"author11",author11_private_key}, {"author21",author21_private_key}, {"author31",author31_private_key},
-      {"author41",author41_private_key}, {"author51",author51_private_key}, {"author61",author61_private_key}, {"author71",author71_private_key},
-      {"author02",author02_private_key}, {"author12",author12_private_key}, {"author22",author22_private_key}, {"author32",author32_private_key},
-      {"author42",author42_private_key}, {"author52",author52_private_key}, {"author62",author62_private_key}, {"author72",author72_private_key},
-      {"author03",author03_private_key}, {"author13",author13_private_key}, {"author23",author23_private_key}, {"author33",author33_private_key},
-      {"author43",author43_private_key}, {"author53",author53_private_key}, {"author63",author63_private_key}, {"author73",author73_private_key},
-      {"author04",author04_private_key}, {"author14",author14_private_key}, {"author24",author24_private_key}, {"author34",author34_private_key},
-      {"author44",author44_private_key}, {"author54",author54_private_key}, {"author64",author64_private_key}, {"author74",author74_private_key}
+      {"author0",author0_post_key}, {"author1",author1_post_key}, {"author2",author2_post_key}, {"author3",author3_post_key},
+      {"author4",author4_post_key}, {"author5",author5_post_key}, {"author6",author6_post_key}, {"author7",author7_post_key},
+      {"author01",author01_post_key}, {"author11",author11_post_key}, {"author21",author21_post_key}, {"author31",author31_post_key},
+      {"author41",author41_post_key}, {"author51",author51_post_key}, {"author61",author61_post_key}, {"author71",author71_post_key},
+      {"author02",author02_post_key}, {"author12",author12_post_key}, {"author22",author22_post_key}, {"author32",author32_post_key},
+      {"author42",author42_post_key}, {"author52",author52_post_key}, {"author62",author62_post_key}, {"author72",author72_post_key},
+      {"author03",author03_post_key}, {"author13",author13_post_key}, {"author23",author23_post_key}, {"author33",author33_post_key},
+      {"author43",author43_post_key}, {"author53",author53_post_key}, {"author63",author63_post_key}, {"author73",author73_post_key},
+      {"author04",author04_post_key}, {"author14",author14_post_key}, {"author24",author24_post_key}, {"author34",author34_post_key},
+      {"author44",author44_post_key}, {"author54",author54_post_key}, {"author64",author64_post_key}, {"author74",author74_post_key}
     };
 
     for( auto& voter : voters )
@@ -2902,7 +2902,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
       op.json = fc::to_string( i );
       tx.clear();
       tx.operations.push_back( op );
-      push_transaction( tx, alice_private_key );
+      push_transaction( tx, alice_post_key );
     }
 
 
@@ -2912,7 +2912,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
     tx.clear();
     tx.operations.push_back( op );
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), plugin_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), plugin_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Testing 5 custom json ops in one transaction" );
@@ -2926,7 +2926,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
       tx.operations.push_back( op );
     }
 
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
 
 
     BOOST_TEST_MESSAGE( "--- Testing failure pushing 6th custom json op tx" );
@@ -2935,7 +2935,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
     tx.clear();
     tx.operations.push_back( op );
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), plugin_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_post_key ), plugin_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Testing failure of 6 custom json ops in one transaction" );
@@ -2948,7 +2948,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
       tx.operations.push_back( op );
     }
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), plugin_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, sam_post_key ), plugin_exception );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -7054,7 +7054,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     tx.clear();
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
     validate_database();
 
 
@@ -7301,7 +7301,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Claiming a partial reward balance" );
@@ -7310,7 +7310,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     op.reward_vests = ASSET( "5.000000 VESTS" );
     tx.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_hive );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
@@ -7330,7 +7330,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     op.reward_hbd = ASSET( "10.000 TBD" );
     tx.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_hive );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
@@ -7523,7 +7523,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     comment_op.body = "foo bar";
     tx.operations.push_back( comment_op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
     tx.operations.clear();
     vote_operation vote_op;
     vote_op.voter = "bob";
@@ -7533,7 +7533,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( vote_op );
 
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
     generate_blocks(1);
 
     const auto& vote_idx = db->get_index< comment_vote_index >().indices().get< by_comment_voter >();
@@ -7894,7 +7894,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure on more than 8 benefactors" );
     b.beneficiaries.push_back( beneficiary_route_type( account_name_type( "bob" ), HIVE_1_PERCENT ) );
@@ -7910,7 +7910,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     op.extensions.insert( b );
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Test specifying a non-existent benefactor" );
@@ -7920,7 +7920,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     op.extensions.insert( b );
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Test setting when comment has been voted on" );
@@ -7939,13 +7939,13 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     tx.clear();
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key} ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_post_key, bob_post_key} ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Test success" );
     tx.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    push_transaction( tx, alice_post_key );
 
 
     BOOST_TEST_MESSAGE( "--- Test setting when there are already beneficiaries" );
@@ -7953,13 +7953,13 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     b.beneficiaries.push_back( beneficiary_route_type( account_name_type( "dave" ), 25 * HIVE_1_PERCENT ) );
     op.extensions.clear();
     op.extensions.insert( b );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Payout and verify rewards were split properly" );
     tx.clear();
     tx.operations.push_back( vote );
-    push_transaction( tx, bob_private_key );
+    push_transaction( tx, bob_post_key );
 
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
@@ -8022,15 +8022,15 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     comment.parent_permlink = "test";
     comment.title = "test";
     comment.body = "foobar";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
     generate_block();
     comment.parent_author = "alice";
     comment.parent_permlink = "test1";
     comment.permlink = "test2";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
     generate_block();
     comment.permlink = "test3";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Test clearing allow_votes when comment has been voted on" );
@@ -8047,23 +8047,23 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_private_key, bob_private_key} ), "!comment_cashout->has_votes()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_post_key, bob_post_key} ), "!comment_cashout->has_votes()" );
 
     BOOST_TEST_MESSAGE( "--- Test success of clearing allow_votes" );
-    push_transaction( op, alice_private_key );
+    push_transaction( op, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test voting no longer possible" );
-    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_private_key ), "comment_cashout->allows_votes()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_post_key ), "comment_cashout->allows_votes()" );
 
     BOOST_TEST_MESSAGE( "--- Test enabling voting back not possible" );
     op.allow_votes = true;
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->allows_votes() >= o.allow_votes" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "comment_cashout->allows_votes() >= o.allow_votes" );
 
     BOOST_TEST_MESSAGE( "--- Test success - voting actually possible but only downvoting" );
     //ABW: that is probably the source of confusion, however if all votes were disallowed author
     //of some negative content could not even be affected on reputation
     vote.weight = -HIVE_100_PERCENT;
-    push_transaction( vote, bob_private_key );
+    push_transaction( vote, bob_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test clearing allow_curation_rewards when comment has been voted on" );
     vote.voter = "sam";
@@ -8076,17 +8076,17 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_private_key, sam_private_key} ), "!comment_cashout->has_votes()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_post_key, sam_post_key} ), "!comment_cashout->has_votes()" );
 
     BOOST_TEST_MESSAGE( "--- Test success of clearing allow_curation_rewards" );
-    push_transaction( op, alice_private_key );
+    push_transaction( op, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test enabling curations back not possible" );
     op.allow_curation_rewards = true;
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards" );
 
     BOOST_TEST_MESSAGE( "--- Test success of voting on comment with cleared allow_curation_rewards" );
-    push_transaction( vote, sam_private_key );
+    push_transaction( vote, sam_post_key );
 
 
     BOOST_TEST_MESSAGE( "--- Test setting lower max_accepted_payout when comment has been voted on" );
@@ -8099,17 +8099,17 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_private_key, dave_private_key} ), "!comment_cashout->has_votes()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, {alice_post_key, dave_post_key} ), "!comment_cashout->has_votes()" );
 
     BOOST_TEST_MESSAGE( "--- Test success of setting lower max_accepted_payout" );
-    push_transaction( op, alice_private_key );
+    push_transaction( op, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test increasing max_accepted_payout not possible" );
     op.max_accepted_payout.amount *= 2;
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout" );
 
     BOOST_TEST_MESSAGE( "--- Test success of voting on comment with lowered max_accepted_payout" );
-    push_transaction( vote, dave_private_key );
+    push_transaction( vote, dave_post_key );
 
     BOOST_TEST_MESSAGE( "--- Payout and verify rewards on comment with disabled curation rewards" );
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
@@ -8196,8 +8196,8 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     comment.parent_permlink = "test";
     comment.title = "test";
     comment.body = "foobar";
-    push_transaction( comment, alice_private_key );
-    set_comment_options( "alice", "test", ASSET( "0.010 TBD" ), HIVE_100_PERCENT, false, false, comment_options_extensions_type(), alice_private_key );
+    push_transaction( comment, alice_post_key );
+    set_comment_options( "alice", "test", ASSET( "0.010 TBD" ), HIVE_100_PERCENT, false, false, comment_options_extensions_type(), alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Downvoting comment (possible even with voting disabled)" );
@@ -8205,7 +8205,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     vote.permlink = "test";
     vote.voter = "bob";
     vote.weight = -HIVE_100_PERCENT;
-    push_transaction( vote, bob_private_key );
+    push_transaction( vote, bob_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment has curations and voting blocked, small max payout; vote exists" );
@@ -8222,7 +8222,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     BOOST_TEST_MESSAGE( "--- Deleting comment (right before cashout)" );
     generate_blocks( comment_cashout->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
-    delete_comment( "alice", "test", alice_private_key );
+    delete_comment( "alice", "test", alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );
@@ -8232,7 +8232,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
 
     BOOST_TEST_MESSAGE( "--- Reusing old permlink for new comment" );
     comment.body = "bob, why the hate? :o(";
-    push_transaction( comment, alice_private_key );
+    push_transaction( comment, alice_post_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- New comment has default options, no vote on it exists" );
@@ -9070,7 +9070,7 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
 
     generate_block();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, bob_posting_private_key );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_posting_private_key ), tx_missing_posting_auth );
 
     generate_block();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -10350,14 +10350,14 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
       "key_weight_pair.first != key", plugin_exception );
 
     BOOST_TEST_MESSAGE( "Testing master password based keys in memo - active key" );
-    HIVE_REQUIRE_EXCEPTION( transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, alice_active_private_key ),
       "key_weight_pair.first != key", plugin_exception );
-    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, alice_active_private_key ),
       "key_weight_pair.first != key", plugin_exception );
-    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, alice_active_private_key ),
       "key_weight_pair.first != key", plugin_exception );
-    transfer_to_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), "", other_private_key );
-    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+    transfer_to_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), "", alice_active_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, alice_active_private_key ),
       "key_weight_pair.first != key", plugin_exception );
 
     BOOST_TEST_MESSAGE( "Testing master password based keys in memo - posting key" );
