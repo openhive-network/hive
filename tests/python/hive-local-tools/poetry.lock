@@ -173,16 +173,16 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev274+bdf59fc"
+version = "0.0.1.dev275+47b0110"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "beekeepy-0.0.1.dev274+bdf59fc-py3-none-any.whl", hash = "sha256:f80648dc577cd1a47771391797c6c24c4a9966ea138329a4b580ee9ad975a6cd"},
+    {file = "beekeepy-0.0.1.dev275+47b0110-py3-none-any.whl", hash = "sha256:ea04c3399fcc073188547bfb811bcfca30d9a24187763e3b5f6f1ab5cc43d0d4"},
 ]
 
 [package.dependencies]
-helpy = "0.0.1.dev274+bdf59fc"
+helpy = "0.0.1.dev275+47b0110"
 
 [package.source]
 type = "legacy"
@@ -477,12 +477,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev274+bdf59fc"
+version = "0.0.1.dev275+47b0110"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev274+bdf59fc-py3-none-any.whl", hash = "sha256:75721c9c5333f2db7d66338fc5862a30da411f4854df81e2635d823c1184a69f"},
+    {file = "helpy-0.0.1.dev275+47b0110-py3-none-any.whl", hash = "sha256:fe976b2269326d867dfb42ebae0d8d46b9974b32a3f39bc487d83dd0f34105b9"},
 ]
 
 [package.dependencies]
@@ -491,7 +491,7 @@ httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev320+f4fdcfe"
+schemas = "0.0.1.dev323+c5bf0df"
 wax = "0.3.10.dev227+a000255"
 
 [package.source]
@@ -1474,12 +1474,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev320+f4fdcfe"
+version = "0.0.1.dev323+c5bf0df"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev320+f4fdcfe-py3-none-any.whl", hash = "sha256:b2106d4f429ca7aa04e723ef1072004f4705344eeeb0737a7eb6ee0248221992"},
+    {file = "schemas-0.0.1.dev323+c5bf0df-py3-none-any.whl", hash = "sha256:94c8b5bfbe0ac9aaa73d3d4528da3288681a69e37c1d822688b77822def41b52"},
 ]
 
 [package.dependencies]
@@ -1592,7 +1592,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "0.0.1.dev274+bdf59fc"
+beekeepy = "0.0.1.dev275+47b0110"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
