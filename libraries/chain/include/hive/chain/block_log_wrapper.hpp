@@ -47,12 +47,13 @@ namespace hive { namespace chain {
     std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
     std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t>
       read_raw_block_data_by_num(uint32_t block_num) const;
-    std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>
-    multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num) const;
+    void multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num_from_disk,
+      block_log_artifacts::artifact_container_t& plural_of_block_artifacts,
+      std::unique_ptr<char[]>& block_data_buffer, size_t& block_data_buffer_size ) const;
     uint64_t append_raw( uint32_t block_num, const char* raw_block_data, size_t raw_block_size,
                                  const block_attributes_t& flags, const bool is_at_live_sync );
-    void multi_append_raw( uint32_t first_block_num,
-      std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>& data);
+    void multi_append_raw( uint32_t first_block_num, std::unique_ptr<char[]>& block_data_buffer,
+      block_log_artifacts::artifact_container_t& plural_of_artifacts);
 
     // Methods implementing block_read_i interface:
     virtual full_block_ptr_t head_block() const override;
@@ -150,7 +151,7 @@ namespace hive { namespace chain {
     full_block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
     using append_t = std::function< void( block_log_ptr_t log ) >;
-    void internal_append( uint32_t block_num, append_t do_appending);
+    void internal_append( uint32_t first_block_num, size_t block_count, append_t do_appending);
 
     static uint32_t get_part_number_for_block( uint32_t block_num, uint32_t max_blocks_in_log_file )
     {

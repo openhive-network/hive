@@ -163,7 +163,7 @@ std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> bl
 
 void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
-  internal_append( full_block->get_block_num(), [&]( block_log_ptr_t log ){ 
+  internal_append( full_block->get_block_num(), 1 /*block_count*/, [&]( block_log_ptr_t log ){ 
     log->append( full_block, is_at_live_sync );
   });
 }
@@ -172,27 +172,29 @@ uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_bloc
   size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
 {
   uint64_t result = 0;
-  internal_append( block_num, [&]( block_log_ptr_t log ){ 
+  internal_append( block_num, 1 /*block_count*/, [&]( block_log_ptr_t log ){ 
     result = log->append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
   });
   return result;
 }
 
 void block_log_wrapper::multi_append_raw( uint32_t first_block_num,
-  std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>& data)
+  std::unique_ptr<char[]>& block_data_buffer, block_log_artifacts::artifact_container_t& plural_of_artifacts)
 {
-  internal_append( first_block_num, [&]( block_log_ptr_t log ){
-    log->multi_append_raw( first_block_num, data );
+  internal_append( first_block_num, plural_of_artifacts.size() /*block_count*/, [&]( block_log_ptr_t log ){
+    log->multi_append_raw( first_block_num, block_data_buffer, plural_of_artifacts );
   });
 }
 
-std::tuple<std::unique_ptr<char[]>, block_log_artifacts::artifact_container_t, uint64_t>
-block_log_wrapper::multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num) const
+void block_log_wrapper::multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num_from_disk,
+  block_log_artifacts::artifact_container_t& plural_of_block_artifacts,
+  std::unique_ptr<char[]>& block_data_buffer, size_t& block_data_buffer_size ) const
 {
   const block_log_ptr_t log = get_block_log_corresponding_to( first_block_num );
-  FC_ASSERT( log, 
-             "Unable to find block log corresponding to block number ${block_num}", (first_block_num));
-  return log->multi_read_raw_block_data(first_block_num, last_block_num);
+  FC_ASSERT( log,
+             "Unable to find block log corresponding to block number ${first_block_num}", (first_block_num));
+  return log->multi_read_raw_block_data( first_block_num, last_block_num_from_disk, 
+    plural_of_block_artifacts, block_data_buffer, block_data_buffer_size ); 
 }
 
 void block_log_wrapper::flush_head_storage()
@@ -753,17 +755,20 @@ void block_log_wrapper::wipe_storage_files( const fc::path& dir )
   }
 }
 
-void block_log_wrapper::internal_append( uint32_t block_num, append_t do_appending)
+void block_log_wrapper::internal_append( uint32_t first_block_num, size_t block_count, append_t do_appending)
 {
-  FC_ASSERT( block_num > 0 );
+  FC_ASSERT( first_block_num > 0 );
+  FC_ASSERT( block_count > 0 );
+  uint32_t block_part_number = get_part_number_for_block( first_block_num, _max_blocks_in_log_file );
+  FC_ASSERT( block_count == 1 ||
+             block_part_number == get_part_number_for_block( first_block_num + block_count -1, _max_blocks_in_log_file ),
+             "Can't handle block batches spanning block log file boundary." );
 
-  // Note that we use provided block_num here instead of checking top log's head, as the latter
+  // Note that we use provided first_block_num here instead of checking top log's head, as the latter
   // may not be updated when low-level appending using append_raw.
 
-  uint32_t block_part_number = 0;
   // Is it time to switch to a new file & append there?
-  if( is_last_number_of_the_file( block_num -1 ) &&
-      ( block_part_number = get_part_number_for_block( block_num, _max_blocks_in_log_file ) ) > _logs.size() )
+  if( is_last_number_of_the_file( first_block_num -1 ) && ( block_part_number > _logs.size() ) )
   {
     fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( block_part_number ).c_str();
     const auto new_part_log = std::make_shared<block_log>( _app );
