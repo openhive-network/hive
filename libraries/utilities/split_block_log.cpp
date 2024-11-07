@@ -78,16 +78,20 @@ void split_block_log( fc::path monolith_path, uint32_t head_block_number, size_t
   uint32_t batch_first_block_num = starting_block_number;
   uint32_t batch_stop_at_block = 
     stop_at_block == source_head_block_num ? stop_at_block -1 : stop_at_block;
+  block_log_artifacts::artifact_container_t plural_of_block_artifacts;
+  std::unique_ptr<char[]> the_buffer;
+  size_t the_buffer_size = 0;
   while( batch_first_block_num <= batch_stop_at_block )
   {
     uint32_t batch_last_block_num = std::min<uint32_t>( batch_stop_at_block, batch_first_block_num + BLOCKS_IN_BATCH_IO_MODE -1 );
     ilog( "Reading blocks #${batch_first_block_num} to #${batch_last_block_num}",
           (batch_first_block_num)(batch_last_block_num) );
-    auto read_result = mono_log->multi_read_raw_block_data( batch_first_block_num, batch_last_block_num );
+    mono_log->multi_read_raw_block_data( batch_first_block_num, batch_last_block_num,
+      plural_of_block_artifacts, the_buffer, the_buffer_size );
 
     ilog( "Appending a batch of ${count} blocks, starting with block #${batch_first_block_num}",
-          ("count", std::get<1>(read_result).size())(batch_first_block_num) );
-    split_log->multi_append_raw( batch_first_block_num, read_result );
+          ("count", plural_of_block_artifacts.size())(batch_first_block_num) );
+    split_log->multi_append_raw( batch_first_block_num, the_buffer, plural_of_block_artifacts );
 
     batch_first_block_num = batch_last_block_num + 1;
   }

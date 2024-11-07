@@ -254,11 +254,6 @@ private:
   void generate_artifacts_file(const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
   void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
   
-  void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
-  {
-    hive::utilities::perform_write(_storage_fd, buffer.data(), buffer.size(), offset, description);
-  }
-
   template <class Data>
   void write_data(const Data& buffer, off_t offset, const std::string& description) const
   {
