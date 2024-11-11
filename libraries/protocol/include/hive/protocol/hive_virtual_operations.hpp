@@ -116,6 +116,7 @@ struct liquidity_reward_operation : public virtual_operation
   * Generated when operation modified HBD balance and account received interest payment.
   * Interest is stored in related balance (liquid when liquid was modified, savings when savings was modified).
   * Note: since HF25 interest is not calculated nor paid on liquid balance.
+  * Note: since HF28 interest on savings are paid in liquid when HBD savings balance is reset to 0.
   */
 struct interest_operation : public virtual_operation
 {
@@ -126,7 +127,7 @@ struct interest_operation : public virtual_operation
 
   account_name_type owner; //user that had his HBD balance modified (receiver of interest)
   HBD_asset         interest; //(HBD) amount of interest paid
-  bool              is_saved_into_hbd_balance = false; //true when liquid balance was modified (not happening after HF25)
+  bool              is_saved_into_hbd_balance = false; //true when liquid balance was modified (not happening after HF25) or HBD savings balance has been reset to 0 (happening after HF28)
 };
 
 /**

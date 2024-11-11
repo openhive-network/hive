@@ -2822,6 +2822,37 @@ void database::process_savings_withdraws()
     modify( get_account( itr->from ), [&]( account_object& a )
     {
       a.savings_withdraw_requests--;
+
+      // Starting from HF28, interest are collected and made liquid when HBD savings is reset to 0
+      if( has_hardfork( HIVE_HARDFORK_1_28_CLEAR_HBD_SAVINGS ) && 
+          itr->amount.symbol.asset_num == HIVE_ASSET_NUM_HBD && a.get_hbd_savings().amount.value == 0 ) 
+      {
+        if( a.savings_hbd_seconds_last_update != head_block_time() ) 
+        {
+          a.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
+          a.savings_hbd_seconds_last_update = head_block_time();
+
+          if( a.savings_hbd_seconds > 0 )
+          {
+            auto interest = a.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
+            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
+            interest /= HIVE_100_PERCENT;
+            asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
+            a.hbd_balance += interest_paid;
+            a.savings_hbd_seconds = 0;
+            a.savings_hbd_last_interest_payment = head_block_time();
+
+            if(interest > 0)
+              push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
+
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
+            {
+              props.current_hbd_supply += interest_paid;
+              props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+            } );
+          }
+        }
+      }
     });
 
     push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
