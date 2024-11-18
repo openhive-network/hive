@@ -8,6 +8,7 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <queue>
+#include <filesystem>
 #include <fstream>
 #include <fc/io/raw.hpp>
 #include <fc/thread/thread.hpp>
@@ -97,12 +98,14 @@ namespace hive { namespace chain {
         std::shared_ptr<full_block_type> head;
 
         // these don't change after opening, don't need locking
-        int block_log_fd;
+        int block_log_fd = -1;
+        std::fstream block_log_fs;
         fc::path block_file;
         block_log_artifacts::block_log_artifacts_ptr_t _artifacts;
         boost::interprocess::file_lock _flock;
 
         static void write_with_retry(int filedes, const void* buf, size_t nbyte);
+        static void write_with_retry(std::fstream& fs, const char* buf, size_t nbyte);
         static void pwrite_with_retry(int filedes, const void* buf, size_t nbyte, off_t offset);
         static size_t pread_with_retry(int filedes, void* buf, size_t nbyte, off_t offset);
 
@@ -134,6 +137,11 @@ namespace hive { namespace chain {
         buf = ((const char*)buf) + bytes_written;
         nbyte -= bytes_written;
       }
+    }
+
+    void block_log_impl::write_with_retry(std::fstream& fs, const char* buf, size_t nbyte)
+    {
+      fs.write(buf, nbyte);
     }
 
     void block_log_impl::pwrite_with_retry(int fd, const void* buf, size_t nbyte, off_t offset)
@@ -175,14 +183,14 @@ namespace hive { namespace chain {
   } // end namespace detail
 
   block_log::block_log( appbase::application& app ) : my( new detail::block_log_impl() ), theApp( app )
-  {
-    my->block_log_fd = -1;
-  }
+  {}
 
   block_log::~block_log()
   {
     if (my->block_log_fd != -1)
       ::close(my->block_log_fd);
+    else if (my->block_log_fs.is_open())
+      my->block_log_fs.close();
   }
 
   namespace
@@ -196,7 +204,9 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only /* = false */, bool write_fallback /*= false*/, bool auto_open_artifacts /*= true*/ )
+  void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool,
+     bool read_only /* = false */, bool write_fallback /*= false*/, bool auto_open_artifacts /*= true*/,
+     bool stream_log /*= false*/ )
   {
       FC_ASSERT(!fc::is_directory(file), "${file} should point to block_log file, not directory", (file));
       close();
@@ -211,51 +221,100 @@ namespace hive { namespace chain {
 
       std::string file_str = my->block_file.generic_string();
 
-      int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
-      if (read_only)
+      if (stream_log)
       {
-        flags = O_RDONLY | O_CLOEXEC;
-        if(not fc::exists(file) && write_fallback)
-        {
-          int temp_flags = flags | O_CREAT;
-          int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
-          if (temp_fd == -1)
-            FC_THROW("Error creating block log file ${filename}: ${error}",
-              ("filename", my->block_file)("error", strerror(errno)));
-
-          ::close(temp_fd);
-        }
-      }
-
-      ilog("Opening blocklog ${blocklog_filename} in ${mode} mode ...",
-        ("blocklog_filename",file_str.c_str())("mode", read_only ? "read only" : "read write"));
-      my->block_log_fd = ::open(file_str.c_str(), flags, 0644);
-      if (my->block_log_fd == -1)
-        FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
-          ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
-
-      struct stat block_log_stats = get_file_stats(my->block_log_fd);
-      if( (block_log_stats.st_mode & 0200) == 0 )
-      {
-        wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
-      }
-      else
-      {
-        my->_flock = boost::interprocess::file_lock(file_str.c_str());
-
         if (read_only)
         {
-          if (!my->_flock.try_lock_sharable())
-            FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", file_str.c_str()));
+          if(not fc::exists(file) && write_fallback)
+          {
+            my->block_log_fs.open(file_str.c_str(), LOG_WRITE );
+            if (not my->block_log_fs.is_open())
+              FC_THROW("Error creating block log file ${filename}: ${error}",
+                ("filename", my->block_file)("error", strerror(errno)));
+            
+            my->block_log_fs.close();
+          }
+        }
+
+        ilog("Opening blocklog ${blocklog_filename} in ${mode} mode ...",
+          ("blocklog_filename",file_str.c_str())("mode", read_only ? "read only" : "read write"));
+        my->block_log_fs.open(file_str.c_str(), read_only ? LOG_READ : LOG_WRITE);
+        if (not my->block_log_fs.is_open())
+          FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
+            ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
+
+        using std::filesystem::perms;
+        auto perms = std::filesystem::status(file_str.c_str()).permissions();
+        if( (perms & perms::owner_write) == perms::none )
+        {
+          wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
         }
         else
         {
-          if (!my->_flock.try_lock())
-            FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", file_str.c_str()));
-        }
-      }
+          my->_flock = boost::interprocess::file_lock(file_str.c_str());
 
-      my->block_log_size = block_log_stats.st_size;
+          if (read_only)
+          {
+            if (!my->_flock.try_lock_sharable())
+              FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", file_str.c_str()));
+          }
+          else
+          {
+            if (!my->_flock.try_lock())
+              FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", file_str.c_str()));
+          }
+        }
+
+        my->block_log_size = std::filesystem::file_size(std::filesystem::path(file_str.c_str()));
+      }
+      else
+      {
+        int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
+        if (read_only)
+        {
+          flags = O_RDONLY | O_CLOEXEC;
+          if(not fc::exists(file) && write_fallback)
+          {
+            int temp_flags = flags | O_CREAT;
+            int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
+            if (temp_fd == -1)
+              FC_THROW("Error creating block log file ${filename}: ${error}",
+                ("filename", my->block_file)("error", strerror(errno)));
+
+            ::close(temp_fd);
+          }
+        }
+
+        ilog("Opening blocklog ${blocklog_filename} in ${mode} mode ...",
+          ("blocklog_filename",file_str.c_str())("mode", read_only ? "read only" : "read write"));
+        my->block_log_fd = ::open(file_str.c_str(), flags, 0644);
+        if (my->block_log_fd == -1)
+          FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
+            ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
+
+        struct stat block_log_stats = get_file_stats(my->block_log_fd);
+        if( (block_log_stats.st_mode & 0200) == 0 )
+        {
+          wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+        }
+        else
+        {
+          my->_flock = boost::interprocess::file_lock(file_str.c_str());
+
+          if (read_only)
+          {
+            if (!my->_flock.try_lock_sharable())
+              FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", file_str.c_str()));
+          }
+          else
+          {
+            if (!my->_flock.try_lock())
+              FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", file_str.c_str()));
+          }
+        }
+
+        my->block_log_size = block_log_stats.st_size;
+      }
 
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
@@ -294,12 +353,15 @@ namespace hive { namespace chain {
       ::close(my->block_log_fd);
       my->block_log_fd = -1;
     }
+    else if (my->block_log_fs.is_open()) {
+      my->block_log_fs.close();
+    }
     std::atomic_store(&my->head, std::shared_ptr<full_block_type>());
   }
 
   bool block_log::is_open()const
   {
-    return my->block_log_fd != -1;
+    return (my->block_log_fd != -1) || (my->block_log_fs.is_open());
   }
 
   fc::path block_log::get_log_file() const
@@ -346,7 +408,10 @@ namespace hive { namespace chain {
       memcpy(block_with_start_pos.get(), raw_block_data, raw_block_size);
       *(uint64_t*)(block_with_start_pos.get() + raw_block_size) = block_start_pos_with_flags;
 
-      detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
+      if (my->block_log_fd != -1)
+        detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
+      else
+        detail::block_log_impl::write_with_retry(my->block_log_fs, block_with_start_pos.get(), block_size_including_start_pos);
       my->block_log_size += block_size_including_start_pos;
 
       my->_artifacts->store_block_artifacts(block_num, block_start_pos, attributes, block_id, is_at_live_sync);
@@ -359,6 +424,8 @@ namespace hive { namespace chain {
   void block_log::multi_append_raw(uint32_t first_block_num, std::unique_ptr<char[]>& block_data_buffer,
     block_log_artifacts::artifact_container_t& plural_of_artifacts)
   {
+    FC_ASSERT(my->block_log_fs.is_open());
+
     size_t buffer_offset = 0;
     block_log_artifacts::artifact_data_container_t artifacts_data;
     // We will override file position offsets bundled with raw block data
@@ -385,7 +452,8 @@ namespace hive { namespace chain {
       ++block_num;
     }
 
-    detail::block_log_impl::write_with_retry(my->block_log_fd, block_data_buffer.get(), buffer_offset);
+    //detail::block_log_impl::write_with_retry(my->block_log_fd, block_data_buffer.get(), buffer_offset);
+    detail::block_log_impl::write_with_retry(my->block_log_fs, block_data_buffer.get(), buffer_offset);
     my->_artifacts->store_block_artifacts(artifacts_data, false/*is_at_live_sync*/);
   }
 
@@ -634,10 +702,11 @@ namespace hive { namespace chain {
   }
 
   void block_log::open_and_init( const fc::path& file, bool read_only, bool enable_compression,
-    int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool )
+    int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool,
+    bool stream_log /*= false*/ )
   {
     my->auto_fixing_enabled = enable_block_log_auto_fixing;
-    open( file, thread_pool, read_only, true /*write_fallback*/ );
+    open( file, thread_pool, read_only, true /*write_fallback*/, true /*auto_open_artifacts*/, stream_log );
     my->compression_enabled = enable_compression;
     my->zstd_level = compression_level;
   }

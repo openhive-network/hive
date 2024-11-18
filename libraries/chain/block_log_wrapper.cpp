@@ -44,7 +44,7 @@ namespace hive { namespace chain {
   FC_ASSERT( fc::exists( dir ) && fc::is_directory( dir ),
     "Path ${p} is NOT an existing directory.", ("p", dir) );
 
-  auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
+  auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool, true /*stream_log*/ );
   writer->_open_args.data_dir = dir;
   writer->skip_first_parts( start_from_part -1 );
 
@@ -59,10 +59,10 @@ namespace hive { namespace chain {
 }
 
 block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application& app,
-                                      blockchain_worker_thread_pool& thread_pool )
+                                      blockchain_worker_thread_pool& thread_pool, bool stream_log /*= false*/ )
   : _app( app ), _thread_pool( thread_pool ), 
     _max_blocks_in_log_file( determine_max_blocks_in_log_file( block_log_split ) ),
-    _block_log_split( block_log_split )
+    _block_log_split( block_log_split ), _stream_log( stream_log )
 {}
 
 void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
@@ -456,7 +456,8 @@ void block_log_wrapper::internal_open_and_init( block_log_ptr_t the_log, const f
                           _open_args.enable_block_log_compression,
                           _open_args.block_log_compression_level,
                           _open_args.enable_block_log_auto_fixing,
-                          _thread_pool );
+                          _thread_pool,
+                          _stream_log );
 }
 
 uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number, 

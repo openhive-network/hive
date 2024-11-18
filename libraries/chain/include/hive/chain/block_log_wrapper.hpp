@@ -27,7 +27,7 @@ namespace hive { namespace chain {
 
   public:
     block_log_wrapper( int block_log_split, appbase::application& app,
-                                 blockchain_worker_thread_pool& thread_pool );
+                       blockchain_worker_thread_pool& thread_pool, bool stream_log = false );
     virtual ~block_log_wrapper() = default;
 
     using block_storage_i::full_block_ptr_t;
@@ -188,6 +188,7 @@ namespace hive { namespace chain {
     blockchain_worker_thread_pool&    _thread_pool;
     const uint32_t                    _max_blocks_in_log_file = 0;
     const int                         _block_log_split = 0;
+    const bool                        _stream_log = false;
     block_log_open_args               _open_args;
     std::deque< block_log_ptr_t >     _logs;
     std::deque< block_log_ptr_t >     _garbage_collection;
