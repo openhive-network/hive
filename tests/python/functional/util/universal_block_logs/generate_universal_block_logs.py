@@ -60,8 +60,8 @@ def prepare_block_log(
     """
     block_log_directory = output_block_log_directory / f"block_log_{signature_type}"
 
-    logger.disable("helpy")
-    logger.disable("test_tools")
+    logger.enable("helpy")
+    logger.enable("test_tools")
 
     node = tt.InitNode()
     node.config.shared_file_size = "24G"
