@@ -8,7 +8,7 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
-  GIT_DEPTH: 20
+  GIT_DEPTH: 1
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
