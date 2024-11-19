@@ -30,8 +30,8 @@ def prepare_empty_logs(
     """
     This script generates block logs (both split and monlithic) of different length with empty blocks only
     """
-    logger.disable("helpy")
-    logger.disable("test_tools")
+    logger.enable("helpy")
+    logger.enable("test_tools")
 
     # Initial 30 blocks are needed to have at least 10 irreversible ones
     block_log_directory_30 = output_block_log_directory / "empty_30"
