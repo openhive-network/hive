@@ -589,7 +589,7 @@ void chain_plugin_impl::start_write_processing()
 
             ++write_queue_items_processed;
 
-            if( stop_at_block > 0 && stop_at_block == last_block_number )
+            if( !stop_at_block_interrupt_request && stop_at_block > 0 && stop_at_block == last_block_number )
             {
               ilog("Stopped ${mode} on user request. Last applied block number: ${n}.",
                 ("n", last_block_number)("mode", is_syncing ? "syncing" : is_p2p_enabled ? "live mode" : "API mode" ));
