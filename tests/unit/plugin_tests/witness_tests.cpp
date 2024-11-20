@@ -1733,7 +1733,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         }
 
         block_num = get_block_num();
-        BOOST_REQUIRE_LT( block_num, COLONY_START ); // check that we've managed to prepare before activation of colony
+        BOOST_REQUIRE_LT( block_num, COLONY_START - 2 ); // check that we've managed to prepare before activation of colony (plus margin)
         ilog( "Sleeping until block #${b}", ( "b", COLONY_START - 2 ) );
         fc::sleep_until( get_genesis_time() + ( COLONY_START - 2 ) * HIVE_BLOCK_INTERVAL );
         block_num = get_block_num();
