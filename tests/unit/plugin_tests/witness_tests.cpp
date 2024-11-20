@@ -12,6 +12,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
 #include <hive/plugins/colony/colony_plugin.hpp>
+#include <hive/plugins/queen/queen_plugin.hpp>
 
 #include <fc/log/appender.hpp>
 
@@ -1917,6 +1918,284 @@ BOOST_AUTO_TEST_CASE( colony_no_workers_test )
     BOOST_REQUIRE_EQUAL( db->head_block_num(), COLONY_START );
     theApp.quit( true );
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_queen_test )
+{ try {
+  // NOTE: unlike other tests here, queen tests can be run under debugger, but there is some
+  // strange effect at the end (logging thread not shut down) - continue and it will finish ok
+  bool test_passed = false;
+
+  initialize( 1,
+    { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+    "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
+    {}, // queen should ignore configured witnesses and only care about signing key
+    {
+      config_line_t( { "plugin", { HIVE_QUEEN_PLUGIN_NAME } } ),
+      config_line_t( { "queen-block-size", { "1000" } } ),
+      config_line_t( { "queen-tx-count", { "3" } } ),
+    }
+  );
+
+  ilog( "forcing block production" );
+  generate_block(); // add block to trigger hardforks
+
+  fc::thread api_thread;
+  auto _future = api_thread.async( [&]()
+  {
+    BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+    try
+    {
+      ilog( "All hardforks should have been applied" );
+      BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+      BOOST_REQUIRE_EQUAL( get_block_num(), 1 );
+      db->_log_hardforks = true;
+
+      std::string name = "wit?";
+      for( int i = 1; i <= 9; ++i )
+      {
+        name[3] = '0' + i;
+        ilog( "sending funds to ${name}", ( name ) );
+        schedule_fund( name, ASSET( "10.000 TESTS" ) );
+      }
+
+      BOOST_REQUIRE_EQUAL( get_block_num(), 4 ); // 1(0), 2(3), 3(3), 4(3)
+
+      for( int i = 0; i <= 10; ++i )
+      {
+        name[3] = 'a' + i;
+        ilog( "sending funds to ${name}", ( name ) );
+        schedule_fund( name, ASSET( "10.000 TESTS" ) );
+        if( i % 4 == 0 )
+        {
+          ilog( "forcing block production" );
+          schedule_block(); // you can generate blocks with debug plugin to trigger early generation
+        }
+      }
+
+      BOOST_REQUIRE_EQUAL( get_block_num(), 9 ); // 1(0), 2(3), 3(3), 4(3), 5(1), 6(3), 7(1), 8(3), 9(1)
+      BOOST_REQUIRE_GT( db->_pending_tx_size, 0 ); // 2 last transactions are pending
+
+      ilog( "sending funds to witl (failure)" );
+      BOOST_REQUIRE_THROW( schedule_fund( "witl", ASSET( "10.000 TESTS" ) ), fc::exception );
+      // failed transaction does not trigger block production
+      BOOST_REQUIRE_EQUAL( get_block_num(), 9 );
+
+      ilog( "forcing block production" );
+      schedule_block();
+      BOOST_REQUIRE_EQUAL( get_block_num(), 10 );
+      BOOST_REQUIRE_EQUAL( db->_pending_tx_size, 0 );
+
+      // trigger block with big transaction (block size check)
+      {
+        comment_operation comment;
+        comment.parent_permlink = "bigtx";
+        comment.author = "wit1";
+        comment.permlink = "bigtx";
+        comment.title = "Big transaction";
+        comment.body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.Aliquam commodo "
+          "vitae elit sodales vulputate. Curabitur sed massa mauris. Integer cursus orci non pulvinar "
+          "interdum. Mauris dictum sit amet massa eget pellentesque.Aenean consequat quam sodales "
+          "porta sollicitudin. Nullam dui ipsum, vulputate vel nunc sodales, scelerisque porta augue. "
+          "Aenean ac porta ante.Donec dapibus orci justo, ut pharetra arcu pulvinar ornare. "
+          "Vestibulum ac nisl semper, venenatis nisi vitae, aliquam ipsum.Aenean ut enim eget dui "
+          "maximus scelerisque. Suspendisse ut nibh ultrices, hendrerit dolor a, vulputate ante.\n\n"
+          "Suspendisse a finibus sapien, ac consequat neque. Donec eget tempus neque, id interdum "
+          "metus. In id porta mi. Duis cursus risus est, at iaculis orci aliquam eu.Ut sapien est, "
+          "suscipit a massa sed, finibus ultrices odio. Maecenas urna nulla, facilisis vel mi vel, "
+          "faucibus porta erat. Suspendisse tempus turpis in mauris interdum lobortis. Mauris eros "
+          "nunc, porta sed turpis sed, euismod semper libero.";
+        ilog( "sending big comment" );
+        schedule_transaction( comment );
+
+        BOOST_REQUIRE_EQUAL( get_block_num(), 11 );
+      }
+
+      test_passed = true;
+    }
+    CATCH( "API" )
+  } );
+
+  theApp.wait4interrupt_request();
+  theApp.quit( true );
+  _future.wait();
+  db = nullptr; // prevent fixture destructor from accessing database after it was closed
+  BOOST_REQUIRE( test_passed );
+  ilog( "Test done" );
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( colony_queen_test )
+{
+  try
+  {
+    configuration_data.min_root_comment_interval = fc::seconds( 3 );
+    const uint32_t COLONY_START = 42; // at the start of third schedule
+    bool test_passed = false;
+
+    initialize( 1, {}, {}, {
+      config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
+      config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
+      config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
+      config_line_t( { "colony-transactions-per-block", { "0" } } ), // unlimited
+      config_line_t( { "colony-no-broadcast", { "1" } } ),
+      config_line_t( { "colony-article", { R"~({"min":100,"max":5000,"weight":16,"exponent":4})~" } } ),
+      config_line_t( { "colony-reply", { R"~({"min":30,"max":1000,"weight":110,"exponent":5})~" } } ),
+      config_line_t( { "colony-vote", { R"~({"weight":2070})~" } } ),
+      config_line_t( { "colony-transfer", { R"~({"min":0,"max":350,"weight":87,"exponent":4})~" } } ),
+      config_line_t( { "colony-custom", { R"~({"min":20,"max":400,"weight":6006,"exponent":1})~" } } ),
+      config_line_t( { "plugin", { HIVE_QUEEN_PLUGIN_NAME } } ),
+      config_line_t( { "queen-block-size", { "1500000" } } )
+    }, "1G" );
+
+    generate_block(); // add block to trigger hardforks
+
+    fc::thread api_thread;
+    auto _future = api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        ilog( "All hardforks should have been applied" );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+        BOOST_REQUIRE_EQUAL( get_block_num(), 1 );
+        db->_log_hardforks = true;
+
+        ilog( "Starting 'API' thread that will be sending transactions" );
+
+        // now we have up to block 'colony_start' to add users and some initial comments
+        const int ACCOUNTS = 20000;
+        signed_transaction tx; // building multiop transaction to speed up the process
+        uint32_t block_num = 1;
+
+        tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION / 2 );
+        tx.set_reference_block( db->head_block_id() );
+
+        auto set_block_size = [&]( uint32_t value )
+        {
+          witness_set_properties_operation witness_props;
+          witness_props.owner = "initminer";
+          witness_props.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+          witness_props.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( value );
+          tx.operations.emplace_back( witness_props );
+          tx.set_expiration( tx.expiration + HIVE_BLOCK_INTERVAL ); // shifting expiration to avoid tx duplicates
+          schedule_transaction( tx );
+          tx.clear();
+          ilog( "#${b} sending block size change (${v}) to witness (activates in future schedule)",
+            ( "b", block_num )( "v", value ) );
+        };
+
+        // since colony and queen rarely leave any room for actions outside write lock
+        // we have to read block number without lock - the actual value does not matter
+        // and the actual head block is likely to change before we manage to do something
+        // anyway
+        auto wait_for_block_change_nolock = [&]( uint32_t block_num )
+        {
+          do
+          {
+            fc::usleep( fc::milliseconds( 50 ) );
+            uint32_t new_block = db->head_block_num();
+            if( new_block > block_num )
+              return new_block;
+          }
+          while( true );
+          return 0u;
+        };
+
+        // start with setting block size to 2MB (it will temporarily change to default 128kB on first schedule)
+        set_block_size( HIVE_MAX_BLOCK_SIZE );
+
+        for( size_t i = 0; i < ACCOUNTS; ++i )
+        {
+          auto account_name = "account" + std::to_string( i );
+
+          account_create_operation create;
+          create.new_account_name = account_name;
+          create.creator = HIVE_INIT_MINER_NAME;
+          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+          create.owner = authority( 1, init_account_pub_key, 1 );
+          create.active = create.owner;
+          create.posting = create.owner;
+          create.memo_key = init_account_pub_key;
+          tx.operations.emplace_back( create );
+
+          transfer_to_vesting_operation vest;
+          vest.from = HIVE_INIT_MINER_NAME;
+          vest.to = account_name;
+          vest.amount = ASSET( "1000.000 TESTS" );
+          tx.operations.emplace_back( vest );
+
+          transfer_operation fund;
+          fund.from = HIVE_INIT_MINER_NAME;
+          fund.to = account_name;
+          fund.amount = ASSET( "10.000 TBD" );
+          tx.operations.emplace_back( fund );
+
+          schedule_transaction( tx );
+          tx.clear();
+
+          comment_operation comment;
+          comment.parent_permlink = "hello";
+          comment.author = account_name;
+          comment.permlink = "hello";
+          comment.title = "hello";
+          comment.body = "Hi. I'm " + std::string( account_name );
+          tx.operations.emplace_back( comment );
+          schedule_transaction( comment );
+          tx.clear();
+
+          if( i % 2000 == 0 )
+            ilog( "Adding users... ${i}", ( i ) );
+        }
+
+        block_num = get_block_num();
+        BOOST_REQUIRE_LT( block_num, COLONY_START - 2 ); // check that we've managed to prepare before activation of colony (plus margin)
+        schedule_blocks( COLONY_START - 2 - block_num );
+        block_num = get_block_num();
+        ilog( "#${b} initial block size should soon set to 2MB", ( "b", block_num ) );
+
+        // reduce block size to 1MB so queen has to lower its trigger point
+        set_block_size( HIVE_MAX_BLOCK_SIZE / 2 );
+        // push past colony starting point - from now on it will be driving queen to produce blocks
+        schedule_blocks( 2 );
+
+        const uint32_t FULL_RATE_BLOCKS = ( COLONY_START + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        block_num = wait_for_block_change_nolock( FULL_RATE_BLOCKS );
+        ilog( "#${b} block size should soon change to 1MB", ( "b", block_num ) );
+
+        // reduce block size to 64kB to drastically lower queen's trigger point (in future schedule)
+        set_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
+
+        const uint32_t REDUCED_RATE_BLOCKS = ( FULL_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        block_num = wait_for_block_change_nolock( REDUCED_RATE_BLOCKS );
+        ilog( "#${b} block size should soon change to 64kB", ( "b", block_num ) );
+
+        // increase block size back to 2MB, so queen actually triggers with its target block size as stated in config
+        set_block_size( HIVE_MAX_BLOCK_SIZE );
+
+        const uint32_t MINIMAL_RATE_BLOCKS = ( REDUCED_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21 - 3;
+          // there needs to be 2 blocks of margin before next schedule
+        block_num = wait_for_block_change_nolock( MINIMAL_RATE_BLOCKS );
+        ilog( "#${b} block size should soon change back to 2MB", ( "b", block_num ) );
+
+        const uint32_t FULL2_RATE_BLOCKS = ( MINIMAL_RATE_BLOCKS + 3 + 20 + 10 ) / 21 * 21;
+        block_num = wait_for_block_change_nolock( FULL2_RATE_BLOCKS );
+
+        ilog( "'API' thread finished" );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } );
+
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    _future.wait();
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
