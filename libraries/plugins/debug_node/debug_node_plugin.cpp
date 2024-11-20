@@ -23,6 +23,23 @@
 namespace hive { namespace plugins { namespace debug_node {
 
 namespace detail {
+
+class debug_generate_block_flow_control final : public hive::chain::generate_block_flow_control
+{
+public:
+  using hive::chain::generate_block_flow_control::generate_block_flow_control;
+  virtual ~debug_generate_block_flow_control() = default;
+
+  virtual void on_worker_done( appbase::application& app ) const override
+  {
+    stats.recalculate_times( get_block_timestamp() );
+    generate_block_flow_control::on_worker_done( app );
+  }
+
+private:
+  virtual const char* buffer_type() const override { return "debug"; }
+};
+
 class debug_node_plugin_impl
 {
   public:
@@ -360,7 +377,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
         break;
     }
 
-    auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
+    auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
       scheduled_witness_name, *debug_private_key, skip);
 
     if( immediate_generation )
