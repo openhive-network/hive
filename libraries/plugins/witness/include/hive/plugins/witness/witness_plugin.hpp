@@ -70,6 +70,8 @@ public:
   void update_production_data( fc::time_point_sec time );
   const produce_block_data_t& get_production_data() const;
 
+  void enable_queen_mode(); // turned on when queen_plugin is active
+
   // for unit tests - overrides list of represented witnesses
   void set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses );
 
