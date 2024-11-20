@@ -405,6 +405,7 @@ struct chain_plugin_impl::write_request_visitor
       fc::time_point time_before_generating_block = fc::time_point::now();
       on_block( generate_block_ctrl.get() );
       cp.block_generator->generate_block( generate_block_ctrl.get() );
+      last_block_number = generate_block_ctrl->get_full_block()->get_block_num();
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_generating_block;
       STATSD_STOP_TIMER( "chain", "write_time", "push_generate_block_request" )
     }
