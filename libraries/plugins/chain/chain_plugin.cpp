@@ -327,9 +327,7 @@ struct chain_plugin_impl::write_request_visitor
     try
     {
       if( cp.is_interrupt_request() )
-      {
         throw fc::exception(fc::canceled_exception_code, "interrupted by user");
-      }
 
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f, cp.theApp)
       on_block( p2p_block_ctrl.get() );
@@ -358,6 +356,9 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
+      if( cp.is_interrupt_request() )
+        throw fc::exception( fc::canceled_exception_code, "interrupted by user" );
+
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f, cp.theApp)
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
@@ -395,6 +396,8 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
+      if( cp.is_interrupt_request() )
+        throw fc::exception( fc::canceled_exception_code, "interrupted by user" );
       if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
