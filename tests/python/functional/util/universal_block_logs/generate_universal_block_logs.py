@@ -271,7 +271,6 @@ def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign"
         case "single_sign":
             wallet.api.import_key(tt.PrivateKey("account", secret="owner"))
             wallet.api.import_key(tt.PrivateKey("account", secret="active"))
-            wallet.api.import_key(tt.PrivateKey("account", secret="posting"))
 
             return {
                 "owner": {
@@ -287,7 +286,7 @@ def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign"
                 "posting": {
                     "weight_threshold": 1,
                     "account_auths": [],
-                    "key_auths": [[tt.PublicKey("account", secret="posting"), 1]],
+                    "key_auths": [[tt.PublicKey("account", secret="active"), 1]],
                 },
                 "memo": tt.PublicKey("account", secret="memo"),
             }
