@@ -230,7 +230,7 @@ public:
   virtual fc::time_point_sec get_block_timestamp() const override final { return block_ts; }
 
 protected:
-  virtual const char* buffer_type() const override final { return "gen"; }
+  virtual const char* buffer_type() const override { return "gen"; }
 
   inline void trigger_promise() const;
 
