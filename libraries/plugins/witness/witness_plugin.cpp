@@ -54,25 +54,8 @@ void new_chain_banner( const chain::database& db )
 
 namespace detail {
 
-  struct produce_block_data_t {
-    produce_block_data_t() :
-      next_slot( 0 ),
-      next_slot_time( HIVE_GENESIS_TIME + HIVE_BLOCK_INTERVAL ),
-      scheduled_witness( "" ),
-      scheduled_private_key{},
-      condition( block_production_condition::not_my_turn ),
-      produce_in_next_slot( false )
-    {}
-
-    uint32_t next_slot;
-    fc::time_point_sec next_slot_time;
-    chain::account_name_type scheduled_witness;
-    fc::ecc::private_key scheduled_private_key;
-    block_production_condition condition;
-    bool produce_in_next_slot;
-  };
-
-  class witness_plugin_impl {
+class witness_plugin_impl
+{
   public:
     witness_plugin_impl( boost::asio::io_service& io, appbase::application& app ) :
       _timer(io),
@@ -86,7 +69,7 @@ namespace detail {
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_finish_push_block( const chain::block_notification& note );
-    produce_block_data_t get_produce_block_data( fc::time_point_sec time );
+    void update_produce_block_data( fc::time_point_sec time );
 
     void schedule_production_loop();
     block_production_condition block_production_loop(const boost::system::error_code&);
@@ -191,11 +174,7 @@ namespace detail {
 
       for( const account_name_type& account : impacted )
       {
-        // Possible alternative implementation:  Don't call find(), simply catch
-        // the exception thrown by db.create() when violating uniqueness (std::logic_error).
-        //
-        // This alternative implementation isn't "idiomatic" (i.e. AFAICT no existing
-        // code uses this approach).  However, it may improve performance.
+        // TODO: find a way to have that structure locally, without use of chain objects and undo sessions
 
         const witness_custom_op_object* coo = _db.find< witness_custom_op_object, by_account >( account );
 
@@ -370,20 +349,16 @@ namespace detail {
 
       _last_fast_confirmation_block_number = note.block_num;
     }
-    {
-      produce_block_data_t data = get_produce_block_data( _db.get_slot_time( 1 ) );
-      std::unique_lock g(should_produce_block_mutex);
-      produce_block_data = std::move(data);
-    }
+    update_produce_block_data( _db.get_slot_time( 1 ) );
   }
 
-  produce_block_data_t witness_plugin_impl::get_produce_block_data( fc::time_point_sec time )
+  void witness_plugin_impl::update_produce_block_data( fc::time_point_sec time )
   {
     uint32_t slot = _db.get_slot_at_time( time );
     {
       fc::time_point_sec slot_time = _db.get_slot_time( slot );
       FC_ASSERT( slot_time == time,
-        "Unalligned time passed to get_produce_block_data (time=$(time) vs slot_time=${slot_time})",
+        "Unalligned time passed to update_produce_block_data (time=$(time) vs slot_time=${slot_time})",
         (time)(slot_time) );
     }
     chain::account_name_type scheduled_witness;
@@ -405,7 +380,7 @@ namespace detail {
       if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
         return block_production_condition::not_my_turn;
 
-      chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >( scheduled_witness ).signing_key;
+      const chain::public_key_type& scheduled_key = _db.get< chain::witness_object, chain::by_name >( scheduled_witness ).signing_key;
       auto private_key_itr = _private_keys.find( scheduled_key );
       if( private_key_itr == _private_keys.end() )
       {
@@ -424,14 +399,16 @@ namespace detail {
       return block_production_condition::produced;
     }();
 
-    produce_block_data_t produce_block_data;
-    produce_block_data.next_slot = slot;
-    produce_block_data.next_slot_time = time;
-    produce_block_data.scheduled_witness = std::move(scheduled_witness);
-    produce_block_data.scheduled_private_key = private_key;
-    produce_block_data.condition = condition;
-    produce_block_data.produce_in_next_slot = condition == block_production_condition::produced;
-    return produce_block_data;
+    {
+      std::unique_lock g( should_produce_block_mutex );
+
+      produce_block_data.next_slot = slot;
+      produce_block_data.next_slot_time = time;
+      produce_block_data.scheduled_witness = std::move( scheduled_witness );
+      produce_block_data.scheduled_private_key = private_key;
+      produce_block_data.condition = condition;
+      produce_block_data.produce_in_next_slot = condition == block_production_condition::produced;
+    }
   }
 
   void witness_plugin_impl::schedule_production_loop()
@@ -547,7 +524,7 @@ namespace detail {
         _db.with_read_lock( [&]()
         {
           // check if we are to produce in future slot nearest to current time
-          produce_block_data = get_produce_block_data( time );
+          update_produce_block_data( time );
         }, fc::milliseconds( 200 ) );
       }
       catch( const chainbase::lock_exception& e )
@@ -593,15 +570,21 @@ bool witness_plugin::is_fast_confirm_enabled() const
   return my->_enable_fast_confirm.load(std::memory_order_relaxed);
 }
 
+void witness_plugin::update_production_data( fc::time_point_sec time )
+{
+  my->update_produce_block_data( time );
+}
+
+const produce_block_data_t& witness_plugin::get_production_data() const
+{
+  return my->produce_block_data;
+}
+
 void witness_plugin::set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses )
 {
   my->_witnesses = witnesses;
   // recompute next block production data with new set of witnesses
-  {
-    auto data = my->get_produce_block_data( my->_db.get_slot_time( 1 ) );
-    std::unique_lock g( my->should_produce_block_mutex );
-    my->produce_block_data = std::move( data );
-  }
+  my->update_produce_block_data( my->_db.get_slot_time( 1 ) );
 }
 
 void witness_plugin::set_program_options(
@@ -669,15 +652,16 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
 void witness_plugin::plugin_startup()
 { try {
-  ilog( "witness plugin:  plugin_startup() begin" );
-  my->_is_p2p_enabled = my->_chain_plugin.is_p2p_enabled();
+  my->update_produce_block_data( my->_db.get_slot_time( 1 ) );
 
+  my->_is_p2p_enabled = my->_chain_plugin.is_p2p_enabled();
   if( !my->_is_p2p_enabled )
   {
     ilog( "Witness plugin is not enabled, because P2P plugin is disabled..." );
     return;
   }
 
+  ilog( "witness plugin:  plugin_startup() begin" );
   if( !my->_witnesses.empty() )
   {
     ilog( "Launching block production for ${n} witnesses.", ( "n", my->_witnesses.size() ) );
@@ -688,7 +672,6 @@ void witness_plugin::plugin_startup()
         new_chain_banner( my->_db );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
-    my->produce_block_data = my->get_produce_block_data( my->_db.get_slot_time( 1 ) );
     my->schedule_production_loop();
   }
   else
