@@ -160,7 +160,7 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
     itr != widx.end() && selected_voted.size() < wso.max_voted_witnesses;
     ++itr )
   {
-    if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && (itr->signing_key == public_key_type()) )
+    if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && (itr->is_disabled()) )
       continue;
     selected_voted.insert( itr->get_id() );
     active_witnesses.push_back( itr->owner) ;
@@ -181,7 +181,7 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
     if( selected_voted.find( mitr->get_id() ) == selected_voted.end() )
     {
       // Only consider a miner who has a valid block signing key
-      if( !( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && db.get_witness( mitr->owner ).signing_key == public_key_type() ) )
+      if( !( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && db.get_witness( mitr->owner ).is_disabled() ) )
       {
         selected_miners.insert( mitr->get_id() );
         active_witnesses.push_back(mitr->owner);
@@ -215,7 +215,7 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
     new_virtual_time = sitr->virtual_scheduled_time; /// everyone advances to at least this time
     processed_witnesses.push_back(sitr);
 
-    if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && sitr->signing_key == public_key_type() )
+    if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && sitr->is_disabled() )
       continue; /// skip witnesses without a valid block signing key
 
     if( selected_miners.find( sitr->get_id() ) == selected_miners.end()

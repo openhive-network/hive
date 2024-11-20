@@ -83,6 +83,8 @@ namespace hive { namespace chain {
       const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; }
       //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
       const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
+      //tells if witness is disabled (can't be chosen to schedule nor sign blocks)
+      bool is_disabled() const { return signing_key == public_key_type(); }
 
       /** the account that has authority over this witness */
       account_name_type owner;
