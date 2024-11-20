@@ -303,6 +303,9 @@ void transaction_builder::build_transaction()
   else if( _tx_needs_update.load( std::memory_order_relaxed ) )
   {
     // block was produced since last transaction (or we just started)
+    // ABW: it might seem like a good idea to replace read lock here with local mutex
+    // that is also held in post_apply_block - the mutex is way better when it comes to
+    // wait times, however overall performance is actually worse - no idea why
     _common._db.with_read_lock( [&]()
     {
       _tx.set_reference_block( _common._db.head_block_id() );
