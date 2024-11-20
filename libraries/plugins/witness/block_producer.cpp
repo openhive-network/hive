@@ -28,7 +28,7 @@ void block_producer::generate_block( chain::generate_block_flow_control* generat
 
 void block_producer::_generate_block( chain::generate_block_flow_control* generate_block_ctrl,
                                       fc::time_point_sec when, const chain::account_name_type& witness_owner,
-                                      const fc::ecc::private_key& block_signing_private_key)
+                                      const fc::ecc::private_key& block_signing_private_key )
 {
   uint32_t skip = _db.get_node_skip_flags();
   uint32_t slot_num = _db.get_slot_at_time( when );
@@ -50,7 +50,10 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
   adjust_hardfork_version_vote( _db.get_witness( witness_owner ), pending_block_header );
 
   std::vector<std::shared_ptr<hive::chain::full_transaction_type>> full_transactions;
-  apply_pending_transactions(witness_owner, when, pending_block_header, full_transactions);
+  if( generate_block_ctrl->skip_transaction_reapplication() )
+    fill_block_with_transactions( witness_owner, when, pending_block_header, full_transactions );
+  else
+    apply_pending_transactions( witness_owner, when, pending_block_header, full_transactions );
 
   // We have temporarily broken the invariant that
   // _pending_tx_session is the result of applying _pending_tx.
@@ -114,7 +117,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   //2 bytes if we ever allow blocks big enough to accomodate over 16k transactions (15 or more bits needed for size)
   size_t total_block_size = fc::raw::pack_size(pending_block_header) + 4;
   const auto& gpo = _db.get_dynamic_global_properties();
-  uint64_t maximum_block_size = gpo.maximum_block_size; //HIVE_MAX_BLOCK_SIZE;
+  uint64_t maximum_block_size = gpo.maximum_block_size;
 
   //
   // The following code throws away existing pending_tx_session and
@@ -189,6 +192,43 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   }
 
   _db.pending_transaction_session().reset();
+}
+
+void block_producer::fill_block_with_transactions( const chain::account_name_type& witness_owner,
+  fc::time_point_sec when,
+  chain::signed_block_header& pending_block_header,
+  std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions )
+{
+  //simplified version of apply_pending_transactions used by queen_plugin, when under certain assumptions
+  //(no source of transactions that could change authorization after it was checked when adding to pending,
+  //no edge case expiration, no deep forks that could fail to reapply all transactions), that are
+  //fulfilled when queen is active (unless broken by external force, like debug_plugin), we can skip
+  //reapplying transactions and just put them in the block in the same order as in pending;
+  //that saves time on undo sessions and transaction reapplications
+
+  size_t total_block_size = fc::raw::pack_size( pending_block_header ) + 4;
+  const auto& gpo = _db.get_dynamic_global_properties();
+  uint64_t maximum_block_size = gpo.maximum_block_size;
+
+  for( const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : _db._pending_tx )
+  {
+    if( full_transaction->get_runtime_expiration() < when )
+    {
+      wlog( "Detected expired pending transaction during simplified block production at timestamp ${when}. "
+        "That might cause error in block application.", ( when ) );
+      wlog( "The transaction was ${t}", ( "t", full_transaction->get_transaction() ) );
+      continue;
+    }
+
+    uint64_t new_total_size = total_block_size + full_transaction->get_transaction_size();
+
+    // stop the process if it would make block too big
+    if( new_total_size >= maximum_block_size )
+      break;
+
+    total_block_size = new_total_size;
+    full_transactions.push_back( full_transaction );
+  }
 }
 
 } } } // hive::plugins::witness
