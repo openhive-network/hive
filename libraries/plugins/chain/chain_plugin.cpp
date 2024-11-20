@@ -479,7 +479,8 @@ void chain_plugin_impl::start_write_processing()
       if( !is_syncing )
       {
         db.notify_end_of_syncing();
-        default_block_writer->set_is_at_live_sync();
+        //don't switch to live in writer (doesn't make a difference for API calls, but does for queen)
+        //default_block_writer->set_is_at_live_sync();
         theApp.notify_status( "entering API mode" );
         wlog( "entering API mode" );
       }
