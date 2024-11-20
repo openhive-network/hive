@@ -129,7 +129,7 @@ class colony_plugin_impl
       _self( _plugin ), theApp( app ) {}
     ~colony_plugin_impl() {}
 
-    void start();
+    void start( uint32_t block_num );
 
     void end_of_sync();
     void post_apply_transaction( const transaction_notification& note );
@@ -543,12 +543,13 @@ void transaction_builder::build_custom( const account_object& actor, uint64_t no
   push_transaction( CUSTOM_JSON );
 }
 
-void colony_plugin_impl::start()
+void colony_plugin_impl::start( uint32_t block_num )
 {
   if( _start_at_block == (uint32_t)-1 )
     return;
   // make sure the initialization code won't be run for the second time)
   _start_at_block = -1;
+  ilog( "Colony plugin starting at block #${block_num}", ( block_num ) );
 
   // scan existing accounts to extract those for which you can effectively use _sign_with keys
   flat_set<public_key_type> common_keys;
@@ -676,8 +677,9 @@ void colony_plugin_impl::start()
 
 void colony_plugin_impl::end_of_sync()
 {
-  if( _start_at_block <= _db.head_block_num() )
-    start(); // while not under write lock, we can still call it safely, since it is called from writer thread
+  uint32_t head_block = _db.head_block_num();
+  if( _start_at_block <= head_block )
+    start( head_block ); // while not under write lock, we can still call it safely, since it is called from writer thread
 
   if( not theApp.is_interrupt_request() )
   {
@@ -702,7 +704,7 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
 {
   if( _start_at_block <= note.block_num )
   {
-    start();
+    start( note.block_num );
     return;
   }
 
@@ -862,7 +864,10 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
   FC_CAPTURE_AND_RETHROW()
 }
 
-void colony_plugin::plugin_startup() {}
+void colony_plugin::plugin_startup()
+{
+  ilog( "Colony plugin waiting for end of sync signal to start" );
+}
 
 void colony_plugin::plugin_shutdown()
 {

@@ -6,7 +6,7 @@
 #define HIVE_COLONY_PLUGIN_NAME "colony"
 
 
-namespace hive { namespace plugins{ namespace colony {
+namespace hive { namespace plugins { namespace colony {
 
 namespace detail { class colony_plugin_impl; }
 
@@ -33,4 +33,4 @@ class colony_plugin : public appbase::plugin< colony_plugin >
     std::unique_ptr< detail::colony_plugin_impl > my;
 };
 
-} } } //hive::follow
+} } } //hive::plugins::colony
