@@ -222,6 +222,7 @@ public:
   const protocol::account_name_type& get_witness_owner() const { return witness_owner; }
   const fc::ecc::private_key& get_block_signing_private_key() const { return block_signing_private_key; }
   uint32_t get_skip_flags() const { return skip; }
+  virtual bool skip_transaction_reapplication() const { return false; } //redefined in queen_plugin
 
   virtual void on_fork_db_insert() const override; //supplemented with broadcast in witness_plugin
   virtual void on_end_of_apply_block() const override;

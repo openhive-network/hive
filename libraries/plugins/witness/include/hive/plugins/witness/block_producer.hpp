@@ -29,10 +29,15 @@ private:
 
   void adjust_hardfork_version_vote(const chain::witness_object& witness, chain::signed_block_header& pending_block);
 
-  void apply_pending_transactions(const chain::account_name_type& witness_owner,
-                                  fc::time_point_sec when,
-                                  chain::signed_block_header& pending_block,
-                                  std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions);
+  void apply_pending_transactions( const chain::account_name_type& witness_owner,
+                                   fc::time_point_sec when,
+                                   chain::signed_block_header& pending_block,
+                                   std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions );
+
+  void fill_block_with_transactions( const chain::account_name_type& witness_owner,
+                                     fc::time_point_sec when,
+                                     chain::signed_block_header& pending_block,
+                                     std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions );
 
 };
 
