@@ -280,71 +280,78 @@ class witness_plugin_impl
         _production_enabled && _is_p2p_enabled &&
         fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM )
     {
-      std::set<account_name_type> scheduled_witnesses;
+      //collect future schedule witnesses that are represented locally by witness plugin
+      std::set<account_name_type> local_scheduled_witnesses;
+      const auto& current_witness = note.full_block->get_block().witness;
       const witness_schedule_object& wso_for_irreversibility = _db.get_witness_schedule_object_for_irreversibility();
-      std::copy(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
-                wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
-                std::inserter(scheduled_witnesses, scheduled_witnesses.end()));
-      //ddump((scheduled_witnesses));
+      std::copy_if(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+        wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
+        std::inserter(local_scheduled_witnesses, local_scheduled_witnesses.end()),
+        [&](const account_name_type& witness_name)
+        {
+          if( witness_name == current_witness ) //block serves as confirmation for current witness
+            return false;
+          return _witnesses.find( witness_name ) != _witnesses.end();
+        });
+      //ddump((local_scheduled_witnesses));
 
-      for (const account_name_type& witness_name : _witnesses)
+      for (const account_name_type& witness_name : local_scheduled_witnesses)
       {
         // dlog("In on_finish_push_block(), checking witness ${witness_name}", (witness_name));
-        if (witness_name != note.full_block->get_block().witness && 
-            scheduled_witnesses.find(witness_name) != scheduled_witnesses.end())
+        try
+        {
+          const chain::public_key_type* scheduled_key = nullptr;
           try
           {
-            chain::public_key_type scheduled_key;
-            try
-            {
-              scheduled_key = _db.get<chain::witness_object, chain::by_name>(witness_name).signing_key;
-            }
-            catch (const fc::exception& e)
-            {
-              elog("unable to get witness's signing key for witness ${witness_name}: ${e}", (witness_name)(e));
-            }
-            auto private_key_itr = _private_keys.find(scheduled_key);
-            if (private_key_itr != _private_keys.end())
-            {
-              // we're on the schedule and we have the keys required to generate the fast confirm op.
-              if (_enable_fast_confirm.load(std::memory_order_relaxed))
-              {
-                witness_block_approve_operation op;
-                op.witness = witness_name;
-                op.block_id = note.block_id;
-
-                transaction tx;
-                uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
-                const block_id_type reference_block_id = 
-                  last_irreversible_block ?
-                    _block_reader.find_block_id_for_num(last_irreversible_block) :
-                    _db.head_block_id();
-                tx.set_reference_block(reference_block_id);
-                tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
-                tx.operations.push_back( op );
-
-                full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction( tx, hive::protocol::pack_type::hf26 );
-                std::vector< hive::protocol::private_key_type > keys;
-                keys.emplace_back( private_key_itr->second );
-                full_transaction->sign_transaction( keys, _db.get_chain_id(), hive::protocol::pack_type::hf26 );
-
-                //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
-                uint32_t skip = _db.get_node_skip_flags();
-
-                _chain_plugin.push_transaction(full_transaction, skip);
-                theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
-              }
-              else
-              {
-                ilog("Not broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}, because fast-confirm is disabled",
-                     (witness_name)("block_num", note.block_num));
-              }
-            }
+            scheduled_key = &_db.get<chain::witness_object, chain::by_name>(witness_name).signing_key;
           }
           catch (const fc::exception& e)
           {
-            elog("Failed to broadcast fast-confirmation transaction for witness ${witness_name}: ${e}", (witness_name)(e));
+            elog("unable to get witness's signing key for witness ${witness_name}: ${e}", (witness_name)(e));
+            continue;
           }
+          auto private_key_itr = _private_keys.find(*scheduled_key);
+          if (private_key_itr != _private_keys.end())
+          {
+            // we're on the schedule and we have the keys required to generate the fast confirm op.
+            if (_enable_fast_confirm.load(std::memory_order_relaxed))
+            {
+              witness_block_approve_operation op;
+              op.witness = witness_name;
+              op.block_id = note.block_id;
+
+              transaction tx;
+              uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
+              const block_id_type reference_block_id =
+                last_irreversible_block ?
+                  _block_reader.find_block_id_for_num(last_irreversible_block) :
+                  _db.head_block_id();
+              tx.set_reference_block(reference_block_id);
+              tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
+              tx.operations.push_back( op );
+
+              full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction( tx, hive::protocol::pack_type::hf26 );
+              std::vector< hive::protocol::private_key_type > keys;
+              keys.emplace_back( private_key_itr->second );
+              full_transaction->sign_transaction( keys, _db.get_chain_id(), hive::protocol::pack_type::hf26 );
+
+              //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
+              uint32_t skip = _db.get_node_skip_flags();
+
+              _chain_plugin.push_transaction(full_transaction, skip);
+              theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+            }
+            else
+            {
+              ilog("Not broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}, because fast-confirm is disabled",
+                   (witness_name)("block_num", note.block_num));
+            }
+          }
+        }
+        catch (const fc::exception& e)
+        {
+          elog("Failed to broadcast fast-confirmation transaction for witness ${witness_name}: ${e}", (witness_name)(e));
+        }
       }
 
       _last_fast_confirmation_block_number = note.block_num;
