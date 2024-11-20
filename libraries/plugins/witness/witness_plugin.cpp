@@ -685,12 +685,6 @@ void witness_plugin::plugin_shutdown()
 {
   try
   {
-    if( !my->_is_p2p_enabled )
-    {
-      ilog("Witness plugin is not enabled, because P2P plugin is disabled...");
-      return;
-    }
-
     chain::util::disconnect_signal( my->_post_apply_block_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
     chain::util::disconnect_signal( my->_finish_push_block_conn );
