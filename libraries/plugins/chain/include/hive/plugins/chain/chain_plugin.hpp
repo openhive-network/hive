@@ -144,7 +144,7 @@ public:
   synchronization_type on_sync;
 
   bool is_p2p_enabled() const;
-  void disable_p2p() const;
+  void disable_p2p( bool also_disable_work = true ) const;
 
   void finish_request();
 

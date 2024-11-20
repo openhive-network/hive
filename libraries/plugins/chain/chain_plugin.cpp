@@ -145,6 +145,8 @@ class chain_plugin_impl
     bool is_running() const;
     fc::microseconds get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time );
 
+    void disable_p2p( bool also_disable_work = true );
+
     void start_write_processing();
     void stop_write_processing();
 
@@ -243,6 +245,7 @@ class chain_plugin_impl
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
+    bool                                is_work_enabled = true;
     std::atomic<uint32_t>               peer_count = {0};
 
     fc::time_point cumulative_times_last_reported_time;
@@ -429,6 +432,13 @@ fc::microseconds chain_plugin_impl::get_time_gap_to_live_sync( const fc::time_po
   return fc::time_point::now() - head_block_time - fc::minutes(1);
 }
 
+void chain_plugin_impl::disable_p2p( bool also_disable_work )
+{
+  is_p2p_enabled = false;
+  if( also_disable_work )
+    is_work_enabled = false;
+}
+
 void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared<std::thread>([&]()
@@ -459,7 +469,14 @@ void chain_plugin_impl::start_write_processing()
 
       const int64_t time_fragments = nr_seconds * 2;
 
-      bool is_syncing = true;
+      bool is_syncing = is_p2p_enabled;
+      if( !is_syncing )
+      {
+        db.notify_end_of_syncing();
+        default_block_writer->set_is_at_live_sync();
+        theApp.notify_status( "entering API mode" );
+        wlog( "entering API mode" );
+      }
       write_request_visitor req_visitor( *this );
 
       /* This loop monitors the write request queue and performs writes to the database. These
@@ -494,7 +511,10 @@ void chain_plugin_impl::start_write_processing()
         fc::microseconds time_since_last_message_printed = loop_start_time - last_msg_time;
         if (time_since_last_popped_item > block_wait_max_time && time_since_last_message_printed > block_wait_max_time)
         {
-          wlog("No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ("t", block_wait_max_time.to_seconds())("peer_count", peer_count.load()));
+          if( is_p2p_enabled )
+            wlog( "No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ( "t", block_wait_max_time.to_seconds() )( "peer_count", peer_count.load() ) );
+          else
+            dlog( "No activity in last ${t} seconds...", ( "t", block_wait_max_time.to_seconds() ) );
           last_msg_time = loop_start_time; /// To avoid log pollution
         }
 
@@ -568,7 +588,8 @@ void chain_plugin_impl::start_write_processing()
 
             if( stop_at_block > 0 && stop_at_block == last_block_number )
             {
-              ilog("Stopped ${mode} on user request. Last applied block number: ${n}.", ("n", last_block_number)("mode", is_syncing ? "syncing" : "live mode"));
+              ilog("Stopped ${mode} on user request. Last applied block number: ${n}.",
+                ("n", last_block_number)("mode", is_syncing ? "syncing" : is_p2p_enabled ? "live mode" : "API mode" ));
               stop_at_block_interrupt_request = true;
             }
 
@@ -739,7 +760,7 @@ bool chain_plugin_impl::start_replay_processing(
   {
     //if `stop_replay_at` > 0 stay in API node context( without synchronization )
     if( stop_replay_at > 0 )
-      is_p2p_enabled = false;
+      disable_p2p( false );
   }
 
   return replay_is_last_operation;
@@ -1746,47 +1767,41 @@ void chain_plugin::plugin_startup()
 
   my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
 
-  if( my->replay )
+  bool start = false;
+  bool replay = my->replay;
+  if( not replay )
+  {
+    ilog( "Consistency data checking..." );
+    if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
+    {
+      start = true;
+      if( my->db.get_snapshot_loaded() )
+        replay = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+    }
+  }
+  if( replay )
   {
     std::shared_ptr< block_write_i > reindex_block_writer =
       std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
-    ilog("Replaying...");
-    if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
+    ilog( "Replaying..." );
+    start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
+  }
+  if( start )
+  {
+    std::string str = replay ? " after replaying" : "";
+    if( my->is_work_enabled )
     {
-      ilog("P2P enabling after replaying...");
+      if( my->is_p2p_enabled )
+        ilog( "P2P enabling${str}...", ( str ) );
+      else
+        ilog( "P2P is disabled${str}. Starting writer loop in API mode.", ( str ) );
       my->work( on_sync );
     }
-  }
-  else
-  {
-    ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
+    else
     {
-      if( my->db.get_snapshot_loaded() )
-      {
-        std::shared_ptr< block_write_i > reindex_block_writer =
-          std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
-        ilog("Replaying...");
-        //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing( reindex_block_writer, get_thread_pool() ) )
-        {
-          ilog("P2P enabling after replaying...");
-          my->work( on_sync );
-        }
-      }
-      else
-      {
-        if( my->is_p2p_enabled )
-        {
-          ilog("P2P enabling...");
-          my->work( on_sync );
-        }
-        else
-        {
-          ilog("P2P is disabled.");
-          my->block_storage->reopen_for_writing();
-        }
-      }
+      assert( !my->is_p2p_enabled );
+      ilog( "P2P is disabled${str}.", ( str ) );
+      my->block_storage->reopen_for_writing();
     }
   }
 
@@ -2023,9 +2038,9 @@ bool chain_plugin::is_p2p_enabled() const
   return my->is_p2p_enabled;
 }
 
-void chain_plugin::disable_p2p() const
+void chain_plugin::disable_p2p( bool also_disable_work ) const
 {
-  my->is_p2p_enabled = false;
+  my->disable_p2p( also_disable_work );
 }
 
 void chain_plugin::finish_request()
