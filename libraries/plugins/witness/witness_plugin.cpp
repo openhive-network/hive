@@ -77,6 +77,7 @@ class witness_plugin_impl
 
     bool     _production_enabled              = false;
     bool     _is_p2p_enabled                  = false;
+    bool     _queen_mode                      = false; // set when queen_plugin is active
     uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
     uint32_t _production_skip_flags           = chain::database::skip_nothing;
 
@@ -277,7 +278,7 @@ class witness_plugin_impl
     // only generate this transaction if our head block number has increased
     if( _db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) &&
         note.block_num > _last_fast_confirmation_block_number &&
-        _production_enabled && _is_p2p_enabled &&
+        _production_enabled && ( _is_p2p_enabled || _queen_mode ) &&
         fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM )
     {
       //collect future schedule witnesses that are represented locally by witness plugin
@@ -291,7 +292,7 @@ class witness_plugin_impl
         {
           if( witness_name == current_witness ) //block serves as confirmation for current witness
             return false;
-          return _witnesses.find( witness_name ) != _witnesses.end();
+          return _queen_mode || _witnesses.find( witness_name ) != _witnesses.end();
         });
       //ddump((local_scheduled_witnesses));
 
@@ -339,7 +340,8 @@ class witness_plugin_impl
               uint32_t skip = _db.get_node_skip_flags();
 
               _chain_plugin.push_transaction(full_transaction, skip);
-              theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+              if( _is_p2p_enabled )
+                theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
             }
             else
             {
@@ -384,7 +386,7 @@ class witness_plugin_impl
 
       // we must control the witness scheduled to produce the next block.
       scheduled_witness = _db.get_scheduled_witness( slot );
-      if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
+      if( not _queen_mode && _witnesses.find( scheduled_witness ) == _witnesses.end() )
         return block_production_condition::not_my_turn;
 
       const chain::public_key_type& scheduled_key = _db.get< chain::witness_object, chain::by_name >( scheduled_witness ).signing_key;
@@ -585,6 +587,14 @@ void witness_plugin::update_production_data( fc::time_point_sec time )
 const produce_block_data_t& witness_plugin::get_production_data() const
 {
   return my->produce_block_data;
+}
+
+void witness_plugin::enable_queen_mode()
+{
+  // turn on refreshing of block production data
+  my->_production_enabled = true;
+  // ignore configured witnesses (represent them all) and just check if you have private key
+  my->_queen_mode = true;
 }
 
 void witness_plugin::set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses )
