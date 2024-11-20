@@ -68,6 +68,8 @@ public:
   void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = database::skip_nothing );
   bool push_block( const block_flow_control& block_ctrl, uint32_t skip = database::skip_nothing );
   void push_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
+  // nonblocking version of push_generate_block_request used by queen_plugin
+  void queue_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
 
   /**
     * Set a class to be called for block generation.
