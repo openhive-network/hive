@@ -2012,6 +2012,21 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
   generate_block_ctrl->rethrow_if_exception();
 }
 
+void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
+{
+  static write_context cxt; // don't call this routine before processing of previous is finished
+  cxt.req_ptr = generate_block_ctrl;
+
+  std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
+  generate_block_ctrl->attach_promise( generate_block_promise );
+
+  {
+    std::unique_lock<std::mutex> lock( my->queue_mutex );
+    my->priority_write_queue.push( &cxt );
+  }
+  my->queue_condition_variable.notify_one();
+}
+
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
 {
   FC_ASSERT( get_state() == appbase::abstract_plugin::state::initialized,
