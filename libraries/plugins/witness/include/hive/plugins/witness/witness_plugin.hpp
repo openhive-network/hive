@@ -33,6 +33,25 @@ enum class block_production_condition
   exception_producing_block = 8
 };
 
+struct produce_block_data_t
+{
+  produce_block_data_t() :
+    next_slot( 0 ),
+    next_slot_time( HIVE_GENESIS_TIME + HIVE_BLOCK_INTERVAL ),
+    scheduled_witness( "" ),
+    scheduled_private_key{},
+    condition( block_production_condition::not_my_turn ),
+    produce_in_next_slot( false )
+  {}
+
+  uint32_t next_slot;
+  fc::time_point_sec next_slot_time;
+  chain::account_name_type scheduled_witness;
+  fc::ecc::private_key scheduled_private_key;
+  block_production_condition condition;
+  bool produce_in_next_slot;
+};
+
 class witness_plugin : public appbase::plugin< witness_plugin >
 {
 public:
@@ -47,6 +66,9 @@ public:
   void enable_fast_confirm();
   void disable_fast_confirm();
   bool is_fast_confirm_enabled() const;
+
+  void update_production_data( fc::time_point_sec time );
+  const produce_block_data_t& get_production_data() const;
 
   // for unit tests - overrides list of represented witnesses
   void set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses );
