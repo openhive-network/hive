@@ -2069,4 +2069,10 @@ void chain_plugin::finish_request()
 {
   my->finish_request();
 }
+
+bool chain_plugin::is_finished_write_processing() const
+{
+  return my->finish.status.load();
+}
+
 } } } // namespace hive::plugis::chain::chain_apis
