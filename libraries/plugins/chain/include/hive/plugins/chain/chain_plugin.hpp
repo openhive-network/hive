@@ -147,6 +147,7 @@ public:
   void disable_p2p() const;
 
   void finish_request();
+  bool is_finished_write_processing() const;
 
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;

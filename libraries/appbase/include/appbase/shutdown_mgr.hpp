@@ -70,6 +70,8 @@ namespace hive {
       std::map< hive_p2p_handler_type, shutdown_state::ptr_shutdown_state > states;
 
       appbase::application& theApp;
+      
+      plugins::chain::chain_plugin& chain;
 
       const char* fStatus(std::future_status s)
       {
@@ -122,8 +124,8 @@ namespace hive {
 
     public:
 
-      shutdown_mgr( std::string _name, appbase::application& app )
-        : name( _name ), running( true ), theApp( app )
+      shutdown_mgr( std::string _name, appbase::application& app, plugins::chain::chain_plugin& chain )
+        : name( _name ), running( true ), theApp( app ), chain( chain )
       {
         std::map< hive_p2p_handler_type, std::string > input = {
                     { hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER, "P2P_BLOCK" },
@@ -171,7 +173,14 @@ namespace hive {
 
       bool is_running() const
       {
-        return running.load() && !theApp.is_interrupt_request();
+        /*
+          Explanation of `is_finished_write_processing`.
+
+          Sometimes stopping of the working thread is triggered by SIGINT, but sometimes by CLI parameteres like `stop-at-block`.
+          We have to have certanity that the working thread is closed regardless of a reason,
+          so the best option is to wait for SIGINT and a real finish of the working thread.
+        */
+        return running.load() && !theApp.is_interrupt_request() && !chain.is_finished_write_processing();
       }
 
       shutdown_state& get_state( hive_p2p_handler_type handler )
