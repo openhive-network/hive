@@ -74,7 +74,7 @@ class p2p_plugin_impl : public graphene::net::node_delegate
 public:
 
   p2p_plugin_impl( plugins::chain::chain_plugin& c, appbase::application& app )
-    : shutdown_helper( "P2P plugin", c.get_app() ), chain( c ), theApp( app )
+    : shutdown_helper( "P2P plugin", c.get_app(), c ), chain( c ), theApp( app )
   {
   }
   virtual ~p2p_plugin_impl()
