@@ -8,7 +8,10 @@ source "$SCRIPTPATH/docker_image_utils.sh"
 
 
 submodule_path=""
+# the path to the registry for this project *with a trailing slash*
 REGISTRY=""
+# the same, without
+REGISTRY_WITHOUT_SLASH=""
 DOTENV_VAR_NAME=""
 REGISTRY_USER=""
 REGISTRY_PASSWORD=""
@@ -32,6 +35,16 @@ print_help () {
 IMGNAME=base_instance
 IMGNAME_INSTANCE=instance
 IMGNAME_MINIMAL_INSTANCE=minimal-instance
+# For use in haf_api_node, we always tag the minimal instance with the top-level
+# registry path for the project.  Normally, CI_REGISTRY_IMAGE for that project,
+# so registry.gitlab.syncad.com/hive/haf for this project.
+# Ideally, we'd rename registry.gitlab.syncad.com/hive/haf/minimal-instance to
+# registry.gitlab.syncad.com/hive/haf.  I don't know if anything depends on
+# the existence of an image named minimal-instance.  For that reason,
+# I'm just adding an additional tag that points to the same minimal-instance
+# image.  If it's determined to be safe, we should remove the tag for
+# minimal-instance.
+RETAG_MINIMAL_INSTANCE=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -44,11 +57,13 @@ while [ $# -gt 0 ]; do
             IMGNAME=testnet-base_instance
             IMGNAME_INSTANCE=testnet-instance
             IMGNAME_MINIMAL_INSTANCE=testnet-minimal-instance
+            RETAG_MINIMAL_INSTANCE=0
             ;;
           "mirrornet"*)
             IMGNAME=mirrornet-base_instance
             IMGNAME_INSTANCE=mirrornet-instance
             IMGNAME_MINIMAL_INSTANCE=mirrornet-minimal-instance
+            RETAG_MINIMAL_INSTANCE=0
             ;;
           "mainnet"*)
             ;;
@@ -73,6 +88,7 @@ while [ $# -gt 0 ]; do
         elif [ -z "$REGISTRY" ];
         then
           REGISTRY="${1}"
+          REGISTRY_WITHOUT_SLASH="$(echo "$1" | sed 's/\/$//')"
         elif [ -z "$DOTENV_VAR_NAME" ];
         then
           DOTENV_VAR_NAME=${1}
@@ -127,6 +143,11 @@ else
   time docker push "$img"
   time docker push "$img_instance"
   time docker push "$img_minimal_instance"
+  if [ "$RETAG_MINIMAL_INSTANCE" -eq 1 ]; then
+    echo "Retagging minimal-instance"
+    docker tag "$img_minimal_instance" "${REGISTRY_WITHOUT_SLASH}:${short_commit}"
+    time docker push "${REGISTRY_WITHOUT_SLASH}:${short_commit}"
+  fi
 fi
 
 echo "${DOTENV_VAR_NAME}_IMAGE_NAME=$img" > docker_image_name.env
