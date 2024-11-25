@@ -65,7 +65,7 @@ def init_network(
                 name,
                 "https://" + name,
                 tt.Account(name).public_key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "hbd_interest_rate": 0},
             )
     tt.logger.info("Wait 21 blocks to schedule newly created witnesses into future slate")
     init_node.wait_number_of_blocks(21)
