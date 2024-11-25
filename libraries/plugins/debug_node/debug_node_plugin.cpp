@@ -48,6 +48,7 @@ class debug_node_plugin_impl
 
     plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
+    plugins::witness::witness_plugin*         _witness_plugin_ptr = nullptr;
 
     typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
     current_debug_update_transactions         _current_debug_update_txs;
@@ -55,11 +56,13 @@ class debug_node_plugin_impl
 
     boost::signals2::connection               _pre_apply_transaction_conn;
     boost::signals2::connection               _post_apply_block_conn;
+
+    appbase::application&                     theApp;
 };
 
 debug_node_plugin_impl::debug_node_plugin_impl( appbase::application& app ) :
   _chain_plugin(app.get_plugin< hive::plugins::chain::chain_plugin >()),
-  _db(_chain_plugin.db())
+  _db(_chain_plugin.db()), theApp(app)
   {}
 
 debug_node_plugin_impl::~debug_node_plugin_impl() {}
@@ -98,6 +101,7 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
 
 void debug_node_plugin::plugin_startup()
 {
+  my->_witness_plugin_ptr = my->theApp.find_plugin< hive::plugins::witness::witness_plugin >();
   /*for( const std::string& fn : _edit_scripts )
   {
     std::shared_ptr< fc::ifstream > stream = std::make_shared< fc::ifstream >( fc::path(fn) );
@@ -337,15 +341,20 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
 
   fc::optional<fc::ecc::private_key> debug_private_key;
   chain::public_key_type debug_public_key;
+  const witness::witness_plugin::t_signing_keys* signing_keys = nullptr;
   if( args.debug_key != "" )
   {
     debug_private_key = fc::ecc::private_key::wif_to_key( args.debug_key );
     FC_ASSERT( debug_private_key.valid() );
     debug_public_key = debug_private_key->get_public_key();
   }
-  else
+  else if( my->_witness_plugin_ptr )
   {
-    if( logging ) elog( "Skipping generation because I don't know the private key");
+    signing_keys = &my->_witness_plugin_ptr->get_signing_keys();
+  }
+  if( not debug_private_key.valid() and ( signing_keys == nullptr or signing_keys->empty() ) )
+  {
+    if( logging ) elog( "Skipping generation because I don't know the private key" );
     ret.blocks = 0;
     return;
   }
@@ -360,25 +369,35 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     fc::time_point_sec scheduled_time = db.get_slot_time( slot );
     const chain::witness_object& scheduled_witness = db.get_witness( scheduled_witness_name );
     chain::public_key_type scheduled_key = scheduled_witness.signing_key;
+    witness::witness_plugin::t_signing_keys::const_iterator it;
     if( logging )
     {
-      wlog( "slot: ${sl}   time: ${t}   scheduled key is: ${sk}   dbg key is: ${dk}",
-        ("sk", scheduled_key)("dk", debug_public_key)("sl", slot)("t", scheduled_time) );
+      wlog( "slot: ${sl}   time: ${t}   scheduled key is: ${sk}",
+        ("sk", scheduled_key)("sl", slot)("t", scheduled_time) );
     }
+    fc::ecc::private_key private_key;
     uint32_t skip = args.skip;
-    if( scheduled_key != debug_public_key )
+    if( scheduled_key == debug_public_key )
     {
-      if( args.edit_if_needed )
-      {
-        if( logging ) wlog( "Missing key for witness ${w}, skipping witness signature.", ("w", scheduled_witness_name) );
-        skip |= hive::chain::database::skip_witness_signature;
-      }
-      else
-        break;
+      private_key = *debug_private_key;
+    }
+    else if( signing_keys && ( ( it = signing_keys->find( scheduled_key ) ) != signing_keys->end() ) )
+    {
+      private_key = it->second;
+    }
+    else if( args.edit_if_needed )
+    {
+      if( logging ) wlog( "Missing key for witness ${w}, skipping witness signature.", ("w", scheduled_witness_name) );
+      skip |= hive::chain::database::skip_witness_signature;
+    }
+    else
+    {
+      if( logging ) wlog( "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
+      break;
     }
 
     auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, *debug_private_key, skip);
+      scheduled_witness_name, private_key, skip);
 
     if( immediate_generation )
     {
