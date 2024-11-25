@@ -81,9 +81,9 @@ class witness_plugin_impl
     uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
     uint32_t _production_skip_flags           = chain::database::skip_nothing;
 
-    std::map< hive::protocol::public_key_type, fc::ecc::private_key > _private_keys;
-    std::set< hive::protocol::account_name_type >                     _witnesses;
-    boost::asio::deadline_timer                                       _timer;
+    witness_plugin::t_signing_keys     _private_keys;
+    witness_plugin::t_witnesses        _witnesses;
+    boost::asio::deadline_timer        _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
@@ -589,6 +589,11 @@ const produce_block_data_t& witness_plugin::get_production_data() const
   return my->produce_block_data;
 }
 
+const witness_plugin::t_signing_keys& witness_plugin::get_signing_keys() const
+{
+  return my->_private_keys;
+}
+
 void witness_plugin::enable_queen_mode()
 {
   // turn on refreshing of block production data
@@ -597,7 +602,7 @@ void witness_plugin::enable_queen_mode()
   my->_queen_mode = true;
 }
 
-void witness_plugin::set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses )
+void witness_plugin::set_witnesses( const t_witnesses& witnesses )
 {
   my->_witnesses = witnesses;
   // recompute next block production data with new set of witnesses
