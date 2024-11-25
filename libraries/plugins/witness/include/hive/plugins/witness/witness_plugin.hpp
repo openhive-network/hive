@@ -70,10 +70,14 @@ public:
   void update_production_data( fc::time_point_sec time );
   const produce_block_data_t& get_production_data() const;
 
+  typedef std::map< hive::protocol::public_key_type, fc::ecc::private_key > t_signing_keys;
+  const t_signing_keys& get_signing_keys() const;
+
   void enable_queen_mode(); // turned on when queen_plugin is active
 
+  typedef std::set< hive::protocol::account_name_type > t_witnesses;
   // for unit tests - overrides list of represented witnesses
-  void set_witnesses( const std::set< hive::protocol::account_name_type >& witnesses );
+  void set_witnesses( const t_witnesses& witnesses );
 
   static const std::string& name() { static std::string name = HIVE_WITNESS_PLUGIN_NAME; return name; }
 
