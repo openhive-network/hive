@@ -51,19 +51,23 @@ FC_EXPAND_MACRO(                                        \
     }                                                   \
   FC_MULTILINE_MACRO_END                                \
 )
-  /**
-    *  Transactions with operations required posting authority cannot be combined
-    *  with transactions requiring active or owner authority. This is for ease of
-    *  implementation. Future versions of authority verification may be able to
-    *  check for the merged authority of active and posting.
-    */
+
   if( not required_authorities.required_posting.empty() )
   {
-    VERIFY_AUTHORITY_CHECK( required_authorities.required_active.empty() &&
-      required_authorities.required_owner.empty() &&
-      required_authorities.required_witness.empty() &&
-      required_authorities.other.empty(),
-      verify_authority_problem::mixed_with_posting, account_name_type() );
+    if( !strict_authority_level )
+    {
+    /**
+      *  Up to HF28 transactions with operations required posting authority cannot be combined
+      *  with transactions requiring active or owner authority. This is for ease of
+      *  implementation. Future versions of authority verification may be able to
+      *  check for the merged authority of active and posting.
+      */
+      VERIFY_AUTHORITY_CHECK( required_authorities.required_active.empty() &&
+        required_authorities.required_owner.empty() &&
+        required_authorities.required_witness.empty() &&
+        required_authorities.other.empty(),
+        verify_authority_problem::mixed_with_posting, account_name_type() );
+    }
 
     flat_set<public_key_type> avail;
     sign_state s( sigs, get_posting, avail );
@@ -82,11 +86,12 @@ FC_EXPAND_MACRO(                                        \
       {
         VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_active( id ) ) ||
           s.check_authority( get_owner( id ) ), verify_authority_problem::missing_posting, id );
+
+        VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
+          verify_authority_problem::unused_signature, account_name_type() );
+        return;
       }
     }
-    VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
-      verify_authority_problem::unused_signature, account_name_type() );
-    return;
   }
 
   flat_set< public_key_type > avail;
@@ -141,8 +146,11 @@ FC_EXPAND_MACRO(                                        \
       verify_authority_problem::missing_witness, id );
   }
 
-  VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
-    verify_authority_problem::unused_signature, account_name_type() );
+  if( !strict_authority_level )
+  {
+    VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
+      verify_authority_problem::unused_signature, account_name_type() );
+  }
 
 #undef VERIFY_AUTHORITY_CHECK
 #undef VERIFY_AUTHORITY_CHECK_OTHER_AUTH
@@ -179,7 +187,7 @@ FC_EXPAND_MACRO(                                                      \
       switch( problem )
       {
       case verify_authority_problem::mixed_with_posting:
-        VERIFY_AUTHORITY_THROW( fc::assert_exception,
+        VERIFY_AUTHORITY_THROW( tx_combined_auths_with_posting,
           "Transactions with operations required posting authority cannot be combined "
           "with transactions requiring active or owner authority." );
       case verify_authority_problem::missing_posting:
