@@ -942,7 +942,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.operations.clear();
   t.from = "bob";
   t.to = HIVE_INIT_MINER_NAME;
-  t.amount = asset(amount,HIVE_SYMBOL);
+  t.amount = asset(amount/2,HIVE_SYMBOL);
   trx.operations.push_back(t);
   trx.validate();
 
@@ -952,8 +952,8 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
   HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, bob_private_key} ), tx_duplicate_sig );
 
-  BOOST_TEST_MESSAGE( "Verify that signing with an extra, unused key fails" );
-  HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, generate_private_key( "bogus") }, 0), tx_irrelevant_sig );
+  BOOST_TEST_MESSAGE( "Up to HF28 it was a verify that signing with an extra, unused key fails. Now the transaction passes." );
+  push_transaction(trx, {bob_private_key, generate_private_key( "bogus") }, database::skip_transaction_dupe_check);
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
   push_transaction(trx, bob_private_key );
