@@ -1744,6 +1744,7 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
 {
   get_required_signatures_return result;
   result.keys = args.trx.get_required_signatures(
+    _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
     _db.get_chain_id(),
     args.available_keys,
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
@@ -1759,6 +1760,7 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
 {
   get_potential_signatures_return result;
   args.trx.get_required_signatures(
+    _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
     _db.get_chain_id(),
     flat_set< public_key_type >(),
     [&]( account_name_type account_name )

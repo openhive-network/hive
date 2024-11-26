@@ -61,6 +61,7 @@ namespace hive { namespace protocol {
     //signature_type sign( const private_key_type& key, const chain_id_type& chain_id )const;
 
     set<public_key_type> get_required_signatures(
+      bool strict_authority_level,
       const chain_id_type& chain_id,
       const flat_set<public_key_type>& available_keys,
       const authority_getter& get_active,
