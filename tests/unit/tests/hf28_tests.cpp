@@ -821,6 +821,7 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
         ACTORS_EXT( (*executor), (alice)(bob) );
         executor->vest( "alice", ASSET( "1.000 TESTS" ) );
         executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+        executor->issue_funds( "alice", ASSET( "100.000 TESTS" ) );
 
         account_witness_proxy_operation _proxy_op;
         _proxy_op.account = "alice";
@@ -833,22 +834,33 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
         _comment_op.title = "test";
         _comment_op.body = "test";
 
-        signed_transaction tx;
-        tx.operations.push_back( _proxy_op );
-        tx.operations.push_back( _comment_op );
-        tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        transfer_operation _transfer_op;
+        _transfer_op.from = "alice";
+        _transfer_op.to = "bob";
+        _transfer_op.amount = ASSET( "5.000 TESTS" );
+
+        signed_transaction _tx;
+        _tx.operations.push_back( _proxy_op );
+        _tx.operations.push_back( _comment_op );
+        _tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        signed_transaction _tx_02;
+        _tx_02.operations.push_back( _transfer_op );
+        _tx_02.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
         if( is_hf28 )
         {
-          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_private_key ), tx_missing_posting_auth );
-          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_post_key ), tx_missing_active_auth );
-          executor->push_transaction( tx, {alice_private_key, alice_post_key} );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, alice_private_key ), tx_missing_posting_auth );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, alice_post_key ), tx_missing_active_auth );
+          executor->push_transaction( _tx, {alice_private_key, alice_post_key} );
+          executor->push_transaction( _tx_02, {alice_private_key, bob_private_key} );
         }
         else
         {
-          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_post_key ), tx_combined_auths_with_posting );
-          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_private_key ), tx_combined_auths_with_posting );
-          HIVE_REQUIRE_THROW( executor->push_transaction( tx, { alice_private_key, alice_post_key } ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, alice_post_key ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, alice_private_key ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, { alice_private_key, alice_post_key } ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_02, {alice_private_key, bob_private_key} ), tx_irrelevant_sig );
         }
     };
 
