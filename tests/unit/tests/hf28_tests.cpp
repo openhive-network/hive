@@ -806,6 +806,63 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
   }
   FC_LOG_AND_RETHROW()
 }
+
+BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [&is_hf28]( ptr_hardfork_database_fixture& executor )
+    {
+        BOOST_TEST_MESSAGE( "Testing: 'mixed_authorities_in_one_transaction'" );
+        BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+        ACTORS_EXT( (*executor), (alice)(bob) );
+        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
+        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+
+        account_witness_proxy_operation _proxy_op;
+        _proxy_op.account = "alice";
+        _proxy_op.proxy = "bob";
+
+        comment_operation _comment_op;
+        _comment_op.parent_permlink = "category";
+        _comment_op.author = "alice";
+        _comment_op.permlink = "test";
+        _comment_op.title = "test";
+        _comment_op.body = "test";
+
+        signed_transaction tx;
+        tx.operations.push_back( _proxy_op );
+        tx.operations.push_back( _comment_op );
+        tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        if( is_hf28 )
+        {
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_private_key ), tx_missing_posting_auth );
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_post_key ), tx_missing_active_auth );
+          executor->push_transaction( tx, {alice_private_key, alice_post_key} );
+        }
+        else
+        {
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_post_key ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, alice_private_key ), tx_combined_auths_with_posting );
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, { alice_private_key, alice_post_key } ), tx_combined_auths_with_posting );
+        }
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
@@ -1657,6 +1714,7 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
  
   FC_LOG_AND_RETHROW()
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
