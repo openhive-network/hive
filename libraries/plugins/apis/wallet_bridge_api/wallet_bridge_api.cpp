@@ -154,7 +154,7 @@ void wallet_bridge_api::api_startup()
 
   //=====
   auto p2p = theApp.find_plugin< p2p::p2p_plugin >();
-  if (p2p)
+  if (p2p && my->_chain.is_p2p_enabled())
     my->_p2p = p2p;
   else
     not_enabled_plugins += "p2p_plugin";
@@ -672,7 +672,6 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 {
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-  FC_ASSERT( _p2p, "p2p_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array().at(0).is_array(), "broadcast_transaction_synchronous needs at least one argument" );
   const auto arguments = args.get_array().at(0);
@@ -722,7 +721,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
      * thread for the lock.
      */
     _chain.determine_encoding_and_accept_transaction( full_transaction, tx, set_remove_callback );
-    _p2p->broadcast_transaction(full_transaction);
+    if( _p2p ) // can be used to feed solo test node
+      _p2p->broadcast_transaction( full_transaction );
   }
   catch( fc::exception& e )
   {

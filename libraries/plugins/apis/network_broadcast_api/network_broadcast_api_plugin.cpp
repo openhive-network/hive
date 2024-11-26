@@ -13,7 +13,10 @@ void network_broadcast_api_plugin::plugin_initialize( const variables_map& optio
   api = std::make_shared< network_broadcast_api >( get_app() );
 }
 
-void network_broadcast_api_plugin::plugin_startup() {}
+void network_broadcast_api_plugin::plugin_startup()
+{
+  api->check_p2p();
+}
 void network_broadcast_api_plugin::plugin_shutdown() {}
 
 } } } // hive::plugins::test_api
