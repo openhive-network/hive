@@ -114,6 +114,7 @@ flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id
 
 
 set<public_key_type> signed_transaction::get_required_signatures(
+  bool strict_authority_level,
   const chain_id_type& chain_id,
   const flat_set<public_key_type>& available_keys,
   const authority_getter& get_active,
@@ -131,27 +132,32 @@ set<public_key_type> signed_transaction::get_required_signatures(
   vector< authority > other;
   get_required_authorities( required_active, required_owner, required_posting, required_witness, other );
 
-  /** posting authority cannot be mixed with active authority in same transaction */
+  set<public_key_type> result;
+
+  /** Up to HF28 posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
     sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
 
-    FC_ASSERT( !required_owner.size() );
-    FC_ASSERT( !required_active.size() );
+    if( !strict_authority_level )
+    {
+      FC_ASSERT( !required_owner.size() );
+      FC_ASSERT( !required_active.size() );
+    }
+
     for( auto& posting : required_posting )
       s.check_authority( posting  );
 
     s.remove_unused_signatures();
 
-    set<public_key_type> result;
-
     for( auto& provided_sig : s.provided_signatures )
       if( available_keys.find( provided_sig.first ) != available_keys.end() )
         result.insert( provided_sig.first );
 
-    return result;
+    if( !strict_authority_level )
+      return result;
   }
 
 
@@ -168,8 +174,6 @@ set<public_key_type> signed_transaction::get_required_signatures(
     s.check_authority( active  );
 
   s.remove_unused_signatures();
-
-  set<public_key_type> result;
 
   for( auto& provided_sig : s.provided_signatures )
     if( available_keys.find( provided_sig.first ) != available_keys.end() )
@@ -191,7 +195,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   uint32_t max_account_auths
   ) const
 {
-  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
+  set< public_key_type > s = get_required_signatures( strict_authority_level, chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
