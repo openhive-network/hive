@@ -11,7 +11,7 @@ namespace detail
   {
     public:
       network_broadcast_api_impl( appbase::application& app ) :
-        _p2p( app.get_plugin< hive::plugins::p2p::p2p_plugin >() ),
+        _p2p( &app.get_plugin< hive::plugins::p2p::p2p_plugin >() ),
         _chain( app.get_plugin< hive::plugins::chain::chain_plugin >() )
       {}
 
@@ -21,7 +21,7 @@ namespace detail
 
       bool check_max_block_age( int32_t max_block_age ) const;
 
-      hive::plugins::p2p::p2p_plugin&                      _p2p;
+      hive::plugins::p2p::p2p_plugin*                      _p2p = nullptr;
       hive::plugins::chain::chain_plugin&                  _chain;
   };
 
@@ -31,7 +31,8 @@ namespace detail
 
     hive::chain::full_transaction_ptr full_transaction;
     _chain.determine_encoding_and_accept_transaction( full_transaction, args.trx );
-    _p2p.broadcast_transaction(full_transaction);
+    if( _p2p ) // can be used to feed solo test node
+      _p2p->broadcast_transaction( full_transaction );
 
     return broadcast_transaction_return();
   }
@@ -58,6 +59,14 @@ network_broadcast_api::network_broadcast_api( appbase::application& app ) : my( 
 }
 
 network_broadcast_api::~network_broadcast_api() {}
+
+void network_broadcast_api::check_p2p()
+{
+  if( not my->_chain.is_p2p_enabled() )
+    my->_p2p = nullptr;
+  else
+    FC_ASSERT( my->_p2p != nullptr ); // constructor should fill it properly
+}
 
 DEFINE_LOCKLESS_APIS( network_broadcast_api,
   (broadcast_transaction)

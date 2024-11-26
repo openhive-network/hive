@@ -49,6 +49,8 @@ class network_broadcast_api
       (broadcast_transaction)
     )
 
+    void check_p2p();
+
   private:
     std::unique_ptr< detail::network_broadcast_api_impl > my;
 };
