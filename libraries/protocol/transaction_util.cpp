@@ -95,6 +95,9 @@ FC_EXPAND_MACRO(                                        \
     {
       VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
         verify_authority_problem::unused_signature, account_name_type() );
+    }
+    if( !allow_mixed_authorities )
+    {
       return;
     }
   }
