@@ -34,6 +34,9 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
   size_t membership = 0;
   for( const auto& k : auth.key_auths )
   {
+    if( !exists_at_least_one_auth )
+      exists_at_least_one_auth = true;
+
     if( signed_by( k.first ) )
     {
       total_weight += k.second;
@@ -50,6 +53,9 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
 
   for( const auto& a : auth.account_auths )
   {
+    if( !exists_at_least_one_auth )
+      exists_at_least_one_auth = true;
+
     if( approved_by.find(a.first) == approved_by.end() )
     {
       if( depth == max_recursion )
@@ -86,11 +92,18 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
   return total_weight >= auth.weight_threshold;
 }
 
-bool sign_state::remove_unused_signatures()
+vector<public_key_type> sign_state::find_unused_signatures() const
 {
   vector<public_key_type> remove_sigs;
   for( const auto& sig : provided_signatures )
     if( !sig.second ) remove_sigs.push_back( sig.first );
+
+  return remove_sigs;
+}
+
+bool sign_state::remove_unused_signatures()
+{
+  vector<public_key_type> remove_sigs = find_unused_signatures();
 
   for( auto& sig : remove_sigs )
     provided_signatures.erase(sig);
@@ -98,11 +111,21 @@ bool sign_state::remove_unused_signatures()
   return remove_sigs.size() != 0;
 }
 
+bool sign_state::check_empty_auths() const
+{
+  vector<public_key_type> remove_sigs = find_unused_signatures();
+  if( !exists_at_least_one_auth )
+    return remove_sigs.size() == 0;
+  else
+    return true;
+}
+
 sign_state::sign_state(
   const flat_set<public_key_type>& sigs,
   const authority_getter& a,
-  const flat_set<public_key_type>& keys
-  ) : get_current_authority(a), available_keys(keys)
+  const flat_set<public_key_type>& keys,
+  bool exists_at_least_one_auth
+  ) : get_current_authority(a), available_keys(keys), exists_at_least_one_auth(exists_at_least_one_auth)
 {
   for( const auto& key : sigs )
     provided_signatures[ key ] = false;

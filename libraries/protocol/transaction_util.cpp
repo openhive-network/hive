@@ -10,7 +10,8 @@ enum class verify_authority_problem
   missing_owner,
   missing_witness,
   missing_witness_key,
-  unused_signature
+  unused_signature,
+  missing_auths_existing_keys
 };
 
 template< typename PROBLEM_HANDLER, typename OTHER_AUTH_PROBLEM_HANDLER >
@@ -52,6 +53,7 @@ FC_EXPAND_MACRO(                                        \
   FC_MULTILINE_MACRO_END                                \
 )
 
+  bool _exists_at_least_one_auth = false;
   if( not required_authorities.required_posting.empty() )
   {
     if( !strict_authority_level )
@@ -92,10 +94,12 @@ FC_EXPAND_MACRO(                                        \
         return;
       }
     }
+    if( strict_authority_level )
+      _exists_at_least_one_auth = s.at_least_one_auth();
   }
 
   flat_set< public_key_type > avail;
-  sign_state s( sigs, get_active, avail );
+  sign_state s( sigs, get_active, avail, _exists_at_least_one_auth );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;
@@ -146,7 +150,12 @@ FC_EXPAND_MACRO(                                        \
       verify_authority_problem::missing_witness, id );
   }
 
-  if( !strict_authority_level )
+  if( strict_authority_level )
+  {
+    VERIFY_AUTHORITY_CHECK( s.check_empty_auths(),
+      verify_authority_problem::missing_auths_existing_keys, account_name_type() );
+  }
+  else
   {
     VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
       verify_authority_problem::unused_signature, account_name_type() );
@@ -211,6 +220,9 @@ FC_EXPAND_MACRO(                                                      \
       case verify_authority_problem::unused_signature:
         VERIFY_AUTHORITY_THROW( tx_irrelevant_sig,
           "Unnecessary signature(s) detected" );
+      case verify_authority_problem::missing_auths_existing_keys:
+        VERIFY_AUTHORITY_THROW( missing_auths_existing_keys,
+          "Missing authorizations, but unnecessary signature(s) detected" );
       }
     },
     []( const char* checked_expr, const authority& auth )

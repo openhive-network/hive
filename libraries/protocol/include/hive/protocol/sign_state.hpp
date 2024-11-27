@@ -25,9 +25,13 @@ struct sign_state
 
   bool remove_unused_signatures();
 
+  bool check_empty_auths() const;
+  bool at_least_one_auth() const{ return exists_at_least_one_auth; }
+
   sign_state( const flat_set<public_key_type>& sigs,
           const authority_getter& a,
-          const flat_set<public_key_type>& keys );
+          const flat_set<public_key_type>& keys,
+          bool exists_at_least_one_auth = false );
 
   const authority_getter&          get_current_authority;
   const flat_set<public_key_type>& available_keys;
@@ -38,8 +42,10 @@ struct sign_state
   uint32_t                         max_membership = ~0;
   uint32_t                         max_account_auths = ~0;
 
+  bool                             exists_at_least_one_auth = false;
   private:
     bool check_authority_impl( const authority& au, uint32_t depth, uint32_t* account_auth_count );
+    vector<public_key_type> find_unused_signatures() const;
 };
 
 } } // hive::protocol
