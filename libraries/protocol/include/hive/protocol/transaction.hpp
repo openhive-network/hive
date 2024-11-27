@@ -93,7 +93,6 @@ namespace hive { namespace protocol {
     set<public_key_type> minimize_required_signatures(
       bool strict_authority_level,
       bool allow_mixed_authorities,
-      bool allow_redundant_authorities,
       const chain_id_type& chain_id,
       const flat_set<public_key_type>& available_keys,
       const authority_getter& get_active,
