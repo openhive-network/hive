@@ -48,13 +48,13 @@ class debug_node_api_impl
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 {
   debug_generate_blocks_return ret;
-  _debug_node.debug_generate_blocks( ret, args, true ); // We can't use chain_plugin like generation because we need to be under lock and then chain plugin route does not work (because it has its own lock)
+  _debug_node.debug_generate_blocks( ret, args, false );
   return ret;
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 {
-  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, true ) };
+  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, false ) };
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_head_block )
@@ -126,8 +126,6 @@ debug_node_api::debug_node_api( appbase::application& app): my( new detail::debu
 debug_node_api::~debug_node_api() {}
 
 DEFINE_WRITE_APIS( debug_node_api,
-  (debug_generate_blocks)
-  (debug_generate_blocks_until)
   (debug_set_hardfork)
   (debug_set_vest_price)
 )
@@ -141,6 +139,8 @@ DEFINE_READ_APIS( debug_node_api,
 DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_get_json_schema) // the whole schema thing is (and pretty much always was) dead
   (debug_throw_exception) // might be lockless because it just sets flag to trigger exception on next on_post_apply_block
+  (debug_generate_blocks)
+  (debug_generate_blocks_until)
 )
 
 } } } // hive::plugins::debug_node
