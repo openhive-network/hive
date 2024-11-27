@@ -875,6 +875,96 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction_2 )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [&is_hf28]( ptr_hardfork_database_fixture& executor )
+    {
+        BOOST_TEST_MESSAGE( "Testing: 'mixed_authorities_in_one_transaction'" );
+        BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+        ACTORS_EXT( (*executor), (alice)(bob) );
+        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
+        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+        executor->issue_funds( "alice", ASSET( "100.000 TESTS" ) );
+        executor->issue_funds( "bob", ASSET( "100.000 TESTS" ) );
+
+        account_update_operation _acc_update_op;
+        _acc_update_op.account = "alice";
+        _acc_update_op.active = authority( 1, "bob", 1 );
+        _acc_update_op.posting = authority( 1, "bob", 1 );
+
+        comment_operation _comment_op;
+        _comment_op.parent_permlink = "category";
+        _comment_op.author = "alice";
+        _comment_op.permlink = "test";
+        _comment_op.title = "test";
+        _comment_op.body = "test";
+
+        transfer_operation _transfer_op;
+        _transfer_op.from = "alice";
+        _transfer_op.to = "bob";
+        _transfer_op.amount = ASSET( "5.000 TESTS" );
+
+        signed_transaction _tx_00;
+        _tx_00.operations.push_back( _acc_update_op );
+        _tx_00.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        signed_transaction _tx_01;
+        _tx_01.operations.push_back( _comment_op );
+        _tx_01.operations.push_back( _transfer_op );
+        _tx_01.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->push_transaction( _tx_00, alice_private_key );
+
+        executor->generate_block();
+
+        if( is_hf28 )
+        {
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction has only active key");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_private_key } ), tx_missing_posting_auth );
+
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction has only posting key");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_post_key } ), tx_missing_active_auth );
+
+          BOOST_TEST_MESSAGE("Success: a mixed transaction has sufficient number of keys");
+          executor->push_transaction( _tx_01, { bob_private_key, bob_post_key }, database::skip_transaction_dupe_check );
+
+          executor->generate_blocks( executor->db->head_block_time() + HIVE_MIN_COMMENT_EDIT_INTERVAL );
+
+          BOOST_TEST_MESSAGE("Success: a mixed transaction has sufficient number of keys");
+          executor->push_transaction( _tx_01, { bob_post_key, bob_private_key }, database::skip_transaction_dupe_check );
+        }
+        else
+        {
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction is not allowed");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_private_key } ), tx_combined_auths_with_posting );
+
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction is not allowed");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_post_key } ), tx_combined_auths_with_posting );
+
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction is not allowed");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_private_key, bob_post_key } ), tx_combined_auths_with_posting );
+
+          BOOST_TEST_MESSAGE("Failure: a mixed transaction is not allowed");
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_post_key, bob_private_key } ), tx_combined_auths_with_posting );
+        }
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
