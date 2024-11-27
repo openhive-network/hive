@@ -27,5 +27,9 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_EXPIRATION_TIME (HIVE_HARDFORK_1_28)
 // accept only required authority. Redirection into stronger authorities is not accepted
 #define HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL (HIVE_HARDFORK_1_28)
+//`Owner/active` authorities can be combined with `posting` authority in one transaction.
+#define HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES (HIVE_HARDFORK_1_28)
+//Redundant signatures are allowed
+#define HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES (HIVE_HARDFORK_1_28)
 
 #endif

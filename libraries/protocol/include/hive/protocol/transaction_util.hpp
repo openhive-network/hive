@@ -27,6 +27,8 @@ required_authorities_type get_required_authorities(const vector<AuthContainerTyp
 } FC_CAPTURE_AND_RETHROW((auth_containers)) }
 
 void verify_authority(bool strict_authority_level,
+                      bool allow_mixed_authorities,
+                      bool allow_redundant_signatures,
                       const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
@@ -42,6 +44,8 @@ void verify_authority(bool strict_authority_level,
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
 
 bool has_authorization( bool strict_authority_level,
+                        bool allow_mixed_authorities,
+                        bool allow_redundant_signatures,
                         const required_authorities_type& required_authorities,
                         const flat_set<public_key_type>& sigs,
                         const authority_getter& get_active,
@@ -51,6 +55,8 @@ bool has_authorization( bool strict_authority_level,
 
 template< typename AuthContainerType >
 void verify_authority(bool strict_authority_level,
+                      bool allow_mixed_authorities,
+                      bool allow_redundant_signatures,
                       const vector<AuthContainerType>& auth_containers, 
                       const flat_set<public_key_type>& sigs,
                       const authority_getter& get_active,
@@ -66,6 +72,8 @@ void verify_authority(bool strict_authority_level,
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>())
 { 
   verify_authority(strict_authority_level,
+                   allow_mixed_authorities,
+                   allow_redundant_signatures,
                    get_required_authorities(auth_containers),
                    sigs,
                    get_active,
