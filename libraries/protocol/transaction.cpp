@@ -187,7 +187,6 @@ set<public_key_type> signed_transaction::get_required_signatures(
 set<public_key_type> signed_transaction::minimize_required_signatures(
   bool strict_authority_level,
   bool allow_mixed_authorities,
-  bool allow_redundant_authorities,
   const chain_id_type& chain_id,
   const flat_set< public_key_type >& available_keys,
   const authority_getter& get_active,
@@ -199,7 +198,9 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   uint32_t max_account_auths
   ) const
 {
-  set< public_key_type > s = get_required_signatures( strict_authority_level, allow_mixed_authorities, allow_redundant_authorities, chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
+  //Don't allow redundant authorities. A transaction should be as small as possible.
+  const bool _allow_redundant_authorities = false;
+  set< public_key_type > s = get_required_signatures( strict_authority_level, allow_mixed_authorities, _allow_redundant_authorities, chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
@@ -210,7 +211,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
       hive::protocol::verify_authority(
         strict_authority_level,
         allow_mixed_authorities,
-        allow_redundant_authorities,
+        _allow_redundant_authorities,
         operations,
         result,
         get_active,
