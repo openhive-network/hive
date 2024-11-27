@@ -625,6 +625,7 @@ void colony_plugin_impl::start( uint32_t block_num )
 
     required_authorities_type required_authorities;
     required_authorities.required_active.insert( account.get_name() );
+    required_authorities.required_posting.insert( account.get_name() );
 
     if( hive::protocol::has_authorization( _db.has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ), required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
     {
