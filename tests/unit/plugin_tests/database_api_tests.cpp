@@ -331,32 +331,35 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   // alice can't sign posting with active/owner
   FAIL( "alice", { alice_active }, authority_level::posting );
   FAIL( "alice", { alice_owner }, authority_level::posting );
-  // can't sign with memo, with other account key, with two of valid keys nor with no keys
+  // can't sign with memo, with other account key, with no keys
   FAIL( "alice", { alice_memo }, authority_level::posting );
   FAIL( "alice", { bob_posting }, authority_level::posting );
-  FAIL( "alice", { alice_active, alice_posting }, authority_level::posting );
   FAIL( "alice", {}, authority_level::posting );
+  //redundant keys are allowed
+  OK( "alice", { alice_active, alice_posting }, authority_level::posting );
 
   // alice can sign active with active
   OK( "alice", { alice_active }, authority_level::active );
   // alice can't sign active with owner
   FAIL( "alice", { alice_owner }, authority_level::active );
-  // can't sign with posting/memo, with other account key, with two of valid keys nor with no keys
+  // can't sign with posting/memo, with other account key, with no keys
   FAIL( "alice", { alice_posting }, authority_level::active );
   FAIL( "alice", { alice_memo }, authority_level::active );
   FAIL( "alice", { bob_active }, authority_level::active );
-  FAIL( "alice", { alice_active, alice_owner }, authority_level::active );
   FAIL( "alice", {}, authority_level::active );
+  //redundant keys are allowed
+  OK( "alice", { alice_active, alice_owner }, authority_level::active );
 
   // alice can sign owner with owner
   OK( "alice", { alice_owner }, authority_level::owner );
-  // can't sign posting/active/memo, with other account key, with two keys nor with no keys
+  // can't sign posting/active/memo, with other account key, with no keys
   FAIL( "alice", { alice_posting }, authority_level::owner );
   FAIL( "alice", { alice_active }, authority_level::owner );
   FAIL( "alice", { alice_memo }, authority_level::owner );
   FAIL( "alice", { bob_active }, authority_level::owner );
-  FAIL( "alice", { alice_owner, alice_active }, authority_level::owner );
   FAIL( "alice", {}, authority_level::owner );
+  //redundant keys are allowed
+  OK( "alice", { alice_owner, alice_active }, authority_level::owner );
 
   BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on account with alternative keys" );
 
@@ -370,13 +373,14 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   FAIL( "single", { single2_active }, authority_level::posting );
   FAIL( "single", { single1_owner }, authority_level::posting );
   FAIL( "single", { single2_owner }, authority_level::posting );
-  // can't sign with memo, with unrelated account key, with two of valid keys nor with no keys
+  // can't sign with memo, with unrelated account key, with no keys
   FAIL( "single", { single1_memo }, authority_level::posting );
   FAIL( "single", { carol_posting }, authority_level::posting );
-  FAIL( "single", { single1_posting, single2_posting }, authority_level::posting );
-  FAIL( "single", { single1_posting, alice_posting }, authority_level::posting );
-  FAIL( "single", { alice_posting, bob_posting }, authority_level::posting );
   FAIL( "single", {}, authority_level::posting );
+  //redundant keys are allowed
+  OK( "single", { single1_posting, single2_posting }, authority_level::posting );
+  OK( "single", { single1_posting, alice_posting }, authority_level::posting );
+  OK( "single", { alice_posting, bob_posting }, authority_level::posting );
   // NOTE: can't sign with active/owner of alice/bob
   FAIL( "single", { alice_active }, authority_level::posting );
   FAIL( "single", { bob_active }, authority_level::posting );
@@ -391,15 +395,16 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   // single can't sign active with owner
   FAIL( "single", { single1_owner }, authority_level::active );
   FAIL( "single", { single2_owner }, authority_level::active );
-  // can't sign with posting/memo, with unrelated account key, with two of valid keys nor with no keys
+  // can't sign with posting/memo, with unrelated account key, with no keys
   FAIL( "single", { single1_posting }, authority_level::active );
   FAIL( "single", { single2_posting }, authority_level::active );
   FAIL( "single", { single1_memo }, authority_level::active );
   FAIL( "single", { carol_active }, authority_level::active );
-  FAIL( "single", { single1_active, single2_active }, authority_level::active );
-  FAIL( "single", { single1_active, alice_active }, authority_level::active );
-  FAIL( "single", { alice_active, bob_active }, authority_level::active );
   FAIL( "single", {}, authority_level::active );
+  //redundant keys are allowed
+  OK( "single", { single1_active, single2_active }, authority_level::active );
+  OK( "single", { single1_active, alice_active }, authority_level::active );
+  OK( "single", { alice_active, bob_active }, authority_level::active );
   // NOTE: can't sign with owner of alice/bob (can't sign with posting either but that is normal)
   FAIL( "single", { alice_owner }, authority_level::active );
   FAIL( "single", { bob_owner }, authority_level::active );
@@ -411,17 +416,18 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   OK( "single", { single2_owner }, authority_level::owner );
   OK( "single", { alice_active }, authority_level::owner );
   OK( "single", { bob_active }, authority_level::owner );
-  // can't sign with posting/active/memo, with unrelated account key, with two of valid keys nor with no keys
+  // can't sign with posting/active/memo, with unrelated account key, with with no keys
   FAIL( "single", { single1_posting }, authority_level::owner );
   FAIL( "single", { single2_posting }, authority_level::owner );
   FAIL( "single", { single1_active }, authority_level::owner );
   FAIL( "single", { single2_active }, authority_level::owner );
   FAIL( "single", { single1_memo }, authority_level::owner );
   FAIL( "single", { carol_active }, authority_level::owner );
-  FAIL( "single", { single1_owner, single2_owner }, authority_level::owner );
-  FAIL( "single", { single1_owner, alice_active }, authority_level::owner );
-  FAIL( "single", { alice_active, bob_active }, authority_level::owner );
   FAIL( "single", {}, authority_level::owner );
+  //redundant keys are allowed
+  OK( "single", { single1_owner, single2_owner }, authority_level::owner );
+  OK( "single", { single1_owner, alice_active }, authority_level::owner );
+  OK( "single", { alice_active, bob_active }, authority_level::owner );
   // NOTE: can't sign with owner of alice/bob (also can't sign with posting, but that's expected)
   FAIL( "single", { alice_owner }, authority_level::owner );
   FAIL( "single", { bob_owner }, authority_level::owner );
@@ -432,27 +438,24 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
 
   // open can sign posting with no keys
   OK( "open", {}, authority_level::posting );
-  // can't sign with any other key
-  FAIL( "open", { single1_memo }, authority_level::posting );
-  FAIL( "open", { alice_posting }, authority_level::posting );
-  FAIL( "open", { bob_active }, authority_level::posting );
-  FAIL( "open", { carol_owner }, authority_level::posting );
+  OK( "open", { single1_memo }, authority_level::posting );
+  OK( "open", { alice_posting }, authority_level::posting );
+  OK( "open", { bob_active }, authority_level::posting );
+  OK( "open", { carol_owner }, authority_level::posting );
 
   // open can sign active with no keys
   OK( "open", {}, authority_level::active );
-  // can't sign with any other key
-  FAIL( "open", { single1_memo }, authority_level::active );
-  FAIL( "open", { alice_posting }, authority_level::active );
-  FAIL( "open", { bob_active }, authority_level::active );
-  FAIL( "open", { carol_owner }, authority_level::active );
+  OK( "open", { single1_memo }, authority_level::active );
+  OK( "open", { alice_posting }, authority_level::active );
+  OK( "open", { bob_active }, authority_level::active );
+  OK( "open", { carol_owner }, authority_level::active );
 
   // open can sign owner with no keys
   OK( "open", {}, authority_level::owner );
-  // can't sign with any other key
-  FAIL( "open", { single1_memo }, authority_level::owner );
-  FAIL( "open", { alice_posting }, authority_level::owner );
-  FAIL( "open", { bob_active }, authority_level::owner );
-  FAIL( "open", { carol_owner }, authority_level::owner );
+  OK( "open", { single1_memo }, authority_level::owner );
+  OK( "open", { alice_posting }, authority_level::owner );
+  OK( "open", { bob_active }, authority_level::owner );
+  OK( "open", { carol_owner }, authority_level::owner );
 
   BOOST_TEST_MESSAGE( "Testing database_api::verify_account_authority on account with multisig authority" );
 
@@ -473,14 +476,15 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   // checks (if order was different, then it would reach threshold without one of own keys making
   // its use superfluous)
   OK( "multi", { multi1_posting, multi2_posting, alice_posting }, authority_level::posting );
-  // can't sign with memo, with unrelated account key, with too few or too many valid keys
+  // can't sign with memo, with unrelated account key, with too few
   // can't mix keys with different strength either
   FAIL( "multi", { multi1_memo }, authority_level::posting );
   FAIL( "multi", { single1_posting }, authority_level::posting );
   FAIL( "multi", { multi1_posting, multi2_posting }, authority_level::posting );
-  FAIL( "multi", { multi1_posting, alice_posting, bob_posting }, authority_level::posting );
   FAIL( "multi", {}, authority_level::posting );
   FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::posting );
+  //redundant keys are allowed
+  OK( "multi", { multi1_posting, alice_posting, bob_posting }, authority_level::posting );
   // NOTE: can't sign with active/owner of alice/bob/carol
   FAIL( "multi", { multi1_posting, bob_active }, authority_level::posting );
   FAIL( "multi", { multi1_active, bob_active }, authority_level::posting );
@@ -507,17 +511,18 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   // checks (if order was different, then it would reach threshold without one of own keys making
   // its use superfluous)
   OK( "multi", { multi1_active, multi2_active, alice_active }, authority_level::active );
-  // can't sign with posting/memo, with unrelated account key, with too few or too many valid keys
+  // can't sign with posting/memo, with unrelated account key, with too few
   // can't mix keys with different strength either
   FAIL( "multi", { multi1_memo }, authority_level::active );
   FAIL( "multi", { single1_active }, authority_level::active );
   FAIL( "multi", { multi1_active, multi2_active }, authority_level::active );
-  FAIL( "multi", { multi1_active, alice_active, bob_active }, authority_level::active );
   FAIL( "multi", {}, authority_level::active );
   FAIL( "multi", { multi1_posting, multi2_posting, multi3_posting }, authority_level::active );
   FAIL( "multi", { multi1_posting, alice_posting }, authority_level::active );
   FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::active );
   FAIL( "multi", { multi1_active, multi2_owner, multi3_active }, authority_level::active );
+  //redundant kays are allowed
+  OK( "multi", { multi1_active, alice_active, bob_active }, authority_level::active );
   // NOTE: can't sign with owner of alice/bob/carol
   FAIL( "multi", { multi1_active, bob_owner }, authority_level::active );
   FAIL( "multi", { multi1_owner, bob_owner }, authority_level::active );
@@ -535,18 +540,19 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   // checks (if order was different, then it would reach threshold without one of own keys making
   // its use superfluous)
   OK( "multi", { multi1_owner, multi2_owner, alice_active }, authority_level::owner );
-  // can't sign with posting/active/memo, with unrelated account key, with too few or too many
+  // can't sign with posting/active/memo, with unrelated account key, with too few
   // valid keys; can't mix keys with different strength either
   FAIL( "multi", { multi1_memo }, authority_level::owner );
   FAIL( "multi", { single1_active }, authority_level::owner );
   FAIL( "multi", { multi1_owner, multi2_owner }, authority_level::owner );
-  FAIL( "multi", { multi1_owner, alice_active, bob_active }, authority_level::owner );
   FAIL( "multi", {}, authority_level::owner );
   FAIL( "multi", { multi1_posting, multi2_posting, multi3_posting }, authority_level::owner );
   FAIL( "multi", { multi1_active, multi2_active, multi3_active }, authority_level::owner );
   FAIL( "multi", { multi1_owner, alice_posting }, authority_level::owner );
   FAIL( "multi", { multi1_posting, multi2_active, multi3_owner }, authority_level::owner );
   FAIL( "multi", { multi1_owner, multi2_active, multi3_owner }, authority_level::owner );
+  //redundant keys are allowed
+  OK( "multi", { multi1_owner, alice_active, bob_active }, authority_level::owner );
   // NOTE: can't sign with owner of alice/bob/carol
   FAIL( "multi", { multi1_owner, bob_owner }, authority_level::owner );
   FAIL( "multi", { alice_active, bob_owner }, authority_level::owner );
