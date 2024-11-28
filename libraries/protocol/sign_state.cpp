@@ -3,6 +3,13 @@
 
 namespace hive { namespace protocol {
 
+sign_state::sign_state( const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits )
+                        : get_current_authority( a ), limits( limits )
+{
+  extend_provided_signatures( sigs );
+  init_approved();
+}
+
 bool sign_state::signed_by( const public_key_type& k )
 {
   auto itr = provided_signatures.find(k);
@@ -112,14 +119,9 @@ void sign_state::extend_provided_signatures( const flat_set<public_key_type>& ke
     provided_signatures[ key ] = false;
 }
 
-sign_state::sign_state(
-  const flat_set<public_key_type>& sigs,
-  const authority_getter& a,
-  const sign_limits& limits
-  ) : get_current_authority(a), limits(limits)
+void sign_state::change_current_authority( const authority_getter& a )
 {
-  extend_provided_signatures( sigs );
-  init_approved();
+  get_current_authority = a;
 }
 
 } } // hive::protocol
