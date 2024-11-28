@@ -136,6 +136,13 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   set<public_key_type> result;
 
+  auto _find_keys = [&result, &available_keys]( const flat_map<public_key_type,bool>& provided_signatures )
+  {
+    for( auto& provided_sig : provided_signatures )
+      if( available_keys.find( provided_sig.first ) != available_keys.end() )
+        result.insert( provided_sig.first );
+  };
+
   /** Up to HF28 posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
     sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys,
@@ -152,9 +159,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
     s.remove_unused_signatures();
 
-    for( auto& provided_sig : s.provided_signatures )
-      if( available_keys.find( provided_sig.first ) != available_keys.end() )
-        result.insert( provided_sig.first );
+    _find_keys( s.get_provided_signatures() );
 
     if( !allow_mixed_authorities )
       return result;
@@ -173,9 +178,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   s.remove_unused_signatures();
 
-  for( auto& provided_sig : s.provided_signatures )
-    if( available_keys.find( provided_sig.first ) != available_keys.end() )
-      result.insert( provided_sig.first );
+  _find_keys( s.get_provided_signatures() );
 
   return result;
 }
