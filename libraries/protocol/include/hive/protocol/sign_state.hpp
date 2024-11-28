@@ -34,6 +34,7 @@ struct sign_state
 
   void clear_approved();
   void add_approved( const flat_set<account_name_type>& approvals );
+  const flat_map<public_key_type,bool>&  get_provided_signatures() const { return provided_signatures; }
 
   sign_state( const flat_set<public_key_type>& sigs,
           const authority_getter& a,
@@ -43,12 +44,11 @@ struct sign_state
   const authority_getter&          get_current_authority;
   const flat_set<public_key_type>& available_keys;
 
-  flat_map<public_key_type,bool>   provided_signatures;
-
   private:
 
-    const sign_limits limits;
-    flat_set<string> approved_by;
+    const sign_limits               limits;
+    flat_set<string>                approved_by;
+    flat_map<public_key_type,bool>  provided_signatures;
 
     bool check_authority_impl( const authority& au, uint32_t depth, uint32_t* account_auth_count );
 };
