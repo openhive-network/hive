@@ -42,7 +42,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
     }
 
     membership++;
-    if( max_membership > 0 && membership >= max_membership )
+    if( limits.membership > 0 && membership >= limits.membership )
     {
       return false;
     }
@@ -52,10 +52,10 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
   {
     if( approved_by.find(a.first) == approved_by.end() )
     {
-      if( depth == max_recursion )
+      if( depth == limits.recursion )
         continue;
 
-      if( max_account_auths > 0 && *account_auth_count >= max_account_auths )
+      if( limits.account_auths > 0 && *account_auth_count >= limits.account_auths )
       {
         return false;
       }
@@ -78,7 +78,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth, ui
     }
 
     membership++;
-    if( max_membership > 0 && membership >= max_membership )
+    if( limits.membership > 0 && membership >= limits.membership )
     {
       return false;
     }
@@ -101,8 +101,9 @@ bool sign_state::remove_unused_signatures()
 sign_state::sign_state(
   const flat_set<public_key_type>& sigs,
   const authority_getter& a,
-  const flat_set<public_key_type>& keys
-  ) : get_current_authority(a), available_keys(keys)
+  const flat_set<public_key_type>& keys,
+  const sign_limits& limits
+  ) : get_current_authority(a), available_keys(keys), limits(limits)
 {
   for( const auto& key : sigs )
     provided_signatures[ key ] = false;

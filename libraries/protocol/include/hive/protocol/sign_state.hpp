@@ -9,6 +9,13 @@ namespace hive { namespace protocol {
 typedef std::function<authority(const string&)> authority_getter;
 typedef std::function<public_key_type(const string&)> witness_public_key_getter;
 
+struct sign_limits
+{
+  uint32_t recursion = HIVE_MAX_SIG_CHECK_DEPTH;
+  uint32_t membership = ~0;
+  uint32_t account_auths = ~0;
+};
+
 struct sign_state
 {
   /** returns true if we have a signature for this key or can
@@ -27,18 +34,19 @@ struct sign_state
 
   sign_state( const flat_set<public_key_type>& sigs,
           const authority_getter& a,
-          const flat_set<public_key_type>& keys );
+          const flat_set<public_key_type>& keys,
+          const sign_limits& limits );
 
   const authority_getter&          get_current_authority;
   const flat_set<public_key_type>& available_keys;
 
   flat_map<public_key_type,bool>   provided_signatures;
   flat_set<string>                 approved_by;
-  uint32_t                         max_recursion = HIVE_MAX_SIG_CHECK_DEPTH;
-  uint32_t                         max_membership = ~0;
-  uint32_t                         max_account_auths = ~0;
 
   private:
+
+    const sign_limits limits;
+
     bool check_authority_impl( const authority& au, uint32_t depth, uint32_t* account_auth_count );
 };
 
