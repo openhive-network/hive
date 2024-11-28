@@ -7,13 +7,10 @@ bool sign_state::signed_by( const public_key_type& k )
 {
   auto itr = provided_signatures.find(k);
   if( itr == provided_signatures.end() )
-  {
-    auto pk = available_keys.find(k);
-    if( pk  != available_keys.end() )
-      return provided_signatures[k] = true;
     return false;
-  }
-  return itr->second = true;
+  else
+    itr->second = true;
+  return true;
 }
 
 bool sign_state::check_authority( const string& id )
@@ -98,9 +95,10 @@ bool sign_state::remove_unused_signatures()
   return remove_sigs.size() != 0;
 }
 
-void sign_state::clear_approved()
+void sign_state::init_approved()
 {
   approved_by.clear();
+  approved_by.insert( "temp" );
 }
 
 void sign_state::add_approved( const flat_set<account_name_type>& approvals )
@@ -108,17 +106,20 @@ void sign_state::add_approved( const flat_set<account_name_type>& approvals )
   std::copy( approvals.begin(), approvals.end(), std::inserter( approved_by, approved_by.end() ) );
 }
 
+void sign_state::extend_provided_signatures( const flat_set<public_key_type>& keys )
+{
+  for( const auto& key : keys )
+    provided_signatures[ key ] = false;
+}
+
 sign_state::sign_state(
   const flat_set<public_key_type>& sigs,
   const authority_getter& a,
-  const flat_set<public_key_type>& keys,
   const sign_limits& limits
-  ) : get_current_authority(a), available_keys(keys), limits(limits)
+  ) : get_current_authority(a), limits(limits)
 {
-  for( const auto& key : sigs )
-    provided_signatures[ key ] = false;
-
-  approved_by.insert( "temp"  );
+  extend_provided_signatures( sigs );
+  init_approved();
 }
 
 } } // hive::protocol

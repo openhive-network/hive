@@ -32,17 +32,16 @@ struct sign_state
 
   bool remove_unused_signatures();
 
-  void clear_approved();
+  void init_approved();
   void add_approved( const flat_set<account_name_type>& approvals );
+  void extend_provided_signatures( const flat_set<public_key_type>& keys );
   const flat_map<public_key_type,bool>&  get_provided_signatures() const { return provided_signatures; }
 
   sign_state( const flat_set<public_key_type>& sigs,
           const authority_getter& a,
-          const flat_set<public_key_type>& keys,
           const sign_limits& limits );
 
   const authority_getter&          get_current_authority;
-  const flat_set<public_key_type>& available_keys;
 
   private:
 
