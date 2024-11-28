@@ -16,10 +16,8 @@ struct sign_limits
   uint32_t account_auths = ~0;
 };
 
-struct sign_state
+class sign_state
 {
-  private:
-
     authority_getter                get_current_authority;
 
     const sign_limits               limits;
