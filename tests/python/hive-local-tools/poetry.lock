@@ -173,16 +173,16 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev270+b417818"
+version = "0.0.1.dev271+8b78881"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "beekeepy-0.0.1.dev270+b417818-py3-none-any.whl", hash = "sha256:c9d8f4be0f08f2504cebd452b58d24e2bd6a19978028da2680da42110a60b6bc"},
+    {file = "beekeepy-0.0.1.dev271+8b78881-py3-none-any.whl", hash = "sha256:ad0192bbb3b1dd9cc1f47a17589d592a46db46ea99799f357e8c05acf4cba684"},
 ]
 
 [package.dependencies]
-helpy = "0.0.1.dev270+b417818"
+helpy = "0.0.1.dev271+8b78881"
 
 [package.source]
 type = "legacy"
@@ -477,12 +477,12 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "helpy"
-version = "0.0.1.dev270+b417818"
+version = "0.0.1.dev271+8b78881"
 description = "Easily interact with the Hive blockchain using Python."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "helpy-0.0.1.dev270+b417818-py3-none-any.whl", hash = "sha256:03d30886338893202b8ac7385b7006c3ba6b021caebb7a34f439f399a333a698"},
+    {file = "helpy-0.0.1.dev271+8b78881-py3-none-any.whl", hash = "sha256:d2e66d1f4905801aab8e30557fb028ea0807279d0aa7790ed51e6661dcf448bf"},
 ]
 
 [package.dependencies]
@@ -492,7 +492,7 @@ loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 schemas = "0.0.1.dev320+f4fdcfe"
-wax = "0.3.10.dev227+a000255"
+wax = "0.3.10.dev250+817072f"
 
 [package.source]
 type = "legacy"
@@ -1592,7 +1592,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "0.0.1.dev270+b417818"
+beekeepy = "0.0.1.dev271+8b78881"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
@@ -1716,12 +1716,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev227+a000255"
+version = "0.3.10.dev250+817072f"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.3.10.dev227+a000255-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:33d35f07c91ae3916cd1ba3dc883c2f58a4eee33f2e5a04fe8139c61d1244b69"},
+    {file = "wax-0.3.10.dev250+817072f-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:0e21b370c630addf96c371b7234b6cd14ee8e196b15dbe9cff6796e8b41852a2"},
 ]
 
 [package.dependencies]
