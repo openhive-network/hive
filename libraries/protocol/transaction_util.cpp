@@ -73,8 +73,8 @@ FC_EXPAND_MACRO(                                        \
 
     flat_set<public_key_type> avail;
     sign_state s( sigs, get_posting, avail, { max_recursion_depth, max_membership, max_account_auths } );
-    for( auto& id : posting_approvals )
-      s.approved_by.insert( id );
+    s.add_approved( posting_approvals );
+
     for( const auto& id : required_authorities.required_posting )
     {
       if( strict_authority_level )
@@ -101,10 +101,8 @@ FC_EXPAND_MACRO(                                        \
 
   flat_set< public_key_type > avail;
   sign_state s( sigs, get_active, avail, { max_recursion_depth, max_membership, max_account_auths } );
-  for( auto& id : active_approvals )
-    s.approved_by.insert( id );
-  for( auto& id : owner_approvals )
-    s.approved_by.insert( id );
+  s.add_approved( active_approvals );
+  s.add_approved( owner_approvals );;
 
   for( const auto& auth : required_authorities.other )
   {

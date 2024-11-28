@@ -98,6 +98,16 @@ bool sign_state::remove_unused_signatures()
   return remove_sigs.size() != 0;
 }
 
+void sign_state::clear_approved()
+{
+  approved_by.clear();
+}
+
+void sign_state::add_approved( const flat_set<account_name_type>& approvals )
+{
+  std::copy( approvals.begin(), approvals.end(), std::inserter( approved_by, approved_by.end() ) );
+}
+
 sign_state::sign_state(
   const flat_set<public_key_type>& sigs,
   const authority_getter& a,
@@ -107,6 +117,7 @@ sign_state::sign_state(
 {
   for( const auto& key : sigs )
     provided_signatures[ key ] = false;
+
   approved_by.insert( "temp"  );
 }
 
