@@ -145,9 +145,10 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** Up to HF28 posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys,
+    sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,
                  { max_recursion_depth, max_membership, max_account_auths } );
 
+    s.extend_provided_signatures( available_keys );
     if( !allow_mixed_authorities )
     {
       FC_ASSERT( !required_owner.size() );
@@ -166,8 +167,10 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active, available_keys,
+  sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active,
                 { max_recursion_depth, max_membership, max_account_auths } );
+
+  s.extend_provided_signatures( available_keys );
 
   for( const auto& auth : other )
     s.check_authority( auth );

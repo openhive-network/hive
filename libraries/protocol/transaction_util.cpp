@@ -71,8 +71,7 @@ FC_EXPAND_MACRO(                                        \
         verify_authority_problem::mixed_with_posting, account_name_type() );
     }
 
-    flat_set<public_key_type> avail;
-    sign_state s( sigs, get_posting, avail, { max_recursion_depth, max_membership, max_account_auths } );
+    sign_state s( sigs, get_posting, { max_recursion_depth, max_membership, max_account_auths } );
     s.add_approved( posting_approvals );
 
     for( const auto& id : required_authorities.required_posting )
@@ -99,8 +98,7 @@ FC_EXPAND_MACRO(                                        \
     }
   }
 
-  flat_set< public_key_type > avail;
-  sign_state s( sigs, get_active, avail, { max_recursion_depth, max_membership, max_account_auths } );
+  sign_state s( sigs, get_active, { max_recursion_depth, max_membership, max_account_auths } );
   s.add_approved( active_approvals );
   s.add_approved( owner_approvals );;
 
