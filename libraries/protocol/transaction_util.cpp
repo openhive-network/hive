@@ -54,6 +54,8 @@ FC_EXPAND_MACRO(                                        \
   FC_MULTILINE_MACRO_END                                \
 )
 
+  sign_state s( sigs, get_posting, { max_recursion_depth, max_membership, max_account_auths } );
+
   if( not required_authorities.required_posting.empty() )
   {
     if( !allow_mixed_authorities )
@@ -71,7 +73,6 @@ FC_EXPAND_MACRO(                                        \
         verify_authority_problem::mixed_with_posting, account_name_type() );
     }
 
-    sign_state s( sigs, get_posting, { max_recursion_depth, max_membership, max_account_auths } );
     s.add_approved( posting_approvals );
 
     for( const auto& id : required_authorities.required_posting )
@@ -98,7 +99,9 @@ FC_EXPAND_MACRO(                                        \
     }
   }
 
-  sign_state s( sigs, get_active, { max_recursion_depth, max_membership, max_account_auths } );
+  s.change_current_authority( get_active );
+
+  s.init_approved();
   s.add_approved( active_approvals );
   s.add_approved( owner_approvals );;
 
