@@ -43,7 +43,10 @@ bool sign_state::check_authority( const authority& auth, uint32_t depth )
 bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
 {
   uint32_t total_weight = 0;
-  size_t membership = 0;
+
+  if( !allow_mixed_authorities )
+    membership = 0;
+
   for( const auto& k : auth.key_auths )
   {
     if( signed_by( k.first ) )
@@ -53,7 +56,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
         return true;
     }
 
-    membership++;
+    ++membership;
     if( limits.membership > 0 && membership >= limits.membership )
     {
       return false;
@@ -89,7 +92,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
         return true;
     }
 
-    membership++;
+    ++membership;
     if( limits.membership > 0 && membership >= limits.membership )
     {
       return false;
