@@ -32,12 +32,12 @@ bool sign_state::check_authority( const string& id )
   return check_authority_impl( get_current_authority(id), 0 );
 }
 
-bool sign_state::check_authority( const authority& auth, uint32_t depth )
+bool sign_state::check_authority( const authority& auth )
 {
   if( !allow_mixed_authorities )
     account_auth_count = 0;
 
-  return check_authority_impl( auth, depth );
+  return check_authority_impl( auth, 0 );
 }
 
 bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
