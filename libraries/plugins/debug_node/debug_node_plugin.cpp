@@ -28,16 +28,24 @@ class debug_generate_block_flow_control final : public hive::chain::generate_blo
 {
 public:
   using hive::chain::generate_block_flow_control::generate_block_flow_control;
+  debug_generate_block_flow_control( const fc::time_point_sec _block_ts, const protocol::account_name_type& _wo,
+    const fc::ecc::private_key& _key, uint32_t _skip, bool _print_stats )
+    : generate_block_flow_control( _block_ts, _wo, _key, _skip ), print_stats( _print_stats ) {}
   virtual ~debug_generate_block_flow_control() = default;
 
   virtual void on_worker_done( appbase::application& app ) const override
   {
-    stats.recalculate_times( get_block_timestamp() );
-    generate_block_flow_control::on_worker_done( app );
+    if( print_stats )
+    {
+      stats.recalculate_times( get_block_timestamp() );
+      generate_block_flow_control::on_worker_done( app );
+    }
   }
 
 private:
   virtual const char* buffer_type() const override { return "debug"; }
+
+  bool print_stats = true;
 };
 
 class debug_node_plugin_impl
@@ -354,7 +362,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
   }
   if( not debug_private_key.valid() and ( signing_keys == nullptr or signing_keys->empty() ) )
   {
-    if( logging ) elog( "Skipping generation because I don't know the private key" );
+    elog( "Skipping generation because I don't know the private key" );
     ret.blocks = 0;
     return;
   }
@@ -370,11 +378,6 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     const chain::witness_object& scheduled_witness = db.get_witness( scheduled_witness_name );
     chain::public_key_type scheduled_key = scheduled_witness.signing_key;
     witness::witness_plugin::t_signing_keys::const_iterator it;
-    if( logging )
-    {
-      wlog( "slot: ${sl}   time: ${t}   scheduled key is: ${sk}",
-        ("sk", scheduled_key)("sl", slot)("t", scheduled_time) );
-    }
     fc::ecc::private_key private_key;
     uint32_t skip = args.skip;
     if( scheduled_key == debug_public_key )
@@ -392,19 +395,34 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
     else
     {
-      if( logging ) wlog( "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
+      elog( "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
       break;
     }
 
     auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, private_key, skip);
+      scheduled_witness_name, private_key, skip, logging);
 
-    if( immediate_generation )
+    if( immediate_generation ) // use this mode when called from debug node API (it takes write lock) - also in most unit tests
     {
-      witness::block_producer bp( my->_chain_plugin );
-      bp.generate_block(generate_block_ctrl.get());
+      try
+      {
+        generate_block_ctrl->on_write_queue_pop( 0, 0, 0, 0 );
+        witness::block_producer bp( my->_chain_plugin );
+        bp.generate_block( generate_block_ctrl.get() );
+      }
+      catch( const fc::exception& e )
+      {
+        generate_block_ctrl->on_failure( e );
+      }
+      catch( ... )
+      {
+        generate_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+          "Unexpected exception while generating block." ), std::current_exception() ) );
+      }
+      generate_block_ctrl->on_worker_done( my->theApp );
+      generate_block_ctrl->rethrow_if_exception();
     }
-    else
+    else // use this mode when not under write lock (includes witness_tests in unit tests)
     {
       my->_chain_plugin.push_generate_block_request(generate_block_ctrl);
     }
