@@ -44,7 +44,7 @@ class sign_state
       *  Checks to see if we have signatures of the active authorites of
       *  the accounts specified in authority or the keys specified.
       */
-    bool check_authority( const authority& au, uint32_t depth = 0 );
+    bool check_authority( const authority& au );
 
     bool remove_unused_signatures();
 
