@@ -1329,6 +1329,383 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( verify_authority_limits )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [&is_hf28]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing limits in authorities verification" );
+
+      authority _empty_auth(  1/*threshold*/, executor->generate_private_key( "empty" ).get_public_key(), 1 );
+
+      BOOST_TEST_MESSAGE( "Creating set of keys" );
+      std::vector< public_key_type > _keys;
+      const size_t _nr_keys = 10;
+      for( size_t i = 0; i < _nr_keys; ++i )
+        _keys.emplace_back( executor->generate_private_key( std::to_string( i ) ).get_public_key() );
+
+      BOOST_TEST_MESSAGE( "Creating set of accounts" );
+      std::vector< std::string > _accs;
+      const size_t _nr_accs = 10;
+      for( size_t i = 0; i < _nr_accs; ++i )
+        _accs.emplace_back( std::to_string( i ) );
+
+      bool _strict_authority_level      = executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL );
+      bool _allow_mixed_authorities     = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES );
+      bool _allow_redundant_signatures  = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES );
+
+      {
+        uint32_t _hive_max_sig_check_depth       = 2;
+        uint32_t _hive_max_authority_membership  = 3;
+        uint32_t _hive_max_sig_check_accounts    = 4;
+
+        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+
+        required_authorities_type _required_authorities;
+        _required_authorities.required_posting.insert( "xyz" );
+
+        flat_set<public_key_type> _signatures;
+        _signatures.insert( _keys[0] );
+
+        BOOST_TEST_MESSAGE( "Failure. Posting authority: required 1 signature, all authorities are empty." );
+
+        HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+        ( _strict_authority_level, _allow_mixed_authorities, _allow_redundant_signatures,
+          _required_authorities, _signatures,
+          _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
+        ), tx_missing_posting_auth );
+      }
+      {
+        uint32_t _hive_max_sig_check_depth       = 10;
+        uint32_t _hive_max_authority_membership  = 3;
+        uint32_t _hive_max_sig_check_accounts    = 10;
+
+        authority _posting_auth;
+        _posting_auth.weight_threshold = _hive_max_authority_membership;
+
+        for( size_t i = 0; i < _hive_max_authority_membership - 1; ++i )
+          _posting_auth.add_authority( _keys[i], 1 );
+
+        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_posting = [&]( const std::string& name ) { return _posting_auth; };
+        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+
+        required_authorities_type _required_authorities;
+        _required_authorities.required_posting.insert( "xyz" );
+
+        flat_set<public_key_type> _signatures;
+        for( size_t i = 0; i < _hive_max_authority_membership; ++i )
+          _signatures.insert( _keys[i] );
+
+        BOOST_TEST_MESSAGE( "Failure. Posting authority: required 3 signatures, but only 2 keys are given." );
+
+        HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        ), tx_missing_posting_auth );
+
+        BOOST_TEST_MESSAGE( "Success. Posting authority: required 3 signatures and 3 keys are given." );
+        _posting_auth.add_authority( _keys[ _hive_max_authority_membership - 1 ], 1 );
+
+        hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        );
+
+        BOOST_TEST_MESSAGE( "Failure. Posting authority: required 3 signatures and 3 keys are given, but `_hive_max_authority_membership` == 2." );
+        _hive_max_authority_membership = 2;
+
+        HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        ), tx_missing_posting_auth );
+      }
+      {
+        uint32_t _hive_max_sig_check_depth       = 10;
+        uint32_t _hive_max_authority_membership  = 10;
+        uint32_t _hive_max_sig_check_accounts    = 3;
+
+        size_t _keys_iter = 0;
+
+        authority _posting_auth;
+        _posting_auth.weight_threshold = 3;
+        _posting_auth.add_authority( _keys[_keys_iter++], 1 );
+        _posting_auth.add_authority( "00", 2 );
+
+        authority _posting_auth_00;
+        _posting_auth_00.weight_threshold = 2;
+        _posting_auth_00.add_authority( _keys[_keys_iter++], 1 );
+        _posting_auth_00.add_authority( "01", 1 );
+
+        authority _posting_auth_01;
+        _posting_auth_01.weight_threshold = 1;
+        _posting_auth_01.add_authority( _keys[_keys_iter++], 1 );
+
+        std::map<std::string, authority> accs_auths;
+        accs_auths["start"] = _posting_auth;
+        accs_auths["00"] = _posting_auth_00;
+        accs_auths["01"] = _posting_auth_01;
+
+        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_posting = [&]( const std::string& name ) { return accs_auths[ name ]; };
+        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+
+        required_authorities_type _required_authorities;
+        _required_authorities.required_posting.insert( "start" );
+
+        flat_set<public_key_type> _signatures;
+        for( size_t i = 0; i < _hive_max_sig_check_accounts; ++i )
+          _signatures.insert( _keys[i] );
+
+        BOOST_TEST_MESSAGE( "Success. Posting authority: required 3 signatures and 3 keys are given. Every user on every level has exactly 1 key." );
+
+        hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        );
+
+        BOOST_TEST_MESSAGE( "Failure. Posting authority: required 3 signatures and 3 keys are given. Every user on every level has exactly 1 key, but `_hive_max_sig_check_accounts` == 2." );
+        _hive_max_sig_check_accounts = 2;
+        HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        ), tx_missing_posting_auth );
+
+        BOOST_TEST_MESSAGE( "Failure. Posting authority: required 3 signatures and 3 keys are given. Every user on every level has exactly 1 key, but `_hive_max_sig_check_depth` == 1." );
+        _hive_max_sig_check_accounts = 3;
+        _hive_max_sig_check_depth = 1;
+        HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+        (
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _hive_max_sig_check_depth,
+          _hive_max_authority_membership,
+          _hive_max_sig_check_accounts
+        ), tx_missing_posting_auth );
+      }
+      {
+        uint32_t _hive_max_sig_check_depth       = 10;
+        uint32_t _hive_max_authority_membership  = 2;
+        uint32_t _hive_max_sig_check_accounts    = 10;
+
+        authority _active_auth;
+        _active_auth.weight_threshold = 1;
+        _active_auth.add_authority( _keys[8], 1 );
+        _active_auth.add_authority( "00", 1 );
+
+        authority _owner_auth;
+        _owner_auth.weight_threshold = 1;
+        _owner_auth.add_authority( _keys[9], 1 );
+        _owner_auth.add_authority( "01", 1 );
+
+        size_t _keys_iter = 0;
+
+        authority _active_auth_00;
+        _active_auth_00.weight_threshold = 1;
+        _active_auth_00.add_authority( _keys[_keys_iter++], 1 );
+
+        authority _owner_auth_01;
+        _owner_auth_01.weight_threshold = 1;
+        _owner_auth_01.add_authority( _keys[_keys_iter++], 1 );
+
+        std::map<std::string, authority> _accs_auths_active;
+        _accs_auths_active["start"] = _active_auth;
+        _accs_auths_active["00"]    = _active_auth_00;
+        _accs_auths_active["01"]    = _owner_auth_01;
+
+        std::map<std::string, authority> _accs_auths_owner;
+        _accs_auths_owner["start"]  = _owner_auth;
+        _accs_auths_owner["01"]     = _owner_auth_01;
+
+        auto _get_active = [&]( const std::string& name ) { return _accs_auths_active[ name ]; };
+        auto _get_owner = [&]( const std::string& name ) { return _accs_auths_owner[ name ]; };
+        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+
+        required_authorities_type _required_authorities;
+        _required_authorities.required_active.insert( "start" );
+        _required_authorities.required_owner.insert( "start" );
+
+        flat_set<public_key_type> _signatures;
+        for( size_t i = 0; i < 2; ++i )
+          _signatures.insert( _keys[i] );
+
+        if( is_hf28 )
+        {
+          BOOST_TEST_MESSAGE( "Failure. In HF28 `membership` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_authority_membership == 2`.");
+          HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          ), tx_missing_owner_auth );
+        }
+        else
+        {
+          BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `membership` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
+          hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          );
+        }
+
+        _hive_max_sig_check_depth       = 10;
+        _hive_max_authority_membership  = 10;
+        _hive_max_sig_check_accounts    = 2;
+
+        if( is_hf28 )
+        {
+          BOOST_TEST_MESSAGE( "Failure. In HF28 `account_auth_count` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_sig_check_accounts == 2`.");
+          HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          ), tx_missing_owner_auth );
+        }
+        else
+        {
+          BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `account_auth_count` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
+          hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          );
+        }
+      }
+      {
+        uint32_t _hive_max_sig_check_depth       = 10;
+        uint32_t _hive_max_authority_membership  = 2;
+        uint32_t _hive_max_sig_check_accounts    = 10;
+
+        size_t _keys_iter = 0;
+
+        authority _active_auth;
+        _active_auth.weight_threshold = 1;
+        _active_auth.add_authority( _keys[8], 1 );
+        _active_auth.add_authority( _keys[_keys_iter++], 1 );
+
+        authority _owner_auth;
+        _owner_auth.weight_threshold = 1;
+        _owner_auth.add_authority( _keys[9], 1 );
+        _owner_auth.add_authority( _keys[_keys_iter++], 1 );
+
+        auto _get_active = [&]( const std::string& name ) { return _active_auth; };
+        auto _get_owner = [&]( const std::string& name ) { return _owner_auth; };
+        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
+        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+
+        required_authorities_type _required_authorities;
+        _required_authorities.required_active.insert( "start" );
+        _required_authorities.required_owner.insert( "start" );
+
+        flat_set<public_key_type> _signatures;
+        for( size_t i = 0; i < 2; ++i )
+          _signatures.insert( _keys[i] );
+
+        if( is_hf28 )
+        {
+          BOOST_TEST_MESSAGE( "Failure. In HF28 `membership` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_authority_membership == 2`.");
+          HIVE_REQUIRE_THROW( hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          ), tx_missing_owner_auth );
+        }
+        else
+        {
+          BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `membership` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
+          hive::protocol::verify_authority
+          (
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
+            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth,
+            _hive_max_authority_membership,
+            _hive_max_sig_check_accounts
+          );
+        }
+      }
+
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
