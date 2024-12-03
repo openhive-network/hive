@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/authority_verification_tracer.hpp>
 #include <hive/protocol/sign_state.hpp>
 #include <hive/protocol/exceptions.hpp>
 
@@ -75,6 +76,28 @@ void verify_authority(bool allow_strict_and_mixed_authorities,
                    owner_approvals,
                    posting_approvals);
 }
+
+class authority_getter_i {
+  public:
+  virtual std::optional<authority> get_active(const string&) const = 0;
+  virtual std::optional<authority> get_owner(const string&) const = 0;
+  virtual std::optional<authority> get_posting(const string&) const = 0;
+  virtual std::optional<public_key_type> get_witness_key(const string&) const = 0;
+};
+
+authority_verification_trace verify_authority_with_tracing(
+  bool allow_strict_and_mixed_authorities,
+  bool allow_redundant_signatures,
+  const required_authorities_type& required_authorities,
+  const flat_set<public_key_type>& sigs,
+  const authority_getter_i& authority_getters,
+  uint32_t max_recursion_depth = HIVE_MAX_SIG_CHECK_DEPTH,
+  uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
+  uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
+  bool allow_committe = false,
+  const flat_set<account_name_type>& active_approvals = flat_set<account_name_type>(),
+  const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
+  const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
 
 /**
  * Builds public keys paired with private keys generated through typical methods of deriving key from given string.

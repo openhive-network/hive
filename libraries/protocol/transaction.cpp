@@ -171,11 +171,11 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   s.clear_approved();
   for( const auto& auth : other )
-    s.check_authority( auth );
+    s.check_authority( auth, "?", "?" );
   for( auto& owner : required_owner )
-    s.check_authority( get_owner( owner ) );
+    s.check_authority( get_owner( owner ), owner, "owner" );
   for( auto& active : required_active )
-    s.check_authority( active  );
+    s.check_authority( active );
 
   s.remove_unused_signatures();
 
