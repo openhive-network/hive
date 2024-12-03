@@ -62,8 +62,11 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
-    BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes." );
+    tx.operations.clear();
+    op.orderid++;
+    tx.operations.push_back( op );
+    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
@@ -106,8 +109,11 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
-    BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes." );
+    tx.operations.clear();
+    op.orderid++;
+    tx.operations.push_back( op );
+    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
@@ -460,6 +466,10 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     tx.operations.push_back( c );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
+    tx.operations.clear();
+    c.orderid = 2;
+    tx.operations.push_back( c );
+    push_transaction( tx, alice_private_key );
 
     limit_order_cancel_operation op;
     op.owner = "alice";
@@ -477,12 +487,13 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
-    BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes" );
+    tx.operations.clear();
+    op.orderid = 2;
+    tx.operations.push_back( op );
+    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
@@ -1066,13 +1077,13 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     op.reward_tokens.push_back( ASSET( "0.000 TBD" ) );
     op.reward_tokens.push_back( ASSET( "20.000 TESTS" ) );
     op.reward_tokens.push_back( ASSET( "0.000000 VESTS" ) );
-    FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
+    FAIL_WITH_OP(op, alice_post_key, fc::assert_exception);
     op.reward_tokens.clear();
     // SMTs
     op.reward_tokens.push_back( asset( 0, smt1 ) );
     op.reward_tokens.push_back( asset( 0, smt2 ) );
     op.reward_tokens.push_back( asset( 20*std::pow(10, smt3.decimals()), smt3 ) );
-    FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
+    FAIL_WITH_OP(op, alice_post_key, fc::assert_exception);
     op.reward_tokens.clear();
 
     BOOST_TEST_MESSAGE( "--- Claiming a partial reward balance" );
@@ -1081,7 +1092,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     op.reward_tokens.push_back( ASSET( "0.000 TBD" ) );
     op.reward_tokens.push_back( ASSET( "0.000 TESTS" ) );
     op.reward_tokens.push_back( partial_vests );
-    PUSH_OP(op, alice_private_key);
+    PUSH_OP(op, alice_post_key);
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + ASSET( "0.000 TESTS" ) );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + ASSET( "0.000 TBD" ) );
@@ -1097,7 +1108,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     op.reward_tokens.push_back( asset( 0, smt1 ) );
     op.reward_tokens.push_back( partial_smt2 );
     op.reward_tokens.push_back( asset( 0, smt3 ) );
-    PUSH_OP(op, alice_private_key);
+    PUSH_OP(op, alice_post_key);
     BOOST_REQUIRE( db->get_balance( "alice", smt1 ) == alice_smt1 + asset( 0, smt1 ) );
     BOOST_REQUIRE( db->get_balance( "alice", smt2 ) == alice_smt2 + partial_smt2 );
     BOOST_REQUIRE( db->get_balance( "alice", smt3 ) == alice_smt3 + asset( 0, smt3 ) );
@@ -1112,7 +1123,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     op.reward_tokens.push_back( full_hbd );
     op.reward_tokens.push_back( full_hive );
     op.reward_tokens.push_back( partial_vests );
-    PUSH_OP(op, alice_private_key);
+    PUSH_OP(op, alice_post_key);
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + full_hive );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + full_hbd );
@@ -1128,7 +1139,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     op.reward_tokens.push_back( full_smt1 );
     op.reward_tokens.push_back( partial_smt2 );
     op.reward_tokens.push_back( full_smt3 );
-    PUSH_OP(op, alice_private_key);
+    PUSH_OP(op, alice_post_key);
     BOOST_REQUIRE( db->get_balance( "alice", smt1 ) == alice_smt1 + full_smt1 );
     BOOST_REQUIRE( db->get_balance( "alice", smt2 ) == alice_smt2 + partial_smt2 );
     BOOST_REQUIRE( db->get_balance( "alice", smt3 ) == alice_smt3 + full_smt3 );
