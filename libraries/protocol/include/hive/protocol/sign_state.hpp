@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/authority_verification_tracer.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/sign_state_types.hpp>
 #include <hive/protocol/types.hpp>
@@ -15,6 +16,7 @@ struct sign_limits
   uint32_t account_auths = ~0;
 };
 
+template <bool IS_TRACED=false>
 class sign_state
 {
     size_t account_auth_count       = 0;
@@ -24,6 +26,7 @@ class sign_state
     const sign_limits               limits;
     flat_set<string>                approved_by;
     flat_map<public_key_type,bool>  provided_signatures;
+    authority_verification_tracer*  tracer = nullptr;
 
     bool check_authority_impl( const authority& auth, uint32_t depth )
     {
@@ -43,6 +46,11 @@ class sign_state
       {
         if( signed_by( k.first ) )
         {
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth);
+          }
+
           total_weight += k.second;
           if( total_weight >= auth.weight_threshold )
             return true;
@@ -52,26 +60,70 @@ class sign_state
           return false;
       }
 
+      if constexpr (IS_TRACED) {
+        FC_ASSERT(tracer);
+        tracer->on_missing_matching_key();
+      }
+
       for( const auto& a : auth.account_auths )
       {
         if( approved_by.find(a.first) == approved_by.end() )
         {
           if( depth == limits.recursion )
+          {
+            if constexpr (IS_TRACED) {
+              FC_ASSERT(tracer);
+              tracer->on_recursion_depth_limit_exceeded();
+            }
+
             continue;
+          }
 
           if( limits.account_auths > 0 && account_auth_count >= limits.account_auths )
           {
+            if constexpr (IS_TRACED) {
+              FC_ASSERT(tracer);
+              tracer->on_account_processing_limit_exceeded();
+            }
+
             return false;
           }
 
           ++account_auth_count;
 
-          if( check_authority_impl( get_current_authority( a.first ), depth + 1 ) )
+          authority account_auth;
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            try
+            {
+              account_auth = get_current_authority( a.first );
+            } catch( const std::runtime_error& e )
+            {
+              // TODO: Call on_unknown_account_entry here
+              continue;
+            }           
+
+            tracer->on_entering_account_entry( a.first, a.second, auth.weight_threshold, depth );
+          }
+          else
+            account_auth = get_current_authority( a.first );
+
+          if( check_authority_impl( account_auth, depth + 1 ) )
           {
             approved_by.insert( a.first );
             total_weight += a.second;
             if( total_weight >= auth.weight_threshold )
+            {
+              if constexpr (IS_TRACED) {
+                FC_ASSERT(tracer);
+                tracer->on_leaving_account_entry( true );
+              }
               return true;
+            }
+          }
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()) );
           }
         }
         else
@@ -89,8 +141,11 @@ class sign_state
 
   public:
 
-    sign_state( const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits )
-      : get_current_authority( a ), limits( limits )
+    sign_state( const flat_set<public_key_type>& sigs,
+      const authority_getter& a,
+      const sign_limits& limits,
+      authority_verification_tracer* the_tracer = nullptr )
+      : get_current_authority( a ), limits( limits ), tracer(the_tracer)
     {
       extend_provided_signatures( sigs );
       init_approved();
@@ -111,6 +166,24 @@ class sign_state
 
     bool check_authority( const string& id )
     {
+      authority initial_auth;
+      if constexpr (IS_TRACED) {
+        FC_ASSERT(tracer);
+        try
+        {
+          initial_auth = get_current_authority( id );
+        } catch( const std::runtime_error& e )
+        {
+          // TODO: Call on_unknown_account_entry here
+          return false;
+        }           
+
+        tracer->on_root_authority_start(id, initial_auth.weight_threshold, 0);
+      }
+      else
+        initial_auth = get_current_authority( id );
+
+      // TODO Determine whether any trace of approved_by is needed.
       if( approved_by.find(id) != approved_by.end() ) return true;
 
       if( limits.allow_strict_and_mixed_authorities )
@@ -118,19 +191,41 @@ class sign_state
       else
         account_auth_count = 1;
 
-      return check_authority_impl( get_current_authority(id), 0 );
+      bool success = check_authority_impl( initial_auth, 0 );
+
+      if constexpr (IS_TRACED) {
+          FC_ASSERT(tracer);
+          // TODO: Provide appropriate set of flags.
+          tracer->on_root_authority_finish(0);
+      }
+
+      return success;
     }
 
     /**
       *  Checks to see if we have signatures of the active authorites of
       *  the accounts specified in authority or the keys specified.
       */
-    bool check_authority( const authority& auth )
+    bool check_authority( const authority& auth, const string& id, const string& role )
     {
+      if constexpr (IS_TRACED) {
+          FC_ASSERT(tracer);
+          tracer->set_role(role);
+          tracer->on_root_authority_start(id, auth.weight_threshold, 0);
+      }
+
       if( !limits.allow_strict_and_mixed_authorities )
         account_auth_count = 0;
 
-      return check_authority_impl( auth, 0 );
+      bool success = check_authority_impl( auth, 0 );
+
+      if constexpr (IS_TRACED) {
+          FC_ASSERT(tracer);
+          // TODO: Provide appropriate set of flags.
+          tracer->on_root_authority_finish(0);
+      }
+
+      return success;
     }
 
     bool remove_unused_signatures()
