@@ -20,7 +20,7 @@ class sign_state
 {
     bool allow_mixed_authorities    = false;
     size_t account_auth_count       = 0;
-    size_t membership               = 0;
+    size_t total_membership         = 0;
 
     authority_getter                get_current_authority;
 
