@@ -44,8 +44,24 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
 {
   uint32_t total_weight = 0;
 
-  if( !allow_mixed_authorities )
-    membership = 0;
+  size_t membership = 0;
+
+  auto _increase_membership = [&membership, this]()
+  {
+    if( allow_mixed_authorities )
+    {
+      ++total_membership;
+      if( limits.membership > 0 && total_membership >= limits.membership )
+        return false;
+    }
+    else
+    {
+      ++membership;
+      if( limits.membership > 0 && membership >= limits.membership )
+        return false;
+    }
+    return true;
+  };
 
   for( const auto& k : auth.key_auths )
   {
@@ -56,11 +72,8 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
         return true;
     }
 
-    ++membership;
-    if( limits.membership > 0 && membership >= limits.membership )
-    {
+    if( !_increase_membership() )
       return false;
-    }
   }
 
   for( const auto& a : auth.account_auths )
@@ -92,11 +105,8 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
         return true;
     }
 
-    ++membership;
-    if( limits.membership > 0 && membership >= limits.membership )
-    {
+    if( !_increase_membership() )
       return false;
-    }
   }
   return total_weight >= auth.weight_threshold;
 }
