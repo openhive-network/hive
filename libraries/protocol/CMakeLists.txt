@@ -30,7 +30,8 @@ generate_get_config(
 
 #############
 
-SET( SOURCES testnet_blockchain_configuration.cpp
+SET( SOURCES authority_verification_tracer.cpp
+   testnet_blockchain_configuration.cpp
    smt_operations.cpp
    hive_operations.cpp
    hive_custom_operations.cpp
