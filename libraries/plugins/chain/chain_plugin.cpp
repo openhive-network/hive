@@ -475,6 +475,7 @@ void chain_plugin_impl::start_write_processing()
 
       const int64_t time_fragments = nr_seconds * 2;
 
+      theApp.notify_status( "syncing" );
       bool is_syncing = is_p2p_enabled;
       if( !is_syncing )
       {
@@ -509,7 +510,6 @@ void chain_plugin_impl::start_write_processing()
       fc::time_point last_msg_time = last_popped_item_time;
       fc::time_point wait_start_time = last_popped_item_time;
 
-      theApp.notify_status("syncing");
       while (true)
       {
         // print a message if we haven't gotten any new data in a while
@@ -598,6 +598,16 @@ void chain_plugin_impl::start_write_processing()
               ilog("Stopped ${mode} on user request. Last applied block number: ${n}.",
                 ("n", last_block_number)("mode", is_syncing ? "syncing" : is_p2p_enabled ? "live mode" : "API mode" ));
               stop_at_block_interrupt_request = true;
+              if( exit_at_block == 0 && is_p2p_enabled )
+              {
+                if( is_syncing )
+                {
+                  is_syncing = false;
+                  db.notify_end_of_syncing();
+                }
+                theApp.notify_status( "entering API mode" );
+                wlog( "entering API mode" );
+              }
             }
 
             if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
