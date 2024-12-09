@@ -114,8 +114,7 @@ flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id
 
 
 set<public_key_type> signed_transaction::get_required_signatures(
-  bool strict_authority_level,
-  bool allow_mixed_authorities,
+  bool allow_strict_and_mixed_authorities,
   bool allow_redundant_signatures,
   const chain_id_type& chain_id,
   const flat_set<public_key_type>& available_keys,
@@ -143,14 +142,14 @@ set<public_key_type> signed_transaction::get_required_signatures(
         result.insert( provided_sig.first );
   };
 
-  sign_state s( allow_mixed_authorities, get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,
+  sign_state s( allow_strict_and_mixed_authorities, get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,
                  { max_recursion_depth, max_membership, max_account_auths } );
 
   s.extend_provided_signatures( available_keys );
 
   /** Up to HF28 posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    if( !allow_mixed_authorities )
+    if( !allow_strict_and_mixed_authorities )
     {
       FC_ASSERT( !required_owner.size() );
       FC_ASSERT( !required_active.size() );
@@ -159,7 +158,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
     for( auto& posting : required_posting )
       s.check_authority( posting  );
 
-    if( !allow_mixed_authorities )
+    if( !allow_strict_and_mixed_authorities )
     {
       s.remove_unused_signatures();
 
@@ -185,8 +184,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 }
 
 set<public_key_type> signed_transaction::minimize_required_signatures(
-  bool strict_authority_level,
-  bool allow_mixed_authorities,
+  bool allow_strict_and_mixed_authorities,
   const chain_id_type& chain_id,
   const flat_set< public_key_type >& available_keys,
   const authority_getter& get_active,
@@ -200,7 +198,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
 {
   //Don't allow redundant authorities. A transaction should be as small as possible.
   const bool _allow_redundant_authorities = false;
-  set< public_key_type > s = get_required_signatures( strict_authority_level, allow_mixed_authorities, _allow_redundant_authorities, chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
+  set< public_key_type > s = get_required_signatures( allow_strict_and_mixed_authorities, _allow_redundant_authorities, chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
@@ -209,8 +207,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
     try
     {
       hive::protocol::verify_authority(
-        strict_authority_level,
-        allow_mixed_authorities,
+        allow_strict_and_mixed_authorities,
         _allow_redundant_authorities,
         operations,
         result,
@@ -236,8 +233,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   return set<public_key_type>( result.begin(), result.end() );
 }
 
-void signed_transaction::verify_authority(bool strict_authority_level,
-                                          bool allow_mixed_authorities,
+void signed_transaction::verify_authority(bool allow_strict_and_mixed_authorities,
                                           bool allow_redundant_signatures,
                                           const chain_id_type& chain_id,
                                           const authority_getter& get_active,
@@ -249,8 +245,7 @@ void signed_transaction::verify_authority(bool strict_authority_level,
                                           uint32_t max_membership,
                                           uint32_t max_account_auths) const
 { try {
-  hive::protocol::verify_authority(strict_authority_level,
-                                   allow_mixed_authorities,
+  hive::protocol::verify_authority(allow_strict_and_mixed_authorities,
                                    allow_redundant_signatures,
                                    operations,
                                    get_signature_keys(chain_id, pack),

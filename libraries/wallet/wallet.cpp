@@ -564,13 +564,10 @@ public:
 
       protocol::hardfork_version _result = _remote_wallet_bridge_api->get_hardfork_version({}, LOCK);
 
-      const bool _hf28 = _result.minor_v() >= 28;
-      bool _strict_authority_level = _hf28;
-      bool _mixed_authorities = _hf28;
+      bool _allow_strict_and_mixed_authorities = _result.minor_v() >= 28;
       
       auto minimal_signing_keys = signature_source.minimize_required_signatures(
-        _strict_authority_level,
-        _mixed_authorities,
+        _allow_strict_and_mixed_authorities,
         _hive_chain_id,
         available_keys,
         [&]( const string& account_name ) { return collector.get_account( account_name ).active; },
