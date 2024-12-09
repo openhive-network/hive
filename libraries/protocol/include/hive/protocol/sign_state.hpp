@@ -11,6 +11,7 @@ typedef std::function<public_key_type(const string&)> witness_public_key_getter;
 
 struct sign_limits
 {
+  bool allow_strict_and_mixed_authorities = false;
   uint32_t recursion = HIVE_MAX_SIG_CHECK_DEPTH;
   uint32_t membership = ~0;
   uint32_t account_auths = ~0;
@@ -18,7 +19,6 @@ struct sign_limits
 
 class sign_state
 {
-    bool allow_mixed_authorities    = false;
     size_t account_auth_count       = 0;
     size_t total_membership         = 0;
 
@@ -32,7 +32,7 @@ class sign_state
 
   public:
 
-    sign_state( bool allow_mixed_authorities, const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits );
+    sign_state( const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits );
 
     /** returns true if we have a signature for this key or can
       * produce a signature for this key, else returns false.

@@ -3,8 +3,8 @@
 
 namespace hive { namespace protocol {
 
-sign_state::sign_state( bool allow_mixed_authorities, const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits )
-                        : allow_mixed_authorities( allow_mixed_authorities ), get_current_authority( a ), limits( limits )
+sign_state::sign_state( const flat_set<public_key_type>& sigs, const authority_getter& a, const sign_limits& limits )
+                        : get_current_authority( a ), limits( limits )
 {
   extend_provided_signatures( sigs );
   init_approved();
@@ -24,7 +24,7 @@ bool sign_state::check_authority( const string& id )
 {
   if( approved_by.find(id) != approved_by.end() ) return true;
 
-  if( allow_mixed_authorities )
+  if( limits.allow_strict_and_mixed_authorities )
     ++account_auth_count;
   else
     account_auth_count = 1;
@@ -34,7 +34,7 @@ bool sign_state::check_authority( const string& id )
 
 bool sign_state::check_authority( const authority& auth )
 {
-  if( !allow_mixed_authorities )
+  if( !limits.allow_strict_and_mixed_authorities )
     account_auth_count = 0;
 
   return check_authority_impl( auth, 0 );
@@ -48,7 +48,7 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
 
   auto _increase_membership = [&membership, this]()
   {
-    if( allow_mixed_authorities )
+    if( limits.allow_strict_and_mixed_authorities )
     {
       ++total_membership;
       if( limits.membership > 0 && total_membership >= limits.membership )

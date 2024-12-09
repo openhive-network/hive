@@ -142,8 +142,8 @@ set<public_key_type> signed_transaction::get_required_signatures(
         result.insert( provided_sig.first );
   };
 
-  sign_state s( allow_strict_and_mixed_authorities, get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,
-                 { max_recursion_depth, max_membership, max_account_auths } );
+  sign_state s( get_signature_keys( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,
+                 { allow_strict_and_mixed_authorities, max_recursion_depth, max_membership, max_account_auths } );
 
   s.extend_provided_signatures( available_keys );
 
