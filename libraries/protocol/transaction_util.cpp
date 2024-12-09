@@ -53,7 +53,7 @@ FC_EXPAND_MACRO(                                        \
   FC_MULTILINE_MACRO_END                                \
 )
 
-  sign_state s( allow_strict_and_mixed_authorities, sigs, get_posting, { max_recursion_depth, max_membership, max_account_auths } );
+  sign_state s( sigs, get_posting, { allow_strict_and_mixed_authorities, max_recursion_depth, max_membership, max_account_auths } );
 
   if( not required_authorities.required_posting.empty() )
   {
