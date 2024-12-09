@@ -356,7 +356,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     FC_ASSERT( debug_private_key.valid() );
     debug_public_key = debug_private_key->get_public_key();
   }
-  else if( my->_witness_plugin_ptr )
+  if( my->_witness_plugin_ptr )
   {
     signing_keys = &my->_witness_plugin_ptr->get_signing_keys();
   }
