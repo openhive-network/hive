@@ -16,7 +16,6 @@ def test_debug_generate_blocks(node: tt.InitNode) -> None:
         count=blocks_to_generate,
         skip=0,
         miss_blocks=0,
-        edit_if_needed=True,
     )
     head_block_number_after_generation_of_blocks = node.api.condenser.get_dynamic_global_properties().head_block_number
     assert (

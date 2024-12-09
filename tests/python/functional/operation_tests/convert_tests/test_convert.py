@@ -32,7 +32,6 @@ def test_convert_hbd_to_hive(
         count=2,
         skip=0,
         miss_blocks=0,
-        edit_if_needed=True,
     )
     transaction = alice.convert_hbd(tt.Asset.Tbd(50))
     alice.check_if_current_rc_mana_was_reduced(transaction)
@@ -75,7 +74,6 @@ def test_convert_hbd_to_hive_during_few_days(
         count=2,
         skip=0,
         miss_blocks=0,
-        edit_if_needed=True,
     )
 
     for iterations, blocks_to_generate in zip(range(10), (400, 400, 400, 480, 200, 200, 400, 400, 680)):
@@ -109,7 +107,6 @@ def test_convert_hive_to_hbd(
         count=2,
         skip=0,
         miss_blocks=0,
-        edit_if_needed=True,
     )
     transaction = alice.convert_hives(tt.Asset.Test(200))
 
@@ -148,7 +145,6 @@ def test_convert_hive_to_hbd_during_few_days(
         count=2,
         skip=0,
         miss_blocks=0,
-        edit_if_needed=True,
     )
 
     for iteration, blocks_to_generate in zip(range(9), (400, 400, 400, 480, 200, 200, 400, 400, 680)):
@@ -164,7 +160,6 @@ def test_convert_hive_to_hbd_during_few_days(
                 count=2,
                 skip=0,
                 miss_blocks=0,
-                edit_if_needed=True,
             )
             alice.assert_collateralized_convert_immediate_conversion_operation(
                 expected_amount=len(convert_transactions)
@@ -220,7 +215,7 @@ def test_convert_hive_into_hbd_with_changing_median_current_price_during_convers
     publish_feeds(node, wallet, initial_feed_base_value, 1000)
 
     node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account("initminer").private_key, count=200, skip=0, miss_blocks=0, edit_if_needed=True
+        debug_key=tt.Account("initminer").private_key, count=200, skip=0, miss_blocks=0
     )
     transaction = alice.convert_hives(tt.Asset.Test(200))
     alice.check_if_current_rc_mana_was_reduced(transaction)
@@ -281,7 +276,6 @@ def test_minimal_feed_price_greater_than_median_feed_price(
                 count=2,
                 skip=0,
                 miss_blocks=0,
-                edit_if_needed=True,
             )
             alice.assert_collateralized_convert_immediate_conversion_operation(
                 expected_amount=len(convert_transactions)
@@ -328,7 +322,6 @@ def test_median_feed_price_greater_than_minimal_feed_price(
                 count=2,
                 skip=0,
                 miss_blocks=0,
-                edit_if_needed=True,
             )
             alice.assert_collateralized_convert_immediate_conversion_operation(
                 expected_amount=len(convert_transactions)

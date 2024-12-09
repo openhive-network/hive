@@ -379,7 +379,6 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     chain::public_key_type scheduled_key = scheduled_witness.signing_key;
     witness::witness_plugin::t_signing_keys::const_iterator it;
     fc::ecc::private_key private_key;
-    uint32_t skip = args.skip;
     if( scheduled_key == debug_public_key )
     {
       private_key = *debug_private_key;
@@ -388,11 +387,6 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     {
       private_key = it->second;
     }
-    else if( args.edit_if_needed )
-    {
-      if( logging ) wlog( "Missing key for witness ${w}, skipping witness signature.", ("w", scheduled_witness_name) );
-      skip |= hive::chain::database::skip_witness_signature;
-    }
     else
     {
       elog( "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
@@ -400,7 +394,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
 
     auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, private_key, skip, logging);
+      scheduled_witness_name, private_key, args.skip, logging);
 
     if( immediate_generation ) // use this mode when called from debug node API (it takes write lock) - also in most unit tests
     {

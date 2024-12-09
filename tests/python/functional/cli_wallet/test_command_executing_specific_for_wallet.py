@@ -151,7 +151,7 @@ def test_set_transaction_expiration() -> None:
     node.run()
     node.wait_for_block_with_number(3)
     node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account("initminer").private_key, count=20, skip=0, miss_blocks=0, edit_if_needed=True
+        debug_key=tt.Account("initminer").private_key, count=20, skip=0, miss_blocks=0
     )
 
     response = node.api.block.get_block(block_num=23)["block"]
