@@ -464,8 +464,6 @@ void chain_plugin_impl::start_write_processing()
       finish.status = false;
 
       uint32_t last_block_number = 0;
-      theApp.notify_status("syncing");
-      ilog("Write processing thread started.");
       fc::set_thread_name("write_queue");
       fc::thread::current().set_name("write_queue");
       cumulative_times_last_reported_time = fc::time_point::now();
@@ -476,6 +474,7 @@ void chain_plugin_impl::start_write_processing()
       const int64_t time_fragments = nr_seconds * 2;
 
       theApp.notify_status( "syncing" );
+      ilog( "Write processing thread started." );
       bool is_syncing = is_p2p_enabled;
       if( !is_syncing )
       {
