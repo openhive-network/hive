@@ -1521,8 +1521,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       required_authorities.required_active.insert( "initminer" );
 
       hive::protocol::verify_authority(
-        db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
         required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
       ++counter;
@@ -1551,8 +1550,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       required_authorities.required_active.insert( "initminer" );
 
       hive::protocol::verify_authority(
-        db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
         required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
       counter = 0;
@@ -1581,8 +1579,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       required_authorities.required_active.insert( "initminer" );
 
       hive::protocol::verify_authority(
-        db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+        db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
         required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
       counter = 0;
@@ -1609,8 +1606,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     required_authorities.required_active.insert( "initminer" );
 
     bool ok = hive::protocol::has_authorization(
-      db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
     if( ok )
@@ -1635,8 +1631,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     required_authorities.required_active.insert( "initminer" );
 
     bool ok = hive::protocol::has_authorization(
-      db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
     if( ok )
@@ -1661,8 +1656,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     required_authorities.required_active.insert( "initminer" );
 
     bool ok = hive::protocol::has_authorization(
-      db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
     if( ok )
@@ -1764,8 +1758,7 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
   auto has_authorization = [&]( const public_key_type& key )
   {
     if( hive::protocol::has_authorization(
-      db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       required_authorities, { key }, get_active, get_owner, get_posting, get_witness_key ) )
       return "true";

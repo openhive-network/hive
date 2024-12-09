@@ -26,8 +26,7 @@ required_authorities_type get_required_authorities(const vector<AuthContainerTyp
   return result;
 } FC_CAPTURE_AND_RETHROW((auth_containers)) }
 
-void verify_authority(bool strict_authority_level,
-                      bool allow_mixed_authorities,
+void verify_authority(bool allow_strict_and_mixed_authorities,
                       bool allow_redundant_signatures,
                       const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
@@ -43,8 +42,7 @@ void verify_authority(bool strict_authority_level,
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
 
-bool has_authorization( bool strict_authority_level,
-                        bool allow_mixed_authorities,
+bool has_authorization( bool allow_strict_and_mixed_authorities,
                         bool allow_redundant_signatures,
                         const required_authorities_type& required_authorities,
                         const flat_set<public_key_type>& sigs,
@@ -54,8 +52,7 @@ bool has_authorization( bool strict_authority_level,
                         const witness_public_key_getter& get_witness_key );
 
 template< typename AuthContainerType >
-void verify_authority(bool strict_authority_level,
-                      bool allow_mixed_authorities,
+void verify_authority(bool allow_strict_and_mixed_authorities,
                       bool allow_redundant_signatures,
                       const vector<AuthContainerType>& auth_containers, 
                       const flat_set<public_key_type>& sigs,
@@ -71,8 +68,7 @@ void verify_authority(bool strict_authority_level,
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>())
 { 
-  verify_authority(strict_authority_level,
-                   allow_mixed_authorities,
+  verify_authority(allow_strict_and_mixed_authorities,
                    allow_redundant_signatures,
                    get_required_authorities(auth_containers),
                    sigs,

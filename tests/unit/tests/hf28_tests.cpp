@@ -1353,9 +1353,8 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
       for( size_t i = 0; i < _nr_accs; ++i )
         _accs.emplace_back( std::to_string( i ) );
 
-      bool _strict_authority_level      = executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL );
-      bool _allow_mixed_authorities     = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES );
-      bool _allow_redundant_signatures  = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES );
+      bool _allow_strict_and_mixed_authorities  = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
+      bool _allow_redundant_signatures          = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES );
 
       {
         uint32_t _hive_max_sig_check_depth       = 2;
@@ -1376,7 +1375,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         BOOST_TEST_MESSAGE( "Failure. Posting authority: required 1 signature, all authorities are empty." );
 
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
-        ( _strict_authority_level, _allow_mixed_authorities, _allow_redundant_signatures,
+        ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
           _required_authorities, _signatures,
           _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
@@ -1409,8 +1408,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
 
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1423,8 +1421,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
 
         hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1437,8 +1434,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
 
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1488,8 +1484,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
 
         hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1501,8 +1496,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         _hive_max_sig_check_accounts = 2;
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1515,8 +1509,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         _hive_max_sig_check_depth = 1;
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
         (
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+          executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
           _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
           _hive_max_sig_check_depth,
@@ -1576,8 +1569,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Failure. In HF28 `membership` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_authority_membership == 2`.");
           HIVE_REQUIRE_THROW( hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,
@@ -1590,8 +1582,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `membership` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
           hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,
@@ -1609,8 +1600,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Failure. In HF28 `account_auth_count` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_sig_check_accounts == 2`.");
           HIVE_REQUIRE_THROW( hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,
@@ -1623,8 +1613,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `account_auth_count` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
           hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,
@@ -1668,8 +1657,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Failure. In HF28 `membership` variable is held in a class like a member. Calling `check_authority` doesn't reset a counter. The limit is reached too early, because `_hive_max_authority_membership == 2`.");
           HIVE_REQUIRE_THROW( hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,
@@ -1682,8 +1670,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           BOOST_TEST_MESSAGE( "Success. In HF27 incrementing of `membership` is reset when every `check_authority` is called. Such situation occurs twice for `active`/`owner` authorities calculation.");
           hive::protocol::verify_authority
           (
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_STRICT_AUTHORITY_LEVEL ),
-            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_MIXED_AUTHORITIES ),
+            executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
             _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
             _hive_max_sig_check_depth,

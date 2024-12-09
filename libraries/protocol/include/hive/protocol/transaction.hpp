@@ -61,8 +61,7 @@ namespace hive { namespace protocol {
     //signature_type sign( const private_key_type& key, const chain_id_type& chain_id )const;
 
     set<public_key_type> get_required_signatures(
-      bool strict_authority_level,
-      bool allow_mixed_authorities,
+      bool allow_strict_and_mixed_authorities,
       bool allow_redundant_signatures,
       const chain_id_type& chain_id,
       const flat_set<public_key_type>& available_keys,
@@ -76,8 +75,7 @@ namespace hive { namespace protocol {
       )const;
 
     void verify_authority(
-      bool strict_authority_level,
-      bool allow_mixed_authorities,
+      bool allow_strict_and_mixed_authorities,
       bool allow_redundant_signatures,
       const chain_id_type& chain_id,
       const authority_getter& get_active,
@@ -91,8 +89,7 @@ namespace hive { namespace protocol {
       )const;
 
     set<public_key_type> minimize_required_signatures(
-      bool strict_authority_level,
-      bool allow_mixed_authorities,
+      bool allow_strict_and_mixed_authorities,
       const chain_id_type& chain_id,
       const flat_set<public_key_type>& available_keys,
       const authority_getter& get_active,
