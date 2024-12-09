@@ -33,7 +33,6 @@ struct debug_generate_blocks_args
   uint32_t                                  count = 0;
   uint32_t                                  skip = hive::chain::database::skip_nothing;
   uint32_t                                  miss_blocks = 0;
-  bool                                      edit_if_needed = true;
 };
 
 struct debug_generate_blocks_return
@@ -157,7 +156,6 @@ FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_args,
         (count)
         (skip)
         (miss_blocks)
-        (edit_if_needed)
         )
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_return,
         (blocks)

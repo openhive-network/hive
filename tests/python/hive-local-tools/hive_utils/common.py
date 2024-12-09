@@ -90,7 +90,7 @@ def debug_generate_blocks(target_node: str, debug_key: str | tt.PrivateKey, coun
         "jsonrpc": "2.0",
         "id": get_random_id(),
         "method": "debug_node_api.debug_generate_blocks",
-        "params": {"debug_key": debug_key, "count": count, "skip": 0, "miss_blocks": 0, "edit_if_needed": True},
+        "params": {"debug_key": debug_key, "count": count, "skip": 0, "miss_blocks": 0},
     }
     return send_rpc_query(target_node, payload)
 
