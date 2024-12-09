@@ -20,7 +20,6 @@ struct sign_limits
 class sign_state
 {
     size_t account_auth_count       = 0;
-    size_t total_membership         = 0;
 
     authority_getter                get_current_authority;
 

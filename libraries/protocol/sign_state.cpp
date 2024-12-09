@@ -48,18 +48,9 @@ bool sign_state::check_authority_impl( const authority& auth, uint32_t depth )
 
   auto _increase_membership = [&membership, this]()
   {
-    if( limits.allow_strict_and_mixed_authorities )
-    {
-      ++total_membership;
-      if( limits.membership > 0 && total_membership >= limits.membership )
-        return false;
-    }
-    else
-    {
-      ++membership;
-      if( limits.membership > 0 && membership >= limits.membership )
-        return false;
-    }
+    ++membership;
+    if( limits.membership > 0 && membership >= limits.membership )
+      return false;
     return true;
   };
 
