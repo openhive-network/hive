@@ -31,7 +31,7 @@ def get_relative_time_offset_from_timestamp(timestamp: datetime.datatime) -> str
     return f"-{delta.total_seconds():.3f}s"
 
 
-def init_network(
+def init_network(  # noqa: C901
     init_node,
     all_witness_names: list[str],
     key: str | None = None,
@@ -103,13 +103,17 @@ def init_network(
     if block_log_directory_name is not None:
         # Prepare dedicated directory
         if block_log_directory_name.exists():
-            block_log = tt.BlockLog(block_log_directory_name, "auto")
-            for file in block_log.block_files:
+            mono_block_log = tt.BlockLog(block_log_directory_name, "monolithic")
+            for file in mono_block_log.block_files:
+                file.unlink(missing_ok=True)
+            split_block_log = tt.BlockLog(block_log_directory_name, "split")
+            for file in split_block_log.block_files:
                 file.unlink(missing_ok=True)
         else:
             Path.mkdir(block_log_directory_name)
 
         # Copy newly created block log into dedicated directory
+        wallet.close()
         init_node.close()
         init_node.block_log.copy_to(block_log_directory_name)
 
