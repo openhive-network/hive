@@ -563,7 +563,11 @@ void colony_plugin_impl::start( uint32_t block_num )
   for( const auto& key : _sign_with )
     common_keys.insert( key.get_public_key() );
 
-  _use_posting = _params[ TRANSFER ].weight == 0;
+  bool active_needed = _params[ TRANSFER ].weight > 0;
+  bool posting_needed = _params[ ARTICLE ].weight > 0 || _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
+  _use_posting = !active_needed;
+  if( _use_posting )
+    posting_needed = true; // custom jsons will use posting even if there are no comments/votes
   const auto& accounts = _db.get_index< account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
@@ -628,15 +632,14 @@ void colony_plugin_impl::start( uint32_t block_num )
     auto get_posting = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).posting ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
+    bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
     required_authorities_type required_authorities;
-    if( !_use_posting )
+    if( active_needed )
       required_authorities.required_active.insert( account.get_name() );
-    if( _params[ ARTICLE ].weight > 0 || _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0 )
+    if( posting_needed && ( hf28 || !active_needed ) )
       required_authorities.required_posting.insert( account.get_name() );
 
-    if( hive::protocol::has_authorization(
-        _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
-        false, // no signature redundancy allowed
+    if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
         required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
     {
       if( i < _max_threads )
