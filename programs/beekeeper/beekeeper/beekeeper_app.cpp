@@ -188,11 +188,14 @@ void beekeeper_app::start()
     instance->save_connection_details( collector );
   } );
 
-  _webserver_plugin.start_webserver();
-
   app.startup();
 
-  app.notify_status( "beekeeper is ready" );
+  //Launch webserver only when all plugins are initialized at startup.
+  if( !app.is_interrupt_request() )
+  {
+    _webserver_plugin.start_webserver();
+    app.notify_status( "beekeeper is ready" );
+  }
 
   ilog("beekeeper is waiting");
   app.wait( true/*log*/ );
