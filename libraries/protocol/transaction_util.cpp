@@ -87,13 +87,13 @@ FC_EXPAND_MACRO(                                        \
       }
     }
 
-    if( !allow_redundant_signatures )
-    {
-      VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
-        verify_authority_problem::unused_signature, account_name_type() );
-    }
     if( !allow_strict_and_mixed_authorities )
     {
+      if( !allow_redundant_signatures )
+      {
+        VERIFY_AUTHORITY_CHECK( !s.remove_unused_signatures(),
+          verify_authority_problem::unused_signature, account_name_type() );
+      }
       return;
     }
   }
