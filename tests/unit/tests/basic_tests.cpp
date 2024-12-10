@@ -1755,51 +1755,72 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
 
   required_authorities_type required_authorities;
 
-  auto has_authorization = [&]( const public_key_type& key )
+  auto has_authorization = [&]( const fc::flat_set< public_key_type >& keys, bool expected )
   {
-    if( hive::protocol::has_authorization(
+    bool result = hive::protocol::has_authorization(
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-      required_authorities, { key }, get_active, get_owner, get_posting, get_witness_key ) )
-      return "true";
-    else
-      return "false";
+      false/*db->has_hardfork(HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES)*/, // enforce no redundancy, since test should have none
+      required_authorities, keys, get_active, get_owner, get_posting, get_witness_key );
+    BOOST_CHECK_EQUAL( result, expected );
+    return result ? "true" : "false";
   };
 
-  auto check_authorizations = [&]()
+  auto check_authorizations = [&]( std::array<bool,12> expected )
   {
-    ilog( "alice_posting_key: ${x}", ( "x", has_authorization( alice_auth.posting.key_auths.begin()->first ) ) );
-    ilog( "alice_active_key: ${x}", ( "x", has_authorization( alice_auth.active.key_auths.begin()->first ) ) );
-    ilog( "alice_owner_key: ${x}", ( "x", has_authorization( alice_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "alice_posting_key: ${x}", ( "x", has_authorization( { alice_auth.posting.key_auths.begin()->first }, expected[0] ) ) );
+    ilog( "alice_active_key: ${x}", ( "x", has_authorization( { alice_auth.active.key_auths.begin()->first }, expected[1] ) ) );
+    ilog( "alice_owner_key: ${x}", ( "x", has_authorization( { alice_auth.owner.key_auths.begin()->first }, expected[2] ) ) );
     ilog( "bob is redirected to from alice posting role" );
-    ilog( "bob_posting_key: ${x}", ( "x", has_authorization( bob_auth.posting.key_auths.begin()->first ) ) );
-    ilog( "bob_active_key: ${x}", ( "x", has_authorization( bob_auth.active.key_auths.begin()->first ) ) );
-    ilog( "bob_owner_key: ${x}", ( "x", has_authorization( bob_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.posting.key_auths.begin()->first }, expected[3] ) ) );
+    ilog( "bob_active_key: ${x}", ( "x", has_authorization( { bob_auth.active.key_auths.begin()->first }, expected[4] ) ) );
+    ilog( "bob_owner_key: ${x}", ( "x", has_authorization( { bob_auth.owner.key_auths.begin()->first }, expected[5] ) ) );
     ilog( "carol is redirected to from alice active role" );
-    ilog( "carol_posting_key: ${x}", ( "x", has_authorization( carol_auth.posting.key_auths.begin()->first ) ) );
-    ilog( "carol_active_key: ${x}", ( "x", has_authorization( carol_auth.active.key_auths.begin()->first ) ) );
-    ilog( "carol_owner_key: ${x}", ( "x", has_authorization( carol_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "carol_posting_key: ${x}", ( "x", has_authorization( { carol_auth.posting.key_auths.begin()->first }, expected[6] ) ) );
+    ilog( "carol_active_key: ${x}", ( "x", has_authorization( { carol_auth.active.key_auths.begin()->first }, expected[7] ) ) );
+    ilog( "carol_owner_key: ${x}", ( "x", has_authorization( { carol_auth.owner.key_auths.begin()->first }, expected[8] ) ) );
     ilog( "dan is redirected to from alice owner role" );
-    ilog( "dan_posting_key: ${x}", ( "x", has_authorization( dan_auth.posting.key_auths.begin()->first ) ) );
-    ilog( "dan_active_key: ${x}", ( "x", has_authorization( dan_auth.active.key_auths.begin()->first ) ) );
-    ilog( "dan_owner_key: ${x}", ( "x", has_authorization( dan_auth.owner.key_auths.begin()->first ) ) );
+    ilog( "dan_posting_key: ${x}", ( "x", has_authorization( { dan_auth.posting.key_auths.begin()->first }, expected[9] ) ) );
+    ilog( "dan_active_key: ${x}", ( "x", has_authorization( { dan_auth.active.key_auths.begin()->first }, expected[10] ) ) );
+    ilog( "dan_owner_key: ${x}", ( "x", has_authorization( { dan_auth.owner.key_auths.begin()->first }, expected[11] ) ) );
   };
 
   ilog( "" );
   ilog( "check authorization when alice@posting is required" );
   required_authorities.required_posting.insert( "alice" );
-  check_authorizations();
+  check_authorizations({1,0,0, 1,0,0, 0,0,0, 0,0,0});
   required_authorities.required_posting.clear();
   ilog( "" );
   ilog( "check authorization when alice@active is required" );
   required_authorities.required_active.insert( "alice" );
-  check_authorizations();
+  check_authorizations({0,1,0, 0,0,0, 0,1,0, 0,0,0});
   required_authorities.required_active.clear();
   ilog( "" );
   ilog( "check authorization when alice@owner is required" );
   required_authorities.required_owner.insert( "alice" );
-  check_authorizations();
+  check_authorizations({0,0,1, 0,0,0, 0,0,0, 0,1,0});
   required_authorities.required_owner.clear();
+
+  create_account( "alice.pay",
+    authority( 1, "alice", 1 ),
+    authority( 1, "alice", 1 ),
+    authority( 1, "alice", 1 ) );
+
+  ilog( "" );
+  ilog( "check authorization when alice.pay@posting and alice.pay@active is required" );
+  // bob is trying to precede transfer from alice.pay that he cannot authorize with comment from
+  // alice.pay that he can authorize through alice in hope that approval from posting will suffice
+  // for active authority
+  required_authorities.required_posting.insert( "alice.pay" );
+  required_authorities.required_active.insert( "alice.pay" );
+  ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.posting.key_auths.begin()->first }, false ) ) );
+  // but the mix of posting and active is ok (since HF28) when proper authorization is given
+  ilog( "bob_posting_key+carol_active_key: ${x}", ( "x", has_authorization(
+    { bob_auth.posting.key_auths.begin()->first, carol_auth.active.key_auths.begin()->first }, true ) ) );
+  // if alice were to sign, she has to provide both posting and active as well
+  ilog( "alice_posting_key+alice_active_key: ${x}", ( "x", has_authorization(
+    { alice_auth.posting.key_auths.begin()->first, alice_auth.active.key_auths.begin()->first }, true ) ) );
+  required_authorities.required_posting.clear();
+  required_authorities.required_active.clear();
 
 #undef CREATE_ACCOUNT
 }
