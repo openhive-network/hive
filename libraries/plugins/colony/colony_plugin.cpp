@@ -156,6 +156,7 @@ class colony_plugin_impl
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
     bool                                                 _disable_broadcast = false;
     bool                                                 _fill_comment_buffers = false;
+    bool                                                 _use_posting = false;
 
     typedef std::pair< hive::protocol::account_name_type, std::string > comment_data;
     // comments that are target for other comments and votes are shared between threads
@@ -535,7 +536,10 @@ void transaction_builder::build_custom( const account_object& actor, uint64_t no
   ++_stats[ CUSTOM_JSON ].count;
 
   custom_json_operation custom;
-  custom.required_auths.emplace( actor.get_name() );
+  if( _common._use_posting )
+    custom.required_posting_auths.emplace( actor.get_name() );
+  else
+    custom.required_auths.emplace( actor.get_name() );
   custom.id = "id" + std::to_string( nonce );
   auto extra_size = _common._params[ CUSTOM_JSON ].randomize();
   _stats[ CUSTOM_JSON ].extra_size += extra_size;
@@ -559,6 +563,7 @@ void colony_plugin_impl::start( uint32_t block_num )
   for( const auto& key : _sign_with )
     common_keys.insert( key.get_public_key() );
 
+  _use_posting = _params[ TRANSFER ].weight == 0;
   const auto& accounts = _db.get_index< account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
@@ -624,11 +629,14 @@ void colony_plugin_impl::start( uint32_t block_num )
     auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
-    required_authorities.required_active.insert( account.get_name() );
+    if( !_use_posting )
+      required_authorities.required_active.insert( account.get_name() );
+    if( _params[ ARTICLE ].weight > 0 || _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0 )
+      required_authorities.required_posting.insert( account.get_name() );
 
     if( hive::protocol::has_authorization(
         _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
-        false,
+        false, // no signature redundancy allowed
         required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
     {
       if( i < _max_threads )
