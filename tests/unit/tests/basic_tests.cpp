@@ -1706,6 +1706,8 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
 
 BOOST_AUTO_TEST_CASE( authorization_redirections )
 {
+  BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ) );
+
   auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
   auto keygen = [&]( const account_name_type& name, authority::classification role )
   {
@@ -1757,9 +1759,7 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
 
   auto has_authorization = [&]( const fc::flat_set< public_key_type >& keys, bool expected )
   {
-    bool result = hive::protocol::has_authorization(
-      db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
-      false/*db->has_hardfork(HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES)*/, // enforce no redundancy, since test should have none
+    bool result = hive::protocol::has_authorization( true, false, // enforce no redundancy, since test should have none
       required_authorities, keys, get_active, get_owner, get_posting, get_witness_key );
     BOOST_CHECK_EQUAL( result, expected );
     return result ? "true" : "false";
@@ -1821,6 +1821,34 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
     { alice_auth.posting.key_auths.begin()->first, alice_auth.active.key_auths.begin()->first }, true ) ) );
   required_authorities.required_posting.clear();
   required_authorities.required_active.clear();
+
+  // also test auto detection of signatures in above situation
+  {
+    ilog( "" );
+    ilog( "check necessary signature detection when alice.pay@posting and alice.pay@active is required" );
+
+    signed_transaction tx;
+    comment_operation comment;
+    comment.author = "alice.pay";
+    comment.permlink = "stealing";
+    comment.parent_permlink = "stealing";
+    comment.title = "stealing";
+    comment.body = "got your money, haha!";
+    tx.operations.emplace_back( comment );
+    transfer_operation transfer;
+    transfer.from = "alice.pay";
+    transfer.to = "bob";
+    transfer.amount = ASSET( "100000.000 TBD" );
+    tx.operations.emplace_back( transfer );
+    auto signature_set = tx.get_required_signatures( true, false, HIVE_CHAIN_ID,
+      { bob_auth.posting.key_auths.begin()->first, carol_auth.active.key_auths.begin()->first,
+      dan_auth.active.key_auths.begin()->first },
+      get_active, get_owner, get_posting, get_witness_key,
+      HIVE_MAX_SIG_CHECK_DEPTH, HIVE_MAX_AUTHORITY_MEMBERSHIP, HIVE_MAX_SIG_CHECK_ACCOUNTS );
+    BOOST_REQUIRE_EQUAL( signature_set.size(), 2 );
+    BOOST_REQUIRE( signature_set.find( bob_auth.posting.key_auths.begin()->first ) != signature_set.end() );
+    BOOST_REQUIRE( signature_set.find( carol_auth.active.key_auths.begin()->first ) != signature_set.end() );
+  }
 
 #undef CREATE_ACCOUNT
 }

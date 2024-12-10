@@ -168,6 +168,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
   s.change_current_authority( get_active );
+  s.init_approved();
 
   for( const auto& auth : other )
     s.check_authority( auth );
