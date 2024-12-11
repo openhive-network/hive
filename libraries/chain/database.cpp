@@ -3621,6 +3621,7 @@ void database::init_genesis()
       auth.account = HIVE_MINER_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
+      auth.posting.weight_threshold = 1;
     });
 
     create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
@@ -3629,6 +3630,7 @@ void database::init_genesis()
       auth.account = HIVE_NULL_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
+      auth.posting.weight_threshold = 1;
     });
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
@@ -3656,6 +3658,7 @@ void database::init_genesis()
       auth.account = HIVE_TEMP_ACCOUNT;
       auth.owner.weight_threshold = 0;
       auth.active.weight_threshold = 0;
+      auth.posting.weight_threshold = 0;
     });
 
     const auto init_witness = [&]( const account_name_type& account_name )
@@ -5995,23 +5998,6 @@ void database::apply_hardfork( uint32_t hardfork )
           }
         }
 
-        modify( get< account_authority_object, by_account >( HIVE_MINER_ACCOUNT ), [&]( account_authority_object& auth )
-        {
-          auth.posting = authority();
-          auth.posting.weight_threshold = 1;
-        });
-
-        modify( get< account_authority_object, by_account >( HIVE_NULL_ACCOUNT ), [&]( account_authority_object& auth )
-        {
-          auth.posting = authority();
-          auth.posting.weight_threshold = 1;
-        });
-
-        modify( get< account_authority_object, by_account >( HIVE_TEMP_ACCOUNT ), [&]( account_authority_object& auth )
-        {
-          auth.posting = authority();
-          auth.posting.weight_threshold = 1;
-        });
       }
       break;
     case HIVE_HARDFORK_0_13:
@@ -6322,18 +6308,6 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
-  
-      /*
-        We want to keep old behaviour, i.e. posting authority for `temp` account should be treated as an open authority.
-        Since redirection into stronger authorities is not accepted anymore, it is necessary to change a threshold in `posting` authority to 0.
-      */
-      modify( get< account_authority_object, by_account >( "temp" ), [&]( account_authority_object& auth )
-      {
-        authority _authority;
-        _authority.weight_threshold = 0;
-
-        auth.posting = _authority;
-      });
       break;
     }
     case HIVE_SMT_HARDFORK:
