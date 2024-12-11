@@ -120,6 +120,7 @@ void condenser_api_fixture::hf12_scenario( check_point_tester_t check_point_test
 
   PREP_ACTOR( carol0ah )
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+  witness_plugin->add_signing_key( carol0ah_private_key );
 
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
@@ -132,6 +133,7 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   
   PREP_ACTOR( dan0ah )
   create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
+  witness_plugin->add_signing_key( dan0ah_private_key );
 
   PREP_ACTOR( edgar0ah )
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
@@ -286,6 +288,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   generate_block();
   
   witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), 1000 );
+  witness_plugin->add_signing_key( alice5ah_private_key );
   witness_feed_publish( "alice5ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), alice5ah_private_key );
   proxy( "ben5ah", "carol5ah", ben5ah_private_key );
   witness_vote( "carol5ah", "alice5ah", carol5ah_private_key, true ); // mistakenly voted

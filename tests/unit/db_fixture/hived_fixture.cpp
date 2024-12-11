@@ -127,16 +127,20 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
         bpo::store( the_options, option_overrides );
       }
 
-      // Initialize appbase. The only plugin initialized explicitly as template parameter here
-      // is needed in all fixtures. Note that more plugins may be initialized using provided
+      // Initialize appbase. The only plugins initialized explicitly as template parameters here
+      // are needed in all fixtures. Note that more plugins may be initialized using provided
       // option_overrides/config_arg_overrides.
       app.initialize< 
-        hive::plugins::debug_node::debug_node_plugin
+        hive::plugins::debug_node::debug_node_plugin,
+        hive::plugins::witness::witness_plugin
       >( argc, argv, option_overrides );
 
       db_plugin = app.find_plugin< hive::plugins::debug_node::debug_node_plugin >();
       BOOST_REQUIRE( db_plugin );
       db_plugin->logging = false;
+
+      witness_plugin = app.find_plugin< hive::plugins::witness::witness_plugin >();
+      BOOST_REQUIRE( witness_plugin );
 
       _chain = &( app.get_plugin< hive::plugins::chain::chain_plugin >() );
       if( _disable_p2p )
@@ -200,7 +204,6 @@ json_rpc_database_fixture::json_rpc_database_fixture()
     {
       config_line_t( { "plugin",
         { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-          HIVE_WITNESS_PLUGIN_NAME,
           HIVE_JSON_RPC_PLUGIN_NAME,
           HIVE_BLOCK_API_PLUGIN_NAME,
           HIVE_DATABASE_API_PLUGIN_NAME,

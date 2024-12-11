@@ -1369,6 +1369,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     {
       fund( accounts[i], ASSET( "10.000 TESTS" ) );
       witness_create( accounts[i], keys[i], "foo.bar", keys[i].get_public_key(), 1000 );
+      witness_plugin->add_signing_key( keys[i] );
 
       ops.push_back( feed_publish_operation() );
       ops[i].publisher = accounts[i];

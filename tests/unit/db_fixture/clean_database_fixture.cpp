@@ -28,8 +28,7 @@ clean_database_fixture::clean_database_fixture(
     postponed_init(
       {
         config_line_t( { "plugin",
-          { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-            HIVE_WITNESS_PLUGIN_NAME } }
+          { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } }
         ),
         config_line_t( { "shared-file-size",
           { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
@@ -45,9 +44,6 @@ clean_database_fixture::clean_database_fixture(
   {
     postponed_init(
       {
-        config_line_t( { "plugin",
-          { HIVE_WITNESS_PLUGIN_NAME } }
-        ),
         config_line_t( { "shared-file-size",
           { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
         ),

@@ -65,7 +65,6 @@ struct witness_fixture : public hived_fixture
     configuration_data.set_init_witnesses( initial_witnesses );
 
     config_arg_override_t config_args = {
-      config_line_t( { "plugin", { HIVE_WITNESS_PLUGIN_NAME } } ),
       config_line_t( { "shared-file-size", { shared_file_size } } ),
       config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
     };
@@ -73,7 +72,7 @@ struct witness_fixture : public hived_fixture
       config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
     config_args.insert( config_args.end(), extra_config_args.begin(), extra_config_args.end() );
 
-    postponed_init( config_args, &witness_plugin );
+    postponed_init( config_args );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
@@ -221,12 +220,9 @@ struct witness_fixture : public hived_fixture
   void set_default_expiration( size_t expiration ) { default_expiration = expiration; }
   size_t get_default_expiration() const { return default_expiration; }
 
-  hive::plugins::witness::witness_plugin& get_witness_plugin() const { return *witness_plugin; }
-
 private:
   fc::time_point_sec genesis_time;
   size_t default_expiration = HIVE_MAX_TIME_UNTIL_EXPIRATION;
-  hive::plugins::witness::witness_plugin* witness_plugin = nullptr;
 
 public:
 
@@ -1223,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
     // set to represent third witness from new schedule
     std::string chosen_witness = db->get_scheduled_witness( 3 );
     ilog( "Chosen witness is ${w}", ( "w", chosen_witness ) );
-    get_witness_plugin().set_witnesses( { chosen_witness } );
+    witness_plugin->set_witnesses( { chosen_witness } );
 
     fc::thread api_thread;
     auto _future = api_thread.async( [&]()
@@ -1345,7 +1341,7 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
     // set to represent third witness from new schedule
     std::string chosen_witness = db->get_scheduled_witness( 3 );
     ilog( "Chosen witness is ${w}", ( "w", chosen_witness ) );
-    get_witness_plugin().set_witnesses( { chosen_witness } );
+    witness_plugin->set_witnesses( { chosen_witness } );
 
     fc::thread api_thread;
     auto _future = api_thread.async( [&]()
@@ -1454,7 +1450,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
     // set to represent third witness from new schedule
     std::string chosen_witness = db->get_scheduled_witness( 3 );
     ilog( "Chosen witness is ${w}", ( "w", chosen_witness ) );
-    get_witness_plugin().set_witnesses( { chosen_witness } );
+    witness_plugin->set_witnesses( { chosen_witness } );
 
     fc::thread api_thread;
     auto _future = api_thread.async( [&]()
@@ -1509,7 +1505,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
           // in order to be able to see which block (timestamp) is when blocks will start
           // to be produced again, we are setting witness plugin to represent all witnesses
           // from this point
-          get_witness_plugin().set_witnesses( { "initminer", "wit1", "wit2", "wit3", "wit4",
+          witness_plugin->set_witnesses( { "initminer", "wit1", "wit2", "wit3", "wit4",
             "wit5", "wit6", "wit7", "wit8", "wit9", "wita", "witb", "witc", "witd", "wite",
             "witf", "witg", "with", "witi", "witj", "witk" } );
           schedule_block();

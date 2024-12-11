@@ -71,6 +71,7 @@ public:
   const produce_block_data_t& get_production_data() const;
 
   typedef std::map< hive::protocol::public_key_type, fc::ecc::private_key > t_signing_keys;
+  void add_signing_key( const fc::ecc::private_key& key );
   const t_signing_keys& get_signing_keys() const;
 
   void enable_queen_mode(); // turned on when queen_plugin is active
