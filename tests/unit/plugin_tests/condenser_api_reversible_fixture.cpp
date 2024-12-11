@@ -20,6 +20,7 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
       const private_key_type account_key = generate_private_key( witness_name );
       const private_key_type witness_key = generate_private_key( witness_name + "_witness" );
       witness_create( witness_name, account_key, witness_name + ".com", witness_key.get_public_key(), 1000 );
+      witness_plugin->add_signing_key( witness_key );
     };
     for( int i = 1; i <= 20; ++i )
       create_witness( "top" + std::to_string(i) );

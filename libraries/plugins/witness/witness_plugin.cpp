@@ -589,6 +589,13 @@ const produce_block_data_t& witness_plugin::get_production_data() const
   return my->produce_block_data;
 }
 
+void witness_plugin::add_signing_key( const fc::ecc::private_key& key )
+{
+  my->_private_keys[ key.get_public_key() ] = key;
+  // recompute next block production data with new set of signing keys
+  my->update_produce_block_data( my->_db.get_slot_time( 1 ) );
+}
+
 const witness_plugin::t_signing_keys& witness_plugin::get_signing_keys() const
 {
   return my->_private_keys;

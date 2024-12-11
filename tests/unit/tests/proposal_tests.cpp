@@ -312,8 +312,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
 
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
+    witness_plugin->add_signing_key( accw_witness_key );
     private_key_type accw_witness2_key = generate_private_key( "accw2_key" );
     witness_create( "accw2", accw2_private_key, "foo.bar", accw_witness2_key.get_public_key(), 1000 );
+    witness_plugin->add_signing_key( accw_witness2_key );
 
     //if we vote before hardfork 25
     generate_block();
@@ -671,7 +673,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
     int64_t _id_proposal_01 = create_proposal( "propcreator2", "propcreator2", _start, _end, asset( 101, HBD_SYMBOL ), propcreator2_private_key, propcreator2_post_key );
 
     witness_create( "witness", witness_private_key, "http://something.com", witness_public_key, 1000 );
+    witness_plugin->add_signing_key( witness_private_key );
     witness_create( "witness2", witness2_private_key, "http://something.com", witness2_public_key, 1000 );
+    witness_plugin->add_signing_key( witness2_private_key );
     generate_block();
 
     {
@@ -848,6 +852,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     {
       private_key_type witness_key = generate_private_key( witness.account + "_key" );
       witness_create( witness.account, witness.active_key, "foo.bar", witness_key.get_public_key(), 1000 );
+      witness_plugin->add_signing_key( witness_key );
     }
     generate_block();
 
