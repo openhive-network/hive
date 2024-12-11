@@ -100,7 +100,7 @@ FC_EXPAND_MACRO(                                        \
 
   s.change_current_authority( get_active );
 
-  s.init_approved();
+  s.clear_approved();
   s.add_approved( active_approvals );
   s.add_approved( owner_approvals );;
 

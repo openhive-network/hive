@@ -7,7 +7,6 @@ sign_state::sign_state( const flat_set<public_key_type>& sigs, const authority_g
                         : get_current_authority( a ), limits( limits )
 {
   extend_provided_signatures( sigs );
-  init_approved();
 }
 
 bool sign_state::signed_by( const public_key_type& k )
@@ -114,10 +113,9 @@ bool sign_state::remove_unused_signatures()
   return remove_sigs.size() != 0;
 }
 
-void sign_state::init_approved()
+void sign_state::clear_approved()
 {
   approved_by.clear();
-  approved_by.insert( "temp" );
 }
 
 void sign_state::add_approved( const flat_set<account_name_type>& approvals )

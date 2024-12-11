@@ -47,7 +47,7 @@ class sign_state
 
     bool remove_unused_signatures();
 
-    void init_approved();
+    void clear_approved();
     void add_approved( const flat_set<account_name_type>& approvals );
 
     void extend_provided_signatures( const flat_set<public_key_type>& keys );
