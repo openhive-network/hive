@@ -6322,6 +6322,18 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
+  
+      /*
+        We want to keep old behaviour, i.e. posting authority for `temp` account should be treated as an open authority.
+        Since redirection into stronger authorities is not accepted anymore, it is necessary to change a threshold in `posting` authority to 0.
+      */
+      modify( get< account_authority_object, by_account >( "temp" ), [&]( account_authority_object& auth )
+      {
+        authority _authority;
+        _authority.weight_threshold = 0;
+
+        auth.posting = _authority;
+      });
       break;
     }
     case HIVE_SMT_HARDFORK:

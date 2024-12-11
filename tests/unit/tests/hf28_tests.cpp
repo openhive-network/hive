@@ -1297,6 +1297,95 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [&is_hf28]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing limits in authorities verification for `temp` account" );
+
+      authority _empty_auth_0;
+      _empty_auth_0.weight_threshold = 0;
+
+      authority _empty_auth_1;
+      _empty_auth_1.weight_threshold = 1;
+
+      bool _allow_strict_and_mixed_authorities  = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
+      bool _allow_redundant_signatures          = executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES );
+
+      {
+        uint32_t _hive_max_sig_check_depth       = 2;
+        uint32_t _hive_max_authority_membership  = 3;
+        uint32_t _hive_max_sig_check_accounts    = 4;
+
+        auto _get_active = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).active ); };
+        auto _get_owner = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).owner ); };
+        auto _get_posting = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).posting ); };
+        auto _get_witness_key = [&]( const std::string& name ) { try { return executor->db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+
+        {
+          required_authorities_type _required_authorities;
+          _required_authorities.required_posting.insert( "temp" );
+
+          flat_set<public_key_type> _signatures;
+
+          BOOST_TEST_MESSAGE( "Success. Posting authority for `temp`: required 0 signatures, all authorities are empty, `threshold` == 1( HF27) `threshold` == 0( HF28)." );
+
+          hive::protocol::verify_authority
+          ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
+            _required_authorities, _signatures,
+            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
+          );
+        }
+        {
+          required_authorities_type _required_authorities;
+          _required_authorities.required_active.insert( "temp" );
+
+          flat_set<public_key_type> _signatures;
+
+          BOOST_TEST_MESSAGE( "Success. Active authority for `temp`: required 0 signatures, all authorities are empty, `threshold` == 0." );
+
+          hive::protocol::verify_authority
+          ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
+            _required_authorities, _signatures,
+            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
+          );
+        }
+        {
+          required_authorities_type _required_authorities;
+          _required_authorities.required_owner.insert( "temp" );
+
+          flat_set<public_key_type> _signatures;
+
+          BOOST_TEST_MESSAGE( "Success. Owner authority for `temp`: required 0 signatures, all authorities are empty, `threshold` == 0." );
+
+          hive::protocol::verify_authority
+          ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
+            _required_authorities, _signatures,
+            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
+          );
+        }
+      }
+
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
