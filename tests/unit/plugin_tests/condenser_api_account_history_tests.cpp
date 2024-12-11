@@ -361,10 +361,6 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf19 )
 
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    // Make witness operations irreversible.
-    generate_until_irreversible_block( 4 );
-    // Artificially generate missing blocks.
-    generate_blocks( db->head_block_time() + fc::seconds(9) );
     // Make the block with desired vops irreversible.
     generate_until_irreversible_block( 27 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
@@ -373,28 +369,31 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf19 )
       R"~([4,{"trx_id":"2c670b301475c656d736c135dcbe67255ed4073a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"witness_update_operation","value":{"owner":"alice19ah","url":"foo.bar","block_signing_key":"STM89H9erzoVqMMEsqN9MqeFdBTdquzeYeXUL2anQVmBdHz55iedM","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
       R"~([4,{"trx_id":"2c670b301475c656d736c135dcbe67255ed4073a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["witness_update",{"owner":"alice19ah","url":"foo.bar","block_signing_key":"STM89H9erzoVqMMEsqN9MqeFdBTdquzeYeXUL2anQVmBdHz55iedM","props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000},"fee":"1.000 TESTS"}]}])~"
       }, {
-      R"~([5,{"trx_id":"c20acb0f4623121ea391d468edd6c1c8647eb0eb","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"account_witness_vote_operation","value":{"account":"ben19ah","witness":"alice19ah","approve":true}},"operation_id":0}])~",
-      R"~([5,{"trx_id":"c20acb0f4623121ea391d468edd6c1c8647eb0eb","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["account_witness_vote",{"account":"ben19ah","witness":"alice19ah","approve":true}]}])~"
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"62909591605","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"62909.591605 VESTS"}]}])~"
       }, {
-      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"93998697157","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
-      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"93998.697157 VESTS"}]}])~"
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":26,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"61683672175","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":26,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"61683.672175 VESTS"}]}])~"
       }, {
-      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":25,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:15","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"92825712045","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
-      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":25,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:15","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"92825.712045 VESTS"}]}])~"
-      }, {
-      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"shutdown_witness_operation","value":{"owner":"alice19ah"}},"operation_id":0}])~",
-      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["shutdown_witness",{"owner":"alice19ah"}]}])~"
-      }, {
-      R"~([9,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_missed_operation","value":{"producer":"alice19ah"}},"operation_id":0}])~",
-      R"~([9,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_missed",{"producer":"alice19ah"}]}])~"
-      }, {
-      R"~([10,{"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:27","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"91321979235","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
-      R"~([10,{"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:27","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"91321.979235 VESTS"}]}])~"
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:27","op":{"type":"producer_reward_operation","value":{"producer":"alice19ah","vesting_shares":{"amount":"60961771931","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:27","op":["producer_reward",{"producer":"alice19ah","vesting_shares":"60961.771931 VESTS"}]}])~"
       } };
 
     expected_t expected_ben19ah_history = { {
-      R"~([4,{"trx_id":"c20acb0f4623121ea391d468edd6c1c8647eb0eb","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"account_witness_vote_operation","value":{"account":"ben19ah","witness":"alice19ah","approve":true}},"operation_id":0}])~",
-      R"~([4,{"trx_id":"c20acb0f4623121ea391d468edd6c1c8647eb0eb","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["account_witness_vote",{"account":"ben19ah","witness":"alice19ah","approve":true}]}])~"
+      R"~([4,{"trx_id":"643d618db0f503cb8f1d10706c7ca4cf0ff7a122","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"witness_update_operation","value":{"owner":"ben19ah","url":"foo.bar","block_signing_key":"STM7pZMDSW8KdZTt1YzmqkfuRZx45yTsNx2v8nXvu7YmKCsxSuQha","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"643d618db0f503cb8f1d10706c7ca4cf0ff7a122","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["witness_update",{"owner":"ben19ah","url":"foo.bar","block_signing_key":"STM7pZMDSW8KdZTt1YzmqkfuRZx45yTsNx2v8nXvu7YmKCsxSuQha","props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000},"fee":"1.000 TESTS"}]}])~",
+      }, {
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":24,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":{"type":"producer_reward_operation","value":{"producer":"ben19ah","vesting_shares":{"amount":"62479383982","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":24,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":["producer_reward",{"producer":"ben19ah","vesting_shares":"62479.383982 VESTS"}]}])~"
+      }, {
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"shutdown_witness_operation","value":{"owner":"ben19ah"}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["shutdown_witness",{"owner":"ben19ah"}]}])~"
+      }, {
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_missed_operation","value":{"producer":"ben19ah"}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_missed",{"producer":"ben19ah"}]}])~"
+      }, {
+      R"~([8,{"trx_id":"e2a7536d726e28d8bc4dba82af7850e628b2c161","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:27","op":{"type":"witness_update_operation","value":{"owner":"ben19ah","url":"foo.bar","block_signing_key":"STM7pZMDSW8KdZTt1YzmqkfuRZx45yTsNx2v8nXvu7YmKCsxSuQha","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([8,{"trx_id":"e2a7536d726e28d8bc4dba82af7850e628b2c161","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:27","op":["witness_update",{"owner":"ben19ah","url":"foo.bar","block_signing_key":"STM7pZMDSW8KdZTt1YzmqkfuRZx45yTsNx2v8nXvu7YmKCsxSuQha","props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000},"fee":"1.000 TESTS"}]}])~",
       } };
 
     // Filter out usual account_create(d) and transfer to vesting (completed)_operations checked in other tests.
