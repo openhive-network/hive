@@ -363,6 +363,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
   if( not debug_private_key.valid() and ( signing_keys == nullptr or signing_keys->empty() ) )
   {
     elog( "Skipping generation because I don't know the private key" );
+    FC_ASSERT( false, "Skipping generation because I don't know the private key" );
     ret.blocks = 0;
     return;
   }
@@ -390,6 +391,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     else
     {
       elog( "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
+      FC_ASSERT( false, "Missing key for witness ${w}, stopping generation.", ( "w", scheduled_witness_name ) );
       break;
     }
 
@@ -426,7 +428,6 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
   }
 
   ret.blocks = produced;
-  return;
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks_until(
