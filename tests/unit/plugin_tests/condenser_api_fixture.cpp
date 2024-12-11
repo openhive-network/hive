@@ -8,6 +8,7 @@
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -164,7 +165,20 @@ void condenser_api_fixture::hf19_scenario( check_point_tester_t check_point_test
   generate_block();
   
   witness_create( "alice19ah", alice19ah_private_key, "foo.bar", alice19ah_private_key.get_public_key(), 1000 );
-  witness_vote( "ben19ah", "alice19ah", ben19ah_private_key );
+  witness_plugin->add_signing_key( alice19ah_private_key );
+  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), 1000 );
+  witness_plugin->add_signing_key( ben19ah_private_key );
+
+  // Make witness operations irreversible.
+  generate_until_irreversible_block( 4 );
+  // Artificially generate missing blocks.
+  generate_blocks( db->head_block_time() + fc::seconds( 9 ) );
+  // reenable ben19ah or it won't be possible to sign block for him when the time comes (he is going to produce more
+  // blocks in the same schedule despite being disabled, because there are only three witnesses - he would be tossed out
+  // only in next schedule, but then we'd fail in witness update anyway, because it is expected that all witnesses are
+  // active if there is less than 21); we need at least 3 by the way, because witness next to his missed block will disable
+  // him and one more is needed to accept transaction that reenables him before its his time to produce again
+  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), 1000 );
 
   // Now all the operations mentioned above can be checked. They can appear as early as 27th block, depending on configuration.
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
