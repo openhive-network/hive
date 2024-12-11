@@ -4,15 +4,6 @@
 
 namespace hive { namespace protocol {
 
-struct required_authorities_type
-{
-  flat_set<hive::protocol::account_name_type> required_active;
-  flat_set<hive::protocol::account_name_type> required_owner;
-  flat_set<hive::protocol::account_name_type> required_posting;
-  flat_set<hive::protocol::account_name_type> required_witness;
-  vector<hive::protocol::authority> other;
-};
-
 template< typename AuthContainerType >
 required_authorities_type get_required_authorities(const vector<AuthContainerType>& auth_containers)
 { try {

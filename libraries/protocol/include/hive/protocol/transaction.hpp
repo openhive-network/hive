@@ -1,6 +1,7 @@
 #pragma once
+#include <hive/protocol/authority.hpp>
 #include <hive/protocol/operations.hpp>
-#include <hive/protocol/sign_state.hpp>
+#include <hive/protocol/sign_state_types.hpp>
 #include <hive/protocol/types.hpp>
 
 #include <functional>

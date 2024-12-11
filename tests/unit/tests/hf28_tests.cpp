@@ -7,6 +7,8 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database_exceptions.hpp>
 
+#include <hive/protocol/transaction_util.hpp>
+
 #include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive::chain;
