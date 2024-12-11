@@ -10,6 +10,8 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
 
+#include <hive/protocol/transaction_util.hpp>
+
 #include <fc/thread/thread.hpp>
 
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes

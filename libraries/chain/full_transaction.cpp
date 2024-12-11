@@ -2,6 +2,7 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/transaction_util.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <mutex>
