@@ -39,7 +39,6 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    schema_types.cpp
    authority.cpp
    operations.cpp
-   sign_state.cpp
    transaction.cpp
    transaction_util.cpp
    block.cpp

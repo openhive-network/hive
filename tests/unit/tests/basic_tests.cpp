@@ -27,10 +27,6 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/protocol/protocol.hpp>
-
-#include <hive/protocol/hive_operations.hpp>
-#include <hive/protocol/words.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -41,6 +37,11 @@
 #include <hive/chain/util/reward.hpp>
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
+
+#include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/protocol.hpp>
+#include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/words.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 
