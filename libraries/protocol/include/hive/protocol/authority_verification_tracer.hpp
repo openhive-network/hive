@@ -33,6 +33,7 @@ class authority_verification_tracer
     void on_root_authority_finish( unsigned int verification_status );
 
   private:
+    bool detect_cycle(std::string account) const;
     path_entry& get_parent_entry();
     void push_parent_entry(const path_entry& entry);
     void pop_parent_entry();

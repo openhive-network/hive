@@ -2,6 +2,17 @@
 
 namespace hive { namespace protocol {
 
+bool authority_verification_tracer::detect_cycle(std::string account) const
+{
+  for( const path_entry& pe : _current_authority_path )
+  {
+    if( pe.processed_entry == account )
+      return true;
+  }
+
+  return false;
+}
+
 authority_verification_trace::path_entry& authority_verification_tracer::get_parent_entry()
 {
   FC_ASSERT(not _current_authority_path.empty());
@@ -109,9 +120,8 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
     weight: weight
   };
 
-  // TODO: Detect possible cycle here.
-  //if(detect_cycle(account))
-  //  entry.flags |= CYCLE_DETECTED;
+  if(detect_cycle(account))
+    entry.flags |= CYCLE_DETECTED;
 
   get_parent_entry().visited_entries.push_back(entry);
   push_final_path_entry(entry);
