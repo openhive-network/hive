@@ -21,9 +21,8 @@ class authority_verification_tracer
     void on_matching_key( const public_key_type& key, unsigned int weight,
                           unsigned int parent_threshold, unsigned int depth );
     void on_missing_matching_key();
-    void on_unknown_account_entry( const account_name_type& account, const std::string& role,
-                                   unsigned int weight, unsigned int parent_threshold,
-                                   unsigned int parent_depth);
+    void on_unknown_account_entry( const account_name_type& account, unsigned int weight,
+                                   unsigned int parent_threshold, unsigned int parent_depth);
     /// called only if account is known
     void on_entering_account_entry( const account_name_type& account, unsigned int weight,
                                     unsigned int parent_threshold, unsigned int parent_depth );

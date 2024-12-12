@@ -83,6 +83,21 @@ void authority_verification_tracer::on_recursion_depth_limit_exceeded()
   get_parent_entry().flags |= DEPTH_LIMIT_EXCEEDED;
 }
 
+void authority_verification_tracer::on_unknown_account_entry( const account_name_type& account,
+  unsigned int weight, unsigned int parent_threshold, unsigned int parent_depth )
+{
+  path_entry entry{
+    processed_entry: account,
+    processed_role: _current_role,
+    recursion_depth: parent_depth,
+    threshold: parent_threshold,
+    weight: weight,
+    flags: MISSING_ACCOUNT
+  };
+
+  get_parent_entry().visited_entries.push_back(entry);
+}
+
 void authority_verification_tracer::on_entering_account_entry( const account_name_type& account,
   unsigned int weight, unsigned int parent_threshold, unsigned int parent_depth )
 {
