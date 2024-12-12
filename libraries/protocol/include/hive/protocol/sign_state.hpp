@@ -28,124 +28,17 @@ class sign_state
     flat_map<public_key_type,bool>  provided_signatures;
     authority_verification_tracer*  tracer = nullptr;
 
-    bool check_authority_impl( const authority& auth, uint32_t depth )
-    {
-      uint32_t total_weight = 0;
-
-      size_t membership = 0;
-
-      auto _increase_membership = [&membership, this]()
-      {
-        ++membership;
-        if( limits.membership > 0 && membership >= limits.membership )
-          return false;
-        return true;
-      };
-
-      for( const auto& k : auth.key_auths )
-      {
-        if( signed_by( k.first ) )
-        {
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
-            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth);
-          }
-
-          total_weight += k.second;
-          if( total_weight >= auth.weight_threshold )
-            return true;
-        }
-
-        if( !_increase_membership() )
-          return false;
-      }
-
-      if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer);
-        tracer->on_missing_matching_key();
-      }
-
-      for( const auto& a : auth.account_auths )
-      {
-        if( approved_by.find(a.first) == approved_by.end() )
-        {
-          if( depth == limits.recursion )
-          {
-            if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer);
-              tracer->on_recursion_depth_limit_exceeded();
-            }
-
-            continue;
-          }
-
-          if( limits.account_auths > 0 && account_auth_count >= limits.account_auths )
-          {
-            if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer);
-              tracer->on_account_processing_limit_exceeded();
-            }
-
-            return false;
-          }
-
-          ++account_auth_count;
-
-          authority account_auth;
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
-            try
-            {
-              account_auth = get_current_authority( a.first );
-            } catch( const std::runtime_error& e )
-            {
-              // TODO: Call on_unknown_account_entry here
-              continue;
-            }           
-
-            tracer->on_entering_account_entry( a.first, a.second, auth.weight_threshold, depth );
-          }
-          else
-            account_auth = get_current_authority( a.first );
-
-          if( check_authority_impl( account_auth, depth + 1 ) )
-          {
-            approved_by.insert( a.first );
-            total_weight += a.second;
-            if( total_weight >= auth.weight_threshold )
-            {
-              if constexpr (IS_TRACED) {
-                FC_ASSERT(tracer);
-                tracer->on_leaving_account_entry( true );
-              }
-              return true;
-            }
-          }
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
-            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()) );
-          }
-        }
-        else
-        {
-          total_weight += a.second;
-          if( total_weight >= auth.weight_threshold )
-            return true;
-        }
-
-        if( !_increase_membership() )
-          return false;
-      }
-      return total_weight >= auth.weight_threshold;
-    }
-
   public:
 
+    /**
+     * @param getter std::runtime_error thrown when id can't be found will be caught when IS_TRACED
+     * @param the_tracer mandatory when IS_TRACED, ignored otherwise
+     */
     sign_state( const flat_set<public_key_type>& sigs,
-      const authority_getter& a,
+      const authority_getter& getter,
       const sign_limits& limits,
       authority_verification_tracer* the_tracer = nullptr )
-      : get_current_authority( a ), limits( limits ), tracer(the_tracer)
+      : get_current_authority( getter ), limits( limits ), tracer(the_tracer)
     {
       extend_provided_signatures( sigs );
     }
@@ -260,6 +153,119 @@ class sign_state
     void change_current_authority( const authority_getter& a )
     {
       get_current_authority = a;
+    }
+
+  private:
+
+    bool check_authority_impl( const authority& auth, uint32_t depth )
+    {
+      uint32_t total_weight = 0;
+
+      size_t membership = 0;
+
+      auto _increase_membership = [&membership, this]()
+      {
+        ++membership;
+        if( limits.membership > 0 && membership >= limits.membership )
+          return false;
+        return true;
+      };
+
+      for( const auto& k : auth.key_auths )
+      {
+        if( signed_by( k.first ) )
+        {
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth);
+          }
+
+          total_weight += k.second;
+          if( total_weight >= auth.weight_threshold )
+            return true;
+        }
+
+        if( !_increase_membership() )
+          return false;
+      }
+
+      if constexpr (IS_TRACED) {
+        FC_ASSERT(tracer);
+        tracer->on_missing_matching_key();
+      }
+
+      for( const auto& a : auth.account_auths )
+      {
+        if( approved_by.find(a.first) == approved_by.end() )
+        {
+          if( depth == limits.recursion )
+          {
+            if constexpr (IS_TRACED) {
+              FC_ASSERT(tracer);
+              tracer->on_recursion_depth_limit_exceeded();
+            }
+
+            continue;
+          }
+
+          if( limits.account_auths > 0 && account_auth_count >= limits.account_auths )
+          {
+            if constexpr (IS_TRACED) {
+              FC_ASSERT(tracer);
+              tracer->on_account_processing_limit_exceeded();
+            }
+
+            return false;
+          }
+
+          ++account_auth_count;
+
+          authority account_auth;
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            try
+            {
+              account_auth = get_current_authority( a.first );
+            } catch( const std::runtime_error& e )
+            {
+              // TODO: Call on_unknown_account_entry here
+              continue;
+            }           
+
+            tracer->on_entering_account_entry( a.first, a.second, auth.weight_threshold, depth );
+          }
+          else
+            account_auth = get_current_authority( a.first );
+
+          if( check_authority_impl( account_auth, depth + 1 ) )
+          {
+            approved_by.insert( a.first );
+            total_weight += a.second;
+            if( total_weight >= auth.weight_threshold )
+            {
+              if constexpr (IS_TRACED) {
+                FC_ASSERT(tracer);
+                tracer->on_leaving_account_entry( true );
+              }
+              return true;
+            }
+          }
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()) );
+          }
+        }
+        else
+        {
+          total_weight += a.second;
+          if( total_weight >= auth.weight_threshold )
+            return true;
+        }
+
+        if( !_increase_membership() )
+          return false;
+      }
+      return total_weight >= auth.weight_threshold;
     }
 };
 
