@@ -170,6 +170,8 @@ namespace fc
         case 0x04:
           FC_THROW_EXCEPTION(parse_error_exception, "EOF before closing '\"' in string '${token}'",
                              ("token", result));
+        case EOF:
+          FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
         case '"':
           in.get();
           return result;
