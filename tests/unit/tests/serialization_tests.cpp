@@ -883,5 +883,28 @@ BOOST_AUTO_TEST_CASE( unpack_array_limit_test )
   FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE( incorrect_json_deserialization )
+{
+  try
+  {
+    std::string _content =
+R"([{
+    "endpoint": "2.59.255.86:2001",
+    "last_seen_time": "2024-11-13T10:00:10",
+    "last_connection_disposition": "last_connection_handshaking_failed",
+    "la
+)";
+
+    const std::string _path = "output.txt";
+    std::ofstream _file( _path );
+    _file << _content;
+    _file.close();
+
+    BOOST_REQUIRE_THROW( fc::json::from_string( _content, fc::json::format_validation_mode::full ), fc::parse_error_exception );
+    BOOST_REQUIRE_THROW( fc::json::from_file( _path, fc::json::format_validation_mode::full ), fc::parse_error_exception );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
