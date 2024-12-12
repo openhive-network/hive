@@ -67,7 +67,7 @@ class sign_state
           initial_auth = get_current_authority( id );
         } catch( const std::runtime_error& e )
         {
-          // TODO: Call on_unknown_account_entry here
+          tracer->on_unknown_account_entry( id, 0, 0, 0 );
           return false;
         }           
 
@@ -229,7 +229,7 @@ class sign_state
               account_auth = get_current_authority( a.first );
             } catch( const std::runtime_error& e )
             {
-              // TODO: Call on_unknown_account_entry here
+              tracer->on_unknown_account_entry( a.first, a.second, auth.weight_threshold, depth );
               continue;
             }           
 
