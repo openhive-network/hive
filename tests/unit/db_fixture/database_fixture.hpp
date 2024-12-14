@@ -244,7 +244,6 @@ struct database_fixture {
   chain::database* db = nullptr;
   fc::ecc::private_key private_key = fc::ecc::private_key::generate();
   fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
-  string debug_key = init_account_priv_key.key_to_wif();
   public_key_type init_account_pub_key = init_account_priv_key.get_public_key();
   uint32_t default_skip = database::skip_nothing;
 
@@ -276,9 +275,9 @@ struct database_fixture {
                       const fc::ecc::private_key& key = committee,
                       int miss_blocks = 0);
 
-  uint32_t generate_blocks( const std::string& debug_key, uint32_t count, uint32_t skip );
+  uint32_t generate_blocks( const fc::ecc::private_key& key, uint32_t count, uint32_t skip );
 
-  uint32_t generate_blocks_until( const std::string& debug_key, const fc::time_point_sec& head_block_time,
+  uint32_t generate_blocks_until( const fc::ecc::private_key& key, const fc::time_point_sec& head_block_time,
     bool generate_sparsely, uint32_t skip );
 
   /**

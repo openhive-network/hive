@@ -51,17 +51,17 @@ public:
     return fixture->generate_block(skip, key, miss_blocks);
   }
 
-  uint32_t generate_blocks( const std::string& debug_key, uint32_t count, uint32_t skip )
+  uint32_t generate_blocks( const fc::ecc::private_key& debug_key, uint32_t count, uint32_t skip )
   {
     FC_ASSERT(fixture);
     return fixture->generate_blocks(debug_key, count, skip);
   }
 
-  uint32_t generate_blocks_until( const std::string& debug_key, const fc::time_point_sec& head_block_time,
+  uint32_t generate_blocks_until( const fc::ecc::private_key& key, const fc::time_point_sec& head_block_time,
     bool generate_sparsely, uint32_t skip )
   {
     FC_ASSERT(fixture);
-    return fixture->generate_blocks_until(debug_key, head_block_time, generate_sparsely, skip);
+    return fixture->generate_blocks_until(key, head_block_time, generate_sparsely, skip);
   }
 
   uint32_t get_last_irreversible_block_num()

@@ -147,7 +147,7 @@ struct witness_fixture : public hived_fixture
 
   void schedule_blocks( uint32_t count ) const
   {
-    db_plugin->debug_generate_blocks( init_account_priv_key.key_to_wif(), count, default_skip, 0, false );
+    db_plugin->debug_generate_blocks( init_account_priv_key, count, default_skip, 0, false );
   }
 
   void schedule_block() const
