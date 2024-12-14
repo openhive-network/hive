@@ -74,7 +74,7 @@ This kind of setup mostly is covered by general build procedures described in [b
 If you'd like to use our already pre-built official binary image, it's as simple as downloading it from the Dockerhub registry with only one command:
 
 ```
-docker pull hiveio/hive
+docker pull hiveio/hive:1.27.7
 ```
 
 Running a docker image in the API node case (specific to exhange deployment) and using a dockerized version of cli_wallet are both described [here](/README.md#scenarios-of-using-dockerized-hived-assumed-mainnet-configuration)
