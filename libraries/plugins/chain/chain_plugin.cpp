@@ -611,7 +611,8 @@ void chain_plugin_impl::start_write_processing()
 
             if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
             {
-              fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
+              fc::time_point now = fc::time_point::now();
+              fc::microseconds write_lock_held_duration = now - write_lock_acquired_time;
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
@@ -635,6 +636,7 @@ void chain_plugin_impl::start_write_processing()
                 * advancing the shutdown_mgr::wait process. Without this mechanism, the application would hang
                 * while waiting for processing all the blocks in the queue.
                 */
+                write_lock_acquired_time = now; // prevent spamming of above warning during shutdown
               }
             }
 
