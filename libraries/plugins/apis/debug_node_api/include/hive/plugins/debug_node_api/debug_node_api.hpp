@@ -15,6 +15,19 @@ using json_rpc::void_type;
 
 namespace detail { class debug_node_api_impl; }
 
+struct debug_generate_blocks_args
+{
+  std::string                               debug_key;
+  uint32_t                                  count = 0;
+  uint32_t                                  skip = hive::chain::database::skip_nothing;
+  uint32_t                                  miss_blocks = 0;
+};
+
+struct debug_generate_blocks_return
+{
+  uint32_t                                  blocks = 0;
+};
+
 struct debug_generate_blocks_until_args
 {
   std::string                               debug_key;
@@ -22,11 +35,7 @@ struct debug_generate_blocks_until_args
   bool                                      generate_sparsely = true;
 };
 
-struct debug_generate_blocks_until_return
-{
-  uint32_t                                  blocks;
-};
-
+typedef debug_generate_blocks_return debug_generate_blocks_until_return;
 
 typedef void_type debug_get_head_block_args;
 
@@ -172,11 +181,15 @@ class debug_node_api
 
 } } } // hive::plugins::debug_node
 
+
+FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_args,
+        (debug_key)(count)(skip)(miss_blocks) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_return,
+        (blocks) )
+
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
         (debug_key)(head_block_time)(generate_sparsely) )
-
-FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_return,
-        (blocks) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_get_head_block_return,
         (block) )

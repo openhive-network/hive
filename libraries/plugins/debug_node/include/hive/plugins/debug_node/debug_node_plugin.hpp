@@ -27,19 +27,6 @@ using namespace appbase;
 
 namespace detail { class debug_node_plugin_impl; }
 
-struct debug_generate_blocks_args
-{
-  std::string                               debug_key;
-  uint32_t                                  count = 0;
-  uint32_t                                  skip = hive::chain::database::skip_nothing;
-  uint32_t                                  miss_blocks = 0;
-};
-
-struct debug_generate_blocks_return
-{
-  uint32_t                                  blocks = 0;
-};
-
 class debug_node_plugin : public plugin< debug_node_plugin >
 {
   public:
@@ -95,20 +82,15 @@ class debug_node_plugin : public plugin< debug_node_plugin >
       const hive::protocol::price& new_price,
       fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() );
 
-    void debug_generate_blocks(
-      debug_generate_blocks_return& ret,
-      const debug_generate_blocks_args& args,
-      bool immediate_generation );
-
     uint32_t debug_generate_blocks(
-      const std::string& debug_key,
+      fc::optional<fc::ecc::private_key> debug_key,
       uint32_t count,
       uint32_t skip,
       uint32_t miss_blocks,
       bool immediate_generation
       );
     uint32_t debug_generate_blocks_until(
-      const std::string& debug_key,
+      fc::optional<fc::ecc::private_key> debug_key,
       const fc::time_point_sec& head_block_time,
       bool generate_sparsely,
       uint32_t skip,
@@ -150,13 +132,3 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 };
 
 } } }
-
-FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_args,
-        (debug_key)
-        (count)
-        (skip)
-        (miss_blocks)
-        )
-FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_return,
-        (blocks)
-        )

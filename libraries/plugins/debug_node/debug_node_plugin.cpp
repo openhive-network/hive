@@ -326,54 +326,31 @@ void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_p
   ilog( "Final price=${p}", ( "p", hive::protocol::price( dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares ) ) );
 }
 
-uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation)
+uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private_key> debug_private_key,
+  uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation )
 {
-  debug_generate_blocks_args args;
-  debug_generate_blocks_return ret;
+  if( count == 0 )
+    return 0;
 
-  args.debug_key = debug_key;
-  args.count = count;
-  args.skip = skip;
-  args.miss_blocks = miss_blocks;
-  debug_generate_blocks( ret, args, immediate_generation );
-  return ret.blocks;
-}
-
-void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret, const debug_generate_blocks_args& args, bool immediate_generation)
-{
-  if( args.count == 0 )
-  {
-    ret.blocks = 0;
-    return;
-  }
-
-  fc::optional<fc::ecc::private_key> debug_private_key;
   chain::public_key_type debug_public_key;
   const witness::witness_plugin::t_signing_keys* signing_keys = nullptr;
-  if( args.debug_key != "" )
-  {
-    debug_private_key = fc::ecc::private_key::wif_to_key( args.debug_key );
-    FC_ASSERT( debug_private_key.valid() );
+  if( debug_private_key.valid() )
     debug_public_key = debug_private_key->get_public_key();
-  }
   if( my->_witness_plugin_ptr )
-  {
     signing_keys = &my->_witness_plugin_ptr->get_signing_keys();
-  }
   if( not debug_private_key.valid() and ( signing_keys == nullptr or signing_keys->empty() ) )
   {
     elog( "Skipping generation because I don't know the private key" );
     FC_ASSERT( false, "Skipping generation because I don't know the private key" );
-    ret.blocks = 0;
-    return;
+    return 0;
   }
 
   chain::database& db = database();
 
-  uint32_t slot = args.miss_blocks+1, produced = 0;
-  while( produced < args.count )
+  uint32_t slot = miss_blocks+1, produced = 0;
+  while( produced < count )
   {
-    uint32_t new_slot = args.miss_blocks+1;
+    uint32_t new_slot = miss_blocks+1;
     std::string scheduled_witness_name = db.get_scheduled_witness( slot );
     fc::time_point_sec scheduled_time = db.get_slot_time( slot );
     const chain::witness_object& scheduled_witness = db.get_witness( scheduled_witness_name );
@@ -396,7 +373,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
 
     auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, private_key, args.skip, logging);
+      scheduled_witness_name, private_key, skip, logging);
 
     if( immediate_generation ) // use this mode when called from debug node API (it takes write lock) - also in most unit tests
     {
@@ -427,11 +404,11 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     slot = new_slot;
   }
 
-  ret.blocks = produced;
+  return produced;
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks_until(
-  const std::string& debug_key,
+  fc::optional<fc::ecc::private_key> debug_private_key,
   const fc::time_point_sec& head_block_time,
   bool generate_sparsely,
   uint32_t skip,
@@ -447,18 +424,18 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
 
   if( generate_sparsely )
   {
-    new_blocks += debug_generate_blocks( debug_key, 1, skip, 0, immediate_generation );
+    new_blocks += debug_generate_blocks( debug_private_key, 1, skip, 0, immediate_generation );
     auto slots_to_miss = db.get_slot_at_time( head_block_time );
     if( slots_to_miss > 1 )
     {
       slots_to_miss--;
-      new_blocks += debug_generate_blocks( debug_key, 1, skip, slots_to_miss, immediate_generation );
+      new_blocks += debug_generate_blocks( debug_private_key, 1, skip, slots_to_miss, immediate_generation );
     }
   }
   else
   {
     while( db.head_block_time() < head_block_time )
-      new_blocks += debug_generate_blocks( debug_key, 1, skip, 0, immediate_generation );
+      new_blocks += debug_generate_blocks( debug_private_key, 1, skip, 0, immediate_generation );
   }
 
   return new_blocks;

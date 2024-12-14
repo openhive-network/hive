@@ -37,6 +37,8 @@ class debug_node_api_impl
       (debug_throw_exception)
     )
 
+    fc::optional<fc::ecc::private_key> get_debug_private_key( const std::string& debug_key_str ) const;
+
     chain::chain_plugin&              _chain;
     chain::database&                  _db;
     const hive::chain::block_read_i&  _block_reader;
@@ -45,16 +47,27 @@ class debug_node_api_impl
     appbase::application&             theApp;
 };
 
+fc::optional<fc::ecc::private_key> debug_node_api_impl::get_debug_private_key( const std::string& debug_key_str ) const
+{
+  fc::optional<fc::ecc::private_key> debug_private_key;
+  if( debug_key_str != "" )
+  {
+    debug_private_key = fc::ecc::private_key::wif_to_key( debug_key_str );
+    FC_ASSERT( debug_private_key.valid() );
+  }
+  return debug_private_key;
+}
+
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 {
-  debug_generate_blocks_return ret;
-  _debug_node.debug_generate_blocks( ret, args, true ); // We can't use chain_plugin like generation because we need to be under lock and then chain plugin route does not work (because it has its own lock)
-  return ret;
+  return { _debug_node.debug_generate_blocks( get_debug_private_key( args.debug_key ), args.count, args.skip,
+    args.miss_blocks, true ) }; // We can't use chain_plugin-like generation because we need to be under lock and then chain plugin route does not work (because it has its own lock)
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 {
-  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, true ) };
+  return { _debug_node.debug_generate_blocks_until( get_debug_private_key( args.debug_key ), args.head_block_time, args.generate_sparsely,
+    chain::database::skip_nothing, true ) }; // We can't use chain_plugin-like generation because we need to be under lock and then chain plugin route does not work (because it has its own lock)
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_head_block )
