@@ -103,9 +103,10 @@ fc::path common_init( appbase::application& app, bool remove_db_files, const fc:
   return _data_dir;
 }
 
+const fc::ecc::private_key database_fixture::committee = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
 fc::ecc::private_key database_fixture::generate_private_key(string seed)
 {
-  static const fc::ecc::private_key committee = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
   if( seed == "init_key" )
     return committee;
   return fc::ecc::private_key::regenerate( fc::sha256::hash( seed ) );

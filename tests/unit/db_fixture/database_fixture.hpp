@@ -268,11 +268,12 @@ struct database_fixture {
   static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
 #endif
 
+  static const fc::ecc::private_key committee;
   static const uint16_t shared_file_size_in_mb_64 = 64;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
   void generate_block(uint32_t skip = 0,
-                      const fc::ecc::private_key& key = generate_private_key("init_key"),
+                      const fc::ecc::private_key& key = committee,
                       int miss_blocks = 0);
 
   uint32_t generate_blocks( const std::string& debug_key, uint32_t count, uint32_t skip );
