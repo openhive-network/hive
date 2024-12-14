@@ -458,7 +458,7 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   else
   {
     while( db.head_block_time() < head_block_time )
-      new_blocks += debug_generate_blocks( debug_key, 1, hive::chain::database::skip_nothing, 0, immediate_generation );
+      new_blocks += debug_generate_blocks( debug_key, 1, skip, 0, immediate_generation );
   }
 
   return new_blocks;
