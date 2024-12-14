@@ -246,7 +246,7 @@ struct database_fixture {
   fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
   string debug_key = init_account_priv_key.key_to_wif();
   public_key_type init_account_pub_key = init_account_priv_key.get_public_key();
-  uint32_t default_skip = 0 | database::skip_undo_history_check | database::skip_authority_check;
+  uint32_t default_skip = database::skip_nothing;
 
   typedef plugins::account_history_rocksdb::account_history_rocksdb_plugin ah_plugin_type;
   ah_plugin_type* ah_plugin = nullptr;
