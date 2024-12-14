@@ -106,7 +106,7 @@ struct transaction_builder
   transaction_builder& operator=( const transaction_builder& ) = delete;
   transaction_builder& operator=( transaction_builder&& ) = delete;
 
-  void print_stats() const;
+  void finalize();
 
   void init( int starting_point = 0 ); // first task of worker thread
   bool accept_transaction( full_transaction_ptr full_tx );
@@ -164,9 +164,13 @@ class colony_plugin_impl
     uint32_t                                             _last_comment = 0;
 };
 
-void transaction_builder::print_stats() const
+void transaction_builder::finalize()
 {
-  ilog( "Production stats for thread ${t}", ( "t", _worker.name() ) );
+  std::string name = _worker.name(); //ABW: remember name because quit() can release the internal data (TBH it is a bug in fc::thread)
+
+  _worker.quit();
+
+  ilog( "Production stats for thread ${t}", ( "t", name ) );
   ilog( "Number of transactions: ${t}", ( "t", _tx_num ) );
   if( _tx_num == 0 )
     return;
@@ -298,7 +302,6 @@ void transaction_builder::build_transaction()
   {
     ilog( "Thread ${t} stopped building new transactions (${p} pending).",
       ( "t", _worker.name() )( "p", _concurrent_tx_count ) );
-    _worker.quit();
     return;
   }
   else if( _tx_needs_update.load( std::memory_order_relaxed ) )
@@ -888,12 +891,14 @@ void colony_plugin::plugin_startup()
 
 void colony_plugin::plugin_shutdown()
 {
-  for( const auto& thread : my->_threads )
-    thread.print_stats();
+  ilog( "Shutting down colony plugin" );
 
   chain::util::disconnect_signal( my->_end_of_sync_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
+
+  for( auto& thread : my->_threads )
+    thread.finalize();
 }
 
 } } } // hive::plugins::colony
