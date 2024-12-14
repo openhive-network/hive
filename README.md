@@ -66,13 +66,13 @@ If you'd like to use our pre-built official binary images, download them from th
 docker pull hiveio/hive:1.27.7
 ```
 
-Please note that the `latest` tag is not supported; you must specify the version tag explicitly, in order to avoid problems for new versions that require replay.
+Please note that the `latest` tag is not supported; you must explicitly specify the version tag to avoid issues with new versions that require replay.
 
-A script is available that wraps a `docker run` statement and emulates direct hived usage: [run_hived_img.sh](scripts/run_hived_img.sh). This script is the recommended way to launch the hived docker container:
+A script is available to simplify the use of a `docker run` command by emulating direct `hived` usage: [run_hived_img.sh](scripts/run_hived_img.sh). This script is the recommended method for launching the hived Docker container.
 
 General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`
 
-Read [more about using run_hived_img.sh](doc/run_hived_img.md) in various scenarios.
+Read [more about using run_hived_img.sh](doc/run_hived_img.md) to explore its usage in various scenarios.
 
 ## CLI Wallet
 
