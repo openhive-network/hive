@@ -60,10 +60,10 @@ However, if you prefer to build from source, we also provide [build instructions
 
 Building a `hived` docker image is described in detail here: [Building under Docker](doc/building.md#building-under-docker).
 
-If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.27.6, run:
+If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.27.7, run:
 
 ```
-docker pull hiveio/hive:1.27.6
+docker pull hiveio/hive:1.27.7
 ```
 
 Please note that the `latest` tag is not supported; you must specify the version tag explicitly, in order to avoid problems for new versions that require replay.
