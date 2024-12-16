@@ -28,6 +28,7 @@ namespace hive { namespace chain {
 
 inline void validate_permlink_0_1( const string& permlink )
 {
+  ilog("Permlink: '${p}', permlink length: ${l}", ("p", permlink)("l", permlink.size()));
   FC_ASSERT( permlink.size() > HIVE_MIN_PERMLINK_LENGTH && permlink.size() < HIVE_MAX_PERMLINK_LENGTH, "Permlink is not a valid size." );
 
   for( const auto& c : permlink )
