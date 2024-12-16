@@ -3462,6 +3462,7 @@ void database::verify_match_of_blockchain_configuration()
   {
     constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
     constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
+    constexpr char HIVE_BLOCKCHAIN_VERSION_KEY[] = "HIVE_BLOCKCHAIN_VERSION";
 
     fc::mutable_variant_object stored_blockchain_config = fc::json::from_string(full_stored_blockchain_config_json, fc::json::format_validation_mode::full).get_object();
     const std::string current_hive_treasury_account = current_blockchain_config[HIVE_TREASURY_ACCOUNT_KEY].as_string();
@@ -3471,6 +3472,9 @@ void database::verify_match_of_blockchain_configuration()
     current_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
     stored_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
     current_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
+    stored_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
+    current_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
+
     bool throw_exception = false;
 
     {
