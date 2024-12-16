@@ -510,6 +510,14 @@ public:
       _self
     );
 
+    _on_end_of_sync_conn = _mainDb.add_end_of_syncing_handler(
+      [&]( )
+      {
+        on_end_of_sync();
+      },
+      _self
+    );
+
     _cached_irreversible_block.store(0);
     _cached_reindex_point = 0;
 
@@ -523,6 +531,7 @@ public:
     chain::util::disconnect_signal(_on_irreversible_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
+    chain::util::disconnect_signal(_on_end_of_sync_conn);
     shutdownDb();
   }
 
@@ -820,6 +829,8 @@ private:
 
   void on_post_apply_block(const block_notification& bn);
 
+  void on_end_of_sync();
+
   void collectOptions(const bpo::variables_map& options);
 
   /** Returns true if given account is tracked.
@@ -861,6 +872,7 @@ private:
   boost::signals2::connection      _on_irreversible_block_conn;
   boost::signals2::connection      _on_post_apply_block_conn;
   boost::signals2::connection      _on_fail_apply_block_conn;
+  boost::signals2::connection      _on_end_of_sync_conn;
 
   /// Helper member to be able to detect another incomming tx and increment tx-counter.
   transaction_id_type              _lastTx;
@@ -904,6 +916,8 @@ private:
   bool                             _reindexing = false;
 
   bool                             _prune = false;
+
+  bool                             _is_live = false;
 
   struct saved_balances
   {
@@ -2068,7 +2082,10 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   );
 
   update_lib(block_num);
-  //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
+  if( _is_live )
+  {
+    flushStorage(); // it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
+  }
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
@@ -2181,6 +2198,11 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   }
 
   _operationSeqId = 0;
+}
+
+void account_history_rocksdb_plugin::impl::on_end_of_sync()
+{
+  _is_live = true;
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
