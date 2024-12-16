@@ -1604,6 +1604,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     {
       constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
       constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
+      constexpr char HIVE_BLOCKCHAIN_VERSION_KEY[] = "HIVE_BLOCKCHAIN_VERSION";
 
       fc::mutable_variant_object loaded_blockchain_config = fc::json::from_string(full_loaded_blockchain_configuration_json, fc::json::format_validation_mode::full).get_object();
       const std::string loaded_hive_treasury_account = loaded_blockchain_config[HIVE_TREASURY_ACCOUNT_KEY].as_string();
@@ -1613,6 +1614,9 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       current_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
       loaded_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
       current_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
+      loaded_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
+      current_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
+
       bool throw_exception = false;
 
       {
