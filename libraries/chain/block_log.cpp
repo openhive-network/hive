@@ -403,6 +403,20 @@ namespace hive { namespace chain {
     return std::make_tuple(std::move(serialized_data), serialized_data_size, std::move(this_block_artifacts));
   }
 
+  std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::block_attributes_t> block_log::read_common_raw_block_data_by_num(uint32_t block_num) const
+  {
+    if( block_num == my->_artifacts->read_head_block_num() )
+    {
+      return read_raw_head_block();
+    }
+    else
+    {
+      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = 
+        read_raw_block_data_by_num(block_num);
+      return std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
+    }
+  }
+
   // threading guarantees:
   // - this function may only be called by one thread at a time
   // - It is safe to call `append` while any number of other threads 

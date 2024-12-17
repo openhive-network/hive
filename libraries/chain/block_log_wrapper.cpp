@@ -153,12 +153,12 @@ std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> block_log_wrappe
   return get_head_log()->read_raw_head_block();
 }
 
-std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log_wrapper::read_raw_block_data_by_num(uint32_t block_num) const
+std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::block_attributes_t> block_log_wrapper::read_common_raw_block_data_by_num(uint32_t block_num) const
 {
   const block_log_ptr_t log = get_block_log_corresponding_to( block_num );
   FC_ASSERT( log, 
              "Unable to find block log corresponding to block number ${block_num}", (block_num));
-  return log->read_raw_block_data_by_num( block_num );
+  return log->read_common_raw_block_data_by_num( block_num );
 }
 
 void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )

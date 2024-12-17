@@ -315,15 +315,8 @@ void fill_pending_queue(const fc::path &input_path, const bool read_only, uint32
     block_to_compress *uncompressed_block = new block_to_compress;
     uncompressed_block->block_number = current_block_number;
 
-    std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data;
-    if (current_block_number == head_block_num)
-      raw_compressed_block_data = log_reader->read_raw_head_block();
-    else
-    {
-      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = 
-        log_reader->read_raw_block_data_by_num(current_block_number);
-      raw_compressed_block_data = std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
-    }
+    std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data =
+      log_reader->read_common_raw_block_data_by_num(current_block_number);
     std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = 
       hive::chain::block_log_compression::decompress_raw_block(std::move(raw_compressed_block_data));
 
