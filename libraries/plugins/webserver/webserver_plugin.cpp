@@ -1,5 +1,6 @@
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/webserver/local_endpoint.hpp>
+#include <hive/plugins/webserver/servers.hpp>
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
@@ -281,17 +282,12 @@ class webserver_plugin_impl : public webserver_base
 
     thread_pool_size_t         thread_pool_size;
 
-    shared_ptr< std::thread >  http_thread;
-    asio::io_service           http_ios;
-    websocket_server_type      http_server;
+    server<websocket_server_type> http;
+    server<websocket_server_type> ws;
 
     shared_ptr< std::thread >              unix_thread;
     asio::io_service                       unix_ios;
     websocket_local_server_type            unix_server;
-
-    shared_ptr< std::thread >  ws_thread;
-    asio::io_service           ws_ios;
-    websocket_server_type      ws_server;
 
     boost::thread_group        thread_pool;
     asio::io_service           thread_pool_ios;
@@ -353,23 +349,23 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
 
   if( ws_endpoint )
   {
-    ws_thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
+    ws.thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
     {
       ilog( "start processing ws thread" );
       fc::set_thread_name("websocket");
       fc::thread::current().set_name("websocket");
       try
       {
-        ws_server.clear_access_channels( websocketpp::log::alevel::all );
-        ws_server.clear_error_channels( websocketpp::log::elevel::all );
-        ws_server.init_asio( &ws_ios );
-        ws_server.set_reuse_addr( true );
+        ws.server.clear_access_channels( websocketpp::log::alevel::all );
+        ws.server.clear_error_channels( websocketpp::log::elevel::all );
+        ws.server.init_asio( &ws.ios );
+        ws.server.set_reuse_addr( true );
 
-        ws_server.set_message_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_ws_message, this, &ws_server, _1, _2 ) );
+        ws.server.set_message_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_ws_message, this, &ws.server, _1, _2 ) );
 
         if( ws_and_http_uses_same_endpoint )
         {
-          ws_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &ws_server, _1 ) );
+          ws.server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &ws.server, _1 ) );
         }
 
         if( ws_and_http_uses_same_endpoint )
@@ -377,15 +373,15 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
           ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
-        ws_server.listen( *ws_endpoint );
+        ws.server.listen( *ws_endpoint );
         update_ws_endpoint();
 
         notify( "WS", ws_endpoint );
 
         ilog( "start accepting ws requests" );
-        ws_server.start_accept();
+        ws.server.start_accept();
 
-        ws_ios.run();
+        ws.ios.run();
         ilog( "ws io service exit" );
       }
       catch( const fc::exception& e )
@@ -409,34 +405,34 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
 
   if( http_endpoint && ( !ws_and_http_uses_same_endpoint || !ws_endpoint ) )
   {
-    http_thread = std::make_shared<std::thread>( [&]()
+    http.thread = std::make_shared<std::thread>( [&]()
     {
       ilog( "start processing http thread" );
       fc::set_thread_name("http");
       fc::thread::current().set_name("http");
       try
       {
-        http_server.clear_access_channels( websocketpp::log::alevel::all );
-        http_server.clear_error_channels( websocketpp::log::elevel::all );
-        http_server.init_asio( &http_ios );
-        http_server.set_reuse_addr( true );
+        http.server.clear_access_channels( websocketpp::log::alevel::all );
+        http.server.clear_error_channels( websocketpp::log::elevel::all );
+        http.server.init_asio( &http.ios );
+        http.server.set_reuse_addr( true );
 
-        http_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &http_server, _1 ) );
+        http.server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &http.server, _1 ) );
 
         if( tls )
-          tls->set_tls_handlers( http_server );
+          tls->set_tls_handlers( http.server );
 
         ilog( "start listening for ${type} requests on ${endpoint}",
             ("type", tls ? "https" : "http")( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
-        http_server.listen( *http_endpoint );
+        http.server.listen( *http_endpoint );
 
         ilog( "start accepting http requests" );
-        http_server.start_accept();
+        http.server.start_accept();
         update_http_endpoint();
 
         notify( "HTTP", http_endpoint );
 
-        http_ios.run();
+        http.ios.run();
         ilog( "http io service exit" );
       }
       catch( const fc::exception& e )
@@ -466,7 +462,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
       try {
         unix_server.clear_access_channels( websocketpp::log::alevel::all );
         unix_server.clear_error_channels( websocketpp::log::elevel::all );
-        unix_server.init_asio( &http_ios );
+        unix_server.init_asio( &http.ios );
 
         unix_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_request, this, &unix_server, _1 ) );
         //unix_server.set_http_handler([&](connection_hdl hdl) {
@@ -479,7 +475,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         unix_server.start_accept();
 
         ilog( "start running unix http requests" );
-        http_ios.run();
+        http.ios.run();
         ilog( "unix http io service exit" );
       } catch( ... ) {
         elog( "error thrown from unix http io service" );
@@ -503,13 +499,13 @@ void update_endpoint(websocket_server_type& server, optional< tcp::endpoint >& e
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::update_http_endpoint()
 {
-  update_endpoint<websocket_server_type>(http_server, http_endpoint);
+  update_endpoint<websocket_server_type>(http.server, http_endpoint);
 }
 
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::update_ws_endpoint()
 {
-  update_endpoint<websocket_server_type>(ws_server, ws_endpoint);
+  update_endpoint<websocket_server_type>(ws.server, ws_endpoint);
 }
 
 template<typename websocket_server_type>
@@ -518,18 +514,18 @@ void webserver_plugin_impl<websocket_server_type>::stop_webserver()
   thread_pool_ios.stop();
   thread_pool.join_all();
 
-  if( ws_thread )
+  if( ws.thread )
   {
-    ws_ios.stop();
-    ws_thread->join();
-    ws_thread.reset();
+    ws.ios.stop();
+    ws.thread->join();
+    ws.thread.reset();
   }
 
-  if( http_thread )
+  if( http.thread )
   {
-    http_ios.stop();
-    http_thread->join();
-    http_thread.reset();
+    http.ios.stop();
+    http.thread->join();
+    http.thread.reset();
   }
 
   if( unix_thread )
