@@ -2,8 +2,6 @@
 #include <hive/plugins/webserver/local_endpoint.hpp>
 #include <hive/plugins/webserver/servers.hpp>
 
-#include <hive/plugins/json_rpc/utility.hpp>
-
 #include <fc/network/ip.hpp>
 #include <fc/log/logger_config.hpp>
 #include <fc/io/json.hpp>
@@ -276,8 +274,6 @@ class webserver_plugin_impl : public webserver_base
     void start_webserver() override;
     void stop_webserver() override;
 
-    void handle_ws_message( websocket_server_type*, connection_hdl, const typename websocket_server_type::message_ptr& );
-    void handle_http_message( websocket_server_type*, connection_hdl );
     void handle_http_request( websocket_local_server_type*, connection_hdl );
 
     thread_pool_size_t         thread_pool_size;
@@ -361,11 +357,11 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         ws.server.init_asio( &ws.ios );
         ws.server.set_reuse_addr( true );
 
-        ws.server.set_message_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_ws_message, this, &ws.server, _1, _2 ) );
+        ws.server.set_message_handler( boost::bind( &server<websocket_server_type>::handle_ws_message, &ws, api, &thread_pool_ios, _1, _2 ) );
 
         if( ws_and_http_uses_same_endpoint )
         {
-          ws.server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &ws.server, _1 ) );
+          ws.server.set_http_handler( boost::bind( &server<websocket_server_type>::handle_http_message, &ws, api, &thread_pool_ios, _1 ) );
         }
 
         if( ws_and_http_uses_same_endpoint )
@@ -417,7 +413,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         http.server.init_asio( &http.ios );
         http.server.set_reuse_addr( true );
 
-        http.server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &http.server, _1 ) );
+        http.server.set_http_handler( boost::bind( &server<websocket_server_type>::handle_http_message, &http, api, &thread_pool_ios, _1 ) );
 
         if( tls )
           tls->set_tls_handlers( http.server );
@@ -534,121 +530,6 @@ void webserver_plugin_impl<websocket_server_type>::stop_webserver()
     unix_thread->join();
     unix_thread.reset();
   }
-}
-
-template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_server_type* server, connection_hdl hdl, const typename websocket_server_type::message_ptr& msg )
-{
-  auto con = server->get_con_from_hdl( std::move( hdl ) );
-
-  fc::time_point arrival_time = fc::time_point::now();
-  thread_pool_ios.post( [con, msg, this, arrival_time]()
-  {
-    LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing ws API call");
-
-    try
-    {
-      if( msg->get_opcode() == websocketpp::frame::opcode::text )
-      {
-        auto body = msg->get_payload();
-        LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get ws payload");
-
-        auto response =  api->call( body );
-        LOG_DELAY_EX(arrival_time, fc::seconds(10), "Excessive delay to process ws API call: ${body}", (body));
-
-        con->send( response );
-      }
-      else
-        con->send( "error: string payload expected" );
-    }
-    catch( fc::exception& e )
-    {
-      con->send( "error calling API " + e.to_string() );
-      ulog("${e}",("e",e.to_string()));
-    }
-    catch( ... )
-    {
-      auto eptr = std::current_exception();
-
-      try
-      {
-        if( eptr )
-          std::rethrow_exception( eptr );
-
-        con->send( "unknown error occurred" );
-      }
-      catch( const std::exception& e )
-      {
-        std::stringstream s;
-        s << "unknown exception: " << e.what();
-        con->send( s.str() );
-        ulog("${e}", ("e", s.str()) );
-      }
-    }
-  });
-}
-
-template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocket_server_type* server, connection_hdl hdl )
-{
-  auto con = server->get_con_from_hdl( std::move( hdl ) );
-  con->defer_http_response();
-
-  fc::time_point arrival_time = fc::time_point::now();
-  thread_pool_ios.post( [con, this, arrival_time]()
-  {
-    LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing API call");
-
-    auto body = con->get_request_body();
-    LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get request_body");
-
-    try
-    {
-      con->set_body( api->call( body ) );
-      con->append_header( "Content-Type", "application/json" );
-
-      /*
-        HTTP/1.1 applications that do not support persistent connections MUST include the "close" connection option in every message. 
-        See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-
-        Additional details: https://github.com/zaphoyd/websocketpp/issues/890
-      */
-      con->append_header( "Connection", "close" );
-
-      con->set_status( websocketpp::http::status_code::ok );
-    }
-    catch( fc::exception& e )
-    {
-      edump( (e) );
-      ulog("${e}", (e) );
-      con->set_body( "Could not call API" );
-      con->set_status( websocketpp::http::status_code::not_found );
-    }
-    catch( ... )
-    {
-      auto eptr = std::current_exception();
-
-      try
-      {
-        if( eptr )
-          std::rethrow_exception( eptr );
-        ulog("unknown error trying to process API call");
-        con->set_body( "unknown error occurred" );
-        con->set_status( websocketpp::http::status_code::internal_server_error );
-      }
-      catch( const std::exception& e )
-      {
-        std::stringstream s;
-        s << "unknown exception: " << e.what();
-        con->set_body( s.str() );
-        con->set_status( websocketpp::http::status_code::internal_server_error );
-        ulog("${e}", ("e", s.str()) );
-      }
-    }
-
-    LOG_DELAY_EX(arrival_time, fc::seconds(10), "Excessive delay to process API call ${body}",(body));
-    con->send_http_response();
-  });
 }
 
 template<typename websocket_server_type>
