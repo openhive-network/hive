@@ -126,6 +126,7 @@ namespace hive { namespace chain {
         block_log_artifacts::artifact_container_t& plural_of_artifacts);
 
       void flush();
+      std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::block_attributes_t> read_common_raw_block_data_by_num(uint32_t block_num) const;
       std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const;
       void multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num_from_disk,
         block_log_artifacts::artifact_container_t& plural_of_block_artifacts,

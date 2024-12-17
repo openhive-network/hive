@@ -45,8 +45,8 @@ namespace hive { namespace chain {
 
     // Methods wrapping safely block_log ones.
     std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
-    std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t>
-      read_raw_block_data_by_num(uint32_t block_num) const;
+    std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>
+      read_common_raw_block_data_by_num(uint32_t block_num) const;
     void multi_read_raw_block_data(uint32_t first_block_num, uint32_t last_block_num_from_disk,
       block_log_artifacts::artifact_container_t& plural_of_block_artifacts,
       std::unique_ptr<char[]>& block_data_buffer, size_t& block_data_buffer_size ) const;
