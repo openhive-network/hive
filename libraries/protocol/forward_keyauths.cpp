@@ -135,9 +135,9 @@ private:
 
   void collect_pow(const account_name_type& worker_account_name, const public_key_type& worker_key)
   {
-    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::OWNER, 0, true, worker_key, {}, 0});
-    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::ACTIVE, 0, true, worker_key, {}, 0});
-    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::POSTING, 0, true, worker_key, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::OWNER, 1, true, worker_key, {}, 1});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::ACTIVE, 1, true, worker_key, {}, 1});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::POSTING, 1, true, worker_key, {}, 1});
     collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::MEMO, 0, true, worker_key, {}, 0});
   }
 
@@ -271,17 +271,23 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
     keyauth_collector collector;
 
     // Common key types for genesis accounts
-    std::vector<key_t> genesis_key_types = {key_t::OWNER, key_t::ACTIVE, key_t::POSTING, key_t::MEMO};
+    std::vector<key_t> genesis_key_types = {key_t::OWNER, key_t::ACTIVE, key_t::POSTING};
 
     // 'steem' account
     auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
     collected_keyauth_t steem_item {"steem", key_t::OWNER, 1, true, STEEM_PUBLIC_KEY, {}, 1};
     add_key_authorizations(collector, steem_item, genesis_key_types);
+    add_key_authorizations(collector, steem_item, {key_t::MEMO});
 
     // 'initminer' account
     auto INITMINER_KEY = public_key_type(HIVE_INIT_PUBLIC_KEY_STR);
-    collected_keyauth_t initminer_item {"initminer", key_t::OWNER, 0, true, INITMINER_KEY, {}, 0};
+    collected_keyauth_t initminer_item {"initminer", key_t::OWNER, 1, true, INITMINER_KEY, {}, 1};
     add_key_authorizations(collector, initminer_item, genesis_key_types);
+    add_key_authorizations(collector, initminer_item, {key_t::MEMO});
+
+    // 'temp' account
+    collected_keyauth_t temp_item {"temp", key_t::OWNER, 0, true, public_key_type(), {}, 0, false};
+    add_key_authorizations(collector, temp_item, genesis_key_types);
 
     // Other genesis accounts - only MEMO
     std::vector<std::string> other_accounts = {HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT};
@@ -319,7 +325,7 @@ collected_keyauth_collection_t lock_account( const std::string& account_name )
 
     for (const auto& key_type : key_types) 
     {
-        collected_keyauth_t default_item {account_name, key_type, 0, key_type == key_t::MEMO, {}, {}, 0, key_type != key_t::MEMO/*lock_account_mode*/};
+        collected_keyauth_t default_item {account_name, key_type, 0, key_type == key_t::MEMO, {}, {}, 0, true, key_type != key_t::MEMO/*lock_account_mode*/};
         add_key_authorizations(collector, default_item, {key_type});
     }
 

@@ -26,12 +26,12 @@ struct collected_keyauth_t
   fc::ecc::public_key_data key_auth;
   std::string account_auth;
   hive::protocol::weight_type w = 0;
-
+  bool key_exists = true;
   bool lock_account_mode = false;
 
   bool allow_null_in_key_auth() const
   {
-    return lock_account_mode || !keyauth_variant;
+    return lock_account_mode || !keyauth_variant || !key_exists;
   }
 
   bool allow_null_in_account_auth() const
