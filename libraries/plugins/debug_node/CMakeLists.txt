@@ -5,7 +5,7 @@ add_library( debug_node_plugin
              debug_node_plugin.cpp
            )
 
-target_link_libraries( debug_node_plugin chain_plugin hive_utilities witness_plugin )
+target_link_libraries( debug_node_plugin chain_plugin hive_utilities witness_plugin account_history_rocksdb_plugin )
 target_include_directories( debug_node_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

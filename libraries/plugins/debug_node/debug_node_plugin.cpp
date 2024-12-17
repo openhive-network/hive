@@ -2,6 +2,7 @@
 
 #include <hive/plugins/witness/block_producer.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -57,6 +58,8 @@ class debug_node_plugin_impl
     plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
     plugins::witness::witness_plugin*         _witness_plugin_ptr = nullptr;
+    plugins::account_history_rocksdb::account_history_rocksdb_plugin*
+                                              _ah_plugin_ptr = nullptr;
 
     typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
     current_debug_update_transactions         _current_debug_update_txs;
@@ -110,6 +113,7 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
 void debug_node_plugin::plugin_startup()
 {
   my->_witness_plugin_ptr = my->theApp.find_plugin< hive::plugins::witness::witness_plugin >();
+  my->_ah_plugin_ptr = my->theApp.find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
   /*for( const std::string& fn : _edit_scripts )
   {
     std::shared_ptr< fc::ifstream > stream = std::make_shared< fc::ifstream >( fc::path(fn) );
@@ -332,6 +336,24 @@ uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private
   if( count == 0 )
     return 0;
 
+  // temporarily turn off live mode flushing of AH data when we are producing debug blocks
+  bool temp_live = false;
+  if( my->_ah_plugin_ptr )
+    temp_live = my->_ah_plugin_ptr->set_is_live_sync( false );
+
+  uint32_t result = debug_generate_blocks_impl( debug_private_key, count, skip, miss_blocks, immediate_generation );
+
+  // restore live mode setting in AH
+  if( temp_live )
+    my->_ah_plugin_ptr->set_is_live_sync( true );
+
+  return result;
+}
+
+uint32_t debug_node_plugin::debug_generate_blocks_impl( fc::optional<fc::ecc::private_key> debug_private_key,
+  uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation )
+{
+
   chain::public_key_type debug_public_key;
   const witness::witness_plugin::t_signing_keys* signing_keys = nullptr;
   if( debug_private_key.valid() )
@@ -420,23 +442,32 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   if( db.head_block_time() >= head_block_time )
     return 0;
 
+  // temporarily turn off live mode flushing of AH data when we are producing many blocks
+  bool temp_live = false;
+  if( my->_ah_plugin_ptr )
+    temp_live = my->_ah_plugin_ptr->set_is_live_sync( false );
+
   uint32_t new_blocks = 0;
 
   if( generate_sparsely )
   {
-    new_blocks += debug_generate_blocks( debug_private_key, 1, skip, 0, immediate_generation );
+    new_blocks += debug_generate_blocks_impl( debug_private_key, 1, skip, 0, immediate_generation );
     auto slots_to_miss = db.get_slot_at_time( head_block_time );
     if( slots_to_miss > 1 )
     {
       slots_to_miss--;
-      new_blocks += debug_generate_blocks( debug_private_key, 1, skip, slots_to_miss, immediate_generation );
+      new_blocks += debug_generate_blocks_impl( debug_private_key, 1, skip, slots_to_miss, immediate_generation );
     }
   }
   else
   {
     while( db.head_block_time() < head_block_time )
-      new_blocks += debug_generate_blocks( debug_private_key, 1, skip, 0, immediate_generation );
+      new_blocks += debug_generate_blocks_impl( debug_private_key, 1, skip, 0, immediate_generation );
   }
+
+  // restore live mode setting in AH
+  if( temp_live )
+    my->_ah_plugin_ptr->set_is_live_sync( true );
 
   return new_blocks;
 }

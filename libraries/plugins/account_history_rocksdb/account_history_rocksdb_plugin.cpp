@@ -634,6 +634,9 @@ public:
     }
   }
 
+  bool is_live() const { return _is_live; }
+  void set_live( bool set ) { _is_live = set; }
+
 private:
   void supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note);
   void load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note);
@@ -2293,6 +2296,13 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
   uint32_t* txInBlock) const
 {
   return _my->find_transaction_info(trxId, include_reversible, blockNo, txInBlock);
+}
+
+bool account_history_rocksdb_plugin::set_is_live_sync( bool set )
+{
+  bool is_live = _my->is_live();
+  _my->set_live( set );
+  return is_live;
 }
 
 } } }

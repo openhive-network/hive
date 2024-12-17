@@ -112,6 +112,13 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     bool allow_throw_exception = false;
 
   private:
+    uint32_t debug_generate_blocks_impl(
+      fc::optional<fc::ecc::private_key> debug_key,
+      uint32_t count,
+      uint32_t skip,
+      uint32_t miss_blocks,
+      bool immediate_generation );
+
     void on_pre_apply_transaction( const hive::chain::transaction_notification& note );
     void on_post_apply_block( const hive::chain::block_notification& note );
     std::map<protocol::public_key_type, fc::ecc::private_key> _private_keys;

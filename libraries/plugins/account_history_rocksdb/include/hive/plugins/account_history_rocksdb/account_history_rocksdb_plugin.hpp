@@ -54,6 +54,9 @@ public:
   // makes plugin remove database on shutdown - useful for tests where each test needs fresh database
   void set_destroy_database_on_shutdown( bool set = true ) { _destroyOnShutdown = set; }
 
+  // used by debug plugin to temporarily suppress live mode flushing while generating blocks
+  bool set_is_live_sync( bool set = true );
+
 private:
   class impl;
 
