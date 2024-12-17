@@ -264,7 +264,7 @@ class webserver_plugin_impl : public webserver_base
 {
   public:
     webserver_plugin_impl( thread_pool_size_t _thread_pool_size, appbase::application& app ) :
-      thread_pool_size( _thread_pool_size ), theApp( app )
+      thread_pool_size( _thread_pool_size ), http( "http" ), ws( "ws" ), theApp( app )
     {
     }
 
@@ -278,8 +278,8 @@ class webserver_plugin_impl : public webserver_base
 
     thread_pool_size_t         thread_pool_size;
 
-    server<websocket_server_type> http;
-    server<websocket_server_type> ws;
+    webserver<websocket_server_type> http;
+    webserver<websocket_server_type> ws;
 
     shared_ptr< std::thread >              unix_thread;
     asio::io_service                       unix_ios;
@@ -357,11 +357,11 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         ws.server.init_asio( &ws.ios );
         ws.server.set_reuse_addr( true );
 
-        ws.server.set_message_handler( boost::bind( &server<websocket_server_type>::handle_ws_message, &ws, api, &thread_pool_ios, _1, _2 ) );
+        ws.server.set_message_handler( boost::bind( &webserver<websocket_server_type>::handle_ws_message, &ws, api, &thread_pool_ios, _1, _2 ) );
 
         if( ws_and_http_uses_same_endpoint )
         {
-          ws.server.set_http_handler( boost::bind( &server<websocket_server_type>::handle_http_message, &ws, api, &thread_pool_ios, _1 ) );
+          ws.server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, &ws, api, &thread_pool_ios, _1 ) );
         }
 
         if( ws_and_http_uses_same_endpoint )
@@ -413,7 +413,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         http.server.init_asio( &http.ios );
         http.server.set_reuse_addr( true );
 
-        http.server.set_http_handler( boost::bind( &server<websocket_server_type>::handle_http_message, &http, api, &thread_pool_ios, _1 ) );
+        http.server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, &http, api, &thread_pool_ios, _1 ) );
 
         if( tls )
           tls->set_tls_handlers( http.server );

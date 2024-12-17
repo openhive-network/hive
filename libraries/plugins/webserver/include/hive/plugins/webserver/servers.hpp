@@ -16,11 +16,18 @@ using websocketpp::connection_hdl;
 namespace asio = boost::asio;
 
 template<typename websocket_server_type>
-struct server
+struct webserver
 {
+  std::string name;
+
   std::shared_ptr< std::thread >  thread;
   asio::io_service                ios;
   websocket_server_type           server;
+
+  webserver( const std::string& name ): name( name )
+  {
+
+  }
 
   void handle_ws_message( plugins::json_rpc::json_rpc_plugin* api, asio::io_service* thread_pool_ios, connection_hdl hdl, const typename websocket_server_type::message_ptr& msg )
   {
@@ -133,6 +140,11 @@ struct server
       LOG_DELAY_EX(arrival_time, fc::seconds(10), "Excessive delay to process API call ${body}",(body));
       con->send_http_response();
     });
+  }
+
+  void run()
+  {
+
   }
 
 };
