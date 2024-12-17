@@ -72,6 +72,7 @@ add_library( hive_chain
              util/owner_update_limit_mgr.cpp
              util/operation_extractor.cpp
              util/data_filter.cpp
+             util/state_checker_tools.cpp
 
              rc/rc_curve.cpp
              rc/rc_objects.cpp

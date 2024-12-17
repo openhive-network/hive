@@ -32,6 +32,8 @@
 #include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
+#include <hive/chain/util/state_checker_tools.hpp>
+
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/resource_count.hpp>
@@ -3411,38 +3413,7 @@ void database::verify_match_of_state_objects_definitions_from_shm(const bool thr
   if (decoded_state_objects_data.empty())
     set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
   else
-  {
-    auto result = _my->_decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);
-
-    if (!result.first)
-    {
-      std::fstream loaded_decoded_types_details, current_decoded_types_details;
-      constexpr char current_data_filename[] = "current_decoded_types_details.log";
-      constexpr char loaded_data_filename[] = "loaded_decoded_types_details.log";
-
-      loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
-      if (loaded_decoded_types_details.good())
-        loaded_decoded_types_details << _my->_decoded_types_data_storage->generate_decoded_types_data_pretty_string(decoded_state_objects_data);
-      loaded_decoded_types_details.flush();
-      loaded_decoded_types_details.close();
-
-      current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
-      if (current_decoded_types_details.good())
-        current_decoded_types_details << _my->_decoded_types_data_storage->generate_decoded_types_data_pretty_string();
-      current_decoded_types_details.flush();
-      current_decoded_types_details.close();
-
-      if (throw_an_error_on_state_definitions_mismatch)
-        FC_THROW_EXCEPTION(shm_state_definitions_mismatch_exception,
-                           "Details:\n ${details}"
-                           "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-                           ("details", result.second)(current_data_filename)(loaded_data_filename));
-      else
-        wlog("Mismatch between current and loaded state definitions. Details:\n ${details}"
-             "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-             ("details", result.second)(current_data_filename)(loaded_data_filename));
-    }
-  }
+    util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), decoded_state_objects_data, throw_an_error_on_state_definitions_mismatch, /* used in snapshot plugin*/ false);
 
   _my->delete_decoded_types_data_storage();
 }
@@ -3459,72 +3430,7 @@ void database::verify_match_of_blockchain_configuration()
   if (full_stored_blockchain_config_json.empty())
     set_blockchain_config(full_current_blockchain_config_as_json_string);
   else if (full_stored_blockchain_config_json != full_current_blockchain_config_as_json_string)
-  {
-    constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
-    constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
-    constexpr char HIVE_BLOCKCHAIN_VERSION_KEY[] = "HIVE_BLOCKCHAIN_VERSION";
-
-    fc::mutable_variant_object stored_blockchain_config = fc::json::from_string(full_stored_blockchain_config_json, fc::json::format_validation_mode::full).get_object();
-    const std::string current_hive_treasury_account = current_blockchain_config[HIVE_TREASURY_ACCOUNT_KEY].as_string();
-    const std::string current_hive_chain_id = current_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
-
-    stored_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
-    current_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
-    stored_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
-    current_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
-    stored_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
-    current_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
-
-    bool throw_exception = false;
-
-    {
-      fc::variant modified_current_blockchain_config;
-      fc::to_variant(current_blockchain_config, modified_current_blockchain_config);
-      fc::variant modified_stored_blockchain_config;
-      fc::to_variant(stored_blockchain_config, modified_stored_blockchain_config);
-
-      if (fc::json::to_string(modified_current_blockchain_config) != fc::json::to_string(modified_stored_blockchain_config))
-        throw_exception = true;
-    }
-
-    if (!throw_exception)
-    {
-      if (get_hardfork() < HIVE_HARDFORK_1_24)
-      {
-        if (current_hive_treasury_account != OBSOLETE_TREASURY_ACCOUNT || current_hive_chain_id != std::string(OLD_CHAIN_ID))
-          throw_exception = true;
-      }
-      else
-      {
-        if (current_hive_treasury_account != NEW_HIVE_TREASURY_ACCOUNT || current_hive_chain_id != std::string(HIVE_CHAIN_ID))
-          throw_exception = true;
-      }
-    }
-
-    if (throw_exception)
-    {
-      std::fstream loaded_blockchain_config_file, current_blockchain_config_file;
-      constexpr char current_config_filename[] = "current_blockchain_config.log";
-      constexpr char loaded_config_filename[] = "loaded_blockchain_config.log";
-
-      loaded_blockchain_config_file.open(loaded_config_filename, std::ios::out | std::ios::trunc);
-      if (loaded_blockchain_config_file.good())
-        loaded_blockchain_config_file << fc::json::to_pretty_string(fc::json::from_string(full_stored_blockchain_config_json, fc::json::format_validation_mode::full));
-      loaded_blockchain_config_file.flush();
-      loaded_blockchain_config_file.close();
-
-      current_blockchain_config_file.open(current_config_filename, std::ios::out | std::ios::trunc);
-      if (current_blockchain_config_file.good())
-        current_blockchain_config_file << fc::json::to_pretty_string(full_current_blockchain_config_as_variant);
-      current_blockchain_config_file.flush();
-      current_blockchain_config_file.close();
-
-      FC_THROW_EXCEPTION(blockchain_config_mismatch_exception,
-                         "Mismatch between blockchain configuration loaded from shared memory file and the current one"
-                         "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
-                         (current_config_filename)(loaded_config_filename));
-    }
-  }
+    util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json, get_hardfork(), /* used_in_snapshot_plugin */ false);
 }
 
 std::string database::get_current_decoded_types_data_json()

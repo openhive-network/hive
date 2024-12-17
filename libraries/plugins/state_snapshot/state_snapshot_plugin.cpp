@@ -9,6 +9,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
+#include <hive/chain/util/state_checker_tools.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -1558,40 +1559,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   {
     chain::util::decoded_types_data_storage dtds(_mainDb.get_current_decoded_types_data_json());
-    auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(loaded_decoded_type_data);
-
-    if (!result.first)
-    {
-      std::fstream loaded_decoded_types_details, current_decoded_types_details;
-      constexpr char current_data_filename[] = "current_decoded_types_details.log";
-      constexpr char loaded_data_filename[] = "loaded_from_snapshot_decoded_types_details.log";
-
-      loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
-      if (loaded_decoded_types_details.good())
-        loaded_decoded_types_details << dtds.generate_decoded_types_data_pretty_string(loaded_decoded_type_data);
-      loaded_decoded_types_details.flush();
-      loaded_decoded_types_details.close();
-
-      current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
-      if (current_decoded_types_details.good())
-        current_decoded_types_details << dtds.generate_decoded_types_data_pretty_string();
-      current_decoded_types_details.flush();
-      current_decoded_types_details.close();
-
-      if (throw_exception_if_state_definitions_mismatch)
-      {
-        FC_THROW_EXCEPTION(chain::snapshot_state_definitions_mismatch_exception,
-          "Details:\n ${details}"
-          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-          ("details", result.second)(current_data_filename)(loaded_data_filename));
-      }
-      else
-      {
-        wlog("Snapshot state definitions mismatch current hived version. Details:\n ${details}"
-          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-          ("details", result.second)(current_data_filename)(loaded_data_filename));
-      }
-    }
+    chain::util::verify_match_of_state_definitions(dtds, loaded_decoded_type_data, throw_exception_if_state_definitions_mismatch, /* used in snapshot plugin*/ true);
   }
 
   const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
@@ -1601,72 +1569,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     fc::to_variant(current_blockchain_config, full_current_blockchain_config_as_variant);
 
     if (_mainDb.head_block_num() > 0 && full_loaded_blockchain_configuration_json != fc::json::to_string(full_current_blockchain_config_as_variant))
-    {
-      constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
-      constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
-      constexpr char HIVE_BLOCKCHAIN_VERSION_KEY[] = "HIVE_BLOCKCHAIN_VERSION";
-
-      fc::mutable_variant_object loaded_blockchain_config = fc::json::from_string(full_loaded_blockchain_configuration_json, fc::json::format_validation_mode::full).get_object();
-      const std::string loaded_hive_treasury_account = loaded_blockchain_config[HIVE_TREASURY_ACCOUNT_KEY].as_string();
-      const std::string loaded_hive_chain_id = loaded_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
-
-      loaded_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
-      current_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
-      loaded_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
-      current_blockchain_config.erase(HIVE_CHAIN_ID_KEY);
-      loaded_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
-      current_blockchain_config.erase(HIVE_BLOCKCHAIN_VERSION_KEY);
-
-      bool throw_exception = false;
-
-      {
-        fc::variant modified_current_blockchain_config;
-        fc::to_variant(current_blockchain_config, modified_current_blockchain_config);
-        fc::variant modified_loaded_blockchain_config;
-        fc::to_variant(loaded_blockchain_config, modified_loaded_blockchain_config);
-
-        if (fc::json::to_string(modified_current_blockchain_config) != fc::json::to_string(modified_loaded_blockchain_config))
-          throw_exception = true;
-      }
-
-      if (!throw_exception)
-      {
-        if (_mainDb.get_hardfork() < HIVE_HARDFORK_1_24)
-        {
-          if (loaded_hive_treasury_account != OBSOLETE_TREASURY_ACCOUNT || loaded_hive_chain_id != std::string(OLD_CHAIN_ID))
-            throw_exception = true;
-        }
-        else
-        {
-          if (loaded_hive_treasury_account != NEW_HIVE_TREASURY_ACCOUNT || loaded_hive_chain_id != std::string(HIVE_CHAIN_ID))
-            throw_exception = true;
-        }
-      }
-
-      if (throw_exception)
-      {
-        std::fstream loaded_blockchain_config_file, current_blockchain_config_file;
-        constexpr char current_config_filename[] = "current_blockchain_config.log";
-        constexpr char loaded_config_filename[] = "loaded_from_snapshot_blockchain_config.log";
-
-        loaded_blockchain_config_file.open(loaded_config_filename, std::ios::out | std::ios::trunc);
-        if (loaded_blockchain_config_file.good())
-          loaded_blockchain_config_file << fc::json::to_pretty_string(fc::json::from_string(full_loaded_blockchain_configuration_json, fc::json::format_validation_mode::full));
-        loaded_blockchain_config_file.flush();
-        loaded_blockchain_config_file.close();
-
-        current_blockchain_config_file.open(current_config_filename, std::ios::out | std::ios::trunc);
-        if (current_blockchain_config_file.good())
-          current_blockchain_config_file << fc::json::to_pretty_string(full_current_blockchain_config_as_variant);
-        current_blockchain_config_file.flush();
-        current_blockchain_config_file.close();
-
-        FC_THROW_EXCEPTION(chain::snapshot_blockchain_config_mismatch_exception,
-                           "Mismatch between blockchain configuration loaded from snapshot file and the current one"
-                           "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
-                           (current_config_filename)(loaded_config_filename));
-      }
-    }
+      chain::util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_loaded_blockchain_configuration_json, _mainDb.get_hardfork(), /* used_in_snapshot_plugin */ true);
   }
 
   wlog("Snapshot state definitions matches current app version - wiping DB.");
