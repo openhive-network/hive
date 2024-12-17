@@ -11,6 +11,7 @@
 
 #include <sstream>
 #include <string>
+#include <iostream>
 
 namespace websocketpp {
 namespace transport {
