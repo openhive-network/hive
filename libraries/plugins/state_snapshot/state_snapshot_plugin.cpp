@@ -1535,7 +1535,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);
     fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
     std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
-    bool less_current_plugins_than_plugins_in_snapshot = false;
+    bool snapshot_has_more_plugins = false;
 
     for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
     {
@@ -1543,16 +1543,18 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       if (current_plugins.count(plugin_from_snapshot))
         current_plugins.erase(plugin_from_snapshot);
       else
-        less_current_plugins_than_plugins_in_snapshot = true;
+        snapshot_has_more_plugins = true;
     }
 
-    if (!current_plugins.empty())
-    {
-      elog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-      throw_exception_if_state_definitions_mismatch = true;
-    }
-    else if (less_current_plugins_than_plugins_in_snapshot)
+    if (snapshot_has_more_plugins)
       wlog("Snaphot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+    else
+    {
+      throw_exception_if_state_definitions_mismatch = true;
+
+      if (!current_plugins.empty())
+        elog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+    }
   }
 
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
