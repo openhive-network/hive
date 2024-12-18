@@ -15,18 +15,49 @@ namespace hive { namespace plugins { namespace webserver {
 using websocketpp::connection_hdl;
 namespace asio = boost::asio;
 
+enum class server_type{ http, https, ws, wss };
+
 template<typename websocket_server_type>
 struct webserver
 {
-  std::string name;
+  bool the_same_endpoint = false;
+
+  server_type type;
 
   std::shared_ptr< std::thread >  thread;
   asio::io_service                ios;
   websocket_server_type           server;
 
-  webserver( const std::string& name ): name( name )
+
+  webserver( const server_type& type ): type( type )
   {
 
+  }
+
+  std::string name() const
+  {
+    switch( type )
+    {
+      case server_type::http:   return "http";
+      case server_type::https:  return "https";
+      case server_type::ws:     return "ws";
+      case server_type::wss:    return "wss";
+      default:                  return "";
+    }
+  }
+
+  void set_the_same_endpoint( bool value )
+  {
+    the_same_endpoint = value;
+  }
+
+  bool is_the_same_endpoint() const
+  {
+    return the_same_endpoint;
+  }
+
+  bool is_secure() const
+  {
   }
 
   void handle_ws_message( plugins::json_rpc::json_rpc_plugin* api, asio::io_service* thread_pool_ios, connection_hdl hdl, const typename websocket_server_type::message_ptr& msg )

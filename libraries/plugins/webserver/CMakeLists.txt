@@ -2,7 +2,6 @@ file(GLOB HEADERS "include/hive/plugins/webserver/*.hpp")
 
 add_library( webserver_plugin
              webserver_plugin.cpp
-             servers.cpp
              ${HEADERS} )
 
 target_link_libraries( webserver_plugin json_rpc_plugin appbase fc )
