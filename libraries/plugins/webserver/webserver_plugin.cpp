@@ -33,8 +33,6 @@ using namespace boost::placeholders;
 
 namespace hive { namespace plugins { namespace webserver {
 
-namespace asio = boost::asio;
-
 using std::string;
 using boost::optional;
 using boost::asio::ip::tcp;
@@ -56,11 +54,16 @@ class webserver_base
 
     virtual boost::signals2::connection add_connection( std::function<void(const collector_t&)> ) = 0;
 
-    optional<tls_server>                                      tls;
+    virtual void process_webserver_parameters(
+        const std::optional<std::string>& webserver_http_endpoint,
+        const std::optional<std::string>& webserver_https_endpoint,
+        const std::optional<std::string>& webserver_ws_endpoint,
+        const std::optional<std::string>& webserver_wss_endpoint,
+        const std::optional<std::string>& webserver_https_certificate_file_name,
+        const std::optional<std::string>& webserver_https_key_file_name
+      ) = 0;
 
-    optional< tcp::endpoint >                                 http_endpoint;
-    optional< boost::asio::local::stream_protocol::endpoint > unix_endpoint;
-    optional< tcp::endpoint >                                 ws_endpoint;
+    std::optional< boost::asio::local::stream_protocol::endpoint > unix_endpoint;
 };
 
 template<typename websocket_server_type>
@@ -99,14 +102,20 @@ class webserver_plugin_impl : public webserver_base
     signal_t listen;
     boost::signals2::connection add_connection( std::function<void(const collector_t&)> func ) override;
 
+    void process_webserver_parameters(
+        const std::optional<std::string>& webserver_http_endpoint,
+        const std::optional<std::string>& webserver_https_endpoint,
+        const std::optional<std::string>& webserver_ws_endpoint,
+        const std::optional<std::string>& webserver_wss_endpoint,
+        const std::optional<std::string>& webserver_https_certificate_file_name,
+        const std::optional<std::string>& webserver_https_key_file_name
+      )override;
+
   private:
 
     appbase::application& theApp;
 
-    void update_http_endpoint();
-    void update_ws_endpoint();
-
-    void notify( const std::string& type, const optional< tcp::endpoint >& endpoint );
+    void notify( const std::string& type, const std::optional< tcp::endpoint >& endpoint );
 };
 
 template<typename websocket_server_type>
@@ -128,9 +137,11 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
 }
 
 template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::notify( const std::string& type, const optional< tcp::endpoint >& endpoint )
+void webserver_plugin_impl<websocket_server_type>::notify( const std::string& type, const std::optional< tcp::endpoint >& endpoint )
 {
   collector_t collector;
+
+  FC_ASSERT( endpoint.has_value() );
 
   collector.assign_values(
     "type",     type,
@@ -145,114 +156,17 @@ void webserver_plugin_impl<websocket_server_type>::notify( const std::string& ty
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::start_webserver()
 {
-  const bool ws_and_http_uses_same_endpoint = http_endpoint && http_endpoint == ws_endpoint && http_endpoint->port() != 0;
+  const bool _ws_and_http_uses_same_endpoint = http.endpoint && http.endpoint == ws.endpoint && http.endpoint->port() != 0;
+  http.set_the_same_endpoint( _ws_and_http_uses_same_endpoint );
+  ws.set_the_same_endpoint( _ws_and_http_uses_same_endpoint );
 
-  if( ws_endpoint )
+  auto _notify = [this]( const std::string& type, const std::optional< tcp::endpoint >& endpoint)
   {
-    ws.thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
-    {
-      ilog( "start processing ws thread" );
-      fc::set_thread_name("websocket");
-      fc::thread::current().set_name("websocket");
-      try
-      {
-        ws.server.clear_access_channels( websocketpp::log::alevel::all );
-        ws.server.clear_error_channels( websocketpp::log::elevel::all );
-        ws.server.init_asio( &ws.ios );
-        ws.server.set_reuse_addr( true );
+    notify( type, endpoint );
+  };
 
-        ws.server.set_message_handler( boost::bind( &webserver<websocket_server_type>::handle_ws_message, &ws, api, &thread_pool_ios, _1, _2 ) );
-
-        if( ws_and_http_uses_same_endpoint )
-        {
-          ws.server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, &ws, api, &thread_pool_ios, _1 ) );
-        }
-
-        if( ws_and_http_uses_same_endpoint )
-        {
-          ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
-        }
-        ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
-        ws.server.listen( *ws_endpoint );
-        update_ws_endpoint();
-
-        notify( "WS", ws_endpoint );
-
-        ilog( "start accepting ws requests" );
-        ws.server.start_accept();
-
-        ws.ios.run();
-        ilog( "ws io service exit" );
-      }
-      catch( const fc::exception& e )
-      {
-        elog( "error thrown from ws io service. Details: ${message}", ( "message", e.what() ) );
-      }
-      catch ( const boost::exception& e )
-      {
-        elog( "error thrown from ws io service. Details: ${message}", ( "message", boost::diagnostic_information( e ) ) );
-      }
-      catch( std::exception& e )
-      {
-        elog( "error thrown from ws io service. Details: ${message}", ( "message", e.what() ) );
-      }
-      catch( ... )
-      {
-        elog( "error thrown from ws io service" );
-      }
-    });
-  }
-
-  if( http_endpoint && ( !ws_and_http_uses_same_endpoint || !ws_endpoint ) )
-  {
-    http.thread = std::make_shared<std::thread>( [&]()
-    {
-      ilog( "start processing http thread" );
-      fc::set_thread_name("http");
-      fc::thread::current().set_name("http");
-      try
-      {
-        http.server.clear_access_channels( websocketpp::log::alevel::all );
-        http.server.clear_error_channels( websocketpp::log::elevel::all );
-        http.server.init_asio( &http.ios );
-        http.server.set_reuse_addr( true );
-
-        http.server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, &http, api, &thread_pool_ios, _1 ) );
-
-        if( tls )
-          tls->set_tls_handlers( http.server );
-
-        ilog( "start listening for ${type} requests on ${endpoint}",
-            ("type", tls ? "https" : "http")( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
-        http.server.listen( *http_endpoint );
-
-        ilog( "start accepting http requests" );
-        http.server.start_accept();
-        update_http_endpoint();
-
-        notify( "HTTP", http_endpoint );
-
-        http.ios.run();
-        ilog( "http io service exit" );
-      }
-      catch( const fc::exception& e )
-      {
-        elog( "error thrown from http io service. Details: ${message}", ( "message", e.what() ) );
-      }
-      catch ( const boost::exception& e )
-      {
-        elog( "error thrown from http io service. Details: ${message}", ( "message", boost::diagnostic_information( e ) ) );
-      }
-      catch( std::exception& e )
-      {
-        elog( "error thrown from http io service. Details: ${message}", ( "message", e.what() ) );
-      }
-      catch( ... )
-      {
-        elog( "error thrown from http io service" );
-      }
-    });
-  }
+  ws.start(api, &thread_pool_ios, _notify );
+  http.start(api, &thread_pool_ios, _notify );
 
   if( unix_endpoint ) {
     unix_thread = std::make_shared<std::thread>( [&]() {
@@ -284,29 +198,6 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
   }
 }
 
-template<typename websocket_server_type>
-void update_endpoint(websocket_server_type& server, optional< tcp::endpoint >& endpoint)
-{
-  if (endpoint->port() == 0)
-  {
-    boost::system::error_code error;
-    auto server_port = server.get_local_endpoint(error).port();
-    FC_ASSERT(!error);
-    endpoint->port(server_port);
-  }
-}
-
-template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::update_http_endpoint()
-{
-  update_endpoint<websocket_server_type>(http.server, http_endpoint);
-}
-
-template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::update_ws_endpoint()
-{
-  update_endpoint<websocket_server_type>(ws.server, ws_endpoint);
-}
 
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::stop_webserver()
@@ -388,6 +279,55 @@ boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_co
   return listen.connect( func );
 }
 
+template<typename websocket_server_type>
+void webserver_plugin_impl<websocket_server_type>::process_webserver_parameters(
+    const std::optional<std::string>& webserver_http_endpoint,
+    const std::optional<std::string>& webserver_https_endpoint,
+    const std::optional<std::string>& webserver_ws_endpoint,
+    const std::optional<std::string>& webserver_wss_endpoint,
+    const std::optional<std::string>& webserver_https_certificate_file_name,
+    const std::optional<std::string>& webserver_https_key_file_name
+  )
+{
+  if( webserver_https_endpoint )
+  {
+    FC_ASSERT( webserver_https_certificate_file_name, "Option `webserver-https-certificate-file-name` is required" );
+    FC_ASSERT( webserver_https_key_file_name, "Option `webserver-https-key-file-name` is required" );
+
+    http.set_secure( theApp, *webserver_https_certificate_file_name, *webserver_https_key_file_name );
+  }
+  else
+  {
+    if( webserver_https_certificate_file_name )
+      ilog( "Option `webserver-https-certificate-file-name` is avoided. It's used only for https connection." );
+
+    if( webserver_https_key_file_name )
+      ilog( "Option `webserver-https-key-file-name` is avoided. It's used only for https connection." );
+  }
+
+  if( webserver_http_endpoint || webserver_https_endpoint )
+  {
+    std::string _http_or_https_endpoint = http.is_secure() ? *webserver_https_endpoint : *webserver_http_endpoint;
+
+    auto _endpoints = fc::resolve_string_to_ip_endpoints( _http_or_https_endpoint );
+
+    FC_ASSERT( _endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
+              ("http-endpoint-type", http.is_secure() ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
+
+    http.endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )_endpoints[0].get_address() ), _endpoints[0].port() );
+    ilog( "configured ${type} to listen on ${ep}", ("type", http.name())("ep", _endpoints[0]) );
+  }
+
+  if( webserver_ws_endpoint )
+  {
+    auto _endpoints = fc::resolve_string_to_ip_endpoints( *webserver_ws_endpoint );
+    FC_ASSERT( _endpoints.size(), "ws-server-endpoint ${hostname} did not resolve", ("hostname", *webserver_ws_endpoint) );
+
+    ws.endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )_endpoints[0].get_address() ), _endpoints[0].port() );
+    ilog( "configured ${type} to listen on ${ep}", ("type", ws.name())("ep", _endpoints[0]) );
+  }
+}
+
 } // detail
 
 webserver_plugin::webserver_plugin()
@@ -423,45 +363,26 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   auto _ws_deflate_enabled = options.at( "webserver-ws-deflate" ).as< bool >();
   ilog("Compression in webserver is ${_ws_deflate_enabled}", ("_ws_deflate_enabled", _ws_deflate_enabled ? "enabled" : "disabled"));
 
-  if( options.count( "webserver-https-endpoint" ) )
-  {
-    FC_ASSERT(options.count( "webserver-https-certificate-file-name" ), "Option `webserver-https-certificate-file-name` is required");
-    FC_ASSERT(options.count( "webserver-https-key-file-name" ), "Option `webserver-https-key-file-name` is required");
+  std::optional<std::string> webserver_http_endpoint                = options.count( "webserver-http-endpoint" ) ? options.at( "webserver-http-endpoint" ).as< string >() : std::optional<std::string>();
+  std::optional<std::string> webserver_https_endpoint               = options.count( "webserver-https-endpoint" ) ? options.at( "webserver-https-endpoint" ).as< string >() : std::optional<std::string>();
+  std::optional<std::string> webserver_ws_endpoint                  = options.count( "webserver-ws-endpoint" ) ? options.at( "webserver-ws-endpoint" ).as< string >() : std::optional<std::string>();
+  std::optional<std::string> webserver_wss_endpoint                 = options.count( "webserver-wss-endpoint" ) ? options.at( "webserver-wss-endpoint" ).as< string >() : std::optional<std::string>();
+  std::optional<std::string> webserver_https_certificate_file_name  = options.count( "webserver-https-certificate-file-name" ) ? options.at( "webserver-https-certificate-file-name" ).as< string >() : std::optional<std::string>();
+  std::optional<std::string> webserver_https_key_file_name          = options.count( "webserver-https-key-file-name" ) ? options.at( "webserver-https-key-file-name" ).as< string >() : std::optional<std::string>();
 
+  if( webserver_https_endpoint )
+  {
     if( _ws_deflate_enabled )
       my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_deflate>( thread_pool_size, get_app() ) );
     else
       my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_nondeflate>( thread_pool_size, get_app() ) );
-
-    my->tls = detail::tls_server( get_app() );
-    my->tls->server_certificate_file_name = options.at( "webserver-https-certificate-file-name" ).as< string >();
-    my->tls->server_key_file_name = options.at( "webserver-https-key-file-name" ).as< string >();
   }
   else
   {
-    if( options.count( "webserver-https-certificate-file-name" ) )
-      ilog( "Option `webserver-https-certificate-file-name` is avoided. It's used only for https connection." );
-
-    if( options.count( "webserver-https-key-file-name" ) )
-      ilog( "Option `webserver-https-key-file-name` is avoided. It's used only for https connection." );
-
     if( _ws_deflate_enabled )
       my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
     else
       my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, get_app() ) );
-  }
-
-  if( options.count( "webserver-http-endpoint" ) || options.count( "webserver-https-endpoint" ) )
-  {
-    std::string _http_or_https_endpoint = my->tls ? options.at( "webserver-https-endpoint" ).as< string >() : options.at( "webserver-http-endpoint" ).as< string >();
-
-    auto endpoints = fc::resolve_string_to_ip_endpoints( _http_or_https_endpoint );
-
-    FC_ASSERT( endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
-              ("http-endpoint-type", my->tls ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
-
-    my->http_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
-    ilog( "configured ${type} to listen on ${ep}", ("type", my->tls ? "https" : "http")("ep", endpoints[0]) );
   }
 
   if( options.count( "webserver-unix-endpoint" ) )
@@ -472,14 +393,14 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     ilog( "configured http to listen on ${ep}", ("ep", unix_endpoint ));
   }
 
-  if( options.count( "webserver-ws-endpoint" ) )
-  {
-    auto ws_endpoint = options.at( "webserver-ws-endpoint" ).as< string >();
-    auto endpoints = fc::resolve_string_to_ip_endpoints( ws_endpoint );
-    FC_ASSERT( endpoints.size(), "ws-server-endpoint ${hostname} did not resolve", ("hostname", ws_endpoint) );
-    my->ws_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
-    ilog( "configured ws to listen on ${ep}", ("ep", endpoints[0]) );
-  }
+  my->process_webserver_parameters(
+    webserver_http_endpoint,
+    webserver_https_endpoint,
+    webserver_ws_endpoint,
+    webserver_wss_endpoint,
+    webserver_https_certificate_file_name,
+    webserver_https_key_file_name
+  );
 }
 
 void webserver_plugin::plugin_startup()

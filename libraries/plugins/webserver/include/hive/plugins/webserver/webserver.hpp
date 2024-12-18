@@ -8,14 +8,18 @@
 #include <hive/plugins/webserver/tls_server.hpp>
 
 #include <fc/time.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include<memory>
 
 namespace hive { namespace plugins { namespace webserver { namespace detail {
 
 using websocketpp::connection_hdl;
+using boost::asio::ip::tcp;
+
 namespace asio = boost::asio;
 
 enum class server_type{ http, https, ws, wss };
@@ -26,6 +30,8 @@ struct webserver
   bool the_same_endpoint = false;
 
   server_type type;
+
+  std::optional< tcp::endpoint >       endpoint;
 
   std::optional<tls_server>       tls;
 
@@ -51,6 +57,19 @@ struct webserver
     }
   }
 
+  void update_endpoint()
+  {
+    FC_ASSERT( endpoint, "endpoint is empty" );
+
+    if( endpoint->port() == 0 )
+    {
+      boost::system::error_code error;
+      auto server_port = server.get_local_endpoint(error).port();
+      FC_ASSERT( !error, "${err}", ( "err", error.message() ) );
+      endpoint->port( server_port );
+    }
+  }
+
   void set_the_same_endpoint( bool value )
   {
     the_same_endpoint = value;
@@ -61,8 +80,25 @@ struct webserver
     return the_same_endpoint;
   }
 
+  void set_secure( appbase::application& app, const std::string& server_certificate_file_name, const std::string& server_key_file_name )
+  {
+    FC_ASSERT( !tls && ( type == server_type::http || type == server_type::ws ) );
+
+    tls = detail::tls_server( app );
+
+    tls->server_certificate_file_name = server_certificate_file_name;
+    tls->server_key_file_name = server_key_file_name;
+
+    if( type == server_type::http )
+      type = server_type::https;
+    else
+      type = server_type::wss;
+  }
+
   bool is_secure() const
   {
+    FC_ASSERT( ( tls && ( type == server_type::https || type == server_type::wss ) ) || ( !tls && ( type == server_type::http || type == server_type::ws ) ) );
+    return tls.has_value();
   }
 
   void handle_ws_message( plugins::json_rpc::json_rpc_plugin* api, asio::io_service* thread_pool_ios, connection_hdl hdl, const typename websocket_server_type::message_ptr& msg )
@@ -178,9 +214,69 @@ struct webserver
     });
   }
 
-  void run()
+  void start( plugins::json_rpc::json_rpc_plugin* api, asio::io_service* thread_pool_ios, std::function<void(const std::string&, const std::optional< tcp::endpoint >&)> notify )
   {
+    if( !endpoint )
+      return;
 
+    if( is_the_same_endpoint() && ( type == server_type::http || type == server_type::https ) )
+      return;
+
+    thread = std::make_shared<std::thread>( [notify, api, thread_pool_ios, this]()
+    {
+      ilog( "start processing ${name} thread", ("name", name()) );
+      fc::set_thread_name("websocket");
+      fc::thread::current().set_name("websocket");
+      try
+      {
+        server.clear_access_channels( websocketpp::log::alevel::all );
+        server.clear_error_channels( websocketpp::log::elevel::all );
+        server.init_asio( &ios );
+        server.set_reuse_addr( true );
+
+        if( type == server_type::http || type == server_type::https )
+          server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, this, api, thread_pool_ios, boost::placeholders::_1 ) );
+        else
+          server.set_message_handler( boost::bind( &webserver<websocket_server_type>::handle_ws_message, this, api, thread_pool_ios, boost::placeholders::_1, boost::placeholders::_2 ) );
+
+        if( is_the_same_endpoint() && ( type == server_type::ws || type == server_type::wss ) )
+        {
+          server.set_http_handler( boost::bind( &webserver<websocket_server_type>::handle_http_message, this, api, thread_pool_ios, boost::placeholders::_1 ) );
+          ilog( "start listening for ${name} requests on ${endpoint}", ( "name", name() )( "endpoint", boost::lexical_cast<fc::string>( *endpoint ) ) );
+        }
+
+        ilog( "start listening for ${name} requests on ${endpoint}", ( "name", name() )( "endpoint", boost::lexical_cast<fc::string>( *endpoint ) ) );
+        server.listen( *endpoint );
+
+        ilog( "start accepting ${name} requests", ( "name", name() ) );
+        server.start_accept();
+
+        ilog( "update ${name} endpoint if necessary", ( "name", name() ) );
+        update_endpoint();
+
+        ilog( "send a notification about ${address}:${port} endpoint", ( "address", endpoint->address().to_string() )( "port", endpoint->port() ) );
+        notify( boost::to_upper_copy<std::string>( name() ), endpoint );
+
+        ios.run();
+        ilog( "${name} io service exit", ( "name", name() ) );
+      }
+      catch( const fc::exception& e )
+      {
+        elog( "error thrown from ${name} io service. Details: ${message}", ( "name", name() )( "message", e.what() ) );
+      }
+      catch ( const boost::exception& e )
+      {
+        elog( "error thrown from ${name} io service. Details: ${message}", ( "name", name() )( "message", boost::diagnostic_information( e ) ) );
+      }
+      catch( std::exception& e )
+      {
+        elog( "error thrown from ${name} io service. Details: ${message}", ( "name", name() )( "message", e.what() ) );
+      }
+      catch( ... )
+      {
+        elog( "error thrown from ${name} io service", ( "name", name() ) );
+      }
+    });
   }
 
 };
