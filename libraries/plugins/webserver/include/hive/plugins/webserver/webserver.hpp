@@ -1,8 +1,11 @@
+#pragma once
 
 #include <websocketpp/server.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 #include <hive/plugins/json_rpc/utility.hpp>
+
+#include <hive/plugins/webserver/tls_server.hpp>
 
 #include <fc/time.hpp>
 
@@ -10,7 +13,7 @@
 
 #include<memory>
 
-namespace hive { namespace plugins { namespace webserver {
+namespace hive { namespace plugins { namespace webserver { namespace detail {
 
 using websocketpp::connection_hdl;
 namespace asio = boost::asio;
@@ -23,6 +26,8 @@ struct webserver
   bool the_same_endpoint = false;
 
   server_type type;
+
+  std::optional<tls_server>       tls;
 
   std::shared_ptr< std::thread >  thread;
   asio::io_service                ios;
@@ -180,4 +185,4 @@ struct webserver
 
 };
 
-} } } // hive::plugins::webserver
+} } } } // hive::plugins::webserver::detail

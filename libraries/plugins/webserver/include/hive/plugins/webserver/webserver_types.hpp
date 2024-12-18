@@ -1,3 +1,4 @@
+#pragma once
 
 #include <hive/plugins/webserver/local_endpoint.hpp>
 
