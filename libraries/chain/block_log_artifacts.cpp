@@ -206,6 +206,7 @@ public:
   void store_block_artifacts(artifact_data_container_t& artifacts_data);
 
   block_log_artifacts::artifacts_t read_block_artifacts(uint32_t block_num) const;
+  std::string get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;
 
   void update_head_block(uint32_t block_num)
   {
@@ -400,7 +401,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         return;
       }
 
-      FC_THROW("Artifacts file generating process is not finished.");
+      FC_THROW("Artifacts file generating process is not finished.\nDetails:\n ${details}", ("details", get_artifacts_contents(_header.generating_interrupted_at_block, _header.generating_interrupted_at_block, false)));
     }
     
     verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
@@ -855,6 +856,58 @@ block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts
 }
 
 
+std::string block_log_artifacts::impl::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
+{
+  try
+  {
+    fc::mutable_variant_object result;
+
+    const auto header = get_artifacts_header();
+    const uint32_t artifacts_head_block_num = header.head_block_num;
+    {
+      fc::mutable_variant_object header_data;
+      header_data["head_block_num"] = artifacts_head_block_num;
+      header_data["git_version"] = header.git_version;
+      header_data["format_major_version"] = header.format_major_version;
+      header_data["format_minor_version"] = header.format_minor_version;
+      header_data["dirty_close"] = header.dirty_close;
+      header_data["tail_block_num"] = header.tail_block_num;
+      header_data["generating_interrupted_at_block"] = header.generating_interrupted_at_block;
+      result["header"] = header_data;
+    }
+
+    if (!header_only)
+    {
+      const uint32_t artifacts_head_block_number = read_head_block_num();
+      const uint32_t start_block_num = starting_block_number ? *starting_block_number : 1;
+      const uint32_t end_block_num = ending_block_number ? *ending_block_number : (artifacts_head_block_number - 1);
+
+      FC_ASSERT(start_block_num <= end_block_num, "${start_block_num} <= ${end_block_num}", (start_block_num)(end_block_num));
+      FC_ASSERT(end_block_num <= artifacts_head_block_number, "${end_block_num} <= ${artifacts_head_block_number}", (end_block_num)(artifacts_head_block_number));
+
+      std::vector<fc::variant> artifacts_data;
+      artifacts_data.reserve(artifacts_head_block_number);
+
+      for (uint32_t block_num = start_block_num; block_num <= end_block_num; ++block_num)
+      {
+        const auto artifacts = read_block_artifacts(block_num);
+        fc::mutable_variant_object obj;
+        obj["block_num"] = block_num;
+        obj["block_id"] = artifacts.block_id.str();
+        obj["attributes"] = fc::json::to_pretty_string(artifacts.attributes);
+        obj["pos"] = artifacts.block_log_file_pos;
+        obj["size"] = artifacts.block_serialized_data_size;
+        artifacts_data.push_back(obj);
+      }
+
+      result["artifacts"] = artifacts_data;
+    }
+    return fc::json::to_pretty_string(result);
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
+
 block_log_artifacts::block_log_artifacts( appbase::application& app ) : _impl(std::make_unique<impl>( app ))
 {
 }
@@ -974,53 +1027,7 @@ void block_log_artifacts::truncate(uint32_t new_head_block_num)
 
 std::string block_log_artifacts::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
 {
-  try
-  {
-    fc::mutable_variant_object result;
-
-    const auto header = _impl->get_artifacts_header();
-    const uint32_t artifacts_head_block_num = header.head_block_num;
-    {
-      fc::mutable_variant_object header_data;
-      header_data["head_block_num"] = artifacts_head_block_num;
-      header_data["git_version"] = header.git_version;
-      header_data["format_major_version"] = header.format_major_version;
-      header_data["format_minor_version"] = header.format_minor_version;
-      header_data["dirty_close"] = header.dirty_close;
-      header_data["tail_block_num"] = header.tail_block_num;
-      header_data["generating_interrupted_at_block"] = header.generating_interrupted_at_block;
-      result["header"] = header_data;
-    }
-
-    if (!header_only)
-    {
-      const uint32_t artifacts_head_block_number = read_head_block_num();
-      const uint32_t start_block_num = starting_block_number ? *starting_block_number : 1;
-      const uint32_t end_block_num = ending_block_number ? *ending_block_number : (artifacts_head_block_number - 1);
-
-      FC_ASSERT(start_block_num <= end_block_num, "${start_block_num} <= ${end_block_num}", (start_block_num)(end_block_num));
-      FC_ASSERT(end_block_num <= artifacts_head_block_number, "${end_block_num} <= ${artifacts_head_block_number}", (end_block_num)(artifacts_head_block_number));
-
-      std::vector<fc::variant> artifacts_data;
-      artifacts_data.reserve(artifacts_head_block_number);
-
-      for (uint32_t block_num = start_block_num; block_num <= end_block_num; ++block_num)
-      {
-        const auto artifacts = read_block_artifacts(block_num);
-        fc::mutable_variant_object obj;
-        obj["block_num"] = block_num;
-        obj["block_id"] = artifacts.block_id.str();
-        obj["attributes"] = fc::json::to_pretty_string(artifacts.attributes);
-        obj["pos"] = artifacts.block_log_file_pos;
-        obj["size"] = artifacts.block_serialized_data_size;
-        artifacts_data.push_back(obj);
-      }
-
-      result["artifacts"] = artifacts_data;
-    }
-    return fc::json::to_pretty_string(result);
-  }
-  FC_CAPTURE_AND_RETHROW()
+  return _impl->get_artifacts_contents(starting_block_number, ending_block_number, header_only);
 }
 
 }}
