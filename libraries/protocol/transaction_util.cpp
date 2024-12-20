@@ -303,7 +303,7 @@ authority_verification_trace verify_authority_with_tracing(
   )
 {
   authority_verification_tracer tracer;
-  verify_authority<true>(
+  verify_authority_impl<true>(
     allow_strict_and_mixed_authorities,
     allow_redundant_signatures,
     required_authorities,
@@ -315,10 +315,11 @@ authority_verification_trace verify_authority_with_tracing(
     max_recursion_depth /* = HIVE_MAX_SIG_CHECK_DEPTH */,
     max_membership /* = HIVE_MAX_AUTHORITY_MEMBERSHIP */,
     max_account_auths /* = HIVE_MAX_SIG_CHECK_ACCOUNTS */,
-    allow_committe /* = false */,
     active_approvals /* = flat_set<account_name_type>() */,
     owner_approvals /* = flat_set<account_name_type>() */,
     posting_approvals /* = flat_set<account_name_type>() */,
+    [&]( const char*, verify_authority_problem, const account_name_type& ){},
+    [&]( const char*, const authority& ){},
     &tracer
   );
   return tracer.get_trace();
