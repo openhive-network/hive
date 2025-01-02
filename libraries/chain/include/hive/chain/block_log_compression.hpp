@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <optional>
+#include <tuple>
+
 #include <hive/chain/detail/block_attributes.hpp>
 
 extern "C"
