@@ -69,11 +69,18 @@ public:
   *   \param read_only - determines if artifacts file are open in read_only mode.
   *   \param write_fallback - whether to try create/overwrite artifacts file when opening in read only mode failed.
   *   \param full_match_verification - if true, all artifacts will be checked if they match block_log. Otherwise only small amount of artifacts will be checked if they match block_log.
+  *   \param new_block_log_created - whether corresponding block log file has just been created (and is empty).
   *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path,
+                                        const block_log& source_block_provider,
+                                        const bool read_only, const bool write_fallback,
+                                        const bool full_match_verification,
+                                        const bool new_block_log_created,
+                                        appbase::application& app,
+                                        hive::chain::blockchain_worker_thread_pool& thread_pool);
 
   fc::path get_artifacts_file() const;
 

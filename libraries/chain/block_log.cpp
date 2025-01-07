@@ -202,6 +202,7 @@ namespace hive { namespace chain {
       close();
 
       my->block_file = file;
+      bool file_existed = fc::exists(file);
 
       {
         const fc::path parent_path = my->block_file.parent_path();
@@ -215,7 +216,7 @@ namespace hive { namespace chain {
       if (read_only)
       {
         flags = O_RDONLY | O_CLOEXEC;
-        if(not fc::exists(file) && write_fallback)
+        if(not file_existed && write_fallback)
         {
           int temp_flags = flags | O_CREAT;
           int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
@@ -283,7 +284,10 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback, false, theApp, thread_pool);
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback, 
+                                                     false /*full_match_verification*/,
+                                                     not file_existed /*log_file_created*/,
+                                                     theApp, thread_pool);
   }
 
   void block_log::close()
