@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import test_tools as tt
+from hive_local_tools.functional.python.operation import Account
 
 
 @pytest.fixture()
@@ -43,3 +44,11 @@ def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt
     tt.logger.info(f"Test uses hardfork : {node.api.database.get_hardfork_properties().current_hardfork_version}")
 
     return node, wallet
+
+
+@pytest.fixture()
+def alice(prepare_environment) -> Account:
+    node, wallet = prepare_environment
+    alice = Account("alice", node, wallet)
+    alice.update_account_info()
+    return alice
