@@ -180,7 +180,10 @@ public:
 
   impl( appbase::application& app );
 
-  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool);
+  void open(const fc::path& block_log_file_path, const block_log& source_block_provider,
+            const bool read_only, const bool write_fallback, const bool full_match_verification,
+            const bool new_block_log_created,
+            hive::chain::blockchain_worker_thread_pool& thread_pool);
 
   fc::path get_artifacts_file() const
   {
@@ -318,7 +321,10 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 
 }
 
-void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
+void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
+  const block_log& source_block_provider, const bool read_only, const bool write_fallback,
+  const bool full_match_verification, const bool new_block_log_created,
+  hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try {
   set_block_num_to_file_pos_offset(
@@ -339,17 +345,21 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     _storage_fd = ::open(file_str.c_str(), O_RDONLY | O_CLOEXEC, 0644);
 
     auto open_writeable_fallback = [&](bool close_fd, const char* msg){
-      ilog(msg, (_artifact_file_name));
+      if(msg != nullptr)
+        ilog(msg, (_artifact_file_name));
       if (close_fd)
         close();
-      open(block_log_file_path, source_block_provider, false /*read_only*/, false /*write_fallback*/, full_match_verification, thread_pool);
+      open(block_log_file_path, source_block_provider, false /*read_only*/,
+           false /*write_fallback*/, full_match_verification, new_block_log_created, thread_pool);
     };
 
     if (_storage_fd == -1)
     {
       if (errno == ENOENT && write_fallback)
       {
-        open_writeable_fallback(false/*close_fd*/, "Missing artifacts file ${_artifact_file_name}. Trying creation in read write mode...");
+        // To avoid confusion warn about missing artifacts only when block log existed earlier.
+        open_writeable_fallback(false/*close_fd*/, 
+          new_block_log_created ? nullptr : "Missing artifacts file ${_artifact_file_name}. Trying creation in read write mode...");
         return;
       }
 
@@ -416,7 +426,10 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     {
       if (errno == ENOENT)
       {
-        wlog("Could not find artifacts file in ${_artifact_file_name}. Creating new artifacts file ...", (_artifact_file_name));
+        // To avoid confusion warn about missing artifacts only when block log existed earlier.
+        if( not new_block_log_created )
+          wlog("Could not find artifacts file in ${_artifact_file_name}. Creating new artifacts file ...", (_artifact_file_name));
+
         _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
 
         if (_storage_fd == -1)
@@ -918,10 +931,16 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool write_fallback, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(
+  const fc::path& block_log_file_path, const block_log& source_block_provider,
+  const bool read_only, const bool write_fallback, const bool full_match_verification,
+  const bool new_block_log_created, appbase::application& app,
+  hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
-  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, write_fallback, full_match_verification, thread_pool );
+  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only,
+                               write_fallback, full_match_verification, new_block_log_created,
+                               thread_pool );
   return block_artifacts;
 }
 

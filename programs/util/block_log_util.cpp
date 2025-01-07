@@ -768,12 +768,16 @@ bool get_block_artifacts(const fc::path &block_log_path, const int32_t first_blo
   try
   {
     hive::chain::block_log block_log(app);
+    bool block_log_existed = fc::exists(block_log_path);
     block_log.open(block_log_path, thread_pool, true, false);
     FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
     if (full_match_verification)
       ilog("Opening artifacts file with full artifacts match verification ...");
 
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, false, full_match_verification, app, thread_pool);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts =
+      hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log,
+        true /*read_only*/, false /*write_fallback*/, full_match_verification,
+        not block_log_existed /*new_block_log_created*/, app, thread_pool);
 
     if (full_match_verification)
       ilog("Artifacts file match verification done");

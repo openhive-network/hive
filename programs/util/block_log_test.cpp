@@ -19,9 +19,12 @@ using namespace hive::chain;
 void generate_artifacts(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log bl( app );
+  bool block_log_existed = fc::exists(block_log_path);
 
   bl.open(block_log_path, thread_pool, true, false);
-  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, false, app, thread_pool);
+  auto bla = block_log_artifacts::open(block_log_path, bl, false /*read_only*/, 
+                                       false /*write_fallback*/, false /*full_match_verification*/,
+                                       not block_log_existed /*new_block_log_created*/, app, thread_pool);
   bla.reset();
   ilog("open and generation finished...");
 }
