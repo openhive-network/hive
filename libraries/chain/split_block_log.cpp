@@ -1,15 +1,8 @@
-#include <hive/utilities/split_block_log.hpp>
-
+#include <hive/chain/split_block_log.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/block_log_wrapper.hpp>
 
-namespace hive { namespace utilities {
-
-using hive::chain::block_log;
-using hive::chain::block_log_artifacts;
-using hive::chain::block_log_file_name_info;
-using hive::chain::block_log_wrapper;
-using hive::chain::blockchain_worker_thread_pool;
+namespace hive { namespace chain {
 
 using block_data_t = std::tuple<uint32_t,std::unique_ptr<char[]>,size_t,block_log_artifacts::artifacts_t>;
 using block_data_container_t = std::vector<block_data_t>;

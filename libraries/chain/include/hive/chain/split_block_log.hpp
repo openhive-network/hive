@@ -6,7 +6,7 @@
 
 #include <fc/filesystem.hpp>
 
-namespace hive { namespace utilities {
+namespace hive { namespace chain {
 
 /**
  * @brief Tries splitting provided legacy block log file into parts.

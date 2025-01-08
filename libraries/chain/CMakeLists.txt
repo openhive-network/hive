@@ -57,6 +57,7 @@ add_library( hive_chain
              irreversible_block_writer.cpp
              single_block_storage.cpp
              sync_block_writer.cpp
+             split_block_log.cpp
 
              generic_custom_operation_interpreter.cpp
 

@@ -2,7 +2,7 @@
 
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/utilities/split_block_log.hpp>
+#include <hive/chain/split_block_log.hpp>
 //#include <regex>
 
 namespace hive { namespace chain {
@@ -497,7 +497,7 @@ bool block_log_wrapper::try_splitting_monolithic_log_file( full_block_ptr_t stat
     try
     {
       wlog("Trying to split legacy monolithic block log file.");
-      utilities::split_block_log( monolith_path, head_block_number, part_count, _app, _thread_pool );
+      split_block_log( monolith_path, head_block_number, part_count, _app, _thread_pool );
       wlog("Successfully split legacy monolithic block log file.");
       return true;
     }

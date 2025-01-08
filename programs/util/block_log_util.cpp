@@ -14,9 +14,9 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
+#include <hive/chain/split_block_log.hpp>
 #include <hive/utilities/io_primitives.hpp>
 #include <hive/utilities/git_revision.hpp>
-#include <hive/utilities/split_block_log.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/scope_exit.hpp>
@@ -877,7 +877,7 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
     uint32_t head_block_number = head_part_num == 0 ? 0 :
       hive::chain::block_log_wrapper::get_number_of_last_block_in_part( head_part_num, MAX_FILES_OF_SPLIT_BLOCK_LOG );
     std::cout << "Splitting block_log ...\n";
-    hive::utilities::split_block_log(block_log_filename, head_block_number, part_count, app, thread_pool, output_dir);
+    hive::chain::split_block_log(block_log_filename, head_block_number, part_count, app, thread_pool, output_dir);
     std::cout << "Splitting block_log finished\n";
     if (!last_block_is_head_block && (last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE != 0))
     {
