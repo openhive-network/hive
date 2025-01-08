@@ -15,7 +15,6 @@ file(GLOB HEADERS "include/hive/utilities/*.hpp")
 set(sources
    notifications.cpp
    benchmark_dumper.cpp
-   split_block_log.cpp
    string_escape.cpp
    tempdir.cpp
    logging_config.cpp
@@ -29,7 +28,7 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 add_library( hive_utilities
              ${sources}
              ${HEADERS} )
-target_link_libraries( hive_utilities appbase hive_chain fc hive_protocol )
+target_link_libraries( hive_utilities appbase fc hive_protocol )
 target_include_directories( hive_utilities
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 if (USE_PCH)
