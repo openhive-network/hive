@@ -175,12 +175,14 @@ class sign_state
       {
         if( signed_by( k.first ) )
         {
+          total_weight += k.second;
+
           if constexpr (IS_TRACED) {
             FC_ASSERT(tracer);
-            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth);
+            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth, 
+                                    total_weight >= auth.weight_threshold);
           }
 
-          total_weight += k.second;
           if( total_weight >= auth.weight_threshold )
             return true;
         }
@@ -245,14 +247,14 @@ class sign_state
             {
               if constexpr (IS_TRACED) {
                 FC_ASSERT(tracer);
-                tracer->on_leaving_account_entry( true );
+                tracer->on_leaving_account_entry( true, true /*parent_threshold_reached*/ );
               }
               return true;
             }
           }
           if constexpr (IS_TRACED) {
             FC_ASSERT(tracer);
-            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()) );
+            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()), false /*parent_threshold_reached*/ );
           }
         }
         else

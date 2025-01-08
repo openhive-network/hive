@@ -48,7 +48,8 @@ void authority_verification_tracer::on_root_authority_start( const account_name_
     processed_entry: account,
     processed_role: _current_role,
     recursion_depth: depth,
-    threshold: threshold
+    threshold: threshold,
+    flags: INSUFFICIENT_WEIGHT
   };
 
   _trace.root = root_path_entry;
@@ -62,7 +63,8 @@ void authority_verification_tracer::on_root_authority_finish( unsigned int verif
 }
 
 void authority_verification_tracer::on_matching_key( const public_key_type& key,
-  unsigned int weight, unsigned int parent_threshold, unsigned int depth )
+  unsigned int weight, unsigned int parent_threshold, unsigned int depth,
+  bool parent_threshold_reached )
 {
   path_entry key_entry {
     processed_entry: (std::string)key,
@@ -75,6 +77,9 @@ void authority_verification_tracer::on_matching_key( const public_key_type& key,
 
   if (weight < parent_threshold)
     key_entry.flags |= INSUFFICIENT_WEIGHT;
+  
+  if (parent_threshold_reached)
+    get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
 
   get_parent_entry().visited_entries.push_back(key_entry);
 }
@@ -117,7 +122,8 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
     processed_role: _current_role,
     recursion_depth: parent_depth + 1,
     threshold: parent_threshold,
-    weight: weight
+    weight: weight,
+    flags: INSUFFICIENT_WEIGHT
   };
 
   if(detect_cycle(account))
@@ -128,8 +134,11 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
   push_parent_entry(entry);
 }
 
-void authority_verification_tracer::on_leaving_account_entry( bool is_last_account_auth )
+void authority_verification_tracer::on_leaving_account_entry( bool is_last_account_auth, bool parent_threshold_reached )
 {
+  if( parent_threshold_reached )
+    get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
+
   if( not is_last_account_auth )
     pop_final_path_entry(); // drop its path_entry from last path
   

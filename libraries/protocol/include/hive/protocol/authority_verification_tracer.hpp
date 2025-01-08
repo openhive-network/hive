@@ -19,7 +19,8 @@ class authority_verification_tracer
     void on_root_authority_start( const account_name_type& account, unsigned int threshold,
                                   unsigned int depth );
     void on_matching_key( const public_key_type& key, unsigned int weight,
-                          unsigned int parent_threshold, unsigned int depth );
+                          unsigned int parent_threshold, unsigned int depth,
+                          bool parent_threshold_reached );
     void on_missing_matching_key();
     void on_unknown_account_entry( const account_name_type& account, unsigned int weight,
                                    unsigned int parent_threshold, unsigned int parent_depth);
@@ -29,7 +30,7 @@ class authority_verification_tracer
     void on_account_processing_limit_exceeded();
     void on_recursion_depth_limit_exceeded();
     /// called only if account is known
-    void on_leaving_account_entry( bool is_last_account_auth );
+    void on_leaving_account_entry( bool is_last_account_auth, bool parent_threshold_reached );
     void on_root_authority_finish( unsigned int verification_status );
 
   private:
