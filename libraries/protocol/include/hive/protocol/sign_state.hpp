@@ -75,8 +75,16 @@ class sign_state
       else
         initial_auth = get_current_authority( id );
 
-      // TODO Determine whether any trace of approved_by is needed.
-      if( approved_by.find(id) != approved_by.end() ) return true;
+      if( approved_by.find(id) != approved_by.end() )
+      {
+        if constexpr (IS_TRACED) {
+          FC_ASSERT(tracer);
+          tracer->on_approved_authority( id, initial_auth.weight_threshold,
+                                         true /*is_last_account_auth*/ );
+        }
+
+        return true;
+      }
 
       if( limits.allow_strict_and_mixed_authorities )
         ++account_auth_count;
@@ -267,7 +275,19 @@ class sign_state
         {
           total_weight += a.second;
           if( total_weight >= auth.weight_threshold )
+          {
+            if constexpr (IS_TRACED) {
+              FC_ASSERT(tracer);
+              tracer->on_approved_authority( a.first, a.second, true /*is_last_account_auth*/ );
+            }
+
             return true;
+          }
+
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_approved_authority( a.first, a.second, a == *(auth.account_auths.crbegin()) /*is_last_account_auth*/ );
+          }
         }
 
         if( !_increase_membership() )

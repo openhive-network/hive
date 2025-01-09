@@ -67,6 +67,32 @@ void authority_verification_tracer::on_empty_auth()
   get_parent_entry().flags |= EMPTY_AUTHORITY;
 }
 
+void authority_verification_tracer::on_approved_authority( const account_name_type& account,
+  unsigned int weight, bool is_last_account_auth )
+{
+  path_entry& parent = get_parent_entry();
+  if( parent.processed_entry == account )
+  {
+    parent.flags &= ~INSUFFICIENT_WEIGHT;
+    parent.flags |= RESOLVED_BY_APPROVAL;
+  }
+  else
+  {
+    path_entry entry{
+      processed_entry: account,
+      processed_role: _current_role,
+      recursion_depth: parent.recursion_depth + 1,
+      threshold: parent.threshold,
+      weight: weight,
+      flags: RESOLVED_BY_APPROVAL
+    };
+
+    parent.visited_entries.push_back( entry );
+    if( is_last_account_auth )
+      push_final_path_entry( entry );
+  }
+}
+
 void authority_verification_tracer::on_matching_key( const public_key_type& key,
   unsigned int weight, unsigned int parent_threshold, unsigned int depth,
   bool parent_threshold_reached )

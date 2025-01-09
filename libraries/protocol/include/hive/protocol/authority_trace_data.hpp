@@ -15,7 +15,8 @@ enum authority_entry_processing_flags
   ACCOUNT_LIMIT_EXCEEDED  = 0x020,
   CYCLE_DETECTED          = 0x040,
   MISSING_ACCOUNT         = 0x080,
-  EMPTY_AUTHORITY         = 0X100,
+  EMPTY_AUTHORITY         = 0x100,
+  RESOLVED_BY_APPROVAL    = 0x200,
 };
 
 /// @brief Contains detailed info of authority verification attempt.
