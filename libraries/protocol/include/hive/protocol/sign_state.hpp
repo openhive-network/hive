@@ -79,8 +79,7 @@ class sign_state
       {
         if constexpr (IS_TRACED) {
           FC_ASSERT(tracer);
-          tracer->on_approved_authority( id, initial_auth.weight_threshold,
-                                         true /*is_last_account_auth*/ );
+          tracer->on_approved_authority( id, initial_auth.weight_threshold );
         }
 
         return true;
@@ -261,32 +260,28 @@ class sign_state
             {
               if constexpr (IS_TRACED) {
                 FC_ASSERT(tracer);
-                tracer->on_leaving_account_entry( true, true /*parent_threshold_reached*/ );
+                tracer->on_leaving_account_entry( true /*parent_threshold_reached*/ );
               }
               return true;
             }
           }
           if constexpr (IS_TRACED) {
             FC_ASSERT(tracer);
-            tracer->on_leaving_account_entry( a == *(auth.account_auths.crbegin()), false /*parent_threshold_reached*/ );
+            tracer->on_leaving_account_entry( false /*parent_threshold_reached*/ );
           }
         }
         else
         {
+          if constexpr (IS_TRACED) {
+            FC_ASSERT(tracer);
+            tracer->on_approved_authority( a.first, a.second );
+          }
+
           total_weight += a.second;
           if( total_weight >= auth.weight_threshold )
           {
-            if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer);
-              tracer->on_approved_authority( a.first, a.second, true /*is_last_account_auth*/ );
-            }
 
             return true;
-          }
-
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
-            tracer->on_approved_authority( a.first, a.second, a == *(auth.account_auths.crbegin()) /*is_last_account_auth*/ );
           }
         }
 

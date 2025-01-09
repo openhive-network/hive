@@ -4,9 +4,14 @@ namespace hive { namespace protocol {
 
 bool authority_verification_tracer::detect_cycle(std::string account) const
 {
-  for( const path_entry& pe : _current_authority_path )
+  const path_entry* entry = &( _trace.root );
+  if( entry->processed_entry == account )
+    return true;
+
+  for( size_t index : _current_authority_path )
   {
-    if( pe.processed_entry == account )
+    entry = &( entry->visited_entries.at( index ) );
+    if( entry->processed_entry == account )
       return true;
   }
 
@@ -15,13 +20,19 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_parent_entry()
 {
-  FC_ASSERT(not _current_authority_path.empty());
-  return _current_authority_path.back();
+  path_entry* parent_entry = &( _trace.root );
+  for( size_t index : _current_authority_path )
+    parent_entry = &( parent_entry->visited_entries.at( index ) );
+
+  return *parent_entry;
 }
 
-void authority_verification_tracer::push_parent_entry(const path_entry& entry)
+void authority_verification_tracer::push_parent_entry()
 {
-  _current_authority_path.push_back(entry);
+  path_entry& parent_entry = get_parent_entry();
+  size_t aux = parent_entry.visited_entries.size();
+  FC_ASSERT(aux > 0, "Push parent entry AFTER putting it into visited_entries!");
+  _current_authority_path.push_back( aux -1 );
 }
 
 void authority_verification_tracer::pop_parent_entry()
@@ -30,15 +41,15 @@ void authority_verification_tracer::pop_parent_entry()
   _current_authority_path.pop_back();
 }
 
-void authority_verification_tracer::push_final_path_entry(const path_entry& entry)
+void authority_verification_tracer::fill_final_authority_path()
 {
-  _trace.final_authority_path.push_back(entry);
-}
-
-void authority_verification_tracer::pop_final_path_entry()
-{
-  FC_ASSERT(not _trace.final_authority_path.empty());
-  _trace.final_authority_path.pop_back();
+  path_entry* entry = &( _trace.root );
+  _trace.final_authority_path.push_back( *entry );
+  while( not entry->visited_entries.empty() )
+  {
+    entry = &( entry->visited_entries.back() );
+    _trace.final_authority_path.push_back( *entry );
+  }
 }
 
 void authority_verification_tracer::on_root_authority_start( const account_name_type& account,
@@ -53,13 +64,12 @@ void authority_verification_tracer::on_root_authority_start( const account_name_
   };
 
   _trace.root = root_path_entry;
-  push_parent_entry(root_path_entry);
-  push_final_path_entry(root_path_entry);
 }
 
 void authority_verification_tracer::on_root_authority_finish( unsigned int verification_status )
 {
   _trace.verification_status = verification_status;
+  fill_final_authority_path();
 }
 
 void authority_verification_tracer::on_empty_auth()
@@ -68,13 +78,14 @@ void authority_verification_tracer::on_empty_auth()
 }
 
 void authority_verification_tracer::on_approved_authority( const account_name_type& account,
-  unsigned int weight, bool is_last_account_auth )
+  unsigned int weight )
 {
   path_entry& parent = get_parent_entry();
   if( parent.processed_entry == account )
   {
     parent.flags &= ~INSUFFICIENT_WEIGHT;
     parent.flags |= RESOLVED_BY_APPROVAL;
+    _trace.final_authority_path.push_back( _trace.root );
   }
   else
   {
@@ -88,8 +99,6 @@ void authority_verification_tracer::on_approved_authority( const account_name_ty
     };
 
     parent.visited_entries.push_back( entry );
-    if( is_last_account_auth )
-      push_final_path_entry( entry );
   }
 }
 
@@ -161,18 +170,14 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
     entry.flags |= CYCLE_DETECTED;
 
   get_parent_entry().visited_entries.push_back(entry);
-  push_final_path_entry(entry);
-  push_parent_entry(entry);
+  push_parent_entry();
 }
 
-void authority_verification_tracer::on_leaving_account_entry( bool is_last_account_auth, bool parent_threshold_reached )
+void authority_verification_tracer::on_leaving_account_entry( bool parent_threshold_reached )
 {
   if( parent_threshold_reached )
     get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
 
-  if( not is_last_account_auth )
-    pop_final_path_entry(); // drop its path_entry from last path
-  
   pop_parent_entry();
 }
 
