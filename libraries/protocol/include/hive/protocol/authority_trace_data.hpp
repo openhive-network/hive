@@ -7,14 +7,15 @@ namespace hive { namespace protocol {
 
 enum authority_entry_processing_flags
 {
-  //ENTERING_AUTHORITY   = 0x01
-  NOT_MATCHING_KEY        = 0x02,
-  MATCHING_KEY            = 0x04,
-  INSUFFICIENT_WEIGHT     = 0x08,
-  DEPTH_LIMIT_EXCEEDED    = 0x10,
-  ACCOUNT_LIMIT_EXCEEDED  = 0x20,
-  CYCLE_DETECTED          = 0x40,
-  MISSING_ACCOUNT         = 0x80,
+  //ENTERING_AUTHORITY   = 0x001
+  NOT_MATCHING_KEY        = 0x002,
+  MATCHING_KEY            = 0x004,
+  INSUFFICIENT_WEIGHT     = 0x008,
+  DEPTH_LIMIT_EXCEEDED    = 0x010,
+  ACCOUNT_LIMIT_EXCEEDED  = 0x020,
+  CYCLE_DETECTED          = 0x040,
+  MISSING_ACCOUNT         = 0x080,
+  EMPTY_AUTHORITY         = 0X100,
 };
 
 /// @brief Contains detailed info of authority verification attempt.
