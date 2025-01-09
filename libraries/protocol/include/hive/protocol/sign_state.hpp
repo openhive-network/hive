@@ -163,6 +163,12 @@ class sign_state
 
       size_t membership = 0;
 
+      if constexpr (IS_TRACED) {
+        FC_ASSERT(tracer);
+        if( auth.key_auths.empty() && auth.account_auths.empty() )
+          tracer->on_empty_auth();
+      }
+
       auto _increase_membership = [&membership, this]()
       {
         ++membership;
