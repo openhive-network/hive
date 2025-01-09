@@ -62,6 +62,11 @@ void authority_verification_tracer::on_root_authority_finish( unsigned int verif
   _trace.verification_status = verification_status;
 }
 
+void authority_verification_tracer::on_empty_auth()
+{
+  get_parent_entry().flags |= EMPTY_AUTHORITY;
+}
+
 void authority_verification_tracer::on_matching_key( const public_key_type& key,
   unsigned int weight, unsigned int parent_threshold, unsigned int depth,
   bool parent_threshold_reached )

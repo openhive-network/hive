@@ -18,6 +18,7 @@ class authority_verification_tracer
 
     void on_root_authority_start( const account_name_type& account, unsigned int threshold,
                                   unsigned int depth );
+    void on_empty_auth();  
     void on_matching_key( const public_key_type& key, unsigned int weight,
                           unsigned int parent_threshold, unsigned int depth,
                           bool parent_threshold_reached );
