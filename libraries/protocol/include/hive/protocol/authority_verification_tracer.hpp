@@ -32,7 +32,7 @@ class authority_verification_tracer
     void on_account_processing_limit_exceeded();
     void on_recursion_depth_limit_exceeded();
     /// called only if account is known
-    void on_leaving_account_entry( bool parent_threshold_reached );
+    void on_leaving_account_entry( unsigned int effective_weight, bool parent_threshold_reached );
     void on_root_authority_finish( unsigned int verification_status );
 
   private:
