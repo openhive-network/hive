@@ -10,6 +10,7 @@ from helpy._interfaces.wax import calculate_tapos_data
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
+from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHiveHF26
 from schemas.fields.basic import AccountName, PublicKey
@@ -151,16 +152,6 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     init_node.block_log.copy_to(output_block_log_directory)
     init_wallet.close()
     init_node.close()
-
-
-def generate_block(node: tt.InitNode, number: int) -> None:
-    node.api.debug_node.debug_generate_blocks(
-        debug_key="",
-        count=number,
-        skip=0,
-        miss_blocks=0,
-        edit_if_needed=False,
-    )
 
 
 def wait_for_comment_payment(node: tt.InitNode) -> None:
