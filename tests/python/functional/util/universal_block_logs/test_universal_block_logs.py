@@ -18,7 +18,7 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
 @pytest.mark.parametrize(
     "replayed_node",
     [
-        ("block_log_multi_sign", {"owner": 3, "active": 6, "posting": 10}),
+        ("block_log_multi_sign", {"owner": 5, "active": 5, "posting": 5}),
         ("block_log_open_sign", {"owner": 0, "active": 0, "posting": 0}),
         ("block_log_single_sign", {"owner": 1, "active": 1, "posting": 1}),
     ],
@@ -28,7 +28,7 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
 def test_block_log_with_several_type_of_signatures(replayed_node: tt.InitNode) -> None:
     node, wallet, signature_type = replayed_node
 
-    account: str = f"account-{random.randint(0, 99_999)}"
+    account: str = f"account-{random.randint(0, 9999)}"
 
     assert len(wallet.api.list_witnesses("", 1000)) == 21, "Incorrect number of witnesses"
     assert get_vesting_price(node) > 1_799_900, "Too low price Hive to Vest"
