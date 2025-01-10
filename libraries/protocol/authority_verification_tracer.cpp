@@ -81,6 +81,7 @@ void authority_verification_tracer::on_approved_authority( const account_name_ty
   unsigned int weight )
 {
   path_entry& parent = get_parent_entry();
+  parent.weight += weight;
   if( parent.processed_entry == account )
   {
     parent.flags &= ~INSUFFICIENT_WEIGHT;
@@ -118,10 +119,14 @@ void authority_verification_tracer::on_matching_key( const public_key_type& key,
   if (weight < parent_threshold)
     key_entry.flags |= INSUFFICIENT_WEIGHT;
   
-  if (parent_threshold_reached)
-    get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
+  path_entry& parent_entry = get_parent_entry();
 
-  get_parent_entry().visited_entries.push_back(key_entry);
+  parent_entry.weight += weight;
+
+  if (parent_threshold_reached)
+    parent_entry.flags &= ~INSUFFICIENT_WEIGHT;
+
+  parent_entry.visited_entries.push_back(key_entry);
 }
 
 void authority_verification_tracer::on_missing_matching_key()
@@ -173,12 +178,19 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
   push_parent_entry();
 }
 
-void authority_verification_tracer::on_leaving_account_entry( bool parent_threshold_reached )
+void authority_verification_tracer::on_leaving_account_entry( unsigned int effective_weight,
+  bool parent_threshold_reached )
 {
   if( parent_threshold_reached )
     get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
 
   pop_parent_entry();
+
+  if( effective_weight > 0)
+  {
+    path_entry& parent_entry = get_parent_entry();
+    parent_entry.weight += effective_weight;
+  }
 }
 
 } } // hive::protocol
