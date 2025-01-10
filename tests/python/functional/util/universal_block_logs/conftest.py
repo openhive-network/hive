@@ -16,7 +16,7 @@ WEBSERVER_THREAD_POOL_SIZE: Final[int] = 16
 
 
 @pytest.fixture()
-def replayed_node(request: pytest.FixtureRequest) -> tt.InitNode:
+def replayed_node(request: pytest.FixtureRequest) -> tuple:
     block_log_directory = Path(__file__).parent / request.param[0]
     block_log = tt.BlockLog(block_log_directory, "auto")
     alternate_chain_spec_path = block_log_directory / tt.AlternateChainSpecs.FILENAME
@@ -61,10 +61,6 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.InitNode:
 def import_keys(wallet: tt.OldWallet, block_log_type: str) -> None:
     match block_log_type:
         case "block_log_multi_sign":
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"owner-{num}") for num in range(3)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"active-{num}") for num in range(6)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"posting-{num}") for num in range(10)])
+            wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)])
         case "block_log_single_sign":
-            wallet.api.import_key(tt.PrivateKey("account", secret="owner"))
-            wallet.api.import_key(tt.PrivateKey("account", secret="active"))
-            wallet.api.import_key(tt.PrivateKey("account", secret="posting"))
+            wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
