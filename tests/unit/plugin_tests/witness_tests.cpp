@@ -228,6 +228,13 @@ public:
 
   void witness_basic()
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize();
     bool test_passed = false;
 
@@ -333,6 +340,13 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
@@ -397,6 +411,13 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
@@ -514,6 +535,13 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     set_default_expiration( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION );
 
     initialize();
@@ -630,6 +658,13 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     configuration_data.min_root_comment_interval = fc::seconds( 3 * HIVE_BLOCK_INTERVAL );
     initialize();
 
@@ -923,6 +958,13 @@ BOOST_AUTO_TEST_CASE( start_before_genesis_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( 3, { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" } );
     bool test_passed = false;
@@ -965,6 +1007,13 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1036,6 +1085,13 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1104,6 +1160,14 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
   try
   {
     witness_fixture preparation;
+
+    BOOST_SCOPE_EXIT( &preparation )
+    {
+      preparation.theApp.generate_interrupt_request();
+      preparation.theApp.wait4interrupt_request();
+      preparation.theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     preparation.initialize( -HIVE_MAX_WITNESSES * 3 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" }
@@ -1122,6 +1186,13 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( 0, // already set
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1203,6 +1274,13 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1325,6 +1403,13 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1434,6 +1519,13 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
       { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
       "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" },
@@ -1551,6 +1643,13 @@ BOOST_AUTO_TEST_CASE( slow_obi_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     initialize();
     bool test_passed = false;
     fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
@@ -1623,6 +1722,13 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
 {
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
     const uint32_t COLONY_START = 42; // at the start of third schedule
     bool test_passed = false;
@@ -1865,6 +1971,13 @@ BOOST_AUTO_TEST_CASE( colony_no_workers_test )
 
   try
   {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
     const uint32_t COLONY_START = 5;
 
@@ -1924,6 +2037,13 @@ BOOST_AUTO_TEST_CASE( basic_queen_test )
   // NOTE: unlike other tests here, queen tests can be run under debugger, but there is some
   // strange effect at the end (logging thread not shut down) - continue and it will finish ok
   bool test_passed = false;
+
+  BOOST_SCOPE_EXIT( this_ )
+  {
+    this_->theApp.generate_interrupt_request();
+    this_->theApp.wait4interrupt_request();
+    this_->theApp.quit( true );
+  } BOOST_SCOPE_EXIT_END
 
   initialize( 1,
     { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
@@ -2030,6 +2150,13 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
     const uint32_t COLONY_START = 42; // at the start of third schedule
     bool test_passed = false;
+
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
 
     initialize( 1, {}, {}, {
       config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
