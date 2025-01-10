@@ -252,7 +252,8 @@ class sign_state
           else
             account_auth = get_current_authority( a.first );
 
-          if( check_authority_impl( account_auth, depth + 1 ) )
+          bool success = check_authority_impl( account_auth, depth + 1 );
+          if( success )
           {
             approved_by.insert( a.first );
             total_weight += a.second;
@@ -260,14 +261,14 @@ class sign_state
             {
               if constexpr (IS_TRACED) {
                 FC_ASSERT(tracer);
-                tracer->on_leaving_account_entry( true /*parent_threshold_reached*/ );
+                tracer->on_leaving_account_entry( a.second, true /*parent_threshold_reached*/ );
               }
               return true;
             }
           }
           if constexpr (IS_TRACED) {
             FC_ASSERT(tracer);
-            tracer->on_leaving_account_entry( false /*parent_threshold_reached*/ );
+            tracer->on_leaving_account_entry( success ? a.second : 0, false /*parent_threshold_reached*/ );
           }
         }
         else
