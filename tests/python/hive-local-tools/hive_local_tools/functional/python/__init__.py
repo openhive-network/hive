@@ -17,3 +17,13 @@ def get_authority(
 
 def basic_authority(key: PublicKey) -> Authority:
     return Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]])
+
+
+def generate_block(node: tt.InitNode, number: int, miss_blocks: int = 0) -> None:
+    node.api.debug_node.debug_generate_blocks(
+        debug_key="",
+        count=number,
+        skip=0,
+        miss_blocks=miss_blocks,
+        edit_if_needed=False,
+    )
