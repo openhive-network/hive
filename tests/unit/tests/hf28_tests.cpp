@@ -1386,6 +1386,44 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: different_behaviour for not existing proposals" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice) );
+
+      executor->generate_block();
+
+      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
+      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
+
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
+      if( is_hf28 )
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "_at_least_one_proposal_exists" );
+      else
+        executor->vote_proposal("alice", { 666 }, true, alice_private_key);
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )

@@ -2612,7 +2612,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits), but none of them exist therefore there is an error" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -2620,7 +2620,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
     generate_block();
 
     std::vector< int64_t > proposals = {-1, -2, -3, -4, -5};
-    vote_proposal("carol", proposals, true, carol_private_key);
+    HIVE_REQUIRE_ASSERT( vote_proposal("carol", proposals, true, carol_private_key), "_at_least_one_proposal_exists" );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3980,7 +3980,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 30 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "_at_least_one_proposal_exists" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 30 );
@@ -4004,7 +4004,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 0 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "_at_least_one_proposal_exists" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 0 );

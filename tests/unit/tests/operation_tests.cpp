@@ -2179,7 +2179,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
   {
     BOOST_TEST_MESSAGE( "Testing: account_object_by_governance_vote_expiration_ts_idx" );
 
-    ACTORS( (acc1)(acc2)(acc3)(acc4)(accw) )
+    ACTORS( (alice)(bob)(acc1)(acc2)(acc3)(acc4)(accw) )
     signed_transaction tx;
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
@@ -2210,13 +2210,19 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
       tx.clear();
     };
 
+    dhf_database::create_proposal_data cpd(db->head_block_time());
+    ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
+    generate_block();
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
+    generate_block();
+
     generate_block();
     witness_vote("acc1", acc1_private_key);
     generate_block();
     witness_vote("acc2", acc2_private_key);
-    proposal_vote("acc3", {154,357,987}, acc3_private_key);
+    proposal_vote("acc3", {proposal_1}, acc3_private_key);
     generate_block();
-    proposal_vote("acc4", {111,222,333,444,555}, acc4_private_key);
+    proposal_vote("acc4", {proposal_1}, acc4_private_key);
     generate_block();
 
 

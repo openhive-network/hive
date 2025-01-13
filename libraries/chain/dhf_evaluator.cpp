@@ -145,12 +145,17 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
+    auto _at_least_one_proposal_exists = false;
+
     for( const auto pid : o.proposal_ids )
     {
       //checking if proposal id exists
       auto found_id = pidx.find( pid );
       if( found_id == pidx.end() || found_id->removed )
         continue;
+
+      if( !_at_least_one_proposal_exists )
+        _at_least_one_proposal_exists = true;
 
       if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
       {
@@ -179,6 +184,10 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
           _db.remove( *found );
       }
     }
+
+    if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_ALLOW_VOTE_FOR_NONEXISTENT_PROPOSAL ) )
+      FC_ASSERT( _at_least_one_proposal_exists, "Can't vote for not existing proposal" );
+
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }

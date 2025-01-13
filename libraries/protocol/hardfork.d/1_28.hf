@@ -29,5 +29,6 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES (HIVE_HARDFORK_1_28)
 //Redundant signatures are allowed
 #define HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES (HIVE_HARDFORK_1_28)
-
+//Don't allow to vote on nonexistent proposal
+#define HIVE_HARDFORK_1_28_DONT_ALLOW_VOTE_FOR_NONEXISTENT_PROPOSAL (HIVE_HARDFORK_1_28)
 #endif
