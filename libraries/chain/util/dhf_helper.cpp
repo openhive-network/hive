@@ -14,12 +14,18 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
 
   remove_guard obj_perf( db.get_remove_threshold() );
 
-  for(auto pid : proposal_ids)
+  auto _iter_pid = proposal_ids.begin();
+  while( _iter_pid != proposal_ids.end() )
   {
-    auto foundPosI = byPropIdIdx.find( pid );
+    auto foundPosI = byPropIdIdx.find( *_iter_pid );
+    ++_iter_pid;
 
     if(foundPosI == byPropIdIdx.end())
+    {
+      if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
+        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal" );
       continue;
+    }
 
     FC_ASSERT(foundPosI->creator == proposal_owner, "Only proposal owner can remove it...");
 
@@ -28,6 +34,20 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
       break;
   }
 
+  if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
+  {
+    while( _iter_pid != proposal_ids.end() )
+    {
+      auto foundPosI = byPropIdIdx.find( *_iter_pid );
+      ++_iter_pid;
+
+      if(foundPosI == byPropIdIdx.end())
+      {
+        if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
+          FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal" );
+      }
+    }
+  }
 }
 
 } } // hive::chain

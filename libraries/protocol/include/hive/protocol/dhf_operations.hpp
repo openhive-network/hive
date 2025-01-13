@@ -62,7 +62,7 @@ struct update_proposal_votes_operation : public base_operation
 {
   account_name_type voter;
 
-  /// IDs of proposals to vote for/against. Nonexisting IDs are ignored.
+  /// IDs of proposals to vote for/against. Nonexisting IDs trigger an error.
   flat_set_ex<int64_t> proposal_ids;
 
   bool approve = false;
@@ -81,7 +81,7 @@ struct remove_proposal_operation : public base_operation
 {
   account_name_type proposal_owner;
 
-  /// IDs of proposals to be removed. Nonexisting IDs are ignored.
+  /// IDs of proposals to be removed. Nonexisting IDs trigger an error.
   flat_set_ex<int64_t> proposal_ids;
 
   extensions_type extensions;
