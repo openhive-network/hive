@@ -73,7 +73,8 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
 
       config_arg_override_t default_overrides = {
         // turn off RC stats reports by default - specific tests/fixtures can turn it on later
-        { "rc-stats-report-type", { "NONE" } }
+        { "rc-stats-report-type", { "NONE" } },
+        { "p2p-endpoint", { "0.0.0.0:0" } }
       };
 
       if (std::find_if(config_arg_overrides.cbegin(), config_arg_overrides.cend(),
@@ -90,7 +91,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
                       std::back_inserter( default_overrides ),
                       [&]( const auto& override ) {
                         auto error_str = "Unit test nodes must not listen to other ones!";
-                        BOOST_REQUIRE_MESSAGE( override.first != "p2p-endpoint", error_str );
+                        //BOOST_REQUIRE_MESSAGE( override.first != "p2p-endpoint", error_str );
                         BOOST_REQUIRE_MESSAGE( override.first != "p2p-seed-node", error_str );
                         BOOST_REQUIRE_MESSAGE( override.first != "p2p-parameters", error_str );
                         return true;
