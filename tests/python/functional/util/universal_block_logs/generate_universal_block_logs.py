@@ -382,6 +382,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
     args = parser.parse_args()
-    prepare_block_log(args.output_block_log_directory, "open_sign", 400)
-    prepare_block_log(args.output_block_log_directory, "single_sign", 520)
+    # prepare_block_log(args.output_block_log_directory, "open_sign", 400)
+    # prepare_block_log(args.output_block_log_directory, "single_sign", 520)
     prepare_block_log(args.output_block_log_directory, "multi_sign", 1200)
