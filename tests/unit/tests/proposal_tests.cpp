@@ -2612,7 +2612,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits), but none of them exist therefore there is an error" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -2620,7 +2620,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
     generate_block();
 
     std::vector< int64_t > proposals = {-1, -2, -3, -4, -5};
-    vote_proposal("carol", proposals, true, carol_private_key);
+    HIVE_REQUIRE_ASSERT( vote_proposal("carol", proposals, true, carol_private_key), "false && \"proposal doesn't exist\"" );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3067,7 +3067,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_008 )
     ISSUE_FUNDS( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
     flat_set<int64_t> proposals = { 0 };
-    remove_proposal(cpd.creator, proposals, alice_private_key);
+    HIVE_REQUIRE_ASSERT( remove_proposal(cpd.creator, proposals, alice_private_key), "false && \"proposal doesn't exist\"" );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3443,7 +3443,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     }
 
     {
-      remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key );
+      HIVE_REQUIRE_ASSERT( remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key ), "false && \"proposal doesn't exist\"" );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_proposals == 0 );
@@ -3639,7 +3639,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       v5 oo oo oo v5 xx xx oo xx rr
     */
     {
-      remove_proposal( item_creator.account, {5,6,7/*doesn't exist*/,8,9}, item_creator.active_key );
+      HIVE_REQUIRE_ASSERT( remove_proposal( item_creator.account, {5,6,7/*doesn't exist*/,8,9}, item_creator.active_key ), "false && \"proposal doesn't exist\"" );
+      remove_proposal( item_creator.account, {5,6,8,9}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 8 ) && find_proposal( 8 )->removed );
@@ -3980,7 +3981,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 30 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal doesn't exist\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 30 );
@@ -4004,7 +4005,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 0 );
 
       for( auto item : inits )
-        vote_proposal( item.account, {4}, true/*approve*/, item.active_key);
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal doesn't exist\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 0 );

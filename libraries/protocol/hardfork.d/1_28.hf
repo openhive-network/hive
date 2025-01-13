@@ -31,5 +31,8 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES (HIVE_HARDFORK_1_28)
 //Remove DHF HBD from inflation calculations
 #define HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION (HIVE_HARDFORK_1_28)
-
+//Don't try to vote on nonexistent proposal
+#define HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL (HIVE_HARDFORK_1_28)
+//Don't try to remove nonexistent proposal
+#define HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL (HIVE_HARDFORK_1_28)
 #endif

@@ -150,7 +150,11 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       //checking if proposal id exists
       auto found_id = pidx.find( pid );
       if( found_id == pidx.end() || found_id->removed )
+      {
+        if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) )
+          FC_ASSERT( false && "proposal doesn't exist", "Can't vote for nonexistent proposal" );
         continue;
+      }
 
       if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
       {
