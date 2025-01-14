@@ -61,6 +61,7 @@ def node(request: pytest.FixtureRequest) -> tt.InitNode | tt.RemoteNode:  # noqa
         )  # FIXME eliminate condenser_api usage from other tests than this API specific
         init_node.config.block_log_split = -1
         init_node.run()
+        init_node.wait_number_of_blocks(1)
         return init_node
 
     def __create_remote_node() -> tt.RemoteNode:

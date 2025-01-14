@@ -186,22 +186,17 @@ void beekeeper_app::start()
 {
   auto& _webserver_plugin = app.get_plugin<hive::plugins::webserver::webserver_plugin>();
 
-  webserver_connection = _webserver_plugin.add_connection( [this](const hive::utilities::notifications::collector_t& collector )
-  {
-    instance->save_connection_details( collector );
-  } );
-
   app.startup();
 
   //Launch webserver only when all plugins are initialized at startup.
   if( !app.is_interrupt_request() )
   {
     _webserver_plugin.start_webserver();
-    instance->get_app().notify_status( "beekeeper is ready" );
+    instance->get_app().save_status( "beekeeper is ready" );
   }
   else
   {
-    instance->get_app().notify_status( "opening beekeeper failed. Beekeeper API is disabled" );
+    instance->get_app().save_status( "opening beekeeper failed. Beekeeper API is disabled" );
   }
 
 

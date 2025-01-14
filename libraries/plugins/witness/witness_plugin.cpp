@@ -716,9 +716,9 @@ void witness_plugin::plugin_shutdown()
 {
   try
   {
-    chain::util::disconnect_signal( my->_post_apply_block_conn );
-    chain::util::disconnect_signal( my->_pre_apply_operation_conn );
-    chain::util::disconnect_signal( my->_finish_push_block_conn );
+    hive::utilities::disconnect_signal( my->_post_apply_block_conn );
+    hive::utilities::disconnect_signal( my->_pre_apply_operation_conn );
+    hive::utilities::disconnect_signal( my->_finish_push_block_conn );
 
     my->_timer.cancel();
   }

@@ -495,7 +495,7 @@ void chain_plugin_impl::start_write_processing()
 
       const int64_t time_fragments = nr_seconds * 2;
 
-      theApp.notify_status( "syncing" );
+      theApp.save_status( "syncing" );
       ilog( "Write processing thread started." );
       bool is_syncing = is_p2p_enabled;
       if( !is_syncing )
@@ -503,7 +503,7 @@ void chain_plugin_impl::start_write_processing()
         db.notify_end_of_syncing();
         //don't switch to live in writer (doesn't make a difference for API calls, but does for queen)
         //default_block_writer->set_is_at_live_sync();
-        theApp.notify_status( "entering API mode" );
+        theApp.save_status( "entering API mode" );
         wlog( "entering API mode" );
       }
       write_request_visitor req_visitor( *this );
@@ -629,7 +629,7 @@ void chain_plugin_impl::start_write_processing()
                   is_syncing = false;
                   db.notify_end_of_syncing();
                 }
-                theApp.notify_status( "entering API mode" );
+                theApp.save_status( "entering API mode" );
                 wlog( "entering API mode" );
               }
             }
@@ -921,7 +921,7 @@ void chain_plugin_impl::open()
       thread_pool.shutdown();
 
       wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-      theApp.notify_status("exitting with open database error");
+      theApp.save_status("exitting with open database error");
     }
   } BOOST_SCOPE_EXIT_END
 
