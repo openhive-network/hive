@@ -5,7 +5,7 @@ globalThis.createBeekeeperTestFor = async function createBeekeeperTestFor (env) 
 
   const beekeeper = await import(locBeekeeper);
 
-  const bk = await beekeeper.default({ storageRoot: '.beekeeper', enableLogs: false });
+  const bk = await beekeeper.default({ storageRoot: env === "web" ? "/storage_root" : '.beekeeper', enableLogs: false });
 
   return {
     provider: beekeeper,
