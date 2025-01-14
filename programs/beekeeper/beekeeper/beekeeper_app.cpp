@@ -194,6 +194,10 @@ void beekeeper_app::start()
     _webserver_plugin.start_webserver();
     instance->get_app().save_status( "beekeeper is ready", "beekeeper_status" );
   }
+  else
+  {
+    instance->get_app().save_status( "opening beekeeper failed. Beekeeper API is disabled" );
+  }
 
   ilog("beekeeper is waiting");
   app.wait( true/*log*/ );
