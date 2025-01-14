@@ -184,11 +184,6 @@ void beekeeper_app::start()
 {
   auto& _webserver_plugin = app.get_plugin<hive::plugins::webserver::webserver_plugin>();
 
-  webserver_connection = _webserver_plugin.add_connection( [this](const hive::utilities::notifications::collector_t& collector )
-  {
-    instance->save_connection_details( collector );
-  } );
-
   app.startup();
 
   //Launch webserver only when all plugins are initialized at startup.
