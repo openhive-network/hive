@@ -43,12 +43,29 @@ void authority_verification_tracer::pop_parent_entry()
 
 void authority_verification_tracer::fill_final_authority_path()
 {
-  path_entry* entry = &( _trace.root );
+  /*path_entry* entry = &( _trace.root );
   _trace.final_authority_path.push_back( *entry );
   while( not entry->visited_entries.empty() )
   {
     entry = &( entry->visited_entries.back() );
     _trace.final_authority_path.push_back( *entry );
+  }*/
+
+  // 1. Copy whole tree
+  _trace.final_authority_path.push_back( _trace.root );
+  path_entry* entry_to_clear = &( _trace.final_authority_path.back() );
+  // 2. Clear visited except last ones.
+  while( not entry_to_clear->visited_entries.empty() )
+  {
+    /*path_entry last_visited = entry_to_clear->visited_entries.back();
+    entry_to_clear->visited_entries.clear();
+    entry_to_clear->visited_entriest.push_back( last_visited );
+    entry_to_clear = &( entry_to_clear->visited_entries.back() );*/
+    auto& visited = entry_to_clear->visited_entries;
+    if( visited.size() > 1 ) 
+      visited.erase( visited.begin(), visited.end() - 1 );
+
+    entry_to_clear = &( visited.back() );
   }
 }
 
