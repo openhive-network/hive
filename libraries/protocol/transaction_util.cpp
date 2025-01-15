@@ -394,20 +394,17 @@ void signing_keys_collector::collect_signing_keys( flat_set< public_key_type >* 
   for( const auto& name : req_active_approvals )
   {
     auto v_approving_keys = get_active( name ).get_keys();
-    wdump( ( v_approving_keys ) );
     keys->insert( v_approving_keys.begin(), v_approving_keys.end() );
   }
   for( const auto& name : req_owner_approvals )
   {
     auto v_approving_keys = get_owner( name ).get_keys();
-    wdump( ( v_approving_keys ) );
     keys->insert( v_approving_keys.begin(), v_approving_keys.end() );
   }
 
   for( const auto& name : req_posting_approvals )
   {
     auto v_approving_keys = get_posting( name ).get_keys();
-    wdump( ( v_approving_keys ) );
     keys->insert( v_approving_keys.begin(), v_approving_keys.end() );
   }
 
@@ -415,7 +412,6 @@ void signing_keys_collector::collect_signing_keys( flat_set< public_key_type >* 
   {
     for( const auto& kv : a.key_auths )
     {
-      wdump( ( kv.first ) );
       keys->insert( kv.first );
     }
   }
