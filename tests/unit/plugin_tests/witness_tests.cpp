@@ -102,7 +102,7 @@ struct witness_fixture : public hived_fixture
         }
       } );
     }
-    while( !stop );
+    while( !stop && !theApp.is_interrupt_request() );
     return block_num;
   }
 
@@ -127,31 +127,43 @@ struct witness_fixture : public hived_fixture
 
   void schedule_transaction( const full_transaction_ptr& tx ) const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     get_chain_plugin().accept_transaction( tx, hive::plugins::chain::chain_plugin::lock_type::fc );
   }
 
   void schedule_transaction( const signed_transaction& tx ) const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     schedule_transaction( build_transaction( tx ) );
   }
 
   void schedule_transaction( const operation& op ) const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     schedule_transaction( build_transaction( op, default_expiration ) );
   }
 
   void schedule_transaction( const operation& op, size_t expiration ) const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     schedule_transaction( build_transaction( op, expiration ) );
   }
 
   void schedule_blocks( uint32_t count ) const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     db_plugin->debug_generate_blocks( init_account_priv_key, count, default_skip, 0, false );
   }
 
   void schedule_block() const
   {
+    if( theApp.is_interrupt_request() )
+      return;
     schedule_blocks( 1 );
   }
 
@@ -295,14 +307,14 @@ public:
         } );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -392,14 +404,14 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_01_test )
         } );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -516,14 +528,14 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
         }
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -639,14 +651,14 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
         }
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -716,7 +728,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
       active_feeders.store( FEEDER_COUNT );
       ilog( "Waiting for feeder threads to finish work" );
-      while( active_feeders.load() > 0 )
+      while( active_feeders.load() > 0 && !theApp.is_interrupt_request() )
         fc::usleep( fc::milliseconds( 200 ) );
       ilog( "All threads finished." );
     } );
@@ -727,7 +739,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     {
       try
       {
-        while( active_feeders.load() == 0 )
+        while( active_feeders.load() == 0 && !theApp.is_interrupt_request() )
           fc::usleep( fc::milliseconds( 200 ) );
         ilog( "Starting 'API' thread that will be sending transactions from 'alice'" );
 
@@ -783,7 +795,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     {
       try
       {
-        while( active_feeders.load() == 0 )
+        while( active_feeders.load() == 0 && !theApp.is_interrupt_request() )
           fc::usleep( fc::milliseconds( 200 ) );
         ilog( "Starting 'API' thread that will be sending transactions from 'bob'" );
 
@@ -837,7 +849,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     {
       try
       {
-        while( active_feeders.load() == 0 )
+        while( active_feeders.load() == 0 && !theApp.is_interrupt_request() )
           fc::usleep( fc::milliseconds( 200 ) );
         ilog( "Starting 'API' thread that will be sending transactions from 'carol'" );
 
@@ -872,7 +884,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
         // wait long enough for alice/shopping comment to show up and a bit more
         fc::usleep( fc::seconds( 8 * HIVE_BLOCK_INTERVAL ) );
-        while( db->find_comment( "alice", std::string( "shopping" ) ) == nullptr )
+        while( db->find_comment( "alice", std::string( "shopping" ) ) == nullptr && !theApp.is_interrupt_request() )
           fc::usleep( fc::seconds( 1 ) );
         fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -898,7 +910,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
     {
       try
       {
-        while( active_feeders.load() == 0 )
+        while( active_feeders.load() == 0 && !theApp.is_interrupt_request() )
           fc::usleep( fc::milliseconds( 200 ) );
         ilog( "Starting 'API' thread that will be sending transactions from 'dan'" );
 
@@ -936,13 +948,13 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
       ilog( "'DAN' thread finished" );
     } );
 
-    theApp.wait4interrupt_request();
-    theApp.quit( true );
     _future_00.wait();
     _future_01.wait();
     _future_02.wait();
     _future_03.wait();
     _future_04.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed[ FEEDER_COUNT ] );
     BOOST_REQUIRE( test_passed[ ALICE ] );
@@ -988,14 +1000,14 @@ BOOST_AUTO_TEST_CASE( start_before_genesis_test )
         BOOST_REQUIRE( block_header.timestamp == get_genesis_time() + HIVE_BLOCK_INTERVAL );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1061,14 +1073,14 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
         BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 - 11 ); // we should see 11 missed blocks
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1138,14 +1150,14 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
         BOOST_REQUIRE_EQUAL( block_num, HIVE_MAX_WITNESSES * 3 ); // all missed blocks should be supplemented
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1249,14 +1261,14 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
         BOOST_REQUIRE( already_produced );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1380,14 +1392,14 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
         BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1494,14 +1506,14 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
         BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1620,14 +1632,14 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
         BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1703,14 +1715,14 @@ BOOST_AUTO_TEST_CASE( slow_obi_test )
         fc::sleep_until( stop_time );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -1789,7 +1801,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
         // start with setting block size to 2MB (it will temporarily change to default 128kB on first schedule)
         set_block_size( HIVE_MAX_BLOCK_SIZE );
 
-        for( size_t i = 0; i < ACCOUNTS; ++i )
+        for( size_t i = 0; i < ACCOUNTS && !theApp.is_interrupt_request(); ++i )
         {
           auto account_name = "account" + std::to_string( i );
 
@@ -1866,7 +1878,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
             }
           } );
         }
-        while( block_num < FULL_RATE_BLOCKS );
+        while( block_num < FULL_RATE_BLOCKS && !theApp.is_interrupt_request() );
 
         ilog( "#${b} block size should soon change to 1MB - colony production rate should be reduced", ( "b", block_num ) );
 
@@ -1901,7 +1913,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
             }
           } );
         }
-        while( block_num < REDUCED_RATE_BLOCKS );
+        while( block_num < REDUCED_RATE_BLOCKS && !theApp.is_interrupt_request() );
 
         ilog( "#${b} block size should soon change to 64kB - colony production rate should be drastically reduced", ( "b", block_num ) );
 
@@ -1925,7 +1937,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
             }
           } );
         }
-        while( block_num < MINIMAL_RATE_BLOCKS );
+        while( block_num < MINIMAL_RATE_BLOCKS && !theApp.is_interrupt_request() );
 
         ilog( "#${b} block size should soon change back to 2MB - colony production rate should return to full", ( "b", block_num ) );
 
@@ -1945,17 +1957,17 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
             }
           } );
         }
-        while( block_num < FULL2_RATE_BLOCKS );
+        while( block_num < FULL2_RATE_BLOCKS && !theApp.is_interrupt_request() );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
@@ -2130,14 +2142,14 @@ BOOST_AUTO_TEST_CASE( basic_queen_test )
         BOOST_REQUIRE_EQUAL( get_block_num(), 11 );
       }
 
-      test_passed = true;
+      test_passed = !theApp.is_interrupt_request();
     }
     CATCH( "API" )
   } );
 
+  _future.wait();
   theApp.wait4interrupt_request();
   theApp.quit( true );
-  _future.wait();
   db = nullptr; // prevent fixture destructor from accessing database after it was closed
   BOOST_REQUIRE( test_passed );
   ilog( "Test done" );
@@ -2223,14 +2235,14 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
             if( new_block > block_num )
               return new_block;
           }
-          while( true );
+          while( !theApp.is_interrupt_request() );
           return 0u;
         };
 
         // start with setting block size to 2MB (it will temporarily change to default 128kB on first schedule)
         set_block_size( HIVE_MAX_BLOCK_SIZE );
 
-        for( size_t i = 0; i < ACCOUNTS; ++i )
+        for( size_t i = 0; i < ACCOUNTS && !theApp.is_interrupt_request(); ++i )
         {
           auto account_name = "account" + std::to_string( i );
 
@@ -2309,14 +2321,14 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
         block_num = wait_for_block_change_nolock( FULL2_RATE_BLOCKS );
 
         ilog( "'API' thread finished" );
-        test_passed = true;
+        test_passed = !theApp.is_interrupt_request();
       }
       CATCH( "API" )
     } );
 
+    _future.wait();
     theApp.wait4interrupt_request();
     theApp.quit( true );
-    _future.wait();
     db = nullptr; // prevent fixture destructor from accessing database after it was closed
     BOOST_REQUIRE( test_passed );
     ilog( "Test done" );
