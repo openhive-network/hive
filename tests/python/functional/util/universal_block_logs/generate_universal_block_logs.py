@@ -44,7 +44,7 @@ INITIAL_ACCOUNT_CREATION_FEE: Final[tt.Asset.Test] = tt.Asset.Test(0.001)
 ACCOUNT_CREATION_FEE_AFTER_HF_20: Final[tt.Asset.Test] = tt.Asset.Test(3)
 
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
-MAX_WORKERS: Final[int] = os.cpu_count() or 2
+MAX_WORKERS: Final[int] = os.cpu_count() * 2
 
 
 def prepare_block_log(
@@ -78,7 +78,7 @@ def prepare_block_log(
         key = tt.Account(witness).private_key
         node.config.witness.append(witness)
         node.config.private_key.append(key)
-
+    node.temporarily_change_timeout(seconds=60)
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
     five_days_in_blocks = 5 * 24 * 60 * 60 // 3
@@ -128,17 +128,18 @@ def prepare_block_log(
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
+    size = {"open_sign": 1300, "single_sign": 1000, "multi_sign": 150}
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
-            __create_account_and_fund_hive_and_hbd,
+            __create_and_fund_account,
             node,
             wallet,
             authority,
         ),
         args_sequences=(ACCOUNT_NAMES,),
         amount=NUMBER_OF_ACCOUNTS,
-        chunk_size=ACCOUNTS_PER_CHUNK - 512,
+        chunk_size=size[signature_type],
         max_workers=MAX_WORKERS,
     )
     generate_block(node, 1)
@@ -161,24 +162,6 @@ def prepare_block_log(
     )
     generate_block(node, 1)
     tt.logger.info(f"Finish transfer to vesting! @Block: {node.get_last_block_number()}")
-
-    # delegate rc from initminer to each account
-    tt.logger.info(f"Start delegate rc! @Block: {node.get_last_block_number()}")
-    execute_function_in_threads(
-        __generate_and_broadcast_transaction,
-        args=(
-            __delegate_vesting_shares,
-            node,
-            wallet,
-            authority,
-        ),
-        args_sequences=(ACCOUNT_NAMES,),
-        amount=NUMBER_OF_ACCOUNTS,
-        chunk_size=ACCOUNTS_PER_CHUNK + 1024,
-        max_workers=MAX_WORKERS,
-    )
-    generate_block(node, 1)
-    tt.logger.info(f"Finish delegate rc! @Block: {node.get_last_block_number()}")
 
     # unlock delayed votes after vesting delegation.
     tt.logger.info(f"Unlock delayed votes! @Block: {node.get_last_block_number()}")
@@ -239,16 +222,6 @@ def __invest(account: str, _) -> tuple[TransferToVestingOperationLegacy]:
     return (TransferToVestingOperationLegacy(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
 
 
-def __delegate_vesting_shares(account: str, _) -> tuple[DelegateVestingSharesOperationLegacy]:
-    return (
-        DelegateVestingSharesOperationLegacy(
-            delegatee=AccountName(account),
-            delegator=AccountName("initminer"),
-            vesting_shares=DELEGATION_PER_ACCOUNT.as_legacy(),
-        ),
-    )
-
-
 def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
     match authority_type:
         case "open_sign":
@@ -259,46 +232,36 @@ def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign"
                 "memo": tt.PublicKey("account", secret="memo"),
             }
         case "multi_sign":
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"owner-{num}") for num in range(3)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"active-{num}") for num in range(6)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"posting-{num}") for num in range(10)])
+            wallet.api.import_keys([tt.PrivateKey("account", secret=f"multi_sign-{num}") for num in range(32)])
+            keys = [(tt.PublicKey("account", secret=f"multi_sign-{num}"), HiveInt(1)) for num in range(32)]
 
-            owner_keys = [(tt.PublicKey("account", secret=f"owner-{num}"), HiveInt(1)) for num in range(3)]
-            active_keys = [(tt.PublicKey("account", secret=f"active-{num}"), HiveInt(1)) for num in range(6)]
-            posting_keys = [(tt.PublicKey("account", secret=f"posting-{num}"), HiveInt(1)) for num in range(10)]
             return {
-                "owner": Authority(weight_threshold=HiveInt(3), account_auths=[], key_auths=owner_keys),
-                "active": Authority(weight_threshold=HiveInt(6), account_auths=[], key_auths=active_keys),
-                "posting": Authority(weight_threshold=HiveInt(10), account_auths=[], key_auths=posting_keys),
+                "owner": Authority(weight_threshold=HiveInt(32), account_auths=[], key_auths=keys),
+                "active": Authority(weight_threshold=HiveInt(32), account_auths=[], key_auths=keys),
+                "posting": Authority(weight_threshold=HiveInt(32), account_auths=[], key_auths=keys),
                 "memo": tt.PublicKey("account", secret="memo"),
             }
         case "single_sign":
-            wallet.api.import_key(tt.PrivateKey("account", secret="owner"))
-            wallet.api.import_key(tt.PrivateKey("account", secret="active"))
+            wallet.api.import_key(tt.PrivateKey("account", secret="single_sign"))
+            key = tt.PublicKey("account", secret="single_sign")
+            weight = HiveInt(1)
 
             return {
-                "owner": Authority(
-                    weight_threshold=HiveInt(1),
-                    account_auths=[],
-                    key_auths=[(tt.PublicKey("account", secret="owner"), HiveInt(1))],
-                ),
-                "active": Authority(
-                    weight_threshold=HiveInt(1),
-                    account_auths=[],
-                    key_auths=[(tt.PublicKey("account", secret="active"), HiveInt(1))],
-                ),
-                "posting": Authority(
-                    weight_threshold=HiveInt(1),
-                    account_auths=[],
-                    key_auths=[(tt.PublicKey("account", secret="active"), HiveInt(1))],
-                ),
-                "memo": tt.PublicKey("account", secret="memo"),
+                "owner": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
+                "active": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
+                "posting": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
+                "memo": key,
             }
 
 
-def __create_account_and_fund_hive_and_hbd(
+def __create_and_fund_account(
     account: str, authority: dict
-) -> tuple[AccountCreateOperationLegacy, TransferOperationLegacy, TransferOperationLegacy]:
+) -> tuple[
+    AccountCreateOperationLegacy,
+    TransferOperationLegacy,
+    TransferOperationLegacy,
+    DelegateVestingSharesOperationLegacy,
+]:
     return (
         AccountCreateOperationLegacy(
             fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
@@ -321,6 +284,11 @@ def __create_account_and_fund_hive_and_hbd(
             to=AccountName(account),
             amount=TBD_PER_ACCOUNT.as_legacy(),
             memo=f"hbd_transfer-{account}",
+        ),
+        DelegateVestingSharesOperationLegacy(
+            delegatee=AccountName(account),
+            delegator=AccountName("initminer"),
+            vesting_shares=DELEGATION_PER_ACCOUNT.as_legacy(),
         ),
     )
 
@@ -382,6 +350,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
     args = parser.parse_args()
-    # prepare_block_log(args.output_block_log_directory, "open_sign", 400)
-    # prepare_block_log(args.output_block_log_directory, "single_sign", 520)
-    prepare_block_log(args.output_block_log_directory, "multi_sign", 1200)
+    prepare_block_log(args.output_block_log_directory, "open_sign", 400)
+    prepare_block_log(args.output_block_log_directory, "single_sign", 520)
+    # prepare_block_log(args.output_block_log_directory, "multi_sign", 1200)
