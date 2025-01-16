@@ -47,6 +47,7 @@ public:
   uint32_t                      remaining_block_size = 0;
   uint32_t                      remaining_tx_count = 0;
 
+  uint32_t                      blocks_finished = 0;
   uint32_t                      blocks_observed = 0;
   uint32_t                      blocks_produced = 0;
   uint32_t                      transactions_observed = 0;
@@ -84,6 +85,7 @@ public:
     plugin.total_production_time += stats.get_work_time();
     plugin.total_application_time += stats.get_cleanup_time();
     plugin.total_time += stats.get_total_time();
+    ++plugin.blocks_finished;
   }
 
 private:
@@ -309,6 +311,13 @@ void queen_plugin::plugin_startup()
 
 void queen_plugin::plugin_shutdown()
 {
+  /*
+    Dont close the plugin before all blocks are finished.
+    Sometimes when a machine is under stress, shutdown is done earlier, but some blocks are still in the queue.
+  */
+  while( my->blocks_finished < my->blocks_produced )
+    fc::usleep( fc::milliseconds( 50 ) );
+
   my->print_stats();
 
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
