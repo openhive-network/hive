@@ -2715,20 +2715,27 @@ void database::process_funds()
   const auto& wso = get_witness_schedule_object();
   const auto& feed = get_feed_history();
 
-  if( has_hardfork( HIVE_HARDFORK_0_16__551) )
-  {
+  if( has_hardfork( HIVE_HARDFORK_0_16__551) ) {
     /**
       * At block 7,000,000 have a 9.5% instantaneous inflation rate, decreasing to 0.95% at a rate of 0.01%
       * every 250k blocks. This narrowing will take approximately 20.5 years and will complete on block 220,750,000
       */
-    int64_t start_inflation_rate = int64_t( HIVE_INFLATION_RATE_START_PERCENT );
-    int64_t inflation_rate_adjustment = int64_t( head_block_num() / HIVE_INFLATION_NARROWING_PERIOD );
-    int64_t inflation_rate_floor = int64_t( HIVE_INFLATION_RATE_STOP_PERCENT );
+    int64_t start_inflation_rate = int64_t(HIVE_INFLATION_RATE_START_PERCENT);
+    int64_t inflation_rate_adjustment = int64_t(head_block_num() / HIVE_INFLATION_NARROWING_PERIOD);
+    int64_t inflation_rate_floor = int64_t(HIVE_INFLATION_RATE_STOP_PERCENT);
 
     // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
-    int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
+    int64_t current_inflation_rate = std::max(start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor);
 
-    auto new_hive = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
+    auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+    if (has_hardfork(HIVE_HARDFORK_1_28)) {
+      const auto &treasury_account = get_treasury();
+      const auto hdb_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.hbd_balance);
+      const auto virtual_supply_without_treasury = hdb_supply_without_treasury * get_feed_history().current_median_history + props.current_supply;
+
+      new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+    }
+
     auto content_reward = ( new_hive * props.content_reward_percent ) / HIVE_100_PERCENT;
     if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       content_reward = pay_reward_funds( content_reward );
