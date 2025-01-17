@@ -18,7 +18,7 @@ This is the fee in HIVE that must be paid to create an account. This field must 
 
 ### account_subsidy_budget
 
-The account subsidies to be added to the account subisidy per block. This is the maximum rate that accounts can be created via subsidization.
+The account subsidies to be added to the account subsidy per block. This is the maximum rate that accounts can be created via subsidization.
 The value must be between `1` and `268435455` where `10000` is one account per block.
 
 ### account_subsidy_decay
@@ -46,6 +46,12 @@ A more detailed explanation of resource dynamics can be found [here](./devs/2018
 ### maximum_block_size
 
 The maximum size of a single block in bytes. The value must be not less than `65536`. The value must not be more than 2MB (`2097152`).
+
+### rc_scale
+
+Scale of RC pools in relation to base values for 64kB blocks. If left as default `0`, it means automatic scaling with size of block (witness votes for rc_scale determined by highest multiple of 64kB fitting the size of blocks they vote for). Maximum value is `32` which is the most abundant RC (the RC costs will be roughly the same for any size of block when the same percentage of block budget is consumed, however when bigger blocks are allowed, the chance of them being less full is bigger, which results in RC costs dropping due to unused resources). When set to `1`, it means there will only be as many resources as for 64kB blocks.
+
+Note: median value of rc_scale is always limited by median value of max_block_size, that is, even if all witnesses vote for rc_scale of `32`, but median value of max_block_size is 128kB, then the actual median rc_scale will be `2`.
 
 ### hbd_interest_rate
 
