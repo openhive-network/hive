@@ -1166,8 +1166,8 @@ Trigger-full-mirrornet-conversion:
       artifacts: true
 
   rules:
-    # Create a child pipeline only when master/develop are a target branches. Child pipeline definition has defined manual job, so it will not start automatically.
-    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "develop")
+    # Create a child pipeline for protected branches. Child pipeline definition has defined manual job, so it will not start automatically.
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
 
   trigger:
     include:
