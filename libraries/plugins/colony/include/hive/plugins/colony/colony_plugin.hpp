@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
 
 #define HIVE_COLONY_PLUGIN_NAME "colony"
 
@@ -18,7 +19,7 @@ class colony_plugin : public appbase::plugin< colony_plugin >
     colony_plugin();
     virtual ~colony_plugin();
 
-    APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
+    APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin)(hive::plugins::p2p::p2p_plugin) )
 
     static const std::string& name() { static std::string name = HIVE_COLONY_PLUGIN_NAME; return name; }
 
