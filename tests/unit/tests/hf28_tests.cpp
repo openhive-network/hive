@@ -2259,11 +2259,9 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
 
     auto after_virtual_supply = props.virtual_supply.amount;
 
-    // Calculate initial inflation rate
     auto initial_inflation = after_virtual_supply - before_virtual_supply;
     BOOST_REQUIRE( initial_inflation > 0 );
 
-    // Issue TBD and check increased inflation
     before_virtual_supply = props.virtual_supply.amount;
     ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     
@@ -2353,7 +2351,6 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
 
         const auto& props = db->get_dynamic_global_properties();
 
-        // Setup HF27
         inject_hardfork(HIVE_HARDFORK_1_27);
         set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
         generate_block();
@@ -2362,7 +2359,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         auto before_virtual_supply = props.virtual_supply.amount;
         auto expected_new_virtual_supply = calculate_expected_new_virtual_supply();
 
-        // Generate block and check actual inflation
+        // check hf28 inflation
         generate_block();
         auto actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
         BOOST_REQUIRE(expected_new_virtual_supply == actual_new_virtual_supply);
