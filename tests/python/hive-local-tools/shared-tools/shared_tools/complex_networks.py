@@ -244,23 +244,30 @@ def generate_networks(
     block_log_directory_name: Path | None = None,
     preparer: NodesPreparer = None,
     desired_blocklog_length: int | None = None,
+    terminate_nodes: bool | None = None,
 ) -> dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
-    if preparer is not None:
-        preparer.prepare(builder)
+    try:
+        if preparer is not None:
+            preparer.prepare(builder)
 
-    run_networks(builder.networks, None)
+        run_networks(builder.networks, None)
 
-    initminer_public_key = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
-    init_network(
-        builder.init_node,
-        builder.witness_names,
-        initminer_public_key,
-        block_log_directory_name,
-        desired_blocklog_length,
-    )
+        initminer_public_key = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+        init_network(
+            builder.init_node,
+            builder.witness_names,
+            initminer_public_key,
+            block_log_directory_name,
+            desired_blocklog_length,
+        )
+
+    finally:
+        if terminate_nodes:
+            for node in builder.nodes:
+                node.close()
 
     return None
 
