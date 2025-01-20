@@ -9,7 +9,7 @@
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
-    "postbuild": "rollup -c",
+    "postbuild": "rollup -c && bundlesize",
     "pretest": "playwright install",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
@@ -18,6 +18,28 @@
   "keywords": [
     "blockchain",
     "hive"
+  ],
+  "bundlesize": [
+    {
+      "path": "./dist/bundle/node.js",
+      "maxSize": "5000 kB",
+      "compression": "none"
+    },
+    {
+      "path": "./dist/bundle/node.d.ts",
+      "maxSize": "15 kB",
+      "compression": "none"
+    },
+    {
+      "path": "./dist/bundle/web.js",
+      "maxSize": "5000 kB",
+      "compression": "none"
+    },
+    {
+      "path": "./dist/bundle/web.d.ts",
+      "maxSize": "15 kB",
+      "compression": "none"
+    }
   ],
   "exports": {
     ".": {
@@ -60,6 +82,7 @@
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-replace": "^6.0.1",
     "@types/node": "^22.10.6",
+    "bundlesize": "^0.18.2",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
     "playwright": "^1.49.1",
