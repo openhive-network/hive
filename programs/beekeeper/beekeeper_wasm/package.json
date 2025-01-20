@@ -5,7 +5,7 @@
   "main": "dist/bundle/web.js",
   "type": "module",
   "private": false,
-  "packageManager": "pnpm@9.1.1+sha256.9551e803dcb7a1839fdf5416153a844060c7bce013218ce823410532504ac10b",
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
@@ -54,22 +54,22 @@
     "dist/bundle"
   ],
   "devDependencies": {
-    "@playwright/test": "^1.39.0",
+    "@playwright/test": "^1.49.1",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-replace": "^6.0.1",
-    "@types/node": "^20.10.6",
+    "@types/node": "^22.10.6",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
-    "playwright": "^1.39.0",
+    "playwright": "^1.49.1",
     "rollup": "^4.24.3",
     "rollup-plugin-dts": "^6.1.1",
-    "tslib": "^2.6.2",
-    "typedoc": "0.25.13",
-    "typedoc-gitlab-wiki-theme": "^2.0.0",
-    "typedoc-plugin-markdown": "4.0.0",
-    "typescript": "5.2.2"
+    "tslib": "^2.8.1",
+    "typedoc": "0.27.6",
+    "typedoc-gitlab-wiki-theme": "^2.1.0",
+    "typedoc-plugin-markdown": "4.4.1",
+    "typescript": "5.7.3"
   },
   "types": "dist/bundle/web.d.ts",
   "repository": {
