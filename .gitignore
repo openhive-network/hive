@@ -34,6 +34,7 @@ Makefile
 compile_commands.json
 lcov
 doxygen
+test-results
 
 # Project generated files/directories
 
