@@ -103,7 +103,8 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
 
-@pytest.mark.parametrize("dupa", [x for x in range(20)])
+
+@pytest.mark.parametrize("dupa", list(range(20)))
 def test_stop_sync_mode_at_given_block(dupa) -> None:
     network = tt.Network()
     init_node = tt.InitNode(network=network)
