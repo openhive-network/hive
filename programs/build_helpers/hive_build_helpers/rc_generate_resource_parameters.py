@@ -83,7 +83,7 @@ def compute_parameters(args):
 
     pool_eq = budget_per_sec / decay_per_sec_float
     rdparams["pool_eq"] = int(pool_eq+1)
-    rdparams["max_pool_size"] = str(int(pool_eq*2.0 + 0.5))
+    # rdparams["max_pool_size"] = str(int(pool_eq*2.0 + 0.5)) the only place that used max_pool_size was actually using pool_eq overwriting this value a moment earlier
 
     # Find k such that 1-1/(1+k*a) = u
     # 1-u = 1/(1+k*a)
@@ -119,10 +119,11 @@ def compute_parameters(args):
     curve_shift = int(math.floor(curve_shift_float))
 
     result["price_curve_params"] = collections.OrderedDict()
-    result["price_curve_params"]["coeff_a"] = str(int(A*(2.0**curve_shift)+0.5))
-    result["price_curve_params"]["coeff_b"] = str(int(B+0.5))
-    result["price_curve_params"]["coeff_d"] = str(int(D*(2.0**curve_shift)+0.5))
-    result["price_curve_params"]["shift"] = curve_shift
+    price_params = result["price_curve_params"]
+    price_params["coeff_a"] = str(int(A*(2.0**curve_shift)+0.5))
+    price_params["coeff_b"] = str(int(B+0.5))
+    price_params["coeff_d"] = str(int(D*(2.0**curve_shift)+0.5))
+    price_params["shift"] = curve_shift
 
     decay_per_time_unit_float = -math.expm1(-time_unit_sec*math.log(2.0) / half_life_sec)
 

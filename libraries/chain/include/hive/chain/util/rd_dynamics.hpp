@@ -30,7 +30,6 @@ struct rd_dynamics_params
   int32_t         budget_per_time_unit = 0;
 
   uint64_t        pool_eq = 0;
-  uint64_t        max_pool_size = 0;
 
   rd_decay_params decay_params;
 
@@ -42,14 +41,12 @@ struct rd_dynamics_params
           resource_unit,
           budget_per_time_unit,
           pool_eq,
-          max_pool_size,
           decay_params,
           min_decay )
         == std::tie(
           other.resource_unit,
           other.budget_per_time_unit,
           other.pool_eq,
-          other.max_pool_size,
           other.decay_params,
           other.min_decay );
   }
@@ -76,7 +73,6 @@ FC_REFLECT( hive::chain::util::rd_dynamics_params,
   (resource_unit)
   (budget_per_time_unit)
   (pool_eq)
-  (max_pool_size)
   (decay_params)
   (min_decay)
   )

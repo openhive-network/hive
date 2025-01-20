@@ -45,7 +45,7 @@ int64_t rd_apply( const rd_dynamics_params& rd, int64_t pool )
   // Apply resource dynamics, hardcoded dt=1
   int64_t decay = rd_compute_pool_decay( rd.decay_params, pool, 1 );
   int64_t budget = rd.budget_per_time_unit;
-  int64_t max_pool_size = rd.max_pool_size;
+  int64_t max_pool_size = rd.pool_eq;
   decay = std::max( decay, rd.min_decay );
   int64_t new_pool = pool + budget - decay;
   new_pool = std::min( new_pool, max_pool_size );
@@ -75,7 +75,10 @@ void rd_setup_dynamics_params(
   //   or re-write this implementation so that the functionality here (including bounds checks) correctly
   //   handles the values you want to feed it.
   //
-  FC_ASSERT( system_params.decay_per_time_unit_denom_shift == HIVE_RD_DECAY_DENOM_SHIFT );
+  // ABW: replaced the assertion as it made no sense to me; the only limit that is actually needed
+  // is inside uint128_to_uint64() call
+  // FC_ASSERT( system_params.decay_per_time_unit_denom_shift == HIVE_RD_DECAY_DENOM_SHIFT );
+  FC_ASSERT( system_params.decay_per_time_unit_denom_shift < 64 );
 
   // Initialize pool_eq to the smallest integer where budget/decay are in balance
   // Let b=budget, d=decay_per_time_unit, s=decay_per_time_unit_shift
@@ -96,7 +99,6 @@ void rd_setup_dynamics_params(
   temp += (user_params.decay_per_time_unit-1);
   temp /= user_params.decay_per_time_unit;
   dparams_out.pool_eq = fc::uint128_to_uint64(temp);
-  dparams_out.max_pool_size = dparams_out.pool_eq;
 
   // Debug code:  Check that the above reasoning is correct and we've set pool_eq
   //    to the smallest integer pool size where decay >= budget

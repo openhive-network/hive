@@ -6,7 +6,6 @@
       "decay_per_time_unit": 347321,
       "decay_per_time_unit_denom_shift": 36
     },
-    "max_pool_size": 157691079,
     "min_decay": 0,
     "pool_eq": 157691079,
     "resource_unit": 10000
@@ -17,7 +16,6 @@
       "decay_per_time_unit": 7293741,
       "decay_per_time_unit_denom_shift": 36
     },
-    "max_pool_size": 9384019,
     "min_decay": 896,
     "pool_eq": 9384019,
     "resource_unit": 10000
