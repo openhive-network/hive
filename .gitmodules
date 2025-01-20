@@ -22,3 +22,6 @@
 	path = libraries/vendor/rocksdb
 	url = https://github.com/facebook/rocksdb.git
 	shallow = true
+[submodule "tests/python/hive-local-tools/test-tools"]
+	path = tests/python/hive-local-tools/test-tools
+	url = ../test-tools.git

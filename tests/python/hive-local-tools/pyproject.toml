@@ -32,7 +32,7 @@ pytest-xdist = "3.2.0"
 tavern = "2.2.0"
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
-# test-tools = { path = "test-tools", develop = true }
+test-tools = { path = "test-tools", develop = true }
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.dev.dependencies]
