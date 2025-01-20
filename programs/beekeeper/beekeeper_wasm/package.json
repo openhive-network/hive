@@ -9,8 +9,8 @@
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
-    "postbuild": "rollup -c && bundlesize",
-    "pretest": "playwright install",
+    "postbuild": "rollup -c && cp ./build/beekeeper_wasm.*.wasm ./dist/bundle && bundlesize",
+    "pretest": "playwright install && cp ./build/beekeeper_wasm.*.wasm ./__tests__/assets",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
@@ -22,6 +22,11 @@
   "bundlesize": [
     {
       "path": "./dist/bundle/node.js",
+      "maxSize": "130 kB",
+      "compression": "none"
+    },
+    {
+      "path": "./dist/bundle/beekeeper_wasm.node.wasm",
       "maxSize": "5000 kB",
       "compression": "none"
     },
@@ -32,6 +37,11 @@
     },
     {
       "path": "./dist/bundle/web.js",
+      "maxSize": "130 kB",
+      "compression": "none"
+    },
+    {
+      "path": "./dist/bundle/beekeeper_wasm.web.wasm",
       "maxSize": "5000 kB",
       "compression": "none"
     },

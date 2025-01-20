@@ -35,6 +35,7 @@ compile_commands.json
 lcov
 doxygen
 test-results
+beekeeper_wasm.*.wasm
 
 # Project generated files/directories
 

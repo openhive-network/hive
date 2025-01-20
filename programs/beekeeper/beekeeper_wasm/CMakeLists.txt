@@ -60,7 +60,7 @@ function( DEFINE_BEEKEEPER_TARGET_FOR env )
       target_link_libraries( ${exec_wasm_name} PUBLIC embind beekeeper_core )
       # add -sASSERTIONS to `target_link_options` if you want more information
       # INITIAL_MEMORY by default = 16777216
-      target_link_options( ${exec_wasm_name} PUBLIC -fexceptions -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=1
+      target_link_options( ${exec_wasm_name} PUBLIC -fexceptions -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=0
                                                     -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sENVIRONMENT="${env}"
                          )
       set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "beekeeper_wasm.${env}.js" )
