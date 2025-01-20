@@ -243,6 +243,7 @@ def generate_networks(
     block_log_directory_name: Path | None = None,
     preparer: NodesPreparer = None,
     desired_blocklog_length: int | None = None,
+    terminate_nodes: bool | None = None,
 ) -> dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
@@ -260,6 +261,10 @@ def generate_networks(
         block_log_directory_name,
         desired_blocklog_length,
     )
+
+    if terminate_nodes:
+        for node in builder.nodes:
+            node.close()
 
     return None
 
