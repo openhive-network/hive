@@ -84,6 +84,7 @@ def test_handle_by_wallet_additional_private_key_in_memo_field(
     wallet.api.import_key(extra_private_key)
 
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    assert "alice" in node.api.wallet_bridge.list_accounts("", 1000)
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         broadcast_transaction_by_wallet(wallet, operation, memo=extra_private_key)
