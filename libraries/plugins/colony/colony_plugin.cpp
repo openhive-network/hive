@@ -14,6 +14,8 @@
 
 #include <fc/thread/thread.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
 #define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // number of transactions per thread that can be sent with no wait
 #define COLONY_DEFAULT_THREADS 4 // number of working threads used by default (threads have separate pools of users)
@@ -93,6 +95,7 @@ struct transaction_builder
   uint32_t                                            _block_num = 0;
   uint32_t                                            _tx_to_produce = 0;
   uint32_t                                            _concurrent_tx_count = 0;
+  std::atomic<uint32_t>                               _accept_transaction_count = {0};
 
   hive::protocol::signed_transaction                  _tx;
   std::atomic_bool                                    _tx_needs_update = { true };
@@ -170,7 +173,20 @@ void transaction_builder::finalize()
 {
   std::string name = _worker.name(); //ABW: remember name because quit() can release the internal data (TBH it is a bug in fc::thread)
 
-  _worker.quit();
+  /*
+    Workaround.
+    There are some unknown problems in `fc::thread`. Better is to wait until all `accept_transaction` calls are finished.
+    After changing `fc` library to newer version, maybe below code could be removed.
+  */
+  while( _accept_transaction_count )
+  {
+    fc::usleep( fc::milliseconds( 50 ) );
+  }
+
+  fc::promise<void>::ptr quitDone(new fc::promise<void>(name.c_str()));
+  _worker.quit(quitDone.get());
+  quitDone->wait();
+
 
   ilog( "Production stats for thread ${t}", ( "t", name ) );
   ilog( "Number of transactions: ${t}", ( "t", _tx_num ) );
@@ -223,6 +239,20 @@ void transaction_builder::init( int starting_point )
 
 bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
 {
+  BOOST_SCOPE_EXIT( this_ )
+  {
+    this_->_accept_transaction_count.store( this_->_accept_transaction_count.load() - 1 );
+  } BOOST_SCOPE_EXIT_END
+
+  _accept_transaction_count.store( _accept_transaction_count.load() + 1 );
+
+  if( _common.theApp.is_interrupt_request() )
+  {
+    ilog( "Thread ${t} stopped accepting transactions.",
+      ( "t", _worker.name() ) );
+    return true;
+  }
+
   bool result = false;
   try
   {
@@ -771,7 +801,10 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
 
 } // detail
 
-colony_plugin::colony_plugin() {}
+colony_plugin::colony_plugin()
+{
+  set_pre_shutdown_order( colony_order );
+}
 
 colony_plugin::~colony_plugin() {}
 
@@ -891,7 +924,7 @@ void colony_plugin::plugin_startup()
   ilog( "Colony plugin waiting for end of sync signal to start" );
 }
 
-void colony_plugin::plugin_shutdown()
+void colony_plugin::plugin_pre_shutdown()
 {
   ilog( "Shutting down colony plugin" );
 
@@ -901,6 +934,11 @@ void colony_plugin::plugin_shutdown()
 
   for( auto& thread : my->_threads )
     thread.finalize();
+}
+
+void colony_plugin::plugin_shutdown()
+{
+  //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
 }
 
 } } } // hive::plugins::colony
