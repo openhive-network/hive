@@ -46,7 +46,7 @@ def prepare_blocklog_network() -> None:
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    generate_networks(architecture, Path("base_network_block_log"))
+    generate_networks(architecture, Path("base_network_block_log"), terminate_nodes=True)
 
 
 def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -> None:
@@ -127,6 +127,10 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     tt.logger.info("Creating comments started...")
     create_comments(init_node, init_wallet)
     tt.logger.info("Creating comments finished...")
+
+    tt.logger.info("Start Delegate RC...")
+    delegate_rc_to_payers(init_node, init_wallet, voters, ACCOUNTS_PER_CHUNK)
+    tt.logger.info("Finish Delegate RC...")
 
     tt.logger.info(f"Started voting at: {init_node.get_head_block_time()}")
     for comment_number in range(AMOUNT_OF_ALL_COMMENTS):
@@ -224,14 +228,8 @@ def __generate_and_broadcast_transaction(
         operations=[],
     )
 
-    for account_number, name in enumerate(account_names):
+    for name in account_names:
         if comment_number is not None:
-            if account_number == 0 and comment_number == 0:
-                # The account listed first in the transaction bears the transaction cost. For this reason,
-                # accounts that incur transaction costs have delegated RCs.
-                trx = wallet.api.delegate_rc("initminer", [name], 40_000_000_000, broadcast=False)
-                node.api.network_broadcast.broadcast_transaction(trx=trx)
-                generate_block(node, 1)
             transaction.add_operation(func(name, creator_number=comment_number))  # vote for comment
         else:
             transaction.add_operation(func(name))
@@ -257,6 +255,19 @@ def __create_voter(voter: str) -> AccountCreateOperation:
 
 def __fund_voter(voter: str) -> TransferToVestingOperation:
     return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHiveHF26(amount=10))
+
+
+def delegate_rc_to_payers(node: tt.InitNode, wallet: tt.Wallet, voters: list[str], accounts_per_chunks: int) -> None:
+    """
+    The account listed first in the transaction bears the transaction cost. For this reason,
+    accounts that incur transaction costs have delegated RCs.
+    """
+    chunks = [voters[i : i + accounts_per_chunks] for i in range(0, len(voters), accounts_per_chunks)]
+
+    payers = [payer[0] for payer in chunks]
+    transaction = wallet.api.delegate_rc("initminer", payers, 40_000_000_000, broadcast=False)
+    node.api.network_broadcast.broadcast_transaction(trx=transaction)
+    generate_block(node, 1)
 
 
 if __name__ == "__main__":
