@@ -170,6 +170,8 @@ namespace fc {
         delete my;
         my = nullptr;
       }
+      if(quitDone != nullptr)
+        quitDone->set_value();
       return;
     }
 
