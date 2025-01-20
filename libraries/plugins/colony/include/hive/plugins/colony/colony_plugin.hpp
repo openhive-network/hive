@@ -27,6 +27,7 @@ class colony_plugin : public appbase::plugin< colony_plugin >
       options_description& cfg ) override;
     virtual void plugin_initialize( const variables_map& options ) override;
     virtual void plugin_startup() override;
+    virtual void plugin_pre_shutdown() override;
     virtual void plugin_shutdown() override;
 
   private:
