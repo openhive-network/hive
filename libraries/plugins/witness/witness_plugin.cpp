@@ -425,24 +425,35 @@ class witness_plugin_impl
   void witness_plugin_impl::schedule_production_loop()
   {
     // Sleep for 200ms, before checking the block production
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 00");
     fc::time_point now = fc::time_point::now();
     int64_t time_to_sleep = BLOCK_PRODUCTION_LOOP_SLEEP_TIME - (now.time_since_epoch().count() % BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
     if( time_to_sleep < 50000 ) // we must sleep for at least 50ms
+    {
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 01");
       time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
+    }
 
     using boost::placeholders::_1;
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 02");
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 03");
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this, _1 ) );
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 04");
   }
 
   block_production_condition witness_plugin_impl::block_production_loop(const boost::system::error_code& e)
   {
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 05");
     if (e) return {};
+    //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 06");
 
     if( fc::time_point::now() < fc::time_point(HIVE_GENESIS_TIME) )
     {
       wlog( "waiting until genesis time to produce block: ${t}", ("t",HIVE_GENESIS_TIME) );
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 07");
       schedule_production_loop();
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 08");
       return block_production_condition::wait_for_genesis;
     }
 
@@ -450,21 +461,26 @@ class witness_plugin_impl
     fc::mutable_variant_object capture;
     try
     {
+      ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 09");
       result = maybe_produce_block(capture);
+      ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 10");
     }
     catch( const fc::canceled_exception& )
     {
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 11");
       //We're trying to exit. Go ahead and let this one out.
       throw;
     }
     catch( const chain::unknown_hardfork_exception& e )
     {
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 12");
       // Hit a hardfork that the current node know nothing about, stop production and inform user
       elog( "${e}\nNode may be out of date...", ( "e", e.to_detail_string() ) );
       throw;
     }
     catch( const fc::exception& e )
     {
+      //ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 13");
       elog( "Got exception while generating block:\n${e}", ( "e", e.to_detail_string() ) );
       result = block_production_condition::exception_producing_block;
     }
@@ -500,9 +516,15 @@ class witness_plugin_impl
     }
 
     if( theApp.is_interrupt_request() )
+    {
       ilog( "ending block_production_loop" );
+      ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 14 ${a}", ("a", theApp.is_interrupt_request()));
+    }
     else
+    {
+      ilog("xxxxxxxxxxxxxxxxxxxxxxxxxxxx 15 ${a}", ("a", theApp.is_interrupt_request()));
       schedule_production_loop();
+    }
     return result;
   }
 
@@ -515,45 +537,60 @@ class witness_plugin_impl
     }
     fc::time_point_sec now;
     now = fc::time_point::now() + fc::microseconds( 500000 );
+    ilog("*********** 00 ${a}", ("a", theApp.is_interrupt_request()));
 
     if( !_production_enabled )
       return block_production_condition::not_synced;
 
+    ilog("*********** 01 ${a}", ("a", theApp.is_interrupt_request()));
     if( data.next_slot_time > now )
     {
       capture( "next_time", data.next_slot_time );
       return block_production_condition::not_time_yet;
     }
+    ilog("*********** 02 ${a}", ("a", theApp.is_interrupt_request()));
 
     const fc::microseconds lag = now - data.next_slot_time;
     if( lag.count() > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
+    ilog("*********** 03 ${a}", ("a", theApp.is_interrupt_request()));
       // if it was our time to produce, we are lagging, otherwise the block seems to be late
       try
       {
+        ilog("*********** 04 ${a}", ("a", theApp.is_interrupt_request()));
         auto time = data.next_slot_time + ( ( lag.to_seconds() + HIVE_BLOCK_INTERVAL - 1 ) / HIVE_BLOCK_INTERVAL ) * HIVE_BLOCK_INTERVAL;
         _db.with_read_lock( [&]()
         {
           // check if we are to produce in future slot nearest to current time
+          ilog("*********** 05 ${a}", ("a", theApp.is_interrupt_request()));
           update_produce_block_data( time );
+          ilog("*********** 06 ${a}", ("a", theApp.is_interrupt_request()));
         }, fc::milliseconds( 200 ) );
       }
       catch( const chainbase::lock_exception& e )
       {
+        ilog("*********** 07 ${a}", ("a", theApp.is_interrupt_request()));
         // Do nothing
       }
+      ilog("*********** 08 ${a}", ("a", theApp.is_interrupt_request()));
       if( data.produce_in_next_slot )
         return block_production_condition::lag;
     }
 
+    ilog("*********** 09 ${a}", ("a", theApp.is_interrupt_request()));
     if( !data.produce_in_next_slot )
       return data.condition;
 
+    ilog("*********** 10 ${a}", ("a", theApp.is_interrupt_request()));
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( data.next_slot_time,
       data.scheduled_witness, data.scheduled_private_key, _production_skip_flags, theApp );
+    ilog("*********** 11 ${a}", ("a", theApp.is_interrupt_request()));
     _chain_plugin.push_generate_block_request( generate_block_ctrl );
+    ilog("*********** 12 ${a}", ("a", theApp.is_interrupt_request()));
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
+    ilog("*********** 13 ${a}", ("a", theApp.is_interrupt_request()));
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
+    ilog("*********** 14 ${a}", ("a", theApp.is_interrupt_request()));
 
     //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting

@@ -219,6 +219,33 @@ class chain_plugin_impl
     std::condition_variable          queue_condition_variable;
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
+
+    template<typename Promise>
+    void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx, Promise& promise )
+    {
+      std::unique_lock<std::mutex> lock( queue_mutex );
+      if( !theApp.is_interrupt_request() )
+      {
+        FC_ASSERT( ctx );
+        any_queue.push( ctx );
+        queue_condition_variable.notify_one();
+      }
+      else
+        promise->set_value();
+    }
+
+    template<typename Promise>
+    void add_to_priority_write_queue( write_context* ctx, Promise& promise )
+    {
+      add_to_any_queue( priority_write_queue, ctx, promise );
+    }
+
+    template<typename Promise>
+    void add_to_write_queue( write_context* ctx, Promise& promise )
+    {
+      add_to_any_queue( write_queue, ctx, promise );
+    }
+
     bool                             running = true;
 
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
@@ -511,6 +538,7 @@ void chain_plugin_impl::start_write_processing()
 
       while (true)
       {
+        ilog("^^^^^^^^^ 00");
         // print a message if we haven't gotten any new data in a while
         fc::time_point loop_start_time = fc::time_point::now();
         fc::microseconds time_since_last_popped_item = loop_start_time - last_popped_item_time;
@@ -536,12 +564,15 @@ void chain_plugin_impl::start_write_processing()
           int64_t chunk_time = max_time_to_wait.count() / time_fragments;
           while (is_running() && priority_write_queue.empty() && write_queue.empty() && !wait_timed_out)
           {
+            ilog("^^^^^^^^^ 01");
             size_t cnt = 0;
             size_t wait_timed_out_cnt = 0;
             while( cnt < time_fragments && is_running() && priority_write_queue.empty() && write_queue.empty() && !wait_timed_out )
             {
+              ilog("^^^^^^^^^ 02");
               if( queue_condition_variable.wait_for(lock, std::chrono::microseconds(chunk_time)) == std::cv_status::timeout )
               {
+                ilog("^^^^^^^^^ 03");
                 ++wait_timed_out_cnt;
               }
 
@@ -550,23 +581,34 @@ void chain_plugin_impl::start_write_processing()
             }
           }
 
+          ilog("^^^^^^^^^ 04");
           if (!is_running()) // we woke because the node is shutting down
+          {
+            ilog("^^^^^^^^^ 05 wait_timed_out: ${a} priority_write_queue.size ${b} running: ${c}",
+              ("a", wait_timed_out)("b", priority_write_queue.size())("c", running));
             break;
+          }
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
+          {
+            ilog("^^^^^^^^^ 06");
             continue;
+          }
           // otherwise, we woke because the priority_write_queue or write_queue is non-empty
           if( not priority_write_queue.empty() )
           {
+            ilog("^^^^^^^^^ 07");
             cxt = priority_write_queue.front();
             priority_write_queue.pop();
           }
           else
           {
+            ilog("^^^^^^^^^ 08");
             cxt = write_queue.front();
             write_queue.pop();
           }
         }
 
+        ilog("^^^^^^^^^ 09");
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
         last_popped_item_time = fc::time_point::now();
 
@@ -587,6 +629,7 @@ void chain_plugin_impl::start_write_processing()
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
           {
+            ilog("^^^^^^^^^ 10");
             req_visitor.cxt = cxt;
             last_block_number = cxt->req_ptr.visit( req_visitor );
 
@@ -594,6 +637,7 @@ void chain_plugin_impl::start_write_processing()
 
             if( !stop_at_block_interrupt_request && stop_at_block > 0 && stop_at_block == last_block_number )
             {
+            ilog("^^^^^^^^^ 11");
               ilog("Stopped ${mode} on user request. Last applied block number: ${n}.",
                 ("n", last_block_number)("mode", is_syncing ? "syncing" : is_p2p_enabled ? "live mode" : "API mode" ));
               stop_at_block_interrupt_request = true;
@@ -622,6 +666,7 @@ void chain_plugin_impl::start_write_processing()
                   ("i", priority_write_queue.size() + write_queue.size()));
 
                 if ( is_running() ) {
+                  ilog("^^^^^^^^^ 12");
                   break;
                 }
                 /**
@@ -641,6 +686,7 @@ void chain_plugin_impl::start_write_processing()
             }
 
             {
+              ilog("^^^^^^^^^ 13");
               std::unique_lock<std::mutex> lock(queue_mutex);
               if (!running || (priority_write_queue.empty() && write_queue.empty()))
               {
@@ -653,11 +699,13 @@ void chain_plugin_impl::start_write_processing()
               }
               if( not priority_write_queue.empty() )
               {
+                ilog("^^^^^^^^^ 14");
                 cxt = priority_write_queue.front();
                 priority_write_queue.pop();
               }
               else
               {
+                ilog("^^^^^^^^^ 15");
                 cxt = write_queue.front();
                 write_queue.pop();
               }
@@ -670,6 +718,7 @@ void chain_plugin_impl::start_write_processing()
 
         if (is_syncing && get_time_gap_to_live_sync( head_block_time ).count() < 0) //we're syncing, see if we are close enough to move to live sync
         {
+          ilog("^^^^^^^^^ 16");
           is_syncing = false;
           db.notify_end_of_syncing();
           default_block_writer->set_is_at_live_sync();
@@ -681,6 +730,7 @@ void chain_plugin_impl::start_write_processing()
         fc::microseconds time_since_last_report = fc::time_point::now() - cumulative_times_last_reported_time;
         if (time_since_last_report > fc::seconds(30))
         {
+          ilog("^^^^^^^^^ 17");
           fc::microseconds total_recorded_times = cumulative_time_waiting_for_locks + cumulative_time_processing_blocks + cumulative_time_processing_transactions + cumulative_time_waiting_for_work;
           float percent_waiting_for_locks = cumulative_time_waiting_for_locks.count() / (float)time_since_last_report.count() * 100.f;
           float percent_processing_blocks = cumulative_time_processing_blocks.count() / (float)time_since_last_report.count() * 100.f;
@@ -704,7 +754,7 @@ void chain_plugin_impl::start_write_processing()
           cumulative_times_last_reported_time = fc::time_point::now();
         }
       } // while running
-      ilog("Write processing thread finished.");
+      ilog("Write processing thread finished. priority-size: ${a}", ("a", priority_write_queue.size()));
       if( exit_at_block > 0 && exit_at_block == last_block_number )
       {
         ilog("Exiting application on user request, because requested block ${exit_at_block} reached (--exit-at-block).", (exit_at_block));
@@ -1904,11 +1954,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
   fc::future<void> accept_block_future(accept_block_promise);
   block_ctrl->attach_promise( accept_block_promise );
-  {
-    std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->priority_write_queue.push(&cxt);
-  }
-  my->queue_condition_variable.notify_one();
+  my->add_to_priority_write_queue( &cxt, accept_block_promise );
   accept_block_future.wait();
 
   block_ctrl->rethrow_if_exception();
@@ -1934,11 +1980,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     tx_ctrl.attach_promise( accept_transaction_promise );
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
+    my->add_to_write_queue( &cxt, accept_transaction_promise );
     accept_transaction_future.get();
   }
   else
@@ -1947,11 +1989,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl.attach_promise( accept_transaction_promise );
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
+    my->add_to_write_queue( &cxt, accept_transaction_promise );
     accept_transaction_future.wait();
   }
 
@@ -2007,19 +2045,24 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
   write_context cxt;
   cxt.req_ptr = generate_block_ctrl;
 
+  ilog("######## 00 ${a}", ("a", my->theApp.is_interrupt_request()));
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
+  ilog("######## 01 ${a}", ("a", my->theApp.is_interrupt_request()));
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
+  ilog("######## 02 ${a}", ("a", my->theApp.is_interrupt_request()));
   generate_block_ctrl->attach_promise( generate_block_promise );
+  ilog("######## 03 ${a}", ("a", my->theApp.is_interrupt_request()));
 
-  {
-    std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->priority_write_queue.push(&cxt);
-  }
-  my->queue_condition_variable.notify_one();
+  ilog("######## 04 ${a}", ("a", my->theApp.is_interrupt_request()));
+  my->add_to_priority_write_queue( &cxt, generate_block_promise );
+  ilog("######## 05 ${a}", ("a", my->theApp.is_interrupt_request()));
 
+  ilog("######## 07 ${a}", ("a", my->theApp.is_interrupt_request()));
   generate_block_future.get();
+  ilog("######## 08 ${a}", ("a", my->theApp.is_interrupt_request()));
 
   generate_block_ctrl->rethrow_if_exception();
+  ilog("######## 09 ${a}", ("a", my->theApp.is_interrupt_request()));
 }
 
 void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
@@ -2029,12 +2072,7 @@ void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   generate_block_ctrl->attach_promise( generate_block_promise );
-
-  {
-    std::unique_lock<std::mutex> lock( my->queue_mutex );
-    my->priority_write_queue.push( &cxt );
-  }
-  my->queue_condition_variable.notify_one();
+  my->add_to_priority_write_queue( &cxt, generate_block_promise );
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
