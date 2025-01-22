@@ -4,7 +4,7 @@ from pathlib import Path
 
 import test_tools as tt
 
-TOTAL_BLOCKS = 120
+TOTAL_BLOCKS = 430
 
 
 def prepare_block_log() -> None:
