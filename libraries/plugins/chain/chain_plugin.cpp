@@ -219,6 +219,33 @@ class chain_plugin_impl
     std::condition_variable          queue_condition_variable;
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
+
+    template<typename Promise>
+    void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx, Promise& promise )
+    {
+      std::lock_guard<std::mutex> lock( queue_mutex );
+      if( !theApp.is_interrupt_request() )
+      {
+        FC_ASSERT( ctx );
+        any_queue.push( ctx );
+        queue_condition_variable.notify_one();
+      }
+      else
+        promise->set_value();
+    }
+
+    template<typename Promise>
+    void add_to_priority_write_queue( write_context* ctx, Promise& promise )
+    {
+      add_to_any_queue( priority_write_queue, ctx, promise );
+    }
+
+    template<typename Promise>
+    void add_to_write_queue( write_context* ctx, Promise& promise )
+    {
+      add_to_any_queue( write_queue, ctx, promise );
+    }
+
     bool                             running = true;
 
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
@@ -1906,11 +1933,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
   fc::future<void> accept_block_future(accept_block_promise);
   block_ctrl->attach_promise( accept_block_promise );
-  {
-    std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->priority_write_queue.push(&cxt);
-  }
-  my->queue_condition_variable.notify_one();
+  my->add_to_priority_write_queue( &cxt, accept_block_promise );
   accept_block_future.wait();
 
   block_ctrl->rethrow_if_exception();
@@ -1936,11 +1959,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     tx_ctrl.attach_promise( accept_transaction_promise );
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
+    my->add_to_write_queue( &cxt, accept_transaction_promise );
     accept_transaction_future.get();
   }
   else
@@ -1949,11 +1968,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl.attach_promise( accept_transaction_promise );
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
+    my->add_to_write_queue( &cxt, accept_transaction_promise );
     accept_transaction_future.wait();
   }
 
@@ -2012,13 +2027,7 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
   generate_block_ctrl->attach_promise( generate_block_promise );
-
-  {
-    std::unique_lock<std::mutex> lock(my->queue_mutex);
-    my->priority_write_queue.push(&cxt);
-  }
-  my->queue_condition_variable.notify_one();
-
+  my->add_to_priority_write_queue( &cxt, generate_block_promise );
   generate_block_future.get();
 
   generate_block_ctrl->rethrow_if_exception();
@@ -2031,12 +2040,7 @@ void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   generate_block_ctrl->attach_promise( generate_block_promise );
-
-  {
-    std::unique_lock<std::mutex> lock( my->queue_mutex );
-    my->priority_write_queue.push( &cxt );
-  }
-  my->queue_condition_variable.notify_one();
+  my->add_to_priority_write_queue( &cxt, generate_block_promise );
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
