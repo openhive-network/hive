@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from copy import deepcopy
 from pathlib import Path
 from typing import Final
@@ -16,7 +17,7 @@ MAX_WORKERS: Final[int] = 6
 TIME_MULTIPLIER: Final[int] = 4
 
 
-def prepare_block_log_with_many_vote_for_proposals() -> None:
+def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: Path) -> None:
     """
     This script generate block_log with specific conditions:
       1) 12_000 accounts from account-0 to account-11999,
@@ -168,7 +169,7 @@ def prepare_block_log_with_many_vote_for_proposals() -> None:
     tt.logger.info(f"head block timestamp: {timestamp}")
 
     node.close()
-    node.block_log.copy_to(Path(__file__).parent)
+    node.block_log.copy_to(output_block_log_directory / "votes_on_proposals")
 
 
 def __generate_and_broadcast_fund(wallet: tt.Wallet, account_names: list[str]) -> None:
@@ -293,4 +294,7 @@ def __generate_and_broadcast_vote(wallet: tt.Wallet, approve: bool, reverse: boo
 
 
 if __name__ == "__main__":
-    prepare_block_log_with_many_vote_for_proposals()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
+    args = parser.parse_args()
+    prepare_block_log_with_many_vote_for_proposals(args.output_block_log_directory)

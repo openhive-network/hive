@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import math
 from copy import deepcopy
 from pathlib import Path
@@ -21,7 +22,7 @@ ACCOUNTS_PER_CHUNK: Final[int] = 256
 MAX_WORKERS: Final[int] = 100
 
 
-def prepare_block_log() -> None:
+def prepare_block_log(output_block_log_directory: Path) -> None:
     """
     This script generate block_log with specific conditions. The entire block_log can be divided into four parts:
       1) creating accounts - the number is specified in a variable - AMOUNT_OF_ALL_ACCOUNTS
@@ -95,7 +96,7 @@ def prepare_block_log() -> None:
     tt.logger.info(f"head block timestamp: {timestamp}")
 
     node.close()
-    node.block_log.copy_to(Path(__file__).parent)
+    node.block_log.copy_to(output_block_log_directory / "recurrent_many_to_many")
 
 
 def __generate_recurrent_transfers_for_sender(sender: str, all_accounts: list[str]) -> list:
@@ -154,4 +155,7 @@ def __get_head_block_time(node: tt.AnyNode) -> datetime:
 
 
 if __name__ == "__main__":
-    prepare_block_log()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
+    args = parser.parse_args()
+    prepare_block_log(args.output_block_log_directory)
