@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 import test_tools as tt
 
 
-def prepare_block_log_with_witnesses() -> None:
+def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
     node = tt.InitNode()
     node.run()
     wallet = tt.Wallet(attach_to=node)
@@ -23,8 +24,11 @@ def prepare_block_log_with_witnesses() -> None:
         json.dump(transaction_ids, json_file)
 
     node.close()
-    node.block_log.copy_to(Path(__file__).parent.absolute())
+    node.block_log.copy_to(output_block_log_directory / "witness_setup")
 
 
 if __name__ == "__main__":
-    prepare_block_log_with_witnesses()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
+    args = parser.parse_args()
+    prepare_block_log_with_witnesses(args.output_block_log_directory)
