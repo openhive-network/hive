@@ -1227,7 +1227,7 @@ authority_tests:
 generate_testing_block_logs_and_save_image:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
-  timeout: 3h
+  timeout: 5h
   variables:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
