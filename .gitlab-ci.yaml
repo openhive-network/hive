@@ -737,14 +737,20 @@ message_format_testnet_tests:
 
 datagen_api_tests:
   stage: test
-  extends: .test_tools_based
-
+  extends: 
+    - .test_tools_based
+    - .test-block-log-service
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: generate_testing_block_logs_and_save_image
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
-
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_430/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/block_log
   script:
+    - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/datagen_tests/
     - !reference [.run-pytest, script]
   tags:
