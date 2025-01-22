@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from copy import deepcopy
 from pathlib import Path
 from typing import Final
@@ -15,7 +16,7 @@ RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
 SINGLE_TRANSFER_AMOUNT: Final[tt.Asset.Test] = tt.Asset.Test(1)
 
 
-def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
+def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_directory: Path) -> None:
     """
     This script generate block_log with specific conditions:
       1) create a receiver account
@@ -51,7 +52,7 @@ def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     tt.logger.info(f"head block timestamp: {timestamp}")
 
     init_node.close()
-    init_node.block_log.copy_to(Path(__file__).parent)
+    init_node.block_log.copy_to(output_block_log_directory / "recurrent_many_to_one")
 
 
 def __generate_operations_for_receiver(account: str) -> list:
@@ -87,4 +88,7 @@ def __generate_and_broadcast(wallet: tt.Wallet, account_names: list[str]) -> Non
 
 
 if __name__ == "__main__":
-    prepare_block_log_with_many_to_one_recurrent_transfers()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
+    args = parser.parse_args()
+    prepare_block_log_with_many_to_one_recurrent_transfers(args.output_block_log_directory)
