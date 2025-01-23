@@ -4,6 +4,7 @@
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/io/stdio.hpp>
 #include <fc/thread/thread.hpp>
+#include <fc/thread/future.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/mutex.hpp>
@@ -26,7 +27,7 @@ namespace fc {
       std::cin.read(&c,1);
       while( !std::cin.eof() ) {
         while( write_pos - read_pos > 0xfffff ) {
-          fc::promise<void>::ptr wr( new fc::promise<void>("cin_buffer::write_ready") );
+          fc::promise<void>::ptr wr( fc::promise<void>::create("cin_buffer::write_ready") );
           write_ready = wr;
           if( write_pos - read_pos <= 0xfffff ) {
             wr->wait();
@@ -112,7 +113,7 @@ namespace fc {
     do {
         while( !b.eof &&  (b.write_pos - b.read_pos)==0 ){ 
            // wait for more... 
-           fc::promise<void>::ptr rr( new fc::promise<void>("cin_buffer::read_ready") );
+           fc::promise<void>::ptr rr = fc::promise<void>::create("cin_buffer::read_ready");
            {  // copy read_ready because it is accessed from multiple threads
              fc::scoped_lock<boost::mutex> lock( b.read_ready_mutex ); 
              b.read_ready = rr;
