@@ -376,9 +376,7 @@ void application::finish()
       pre_shutdown( _actual_plugin_name );
       shutdown( _actual_plugin_name );
 
-      fc::promise<void>::ptr quitDone( ::promise<void>::create("Logging thread quit") );
-      my->_logging_thread.quit( quitDone.get() );
-      quitDone->wait();
+      my->_logging_thread.quit();
 
       is_finished = true;
     }
