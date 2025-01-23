@@ -16,12 +16,20 @@ namespace fc {
     if( m_blist ) 
     {
       fc::thread::current().debug("~mutex");
+#if 0
+      context* c = m_blist;
+      while( c )  {
+ //       elog( "still blocking on context %p (%s)", m_blist, (m_blist->cur_task ? m_blist->cur_task->get_desc() : "no current task") ); 
+        c = c->next_blocked_mutex;
+      }
+#endif
       BOOST_ASSERT( false && "Attempt to free mutex while others are blocking on lock." );
     }
   }
 
   /**
-   *  @param  last_context - is set to the next context to get the lock (the next-to-last element of the list)
+   *  @param  list_head - the head of the list
+   *  @param  context_to_unblock - is set to the next context to get the lock (the next-to-last element of the list)
    *  @return the last context (the one with the lock)
    */
   static fc::context* get_tail( fc::context* list_head, fc::context*& context_to_unblock ) {
