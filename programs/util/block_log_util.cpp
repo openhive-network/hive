@@ -802,7 +802,7 @@ bool generate_artifacts(const fc::path &block_log_path, appbase::application &ap
   try
   {
     hive::chain::block_log block_log(app);
-    block_log.open(block_log_path, thread_pool, false, true);
+    block_log.open(block_log_path, thread_pool, true, true);
     FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
     block_log.close();
     std::cout << "Opened and closed block log file. Artifacts were generated if needed\n";
