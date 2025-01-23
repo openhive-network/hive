@@ -46,7 +46,7 @@ ACCOUNT_DETAILS = [
     ("denserautotest3", {"transfer": [tt.Asset.Hive(1000), tt.Asset.Hbd(100)], "vesting": tt.Asset.Hive(1000)}),
     ("denserautotest4", {"transfer": [tt.Asset.Hive(100), tt.Asset.Hbd(100)], "vesting": tt.Asset.Hive(100)}),
     *(
-        (f"denserautotest-{i}", {"transfer": [tt.Asset.Hive(1), tt.Asset.Hbd(1)], "vesting": tt.Asset.Hive(1)})
+        (f"denserautotest{i}", {"transfer": [tt.Asset.Hive(1), tt.Asset.Hbd(1)], "vesting": tt.Asset.Hive(1)})
         for i in range(5, 10)
     ),
 ]
