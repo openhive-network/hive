@@ -111,10 +111,6 @@ def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
     tt.logger.info(f"Block_log created successfully. Save in {args.output_block_log_directory} Exiting...")
 
 
-def import_keys(wallet: tt.Wallet, account_name: str) -> None:
-    [wallet.api.import_key(tt.PrivateKey(account_name, secret=key_type)) for key_type in ["active", "owner", "posting"]]
-
-
 def get_absolute_slot_at_time(date_string: str) -> int:
     """
     Function to calculate blocks number, including missing blocks
@@ -152,16 +148,34 @@ def set_chain_spec(block_log: tt.BlockLog, current_hardfork_number: int):
 
 def create_accounts(wallet: tt.Wallet, details: list) -> None:
     for account_name, _ in details:
-        import_keys(wallet, account_name)
+        posting = tt.Account(account_name, secret="posting")
+        active = tt.Account(account_name, secret="active")
+        owner = tt.Account(account_name, secret="owner")
+        memo = tt.Account(account_name, secret="memo")
+
+        wallet.api.import_keys([posting.private_key, active.private_key, owner.private_key, memo.private_key])
+
         wallet.api.create_account_with_keys(
             "blocktrades",
             account_name,
             "{}",
-            posting=tt.PublicKey(account_name=account_name, secret="owner"),
-            active=tt.PublicKey(account_name=account_name, secret="active"),
-            owner=tt.PublicKey(account_name=account_name, secret="posting"),
-            memo=tt.PublicKey(account_name=account_name, secret="memo"),
+            posting=posting.public_key,
+            active=active.public_key,
+            owner=owner.public_key,
+            memo=memo.public_key,
         )
+
+        save_keys_to_file(account_name, posting, active, owner, memo)
+
+
+def save_keys_to_file(
+    account_name: str, posting: tt.Account, active: tt.Account, owner: tt.Account, memo: tt.Account
+) -> None:
+    with open(args.output_block_log_directory.joinpath("account_specification.txt"), "a", encoding="utf-8") as file:
+        file.write(account_name.center(70, "-") + "\n")
+        for key in [posting, active, owner, memo]:
+            file.write(f"{key.secret}-private: {key.private_key}\n{key.secret}-public: {key.public_key}\n")
+        file.write(70 * "-" + "\n\n")
 
 
 def fund_accounts(wallet: tt.Wallet, details: list) -> None:
@@ -196,16 +210,21 @@ class Community:
         self.details = details
 
     def create(self):
-        import_keys(self.wallet, self.community_name)
+        owner = tt.Account(self.community_name, secret="owner")
+        active = tt.Account(self.community_name, secret="active")
+        posting = tt.Account(self.community_name, secret="posting")
+        memo = tt.Account(self.community_name, secret="memo")
+
+        self.wallet.api.import_keys([owner.private_key, active.private_key, posting.private_key, memo.private_key])
 
         self.wallet.api.create_account_with_keys(
             self.community_creator,
             self.community_name,
             "{}",
-            tt.PublicKey(account_name=self.community_name, secret="owner"),
-            tt.PublicKey(account_name=self.community_name, secret="active"),
-            tt.PublicKey(account_name=self.community_name, secret="posting"),
-            tt.PublicKey(account_name=self.community_name, secret="memo"),
+            owner.public_key,
+            active.public_key,
+            posting.public_key,
+            memo.public_key,
         )
 
     def __send_custom_json(self, json: str, required_auths=None, required_posting_auths=None):
