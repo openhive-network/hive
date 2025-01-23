@@ -272,8 +272,9 @@ extended_block_log_creation:
       artifacts: true
   variables:
     REGISTRY: "${CI_REGISTRY_IMAGE}"
-    IMAGE_TAG: ${CI_COMMIT_SHORT_SHA}
-    HIVE_SRC: ${CI_PROJECT_DIR}
+    IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+    HIVE_SRC: "${CI_PROJECT_DIR}"
+    HIVE_COMMIT: "${CI_COMMIT_SHORT_SHA}"
     BLOCK_LOG_SOURCE_DIR: "/blockchain/block_log_5m"
     BINARY_PATH: "${CI_PROJECT_DIR}/hived-mirrornet-binaries"
   rules:
@@ -285,7 +286,8 @@ extended_block_log_creation:
       changes:
         paths:
           - scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
-          - scripts/ci-helpers/prepare_extendend_mirrornet_block_log.sh
+          - scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh
+          - scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh
           - tests/python/functional/util/block_logs_for_denser/generate_block_log_for_denser.py
       when: always
     - when: never
