@@ -912,7 +912,7 @@ namespace graphene { namespace net {
       _rate_limiter.set_actual_rate_time_constant(fc::seconds(2));
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
 
-      _shutdownNotifier.reset(new fc::promise<void>("Node shutdown notifier"));
+      _shutdownNotifier = fc::promise<void>::create("Node shutdown notifier");
     }
 
     node_impl::~node_impl()
@@ -1048,7 +1048,7 @@ namespace graphene { namespace net {
 #if 0
           try
           {
-            _retrigger_connect_loop_promise = fc::promise<void>::ptr( new fc::promise<void>("graphene::net::retrigger_connect_loop") );
+            _retrigger_connect_loop_promise = fc::promise<void>::create("graphene::net::retrigger_connect_loop");
             if( is_wanting_new_connections() || !_add_once_node_list.empty() )
             {
               if( is_wanting_new_connections() )
@@ -1212,7 +1212,7 @@ namespace graphene { namespace net {
         if( !_sync_items_to_fetch_updated )
         {
           dlog( "idle_peer_count=${idle_peer_count}, can't request more sync items now, going to sleep",(idle_peer_count) );
-          _retrigger_fetch_sync_items_loop_promise = fc::promise<void>::ptr( new fc::promise<void>("graphene::net::retrigger_fetch_sync_items_loop") );
+          _retrigger_fetch_sync_items_loop_promise = fc::promise<void>::create("graphene::net::retrigger_fetch_sync_items_loop");
           _retrigger_fetch_sync_items_loop_promise->wait();
           _retrigger_fetch_sync_items_loop_promise.reset();
         }
@@ -1351,7 +1351,7 @@ namespace graphene { namespace net {
 
         if (!_items_to_fetch_updated)
         {
-          _retrigger_fetch_item_loop_promise = fc::promise<void>::ptr(new fc::promise<void>("graphene::net::retrigger_fetch_item_loop"));
+          _retrigger_fetch_item_loop_promise = fc::promise<void>::create("graphene::net::retrigger_fetch_item_loop");
           fc::microseconds time_until_retrigger = fc::microseconds::maximum();
           if (next_peer_unblocked_time != fc::time_point::maximum())
             time_until_retrigger = next_peer_unblocked_time - fc::time_point::now();
@@ -1448,7 +1448,7 @@ namespace graphene { namespace net {
 
         if (_new_block_inventory.empty() && _new_transaction_inventory.empty())
         {
-          _retrigger_advertise_inventory_loop_promise = fc::promise<void>::ptr(new fc::promise<void>("graphene::net::retrigger_advertise_inventory_loop"));
+          _retrigger_advertise_inventory_loop_promise = fc::promise<void>::create("graphene::net::retrigger_advertise_inventory_loop");
           _retrigger_advertise_inventory_loop_promise->wait();
           _retrigger_advertise_inventory_loop_promise.reset();
         }

@@ -1903,7 +1903,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   } BOOST_SCOPE_EXIT_END
 
   fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
-  fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
+  fc::promise<void>::ptr accept_block_promise = fc::promise<void>::create("accept_block");
   fc::future<void> accept_block_future(accept_block_promise);
   block_ctrl->attach_promise( accept_block_promise );
   {
@@ -1946,7 +1946,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   else
   {
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count.load()));
-    fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
+    fc::promise<void>::ptr accept_transaction_promise = fc::promise<void>::create("accept_transaction");
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl.attach_promise( accept_transaction_promise );
     {

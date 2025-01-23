@@ -614,7 +614,7 @@ namespace fc { namespace ssh {
     if( dir & LIBSSH2_SESSION_BLOCK_INBOUND ) {
       fc::scoped_lock<fc::spin_lock> lock(this->_spin_lock);
       if( !read_prom ) {
-        read_prom.reset( new fc::promise<boost::system::error_code>("read_prom") );
+        read_prom.reset( fc::promise<boost::system::error_code>::create("read_prom");
         sock->async_read_some( boost::asio::null_buffers(),
                                 [=]( const boost::system::error_code& e, size_t  ) {
                                   fc::scoped_lock<fc::spin_lock> lock(this->_spin_lock);
@@ -628,7 +628,7 @@ namespace fc { namespace ssh {
     if( dir & LIBSSH2_SESSION_BLOCK_OUTBOUND ) {
       fc::scoped_lock<fc::spin_lock> lock(this->_spin_lock);
       if( !write_prom ) {
-          write_prom.reset( new fc::promise<boost::system::error_code>("write_prom") );
+          write_prom.reset( fc::promise<boost::system::error_code>::create("write_prom");
           sock->async_write_some( boost::asio::null_buffers(),
                                   [=]( const boost::system::error_code& e, size_t  ) {
                                     fc::scoped_lock<fc::spin_lock> lock(this->_spin_lock);

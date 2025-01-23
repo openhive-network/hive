@@ -559,7 +559,7 @@ void p2p_plugin::plugin_pre_shutdown() {
 
   ilog("P2P Plugin: terminating p2p tasks");
   my->node->close();
-  fc::promise<void>::ptr quitDone(new fc::promise<void>("P2P thread quit"));
+  fc::promise<void>::ptr quitDone = fc::promise<void>::create("P2P thread quit");
   my->p2p_thread.quit(quitDone.get());
   ilog("Waiting for p2p_thread quit");
   quitDone->wait();

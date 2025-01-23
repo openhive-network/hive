@@ -73,7 +73,7 @@ namespace bpo = boost::program_options;
 
 namespace
 {
-  fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
+  fc::promise< int >::ptr exit_promise = fc::promise<int>::create("cli_wallet exit promise");
 
   std::condition_variable rpc_server_connections;
   std::mutex rpc_server_mutex;
