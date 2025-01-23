@@ -11,6 +11,7 @@ variables:
     REGISTRY_PASS: "${CI_REGISTRY_PASSWORD}"
     IMAGE_TAG: ""
     HIVE_SRC: ""
+    HIVE_COMMIT: ""
     BLOCK_LOG_SOURCE_DIR: ""
     MIRRORNET_WORKING_DIR: "${CI_PROJECT_DIR}/mirrornet"
     MIRRORNET_SOURCE_5M_DATA_DIR: "${MIRRORNET_WORKING_DIR}/mirrornet_blockchain_data"
@@ -36,7 +37,7 @@ variables:
       cp "${BLOCK_LOG_SOURCE_DIR}/block_log" "${MIRRORNET_SOURCE_5M_DATA_DIR}"
       echo -e "\e[0Ksection_end:$(date +%s):prepare\r\e[0K"
   script:
-    - "${HIVE_SRC}/scripts/ci-helpers/prepare_extendend_mirrornet_block_log.sh"
+    - "${HIVE_SRC}/scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh"
   artifacts:
     reports:
       dotenv:
