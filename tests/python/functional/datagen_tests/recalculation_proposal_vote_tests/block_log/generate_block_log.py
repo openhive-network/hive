@@ -1,19 +1,28 @@
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
+import os
 from pathlib import Path
 from typing import Final
 
 import test_tools as tt
-from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, TRANSACTION_TEMPLATE
+from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 from hive_local_tools.functional.python.datagen.recalculation_proposal_vote_tests import wait_for_maintenance_block
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
+from hive_local_tools.functional.python.operation import create_transaction_with_any_operation
+from schemas.fields.assets.hbd import AssetHbdHF26
+from schemas.fields.assets.hive import AssetHiveHF26
+from schemas.fields.basic import AccountName
+from schemas.operations.comment_operation import CommentOperation
+from schemas.operations.create_proposal_operation import CreateProposalOperation
+from schemas.operations.transfer_operation import TransferOperation
+from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
+from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
 
 NUMBER_OF_VOTING_ACCOUNTS: Final[int] = 12_000
 NUMBER_OF_PROPOSALS = 12_000
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
-MAX_WORKERS: Final[int] = 6
+MAX_WORKERS: Final[int] = os.cpu_count()
 TIME_MULTIPLIER: Final[int] = 4
 
 
@@ -72,12 +81,12 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
-
     # Wait for new vests to be unlocked ( delayed voting mechanism )
     node.wait_for_irreversible_block()
     node.restart(
         time_control=tt.StartTimeControl(
-            start_time=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD!s}s", speed_up_rate=TIME_MULTIPLIER
+            start_time=node.get_head_block_time() + tt.Time.seconds(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
+            speed_up_rate=TIME_MULTIPLIER,
         )
     )
     next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
@@ -168,6 +177,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     timestamp = node.api.block.get_block(block_num=head_block_num).block.timestamp
     tt.logger.info(f"head block timestamp: {timestamp}")
 
+    wallet.close()
     node.close()
     node.block_log.copy_to(output_block_log_directory / "votes_on_proposals")
 
@@ -176,80 +186,62 @@ def __generate_and_broadcast_fund(wallet: tt.Wallet, account_names: list[str]) -
     def __generate_operations_to_fund_account(account: str) -> list:
         account_number = int(account.split("-")[1])
         return [
-            [
-                "transfer_to_vesting",
-                {"amount": tt.Asset.Test(100 + account_number), "from": "initminer", "to": f"{account}"},
-            ],
-            [
-                "transfer",
-                {
-                    "from": "initminer",
-                    "to": account,
-                    "amount": str(tt.Asset.Tbd(10)),
-                    "memo": f"supply_hbd_transfer-{account}",
-                },
-            ],
+            TransferToVestingOperation(
+                from_="initminer", to=account, amount=AssetHiveHF26(amount=(100000 + account_number))
+            ),
+            TransferOperation(
+                from_="initminer",
+                to=account,
+                amount=AssetHbdHF26(amount=10000),
+                memo=f"supply_hbd_transfer-{account}",
+            ),
         ]
 
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
+    operations = []
     for name in account_names:
-        transaction["operations"].extend(__generate_operations_to_fund_account(name))
+        operations.extend(__generate_operations_to_fund_account(name))
 
-    wallet.api.sign_transaction(transaction)
+    create_transaction_with_any_operation(wallet, operations, broadcast=True)
     tt.logger.info(f"Finished fund: {account_names[-1]}")
 
 
 def __generate_and_broadcast_comment(wallet: tt.Wallet, account_names: list[str]) -> None:
-    def __generate_comment_operation(account: str) -> list:
-        return [
-            [
-                "comment",
-                {
-                    "author": f"{account}",
-                    "body": f"{account}-body",
-                    "json_metadata": "{}",
-                    "parent_author": "",
-                    "parent_permlink": f"parent-{account}",
-                    "permlink": f"permlink-{account}",
-                    "title": f"{account}-title",
-                },
-            ],
-        ]
+    def __generate_comment_operation(account: str) -> CommentOperation:
+        return CommentOperation(
+            author=account,
+            body=f"{account}-body",
+            json_metadata="{}",
+            parent_author="",
+            parent_permlink=f"parent-{account}",
+            permlink=f"permlink-{account}",
+            title=f"{account}-title",
+        )
 
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
+    operations = []
     for name in account_names:
-        transaction["operations"].extend(__generate_comment_operation(name))
+        operations.append(__generate_comment_operation(name))
 
-    wallet.api.sign_transaction(transaction)
+    create_transaction_with_any_operation(wallet, operations)
     tt.logger.info(f"Finished comment: {account_names[-1]}")
 
 
 def __generate_and_broadcast_proposal(wallet: tt.Wallet, account_names: list[str]) -> None:
-    def __generate_proposal_operation(account: str) -> list:
-        return [
-            [
-                "create_proposal",
-                {
-                    "creator": f"{account}",
-                    "daily_pay": tt.Asset.Tbd(5),
-                    "end_date": tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + 60 * 60 * 24 * 2),
-                    "extensions": [],
-                    "permlink": f"permlink-{account}",
-                    "receiver": f"{account}",
-                    "start_date": tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
-                    "subject": f"subject-{account}",
-                },
-            ],
-        ]
+    def __generate_proposal_operation(account: str) -> CreateProposalOperation:
+        return CreateProposalOperation(
+            creator=AccountName(account),
+            daily_pay=tt.Asset.Tbd(5),
+            receiver=AccountName(account),
+            start_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
+            end_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + 60 * 60 * 24 * 2),
+            subject=f"subject-{account}",
+            permlink=f"permlink-{account}",
+        )
 
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
+    operations = []
     for name in account_names:
-        transaction["operations"].extend(__generate_proposal_operation(name))
+        operations.append(__generate_proposal_operation(name))
 
-    wallet.api.sign_transaction(transaction)
+    create_transaction_with_any_operation(wallet, operations, broadcast=True)
     tt.logger.info(f"Finished proposal: {account_names[-1]}")
 
 
@@ -262,35 +254,31 @@ def __generate_and_broadcast_vote(wallet: tt.Wallet, approve: bool, reverse: boo
 
         for proposal_id in rev if reversed_voting else range(0, 1000, 5):
             operations.append(
-                [
-                    "update_proposal_votes",
-                    {
-                        "approve": approve,
-                        "extensions": [],
-                        "proposal_ids": (
-                            list(range(proposal_id, proposal_id + 5))
-                            if reversed_voting
-                            else list(range(account_id + proposal_id, account_id + proposal_id + 5))
-                        ),
-                        "voter": f"{account}",
-                    },
-                ]
+                UpdateProposalVotesOperation(
+                    proposal_ids=(
+                        list(range(proposal_id, proposal_id + 5))
+                        if reversed_voting
+                        else list(range(account_id + proposal_id, account_id + proposal_id + 5))
+                    ),
+                    approve=approve,
+                    voter=AccountName(account),
+                )
             )
 
         return operations
-
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
 
     full_list = account_names
     chunk_size = int(len(full_list) / 8)
     divided_lists = [full_list[i * chunk_size : (i + 1) * chunk_size] for i in range(8)]
 
+    operations = []
     for account_0, account_1, account_2, account_3, account_4, account_5, account_6, account_7 in zip(*divided_lists):
         for acc in [account_0, account_1, account_2, account_3, account_4, account_5, account_6, account_7]:
-            transaction["operations"].extend(__generate_vote_for_proposal_operation(acc, reverse))
+            operations.extend(__generate_vote_for_proposal_operation(acc, reverse))
             tt.logger.info(f"Finished {'reverse vote' if reverse else 'vote'} for proposal: {acc}")
-        wallet.api.sign_transaction(transaction)
-        transaction["operations"].clear()
+
+        create_transaction_with_any_operation(wallet, operations, broadcast=True)
+        operations.clear()
 
 
 if __name__ == "__main__":
