@@ -1,19 +1,31 @@
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
+import os
+from datetime import datetime
 from pathlib import Path
 from typing import Final
 
 import test_tools as tt
-from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, TRANSACTION_TEMPLATE
-from hive_local_tools.functional.python.datagen.recalculation_proposal_vote_tests import wait_for_maintenance_block
+from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
+from schemas.fields.assets.hbd import AssetHbdHF26
+from schemas.fields.assets.hive import AssetHiveHF26
+from schemas.fields.basic import AccountName, PublicKey
+from schemas.fields.compound import Authority
+from schemas.operations.account_create_operation import AccountCreateOperation
+from schemas.operations.comment_operation import CommentOperation
+from schemas.operations.create_proposal_operation import CreateProposalOperation
+from schemas.operations.transfer_operation import TransferOperation
+from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
+from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
 
 NUMBER_OF_VOTING_ACCOUNTS: Final[int] = 12_000
 NUMBER_OF_PROPOSALS = 12_000
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
-MAX_WORKERS: Final[int] = 6
+MAX_WORKERS: Final[int] = os.cpu_count()
 TIME_MULTIPLIER: Final[int] = 4
 
 
@@ -38,13 +50,21 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     """
     node = tt.InitNode()
     node.config.shared_file_size = "16G"
-    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=TIME_MULTIPLIER))
+    node.config.plugin.append("queen")
+
+    acs = tt.AlternateChainSpecs(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+    )
+
+    node.run(alternate_chain_specs=acs)
+    generate_block(node, 1)  # need to activate hardforks
 
     wallet = tt.Wallet(attach_to=node)
     wallet.api.set_transaction_expiration(3600 - 1)
 
     # change block size to 2mb
-    wallet.api.update_witness(
+    update_witness_trx = wallet.api.update_witness(
         "initminer",
         "https://" + "initminer",
         tt.Account("initminer").public_key,
@@ -54,59 +74,90 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
             "maximum_block_size": 2097152,
             "hbd_interest_rate": 0,
         },
+        broadcast=False,
     )
+    node.api.network_broadcast.broadcast_transaction(trx=update_witness_trx)
 
-    tt.logger.info("Wait 43 blocks...")
-    node.wait_number_of_blocks(43)  # wait for the block size to change to 2mb
+    tt.logger.info("Wait 43 blocks to activate 2mb blocks...")
+    generate_block(node, 43)  # activate 2mb blocks
 
-    voters = [voter.name for voter in wallet.create_accounts(NUMBER_OF_VOTING_ACCOUNTS)]
+    # create accounts
+    tt.logger.info("Started creating voters...")
+    voters = [f"voter-{i}" for i in range(NUMBER_OF_VOTING_ACCOUNTS)]
+    wallet.api.import_key(tt.PrivateKey("voter"))
+    execute_function_in_threads(
+        __generate_and_broadcast_transaction,
+        args=(wallet, node, __create_voter, None),
+        args_sequences=(voters,),
+        amount=NUMBER_OF_VOTING_ACCOUNTS,
+        chunk_size=ACCOUNTS_PER_CHUNK,
+        max_workers=MAX_WORKERS,
+    )
+    generate_block(node, 1)
     tt.logger.info(f"{len(voters)} accounts successfully created!")
 
-    # Fund accounts
+    # fund vests
     tt.logger.info(f"Start fund accounts: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
-        __generate_and_broadcast_fund,
-        args=(wallet,),
+        __generate_and_broadcast_transaction,
+        args=(wallet, node, __vest_account, None),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
+    generate_block(node, 1)
+    tt.logger.info(f"Finish fund accounts successfully!")
 
-    # Wait for new vests to be unlocked ( delayed voting mechanism )
-    node.wait_for_irreversible_block()
-    node.restart(
-        time_control=tt.StartTimeControl(
-            start_time=f"+{HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD!s}s", speed_up_rate=TIME_MULTIPLIER
-        )
+    # transfer HBD to accounts
+    tt.logger.info(f"Start transfer accounts: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
+    execute_function_in_threads(
+        __generate_and_broadcast_transaction,
+        args=(wallet, node, __transfer_account, None),
+        args_sequences=(voters,),
+        amount=NUMBER_OF_VOTING_ACCOUNTS,
+        chunk_size=ACCOUNTS_PER_CHUNK,
+        max_workers=MAX_WORKERS,
     )
-    next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
-    wallet.api.set_transaction_expiration(3600 - 1)
+    generate_block(node, 1)
+    tt.logger.info(f"Finish transfer accounts successfully!")
 
-    # Create comments
+    # wait for new vests to be unlocked ( delayed voting mechanism )
+    tt.logger.info(f"Unlock delayed votes! @Block: {node.get_last_block_number()}")
+    generate_block(node, 1, miss_blocks=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD // 3)
+    tt.logger.info(f"Unlock delayed votes after RC delegation - restart. @Block {node.get_last_block_number()}")
+    next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
+
+    # create comments
     tt.logger.info(f"Start create comments: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
-        __generate_and_broadcast_comment,
-        args=(wallet,),
+        __generate_and_broadcast_transaction,
+        args=(wallet, node, __comment_operation, None),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
+    generate_block(node, 1)
+    tt.logger.info(f"Finish create comments: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
 
-    # Create proposals
+    # create proposals
     tt.logger.info(f"Start create proposals: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
-        __generate_and_broadcast_proposal,
-        args=(wallet,),
+        __generate_and_broadcast_transaction,
+        args=(wallet, node, __proposal_operation, None),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
+    generate_block(node, 1)
+    tt.logger.info(f"Finish create proposals: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
 
-    # Vote for proposals
-    tt.logger.info(f"Start voting: {node.get_head_block_time()}, at block num: {node.get_last_block_number()}.")
+    # vote for proposals
+    tt.logger.info(
+        f"Start voting for proposal: {node.get_head_block_time()}, at block num: {node.get_last_block_number()}."
+    )
     execute_function_in_threads(
         __generate_and_broadcast_vote,
         args=(wallet, True, False),
@@ -115,12 +166,17 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
+    generate_block(node, 1)
+    tt.logger.info(
+        f"Finish voting for proposal: {node.get_head_block_time()}, at block num: {node.get_last_block_number()}."
+    )
     assert node.get_head_block_time() < next_maintenance_time
 
-    wait_for_maintenance_block(node, next_maintenance_time)
+    tt.logger.info("Generate blocks to maintenance block!")
+    generate_blocks_until_date(node, next_maintenance_time)
     assert node.get_head_block_time() > next_maintenance_time
 
-    # Delete all votes
+    # delete all votes
     tt.logger.info(f"Start delete votes: {node.get_head_block_time()}, at block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
         __generate_and_broadcast_vote,
@@ -142,7 +198,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Headblock time before reverse voting: {node.get_head_block_time()}")
     next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
 
-    # Reverse vote for proposals
+    # reverse vote for proposals
     tt.logger.info(f"Remaining time for reverse voting: {next_maintenance_time - node.get_head_block_time()}")
     tt.logger.info(f"Start reverse voting: {node.get_head_block_time()}, at block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
@@ -156,101 +212,51 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
 
     assert next_maintenance_time > node.get_head_block_time(), "Maintenance time exceeded"
     tt.logger.info(f"next_maintenance_time after all: {next_maintenance_time}, hbn: {node.get_last_block_number()}")
-    wait_for_maintenance_block(node, next_maintenance_time - tt.Time.seconds(30))
+    generate_blocks_until_date(node, next_maintenance_time - tt.Time.seconds(30))
     assert next_maintenance_time > node.get_head_block_time()
 
-    # waiting for the block with the last transaction to become irreversible
-    node.wait_for_irreversible_block()
-
     tt.logger.info(f"last block number: {node.get_last_block_number()}")
-
     head_block_num = node.get_last_block_number()
     timestamp = node.api.block.get_block(block_num=head_block_num).block.timestamp
     tt.logger.info(f"head block timestamp: {timestamp}")
 
+    wallet.close()
     node.close()
+    acs.export_to_file(output_block_log_directory)
     node.block_log.copy_to(output_block_log_directory / "votes_on_proposals")
 
 
-def __generate_and_broadcast_fund(wallet: tt.Wallet, account_names: list[str]) -> None:
-    def __generate_operations_to_fund_account(account: str) -> list:
-        account_number = int(account.split("-")[1])
-        return [
-            [
-                "transfer_to_vesting",
-                {"amount": tt.Asset.Test(100 + account_number), "from": "initminer", "to": f"{account}"},
-            ],
-            [
-                "transfer",
-                {
-                    "from": "initminer",
-                    "to": account,
-                    "amount": str(tt.Asset.Tbd(10)),
-                    "memo": f"supply_hbd_transfer-{account}",
-                },
-            ],
-        ]
-
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
-    for name in account_names:
-        transaction["operations"].extend(__generate_operations_to_fund_account(name))
-
-    wallet.api.sign_transaction(transaction)
-    tt.logger.info(f"Finished fund: {account_names[-1]}")
+def generate_blocks_until_date(node: tt.InitNode, end_date: datetime) -> None:
+    now = node.get_head_block_time()
+    seconds_diff = (end_date - now).total_seconds()
+    blocks_to_gen = int(seconds_diff // 3) + 1
+    generate_block(node, 1, miss_blocks=blocks_to_gen)
 
 
-def __generate_and_broadcast_comment(wallet: tt.Wallet, account_names: list[str]) -> None:
-    def __generate_comment_operation(account: str) -> list:
-        return [
-            [
-                "comment",
-                {
-                    "author": f"{account}",
-                    "body": f"{account}-body",
-                    "json_metadata": "{}",
-                    "parent_author": "",
-                    "parent_permlink": f"parent-{account}",
-                    "permlink": f"permlink-{account}",
-                    "title": f"{account}-title",
-                },
-            ],
-        ]
-
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
-    for name in account_names:
-        transaction["operations"].extend(__generate_comment_operation(name))
-
-    wallet.api.sign_transaction(transaction)
-    tt.logger.info(f"Finished comment: {account_names[-1]}")
+def __comment_operation(account: str) -> CommentOperation:
+    return CommentOperation(
+        author=account,
+        body=f"{account}-body",
+        json_metadata="{}",
+        parent_author="",
+        parent_permlink=f"parent-{account}",
+        permlink=f"permlink-{account}",
+        title=f"{account}-title",
+    )
 
 
-def __generate_and_broadcast_proposal(wallet: tt.Wallet, account_names: list[str]) -> None:
-    def __generate_proposal_operation(account: str) -> list:
-        return [
-            [
-                "create_proposal",
-                {
-                    "creator": f"{account}",
-                    "daily_pay": tt.Asset.Tbd(5),
-                    "end_date": tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + 60 * 60 * 24 * 2),
-                    "extensions": [],
-                    "permlink": f"permlink-{account}",
-                    "receiver": f"{account}",
-                    "start_date": tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
-                    "subject": f"subject-{account}",
-                },
-            ],
-        ]
-
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-
-    for name in account_names:
-        transaction["operations"].extend(__generate_proposal_operation(name))
-
-    wallet.api.sign_transaction(transaction)
-    tt.logger.info(f"Finished proposal: {account_names[-1]}")
+def __create_voter(voter: str) -> AccountCreateOperation:
+    key = tt.PublicKey("voter")
+    return AccountCreateOperation(
+        creator=AccountName("initminer"),
+        new_account_name=AccountName(voter),
+        json_metadata="{}",
+        fee=tt.Asset.Test(10000),
+        owner=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
+        active=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
+        posting=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
+        memo_key=PublicKey(key),
+    )
 
 
 def __generate_and_broadcast_vote(wallet: tt.Wallet, approve: bool, reverse: bool, account_names: list[str]) -> None:
@@ -258,39 +264,63 @@ def __generate_and_broadcast_vote(wallet: tt.Wallet, approve: bool, reverse: boo
         account_id = int(account.split("-")[1])
         operations = []
 
-        rev = range(NUMBER_OF_PROPOSALS - account_id - 1000, NUMBER_OF_PROPOSALS - account_id, 5)
+        queue = range(0, 1000, 5)
+        reverse_queue = range(NUMBER_OF_PROPOSALS - account_id - 1000, NUMBER_OF_PROPOSALS - account_id, 5)
 
-        for proposal_id in rev if reversed_voting else range(0, 1000, 5):
+        for proposal_id in reverse_queue if reversed_voting else queue:
             operations.append(
-                [
-                    "update_proposal_votes",
-                    {
-                        "approve": approve,
-                        "extensions": [],
-                        "proposal_ids": (
-                            list(range(proposal_id, proposal_id + 5))
-                            if reversed_voting
-                            else list(range(account_id + proposal_id, account_id + proposal_id + 5))
-                        ),
-                        "voter": f"{account}",
-                    },
-                ]
+                UpdateProposalVotesOperation(
+                    proposal_ids=(
+                        list(range(proposal_id, proposal_id + 5))
+                        if reversed_voting
+                        else list(range(account_id + proposal_id, account_id + proposal_id + 5))
+                    ),
+                    approve=approve,
+                    voter=AccountName(account),
+                )
             )
 
         return operations
-
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
 
     full_list = account_names
     chunk_size = int(len(full_list) / 8)
     divided_lists = [full_list[i * chunk_size : (i + 1) * chunk_size] for i in range(8)]
 
+    operations = []
     for account_0, account_1, account_2, account_3, account_4, account_5, account_6, account_7 in zip(*divided_lists):
         for acc in [account_0, account_1, account_2, account_3, account_4, account_5, account_6, account_7]:
-            transaction["operations"].extend(__generate_vote_for_proposal_operation(acc, reverse))
+            operations.extend(__generate_vote_for_proposal_operation(acc, reverse))
             tt.logger.info(f"Finished {'reverse vote' if reverse else 'vote'} for proposal: {acc}")
-        wallet.api.sign_transaction(transaction)
-        transaction["operations"].clear()
+        wallet.send(operations=operations, broadcast=True, blocking=False)
+        operations.clear()
+
+
+def __proposal_operation(account: str) -> CreateProposalOperation:
+    return CreateProposalOperation(
+        creator=AccountName(account),
+        daily_pay=tt.Asset.Tbd(5),
+        receiver=AccountName(account),
+        start_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
+        end_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + 60 * 60 * 24 * 2),
+        subject=f"subject-{account}",
+        permlink=f"permlink-{account}",
+    )
+
+
+def __transfer_account(voter: str) -> TransferToVestingOperation:
+    return TransferOperation(
+        from_="initminer",
+        to=voter,
+        amount=AssetHbdHF26(amount=10000),
+        memo=f"supply_hbd_transfer-{voter}",
+    )
+
+
+def __vest_account(voter: str) -> TransferToVestingOperation:
+    account_number = int(voter.split("-")[1])
+    return TransferToVestingOperation(
+        from_="initminer", to=voter, amount=AssetHiveHF26(amount=(100000 + account_number))
+    )
 
 
 if __name__ == "__main__":
