@@ -4,7 +4,7 @@ namespace hive { namespace protocol {
 
 bool authority_verification_tracer::detect_cycle(std::string account) const
 {
-  const path_entry* entry = &( _trace.root );
+  const path_entry* entry = &( get_root_entry() );
   if( entry->processed_entry == account )
     return true;
 
@@ -18,9 +18,21 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
   return false;
 }
 
+authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
+{
+  FC_ASSERT( not _trace.root.empty() );
+  return _trace.root.back();
+}
+
+const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
+{
+  FC_ASSERT( not _trace.root.empty() );
+  return _trace.root.back();
+}
+
 authority_verification_trace::path_entry& authority_verification_tracer::get_parent_entry()
 {
-  path_entry* parent_entry = &( _trace.root );
+  path_entry* parent_entry = &( get_root_entry() );
   for( size_t index : _current_authority_path )
     parent_entry = &( parent_entry->visited_entries.at( index ) );
 
@@ -43,24 +55,12 @@ void authority_verification_tracer::pop_parent_entry()
 
 void authority_verification_tracer::fill_final_authority_path()
 {
-  /*path_entry* entry = &( _trace.root );
-  _trace.final_authority_path.push_back( *entry );
-  while( not entry->visited_entries.empty() )
-  {
-    entry = &( entry->visited_entries.back() );
-    _trace.final_authority_path.push_back( *entry );
-  }*/
-
   // 1. Copy whole tree
-  _trace.final_authority_path.push_back( _trace.root );
+  _trace.final_authority_path.push_back( get_root_entry() );
   path_entry* entry_to_clear = &( _trace.final_authority_path.back() );
   // 2. Clear visited except last ones.
   while( not entry_to_clear->visited_entries.empty() )
   {
-    /*path_entry last_visited = entry_to_clear->visited_entries.back();
-    entry_to_clear->visited_entries.clear();
-    entry_to_clear->visited_entriest.push_back( last_visited );
-    entry_to_clear = &( entry_to_clear->visited_entries.back() );*/
     auto& visited = entry_to_clear->visited_entries;
     if( visited.size() > 1 ) 
       visited.erase( visited.begin(), visited.end() - 1 );
@@ -80,7 +80,7 @@ void authority_verification_tracer::on_root_authority_start( const account_name_
     flags: INSUFFICIENT_WEIGHT
   };
 
-  _trace.root = root_path_entry;
+  _trace.root.push_back( root_path_entry );
 }
 
 void authority_verification_tracer::on_root_authority_finish( unsigned int verification_status )
@@ -103,7 +103,7 @@ void authority_verification_tracer::on_approved_authority( const account_name_ty
   {
     parent.flags &= ~INSUFFICIENT_WEIGHT;
     parent.flags |= RESOLVED_BY_APPROVAL;
-    _trace.final_authority_path.push_back( _trace.root );
+    _trace.final_authority_path.push_back( get_root_entry() );
   }
   else
   {

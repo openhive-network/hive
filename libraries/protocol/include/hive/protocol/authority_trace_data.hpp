@@ -36,8 +36,8 @@ struct authority_verification_trace
     std::vector<path_entry> visited_entries;
   };
 
-  /// Contains whole tree of visited paths.
-  path_entry root;
+  /// Contains whole trees of visited paths for different authorities / roles verified.
+  std::vector<path_entry> root;
   /// Contains the final sequence of entries, whether successful or not.
   std::vector<path_entry> final_authority_path;
   /** Combination of flags possibly indicating other problems detected by chain

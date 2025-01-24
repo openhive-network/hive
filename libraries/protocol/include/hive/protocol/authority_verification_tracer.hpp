@@ -37,6 +37,8 @@ class authority_verification_tracer
 
   private:
     bool detect_cycle(std::string account) const;
+    path_entry& get_root_entry();
+    const path_entry& get_root_entry() const;
     path_entry& get_parent_entry();
     void push_parent_entry();
     void pop_parent_entry();
