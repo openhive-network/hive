@@ -10,7 +10,7 @@
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
     "postbuild": "rollup -c && cp ./build/beekeeper_wasm.*.wasm ./dist/bundle && size-limit",
-    "pretest": "playwright install && cp ./build/beekeeper_wasm.*.wasm ./__tests__/assets",
+    "pretest": "playwright install chromium && cp ./build/beekeeper_wasm.*.wasm ./__tests__/assets",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
