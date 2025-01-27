@@ -36,12 +36,12 @@
 
     "allowJs": false,
 
-    "target": "ES6",
+    "target": "ES2020",
     "lib": [
       "DOM",
-      "ES2017"
+      "ES2020"
     ],
-    "module": "ES6",
+    "module": "ES2020",
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
 

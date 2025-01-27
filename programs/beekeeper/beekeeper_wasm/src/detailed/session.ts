@@ -1,8 +1,8 @@
-import { BeekeeperError } from "../errors.js";
+import { BeekeeperError } from "./errors.js";
 import { BeekeeperApi } from "./api.js";
-import { IBeekeeperInfo, IBeekeeperInstance, IBeekeeperSession, IBeekeeperWallet, IWalletCreated } from "../interfaces.js";
+import { IBeekeeperInfo, IBeekeeperInstance, IBeekeeperSession, IBeekeeperWallet, IWalletCreated } from "./interfaces.js";
 import { BeekeeperLockedWallet, BeekeeperUnlockedWallet } from "./wallet.js";
-import { safeWasmCall } from '../util/wasm_error';
+import { safeWasmCall } from './util/wasm_error.js';
 
 interface IBeekeeperWalletPassword {
   password: string;

@@ -3,51 +3,28 @@
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Hive Beekeeper functionality exposed to TypeScript/JavaScript environments",
   "main": "dist/bundle/web.js",
+  "types": "dist/bundle/index.d.ts",
   "type": "module",
   "private": false,
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
-    "build": "tsc",
-    "postbuild": "rollup -c && cp ./build/beekeeper_wasm.*.wasm ./dist/bundle && size-limit",
-    "pretest": "playwright install chromium && cp ./build/beekeeper_wasm.*.wasm ./__tests__/assets",
+    "build": "tsc && cp -r ./build ./dist",
+    "postbuild": "rollup -c && size-limit",
+    "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "keywords": [
     "blockchain",
-    "hive"
+    "hive",
+    "wallet"
   ],
   "size-limit": [
     {
-      "path": "./dist/bundle/node.js",
-      "limit": "130 kB",
-      "brotli": false
-    },
-    {
-      "path": "./dist/bundle/beekeeper_wasm.node.wasm",
-      "limit": "5000 kB",
-      "brotli": false
-    },
-    {
-      "path": "./dist/bundle/node.d.ts",
-      "limit": "15 kB",
-      "brotli": false
-    },
-    {
-      "path": "./dist/bundle/web.js",
-      "limit": "130 kB",
-      "brotli": false
-    },
-    {
-      "path": "./dist/bundle/beekeeper_wasm.web.wasm",
-      "limit": "5000 kB",
-      "brotli": false
-    },
-    {
-      "path": "./dist/bundle/web.d.ts",
-      "limit": "15 kB",
+      "path": "./dist/bundle",
+      "limit": "3500 kB",
       "brotli": false
     }
   ],
@@ -55,26 +32,26 @@
     ".": {
       "node": {
         "import": {
-          "types": "./dist/bundle/node.d.ts",
+          "types": "./dist/bundle/index.d.ts",
           "default": "./dist/bundle/node.js"
         }
       },
       "default": {
         "import": {
-          "types": "./dist/bundle/web.d.ts",
+          "types": "./dist/bundle/index.d.ts",
           "default": "./dist/bundle/web.js"
         }
       }
     },
     "./web": {
       "import": {
-        "types": "./dist/bundle/web.d.ts",
+        "types": "./dist/bundle/index.d.ts",
         "default": "./dist/bundle/web.js"
       }
     },
     "./node": {
       "import": {
-        "types": "./dist/bundle/node.d.ts",
+        "types": "./dist/bundle/index.d.ts",
         "default": "./dist/bundle/node.js"
       }
     },
@@ -87,16 +64,17 @@
   ],
   "devDependencies": {
     "@playwright/test": "^1.49.1",
-    "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-replace": "^6.0.1",
-    "@size-limit/file": "11.1.6",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@size-limit/file": "^11.1.6",
     "@types/node": "^22.10.6",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
     "playwright": "^1.49.1",
     "rollup": "^4.24.3",
+    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-dts": "^6.1.1",
     "size-limit": "11.1.6",
     "tslib": "^2.8.1",
@@ -105,13 +83,12 @@
     "typedoc-plugin-markdown": "4.4.1",
     "typescript": "5.7.3"
   },
-  "types": "dist/bundle/web.d.ts",
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hive.git"
   },
   "engines": {
-    "node": ">= 18"
+    "node": "^20.11 || >= 21.2"
   },
   "publishConfig": {
     "registry": "https://RegistryPlaceholder",

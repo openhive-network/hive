@@ -1,10 +1,11 @@
-import type { BeekeeperModule } from "../beekeeper.js";
-import { BeekeeperError } from "../errors.js";
-import { safeWasmCall } from "../util/wasm_error.js";
+import type { BeekeeperModule } from "../beekeeper_module.js";
+import { BeekeeperError } from "./errors.js";
+import { safeWasmCall } from "./util/wasm_error.js";
 
 export class BeekeeperFileSystem {
   public constructor(
-    private readonly fs: BeekeeperModule['FS']
+    private readonly fs: BeekeeperModule['FS'],
+    private readonly isWebEnvironment: boolean
   ) {}
 
   public sync(): Promise<void> {
@@ -19,7 +20,7 @@ export class BeekeeperFileSystem {
 
   private ensureCreateDir(paths: string[]) {
     // We need an absolute path in web environment in order to create proper directories
-    const dir = (process.env.ROLLUP_TARGET_ENV === "web" ? "/" : "") + paths.join("/");
+    const dir = (this.isWebEnvironment ? "/" : "") + paths.join("/");
 
     let analysis = safeWasmCall(() => this.fs.analyzePath(dir));
 
@@ -32,7 +33,7 @@ export class BeekeeperFileSystem {
   }
 
   public init(walletDir: string): Promise<void> {
-    if(process.env.ROLLUP_TARGET_ENV === "web" && !walletDir.startsWith("/"))
+    if(this.isWebEnvironment && !walletDir.startsWith("/"))
       throw new BeekeeperError("Storage root directory must be an absolute path in web environment");
 
     const walletDirPathParts = walletDir.split("/").filter(node => !!node && node !== ".");
@@ -42,7 +43,7 @@ export class BeekeeperFileSystem {
 
     this.ensureCreateDir(walletDirPathParts);
 
-    if(process.env.ROLLUP_TARGET_ENV === "web")
+    if(this.isWebEnvironment)
       safeWasmCall(() => this.fs.mount(this.fs.filesystems.IDBFS, {}, walletDir));
 
     return new Promise((resolve, reject) => {

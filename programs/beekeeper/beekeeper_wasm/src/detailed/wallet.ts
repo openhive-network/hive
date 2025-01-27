@@ -1,8 +1,8 @@
 import { BeekeeperApi } from "./api.js";
 import { BeekeeperSession } from "./session.js";
-import { IBeekeeperUnlockedWallet, IBeekeeperSession, TPublicKey, IBeekeeperWallet, TSignature } from "../interfaces.js";
-import { StringList } from "../beekeeper.js";
-import { safeWasmCall } from '../util/wasm_error';
+import { IBeekeeperUnlockedWallet, IBeekeeperSession, TPublicKey, IBeekeeperWallet, TSignature } from "./interfaces.js";
+import { StringList } from "../beekeeper_module.js";
+import { safeWasmCall } from './util/wasm_error.js';
 
 interface IImportKeyResponse {
   public_key: string;

@@ -1,8 +1,8 @@
-import type Beekeeper from "../beekeeper.js";
+import type Beekeeper from "../beekeeper_module.js";
 
 import { BeekeeperApi } from "./api.js";
-import { IBeekeeperInstance, IBeekeeperOptions } from "../interfaces.js";
-import { safeAsyncWasmCall } from "../util/wasm_error.js";
+import { IBeekeeperInstance, IBeekeeperOptions } from "./interfaces.js";
+import { safeAsyncWasmCall } from "./util/wasm_error.js";
 
 const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot'> = {
   enableLogs: true,
@@ -12,10 +12,11 @@ const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot'> = {
 const createBeekeeper = async(
   beekeeperContstructor: typeof Beekeeper,
   storageRoot: string,
+  isWebEnvironment: boolean,
   options: Partial<IBeekeeperOptions> = {}
 ): Promise<IBeekeeperInstance> => {
   const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor());
-  const api = new BeekeeperApi(beekeeperProvider);
+  const api = new BeekeeperApi(beekeeperProvider, isWebEnvironment);
 
   await api.init({ ...DEFAULT_BEEKEEPER_OPTIONS, storageRoot, ...options });
 
