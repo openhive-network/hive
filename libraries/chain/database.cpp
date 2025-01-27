@@ -2769,6 +2769,10 @@ void database::process_funds()
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
+    ilog( "PROCESS_FUNDS: ${all}, ${cr}, ${vr}, ${dhf}, ${dhf_hbd}, ${wr}",
+      ( "all", new_hive.value )( "cr", content_reward.value )( "vr", vesting_reward.value )
+      ( "dhf", dhf_new_funds.value )( "dhf_hbd", new_hbd.amount.value )( "wr", witness_reward.value ) );
+
     new_hive = content_reward + vesting_reward + witness_reward;
 
     modify( props, [&]( dynamic_global_property_object& p )
