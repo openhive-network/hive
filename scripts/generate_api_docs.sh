@@ -12,7 +12,7 @@ DOCUMENTATION_URL=${3}
 
 OUTPUT_DIR=${4:-dist/docs}
 
-INPUT_FILE=src/web.ts
+INPUT_FILE=src/index.ts
 
 # When using TypeScript, we are restricted to a specific typedoc and typedoc-plugin-markdown versions
 # https://typedoc.org/guides/installation/#requirements
