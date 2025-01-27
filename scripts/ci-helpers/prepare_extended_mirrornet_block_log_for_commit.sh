@@ -7,6 +7,7 @@ echo "Preparing environment..."
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
 SRC_DIR="$(realpath "${SCRIPTSDIR}/..")"
+WORKING_DIR=${CI_PROJECT_DIR:-$(pwd)}
 
 export LOG_FILE=build_instance4commit.log
 # shellcheck source=../common.sh
@@ -33,6 +34,14 @@ if [ "${TARGET_COMMIT}" != "${CURRENT_COMMIT}" ]; then
 fi
 
 "${HIVE_SRC}/scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh"
+
+if ! cmp -s "${HIVE_SRC}/block_log.env" "${WORKING_DIR}/block_log.env"; then
+    mv "${HIVE_SRC}/block_log.env" "${WORKING_DIR}/block_log.env"
+fi
+
+if [[ -e "${HIVE_SRC}/generated" && $(realpath "${HIVE_SRC}/generated") != $(realpath "${WORKING_DIR}/generated") ]]; then
+    mv "${HIVE_SRC}/generated" "${WORKING_DIR}"
+fi
 
 if [ "${TARGET_COMMIT}" != "${CURRENT_COMMIT}" ]; then
     popd

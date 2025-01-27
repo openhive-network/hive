@@ -45,7 +45,7 @@ function image-exists() {
 }
 
 function generate-env() {
-    echo "EXTENDED_BLOCK_LOG_IMAGE=${TAG}" > block_log.env 
+    echo "EXTENDED_BLOCK_LOG_IMAGE=${TAG}" > "${SRC_DIR}/block_log.env" 
 }
 
 if image-exists "$TAG"
@@ -54,6 +54,8 @@ then
     generate-env
     exit 0
 fi
+
+pushd "${SRC_DIR}"
 
 mkdir -p "${MIRRORNET_SOURCE_5M_DATA_DIR}"
 mkdir -p "${MAINNET_TRUNCATED_DIR}"
@@ -113,3 +115,5 @@ time docker build \
 time docker push "${TAG}"
 
 generate-env
+
+popd
