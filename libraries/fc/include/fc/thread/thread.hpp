@@ -5,6 +5,9 @@
 #include <fc/thread/task.hpp>
 
 namespace fc {
+
+  void set_thread_name(const char* threadName);
+
   class time_point;
   class microseconds;
 

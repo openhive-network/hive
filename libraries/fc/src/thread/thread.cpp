@@ -37,9 +37,11 @@ static void set_thread_name(const char* threadName)
 }
 #elif defined(__linux__)
 # include <pthread.h>
-static void set_thread_name(const char* threadName)
-{
-	pthread_setname_np(pthread_self(), threadName);
+namespace fc {
+  void set_thread_name(const char* threadName)
+  {
+    pthread_setname_np(pthread_self(), threadName);
+  }
 }
 #elif defined(__APPLE__) && !defined(NDEBUG)
 # include <pthread.h>
