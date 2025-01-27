@@ -86,10 +86,10 @@ endfunction()
 DEFINE_BEEKEEPER_TARGET_FOR(node)
 DEFINE_BEEKEEPER_TARGET_FOR(web)
 
-target_link_options( beekeeper_wasm_node PUBLIC -sUSE_ES6_IMPORT_META=1 -sNODERAWFS=1 )
+target_link_options( beekeeper_wasm_node PUBLIC -sNODERAWFS=1 )
 target_link_libraries( beekeeper_wasm_node PUBLIC nodefs.js )
 target_link_libraries( beekeeper_ts_gen_node PUBLIC nodefs.js )
 
-target_link_options( beekeeper_wasm_web PUBLIC -sUSE_ES6_IMPORT_META=0 )
+target_link_options( beekeeper_wasm_web PUBLIC )
 target_link_libraries( beekeeper_wasm_web PUBLIC idbfs.js )
 target_link_libraries( beekeeper_ts_gen_web PUBLIC idbfs.js )

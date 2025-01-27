@@ -1,11 +1,11 @@
-import type { BeekeeperModule, beekeeper_api } from "../beekeeper.js";
+import type { BeekeeperModule, beekeeper_api } from "../beekeeper_module.js";
 
-import { BeekeeperError } from "../errors.js";
+import { BeekeeperError } from "./errors.js";
 import { BeekeeperFileSystem } from "./fs.js";
-import { IBeekeeperInstance, IBeekeeperOptions, IBeekeeperSession } from "../interfaces.js";
+import { IBeekeeperInstance, IBeekeeperOptions, IBeekeeperSession } from "./interfaces.js";
 import { BeekeeperSession } from "./session.js";
-import { safeAsyncWasmCall } from "../util/wasm_error.js";
-import { safeWasmCall } from '../util/wasm_error';
+import { safeAsyncWasmCall } from "./util/wasm_error.js";
+import { safeWasmCall } from './util/wasm_error.js';
 
 // We would like to expose our api using BeekeeperInstance interface, but we would not like to expose users a way of creating instance of BeekeeperApi
 export class BeekeeperApi implements IBeekeeperInstance {
@@ -15,9 +15,10 @@ export class BeekeeperApi implements IBeekeeperInstance {
   public readonly sessions: Map<string, BeekeeperSession> = new Map();
 
   public constructor(
-    private readonly provider: BeekeeperModule
+    private readonly provider: BeekeeperModule,
+    isWebEnvironment: boolean
   ) {
-    this.fs = new BeekeeperFileSystem(this.provider.FS);
+    this.fs = new BeekeeperFileSystem(this.provider.FS, isWebEnvironment);
   }
 
   public extract(json: string) {
