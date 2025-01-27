@@ -40,6 +40,8 @@ export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as 
  * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
  */
 export const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBeekeeperInstance> => {
+  // Remember to keep Object.assign to always create new ModuleArg object passed to the WASM Emscripten wrapper on which new objects will be initialized and stored
+  // Otherwise you will get strange errors, such as: "Cannot register type XXX twice"
   return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, Object.assign({}, await moduleArgs), process.env.ROLLUP_TARGET_ENV === "web", options);
 };
 
