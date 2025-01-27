@@ -18,6 +18,8 @@ export * from "./detailed/index.js";
  *
  * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
  */
-const createBeekeeper = createBeekeeperBase.bind(undefined, Beekeeper, DEFAULT_STORAGE_ROOT, process.env.ROLLUP_TARGET_ENV === "web");
+const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBeekeeperInstance> => {
+  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, {}, process.env.ROLLUP_TARGET_ENV === "web", options);
+};
 
 export default createBeekeeper;
