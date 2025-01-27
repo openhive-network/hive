@@ -1,4 +1,4 @@
-// During bundle - this module will be replaced with the actual wasm module based on your environment. This function is kept mainly for the purpose of type checking and documentation.
+// During bundle - this module will be replaced with the actual wasm module based on your environment. This file is kept mainly for the purpose of type checking and documentation.
 
 import type { MainModule } from 'beekeeper_wasm/beekeeper_wasm.node.js';
 
@@ -48,9 +48,14 @@ export interface BeekeeperModule extends MainModule {
   }
 }
 
+export interface IOptionalModuleArgs {
+  wasmBinary?: Buffer;
+  locateFile?: (path: string, scriptDirectory: string) => string;
+}
+
 // Note: This import will be replaced with Node.js version upon bundling
 export { MainModule, StringList, beekeeper_api } from 'beekeeper_wasm/beekeeper_wasm.node.js';
 
-declare function beekeepermodule(): Promise<BeekeeperModule>;
+declare function beekeepermodule(ModuleArg?: IOptionalModuleArgs): Promise<BeekeeperModule>;
 
 export default beekeepermodule;

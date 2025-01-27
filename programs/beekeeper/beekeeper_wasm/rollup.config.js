@@ -78,14 +78,11 @@ export default [
     ],
     plugins: [
       replace({
-        'process.env.DEFAULT_STORAGE_ROOT': `"/storage_root"`,
-        'process.env.ROLLUP_TARGET_ENV': `"web"`,
-        preventAssignment: true
-      }),
-      replace({
         delimiters: ['', ''],
         values: {
-          './beekeeper_module.js': './build/beekeeper_wasm.web.js'
+          './beekeeper_module.js': './build/beekeeper_wasm.web.js',
+          'process.env.DEFAULT_STORAGE_ROOT': `"/storage_root"`,
+          'process.env.ROLLUP_TARGET_ENV': `"web"`
         },
         preventAssignment: true
       })
@@ -103,14 +100,33 @@ export default [
     ],
     plugins: [
       replace({
-        'process.env.DEFAULT_STORAGE_ROOT': `"./storage_root-node"`,
-        'process.env.ROLLUP_TARGET_ENV': `"node"`,
+        delimiters: ['', ''],
+        values: {
+          './beekeeper_module.js': './build/beekeeper_wasm.node.js',
+          'process.env.DEFAULT_STORAGE_ROOT': `"./storage_root-node"`,
+          'process.env.ROLLUP_TARGET_ENV': `"node"`
+        },
         preventAssignment: true
-      }),
+      })
+    ]
+  },
+  {
+    input: 'dist/vite.js',
+    output: {
+      format: 'es',
+      file: 'dist/bundle/vite.js'
+    },
+    external: [
+      './build/beekeeper_wasm.node.js',
+      './detailed/index.js',
+      './beekeeper.common.wasm?url'
+    ],
+    plugins: [
       replace({
         delimiters: ['', ''],
         values: {
-          './beekeeper_module.js': './build/beekeeper_wasm.node.js'
+          './beekeeper_module.js': './build/beekeeper_wasm.node.js',
+          'beekeeper.common.wasm?url': './beekeeper.common.wasm?url'
         },
         preventAssignment: true
       })

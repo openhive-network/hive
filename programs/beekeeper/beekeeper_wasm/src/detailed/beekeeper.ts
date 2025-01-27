@@ -1,4 +1,5 @@
 import type Beekeeper from "../beekeeper_module.js";
+import { IOptionalModuleArgs } from "../beekeeper_module.js";
 
 import { BeekeeperApi } from "./api.js";
 import { IBeekeeperInstance, IBeekeeperOptions } from "./interfaces.js";
@@ -12,10 +13,11 @@ const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot'> = {
 const createBeekeeper = async(
   beekeeperContstructor: typeof Beekeeper,
   storageRoot: string,
+  ModuleExt: IOptionalModuleArgs = {},
   isWebEnvironment: boolean,
   options: Partial<IBeekeeperOptions> = {}
 ): Promise<IBeekeeperInstance> => {
-  const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor());
+  const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor(ModuleExt));
   const api = new BeekeeperApi(beekeeperProvider, isWebEnvironment);
 
   await api.init({ ...DEFAULT_BEEKEEPER_OPTIONS, storageRoot, ...options });

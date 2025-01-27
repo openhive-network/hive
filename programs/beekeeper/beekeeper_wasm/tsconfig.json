@@ -50,7 +50,10 @@
     "paths": {
       "beekeeper_wasm/*": [
         "./build/*"
-      ]
+      ],
+      "beekeeper.common.wasm?url": [
+        "./build/beekeeper_wasm.node"
+      ],
     }
   },
   "buildOptions": {
