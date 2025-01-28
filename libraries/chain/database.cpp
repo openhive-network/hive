@@ -2715,7 +2715,8 @@ void database::process_funds()
   const auto& wso = get_witness_schedule_object();
   const auto& feed = get_feed_history();
 
-  if( has_hardfork( HIVE_HARDFORK_0_16__551) ) {
+  if( has_hardfork( HIVE_HARDFORK_0_16__551) )
+  {
     /**
       * At block 7,000,000 have a 9.5% instantaneous inflation rate, decreasing to 0.95% at a rate of 0.01%
       * every 250k blocks. This narrowing will take approximately 20.5 years and will complete on block 220,750,000
