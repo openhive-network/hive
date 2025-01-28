@@ -4,21 +4,10 @@ export * from "./detailed/index.js";
 import createBeekeeperBase, { type BeekeeperError, type IBeekeeperOptions, type IBeekeeperInstance } from "./detailed/index.js";
 import Beekeeper from "./beekeeper_module.js";
 
-// This will be empty when SSR is disabled (client-side), but enable static import for SSR
-import possibleFs from 'node:fs/promises';
-
-const isSSR = typeof (import.meta as any).env === "object" && (import.meta as any).env.SSR;
-
 import resolvedUrl from 'beekeeper.common.wasm?url';
 
 const moduleArgs = (async () => {
-  let wasmBinary: Buffer | undefined;
-
-  if (isSSR)
-    wasmBinary = await possibleFs.readFile('beekeeper.common.wasm');
-
   return {
-    wasmBinary,
     locateFile: (path: string, scriptDirectory: string): string => {
       if (path === "beekeeper.common.wasm")
         return resolvedUrl as unknown as string;
