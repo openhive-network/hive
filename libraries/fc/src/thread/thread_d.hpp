@@ -45,9 +45,14 @@ namespace fc {
 #ifndef NDEBUG
              ,non_preemptable_scope_count(0)
 #endif
-            { 
+            {
               static boost::atomic<int> cnt(0);
-              name = std::string("th_") + char('a'+cnt++); 
+              // name threads th_a, th_b, th_c, up to th_z (legacy behavior)
+              // then switch to th_26, th_27, etc to avoid unprintable characters
+              if (cnt < 26)
+                name = fc::string("th_") + char('a' + cnt++);
+              else
+                name = fc::string("th_") + std::to_string(cnt++);
 //              printf("thread=%p\n",this);
             }
 
