@@ -6768,6 +6768,5 @@ database::node_status_t database::get_node_status()
   return result;
 }
 
-}
-  } //hive::chain
+} } //hive::chain
 
