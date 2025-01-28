@@ -29,5 +29,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES (HIVE_HARDFORK_1_28)
 //Redundant signatures are allowed
 #define HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES (HIVE_HARDFORK_1_28)
+//Remove DHF HBD from inflation calculations
+#define HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION (HIVE_HARDFORK_1_28)
 
 #endif
