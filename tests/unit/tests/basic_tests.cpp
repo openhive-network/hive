@@ -30,6 +30,7 @@
 #include <hive/protocol/protocol.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/words.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -1851,6 +1852,22 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
   }
 
 #undef CREATE_ACCOUNT
+}
+
+BOOST_AUTO_TEST_CASE( get_word_list )
+{
+  auto word_list = hive::words::get_word_list();
+
+  BOOST_REQUIRE( word_list != nullptr );
+
+  BOOST_TEST_MESSAGE( hive::words::get_word_list_size() );
+  BOOST_TEST_MESSAGE( word_list[0] );
+  BOOST_TEST_MESSAGE( word_list[1] );
+  BOOST_TEST_MESSAGE( word_list[2] );
+
+  BOOST_CHECK_EQUAL( word_list[0], "a" );
+  BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-5], "zymosis" );
+  BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-1], "zythum" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
