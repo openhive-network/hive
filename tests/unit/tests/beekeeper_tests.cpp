@@ -167,15 +167,15 @@ BOOST_AUTO_TEST_CASE(wallet_complex_name_test)
 
   wm.create( _token, _wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
   BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
-  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token, true ).size(), 1 );
 
   wm.lock( _token, _wallet_name );
   BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
-  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token, true ).size(), 1 );
 
   wm.open( _token, _wallet_name );
   BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 1 );
-  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 1 );
+  BOOST_REQUIRE_EQUAL( wm.list_wallets( _token, true ).size(), 1 );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE( wm.start() );
   std::string _token = wm.create_session( "this is salt", std::optional<std::string>() );
 
-  BOOST_REQUIRE_EQUAL(0u, wm.list_wallets(_token).size());
+  BOOST_REQUIRE_EQUAL(0u, wm.list_wallets( _token, true ).size());
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>("avocado")), fc::exception);
   BOOST_REQUIRE_NO_THROW(wm.lock_all(_token));
@@ -214,17 +214,17 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   auto pw = wm.create(_token, "test", std::optional<std::string>(), false/*is_temporary*/ );
   BOOST_REQUIRE(!pw.empty());
   BOOST_REQUIRE_EQUAL(0u, pw.find("PW")); // starts with PW
-  BOOST_REQUIRE_EQUAL(1u, wm.list_wallets(_token).size());
+  BOOST_REQUIRE_EQUAL(1u, wm.list_wallets( _token, true ).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>("test")).size());
   BOOST_REQUIRE_EQUAL(0u, wm.list_keys(_token, "test", pw).size());
-  BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
+  BOOST_REQUIRE(wm.list_wallets( _token, true )[0].unlocked);
   wm.lock(_token, "test");
-  BOOST_REQUIRE(!wm.list_wallets(_token)[0].unlocked);
+  BOOST_REQUIRE(!wm.list_wallets( _token, true )[0].unlocked);
   wm.unlock(_token, "test", pw);
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", pw), fc::exception);
-  BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
+  BOOST_REQUIRE(wm.list_wallets( _token, true )[0].unlocked);
   wm.import_key(_token, "test", key1_str, _prefix);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>( "test" )).size());
@@ -275,10 +275,10 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.list_keys(_token, "test", pw).size());
   wm.lock_all(_token);
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
-  BOOST_REQUIRE(!wm.list_wallets(_token)[0].unlocked);
+  BOOST_REQUIRE(!wm.list_wallets( _token, true )[0].unlocked);
 
   auto pw2 = wm.create(_token, "test2", std::optional<std::string>(), false/*is_temporary*/ );
-  BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
+  BOOST_REQUIRE_EQUAL(2u, wm.list_wallets( _token, true ).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   wm.import_key(_token, "test2", key3_str, _prefix);
@@ -411,28 +411,28 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
       std::string _pass_01 = wm.create(_token_01, "banana", std::optional<std::string>(), false/*is_temporary*/ );
       std::string _pass_02 = wm.create(_token_01, "cherry", std::optional<std::string>(), false/*is_temporary*/ );
 
-      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token", true ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_created_wallets( "not existed token" ), fc::exception );
-      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_00 ).size(), 1 );
-      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01 ).size(), 2 );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_00, true ).size(), 1 );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01, true ).size(), 2 );
       BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_00 ).size(), 3 );
       BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_01 ).size(), 3 );
 
       wm.close_session( _token_00 );
       BOOST_REQUIRE( !_checker );
 
-      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
-      BOOST_REQUIRE_THROW( wm.list_wallets( _token_00 ), fc::exception );
-      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01 ).size(), 3 );
+      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token", true ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_wallets( _token_00, true ), fc::exception );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01, true ).size(), 3 );
       BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_00 ), fc::exception );
       BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_01 ).size(), 3 );
 
       wm.close_session( _token_01 );
       BOOST_REQUIRE( _checker );
 
-      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
-      BOOST_REQUIRE_THROW( wm.list_wallets( _token_00 ), fc::exception );
-      BOOST_REQUIRE_THROW( wm.list_wallets( _token_01 ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token", true ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_wallets( _token_00, true ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_wallets( _token_01, true ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_00 ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_01 ), fc::exception );
     }
@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_wallets_with_dots)
       wm.create(_token, "avocado.banana", std::optional<std::string>(), false/*is_temporary*/ );
 
       BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token ).size(), 5 );
-      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token ).size(), 5 );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token, true ).size(), 5 );
     }
 
   } FC_LOG_AND_RETHROW()
@@ -601,25 +601,25 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       auto _token = wm.create_session( "salt", std::optional<std::string>() );
       wm.create(_token, wallet_name_0, std::optional<std::string>(), false/*is_temporary*/ );
 
-      auto _wallets = wm.list_wallets( _token );
+      auto _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE( _wallets.size() == 1 );
       BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
 
       BOOST_REQUIRE_THROW( wm.close( _token, wallet_name_1 ), fc::exception );
       wm.close( _token, wallet_name_0 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
 
       wm.create(_token, wallet_name_1, std::optional<std::string>(), false/*is_temporary*/ );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].name, wallet_name_1 );
 
       wm.close( _token, wallet_name_1 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
     }
 
@@ -632,13 +632,13 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
 
       wm.lock_all( _token );
 
-      auto _wallets = wm.list_wallets( _token );
+      auto _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].name, wallet_name_0 );
 
       wm.close( _token, wallet_name_0 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
     }
 
@@ -652,26 +652,26 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
 
       wm.lock( _token, wallet_name_1 );
 
-      auto _wallets = wm.list_wallets( _token );
+      auto _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 2 );
       BOOST_REQUIRE_EQUAL( _wallets[0].name, wallet_name_0 );
       BOOST_REQUIRE_EQUAL( _wallets[1].name, wallet_name_1 );
 
       wm.close( _token, wallet_name_1 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].name, wallet_name_0 );
 
       wm.lock( _token, wallet_name_0 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].name, wallet_name_0 );
 
       wm.close( _token, wallet_name_0 );
 
-      _wallets = wm.list_wallets( _token );
+      _wallets = wm.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
     }
 
@@ -1140,7 +1140,7 @@ class timeout_simulation
 
     std::string create_session( bekeeper_type& beekeeper_obj );
     std::string create( bekeeper_type& beekeeper_obj, const std::string& token, const std::string& name );
-    std::vector<wallet_details> list_wallets( bekeeper_type& beekeeper_obj, const std::string& token );
+    std::vector<wallet_details> list_wallets( bekeeper_type& beekeeper_obj, const std::string& token, bool refresh_timeout );
 
     simulation create( bekeeper_type& beekeeper_obj, const std::string& name, size_t nr_sessions, size_t nr_wallets, const std::vector<size_t>& timeouts )
     {
@@ -1184,7 +1184,7 @@ class timeout_simulation
         auto& _s = sim.sessions[ session_cnt ];
         BOOST_TEST_MESSAGE( "+++++ session: name: " + _s.name + " token: " + _s.token + " timeout: " + std::to_string( _s.timeout ) + " +++++" );
 
-        auto _wallets = list_wallets( beekeeper_obj, _s.token );
+        auto _wallets = list_wallets( beekeeper_obj, _s.token, true );
 
         for( auto& wallet_item : _wallets )
         {
@@ -1226,16 +1226,16 @@ std::string timeout_simulation<beekeeper_wallet_manager>::create( beekeeper_wall
 }
 
 template<>
-std::vector<wallet_details> timeout_simulation<beekeeper_api>::list_wallets( beekeeper_api& beekeeper_obj, const std::string& token )
+std::vector<wallet_details> timeout_simulation<beekeeper_api>::list_wallets( beekeeper_api& beekeeper_obj, const std::string& token, bool refresh_timeout/*not used here*/ )
 {
   auto _result = extract_json( beekeeper_obj.list_wallets( token ) );
   return fc::json::from_string( _result, fc::json::format_validation_mode::full ). template as<beekeeper::list_wallets_return>().wallets;
 }
 
 template<>
-std::vector<wallet_details> timeout_simulation<beekeeper_wallet_manager>::list_wallets( beekeeper_wallet_manager& beekeeper_obj, const std::string& token )
+std::vector<wallet_details> timeout_simulation<beekeeper_wallet_manager>::list_wallets( beekeeper_wallet_manager& beekeeper_obj, const std::string& token, bool refresh_timeout )
 {
-  return beekeeper_obj.list_wallets( token );
+  return beekeeper_obj.list_wallets( token, refresh_timeout );
 }
 
 class wasm_simulation_executor
@@ -1416,7 +1416,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
   try {
     auto _list_wallets_action = []( beekeeper_wallet_manager& beekeeper, const std::string& token )
     {
-      auto _wallets = beekeeper.list_wallets( token );
+      auto _wallets = beekeeper.list_wallets( token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].unlocked, true );
     };
@@ -1538,7 +1538,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       _beekeeper.close( _token, wallet.name );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
+      auto _wallets = _beekeeper.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
     }
     {
@@ -1550,7 +1550,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
+      auto _wallets = _beekeeper.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       const size_t _wallet_cnt = 0;
       BOOST_REQUIRE_EQUAL( _wallets[_wallet_cnt].unlocked, false );
@@ -1560,7 +1560,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       _beekeeper.unlock( _token, _wallets[_wallet_cnt].name, _wallets[_wallet_cnt].password );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
+      auto _wallets = _beekeeper.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       const size_t _wallet_cnt = 0;
       BOOST_REQUIRE_EQUAL( _wallets[_wallet_cnt].unlocked, true );
@@ -1569,7 +1569,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
+      auto _wallets = _beekeeper.list_wallets( _token, true );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       const size_t _wallet_cnt = 0;
       BOOST_REQUIRE_EQUAL( _wallets[_wallet_cnt].unlocked, false );

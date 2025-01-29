@@ -190,14 +190,17 @@ struct import_keys_args: public session_token_type
   std::string wallet_name;
   std::vector<std::string> wif_keys;
 };
+struct list_wallets_args: public session_token_type
+{
+  bool refresh_timeout = true;
+};
 
-using list_wallets_args = session_token_type;
 struct list_wallets_return
 {
   std::vector<wallet_details> wallets;
 };
 
-using list_created_wallets_args = list_wallets_args;
+using list_created_wallets_args = session_token_type;
 using list_created_wallets_return = list_wallets_return;
 
 struct get_public_keys_args: public session_token_type
@@ -364,3 +367,4 @@ FC_REFLECT( beekeeper::decrypt_data_return, (decrypted_content) )
 FC_REFLECT( beekeeper::wallet_data, (cipher_keys) )
 FC_REFLECT( beekeeper::plain_keys, (checksum)(keys) )
 FC_REFLECT( beekeeper::has_wallet_return, (exists) )
+FC_REFLECT_DERIVED( beekeeper::list_wallets_args, (beekeeper::session_token_type), (refresh_timeout) )

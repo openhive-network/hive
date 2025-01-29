@@ -161,7 +161,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, list_wallets )
 {
   std::shared_lock guard( mtx );
 
-  return { _wallet_mgr->list_wallets( args.token ) };
+  return { _wallet_mgr->list_wallets( args.token, args.refresh_timeout ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, list_created_wallets )

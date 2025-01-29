@@ -48,9 +48,10 @@ void beekeeper_wallet_manager::close( const std::string& token, const std::strin
   sessions->get_wallet_manager( token )->close( wallet_name );
 }
 
-std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
+std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token, bool refresh_timeout )
 {
-  sessions->check_timeout( token );
+  if( refresh_timeout )
+    sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->list_wallets();
 }
 

@@ -103,9 +103,10 @@ public:
    *
    * List all opened wallets.
    * @param token Session's identifier.
+   * @param refresh_timeout If `true` timeout is refreshed otherwise isn't.
    * @return      A list of wallets with information if given wallet is unlocked.
    */
-  std::vector<wallet_details> list_wallets( const std::string& token );
+  std::vector<wallet_details> list_wallets( const std::string& token, bool refresh_timeout );
 
   /**
    * 
