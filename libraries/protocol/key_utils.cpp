@@ -100,7 +100,7 @@ brain_key_info suggest_brain_key()
     entropy /= hive::words::word_list_size;
     if (i > 0)
       brain_key += " ";
-    brain_key += hive::words::word_list[choice.to_int64()];
+    brain_key += hive::words::get_word_list()[choice.to_int64()];
   }
 
   brain_key = normalize_brain_key(brain_key);

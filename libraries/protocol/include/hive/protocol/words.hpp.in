@@ -23,10 +23,12 @@
  */
 #pragma once
 
+#include <cstdint>
+
 namespace hive { namespace words {
 
 typedef const char* const_char_ptr;
-extern const const_char_ptr word_list[];
-extern const uint32_t word_list_size;
+const const_char_ptr* get_word_list();
+const uint32_t word_list_size = @WORD_LIST_SIZE@;
 
 } }
