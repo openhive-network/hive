@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xeuo pipefail
+set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
@@ -126,7 +126,7 @@ echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --passw
 
 image_exists=0
 
-docker_image_exists "$short_commit" "$REGISTRY" $IMGNAME image_exists
+docker_image_exists "$img_path" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then

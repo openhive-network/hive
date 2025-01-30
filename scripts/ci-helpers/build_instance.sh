@@ -39,12 +39,12 @@ while [ $# -gt 0 ]; do
         case $type in
           "testnet"*)
             BUILD_HIVE_TESTNET=ON
-            IMAGE_TAG_PREFIX=testnet-
+            IMAGE_TAG_PREFIX=testnet
             ;;
           "mirrornet"*)
             BUILD_HIVE_TESTNET=OFF
             HIVE_CONVERTER_BUILD=ON
-            IMAGE_TAG_PREFIX=mirrornet-
+            IMAGE_TAG_PREFIX=mirrornet
             ;;
           "mainnet"*)
             BUILD_HIVE_TESTNET=OFF
@@ -145,8 +145,8 @@ docker build --target=base \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG}" \
+  --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+  --tag "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}base:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\nBuilding instance image...\n"
@@ -163,8 +163,8 @@ docker build --target=instance \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
+  --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\nBuilding minimal instance image...\n"
@@ -181,8 +181,8 @@ docker build --target=minimal \
   --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal:${BUILD_IMAGE_TAG}" \
+  --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+  --tag "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}minimal:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\n"

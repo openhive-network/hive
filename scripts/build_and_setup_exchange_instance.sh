@@ -221,9 +221,9 @@ source "${HIVED_SOURCE_DIR}/scripts/ci-helpers/docker_image_utils.sh"
 
 image_exists=0
 
-docker_image_exists "${HIVED_IMAGE_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" image_exists 0
+img_name=$( build_image_name "${HIVED_IMAGE_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" )
 
-img_name=$( build_image_name "${HIVED_IMAGE_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}")
+docker_image_exists "${img_name}" image_exists 0
 
 if [ "$image_exists" -eq 1 ];
 then

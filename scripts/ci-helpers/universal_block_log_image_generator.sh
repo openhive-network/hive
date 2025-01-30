@@ -33,7 +33,7 @@ _img_tag=$IMGNAME
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
-docker_image_exists "$tag" "$REGISTRY" $IMGNAME image_exists
+docker_image_exists "$img" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
