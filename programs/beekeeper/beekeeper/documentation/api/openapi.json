@@ -948,6 +948,11 @@
             "type": "string",
             "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913",
             "description": "Session's identifier"
+          },
+          "refresh_timeout": {
+            "type": "boolean",
+            "example": true,
+            "description": "If `true` timeout is refreshed otherwise isn't. By default is true."
           }
         }
       },
