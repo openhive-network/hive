@@ -116,17 +116,17 @@ pushd "${submodule_path}"
 short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
-img=$( build_image_name $IMGNAME "$short_commit" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$short_commit" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$short_commit" "$REGISTRY" )
+img=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME )
+img_path=$( build_image_registry_path "$short_commit" "$REGISTRY" $IMGNAME )
+img_tag="$short_commit"
 
-img_instance=$( build_image_name $IMGNAME_INSTANCE "$short_commit" "$REGISTRY" )
-img_minimal_instance=$( build_image_name $IMGNAME_MINIMAL_INSTANCE "$short_commit" "$REGISTRY" )
+img_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_INSTANCE )
+img_minimal_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_MINIMAL_INSTANCE )
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
 
-docker_image_exists $IMGNAME "$short_commit" "$REGISTRY" image_exists
+docker_image_exists "$short_commit" "$REGISTRY" $IMGNAME image_exists
 
 if [ "$image_exists" -eq 1 ];
 then

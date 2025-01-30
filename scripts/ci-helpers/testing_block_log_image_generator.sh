@@ -26,14 +26,14 @@ popd
 prefix_tag="testing-block-log"
 tag=$prefix_tag-$short_commit
 
-img=$( build_image_name $IMGNAME "$tag" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$tag" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$tag" "$REGISTRY" )
+img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
+_img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
+_img_tag="$tag"
 
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
-docker_image_exists $IMGNAME "$tag" "$REGISTRY" image_exists
+docker_image_exists "$tag" "$REGISTRY" $IMGNAME image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
@@ -48,7 +48,7 @@ else
   echo "Build a Dockerfile"
 
   pwd
-  cd $TESTING_BLOCK_LOGS_DIR
+  cd "$TESTING_BLOCK_LOGS_DIR"
   pwd
 
   cat <<EOF > Dockerfile
@@ -59,10 +59,10 @@ EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing testing_block_logs"
-  docker build -t $img .
-  docker push $img
+  docker build -t "$img" .
+  docker push "$img"
   echo "Created and push docker image with testing block logs: $img"
 fi
 
-echo "TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/testing_block_log_latest_version.env
-echo "TESTING_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/testing_block_log_latest_commit_short_sha.env
+echo "TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > "$CI_PROJECT_DIR/testing_block_log_latest_version.env"
+echo "TESTING_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > "$CI_PROJECT_DIR/testing_block_log_latest_commit_short_sha.env"

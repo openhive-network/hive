@@ -1,36 +1,29 @@
 #! /bin/bash
 
 function build_image_name() {
-  local image=$1
-  local tag=$2
-  local registry=${3}
+  local tag=$1
+  local registry=$2
+  local image=$3
   # If image is not empty then it needs to be preceeded by a slash 
   echo "${registry}${image:+/$image}:${tag}"
 }
 
 function build_image_registry_path() {
-  local image=$1
-  local tag=$2
-  local registry=${3}
-  echo "${registry}${image}"
-}
-
-function build_image_registry_tag() {
-  local image=$1
-  local tag=$2
-  local registry=${3}
-  echo "${tag}"
+  local tag=$1
+  local registry=$2
+  local image=$3
+  echo "${registry}${image:+/$image}"
 }
 
 function docker_image_exists() {
-  local image=$1
-  local tag=$2
-  local registry=${3}
+  local tag=$1
+  local registry=$2
+  local image=$3
   local  __resultvar=${4:?"Missing required retval variable name"}
   local look_to_registry=${5:-1}
 
   local imgname
-  imgname=$( build_image_name "$image" "$tag" "$registry" )
+  imgname=$( build_image_name "$tag" "$registry" "$image" )
 
   local result=0
 
