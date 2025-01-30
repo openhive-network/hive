@@ -125,6 +125,13 @@ def compute_parameters(args):
     price_params["coeff_d"] = str(int(D*(2.0**curve_shift)+0.5))
     price_params["shift"] = curve_shift
 
+    result["base_params"] = collections.OrderedDict()
+    base_params = result["base_params"]
+    base_params["budget_scale_factor"] = args.get("budget_scale_factor", "10000")
+    base_params["price_scale_factor"] = args.get("price_scale_factor", "10000")
+    base_params["budget_per_time_unit"] = rdparams["budget_per_time_unit"]
+    base_params["coeff_b"] = price_params["coeff_b"]
+
     decay_per_time_unit_float = -math.expm1(-time_unit_sec*math.log(2.0) / half_life_sec)
 
     #compound_per_sec_denom_shift = args.get("compound_per_second_denom_shift", 38)

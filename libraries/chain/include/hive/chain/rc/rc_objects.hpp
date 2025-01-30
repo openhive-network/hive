@@ -86,7 +86,8 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
         if( i == resource_new_accounts )
           continue;
         resource_weights[i] = usage_in_window[i] * HIVE_100_PERCENT
-          / params.resource_param_array[i].resource_dynamics_params.budget_per_time_unit;
+          / params.resource_param_array[i].base_params.budget_per_time_unit;
+        // we are using base budgets because actual budgets scale differently across resource pools
         if( resource_weights[i] == 0 )
           resource_weights[i] = 1; //minimum weight
         sum_of_resource_weights += resource_weights[i];

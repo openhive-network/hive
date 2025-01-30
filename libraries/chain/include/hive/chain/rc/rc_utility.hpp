@@ -34,10 +34,19 @@ struct rc_price_curve_params
   uint8_t         shift = 0;
 };
 
+struct rc_base_params
+{
+  int16_t         budget_scale_factor = 0;
+  int16_t         price_scale_factor = 0;
+  int32_t         budget_per_time_unit = 0;
+  uint64_t        coeff_b = 0;
+};
+
 struct rc_resource_params
 {
   util::rd_dynamics_params resource_dynamics_params;
   rc_price_curve_params    price_curve_params;
+  rc_base_params           base_params;
 };
 
 class resource_credits
@@ -188,6 +197,7 @@ class resource_credits
 } } // hive::chain
 
 FC_REFLECT( hive::chain::rc_price_curve_params, (coeff_a)(coeff_b)(shift) )
-FC_REFLECT( hive::chain::rc_resource_params, (resource_dynamics_params)(price_curve_params) )
+FC_REFLECT( hive::chain::rc_base_params, (budget_scale_factor)(price_scale_factor)(budget_per_time_unit)(coeff_b) )
+FC_REFLECT( hive::chain::rc_resource_params, (resource_dynamics_params)(price_curve_params)(base_params) )
 
 HIVE_DECLARE_OPERATION_TYPE( hive::protocol::rc_custom_operation )
