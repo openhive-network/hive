@@ -4,17 +4,21 @@ export * from "./detailed/index.js";
 import createBeekeeperBase, { type BeekeeperError, type IBeekeeperOptions, type IBeekeeperInstance } from "./detailed/index.js";
 import Beekeeper from "./beekeeper_module.js";
 
-import resolvedUrl from 'beekeeper.common.wasm?url';
-
 const moduleArgs = (async () => {
-  return {
-    locateFile: (path: string, scriptDirectory: string): string => {
-      if (path === "beekeeper.common.wasm")
-        return resolvedUrl as unknown as string;
+  // Resolve WASM url only for Nuxt client (first condition) or Vite client (second condition)
+  if ((import.meta as any).client || (!("client" in import.meta) && typeof (import.meta as any).env === "object" && "SSR" in (import.meta as any).env)) {
+      const resolvedUrl = (await import('beekeeper.common.wasm?url')).default;
 
-      return scriptDirectory + path;
-    }
-  };
+      return {
+          locateFile: (path, scriptDirectory) => {
+              if (path === "beekeeper.common.wasm")
+                  return resolvedUrl;
+              return scriptDirectory + path;
+          }
+      };
+  } else {
+      return {};
+  }
 })();
 
 export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as string;
