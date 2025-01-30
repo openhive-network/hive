@@ -48,11 +48,11 @@ We ship a Dockerfile.
 
 - `--export-binaries=PATH` - extracts the built binaries from the created docker image
 
-The example command above will build an image named `registry.gitlab.syncad.com/hive/hive/instance:my-tag`
+The example command above will build an image named `registry.gitlab.syncad.com/hive/hive:my-tag`
 
 To run the given image, you can use a helper script:
 
-    ../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir
+    ../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive:my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir
 
 ## Building native binaries on Ubuntu 22.04 LTS
 

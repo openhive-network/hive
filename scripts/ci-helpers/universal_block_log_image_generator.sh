@@ -11,7 +11,7 @@ submodule_path=$CI_PROJECT_DIR
 REGISTRY=$CI_REGISTRY_IMAGE
 REGISTRY_USER=$REGISTRY_USER
 REGISTRY_PASSWORD=$REGISTRY_PASS
-IMGNAME=/universal-block-logs
+IMGNAME=universal-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
 
@@ -31,14 +31,14 @@ popd
 prefix_tag="universal-block-log"
 tag=$prefix_tag-$final_checksum
 
-img=$( build_image_name $IMGNAME "$tag" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$tag" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$tag" "$REGISTRY" )
+img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
+_img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
+_img_tag=$IMGNAME
 
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
-docker_image_exists $IMGNAME "$tag" "$REGISTRY" image_exists
+docker_image_exists "$img" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
@@ -60,7 +60,7 @@ else
   echo "Build a Dockerfile"
 
   pwd
-  cd $UNIVERSAL_BLOCK_LOGS_DIR
+  cd "$UNIVERSAL_BLOCK_LOGS_DIR"
   pwd
 
   cat <<EOF > Dockerfile
@@ -79,5 +79,5 @@ EOF
   echo "Created and push docker image with universal block logs: $img"
 fi
 
-echo "UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/universal_block_log_latest_version.env
-echo "UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/universal_block_log_latest_commit_short_sha.env
+echo "UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > "$CI_PROJECT_DIR/universal_block_log_latest_version.env"
+echo "UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > "$CI_PROJECT_DIR/universal_block_log_latest_commit_short_sha.env"
