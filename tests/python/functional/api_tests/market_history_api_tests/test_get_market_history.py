@@ -17,7 +17,7 @@ def test_get_market_history_with_start_date_after_end(node: tt.InitNode) -> None
         )
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_exceed_time_range(node: tt.InitNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_market_history(

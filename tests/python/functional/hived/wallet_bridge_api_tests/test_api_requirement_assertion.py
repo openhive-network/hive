@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ApiNotFoundError
 
 import test_tools as tt
 
@@ -105,7 +106,7 @@ def test_reporting_exception_when_market_history_api_is_missing(node: tt.InitNod
 
 @pytest.mark.enabled_plugins("witness")
 def test_reporting_exception_when_wallet_bridge_api_is_missing(node: tt.InitNode) -> None:
-    with pytest.raises(tt.exceptions.RequestError) as exception:
+    with pytest.raises(ApiNotFoundError) as exception:
         node.api.wallet_bridge.get_version()
 
-    assert "Could not find API wallet_bridge_api" in exception.value.error
+    assert "Could not find API wallet_bridge_api" in str(exception.value.response)
