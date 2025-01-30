@@ -1,9 +1,12 @@
 #! /bin/bash
 
+set -e
+
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 echo "$SCRIPTPATH"
 
-LOG_FILE=run_cli_wallet_img.log
+export LOG_FILE=run_cli_wallet_img.log
+# shellcheck source=common.sh
 source "$SCRIPTPATH/common.sh"
 
 log_exec_params "$@"
@@ -61,4 +64,4 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-docker container exec -it ${CONTAINER_NAME} /home/hived/bin/cli_wallet --wallet-file=/home/hived/datadir/wallet.json "${CLI_WALLET_ARGS[@]}"
+docker container exec -it "${CONTAINER_NAME}" /home/hived/bin/cli_wallet --wallet-file=/home/hived/datadir/wallet.json "${CLI_WALLET_ARGS[@]}"
