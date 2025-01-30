@@ -15,11 +15,18 @@ const stringifyError = (error: unknown): string => {
   return "Unknown error" + (name ? `: ${name}` : "");
 };
 
+export const preserveErrorStack = <T extends Error>(caughtError: unknown, newError: T): T => {
+  if (typeof caughtError !== "object" || caughtError === null || !("stack" in caughtError))
+    return newError;
+
+  return Object.assign(newError, { stack: caughtError.stack });
+};
+
 export const safeWasmCall = <T extends () => any>(fn: T): ReturnType<T> => {
   try {
     return fn()
   } catch (error) {
-    throw new BeekeeperError(`Error during Wasm call: ${stringifyError(error)}`);
+    throw preserveErrorStack(error, new BeekeeperError(`Error during Wasm call: ${stringifyError(error)}`));
   }
 };
 
@@ -27,6 +34,6 @@ export const safeAsyncWasmCall = async <T extends () => any>(fn: T): Promise<Ret
   try {
     return await fn();
   } catch (error) {
-    throw new BeekeeperError(`Error during Wasm call: ${stringifyError(error)}`);
+    throw preserveErrorStack(error, new BeekeeperError(`Error during Wasm call: ${stringifyError(error)}`));
   }
 };
