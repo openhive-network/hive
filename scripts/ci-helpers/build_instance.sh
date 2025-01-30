@@ -136,8 +136,8 @@ fi
 
 echo -e "\nBuilding base instance image...\n"
 
-docker build --target=base_instance \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
+docker build --target=base \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
   --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
   --build-arg HIVE_CONVERTER_BUILD="$HIVE_CONVERTER_BUILD" \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
@@ -149,13 +149,13 @@ docker build --target=base_instance \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\nBuilding instance image...\n"
 
 docker build --target=instance \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
@@ -167,13 +167,13 @@ docker build --target=instance \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\nBuilding minimal instance image...\n"
 
-docker build --target=minimal-instance \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
+docker build --target=minimal \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
@@ -185,10 +185,8 @@ docker build --target=minimal-instance \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="$IMAGE_TAG_PREFIX" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal-instance:${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}minimal:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
-
-# rm -rf base_instance.tar base_instance
 
 echo -e "\nDone!\n"
 
@@ -196,6 +194,6 @@ popd
 
 if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 

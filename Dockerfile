@@ -99,7 +99,7 @@ RUN \
 # This prevents crash if testnet is not build
 RUN mkdir -p /home/hived_admin/build/libraries/vendor/rocksdb/tools
 
-FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS base_instance
+FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS base
 
 ARG BUILD_TIME
 ARG GIT_COMMIT_SHA
@@ -182,7 +182,7 @@ EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
-FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG} AS instance
+FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG} AS instance
 
 #p2p service
 EXPOSE ${P2P_PORT}
@@ -198,4 +198,4 @@ EXPOSE ${CLI_WALLET_PORT}
 # the current `instance` isn't bad.  Our current focus is shrinking the haf image size,
 # and since we use the same scripts for building both hive and haf, we need a
 # 'minimal-instance' target here to match the one in haf.  Don't use this.
-FROM instance AS minimal-instance
+FROM instance AS minimal

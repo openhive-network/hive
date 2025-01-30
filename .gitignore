@@ -139,3 +139,6 @@ programs/beekeeper/beekeeper_wasm/storage_root-node
 venv
 .venv
 .cache
+
+# Other
+block_log.env

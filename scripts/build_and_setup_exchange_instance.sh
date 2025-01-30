@@ -48,8 +48,8 @@ print_help () {
     echo
 }
 
-REGISTRY="registry.gitlab.syncad.com/hive/hive/"
-HIVED_IMAGE_NAME="instance"
+REGISTRY="registry.gitlab.syncad.com/hive/hive"
+HIVED_IMAGE_NAME=""
 HIVED_IMAGE_TAG=""
 
 HIVED_SOURCE_DIR=""
@@ -138,7 +138,7 @@ process_option_file() {
 
   mapfile -t <"$option_file" READ_OPTIONS
 #  echo "Read options: ${READ_OPTIONS[@]}"
-  for o in ${READ_OPTIONS[@]}; do
+  for o in "${READ_OPTIONS[@]}"; do
     [[ $o =~ ^#.* ]] && continue
 #    echo "Processing a file option: $o"
     process_option "$o"
@@ -154,10 +154,13 @@ do_clone() {
 
 prepare_data_directory() {
   local data_dir=${1}
-  local image_name=${2}
+  local _image_name=${2}
   local block_log_base_url=${3}
 
-  mkdir --mode=777 -p "${data_dir}/blockchain"
+  # --mode only applies to the blockchain directory when combined with -p.
+  # Let's make that explicit to avoid confusion.
+  mkdir -p "${data_dir}"
+  mkdir --mode=777 "${data_dir}/blockchain"
 
   if [ "${DOWNLOAD_BLOCK_LOG}" -eq 1 ];
   then
@@ -166,7 +169,7 @@ prepare_data_directory() {
       echo "block_log file exists at location: '${data_dir}/blockchain/' - skipping download."
     else
       echo "Downloading a block_log file to the location: '${data_dir}/blockchain/block_log'."
-      wget -O "${data_dir}/blockchain/block_log" ${block_log_base_url}/block_log
+      wget -O "${data_dir}/blockchain/block_log" "${block_log_base_url}/block_log"
     fi
 
     if [ -f "${data_dir}/blockchain/block_log.artifacts" ];
@@ -174,7 +177,7 @@ prepare_data_directory() {
       echo "block_log.artifacts file exists at location: '${data_dir}/blockchain/' - skipping download."
     else
       echo "Downloading a block_log.artifacts file to the location: '${data_dir}/blockchain/block_log.artifacts'."
-      wget -O "${data_dir}/blockchain/block_log.artifacts" ${block_log_base_url}/block_log.artifacts
+      wget -O "${data_dir}/blockchain/block_log.artifacts" "${block_log_base_url}/block_log.artifacts"
     fi
   fi
   
@@ -193,9 +196,9 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-TST_IMGTAG=${HIVED_IMAGE_TAG:?"Missing arg #1 to specify image tag"}
+_TST_IMGTAG=${HIVED_IMAGE_TAG:?"Missing arg #1 to specify image tag"}
 
-TST_DATADIR=${HIVED_DATADIR:?"Missing --data-dir option to specify host directory where hived node data will be stored"}
+_TST_DATADIR=${HIVED_DATADIR:?"Missing --data-dir option to specify host directory where hived node data will be stored"}
 
 
 if [ -z "${HIVED_SOURCE_DIR}" ];
@@ -213,6 +216,7 @@ fi
 echo "Loading exchange-instance default option list from file: ${HIVED_SOURCE_DIR}/scripts/exchange_instance.conf"
 process_option_file "${HIVED_SOURCE_DIR}/scripts/exchange_instance.conf"
 
+# shellcheck source=ci-helpers/docker_image_utils.sh
 source "${HIVED_SOURCE_DIR}/scripts/ci-helpers/docker_image_utils.sh"
 
 image_exists=0
@@ -228,7 +232,7 @@ else
   "${HIVED_SOURCE_DIR}/scripts/ci-helpers/build_instance.sh" "${HIVED_IMAGE_TAG}" "${HIVED_SOURCE_DIR}" "${REGISTRY}"
 fi
 
-prepare_data_directory "${HIVED_DATADIR}" ${img_name} ${BLOCK_LOG_BASE_URL}
+prepare_data_directory "${HIVED_DATADIR}" "${img_name}" "${BLOCK_LOG_BASE_URL}"
 
-"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" ${img_name} --docker-option="-p 8093:8093" ${IMPLICIT_SHM_DIR} "${RUN_HIVED_IMG_ARGS[@]}"
+"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" "${img_name}" --docker-option="-p 8093:8093" "${IMPLICIT_SHM_DIR}" "${RUN_HIVED_IMG_ARGS[@]}"
 

@@ -4,7 +4,8 @@ function build_image_name() {
   local image=$1
   local tag=$2
   local registry=${3}
-  echo "${registry}${image}:${tag}"
+  # If image is not empty then it needs to be preceeded by a slash 
+  echo "${registry}${image:+/$image}:${tag}"
 }
 
 function build_image_registry_path() {
