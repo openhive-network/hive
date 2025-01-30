@@ -1278,7 +1278,7 @@ universal_block_log_tests:
     - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
     - !reference [.run-pytest, script]
   tags:
-    - data-cache-storage
+    - public-runner-docker
 
 colony_tests:
   stage: test
@@ -1300,4 +1300,4 @@ colony_tests:
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
   tags:
-    - data-cache-storage
+    - public-runner-docker
