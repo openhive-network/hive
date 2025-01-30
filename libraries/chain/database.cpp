@@ -2729,7 +2729,7 @@ void database::process_funds()
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
     safe<int64_t> new_hive;
-    if (has_hardfork(HIVE_HARDFORK_1_28)) {
+    if (has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
       auto median_price = get_feed_history().current_median_history;
       FC_ASSERT( median_price.is_null() == false  );
 
