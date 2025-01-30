@@ -34,7 +34,7 @@ include:
     HIVE_NETWORK_TYPE: mainnet
   script:
     - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh
-        "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ HIVED "$REGISTRY_USER" "$REGISTRY_PASS"
+        "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive HIVED "$REGISTRY_USER" "$REGISTRY_PASS"
         --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
     - chmod -Rc a+rwx "$BINARY_CACHE_PATH"
     - ls -la $BINARY_CACHE_PATH/*
