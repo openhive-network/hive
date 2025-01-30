@@ -32,6 +32,7 @@ struct rc_price_curve_params
   uint64_t        coeff_a = 0;
   uint64_t        coeff_b = 0;
   uint8_t         shift = 0;
+  int32_t         scale = 0;
 };
 
 struct rc_base_params
@@ -196,7 +197,7 @@ class resource_credits
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rc_price_curve_params, (coeff_a)(coeff_b)(shift) )
+FC_REFLECT( hive::chain::rc_price_curve_params, (coeff_a)(coeff_b)(shift)(scale) )
 FC_REFLECT( hive::chain::rc_base_params, (budget_scale_factor)(price_scale_factor)(budget_per_time_unit)(coeff_b) )
 FC_REFLECT( hive::chain::rc_resource_params, (resource_dynamics_params)(price_curve_params)(base_params) )
 

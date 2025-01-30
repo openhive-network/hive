@@ -6220,6 +6220,18 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
+      // first application of median RC scale to state of RC budgets
+      const auto& rc_params = get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+      const auto& wso = get_witness_schedule_object();
+      dlog( "Initial application of scaling to RC params (${n})", ( "n", wso.median_props.rc_scale ) );
+      // ABW: note that we are overwriting params even when scaling didn't change (1=>1) because
+      // sadly the pool_eq computed by rc_generate_resource_parameters.py script is incorrect
+      // (slightly), probably because it makes floating point computations; we can't correct it
+      // from the start though, because it would change all historical RC values
+      modify( rc_params, [&]( rc_resource_param_object& p )
+      {
+        p.update_rc_scale( wso.median_props.rc_scale );
+      } );
       break;
     }
     case HIVE_SMT_HARDFORK:

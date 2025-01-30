@@ -1,6 +1,42 @@
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/util/rd_setup.hpp>
 
 namespace hive { namespace chain {
+
+void rc_resource_param_object::update_rc_scale( uint8_t rc_scale )
+{
+  //hardfork needs to be tested outside because the routine is also used right before HF28 becomes active
+  FC_ASSERT( rc_scale > 0 && rc_scale <= HIVE_RC_MAX_SCALE );
+  this->rc_scale = rc_scale;
+
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+  {
+    if( i == resource_new_accounts )
+      continue; // don't scale that resource pool
+
+    // scale block budget and recalculate pool_eq for it
+    {
+      util::rd_user_params params1;
+      const int64_t base = resource_param_array[i].base_params.budget_per_time_unit;
+      const int64_t factor = resource_param_array[i].base_params.budget_scale_factor;
+      params1.budget_per_time_unit = base + ( base * factor * ( rc_scale - 1 ) / HIVE_100_PERCENT );
+      params1.decay_per_time_unit = resource_param_array[i].resource_dynamics_params.decay_params.decay_per_time_unit;
+      util::rd_system_params params2;
+      params2.decay_per_time_unit_denom_shift = resource_param_array[i].resource_dynamics_params.decay_params.decay_per_time_unit_denom_shift;
+      params2.resource_unit = resource_param_array[i].resource_dynamics_params.resource_unit;
+      util::rd_setup_dynamics_params( params1, params2, resource_param_array[i].resource_dynamics_params );
+    }
+    // also scale price curve param (note that we are potentially deviating from pool scale, since we
+    // want to influence price independently with different parameters)
+    {
+      const int64_t base = resource_param_array[i].base_params.coeff_b;
+      const int64_t factor = resource_param_array[i].base_params.price_scale_factor;
+      resource_param_array[i].price_curve_params.coeff_b = base + ( base * factor * ( rc_scale - 1 ) / HIVE_100_PERCENT );
+      resource_param_array[i].price_curve_params.scale = HIVE_100_PERCENT + factor * ( rc_scale - 1 );
+    }
+  }
+  dlog( "Scaled RC params: ${p}", ( "p", *this ) );
+}
 
 void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
   uint32_t _block_num, int64_t _regen )

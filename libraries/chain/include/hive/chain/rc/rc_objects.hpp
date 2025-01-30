@@ -28,7 +28,14 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_resource_param_object )
 
+    uint16_t rc_scale = 1;
     fc::int_array< rc_resource_params, HIVE_RC_NUM_RESOURCE_TYPES > resource_param_array;
+
+    /**
+      * recalculate block budgets and costs curve params according to given scale
+      * this should be called after every change in witness schedule since HF28
+      */
+    void update_rc_scale( uint8_t rc_scale );
 };
 
 /**
@@ -326,7 +333,7 @@ typedef multi_index_container<
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rc_resource_param_object, (id)(resource_param_array) )
+FC_REFLECT( hive::chain::rc_resource_param_object, (id)(rc_scale)(resource_param_array) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_resource_param_object, hive::chain::rc_resource_param_index )
 
 FC_REFLECT( hive::chain::rc_pool_object,

@@ -124,6 +124,7 @@ def compute_parameters(args):
     price_params["coeff_b"] = str(int(B+0.5))
     price_params["coeff_d"] = str(int(D*(2.0**curve_shift)+0.5))
     price_params["shift"] = curve_shift
+    price_params["scale"] = 10000
 
     result["base_params"] = collections.OrderedDict()
     base_params = result["base_params"]

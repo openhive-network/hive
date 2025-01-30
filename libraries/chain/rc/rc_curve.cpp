@@ -95,6 +95,8 @@ void generate_rc_curve_params(
   u128_B *= curve_gen_params.inelasticity_threshold_num;
   u128_B /= curve_gen_params.inelasticity_threshold_denom;
   price_curve_params.coeff_b = fc::uint128_to_uint64(u128_B);
+
+  price_curve_params.scale = HIVE_100_PERCENT;
 }
 
 } } //hive::chain

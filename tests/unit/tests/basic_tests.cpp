@@ -1450,7 +1450,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_schedule_object>(dtds), "2bdc62f9e7a0770f893cd6db2fb5130ad49303a3" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_object>(dtds), "1c1479858305c40a498663d3b90062e3a7218d73" );
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_resource_param_object>(dtds), "c50035bb5eb81b1992501a4c07e5f55827c82a3d" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_resource_param_object>(dtds), "5de88adfd87953643e2c78e8beec7fa5cd639b10" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_pool_object>(dtds), "4c8c3f7ac723bbc93053bbbc56cca22e6b4febad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_direct_delegation_object>(dtds), "f0d4bea1fb7a0120c38300e47487328c301aec50" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_usage_bucket_object>(dtds), "64fed99b3018ca29394f48592aec3a0a2a04ff28" );

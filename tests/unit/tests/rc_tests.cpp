@@ -1019,6 +1019,17 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
   {
     BOOST_TEST_MESSAGE( "Testing differential RC usage for selected operations" );
 
+    db_plugin->debug_update( []( database& db )
+    {
+      for( int i = 0; i < HIVE_MAX_WITNESSES; ++i )
+      {
+        db.modify( db.get_witness( i == 0 ? HIVE_INIT_MINER_NAME : HIVE_INIT_MINER_NAME + fc::to_string( i ) ), []( witness_object& w )
+        {
+          w.props.rc_scale = 1; //set highest possible RC costs to highlight cost differences
+        } );
+      }
+    } );
+
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 

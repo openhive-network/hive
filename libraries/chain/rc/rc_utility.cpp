@@ -274,6 +274,14 @@ int64_t resource_credits::compute_cost(
   //   i.e. define p(x) = p(0) for all x < 0
   denom += (current_pool > 0) ? uint64_t(current_pool) : uint64_t(0);
   uint128_t num_denom = num / denom;
+  if( curve_params.scale != HIVE_100_PERCENT )
+  {
+    // separate scale allows flattening of the price curve without drastic reduction of
+    // max price when pool is empty; the same result could be achieved by scaling coeff_a,
+    // however that value is already on the edge of uint64_t in some cases
+    num_denom *= curve_params.scale;
+    num_denom /= HIVE_100_PERCENT;
+  }
   // Add 1 to avoid 0 result in case of various rounding issues,
   // err on the side of rounding not in the user's favor
   // ilog( "result: ${r}", ("r", num_denom.to_uint64()+1) );
@@ -837,6 +845,19 @@ void resource_credits::set_pool_params( const witness_schedule_object& wso ) con
         p.resource_param_array[ resource_new_accounts ].resource_dynamics_params,
         rc_curve_gen_params() );
     } );
+  }
+
+  if( db.has_hardfork( HIVE_HARDFORK_1_28_RC_SCALE ) )
+  {
+    if( rc_params.rc_scale != wso.median_props.rc_scale )
+    {
+      dlog( "Rescaling RC params in block ${b} (${o} => ${n})", ( "b", db.head_block_num() )
+        ( "o", rc_params.rc_scale )( "n", wso.median_props.rc_scale ) );
+      db.modify( rc_params, [&]( rc_resource_param_object& p )
+      {
+        p.update_rc_scale( wso.median_props.rc_scale );
+      } );
+    }
   }
 }
 
