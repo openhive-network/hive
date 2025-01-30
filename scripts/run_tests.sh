@@ -29,7 +29,7 @@ function check_port {
 }
 
 function check_address {
-  if [[ $1 -eq "localhost" ]] ; then
+  if [[ $1 = "localhost" ]] ; then
     return
   fi
 
@@ -65,10 +65,12 @@ export HIVEMIND_ADDRESS=$1
 export HIVEMIND_PORT=$2
 if [ -z "$TAVERN_DIR" ]
 then
-  export TAVERN_DIR="$(realpath ./tests/python/api_tests/tavern/)"
+  # export masks return code of realpath, so need sto be on a separate line
+  TAVERN_DIR="$(realpath ./tests/python/api_tests/tavern/)"
+  export TAVERN_DIR
 fi
 echo "Attempting to start tests on hived instance listening on: $HIVEMIND_ADDRESS port: $HIVEMIND_PORT"
 
-echo "Additional test options: ${@:3}"
+echo "Additional test options: ${*:3}"
 
-tox -- -W ignore::pytest.PytestDeprecationWarning --workers auto --tests-per-worker auto -p no:logging ${@:3}
+tox -- -W ignore::pytest.PytestDeprecationWarning --workers auto --tests-per-worker auto -p no:logging "${@:3}"

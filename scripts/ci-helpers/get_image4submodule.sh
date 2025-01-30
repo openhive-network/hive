@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xeuo pipefail
+set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
@@ -8,10 +8,8 @@ source "$SCRIPTPATH/docker_image_utils.sh"
 
 
 submodule_path=""
-# the path to the registry for this project *with a trailing slash*
+# the path to the registry for this project *without a trailing slash*
 REGISTRY=""
-# the same, without
-REGISTRY_WITHOUT_SLASH=""
 DOTENV_VAR_NAME=""
 REGISTRY_USER=""
 REGISTRY_PASSWORD=""
@@ -32,9 +30,9 @@ print_help () {
 }
 
 
-IMGNAME=base_instance
-IMGNAME_INSTANCE=instance
-IMGNAME_MINIMAL_INSTANCE=minimal-instance
+IMGNAME=base
+IMGNAME_INSTANCE=
+IMGNAME_MINIMAL_INSTANCE=minimal
 # For use in haf_api_node, we always tag the minimal instance with the top-level
 # registry path for the project.  Normally, CI_REGISTRY_IMAGE for that project,
 # so registry.gitlab.syncad.com/hive/haf for this project.
@@ -54,15 +52,15 @@ while [ $# -gt 0 ]; do
 
         case $NETWORK_TYPE in
           "testnet"*)
-            IMGNAME=testnet-base_instance
-            IMGNAME_INSTANCE=testnet-instance
-            IMGNAME_MINIMAL_INSTANCE=testnet-minimal-instance
+            IMGNAME=testnet-base
+            IMGNAME_INSTANCE=testnet
+            IMGNAME_MINIMAL_INSTANCE=testnet-minimal
             RETAG_MINIMAL_INSTANCE=0
             ;;
           "mirrornet"*)
-            IMGNAME=mirrornet-base_instance
-            IMGNAME_INSTANCE=mirrornet-instance
-            IMGNAME_MINIMAL_INSTANCE=mirrornet-minimal-instance
+            IMGNAME=mirrornet-base
+            IMGNAME_INSTANCE=mirrornet
+            IMGNAME_MINIMAL_INSTANCE=mirrornet-minimal
             RETAG_MINIMAL_INSTANCE=0
             ;;
           "mainnet"*)
@@ -88,7 +86,6 @@ while [ $# -gt 0 ]; do
         elif [ -z "$REGISTRY" ];
         then
           REGISTRY="${1}"
-          REGISTRY_WITHOUT_SLASH="$(echo "$1" | sed 's/\/$//')"
         elif [ -z "$DOTENV_VAR_NAME" ];
         then
           DOTENV_VAR_NAME=${1}
@@ -119,17 +116,17 @@ pushd "${submodule_path}"
 short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
-img=$( build_image_name $IMGNAME "$short_commit" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$short_commit" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$short_commit" "$REGISTRY" )
+img=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME )
+img_path=$( build_image_registry_path "$short_commit" "$REGISTRY" $IMGNAME )
+img_tag="$short_commit"
 
-img_instance=$( build_image_name $IMGNAME_INSTANCE "$short_commit" "$REGISTRY" )
-img_minimal_instance=$( build_image_name $IMGNAME_MINIMAL_INSTANCE "$short_commit" "$REGISTRY" )
+img_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_INSTANCE )
+img_minimal_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_MINIMAL_INSTANCE )
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
 
-docker_image_exists $IMGNAME "$short_commit" "$REGISTRY" image_exists
+docker_image_exists "$img_path" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
@@ -145,8 +142,8 @@ else
   time docker push "$img_minimal_instance"
   if [ "$RETAG_MINIMAL_INSTANCE" -eq 1 ]; then
     echo "Retagging minimal-instance"
-    docker tag "$img_minimal_instance" "${REGISTRY_WITHOUT_SLASH}:${short_commit}"
-    time docker push "${REGISTRY_WITHOUT_SLASH}:${short_commit}"
+    docker tag "$img_minimal_instance" "${REGISTRY}:${short_commit}"
+    time docker push "${REGISTRY}:${short_commit}"
   fi
 fi
 
