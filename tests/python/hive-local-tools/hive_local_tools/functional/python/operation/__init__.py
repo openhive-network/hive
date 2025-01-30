@@ -23,7 +23,7 @@ from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
-    from schemas.operations import AnyOperation
+    from schemas.operations import AnyOperationRepresentation
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
@@ -367,7 +367,7 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, operations: list[AnyOperation], broadcast: bool = True
+    wallet: tt.Wallet, operations: list[AnyOperationRepresentation], broadcast: bool = True
 ) -> dict[str, Any]:
     return wallet.send(operations=operations, broadcast=broadcast, blocking=True)
 

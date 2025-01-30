@@ -13,7 +13,7 @@ from schemas.operations.representations import HF26Representation
 from schemas.transaction import Transaction
 
 if TYPE_CHECKING:
-    from schemas.operations import AnyOperation
+    from schemas.operations import AnyOperationRepresentation
 
 
 @pytest.mark.skip()
@@ -29,7 +29,7 @@ def test_first():
     transaction = generate_transaction_template(node, 0.0)
     transaction.add_operation(operation)
     wax_result = wax.calculate_sig_digest(
-        transaction.json(by_alias=True).encode("ascii"), node_config.HIVE_CHAIN_ID.encode("ascii")
+        transaction.json().encode("ascii"), node_config.HIVE_CHAIN_ID.encode("ascii")
     )
     if (
         wax_result.exception_message != b""
@@ -43,7 +43,7 @@ def test_first():
 
 
 class SimpleTransaction(Transaction):
-    def add_operation(self, op: AnyOperation) -> None:
+    def add_operation(self, op: AnyOperationRepresentation) -> None:
         self.operations.append(HF26Representation(type=op.get_name_with_suffix(), value=op))
 
 

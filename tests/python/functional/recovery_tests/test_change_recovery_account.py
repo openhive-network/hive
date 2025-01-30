@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pydantic
 import pytest
 
 import test_tools as tt
@@ -34,7 +33,7 @@ def test_resign_from_the_current_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
-    with pytest.raises(pydantic.error_wrappers.ValidationError):
+    with pytest.raises(Exception):
         wallet.api.change_recovery_account("alice", "")
 
 
