@@ -245,7 +245,7 @@ mirrornet_node_build:
       source docker_image_name.env
       echo "Pushing hived image for commits on develop, master and tagged"
       docker images
-      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet-instance:"
+      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet:"
       if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
       then
         docker tag $HIVED_IMAGE_NAME_INSTANCE ${IMAGE_NAME_PREFIX}latest
