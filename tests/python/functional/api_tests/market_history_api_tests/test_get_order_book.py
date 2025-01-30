@@ -45,7 +45,7 @@ def test_get_order_book_after_successful_transaction_finishing_all_orders(node: 
     assert len(response.asks) == 0
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_exceed_limit_parameter(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_order_book(limit=501)
