@@ -191,6 +191,6 @@ popd
 
 if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}base:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 
