@@ -795,6 +795,7 @@ struct future_chain_properties
 
   fc::optional<asset>    account_creation_fee;
   fc::optional<uint32_t> maximum_block_size;
+  fc::optional<uint8_t>  rc_scale;
   fc::optional<uint16_t> hbd_interest_rate;
   fc::optional<int32_t>  account_subsidy_budget;
   fc::optional<uint32_t> account_subsidy_decay;
@@ -1297,6 +1298,7 @@ FC_REFLECT( hive::plugins::database_api::api_witness_object,
 FC_REFLECT( hive::plugins::database_api::future_chain_properties,
           (account_creation_fee)
           (maximum_block_size)
+          (rc_scale)
           (hbd_interest_rate)
           (account_subsidy_budget)
           (account_subsidy_decay)

@@ -51,6 +51,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     api_chain_properties( const hive::chain::chain_properties& c ) :
       account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
       maximum_block_size( c.maximum_block_size ),
+      rc_scale( c.rc_scale ),
       hbd_interest_rate( c.hbd_interest_rate ),
       account_subsidy_budget( c.account_subsidy_budget ),
       account_subsidy_decay( c.account_subsidy_decay )
@@ -67,6 +68,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     legacy_asset   account_creation_fee;
     uint32_t       maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+    uint8_t        rc_scale = 1;
     uint16_t       hbd_interest_rate = HIVE_DEFAULT_HBD_INTEREST_RATE;
     int32_t        account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
     uint32_t       account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
@@ -75,7 +77,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 } } } // hive::plugins::condenser_api
 
 FC_REFLECT( hive::plugins::condenser_api::api_chain_properties,
-        (account_creation_fee)(maximum_block_size)(hbd_interest_rate)(account_subsidy_budget)(account_subsidy_decay)
+        (account_creation_fee)(maximum_block_size)(rc_scale)(hbd_interest_rate)(account_subsidy_budget)(account_subsidy_decay)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_price, (base)(quote) )

@@ -106,6 +106,7 @@ struct witness_properties_change_flags
 {
   uint32_t account_creation_changed       : 1;
   uint32_t max_block_changed              : 1;
+  uint32_t rc_scale_changed               : 1;
   uint32_t hbd_interest_changed           : 1;
   uint32_t account_subsidy_budget_changed : 1;
   uint32_t account_subsidy_decay_changed  : 1;
@@ -157,6 +158,20 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
     if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE ) )
     {
       FC_ASSERT( props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
+    }
+  }
+
+  if( _db.has_hardfork( HIVE_HARDFORK_1_28_RC_SCALE ) )
+  {
+    itr = o.props.find( "rc_scale" );
+    flags.rc_scale_changed = itr != o.props.end();
+    if( flags.rc_scale_changed )
+    {
+      fc::raw::unpack_from_vector( itr->second, props.rc_scale );
+      FC_TODO( "Check and move this to validate after HF 28" );
+      FC_ASSERT( props.rc_scale <= HIVE_RC_MAX_SCALE,
+        "RC budgets cannot be scaled more than by a factor of ${m} (value given: ${g})",
+        ( "m", HIVE_RC_MAX_SCALE )( "g", props.rc_scale ) );
     }
   }
 
@@ -219,6 +234,11 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
     if( flags.max_block_changed )
     {
       w.props.maximum_block_size = props.maximum_block_size;
+    }
+
+    if( flags.rc_scale_changed )
+    {
+      w.props.rc_scale = props.rc_scale;
     }
 
     if( flags.hbd_interest_changed )

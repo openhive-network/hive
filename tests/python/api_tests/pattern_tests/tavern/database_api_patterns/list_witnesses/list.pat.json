@@ -33,7 +33,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN",
@@ -77,7 +78,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM62SCcHyNgPSsaafBa1YTGKaYqGfacYNkhfUGo25hQYFSHYPL68",
@@ -121,7 +123,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5NGMkc2vvpDP6srZKPcK8VX2eMbGw9UwrPzmQGYxnDgnj7zhKK",
@@ -165,7 +168,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6kK5PhLANB7PA5LW8qHBrPw2pvQaTZofuqXc3SsKWr6NJpKEkf",
@@ -209,7 +213,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.16.0",
       "signing_key": "STM7G5EaJtkmCmnQ2wAoegitRGJk5GHErBe6jTg6cCP7ewjbo5xyf",
@@ -253,7 +258,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5AXRUM4EYEmf8fWCd466WM9tfWgAraT5WbjGkyAKuqHUKRz33y",
@@ -297,7 +303,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM1111111111111111111111111111111114T1Anm",
@@ -341,7 +348,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5NBqBDSKXFBPo3p3cT7trSAxwF5np5KCWTwSUgonRvAyfTB28L",
@@ -385,7 +393,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7QeikhooTLTphv9NBn6TeK4TNuZ4YjWSJDXTM9zx7CRmR8YMGx",
@@ -429,7 +438,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM4ww39gxjU6o8bYzwGezUaybMSDMfbg4V21wG7qNm31bzGbiqzJ",
@@ -473,7 +483,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7CjVCGTC9mM7H1LTWtn1tMRZy7b9MYkcG1HjnoR1sLypxVSywZ",
@@ -517,7 +528,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7UNfKi4krB6M3g4sVQQM9X15AX5kt2fHNE2tg3JjQT9xJzkn2o",
@@ -561,7 +573,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5kX9Q442fnrQib2UtCrw57u4Eb1Agsena9kT1RYtJEDfMnmhsH",
@@ -605,7 +618,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8QLAawjzP3qYokVcDhs8AeDUPjqcy64H7RomWoVFtdydyY8YHD",
@@ -649,7 +663,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8YnmoztQ8ye6MzNyANHHmM2cci7YQCebi7CBYpFuGZGrQgX4Ep",
@@ -693,7 +708,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8VHXjNYs211BjcruArcGgn9yWNLuotPBKN5msuAGWUJ11vR8zs",
@@ -737,7 +753,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM82rwemF5vxVa2GSEnRMZdU81H5RPPN3itZvx9sdrpUQCrFDyqt",
@@ -781,7 +798,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5kLo9mMvyLKZ53G6CfE4g3gRr6Q2CsjfXNqEq8zZDeoHz6WrLM",
@@ -825,7 +843,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5V4XG315xVEFR318wdxT9xrjaRoaM7kuPYTjMqnBs66EcCcxi6",
@@ -869,7 +888,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7ud76W6dr4dnHHzoGaVgYonV4d7WwznbCYoZiRASC9CSGNHo6c",
@@ -913,7 +933,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6X5UXDR1nhJKmskLK2PCKgDwqFQj6ohMMqTb73Ri55cQqq5Vin",
@@ -957,7 +978,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM56moEZcgA5cG1mQWHCyajnoZ63keW5BnUJsAjsKtxu6URyafv8",
@@ -1001,7 +1023,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6k4J4x4uP2wc45mYobTxAUJu7YkvRPGz4w6w6YZFi1EzrqLMVT",
@@ -1045,7 +1068,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5VqbpxaFQFi54kwJceTVPyqJGcLt7DpTJaghbbhZ5d5YL9sUkk",
@@ -1089,7 +1113,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6rkE4kdAnhH4aXdo6gDUr8MweJeUpQ6N74SPkqotY3ZwRR4kps",
@@ -1133,7 +1158,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5fxUqX49veiKvP3qZ2jAfXYKZEG5SJhZFX7psbBRE57wvmJuBc",
@@ -1177,7 +1203,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5vX95uT55RE3BYhVZ5fz5CgVwR7Fdrv6u6jML18NixJonDNfag",
@@ -1221,7 +1248,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5ThuLhh8gGHPRe1LG18H67MTgxuMAGeDnDsMNRmH39TT6Yq2b3",
@@ -1265,7 +1293,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6wqjWbUMJMW4JrbrCUWgXDyudav3dX75Xf7qz8i8y3BGR73tLt",
@@ -1309,7 +1338,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7SyrkW42zK986nwFDgdY5PUZq153ooz4Jek4dfNczdCaDvLfA8",
@@ -1353,7 +1383,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM87rQHoabHeSR9ruFZKHqa2DbV9TcKxvMP1KfaHYenD9KEJxqhN",
@@ -1397,7 +1428,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8SQChnG5mtmGWJTyPz218nFA2sK83tjmGzKpWitycW53sSCCmM",
@@ -1441,7 +1473,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7pk5tqZo67jwqWX88vS72GGh6rWi5w7q9RHKjJCs8eNG8FpjXF",
@@ -1485,7 +1518,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5aVFSwDTLC118Kr6cNGNDsvHKB7jrtW5qufsgasTDKQMTE6fn4",
@@ -1529,7 +1563,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8EYAgfhTvkhPRGKxTzt2yYKwFWn3mrrVdRbb3FFTPSUpdYad7j",
@@ -1573,7 +1608,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8j13kYzXnozrohexu3vEVQiW5GpJnvbh5xRJa2mXPMSnY3s9RH",
@@ -1617,7 +1653,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM57rCnDkhHAEJTQUMfKDWJcXao7q7rWGo1Ea1eydDZf3QwJyu9e",
@@ -1661,7 +1698,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5V4XG315xVEFR318wdxT9xrjaRoaM7kuPYTjMqnBs66EcCcxi6",
@@ -1705,7 +1743,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6FEC4aQ2iaAJsDYLQjFQfeYp3eryCNc8Pdsib9TvnQ9NTWqk9w",
@@ -1749,7 +1788,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6t3BBF4nEmtJhWi6opwFX4aU3tiCEjqjc8dsTqSxUN61hgBoah",
@@ -1793,7 +1833,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6ewZJ3MVY7UbsVPAqf7DCVdEk9AhPVRfpH8fyxr8vGyPNCo3fm",
@@ -1837,7 +1878,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6od4pZYEi7YbwTMqXcRRmz5j5X9g6QkKWLoUSS2NvGP2A54neM",
@@ -1881,7 +1923,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5LheqCECCLJ5Xs8HpGqZxdS9mm89jMm1Sdn3JihJZE8aYUnfYp",
@@ -1925,7 +1968,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6rBetWi6W79FzHjyKNQdqYhwDE3Kyvy5WkhWtAiX32VMmigAJB",
@@ -1969,7 +2013,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM892ZJzeKYtBD1ekCaxgiQqAxrPUjt3nNe3jLeTwQrvpU5Uhz2W",
@@ -2013,7 +2058,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8A5gssk5TxThi1HUCr1wvp8SbWwdrXBbZK27k6jGqoek53fhCf",
@@ -2057,7 +2103,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5FaApmyCjZmLDWFunqsJPVa4gDT5wmBfT9j7KmD9f2pz6Y9zRB",
@@ -2101,7 +2148,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5h77Pgv1yNb8QR7F3arsxnqGkQcy6pLd2VaxuC9NfyzhMar8zJ",
@@ -2145,7 +2193,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5Lru5wppY1wQEzEH68XWhPRzWM6jRfCCBrMVwneykB4P6gGtee",
@@ -2189,7 +2238,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7ENU1tdLsjPedvn3eqaH561ojK2TcWChPnRdPWcmKhia29MKcn",
@@ -2233,7 +2283,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7Tt5JBm17M63Pd7vbKsYJ961EYFiPpPyDg2RdkTaGCQisb34m9",
@@ -2277,7 +2328,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8aR8aztsYoGoLDaMVf1AzJtAKCmHMgEZtHbPhhBnVoeZ55LHkb",
@@ -2321,7 +2373,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6agJUiinM77WFGPLTr7kGF9L7UdpH6Q1Z6zwq9aKjoPyXdmW1j",
@@ -2365,7 +2418,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5V4XG315xVEFR318wdxT9xrjaRoaM7kuPYTjMqnBs66EcCcxi6",
@@ -2409,7 +2463,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM56sQbsw9gpXniSy3VeoDBKsnFsBGqd96nyRNx42PwaxzEaFTJ8",
@@ -2453,7 +2508,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6Saxrx3QqWpwr5AYo6fR19gWwiYFL6rQaqoTy2XqQhvNWiyYrH",
@@ -2497,7 +2553,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7geR5fejeMccc5NVsPUHUXtkhkG2VHbEt3vxgBQRgAcMQtFUBk",
@@ -2541,7 +2598,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5oaNsJgj2Q3FP6Bfmx68zz5DLRfxKejr7oKyxyFixcrhWdQkMW",
@@ -2585,7 +2643,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM814g5YbbjEZ8AMt8EcH3xD5RnAbPcUnFcxb5rok7mcGEA6xpfL",
@@ -2629,7 +2688,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7iVAmvorB7dT2jgJZ4xLnB4F5KWyLBX3qGPKW8z9uyYSUZT8oL",
@@ -2673,7 +2733,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6yBS7SYpT8XyhK7asnGDihxw74X9husMi6vy1d6YyxdAxtrhXq",
@@ -2717,7 +2778,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5X8XmaWWvWGgo5DpM49G56ESUfUMXHoGYnSyxgxE1N1wfkFFuY",
@@ -2761,7 +2823,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6vwkFCj8s55WbVZ7ZPJqx8JEmqSNNJkwu3pPZiCs3r4kbWtuBa",
@@ -2805,7 +2868,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5h5eQq42dzmiVrtaC1s4AJPyq3mFmA8tHdyGo21ww5AmRqv23o",
@@ -2849,7 +2913,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6jjN5CgcxWJZbmGgN9gXcaRujzF6gYUnhpBwKh2doq56rpx4kk",
@@ -2893,7 +2958,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5qHeHy2mGwHfSJtx1BwBzenG6sGXrcns65qwgkHko2gGgeEpyx",
@@ -2937,7 +3003,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5bkPyVDMYyKqJ6iMS1dkLBjukaurstHENFLVpdfVvTya71YMif",
@@ -2981,7 +3048,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6hnYKyvGe8MX26QU5KrXePnvmNf4y1hHVnxXBmLf258kp8JhVk",
@@ -3025,7 +3093,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6wPASMtpWpSGgfMJH7i11BCAinpwDv7FM2QLC4LEp4gn6pTFrR",
@@ -3069,7 +3138,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5k3CBeSRGmA29v1hp9YrBgA8xCU42cQDYDKFTd15GtLG2r7cpM",
@@ -3113,7 +3183,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM685F2HDuY1fpU4doTSvu2AHCTJWfW4ckU5NqGZFC4tJXC94qLf",
@@ -3157,7 +3228,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7mtkBrRcrQiegnGAd7AGLgfQeRMsxEWYeu2YqQsPxq6Z8ynvbJ",
@@ -3201,7 +3273,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6Azciz3ZVmeNurKYhPbBVENoq1BLmYYanBDhUsnTcQXs2JbysW",
@@ -3245,7 +3318,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM62cybLg6sv7Vk9C6VDhLr2FHfy2VqSAUW6i2qwajiK75WMQnc4",
@@ -3289,7 +3363,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM52nLS9vej9q6g5k3SzXCtn3BJBNz2zA8nwZVepvDSSsmrQ2rfU",
@@ -3333,7 +3408,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6TrdVMGbQKXzYcqgyBmn4wP2rDieDUK3KNepww6thwgsU96TrM",
@@ -3377,7 +3453,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8JfyQ3k4NdyvJ3ky6aNTX4evfBCbHLKUxCyLBJoQ2e7L31C59D",
@@ -3421,7 +3498,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5VAJbynyaPsA3ZCZCA2AzG2ZjPQitCwWcyhD5WWYTu45nnmJ4z",
@@ -3465,7 +3543,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7WsDiidpi6rtNNyJcGgEvCTz89xw1HL1eUAv2pWoq3bmneN7E6",
@@ -3509,7 +3588,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM4yEcw7NWjCbkWSTTNhHEByMV5EVHLzjKxCXCAKmmDPUAfnEK5q",
@@ -3553,7 +3633,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM63JAZbzgGDvB2tNcM9UVoMVwd7jmobfgfFjsJor9tcpw7t4SVp",
@@ -3597,7 +3678,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5miWV4VaqML3GFC21r1asoUvvw9XkuWseQt8TD1fDQvV5MxGzt",
@@ -3641,7 +3723,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7geR5fejeMccc5NVsPUHUXtkhkG2VHbEt3vxgBQRgAcMQtFUBk",
@@ -3685,7 +3768,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM4v5AxYHBPwjsnZVc8vsk2oWQhXRhS5BStQZvUuzdzJtFuCnJJD",
@@ -3729,7 +3813,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5DWSh4N3VQ3wP1doAP85jQrPAyN6WNH6REhAdcVLhD6vC9GcWP",
@@ -3773,7 +3858,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8Tf1wYwdYJBvkmLo2ZLEDLJotZmrxLPBPomkMwAMh6jqgfD7jd",
@@ -3817,7 +3903,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5g8u72DcfRNZhXyR2qxzNC86czs4XU56egNa9DHS6L4RgZsqXH",
@@ -3861,7 +3948,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM71GXJSXouqbGQsfjyMik9JBU9KEwJWrwezYBCbt2MdJdKs1joB",
@@ -3905,7 +3993,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5hgVWB42ZXgYNeE4VCSX9giBwKHEM4aWGqteN6W1j894eRPGSp",
@@ -3949,7 +4038,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6mXB845dTfY44XuYp8G3APpo4f59AJ7dS4ymR5vT2QbASQfouB",
@@ -3993,7 +4083,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM4yEcw7NWjCbkWSTTNhHEByMV5EVHLzjKxCXCAKmmDPUAfnEK5q",
@@ -4037,7 +4128,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5LcRE3RMK9fCv5ZZpnWFD1CW2gwP2Bu6ouvbVY7nNNm21hyRME",
@@ -4081,7 +4173,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM88XwG4xhnm495kJeta89gbwZLokHN6j27VLjd28DzKZuSHvhZj",
@@ -4125,7 +4218,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM5J3sMJcVJukdG5TNSS1GFd4qN1zfGXygjQNZQCiyd1NYm6p7sH",
@@ -4169,7 +4263,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7VeXwbNJq6anUE5fNLY9WiczCfzMDQKC4QFjnWbg6DH7NALwe5",
@@ -4213,7 +4308,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM6FPykwAf3XZBrDqN4Hn2NExV452c16NCPr3xHCpNjWo5deWjTQ",
@@ -4257,7 +4353,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM8cJuWoDJ7HLDwdruDsU1FLg5wLFYEJKur73hfJcKnv41KeEGwq",
@@ -4301,7 +4398,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7uKEWWn8tf98WmJwQNssz6231GGcWjHkvcGtAcvw395Tf3Ln16",
@@ -4345,7 +4443,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7Z3mE2VxFz8QaJW5p67HAd85ifH23Ysu1whTGEWFJgwWZuDfEY",
@@ -4389,7 +4488,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 131072
+        "maximum_block_size": 131072,
+        "rc_scale": 0
       },
       "running_version": "0.0.0",
       "signing_key": "STM7xsQ3JeqChJbZFgwRKfxr9W8Nyp1VHxMLRXYfwQTFV9bNkPeNo",

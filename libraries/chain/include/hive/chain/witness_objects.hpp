@@ -45,6 +45,21 @@ namespace hive { namespace chain {
       *  to tune rate limiting and capacity
       */
     uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+    /**
+      * Scale of RC pools in relation to maximum_block_size. When it is set to automatic,
+      * the witness votes for scale in tune with their maximum_block_size vote (rounded down
+      * to multiple of HIVE_MIN_BLOCK_SIZE_LIMIT). The effective median rc_scale is still limited
+      * by effective median maximum_block_size.
+      */
+    uint8_t           rc_scale = HIVE_RC_AUTOMATIC_SCALE;
+    uint8_t get_effective_rc_scale() const
+    {
+      if( rc_scale == HIVE_RC_AUTOMATIC_SCALE )
+        return maximum_block_size / HIVE_MIN_BLOCK_SIZE_LIMIT;
+      else
+        return rc_scale;
+    }
+
     uint16_t          hbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
     /**
       * How many free accounts should be created per elected witness block.
@@ -318,6 +333,7 @@ FC_REFLECT_ENUM( hive::chain::witness_object::witness_schedule_type, (elected)(t
 FC_REFLECT( hive::chain::chain_properties,
           (account_creation_fee)
           (maximum_block_size)
+          (rc_scale)
           (hbd_interest_rate)
           (account_subsidy_budget)
           (account_subsidy_decay)

@@ -266,6 +266,8 @@ namespace hive { namespace protocol {
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
     }
 
+    FC_TODO( "Move checks on rc_scale here after HF28 is activated" );
+
     itr = props.find( "sbd_interest_rate" );
     if( itr == props.end() )
       itr = props.find( "hbd_interest_rate" );

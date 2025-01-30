@@ -287,6 +287,7 @@ bool future_chain_properties::fill( const chain_properties& active, const chain_
   bool filled = false;
   FILL_FIELD( account_creation_fee );
   FILL_FIELD( maximum_block_size );
+  FILL_FIELD( rc_scale );
   FILL_FIELD( hbd_interest_rate );
   FILL_FIELD( account_subsidy_budget );
   FILL_FIELD( account_subsidy_decay );

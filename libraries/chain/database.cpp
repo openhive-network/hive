@@ -3692,6 +3692,8 @@ void database::init_genesis()
 
       util::rd_setup_dynamics_params( account_subsidy_user_params, account_subsidy_system_params, wso.account_subsidy_rd );
       util::rd_setup_dynamics_params( account_subsidy_per_witness_user_params, account_subsidy_system_params, wso.account_subsidy_witness_rd );
+
+      wso.median_props.rc_scale = 1; // scale can start to change once HF28 starts
     } );
 
 #ifdef HIVE_ENABLE_SMT

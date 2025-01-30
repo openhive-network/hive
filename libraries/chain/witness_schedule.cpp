@@ -75,6 +75,15 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
   } );
   uint32_t median_maximum_block_size = active[active.size()/2]->props.maximum_block_size;
 
+  /// sort them by effective rc_scale
+  std::sort( active.begin(), active.end(), [&]( const witness_object* a, const witness_object* b )
+  {
+    return a->props.get_effective_rc_scale() < b->props.get_effective_rc_scale();
+  } );
+  uint8_t median_rc_scale = active[active.size()/2]->props.get_effective_rc_scale();
+  // RC can't scale higher than block size
+  median_rc_scale = std::min( (uint32_t)median_rc_scale, median_maximum_block_size / HIVE_MIN_BLOCK_SIZE_LIMIT );
+
   /// sort them by hbd_interest_rate
   std::sort( active.begin(), active.end(), [&]( const witness_object* a, const witness_object* b )
   {
@@ -128,6 +137,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
   {
     _wso.median_props.account_creation_fee       = median_account_creation_fee;
     _wso.median_props.maximum_block_size         = median_maximum_block_size;
+    _wso.median_props.rc_scale                   = median_rc_scale;
     _wso.median_props.hbd_interest_rate          = median_hbd_interest_rate;
     _wso.median_props.account_subsidy_budget     = median_account_subsidy_budget;
     _wso.median_props.account_subsidy_decay      = median_account_subsidy_decay;

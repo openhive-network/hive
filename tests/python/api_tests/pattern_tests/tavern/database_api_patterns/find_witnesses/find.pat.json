@@ -33,7 +33,8 @@
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
         "hbd_interest_rate": 1000,
-        "maximum_block_size": 65536
+        "maximum_block_size": 65536,
+        "rc_scale": 0
       },
       "running_version": "0.13.0",
       "signing_key": "STM6GmnhcBN9DxmFcj1e423Q2RkFYStUgSotviptAMSdy74eHQSYM",

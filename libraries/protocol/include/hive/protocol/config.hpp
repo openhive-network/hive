@@ -519,4 +519,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP         100
 
+#define HIVE_RC_AUTOMATIC_SCALE                        0
+#define HIVE_RC_MAX_SCALE                              ( HIVE_MAX_BLOCK_SIZE / HIVE_MIN_BLOCK_SIZE_LIMIT )
+
 #undef __HIVE_START_PROTOCOL_DEFINITIONS__
