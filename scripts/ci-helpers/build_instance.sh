@@ -90,9 +90,6 @@ _TST_IMGTAG=${BUILD_IMAGE_TAG:?"Missing arg #1 to specify built image tag"}
 _TST_SRCDIR=${SRCROOTDIR:?"Missing arg #2 to specify source directory"}
 _TST_REGISTRY=${REGISTRY:?"Missing arg #3 to specify target container registry"}
 
-# Supplement a registry path by trailing slash (if needed)
-[[ "${REGISTRY}" != */ ]] && REGISTRY="${REGISTRY}/"
-
 echo "Moving into source root directory: ${SRCROOTDIR}"
 
 pushd "$SRCROOTDIR"
