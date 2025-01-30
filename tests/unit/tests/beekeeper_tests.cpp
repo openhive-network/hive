@@ -1414,21 +1414,30 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_refresh_timeout)
 BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 {
   try {
-    auto _list_wallets_action = []( beekeeper_wallet_manager& beekeeper, const std::string& token )
+    using prepare_type              = std::function<std::shared_ptr<beekeeper_wallet_manager>( std::string& token )>;
+    using action_type               = std::function<void( std::shared_ptr<beekeeper_wallet_manager>& beekeeper, const std::string& token )>;
+    using action_type_with_refresh  = std::function<void( std::shared_ptr<beekeeper_wallet_manager>& beekeeper, const std::string& token, bool refresh_timeout, bool unlocked )>;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> _start;
+
+    auto _list_wallets_action_with_refresh = []( std::shared_ptr<beekeeper_wallet_manager>& beekeeper, const std::string& token, bool refresh_timeout, bool unlocked )
     {
-      auto _wallets = beekeeper.list_wallets( token, true );
+      auto _wallets = beekeeper->list_wallets( token, refresh_timeout );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
-      BOOST_REQUIRE_EQUAL( _wallets[0].unlocked, true );
+      BOOST_REQUIRE_EQUAL( _wallets[0].unlocked, unlocked );
     };
 
-    auto _set_timeout_action = []( beekeeper_wallet_manager& beekeeper, const std::string& token )
+    auto _list_wallets_action = [&_list_wallets_action_with_refresh]( std::shared_ptr<beekeeper_wallet_manager>& beekeeper, const std::string& token )
     {
-      beekeeper.set_timeout( token, 1 );
+      _list_wallets_action_with_refresh( beekeeper, token, true/*refresh_timeout*/, true/*unlocked*/);
     };
 
-    using action_type = std::function<void(beekeeper_wallet_manager& beekeeper, const std::string& token)>;
+    auto _set_timeout_action = []( std::shared_ptr<beekeeper_wallet_manager>& beekeeper, const std::string& token )
+    {
+      beekeeper->set_timeout( token, 1 );
+    };
 
-    auto _refresh_timeout_simulation = []( action_type&& action, action_type&& aux_action = action_type() )
+    auto _prepare_beekeeper = [&_start]( std::string& token )
     {
       test_utils::beekeeper_mgr b_mgr;
       b_mgr.remove_wallets();
@@ -1438,12 +1447,20 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 
       appbase::application app;
 
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
-      BOOST_REQUIRE( _beekeeper.start() );
+      auto _beekeeper = b_mgr.create_wallet_ptr( app, _timeout, _session_limit );
+      BOOST_REQUIRE( _beekeeper->start() );
 
-      auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
-      auto _password = _beekeeper.create( _token, "0", std::optional<std::string>(), false/*is_temporary*/ );
-      _beekeeper.set_timeout( _token, 1 );
+      token = _beekeeper->create_session( "salt", std::optional<std::string>() );
+      auto _password = _beekeeper->create( token, "0", std::optional<std::string>(), false/*is_temporary*/ );
+      _beekeeper->set_timeout( token, 1 );
+      _start = std::chrono::high_resolution_clock::now();
+      return _beekeeper;
+    };
+
+    auto _refresh_timeout_simulation = []( prepare_type&& prepare, action_type&& action, action_type&& aux_action = action_type() )
+    {
+      std::string _token;
+      auto _beekeeper = prepare( _token );
 
       for( uint32_t i = 0; i < 12; ++i )
       {
@@ -1455,8 +1472,37 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
         aux_action( _beekeeper, _token );
     };
 
-    _refresh_timeout_simulation( _list_wallets_action );
-    _refresh_timeout_simulation( _set_timeout_action ,_list_wallets_action );
+    _refresh_timeout_simulation( _prepare_beekeeper, _list_wallets_action );
+    _refresh_timeout_simulation( _prepare_beekeeper, _set_timeout_action ,_list_wallets_action );
+
+    auto _refresh_timeout_simulation_without_refresh = [&_start]( prepare_type&& prepare, action_type_with_refresh&& action )
+    {
+      bool _refresh_timeout = false;
+
+      std::string _token;
+      auto _beekeeper = prepare( _token );
+
+      auto _checker = [&]( bool expected_value )
+      {
+        for( uint32_t i = 0; i < 4; ++i )
+        {
+          std::this_thread::sleep_for( std::chrono::milliseconds(240) );
+          auto _diff = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now() - _start ).count();
+
+          BOOST_TEST_MESSAGE("iteration: " + std::to_string(i) + " time: " + std::to_string( _diff ) + " [ms]");
+          action( _beekeeper, _token, _refresh_timeout, expected_value );
+        }
+      };
+
+      _checker( true/*expected_value*/ );
+
+      //Checking timeout + updating is done every 200ms (in `time_manager` constructor), so the better option is to wait more than 200ms otherwise the test will be ustable.
+       std::this_thread::sleep_for( std::chrono::milliseconds(201) );
+
+      _checker( false/*expected_value*/ );
+    };
+
+    _refresh_timeout_simulation_without_refresh( _prepare_beekeeper, _list_wallets_action_with_refresh );
 
   } FC_LOG_AND_RETHROW()
 }
