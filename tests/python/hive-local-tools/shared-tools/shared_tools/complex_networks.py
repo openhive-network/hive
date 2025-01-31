@@ -269,6 +269,10 @@ def generate_networks(
             for node in builder.nodes:
                 node.close()
 
+    if terminate_nodes:
+        for node in builder.nodes:
+            node.close()
+
     return None
 
 
