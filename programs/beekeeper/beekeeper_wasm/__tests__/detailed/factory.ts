@@ -10,6 +10,14 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     });
   });
 
+  test('Should be able to retrieve package version', async ({ beekeeperTest }) => {
+    const version = await beekeeperTest(({ beekeeper }) => {
+      return beekeeper.version;
+    });
+
+    expect(typeof version).toBe('string');
+  });
+
   test('Should be able to init the beekeeper factory', async ({ beekeeperTest }) => {
     await beekeeperTest(async ({ beekeeper }) => {
       beekeeper.createSession("my.salt");

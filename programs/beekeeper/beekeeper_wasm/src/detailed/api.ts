@@ -20,6 +20,10 @@ export class BeekeeperApi implements IBeekeeperInstance {
     this.fs = new BeekeeperFileSystem(this.provider.FS, isWebEnvironment);
   }
 
+  public get version(): string {
+    return process.env.npm_package_version as string;
+  }
+
   public extract(json: string) {
     try {
       const parsed = JSON.parse(json);
