@@ -17,7 +17,7 @@ const createBeekeeper = async(
   isWebEnvironment: boolean,
   options: Partial<IBeekeeperOptions> = {}
 ): Promise<IBeekeeperInstance> => {
-  const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor(ModuleExt));
+  const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor(ModuleExt), "Beekeeper WASM module loading");
   const api = new BeekeeperApi(beekeeperProvider, isWebEnvironment);
 
   await api.init({ ...DEFAULT_BEEKEEPER_OPTIONS, storageRoot, ...options });
