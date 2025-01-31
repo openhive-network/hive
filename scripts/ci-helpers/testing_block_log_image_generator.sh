@@ -11,7 +11,7 @@ submodule_path=$CI_PROJECT_DIR
 REGISTRY=$CI_REGISTRY_IMAGE
 REGISTRY_USER=$REGISTRY_USER
 REGISTRY_PASSWORD=$REGISTRY_PASS
-IMGNAME=/testing-block-logs
+IMGNAME=testing-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
 
