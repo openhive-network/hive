@@ -45,7 +45,7 @@ def prepare_blocklog_network() -> None:
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    generate_networks(architecture, Path("base_network_block_log"))
+    generate_networks(architecture, Path("base_network_block_log"), terminate_nodes=True)
 
 
 def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -> None:

@@ -19,7 +19,7 @@ def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -
 def simultaneous_node_startup(
     nodes: list[tt.InitNode | tt.ApiNode],
     timeout: int,
-    alternate_chain_specs: tt.AlternateChainSpecs,
+    alternate_chain_specs: tt.AlternateChainSpecs | None,
     wait_for_live: bool,
     arguments: list | None = None,
     time_control: tt.StartTimeControl = None,
