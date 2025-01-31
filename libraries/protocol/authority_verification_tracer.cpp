@@ -55,6 +55,8 @@ void authority_verification_tracer::pop_parent_entry()
 
 void authority_verification_tracer::fill_final_authority_path()
 {
+  // 0. Clear possible recording of previous attempt (e.g. for different authority role)
+  _trace.final_authority_path.clear();
   // 1. Copy whole tree
   _trace.final_authority_path.push_back( get_root_entry() );
   path_entry* entry_to_clear = &( _trace.final_authority_path.back() );
