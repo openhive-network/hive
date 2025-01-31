@@ -292,6 +292,13 @@ export interface IBeekeeperInstance {
   createSession(salt: string): IBeekeeperSession;
 
   /**
+   * Retrieves the app build version of the Beekeeper API in SemVer format
+   *
+   * @returns {string} the version of the Beekeeper API
+   */
+  get version(): string;
+
+  /**
    * Locks all of the unlocked wallets, closes them, closes opened sessions and deletes the current Beekeeper API instance making it unusable
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)

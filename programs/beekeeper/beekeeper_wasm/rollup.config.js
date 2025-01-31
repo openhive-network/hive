@@ -62,6 +62,13 @@ export default [
       file: `dist/bundle/detailed/index.js`
     },
     plugins: [
+      replace({
+        delimiters: ['', ''],
+        values: {
+          'process.env.npm_package_version': `"${process.env.npm_package_version}"`
+        },
+        preventAssignment: true
+      }),
       nodeResolve({ preferBuiltins: false, browser: false }),
       commonjs()
     ]
