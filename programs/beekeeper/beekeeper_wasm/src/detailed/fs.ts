@@ -18,22 +18,24 @@ export class BeekeeperFileSystem {
     });
   }
 
-  private ensureCreateDir(paths: string[]) {
+  private ensureCreateDir(paths: string[], isAbsolutePath: boolean) {
     // We need an absolute path in web environment in order to create proper directories
-    const dir = (this.isWebEnvironment ? "/" : "") + paths.join("/");
+    const dir = (isAbsolutePath ? "/" : "") + paths.join("/");
 
     let analysis = safeWasmCall(() => this.fs.analyzePath(dir), `analyzing path: '${dir}'`);
 
     if (!analysis.exists) {
       if (paths.length > 1)
-        this.ensureCreateDir(paths.slice(0, -1));
+        this.ensureCreateDir(paths.slice(0, -1), isAbsolutePath);
 
       safeWasmCall(() => this.fs.mkdir(dir), `directory creation: '${dir}'`);
     }
   }
 
   public async init(walletDir: string): Promise<void> {
-    if(this.isWebEnvironment && !walletDir.startsWith("/"))
+    const isAbsolutePath = walletDir.startsWith("/");
+
+    if(this.isWebEnvironment && !isAbsolutePath)
       throw new BeekeeperError("Storage root directory must be an absolute path in web environment");
 
     const walletDirPathParts = walletDir.split("/").filter(node => !!node && node !== ".");
@@ -41,7 +43,7 @@ export class BeekeeperFileSystem {
     if (walletDirPathParts.length === 0)
       throw new BeekeeperError("Storage root directory must not be empty");
 
-    this.ensureCreateDir(walletDirPathParts);
+    this.ensureCreateDir(walletDirPathParts, isAbsolutePath);
 
     if(this.isWebEnvironment)
       safeWasmCall(() => this.fs.mount(this.fs.filesystems.IDBFS, {}, walletDir), "mounting IDBFS");
