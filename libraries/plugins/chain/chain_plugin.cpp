@@ -573,7 +573,10 @@ void chain_plugin_impl::start_write_processing()
           }
 
           if (!is_running()) // we woke because the node is shutting down
-            break;
+          {
+            if( priority_write_queue.empty() && write_queue.empty() )
+              break;
+          }
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
             continue;
           // otherwise, we woke because the priority_write_queue or write_queue is non-empty
