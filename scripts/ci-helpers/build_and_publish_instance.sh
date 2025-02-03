@@ -7,7 +7,7 @@ print_help () {
 cat <<EOF
 Usage: $0 OPTION[=VALUE]...
 
-Script for building Docker image of Hive instance and pushingit to GitLab registry and to Docker Hub
+Script for building Docker image of Hive instance and pushing it to GitLab registry and to Docker Hub
 All options (except '--help') are required
 OPTIONS:
   --registry-user=USERNAME      Docker registry user
