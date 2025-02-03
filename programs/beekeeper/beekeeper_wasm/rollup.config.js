@@ -14,7 +14,6 @@ export default [
     },
     plugins: [
       replace({
-        delimiters: ['', ''],
         values: {
           'beekeeper_wasm.web.wasm': 'beekeeper.common.wasm'
         },
@@ -40,7 +39,6 @@ export default [
         targets: [{ src: ['build/beekeeper_wasm.node.wasm'], dest: 'dist/bundle/build', rename: 'beekeeper.common.wasm' }]
       }),
       replace({
-        delimiters: ['', ''],
         values: {
           'beekeeper_wasm.node.wasm': 'beekeeper.common.wasm'
         },
@@ -63,7 +61,6 @@ export default [
     },
     plugins: [
       replace({
-        delimiters: ['', ''],
         values: {
           'process.env.npm_package_version': `"${process.env.npm_package_version}"`
         },
@@ -85,7 +82,6 @@ export default [
     ],
     plugins: [
       replace({
-        delimiters: ['', ''],
         values: {
           './beekeeper_module.js': './build/beekeeper_wasm.web.js',
           'process.env.DEFAULT_STORAGE_ROOT': `"/storage_root"`,
@@ -107,7 +103,6 @@ export default [
     ],
     plugins: [
       replace({
-        delimiters: ['', ''],
         values: {
           './beekeeper_module.js': './build/beekeeper_wasm.node.js',
           'process.env.DEFAULT_STORAGE_ROOT': `"./storage_root-node"`,
@@ -130,7 +125,6 @@ export default [
     ],
     plugins: [
       replace({
-        delimiters: ['', ''],
         values: {
           './beekeeper_module.js': './build/beekeeper_wasm.node.js',
           'beekeeper.common.wasm?url': './beekeeper.common.wasm?url'
