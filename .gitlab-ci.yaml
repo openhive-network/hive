@@ -1023,6 +1023,8 @@ publish_docker_image:
     - !reference [.publish_docker_image_template, before_script]
   script:
     - scripts/ci-helpers/build_and_publish_instance.sh
+  rules:
+    - when: always
   tags:
     - public-runner-docker
     - hived-for-tests

@@ -130,6 +130,9 @@ docker tag "$CI_REGISTRY_IMAGE/minimal:$CI_COMMIT_TAG" "${HIVEBLOG_IMG}"
 docker images
 
 echo "Pushing instance images"
-docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-docker push "${HIVEIO_IMG}"
-docker push "${HIVEBLOG_IMG}"
+echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+echo "${HIVEIO_IMG}"
+echo "${HIVEBLOG_IMG}"
+# docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+# docker push "${HIVEIO_IMG}"
+# docker push "${HIVEBLOG_IMG}"
