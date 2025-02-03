@@ -213,6 +213,7 @@ initialization_result application::initialize_impl( int argc, char** argv,
 
     if( my->_args.count( "version" ) )
     {
+      hive::utilities::notifications::version_checker::version = true;
       cout << version_info << "\n";
       return { initialization_result::ok, false };
     }

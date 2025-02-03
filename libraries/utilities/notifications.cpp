@@ -8,6 +8,8 @@
 
 namespace hive { namespace utilities { namespace notifications {
 
+bool version_checker::version = false;
+
 namespace{
   const char* get_flag()
   {

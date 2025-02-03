@@ -17,6 +17,11 @@
 
 namespace hive { namespace utilities { namespace notifications {
 
+struct version_checker
+{
+  static bool version;
+};
+
 class collector_t
 {
 public:
@@ -149,6 +154,26 @@ class notification_handler_wrapper
 
     void broadcast( const notification_t& ev ) noexcept
     {
+      try
+      {
+        if( !hive::utilities::notifications::version_checker::version )
+        {
+          bool ok = true;
+          std::string _content = "broadcast! name: " + ev.name;
+          for( auto item : ev.value )
+          {
+            if( item.second.as_string() == "signals attached")
+              ok = false;
+            _content += " key: " + item.first + " value: " + item.second.as_string();
+          }
+          if( ok )
+            ilog( _content );
+        }
+      }
+      catch(...)
+      {
+
+      }
       handler.broadcast( ev );
     }
 
