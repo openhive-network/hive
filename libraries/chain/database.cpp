@@ -381,7 +381,9 @@ void database::set_chain_id( const chain_id_type& chain_id )
 
 const witness_object& database::get_witness( const account_name_type& name ) const
 { try {
-  return get< witness_object, by_name >( name );
+    const auto* _witness = find_witness( name );
+    FC_ASSERT( _witness != nullptr, "Witness ${w} doesn't exist", ("w", name) );
+    return *_witness;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
 const witness_object* database::find_witness( const account_name_type& name ) const
@@ -404,7 +406,9 @@ bool database::is_treasury( const account_name_type& name )const
 
 const account_object& database::get_account( const account_id_type id )const
 { try {
-  return get< account_object, by_id >( id );
+    const auto* _account = find_account( id );
+    FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
+  return *_account;
 } FC_CAPTURE_AND_RETHROW( (id) ) }
 
 const account_object* database::find_account( const account_id_type& id )const
@@ -414,7 +418,9 @@ const account_object* database::find_account( const account_id_type& id )const
 
 const account_object& database::get_account( const account_name_type& name )const
 { try {
-  return get< account_object, by_name >( name );
+    const auto* _account = find_account( name );
+    FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
+    return *_account;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
 const account_object* database::find_account( const account_name_type& name )const
@@ -430,7 +436,9 @@ FC_CAPTURE_AND_RETHROW( (comment_id) )
 
 const comment_object& database::get_comment( const account_id_type& author, const shared_string& permlink )const
 { try {
-  return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, to_string( permlink ) ) );
+  const comment_object* comment_ptr = find_comment( author, permlink );
+  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
+  return *comment_ptr;
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
 const comment_object* database::find_comment( const account_id_type& author, const shared_string& permlink )const
@@ -456,7 +464,9 @@ const comment_object* database::find_comment( const account_name_type& author, c
 
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
-  return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
+  const comment_object* comment_ptr = find_comment( author, permlink );
+  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
+  return *comment_ptr;
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
 const comment_object* database::find_comment( const account_id_type& author, const string& permlink )const
@@ -482,7 +492,9 @@ const comment_object* database::find_comment( const account_name_type& author, c
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
 { try {
-  return get< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
+    const auto* _escrow = find_escrow( name, escrow_id );
+    FC_ASSERT( _escrow != nullptr, "Escrow balance with 'name' ${name} 'escrow_id' ${escrow_id} doesn't exist.", (name)(escrow_id) );
+    return *_escrow;
 } FC_CAPTURE_AND_RETHROW( (name)(escrow_id) ) }
 
 const escrow_object* database::find_escrow( const account_name_type& name, uint32_t escrow_id )const
@@ -495,7 +507,10 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
   if( !has_hardfork( HIVE_HARDFORK_0_6__127 ) )
     orderid = orderid & 0x0000FFFF;
 
-  return get< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
+  const auto* _limit_order = find_limit_order( name, orderid );
+  FC_ASSERT( _limit_order != nullptr, "Limit order with 'name' ${name} 'order_id' ${orderid} doesn't exist.", (name)(orderid) );
+
+  return *_limit_order;
 } FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
 
 const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
@@ -508,7 +523,11 @@ const limit_order_object* database::find_limit_order( const account_name_type& n
 
 const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
 { try {
-  return get< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
+
+  const auto* _savings_withdraw = find_savings_withdraw( owner, request_id );
+  FC_ASSERT( _savings_withdraw != nullptr, "Savings withdraw for `owner` ${owner} and 'request_id' ${request_id} doesn't exist.", (owner)(request_id) );
+
+  return *_savings_withdraw;
 } FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
 
 const savings_withdraw_object* database::find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const

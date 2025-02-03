@@ -31,6 +31,6 @@ def test_publish_feed_from_non_witness_account(
     # test case 2.1 from https://gitlab.syncad.com/hive/hive/-/issues/633
     with pytest.raises(ErrorInResponseError) as error:
         alice.feed_publish(base=1000, quote=100)
-    assert "unknown key" in error.value.error, "Message other than expected."
+    assert "Witness alice doesn't exist" in error.value.error, "Message other than expected."
     alice.check_if_account_has_witness_role(expected_witness_role=False)
     alice.assert_rc_current_mana_was_unchanged()
