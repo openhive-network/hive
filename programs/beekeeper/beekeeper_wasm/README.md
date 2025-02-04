@@ -53,7 +53,6 @@ To run the tests on your own, clone the Hive repo and install the dependencies f
 and then compile the project:
 
 ```bash
-./scripts/build_wasm_beekeeper.sh
 cd ./programs/beekeeper/beekeeper_wasm
 sudo npm install -g pnpm
 pnpm install --frozen-lockfile
