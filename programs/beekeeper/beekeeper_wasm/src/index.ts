@@ -2,6 +2,8 @@
 
 // @ts-expect-error ts(6133) Types used in JSDoc generation
 import createBeekeeperBase, { type BeekeeperError, type IBeekeeperOptions, type IBeekeeperInstance } from "./detailed/index.js";
+
+// Note: This import will be replaced with Web/Node.js version upon bundling
 import Beekeeper from "./beekeeper_module.js";
 
 // This variable will be replaced during bundling based on the environment
