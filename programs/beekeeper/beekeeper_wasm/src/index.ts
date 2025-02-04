@@ -4,7 +4,7 @@
 import createBeekeeperBase, { type BeekeeperError, type IBeekeeperOptions, type IBeekeeperInstance } from "./detailed/index.js";
 
 // Note: This import will be replaced with Web/Node.js version upon bundling
-import Beekeeper from "./beekeeper_module.js";
+import Beekeeper from "./build/beekeeper.common.js";
 
 // This variable will be replaced during bundling based on the environment
 export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as string;

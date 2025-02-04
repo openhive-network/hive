@@ -36,7 +36,7 @@ export default [
       replace({
         delimiters: ['[\'"]','[\'"]'],
         values: {
-          './beekeeper_module.js': '"./build/beekeeper_wasm.web.js"'
+          './build/beekeeper.common.js': '"./build/beekeeper_wasm.web.js"'
         },
         preventAssignment: true
       }),
@@ -62,13 +62,15 @@ export default [
     ],
     plugins: [
       copy({
-        targets: [{ src: ['build/beekeeper.common.wasm', 'build/beekeeper_wasm.*.js'], dest: 'dist/bundle/build' }]
+        targets: [
+          { src: ['src/build/beekeeper.common.wasm', 'src/build/beekeeper_wasm.*.js'], dest: 'dist/bundle/build' },
+          { src: ['src/build/beekeeper.common.d.ts'], dest: 'dist/build' }
+        ]
       }),
-
       replace({
         delimiters: ['[\'"]', '[\'"]'],
         values: {
-          './beekeeper_module.js': '"./build/beekeeper_wasm.node.js"'
+          './build/beekeeper.common.js': '"./build/beekeeper_wasm.node.js"'
         },
         preventAssignment: true
       }),
@@ -91,14 +93,15 @@ export default [
     external: [
       './build/beekeeper_wasm.node.js',
       './detailed/index.js',
-      './beekeeper.common.wasm?url'
+      './build/beekeeper.common.wasm?url'
     ],
     plugins: [
       replace({
         delimiters: ['[\'"]', '[\'"]'],
         values: {
-          './beekeeper_module.js': '"./build/beekeeper_wasm.node.js"',
-          'beekeeper.common.wasm?url': '"./beekeeper.common.wasm?url"'
+          './build/beekeeper.common.js': '"./build/beekeeper_wasm.node.js"',
+          // Replace calculated value which ignores non-existing file with '?url' suffix with static import to support vite import mechanism
+          "./build/beekeeper.common.wasm' + '?url": "'./build/beekeeper.common.wasm?url'"
         },
         preventAssignment: true
       })
