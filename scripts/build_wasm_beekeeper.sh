@@ -22,7 +22,7 @@ EXECUTION_PATH=${2:-"${EXECUTION_PATH_DEFAULT}"}
 
 build() {
   CONFIG="$1"
-  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/build/${CONFIG}"
+  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/src/build/${CONFIG}"
   mkdir -vp "${BUILD_DIR}"
   cd "${BUILD_DIR}"
 
