@@ -1,10 +1,10 @@
-import type { BeekeeperModule } from "../beekeeper_module.js";
+import type { MainModule } from "../build/beekeeper.common";
 import { BeekeeperError } from "./errors.js";
 import { safeWasmCall } from "./util/wasm_error.js";
 
 export class BeekeeperFileSystem {
   public constructor(
-    private readonly fs: BeekeeperModule['FS'],
+    private readonly fs: MainModule['FS'],
     private readonly isWebEnvironment: boolean
   ) {}
 
@@ -22,7 +22,7 @@ export class BeekeeperFileSystem {
     // We need an absolute path in web environment in order to create proper directories
     const dir = (isAbsolutePath ? "/" : "") + paths.join("/");
 
-    let analysis = safeWasmCall(() => this.fs.analyzePath(dir), `analyzing path: '${dir}'`);
+    let analysis = safeWasmCall(() => this.fs.analyzePath(dir, false), `analyzing path: '${dir}'`);
 
     if (!analysis.exists) {
       if (paths.length > 1)

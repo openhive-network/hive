@@ -14,7 +14,7 @@ globalThis.createBeekeeperTestFor = async function createBeekeeperTestFor (env) 
 };
 
 globalThis.createBeekeeperWasmTestFor = async function createBeekeeperWasmTestFor (env) {
-  const locBeekeeperWasm = env === 'web' ? '../../build/beekeeper_wasm.web' : '../../build/beekeeper_wasm.node';
+  const locBeekeeperWasm = env === 'web' ? '../../dist/bundle/build/beekeeper_wasm.web' : '../../dist/bundle/build/beekeeper_wasm.node';
 
   const wasm = await import(locBeekeeperWasm);
 

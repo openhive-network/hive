@@ -46,12 +46,6 @@
     "esModuleInterop": true,
 
     "noErrorTruncation": true,
-
-    "paths": {
-      "beekeeper.common.wasm?url": [
-        "./build/beekeeper_wasm.node"
-      ],
-    }
   },
   "buildOptions": {
     "force": true,
