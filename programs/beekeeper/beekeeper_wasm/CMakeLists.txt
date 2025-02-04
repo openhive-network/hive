@@ -76,6 +76,7 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
       target_link_options( ${exec_wasm_name} PUBLIC
         -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=0
         -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sWASM_ASYNC_COMPILATION=1
+        --minify=0
        )
 
        set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "${exec_wasm_name}.js" )
