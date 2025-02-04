@@ -2239,6 +2239,147 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
 }
 
 
+BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
+{
+  try
+  {
+    // Test inflation behavior across HF27 and HF28 with HBD issuance. This basic test just checks that inflation with HBD is higher than inflation without
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( db->has_hardfork( HIVE_HARDFORK_1_27 ), true );
+    BOOST_REQUIRE_EQUAL( db->has_hardfork( HIVE_HARDFORK_1_28 ), false );
+
+    // First inflation check at HF27
+    const auto& props = db->get_dynamic_global_properties();
+    auto before_virtual_supply = props.virtual_supply.amount;
+
+    generate_blocks( db->head_block_time() + 50 * HIVE_BLOCK_INTERVAL, false );
+
+    auto after_virtual_supply = props.virtual_supply.amount;
+
+    auto initial_inflation = after_virtual_supply - before_virtual_supply;
+    BOOST_REQUIRE( initial_inflation > 0 );
+
+    before_virtual_supply = props.virtual_supply.amount;
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    
+    generate_blocks( db->head_block_time() + 50 * HIVE_BLOCK_INTERVAL, false );
+
+    after_virtual_supply = props.virtual_supply.amount;
+
+    auto inflation_with_hbd = after_virtual_supply - before_virtual_supply;
+    BOOST_REQUIRE( inflation_with_hbd > initial_inflation );
+
+    // Move to HF28 and check reduced inflation
+    inject_hardfork( HIVE_HARDFORK_1_28 );
+    BOOST_REQUIRE_EQUAL( db->has_hardfork( HIVE_HARDFORK_1_28 ), true );
+
+    before_virtual_supply = props.virtual_supply.amount;
+    // we wait 49 because inject_hardfork generates a block
+    generate_blocks( db->head_block_time() + 49 * HIVE_BLOCK_INTERVAL, false );
+
+    after_virtual_supply = props.virtual_supply.amount;
+
+    auto inflation_after_hf28 = after_virtual_supply - before_virtual_supply;
+    BOOST_REQUIRE( inflation_after_hf28 < inflation_with_hbd );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
+{
+      // Test inflation behavior across HF27 and HF28 with HBD issuance. This checks exact values with the same algo as in process_funds
+    try
+    {
+        auto calculate_current_inflation_rate = [&]() -> int64_t
+        {
+            int64_t start_inflation_rate = int64_t(HIVE_INFLATION_RATE_START_PERCENT);
+            int64_t inflation_rate_adjustment = int64_t(db->head_block_num() / HIVE_INFLATION_NARROWING_PERIOD);
+            int64_t inflation_rate_floor = int64_t(HIVE_INFLATION_RATE_STOP_PERCENT);
+
+            return std::max(start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor);
+        };
+
+        auto calculate_expected_new_virtual_supply = [&]() -> share_type
+        {
+            const auto& props = db->get_dynamic_global_properties();
+            const auto& wso = db->get_witness_schedule_object();
+            const auto& cwit = db->get_witness(props.current_witness);
+
+            int64_t current_inflation_rate = calculate_current_inflation_rate();
+            auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+            if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
+              const auto &treasury_account = db->get_treasury();
+              const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.hbd_balance);
+              const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.current_supply;
+
+              new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+            }
+
+            auto content_reward = (new_hive * props.content_reward_percent) / HIVE_100_PERCENT;
+
+            const auto& reward_idx = db->get_index<reward_fund_index, by_id>();
+            share_type used_rewards = 0;
+            for (auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr)
+            {
+                used_rewards += (content_reward * itr->percent_content_rewards) / HIVE_100_PERCENT;
+            }
+
+            content_reward = used_rewards;
+
+            auto vesting_reward = (new_hive * props.vesting_reward_percent) / HIVE_100_PERCENT;
+            auto dhf_new_funds = (new_hive * props.proposal_fund_percent) / HIVE_100_PERCENT;
+            auto witness_reward = new_hive - content_reward - vesting_reward - dhf_new_funds;
+
+            witness_reward *= HIVE_MAX_WITNESSES;
+
+            if (cwit.schedule == witness_object::timeshare)
+                witness_reward *= wso.timeshare_weight;
+            else if (cwit.schedule == witness_object::miner)
+                witness_reward *= wso.miner_weight;
+            else if (cwit.schedule == witness_object::elected)
+                witness_reward *= wso.elected_weight;
+
+            witness_reward /= wso.witness_pay_normalization_factor;
+
+            return content_reward + vesting_reward + witness_reward + dhf_new_funds;
+        };
+
+        const auto& props = db->get_dynamic_global_properties();
+
+        inject_hardfork(HIVE_HARDFORK_1_27);
+        set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
+        generate_block();
+        ISSUE_FUNDS(db->get_treasury_name(), ASSET("50000000.000 TBD"));
+
+        auto before_virtual_supply = props.virtual_supply.amount;
+        auto expected_new_virtual_supply = calculate_expected_new_virtual_supply();
+
+        // check hf28 inflation
+        generate_block();
+        auto actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
+        BOOST_REQUIRE(expected_new_virtual_supply == actual_new_virtual_supply);
+
+        inject_hardfork(HIVE_HARDFORK_1_28);
+        generate_blocks( db->head_block_time() + 20 * HIVE_BLOCK_INTERVAL, false );
+
+        before_virtual_supply = props.virtual_supply.amount;
+        expected_new_virtual_supply = calculate_expected_new_virtual_supply();
+
+        generate_block();
+        actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
+
+        BOOST_REQUIRE(expected_new_virtual_supply == actual_new_virtual_supply);
+
+        validate_database();
+    }
+    FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

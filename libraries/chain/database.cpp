@@ -2728,7 +2728,20 @@ void database::process_funds()
     // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
-    auto new_hive = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
+    safe<int64_t> new_hive;
+    if (has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
+      auto median_price = get_feed_history().current_median_history;
+      FC_ASSERT( median_price.is_null() == false  );
+
+      const auto &treasury_account = get_treasury();
+      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.hbd_balance);
+      const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.current_supply;
+
+      new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+    } else {
+      new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+    }
+
     auto content_reward = ( new_hive * props.content_reward_percent ) / HIVE_100_PERCENT;
     if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       content_reward = pay_reward_funds( content_reward );
@@ -2860,6 +2873,7 @@ void database::process_subsidized_accounts()
 
 asset database::get_liquidity_reward()const
 {
+  // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   if( has_hardfork( HIVE_HARDFORK_0_12__178 ) )
     return asset( 0, HIVE_SYMBOL );
 
@@ -2871,6 +2885,7 @@ asset database::get_liquidity_reward()const
 
 asset database::get_content_reward()const
 {
+  // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   asset percent( protocol::calc_percent_reward_per_block< HIVE_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
@@ -2879,6 +2894,7 @@ asset database::get_content_reward()const
 
 asset database::get_curation_reward()const
 {
+  // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   asset percent( protocol::calc_percent_reward_per_block< HIVE_CURATE_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
@@ -2887,6 +2903,7 @@ asset database::get_curation_reward()const
 
 asset database::get_producer_reward()
 {
+  // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
@@ -2920,6 +2937,7 @@ asset database::get_producer_reward()
 
 asset database::get_pow_reward()const
 {
+  // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
 
 #ifndef IS_TEST_NET
