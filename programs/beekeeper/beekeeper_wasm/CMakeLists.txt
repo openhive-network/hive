@@ -9,7 +9,7 @@ set( CMAKE_C_STANDARD 99 )
 set( CMAKE_C_STANDARD_REQUIRED ON )
 set( CMAKE_EXECUTABLE_SUFFIX "" )
 
-#SET( CMAKE_VERBOSE_MAKEFILE ON )
+SET( CMAKE_VERBOSE_MAKEFILE ON )
 
 cmake_policy(SET CMP0057 NEW)
 
@@ -19,7 +19,6 @@ include( ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/hive_targets.cmake )
 
 set(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS
-      atomic
       chrono
       date_time
       filesystem
@@ -53,11 +52,19 @@ set( SOURCES
 
 set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
-function( DEFINE_BEEKEEPER_TARGET_FOR env )
-      set( exec_wasm_name "beekeeper_wasm_${env}" )
-      set( exec_ts_gen "beekeeper_ts_gen_${env}" )
+function( DEFINE_BEEKEEPER_TARGET_FOR )
+      set( exec_wasm_name "beekeeper.common" )
+      set( exec_ts_gen "beekeeper_ts_gen_common" )
 
       message(NOTICE "Configuring '${exec_wasm_name}' and '${exec_ts_gen}'")
+
+      IF (${TARGET_ENVIRONMENT} STREQUAL "web")
+        MESSAGE( STATUS "Chosen web target environment")
+        SET ( NODE_ENV 0 )
+      ELSE()
+        MESSAGE( STATUS "Chosen node target environment")
+        SET ( NODE_ENV 1 )
+      ENDIF()
 
       ADD_EXECUTABLE( ${exec_wasm_name} ${SOURCES} )
 
@@ -68,9 +75,30 @@ function( DEFINE_BEEKEEPER_TARGET_FOR env )
       # INITIAL_MEMORY by default = 16777216
       target_link_options( ${exec_wasm_name} PUBLIC
         -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=0
-                                                    -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sENVIRONMENT="${env}"
-                         )
-      set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "beekeeper_wasm.${env}.js" )
+        -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 
+       )
+
+       set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "${exec_wasm_name}.js" )
+
+       IF(${NODE_ENV})
+         target_link_options( ${exec_wasm_name} PUBLIC -sENVIRONMENT="node" -sNODERAWFS=1)
+         target_link_libraries( ${exec_wasm_name} PUBLIC nodefs.js )
+       ELSE()
+         target_link_options( ${exec_wasm_name} PUBLIC -sENVIRONMENT="web")
+         target_link_libraries( ${exec_wasm_name} PUBLIC idbfs.js)
+       endif()
+
+      INSTALL( FILES "$<TARGET_FILE_DIR:${exec_wasm_name}>/${exec_wasm_name}.js"
+        RENAME "beekeeper_wasm.${TARGET_ENVIRONMENT}.js"
+        COMPONENT "${exec_wasm_name}_runtime"
+        DESTINATION .
+        )
+
+      INSTALL( FILES "$<TARGET_FILE_DIR:${exec_wasm_name}>/${exec_wasm_name}.wasm"
+        COMPONENT "${exec_wasm_name}_runtime"
+        DESTINATION .
+        )
+
 
       # Helper target, just to perform TypeScript wrapper generation
       ADD_EXECUTABLE( ${exec_ts_gen} ${SOURCES} )
@@ -78,18 +106,32 @@ function( DEFINE_BEEKEEPER_TARGET_FOR env )
       target_include_directories( ${exec_ts_gen} PUBLIC ${INCLUDES} )
       target_link_libraries( ${exec_ts_gen} PUBLIC embind beekeeper_core )
 
-      set_target_properties( ${exec_ts_gen} PROPERTIES OUTPUT_NAME "beekeeper_ts_gen.${env}.cjs" )
+      set_target_properties( ${exec_ts_gen} PROPERTIES OUTPUT_NAME "beekeeper_ts_gen.common.cjs" )
       target_link_options( ${exec_ts_gen} PUBLIC
-        --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/beekeeper_wasm.${env}.d.ts" )
+        --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts" )
+
+       IF(${NODE_ENV})
+         target_link_options( ${exec_ts_gen} PUBLIC -sENVIRONMENT="node" -sNODERAWFS=1)
+         target_link_libraries( ${exec_ts_gen} PUBLIC nodefs.js )
+       ELSE()
+         target_link_options( ${exec_ts_gen} PUBLIC -sENVIRONMENT="web")
+         target_link_libraries( ${exec_ts_gen} PUBLIC idbfs.js)
+       endif()
+
+      INSTALL( FILES  "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts"
+        COMPONENT "${exec_wasm_name}_dts"
+        DESTINATION .
+        )
+
 endfunction()
 
-DEFINE_BEEKEEPER_TARGET_FOR(node)
-DEFINE_BEEKEEPER_TARGET_FOR(web)
+DEFINE_BEEKEEPER_TARGET_FOR()
+#DEFINE_BEEKEEPER_TARGET_FOR(web)
 
-target_link_options( beekeeper_wasm_node PUBLIC -sNODERAWFS=1 )
-target_link_libraries( beekeeper_wasm_node PUBLIC nodefs.js )
-target_link_libraries( beekeeper_ts_gen_node PUBLIC nodefs.js )
+#target_link_options( beekeeper_wasm_node PUBLIC -sNODERAWFS=1 )
+#target_link_libraries( beekeeper_wasm_node PUBLIC nodefs.js )
+#target_link_libraries( beekeeper_ts_gen_node PUBLIC nodefs.js )
 
-target_link_options( beekeeper_wasm_web PUBLIC )
-target_link_libraries( beekeeper_wasm_web PUBLIC idbfs.js )
-target_link_libraries( beekeeper_ts_gen_web PUBLIC idbfs.js )
+#target_link_options( beekeeper_common PUBLIC )
+#target_link_libraries( beekeeper_common PUBLIC idbfs.js )
+#target_link_libraries( beekeeper_ts_gen_common PUBLIC idbfs.js )

@@ -20,6 +20,25 @@ fi
 DIRECT_EXECUTION=${1:-${DIRECT_EXECUTION_DEFAULT}}
 EXECUTION_PATH=${2:-"${EXECUTION_PATH_DEFAULT}"}
 
+build() {
+  CONFIG="$1"
+  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/build/${CONFIG}"
+  mkdir -vp "${BUILD_DIR}"
+  cd "${BUILD_DIR}"
+
+  #-DBoost_DEBUG=TRUE -DBoost_VERBOSE=TRUE -DCMAKE_STATIC_LIBRARY_SUFFIX=".a;.bc"
+  cmake \
+    -DBoost_NO_WARN_NEW_VERSIONS=1 \
+    -DBoost_USE_STATIC_RUNTIME=ON \
+    -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DTARGET_ENVIRONMENT="${CONFIG}" -DCMAKE_BUILD_TYPE=Release -G "Ninja" \
+    -S "${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/" \
+    -B "${BUILD_DIR}"
+  ninja -v -j8 2>&1 | tee -i "${BUILD_DIR}/build.log"
+
+  cmake --install "${BUILD_DIR}" --component beekeeper.common_runtime --prefix "${BUILD_DIR}/../"
+  cmake --install "${BUILD_DIR}" --component beekeeper.common_dts --prefix "${BUILD_DIR}/../"
+}
+
 if [ ${DIRECT_EXECUTION} -eq 0 ]; then
   echo "Performing a docker run"
   docker run \
@@ -31,16 +50,6 @@ if [ ${DIRECT_EXECUTION} -eq 0 ]; then
 else
   echo "Performing a build..."
   cd "${EXECUTION_PATH}"
-  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/build"
-  mkdir -vp "${BUILD_DIR}"
-  cd "${BUILD_DIR}"
-
-  #-DBoost_DEBUG=TRUE -DBoost_VERBOSE=TRUE -DCMAKE_STATIC_LIBRARY_SUFFIX=".a;.bc"
-  cmake \
-    -DBoost_NO_WARN_NEW_VERSIONS=1 \
-    -DBoost_USE_STATIC_RUNTIME=ON \
-    -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release -G "Ninja" \
-    -S "${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/" \
-    -B "${BUILD_DIR}"
-  ninja -j8
+  build "web"
+  build "node"
 fi
