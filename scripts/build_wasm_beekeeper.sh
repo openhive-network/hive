@@ -36,7 +36,6 @@ build() {
   ninja -v -j8 2>&1 | tee -i "${BUILD_DIR}/build.log"
 
   cmake --install "${BUILD_DIR}" --component beekeeper.common_runtime --prefix "${BUILD_DIR}/../"
-  cmake --install "${BUILD_DIR}" --component beekeeper.common_dts --prefix "${BUILD_DIR}/../"
 }
 
 if [ ${DIRECT_EXECUTION} -eq 0 ]; then
