@@ -77,6 +77,7 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
         -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=0
         -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sWASM_ASYNC_COMPILATION=1
         --minify=0
+        --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts"
        )
 
        set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "${exec_wasm_name}.js" )
@@ -100,23 +101,10 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
         DESTINATION .
         )
 
-
-      # Helper target, just to perform TypeScript wrapper generation
-      ADD_EXECUTABLE( ${exec_ts_gen} ${SOURCES} )
-
-      target_include_directories( ${exec_ts_gen} PUBLIC ${INCLUDES} )
-      target_link_libraries( ${exec_ts_gen} PUBLIC embind beekeeper_core )
-
-      set_target_properties( ${exec_ts_gen} PROPERTIES OUTPUT_NAME "beekeeper_ts_gen.common.cjs" )
-      target_link_options( ${exec_ts_gen} PUBLIC
-        -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sWASM_ASYNC_COMPILATION=1
-        --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts" )
-
       INSTALL( FILES  "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts"
-        COMPONENT "${exec_wasm_name}_dts"
+        COMPONENT "${exec_wasm_name}_runtime"
         DESTINATION .
         )
-
 endfunction()
 
 DEFINE_BEEKEEPER_TARGET_FOR()
