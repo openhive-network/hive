@@ -121,7 +121,7 @@ beekeeper_wasm_build:
   stage: build
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/"
-    BINARIES_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/build"
+    BINARIES_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/src/build"
 
   tags:
     - public-runner-docker
