@@ -56,9 +56,9 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
       set( exec_wasm_name "beekeeper.common" )
       set( exec_ts_gen "beekeeper_ts_gen_common" )
 
-      message(NOTICE "Configuring '${exec_wasm_name}' and '${exec_ts_gen}'")
+      message(NOTICE "Configuring '${exec_wasm_name}' and '${exec_ts_gen}' in ${TARGET_ENVIRONMENT} environment")
 
-      IF (${TARGET_ENVIRONMENT} STREQUAL "web")
+      IF ("${TARGET_ENVIRONMENT}" STREQUAL "web")
         MESSAGE( STATUS "Chosen web target environment")
         SET ( NODE_ENV 0 )
       ELSE()
@@ -110,14 +110,6 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
       target_link_options( ${exec_ts_gen} PUBLIC
         --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts" )
 
-       IF(${NODE_ENV})
-         target_link_options( ${exec_ts_gen} PUBLIC -sENVIRONMENT="node" -sNODERAWFS=1)
-         target_link_libraries( ${exec_ts_gen} PUBLIC nodefs.js )
-       ELSE()
-         target_link_options( ${exec_ts_gen} PUBLIC -sENVIRONMENT="web")
-         target_link_libraries( ${exec_ts_gen} PUBLIC idbfs.js)
-       endif()
-
       INSTALL( FILES  "${CMAKE_CURRENT_BINARY_DIR}/${exec_wasm_name}.d.ts"
         COMPONENT "${exec_wasm_name}_dts"
         DESTINATION .
@@ -126,12 +118,3 @@ function( DEFINE_BEEKEEPER_TARGET_FOR )
 endfunction()
 
 DEFINE_BEEKEEPER_TARGET_FOR()
-#DEFINE_BEEKEEPER_TARGET_FOR(web)
-
-#target_link_options( beekeeper_wasm_node PUBLIC -sNODERAWFS=1 )
-#target_link_libraries( beekeeper_wasm_node PUBLIC nodefs.js )
-#target_link_libraries( beekeeper_ts_gen_node PUBLIC nodefs.js )
-
-#target_link_options( beekeeper_common PUBLIC )
-#target_link_libraries( beekeeper_common PUBLIC idbfs.js )
-#target_link_libraries( beekeeper_ts_gen_common PUBLIC idbfs.js )
