@@ -1,4 +1,4 @@
-import type { MainModule } from "../build/beekeeper.common";
+import type { MainModule } from "../build/beekeeper_wasm.common";
 import { BeekeeperError } from "./errors.js";
 import { safeWasmCall } from "./util/wasm_error.js";
 

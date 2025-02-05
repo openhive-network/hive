@@ -1,4 +1,4 @@
-import type { MainModule, beekeeper_api } from "../build/beekeeper.common";
+import type { MainModule, beekeeper_api } from "../build/beekeeper_wasm.common";
 
 import { BeekeeperError } from "./errors.js";
 import { BeekeeperFileSystem } from "./fs.js";

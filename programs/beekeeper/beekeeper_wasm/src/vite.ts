@@ -2,7 +2,7 @@ export * from "./detailed/index.js";
 
 // @ts-expect-error ts(6133) Types used in JSDoc generation
 import createBeekeeperBase, { type BeekeeperError, type IBeekeeperOptions, type IBeekeeperInstance } from "./detailed/index.js";
-import Beekeeper from "./build/beekeeper.common.js";
+import Beekeeper from "./build/beekeeper_wasm.common.js";
 
 const moduleArgs = (async () => {
   // Resolve WASM url only for Nuxt client (first condition) or Vite client (second condition)
