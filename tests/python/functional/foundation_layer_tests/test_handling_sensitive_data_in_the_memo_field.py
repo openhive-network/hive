@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from helpy.exceptions import RequestError
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -56,7 +56,7 @@ def test_handling_sensitive_data_in_the_memo_field(
             broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
     else:
-        with pytest.raises(RequestError) as error:
+        with pytest.raises(ErrorInResponseError) as error:
             broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
         error_message = f"Detected private {role} key in memo field. You should change your {role} key"

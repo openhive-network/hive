@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -28,7 +29,7 @@ def test_publish_feed_from_non_witness_account(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
     # test case 2.1 from https://gitlab.syncad.com/hive/hive/-/issues/633
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         alice.feed_publish(base=1000, quote=100)
     assert "unknown key" in error.value.error, "Message other than expected."
     alice.check_if_account_has_witness_role(expected_witness_role=False)

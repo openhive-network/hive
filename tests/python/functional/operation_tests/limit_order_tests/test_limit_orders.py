@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
-import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     get_number_of_fill_order_operations,
 )
 
 if TYPE_CHECKING:
+    import test_tools as tt
     from python.functional.operation_tests.conftest import LimitOrderAccount
 
 """
@@ -54,7 +55,7 @@ def test_not_matching_orders_with_fill_or_kill(
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
     getattr(alice, create_normal_order)(150, 200, buy_hbd=not use_hbd_in_matching_order)
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         getattr(bob, create_main_order)(200, 300, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
 
     assert "Cancelling order because it was not filled" in str(error.value), "Other error than expected occurred."

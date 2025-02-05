@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -76,10 +77,10 @@ def test_create_proposal_fail_negative_payment(
     prepared_proposal.create_proposal_arguments["daily_pay"] = negative_value  # "-1.000 TBD"
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(CommunicationError) as exception:
         wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
 
-    response = exception.value.error
+    response = exception.value.get_response_error_messages()[0]
     assert "daily_pay.amount >= 0" in response
     assert "Daily pay can't be negative value" in response
 

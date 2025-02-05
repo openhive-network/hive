@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 UINT64_MAX = 2**64 - 1
 
@@ -61,19 +66,19 @@ def test_get_ops_in_block(
 def test_get_ops_in_block_with_incorrect_types_of_argument(
     node: tt.InitNode | tt.RemoteNode, block_num: dict | int | str | tuple, only_virtual: dict | list | str | tuple
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.get_ops_in_block(block_num, only_virtual)
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
 def test_get_ops_in_block_with_additional_argument(node: tt.InitNode | tt.RemoteNode) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.get_ops_in_block(0, False, "additional_argument")
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
 def test_get_ops_in_block_without_arguments(node: tt.InitNode | tt.RemoteNode) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.get_ops_in_block()
 
 

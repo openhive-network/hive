@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from helpy.exceptions import RequestError
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -64,5 +64,7 @@ def test_signing_with_authority(node: tt.InitNode) -> None:
     wallet2.api.use_authority("active", "tst-alice")
 
     # negative test
-    with pytest.raises(RequestError, match=r"Public key STM[\w]{50} not found in InitNode\d+\.Wallet\d+ wallet"):
+    with pytest.raises(
+        ErrorInResponseError, match=r"Public key STM[\w]{50} not found in InitNode\d+\.Wallet\d+ wallet"
+    ):
         wallet2.api.transfer(alice.name, "initminer", tt.Asset.from_legacy("0.001 TESTS"), "this will NOT work")

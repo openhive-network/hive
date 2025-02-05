@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -95,7 +96,7 @@ def test_recovery_account_process_without_changing_owner_key(node: tt.InitNode) 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
     assert "Recent authority not found in authority history." in exception.value.error
@@ -113,7 +114,7 @@ def test_confirm_account_recovery_without_account_recovery_request(node: tt.Init
     new_authority = basic_authority(new_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="new_key"))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
     assert "There are no active recovery requests for this account." in exception.value.error
@@ -140,7 +141,7 @@ def test_account_recovery_process_with_mismatched_key(node: tt.InitNode) -> None
     random_authority = basic_authority(random_key)
     wallet.api.import_key(tt.PrivateKey("alice", secret="random_key"))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         # The key does not match the key provided in the recovery request
         wallet.api.recover_account("alice", primary_authority, random_authority)
 
@@ -181,7 +182,7 @@ def test_create_account_recovery_request_from_random_account_as_recovery_agent(n
     recovery_account_key = tt.Account("random-account").public_key
     authority = basic_authority(recovery_account_key)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         # alice confirms the request made by random account
         wallet.api.request_account_recovery("random-account", "alice", authority)
 
@@ -198,7 +199,7 @@ def test_create_recovery_account_request_from_future_recovery_agent(node: tt.Ini
     new_key = tt.Account("alice", secret="new_key").public_key
     new_authority = basic_authority(new_key)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.request_account_recovery("future-agent", "alice", new_authority)
 
     assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
@@ -262,7 +263,7 @@ def test_try_to_confirm_account_recovery_request_with_expired_key(node: tt.InitN
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_new_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         # alice confirms the request made by her agent
         wallet.api.recover_account("alice", alice_original_authority, new_authority)
 
@@ -345,7 +346,7 @@ def test_use_account_recovery_system_twice_within_a_short_period_of_time(node: t
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_second_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.recover_account("alice", alice_original_authority, new_authority)
     # FIXME: After repair (https://gitlab.syncad.com/hive/hive/-/issues/469) uncomment assert and change error message
     # assert "EXPECTED ERROR MESSAGE" in exception.value.response["error"]["message"]

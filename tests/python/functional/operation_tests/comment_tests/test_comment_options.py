@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from helpy._interfaces.wax import WaxOperationFailedError
-from helpy.exceptions import HelpyError, RequestError
+from helpy.exceptions import ErrorInResponseError, HelpyError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
@@ -154,7 +154,7 @@ def test_try_change_comment_option_again(
         options_and_values_to_modify_after_creating_comment[1]
     )
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         comment.options(**updated_comment_options)
 
     assert error_message in error.value.error, "Appropriate error message is not raise"
@@ -228,7 +228,7 @@ def test_change_comment_options_after_vote(
     comment.send(reply_type=reply_type)
     comment.vote()
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         comment.options(**comment_options)
 
     assert (
@@ -265,7 +265,7 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment already has beneficiaries specified.",
-            RequestError,
+            ErrorInResponseError,
         ),
     ],
     ids=["try_remove_the_beneficiary_after_comment", "try_add_another_beneficiary_after_comment"],
@@ -335,7 +335,7 @@ def test_beneficiary_after_vote(
 
     if isinstance(error.value, WaxOperationFailedError):
         error_value = error.value.args[0]
-    if isinstance(error.value, RequestError):
+    if isinstance(error.value, ErrorInResponseError):
         error_value = error.value.error
 
     assert error_message in error_value, "Appropriate error message is not raise"

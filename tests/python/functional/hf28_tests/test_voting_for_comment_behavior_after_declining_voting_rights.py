@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -41,7 +42,7 @@ def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
 
     assert "Voter has declined their voting rights." in exception.value.error, "Error message other than expected"
@@ -143,7 +144,7 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
     wallet.api.decline_voting_rights("alice", True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 50)
 
 

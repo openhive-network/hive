@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from helpy.exceptions import CommunicationError
+
 import test_tools as tt
 
 """
@@ -70,6 +72,6 @@ def is_dust_vote_ignored(wallet):
 
     try:
         wallet.api.sign_transaction(transaction_containing_comment_option_operation)
-    except tt.exceptions.CommunicationError:
+    except CommunicationError:
         return False
     return True

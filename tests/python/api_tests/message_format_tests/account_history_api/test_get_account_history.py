@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 ACCOUNT = "initminer"
 
@@ -68,7 +73,7 @@ def test_get_account_history_with_incorrect_values(
     start: dict | int | list | None | str,
     limit: dict | int | list | None | str,
 ) -> None:
-    with pytest.raises(tt.exceptions.RequestError):
+    with pytest.raises(ErrorInResponseError):
         node.api.account_history.get_account_history(
             account=account_name,
             start=start,

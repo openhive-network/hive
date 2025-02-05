@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 ACCOUNTS = [f"account-{i}" for i in range(3)]
 
@@ -47,17 +52,17 @@ def test_find_rc_accounts_with_correct_value(
 def test_find_rc_accounts_with_incorrect_type_of_argument(
     node: tt.InitNode, rc_accounts: bool | int | list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.find_rc_accounts(rc_accounts)
 
 
 @run_for("testnet")
 def test_find_rc_accounts_with_missing_argument(node: tt.InitNode) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.find_rc_accounts()
 
 
 @run_for("testnet")
 def test_find_rc_accounts_with_additional_argument(node: tt.InitNode) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.find_rc_accounts([ACCOUNTS[0]], "additional_argument")

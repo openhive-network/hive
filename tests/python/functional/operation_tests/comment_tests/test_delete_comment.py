@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
@@ -54,7 +55,7 @@ def test_try_to_delete_comment_with_votes(prepared_node: tt.InitNode, wallet: tt
     comment.send(reply_type=reply_type)
     comment.vote()
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         comment.delete()
 
     assert "Cannot delete a comment with net positive votes" in error.value.error
@@ -72,7 +73,7 @@ def test_try_to_delete_comment_with_top_comment(prepared_node: tt.InitNode, wall
 
     comment.send(reply_type=reply_type)
     comment.reply(reply_type="reply_another_comment")
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         comment.delete()
 
     assert "Cannot delete a comment with replies" in error.value.error
@@ -94,7 +95,7 @@ def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: 
     start_time = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
     prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         comment.delete()
 
     assert "Cannot delete comment after payout" in error.value.error

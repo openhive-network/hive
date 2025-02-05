@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -41,5 +42,5 @@ def test_get_accounts_with_correct_value(
 def test_get_accounts_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, account_key: bool | int | list
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_accounts(account_key)

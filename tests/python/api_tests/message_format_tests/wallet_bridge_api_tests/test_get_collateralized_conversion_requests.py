@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -31,7 +32,7 @@ def test_get_collateralized_conversion_requests_with_correct_value(
 def test_get_collateralized_conversion_requests_with_incorrect_value(
     node: tt.InitNode | tt.RemoteNode, account_name: int | list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
@@ -40,7 +41,7 @@ def test_get_collateralized_conversion_requests_with_incorrect_value(
 def test_get_collateralized_conversion_requests_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, account_name: list
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_collateralized_conversion_requests(account_name)
 
 

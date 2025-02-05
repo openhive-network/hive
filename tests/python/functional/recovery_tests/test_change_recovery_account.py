@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pydantic
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -91,7 +92,7 @@ def test_change_recovery_agent_to_non_existing_account(node: tt.InitNode) -> Non
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.change_recovery_account("alice", "non-existing-acc")
 
 
@@ -103,7 +104,7 @@ def test_change_recovery_agent_to_the_same_recovery_agent(node: tt.InitNode) -> 
 
     assert get_recovery_agent(node, account_name="alice") == "initminer"
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.change_recovery_account("alice", "initminer")
 
 
@@ -153,5 +154,5 @@ def test_change_recovery_agent_with_too_low_threshold_authority(node: tt.InitNod
 
     wallet.api.use_authority(authority, "alice")
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.change_recovery_account("alice", "bob")

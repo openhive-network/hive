@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 UINT64_MAX = 2**64 - 1
 
@@ -46,7 +51,7 @@ def test_get_ops_in_block_with_correct_value(
 def test_get_ops_in_block_with_incorrect_value(
     node: tt.InitNode | tt.RemoteNode, block_number: int, virtual_operation: bool
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
 
 
@@ -65,5 +70,5 @@ def test_get_ops_in_block_with_incorrect_value(
 def test_get_ops_in_block_with_incorrect_type_of_arguments(
     node: tt.InitNode | tt.RemoteNode, block_number: list | str, virtual_operation: bool | list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)

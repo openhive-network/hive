@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -31,7 +32,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node: tt.InitNode, executions:
     wallet.create_account("receiver")
     wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recurrent_transfer(
             "sender",
             "receiver",
@@ -45,7 +46,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node: tt.InitNode, executions:
     expected_error_message = (
         f"Cannot set a transfer that would last for longer than {MAX_RECURRENT_TRANSFER_END_DATE} days"
     )
-    assert expected_error_message in str(exception.value)
+    assert expected_error_message in exception.value.get_response_error_messages()[0]
 
 
 @pytest.mark.parametrize("executions", [2, 3, 4])

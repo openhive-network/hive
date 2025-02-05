@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 from shared_tools.complex_networks import init_network
@@ -34,10 +35,12 @@ def hf26_operation_passed(wallet: tt.OldWallet) -> None:
 def hf26_operation_failed(wallet: tt.OldWallet) -> None:
     tt.logger.info("Creating `hf26` operations (fail expected)...")
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(CommunicationError) as exception:
         wallet.api.transfer("initminer", "alice", tt.Asset.Test(200).as_nai(), "memo")
 
-    assert "missing required active authority" in exception.value.error, "Incorrect error in `hf26` transfer operation"
+    assert (
+        "missing required active authority" in exception.value.get_response_error_messages()[0]
+    ), "Incorrect error in `hf26` transfer operation"
 
 
 def prepare_network(

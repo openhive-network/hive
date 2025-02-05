@@ -4,6 +4,7 @@ import operator
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -91,7 +92,7 @@ def test_voting_power_of_a_comment_on_current_hardfork(
     for comment_num in range(NUMBER_OF_REPLIES_TO_POST):
         try:
             wallet.api.vote(alice.name, "bob", f"comment-{comment_num}", weight)
-        except tt.exceptions.CommunicationError as error:
+        except ErrorInResponseError as error:
             message = str(error)
             assert "Account does not have enough mana" in message, "Not found expected error message."
 

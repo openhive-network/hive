@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -23,7 +24,7 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet) -> N
 
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 0)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.create_account(accounts[1], "bob", "{}")
 
 
@@ -47,7 +48,7 @@ def test_same_rc_delegation_rejection(wallet: tt.Wallet) -> None:
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         # Can not make same delegation RC two times
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
@@ -85,7 +86,7 @@ def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(2000))
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
 
 
@@ -95,7 +96,7 @@ def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(0.1))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.delegate_rc(accounts[1], [accounts[2]], 50)
 
 
@@ -107,7 +108,7 @@ def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
     operation = wallet.api.delegate_rc(accounts[0], [accounts[1]], 100, broadcast=False)
     operation["operations"][0][1]["required_posting_auths"][0] = accounts[1]
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.sign_transaction(operation)
 
 
@@ -115,7 +116,7 @@ def test_minus_rc_delegation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
 
 

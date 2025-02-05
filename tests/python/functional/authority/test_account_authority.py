@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -33,7 +34,7 @@ def test_posting_account_authority(node: tt.InitNode, authority_level: str, alic
         bob.wallet.api.post_comment(alice.name, "test-permlink", "", "someone0", "test-title", "body", "{}")
     else:
         assert not is_bob_authorized_to_sign_alice_transaction
-        with pytest.raises(tt.exceptions.CommunicationError) as exception:
+        with pytest.raises(ErrorInResponseError) as exception:
             bob.wallet.api.post_comment(alice.name, "test-permlink", "", "someone0", "test-title", "body", "{}")
         assert "missing required posting authority" in exception.value.error
 
@@ -59,7 +60,7 @@ def test_active_account_authority(node: tt.InitNode, authority_level: str, alice
         bob.wallet.api.transfer("alice", "initminer", tt.Asset.Test(10), "bob signed alice transfer.")
     else:
         assert not is_bob_authorized_to_sign_alice_transaction
-        with pytest.raises(tt.exceptions.CommunicationError) as exception:
+        with pytest.raises(ErrorInResponseError) as exception:
             bob.wallet.api.transfer("alice", "initminer", tt.Asset.Test(10), "bob signed alice transfer.")
         assert "missing required active authority" in exception.value.error
 
@@ -97,7 +98,7 @@ def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice:
         bob.wallet.api.import_key(tt.PrivateKey(bob.name, secret=authority_level))
         assert len(bob.wallet.api.list_keys()) == 1, "Bob's wallet has an incorrect number of keys. Expected 1"
 
-        with pytest.raises(tt.exceptions.CommunicationError) as exception:
+        with pytest.raises(ErrorInResponseError) as exception:
             bob.wallet.api.update_account(
                 alice.name,
                 "{}",
@@ -176,7 +177,7 @@ def test_signing_with_circular_account_authority(
     # bob trying broadcast a self - owner type operation (by active authority)
     bob.wallet.api.use_authority("active", bob.name)
     decline_voting_rights = bob.wallet.api.decline_voting_rights(bob.name, True, broadcast=False)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         bob.wallet.api.sign_transaction(decline_voting_rights)
 
     """
@@ -190,19 +191,19 @@ def test_signing_with_circular_account_authority(
     """
     # bob as carol's owner account authority can't set carol's active authority to redirect to bob
     bob.wallet.api.use_authority("active", bob.name)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         bob.wallet.api.update_account_auth_account(carol.name, "active", bob.name, 1)
 
     # bob can't sign owner type operation (use active bob authority)
     bob.wallet.api.use_authority("active", bob.name)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         bob.wallet.api.sign_transaction(decline_voting_rights)
 
     carol.wallet.api.import_key(tt.PrivateKey(account_name=carol.name, secret="owner"))
     assert len(carol.wallet.api.list_keys()) == 1, "Carol's wallet has an incorrect number of imported keys. Expected 1"
     carol.wallet.api.use_authority("owner", carol.name)
     # carol can't sign owner type operation (use owner carol authority)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         carol.wallet.api.sign_transaction(decline_voting_rights)
 
 
@@ -216,6 +217,6 @@ def test_automatic_transaction_signing_by_key_with_higher_authority_level(
     bob.wallet.api.use_automatic_authority()
 
     post = bob.wallet.api.post_comment(bob.name, "test-permlink", "", "someone", "title", "body", "{}", broadcast=False)
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         bob.wallet.api.sign_transaction(post)
     assert "missing required posting authority" in error.value.error

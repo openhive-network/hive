@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -17,7 +18,7 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     # test case 1.1 from https://gitlab.syncad.com/hive/hive/-/issues/645
     alice.check_if_account_has_witness_role(expected_witness_role=False)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         alice.witness_block_approve(block_id=100)
     assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()
@@ -35,7 +36,7 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     alice.update_witness_properties(new_block_signing_key=tt.Account("random-name").public_key)
     alice.rc_manabar.update()
     wallet.api.use_authority("active", "alice")
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         alice.witness_block_approve(block_id=100)
     assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()

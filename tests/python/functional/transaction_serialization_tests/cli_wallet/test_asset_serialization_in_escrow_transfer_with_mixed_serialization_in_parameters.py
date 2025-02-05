@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -32,7 +33,7 @@ def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(CommunicationError):
         wallet_with_legacy_serialization.api.escrow_transfer(
             "initminer",
             "alice",
@@ -73,7 +74,7 @@ def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(CommunicationError):
         wallet_with_legacy_serialization.api.escrow_transfer(
             "initminer",
             "alice",
@@ -114,7 +115,7 @@ def test_fee_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_seriali
         wallet_with_legacy_serialization.api.create_account("initminer", "alice", "{}")
         wallet_with_legacy_serialization.api.create_account("initminer", "bob", "{}")
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(CommunicationError):
         wallet_with_legacy_serialization.api.escrow_transfer(
             "initminer",
             "alice",

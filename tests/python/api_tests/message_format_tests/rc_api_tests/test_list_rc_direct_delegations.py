@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -59,7 +60,7 @@ def test_list_rc_direct_delegations_with_correct_value(
 def test_list_rc_direct_delegations_with_incorrect_value(
     ready_node: tt.InitNode | tt.RemoteNode, from_: str, to: str, limit: int
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
@@ -94,13 +95,13 @@ def test_list_rc_direct_delegations_with_additional_argument(ready_node: tt.Init
 def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
     ready_node: tt.InitNode | tt.RemoteNode, from_: int | list | str, to: int | list | str, limit: int | list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_direct_delegations_with_missing_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         ready_node.api.rc.list_rc_direct_delegations(start=[ACCOUNTS[0], ACCOUNTS[1]])
 
 

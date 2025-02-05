@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import MIN_RECURRENT_TRANSFERS_RECURRENCE
@@ -305,7 +306,7 @@ def test_recurrent_transfer_with_extension_cases_11_and_12(
 
     jump_to_date(node, time_control=rtd1.timestamp + tt.Time.hours(RECURRENT_TRANSFER_DEFINITIONS[0].recurrence / 2))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         # create recurrent transfer (rtd2) with insufficient resources
         RecurrentTransfer(
             node,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -142,7 +143,7 @@ def test_try_to_release_escrow_with_forbidden_arguments_before_or_after_expirati
         start_time = prepared_node.get_head_block_time() + tt.Time.weeks(4)
         prepared_node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         escrow.release(who=release_author, receiver=release_target, hbd_amount=hbd_amount, hive_amount=hive_amount)
     assert "release" in exception.value.error, "Message other than expected."
 
@@ -512,7 +513,7 @@ def test_try_to_release_escrow_with_dispute(prepare_escrow, hbd_amount, hive_amo
     for release_author, release_target in zip(
         (escrow.to_account, escrow.from_account), (escrow.from_account, escrow.to_account)
     ):
-        with pytest.raises(tt.exceptions.CommunicationError) as exception:
+        with pytest.raises(ErrorInResponseError) as exception:
             escrow.release(who=release_author, receiver=release_target, hbd_amount=hbd_amount, hive_amount=hive_amount)
         assert "release funds in a disputed escrow" in exception.value.error, "Message other than expected."
 
