@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 
@@ -80,7 +81,7 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
     assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(0.111)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(CommunicationError) as exception:
         wallet.api.claim_reward_balance("initminer", tt.Asset.Test(0), tt.Asset.Tbd(0), tt.Asset.Vest(0.000001))
 
-    assert "Cannot claim that much VESTS" in exception.value.error
+    assert "Cannot claim that much VESTS" in exception.value.get_response_error_messages()[0]

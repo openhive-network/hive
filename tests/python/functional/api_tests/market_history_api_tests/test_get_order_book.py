@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -47,7 +48,7 @@ def test_get_order_book_after_successful_transaction_finishing_all_orders(node: 
 
 @run_for("testnet", enable_plugins=["market_history_api"])
 def test_exceed_limit_parameter(node):
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.market_history.get_order_book(limit=501)
 
 

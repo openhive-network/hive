@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
+from helpy.exceptions import ErrorInResponseError
+
 import test_tools as tt
 import wax
 from hive_local_tools.functional.python.operation import (
@@ -438,7 +440,7 @@ class Comment:
         try:
             self.__wallet.api.vote(voter.name, self.author, self.permlink, 1)
             vote_send = True
-        except tt.exceptions.CommunicationError:
+        except ErrorInResponseError:
             vote_send = False
 
         if mode == "deleted":

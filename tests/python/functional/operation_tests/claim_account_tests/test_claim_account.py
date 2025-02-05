@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.claim_account import ClaimAccountToken
@@ -53,7 +54,7 @@ def test_crate_claim_account_token_without_enough_rc(
     """User doesn't have enough RC to crate a token"""
     assert alice.vest == tt.Asset.Vest(0)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee)
 
     assert "Account: alice has 0 RC, needs " in exception.value.error
@@ -70,7 +71,7 @@ def test_crate_claim_account_token_without_enough_hive_balance_to_cover_fee(
     """A user tries to claim a token in HIVE, but he doesn't have enough HIVE."""
     assert alice.hive == tt.Asset.Test(0)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee)
 
     assert "Insufficient balance to create account." in exception.value.error
@@ -88,7 +89,7 @@ def test_crate_claim_account_token_with_insufficient_fee(
     alice.top_up(tt.Asset.Test(4))
     assert alice.get_hive_balance() > fee
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee + tt.Asset.Test(1))
 
     assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error
@@ -106,7 +107,7 @@ def test_claim_account_creation_token_with_excessive_fee(
     alice.top_up(tt.Asset.Test(4))
     assert alice.get_hive_balance() > fee
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee - tt.Asset.Test(1))
 
     assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error

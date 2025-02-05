@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import CommunicationError
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 def test_account_creation(wallet: tt.OldWallet) -> None:
@@ -30,7 +34,7 @@ def test_account_creation(wallet: tt.OldWallet) -> None:
 def test_creation_of_account_with_invalid_name(
     wallet: tt.OldWallet, account_name: str, expected_error_message: str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(CommunicationError) as exception:
         wallet.api.create_account("initminer", account_name, "{}")
 
-    assert expected_error_message in exception.value.error
+    assert expected_error_message in exception.value.get_response_error_messages()[0]

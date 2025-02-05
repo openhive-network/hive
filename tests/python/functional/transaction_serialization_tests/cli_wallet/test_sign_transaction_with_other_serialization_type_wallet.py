@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 
@@ -29,11 +30,11 @@ def test_sign_legacy_transaction_with_hf26_wallet(wallet_with_legacy_serializati
     legacy_transaction = wallet_with_legacy_serialization.api.create_account(
         "initminer", "alice", "{}", broadcast=False
     )
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet_with_hf26_serialization.api.sign_transaction(legacy_transaction)
 
 
 def test_sign_hf26_transaction_with_legacy_wallet(wallet_with_legacy_serialization, wallet_with_hf26_serialization):
     hf26_transaction = wallet_with_hf26_serialization.api.create_account("initminer", "alice", "{}", broadcast=False)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet_with_legacy_serialization.api.sign_transaction(hf26_transaction)

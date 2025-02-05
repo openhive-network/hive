@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Final
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -216,7 +217,7 @@ def test_too_long_account_name_length(node, api, method, arguments, keyword_argu
         selected_method = getattr(selected_api, method_)
         return selected_method(*arguments_, **keyword_arguments_)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         call(node, api, method, *arguments, **keyword_arguments)
 
     response = exception.value.error

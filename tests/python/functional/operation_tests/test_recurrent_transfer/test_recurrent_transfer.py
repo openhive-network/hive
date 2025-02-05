@@ -4,6 +4,7 @@ Test scenarios: https://gitlab.syncad.com/hive/hive/-/issues/484
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -810,7 +811,7 @@ def test_recurrent_transfer_cases_27_and_28(
     """
     User tries to create a recurrent transfer in Hive / HBD to be executed 3 times every 366 days.
     """
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         RecurrentTransfer(
             node,
             wallet,

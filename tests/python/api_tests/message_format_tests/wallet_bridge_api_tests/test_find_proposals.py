@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -51,7 +52,7 @@ def test_find_proposals_with_incorrect_values(
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
         prepare_proposals(wallet, ACCOUNTS)
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.find_proposals(proposal_id)
 
 
@@ -66,5 +67,5 @@ def test_find_proposals_with_incorrect_values(
 def test_find_proposals_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, proposal_id: list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.find_proposals(proposal_id)

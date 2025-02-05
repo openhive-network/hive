@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
 from schemas.operations.virtual import DeclinedVotingRightsOperation
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 @run_for("testnet")
@@ -54,7 +59,7 @@ def test_vote_with_declined_voting_rights(prepare_environment: tuple[tt.InitNode
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.vote_for_witness(VOTER_ACCOUNT, "initminer", approve=True)
 
     assert "Account has declined its voting rights." in exception.value.error, "Error message other than expected."

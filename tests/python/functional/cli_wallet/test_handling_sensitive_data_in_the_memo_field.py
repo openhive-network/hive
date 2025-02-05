@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -59,7 +60,7 @@ def test_handling_sensitive_data_in_the_memo_field(
     memo_message = get_memo_message(memo_type, role, private_key)
 
     error_message = "#"
-    with pytest.raises(tt.exceptions.CommunicationError) as error:  # noqa: PT012
+    with pytest.raises(CommunicationError) as error:  # noqa: PT012
         match broadcast_way:
             case "api":
                 error_message = f"Detected private {role} key in memo field. You should change your {role} key"
@@ -68,7 +69,7 @@ def test_handling_sensitive_data_in_the_memo_field(
                 error_message = f"Detected private {role} key in memo field. Cancelling transaction."
                 broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
-    assert error_message in error.value.error
+    assert error_message in error.value.get_response_error_messages()[0]
 
 
 @run_for("testnet")
@@ -85,10 +86,10 @@ def test_handle_by_wallet_additional_private_key_in_memo_field(
 
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(CommunicationError) as error:
         broadcast_transaction_by_wallet(wallet, operation, memo=extra_private_key)
 
-    assert "Detected imported private key in memo field. Cancelling transaction." in error.value.error
+    assert "Detected imported private key in memo field. Cancelling transaction." in str(error.value)
 
 
 def broadcast_transaction_by_api(

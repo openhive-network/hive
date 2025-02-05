@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 @pytest.mark.parametrize(
@@ -74,7 +79,7 @@ def test_get_ops_in_block_with_incorrect_type_of_arguments(
     virtual_operation: bool | dict | list | str,
     include_reversible: bool | dict | list | str,
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.account_history.get_ops_in_block(
             block_num=block_num,
             only_virtual=virtual_operation,

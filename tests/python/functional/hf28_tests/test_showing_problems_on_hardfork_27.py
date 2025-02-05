@@ -7,6 +7,7 @@ from __future__ import annotations
 import time
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -29,13 +30,13 @@ def test_decline_voting_rights_more_than_once_on_hf_27(
         "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
     )
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
+    with pytest.raises(ErrorInResponseError) as exception_from_hf_27:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     assert error_message in exception_from_hf_27.value.error
 
     wait_for_hardfork_28_application(node)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
+    with pytest.raises(ErrorInResponseError) as exception_from_hf_28:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     assert error_message in exception_from_hf_28.value.error
 
@@ -84,13 +85,13 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_h
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     error_message = "Voter declined voting rights, therefore casting votes is forbidden."
-    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
+    with pytest.raises(ErrorInResponseError) as exception_from_hf_27:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     assert error_message in exception_from_hf_27.value.error
 
     wait_for_hardfork_28_application(node)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
+    with pytest.raises(ErrorInResponseError) as exception_from_hf_28:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     assert error_message in exception_from_hf_28.value.error
 

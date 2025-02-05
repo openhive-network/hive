@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_number_of_active_proposals, get_virtual_operations
@@ -88,7 +89,7 @@ def test_try_to_create_proposal(
     # test cases 7-10 from https://gitlab.syncad.com/hive/hive/-/issues/594
     proposal_creator = eval(proposal_creator)
     wallet.api.post_comment("alice", "comment-permlink", "", "category", "title", "body", "{}")
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         proposal_creator.create_proposal(proposal_receiver, tt.Time.now(), end_date)
     assert "Proposal permlink must point to the article posted by creator or receiver" in error.value.error
     assert get_number_of_active_proposals(prepared_node) == 0, "It shouldn't be any active proposals."

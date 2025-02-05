@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
+from helpy.exceptions import ErrorInResponseError
+
 import test_tools as tt
 import wax
 from hive_local_tools.constants import (
@@ -375,7 +377,7 @@ def create_transaction_with_any_operation(
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
     try:
         wallet.api.set_voting_proxy(account_name, "initminer")
-    except tt.exceptions.CommunicationError as error:
+    except ErrorInResponseError as error:
         if "Proxy must change" not in str(error):
             raise
 

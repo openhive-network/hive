@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+import pytest
+from helpy.exceptions import ErrorInResponseError
+
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
 from schemas.operations.virtual import DeclinedVotingRightsOperation
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 @run_for("testnet")
@@ -46,7 +51,7 @@ def test_decline_voting_rights_more_than_once(
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         wallet.api.decline_voting_rights(voter.name, True)
     assert (
         "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
@@ -66,7 +71,7 @@ def test_create_two_decline_voting_rights_requests(
     )
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.decline_voting_rights(voter.name, True)
 
     assert (
@@ -86,7 +91,7 @@ def test_remove_non_existent_decline_voting_rights_request(
 ) -> None:
     _, wallet = prepare_environment
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.decline_voting_rights(voter.name, False)
 
     assert (

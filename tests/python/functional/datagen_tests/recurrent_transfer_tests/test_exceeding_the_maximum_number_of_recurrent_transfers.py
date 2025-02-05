@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -42,7 +43,7 @@ def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one
     )
 
     # Validate there is exception after sending 256th recurrent transfer from the same sender
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         wallet.api.recurrent_transfer(
             account_that_sends_all_recurrent_transfers,
             account_that_exceed_transfers_limit,

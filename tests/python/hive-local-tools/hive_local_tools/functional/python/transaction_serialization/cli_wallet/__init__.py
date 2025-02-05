@@ -5,6 +5,7 @@ import inspect
 from typing import Callable, Iterable
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 
@@ -54,7 +55,7 @@ def run_for_all_cases(**assets: tt.Asset.AnyT):
             if formats_matches:
                 return test(**kwargs)
 
-            with pytest.raises(tt.exceptions.CommunicationError):
+            with pytest.raises(CommunicationError):
                 test(**kwargs)  # noqa: RET503
 
         return __decorated_test

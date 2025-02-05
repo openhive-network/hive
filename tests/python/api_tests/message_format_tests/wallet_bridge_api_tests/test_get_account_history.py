@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -69,7 +70,7 @@ def test_get_account_history_with_correct_value(
 def test_get_account_history_with_incorrect_value(
     node: tt.InitNode | tt.RemoteNode, account: bool | int | str, from_: bool | int, limit: bool | int
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
@@ -99,5 +100,5 @@ def test_get_account_history_with_incorrect_type_of_argument(
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)

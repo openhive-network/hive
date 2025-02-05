@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import CommunicationError
 
 import test_tools as tt
 
@@ -56,5 +57,5 @@ def test_signing_with_authority(node: tt.InitNode) -> None:
     wallet2.api.use_authority("active", "tst-alice")
 
     # negative test
-    with pytest.raises(tt.exceptions.CommunicationError, match="Missing Active Authority"):
+    with pytest.raises(CommunicationError, match="Missing Active Authority"):
         wallet2.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will NOT work")

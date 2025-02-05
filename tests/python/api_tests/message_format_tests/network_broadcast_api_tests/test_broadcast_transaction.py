@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -19,5 +20,5 @@ def test_broadcast_transaction(node: tt.InitNode) -> None:
 def test_broadcast_transaction_with_incorrect_type_of_argument(
     node: tt.InitNode, transaction_name: bool | int | list | str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         node.api.network_broadcast.broadcast_transaction(trx=transaction_name)

@@ -3,11 +3,11 @@ from __future__ import annotations
 import datetime
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
 from hive_local_tools.functional.python.operation.comment import Comment, Vote
-from test_tools.__private.exceptions import CommunicationError
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["vote comment", "vote post"])
@@ -128,7 +128,7 @@ def test_vote_on_not_paid_out_comment_with_not_allowed_votes(
     comment.options(allow_votes=False)
 
     vote = Vote(comment, voter="random")
-    with pytest.raises(CommunicationError) as error:
+    with pytest.raises(ErrorInResponseError) as error:
         vote.vote(100)
 
     assert "Votes are not allowed on the comment." in error.value.error

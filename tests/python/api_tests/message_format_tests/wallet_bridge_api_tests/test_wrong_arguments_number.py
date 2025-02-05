@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -60,7 +61,7 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
 def test_run_command_without_arguments_where_arguments_are_required(
     node: tt.InitNode | tt.RemoteNode, wallet_bridge_api_command: str
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
 
@@ -80,7 +81,7 @@ def test_run_command_with_additional_argument(
     node: tt.InitNode | tt.RemoteNode, should_prepare: bool, wallet_bridge_api_command: str, arguments: tuple
 ) -> None:
     if is_mainnet_5m_node(node) and wallet_bridge_api_command == "get_reward_fund":
-        with pytest.raises(tt.exceptions.CommunicationError):
+        with pytest.raises(ErrorInResponseError):
             getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
     else:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
@@ -102,5 +103,5 @@ def test_run_command_with_additional_argument(
 def test_run_command_with_missing_argument(
     node: tt.InitNode | tt.RemoteNode, wallet_bridge_api_command: str, arguments: tuple
 ) -> None:
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(ErrorInResponseError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])

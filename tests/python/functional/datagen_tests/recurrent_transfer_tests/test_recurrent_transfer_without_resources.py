@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -15,10 +16,10 @@ def test_recurrent_transfer_without_resources(node: tt.InitNode) -> None:
 
     wallet.create_account("sender")
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recurrent_transfer(
             "sender", "initminer", tt.Asset.Test(100), "recurrent transfer to receiver", 24, executions
         )
 
     expected_error_message = "Account does not have enough tokens for the first transfer, has"
-    assert expected_error_message in str(exception.value)
+    assert expected_error_message in exception.value.error

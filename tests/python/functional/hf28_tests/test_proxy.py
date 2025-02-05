@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -94,7 +95,7 @@ def test_too_long_proxy_chain(node: tt.InitNode) -> None:
         for i in range(3):
             wallet.api.set_voting_proxy(f"account-layer-{i + 1}", f"account-layer-{i}")
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.set_voting_proxy("account-layer-4", "account-layer-3")
     assert "Proxy chain is too long." in exception.value.error
 
@@ -132,7 +133,7 @@ def test_set_the_proxy_on_the_same_account_twice(node: tt.InitNode) -> None:
 
     wallet.api.set_voting_proxy("alice", "bob")
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.set_voting_proxy("alice", "bob")
 
     assert "Proxy must change." in exception.value.error

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from helpy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -62,7 +63,7 @@ def test_set_proxy_after_waiving_voting_rights(
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.set_voting_proxy(voter.name, proxy.name)
 
     assert (
