@@ -7,11 +7,11 @@ import Beekeeper from "./build/beekeeper_wasm.common.js";
 const moduleArgs = (async () => {
   // Resolve WASM url only for Nuxt client (first condition) or Vite client (second condition)
   if ((import.meta as any).client || (!("client" in import.meta) && typeof (import.meta as any).env === "object" && "SSR" in (import.meta as any).env)) {
-      const resolvedUrl = (await import('./build/beekeeper.common.wasm' + '?url')).default;
+      const resolvedUrl = (await import('./build/beekeeper_wasm.common.wasm' + '?url')).default;
 
       return {
           locateFile: (path, scriptDirectory) => {
-              if (path === "beekeeper.common.wasm")
+              if (path === "beekeeper_wasm.common.wasm")
                   return resolvedUrl;
               return scriptDirectory + path;
           }
