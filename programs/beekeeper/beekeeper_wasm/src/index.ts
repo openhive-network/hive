@@ -11,6 +11,12 @@ export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as 
 
 export * from "./detailed/index.js";
 
+// Polyfill for web workers in WASM
+declare global {
+  var WorkerGlobalScope: /* object extends */ EventTarget | undefined;
+}
+const ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope != 'undefined';
+
 /**
  * Creates a Beekeeper instance able to own sessions and wallets
  *
@@ -21,7 +27,13 @@ export * from "./detailed/index.js";
  * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
  */
 const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBeekeeperInstance> => {
-  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, {}, process.env.ROLLUP_TARGET_ENV === "web", options);
+  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT,  {
+    locateFile: (path, scriptDirectory) => {
+        if (path === "beekeeper_wasm.common.wasm")
+            return new URL("./build/beekeeper_wasm.common.wasm", ENVIRONMENT_IS_WORKER ? self.location.href : import.meta.url).href;
+        return scriptDirectory + path;
+    }
+  }, process.env.ROLLUP_TARGET_ENV === "web", options);
 };
 
 export default createBeekeeper;
