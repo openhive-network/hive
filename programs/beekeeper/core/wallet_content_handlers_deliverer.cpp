@@ -30,7 +30,7 @@ void wallet_content_handlers_deliverer::erase( const std::string& token, const s
     _idx.erase( _itr );
 }
 
-void wallet_content_handlers_deliverer::emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content )
+void wallet_content_handlers_deliverer::emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content, bool open_mode )
 {
   auto& _idx = items.get<by_token_wallet_name>();
   auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
@@ -38,11 +38,19 @@ void wallet_content_handlers_deliverer::emplace_or_modify( const std::string& to
   if( _itr == _idx.end() )
     _idx.emplace( wallet_content_handler_session( token, wallet_name, locked, content ) );
   else
+  {
+    if( open_mode )
+    {
+      if( !_itr->is_locked() )//A wallet is already unlocked. There is not necessary to do anything.
+        return;
+    }
+
     _idx.modify( _itr, [&]( wallet_content_handler_session& obj )
     {
       obj.set_locked( locked );
       obj.set_content( content );
     });
+  }
 }
 
 void wallet_content_handlers_deliverer::create( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name, const std::string& password, const bool is_temporary )
@@ -74,7 +82,7 @@ void wallet_content_handlers_deliverer::create( const std::string& token, const 
 
   _new_item->save_wallet_file();
 
-  emplace_or_modify( token, wallet_name, false, _new_item );
+  emplace_or_modify( token, wallet_name, false, _new_item, false/*open_mode*/ );
 }
 
 void wallet_content_handlers_deliverer::open( const std::string& token, const std::string& wallet_name, const std::string& wallet_file_name )
@@ -83,7 +91,7 @@ void wallet_content_handlers_deliverer::open( const std::string& token, const st
   auto _itr = _idx.find( wallet_name );
   if( _itr != _idx.end() )
   {
-    emplace_or_modify( token, wallet_name, true, _itr->get_content() );
+    emplace_or_modify( token, wallet_name, true, _itr->get_content(), true/*open_mode*/ );
     return;
   }
 
@@ -91,7 +99,7 @@ void wallet_content_handlers_deliverer::open( const std::string& token, const st
   _new_item->set_wallet_name( wallet_file_name );
   FC_ASSERT( _new_item->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_file_name) );
 
-  emplace_or_modify( token, wallet_name, true, _new_item );
+  emplace_or_modify( token, wallet_name, true, _new_item, false/*open_mode*/ );
 }
 
 } //wallet_content_handler

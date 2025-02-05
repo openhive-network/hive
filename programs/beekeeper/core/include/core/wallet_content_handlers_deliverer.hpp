@@ -81,7 +81,7 @@ class wallet_content_handlers_deliverer
       >
     > wallet_content_handler_session_index;
 
-      void emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content );
+      void emplace_or_modify( const std::string& token, const std::string& wallet_name, bool locked, const wallet_content_handler::ptr& content, bool open_mode );
 
    public:
 
