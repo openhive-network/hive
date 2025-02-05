@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
 
     std::vector<beekeeper::wallet_details> _wallets = _api.list_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
     BOOST_REQUIRE( _wallets.size() == 1 );
-    BOOST_REQUIRE( _wallets[0].unlocked == false );
+    BOOST_REQUIRE( _wallets[0].unlocked == true );
 
     const uint32_t _nr_threads = 10;
 

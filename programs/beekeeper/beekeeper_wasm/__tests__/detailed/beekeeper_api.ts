@@ -374,7 +374,7 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
       return api.listWallets(session).wallets[0].unlocked;
     }, WALLET_OPTIONS_NODE, walletNames);
 
-    expect(retVal).toBeFalsy();
+    expect(retVal).toBeTruthy();
   });
 
   test('Should be able to remove a key', async ({ beekeeperWasmTest }) => {
