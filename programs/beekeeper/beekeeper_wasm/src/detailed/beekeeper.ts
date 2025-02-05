@@ -1,4 +1,4 @@
-import type Beekeeper from "../build/beekeeper.common";
+import type Beekeeper from "../build/beekeeper_wasm.common";
 
 import { BeekeeperApi } from "./api.js";
 import { IBeekeeperInstance, IBeekeeperOptions } from "./interfaces.js";
