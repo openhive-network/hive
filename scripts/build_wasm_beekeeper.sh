@@ -21,8 +21,7 @@ DIRECT_EXECUTION=${1:-${DIRECT_EXECUTION_DEFAULT}}
 EXECUTION_PATH=${2:-"${EXECUTION_PATH_DEFAULT}"}
 
 build() {
-  CONFIG="$1"
-  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/src/build/${CONFIG}"
+  BUILD_DIR="${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/src/build"
   mkdir -vp "${BUILD_DIR}"
   cd "${BUILD_DIR}"
 
@@ -30,12 +29,12 @@ build() {
   cmake \
     -DBoost_NO_WARN_NEW_VERSIONS=1 \
     -DBoost_USE_STATIC_RUNTIME=ON \
-    -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DWASM_USE_FS=1 -DTARGET_ENVIRONMENT="${CONFIG}" -DCMAKE_BUILD_TYPE=Release -G "Ninja" \
+    -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release -G "Ninja" \
     -S "${EXECUTION_PATH}/programs/beekeeper/beekeeper_wasm/" \
     -B "${BUILD_DIR}"
   ninja -v -j8 2>&1 | tee -i "${BUILD_DIR}/build.log"
 
-  cmake --install "${BUILD_DIR}" --component beekeeper_wasm.common_runtime --prefix "${BUILD_DIR}/../"
+  cmake --install "${BUILD_DIR}" --component wasm_runtime_components --prefix "${BUILD_DIR}/"
 }
 
 if [ ${DIRECT_EXECUTION} -eq 0 ]; then
@@ -49,6 +48,5 @@ if [ ${DIRECT_EXECUTION} -eq 0 ]; then
 else
   echo "Performing a build..."
   cd "${EXECUTION_PATH}"
-  build "web"
-  build "node"
+  build
 fi
