@@ -17,13 +17,16 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
   auto _iter_pid = proposal_ids.begin();
   while( _iter_pid != proposal_ids.end() )
   {
-    auto foundPosI = byPropIdIdx.find( *_iter_pid );
+    auto _pid = *_iter_pid;
+
     ++_iter_pid;
+
+    auto foundPosI = byPropIdIdx.find( _pid );
 
     if(foundPosI == byPropIdIdx.end())
     {
-      if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
-        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal" );
+      if( db.is_in_control() || db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
+        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
       continue;
     }
 
@@ -34,18 +37,18 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
       break;
   }
 
-  if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
+  if( db.is_in_control() || db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
   {
     while( _iter_pid != proposal_ids.end() )
     {
       auto foundPosI = byPropIdIdx.find( *_iter_pid );
-      ++_iter_pid;
 
       if(foundPosI == byPropIdIdx.end())
       {
-        if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
-          FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal" );
+        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
       }
+
+      ++_iter_pid;
     }
   }
 }

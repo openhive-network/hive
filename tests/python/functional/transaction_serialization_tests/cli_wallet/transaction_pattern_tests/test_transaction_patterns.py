@@ -262,7 +262,11 @@ def test_remove_proposal(
     account_id = wallet.api.get_account("alice")["id"]
 
     transaction = wallet.api.remove_proposal("initminer", [account_id], broadcast=False)
-    replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
+    try:
+        replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
+    except Exception as e:
+        message = str(e)
+        assert message.find(f"Can\\'t remove nonexistent proposal with id: {account_id}") != -1
 
     verify_pattern(wallet, pattern_name)
 

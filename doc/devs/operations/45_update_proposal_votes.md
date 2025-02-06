@@ -19,12 +19,12 @@ The global parameters:
 
 ## 2. Parameters
 
-| Parameter name | Description | Example |                                                                                                                              
-| -------------- | ----------------------------------------------------------------------------------------|-------- |
-| voter            | Account name                                                                          |         |
-| proposal\_ids    | IDs of proposals to vote for/against. Nonexisting IDs are ignored.                    |         |
-| approve = false; | To vote for the proposal, the approve = true.<br>To remove the vote, the approve = false. |         |
-| extensions       |                                                                                       |         |
+| Parameter name | Description | Example |
+| -------------- | -------------------------------------------------------------------------------------------------------------------|-------- |
+| voter            | Account name                                                                                                     |         |
+| proposal\_ids    | IDs of proposals to vote for/against. Before HF28 nonexisting IDs are ignored from HF28 they trigger an error.   |         |
+| approve = false; | To vote for the proposal, the approve = true.<br>To remove the vote, the approve = false.                        |         |
+| extensions       |                                                                                                                  |         |
 
 ## 3. Authority
 
