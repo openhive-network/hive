@@ -6,12 +6,12 @@ Using operation remove\_proposal\_operation, a user may remove proposals specifi
 
 ## 2. Parameters
 
-| Parameter name | Description | Example |                                                                                                                              
-| -------------- | ---------------------------------------------------------------- | ------------ |
-| Parameter name  | Description                                                            | Example |
-| proposal\_owner | {creator} of the proposal (see operation: create\_proposal\_operation} |         |
-| proposal\_ids   | IDs of proposals to be removed. Nonexisting IDs are ignored.           |         |
-| extensions      | Not currently used.                                                    |         |
+| Parameter name | Description | Example |
+| --------------- | ----------------------------------------------------------------------------------------------------------|-------- |
+| Parameter name  | Description                                                                                               |         |
+| proposal\_owner | {creator} of the proposal (see operation: create\_proposal\_operation}                                    |         |
+| proposal\_ids   | IDs of proposals to be removed. Before HF28 nonexisting IDs are ignored from HF28 they trigger an error.  |         |
+| extensions      | Not currently used.                                                                                       |         |
 
 
 ## 3. Authority
