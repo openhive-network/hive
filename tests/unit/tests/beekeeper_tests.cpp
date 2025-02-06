@@ -1141,6 +1141,7 @@ class timeout_simulation
     std::string create_session( bekeeper_type& beekeeper_obj );
     std::string create( bekeeper_type& beekeeper_obj, const std::string& token, const std::string& name );
     std::vector<wallet_details> list_wallets( bekeeper_type& beekeeper_obj, const std::string& token );
+    keys_details get_public_keys( bekeeper_type& beekeeper_obj, const std::string& token, const std::optional<std::string>& wallet_name );
 
     simulation create( bekeeper_type& beekeeper_obj, const std::string& name, size_t nr_sessions, size_t nr_wallets, const std::vector<size_t>& timeouts )
     {
@@ -1183,6 +1184,21 @@ class timeout_simulation
       {
         auto& _s = sim.sessions[ session_cnt ];
         BOOST_TEST_MESSAGE( "+++++ session: name: " + _s.name + " token: " + _s.token + " timeout: " + std::to_string( _s.timeout ) + " +++++" );
+
+        /*
+          Call this method only in order to refresh timeout, because a method `list_wallets` doesn't refresh timeout anymore.
+        */
+        for( auto& wallet_item : _s.wallets )
+        {
+          try
+          {
+            get_public_keys( beekeeper_obj, _s.token, wallet_item.name );
+          }
+          catch(...)
+          {
+
+          }
+        }
 
         auto _wallets = list_wallets( beekeeper_obj, _s.token );
 
@@ -1236,6 +1252,19 @@ template<>
 std::vector<wallet_details> timeout_simulation<beekeeper_wallet_manager>::list_wallets( beekeeper_wallet_manager& beekeeper_obj, const std::string& token )
 {
   return beekeeper_obj.list_wallets( token );
+}
+
+template<>
+keys_details timeout_simulation<beekeeper_api>::get_public_keys( beekeeper_api& beekeeper_obj, const std::string& token, const std::optional<std::string>& wallet_name )
+{
+  auto _result = extract_json( wallet_name ? beekeeper_obj.get_public_keys( token, *wallet_name ) : beekeeper_obj.get_public_keys( token ) );
+  return fc::json::from_string( _result, fc::json::format_validation_mode::full ). template as<beekeeper::keys_details>();
+}
+
+template<>
+keys_details timeout_simulation<beekeeper_wallet_manager>::get_public_keys( beekeeper_wallet_manager& beekeeper_obj, const std::string& token, const std::optional<std::string>& wallet_name )
+{
+  return beekeeper_obj.get_public_keys( token, wallet_name );
 }
 
 class wasm_simulation_executor
@@ -1414,8 +1443,22 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_refresh_timeout)
 BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 {
   try {
-    auto _list_wallets_action = []( beekeeper_wallet_manager& beekeeper, const std::string& token )
+    const std::string _wallet_name = "0";
+
+    auto _list_wallets_action = [&_wallet_name]( beekeeper_wallet_manager& beekeeper, const std::string& token )
     {
+      /*
+        Call this method only in order to refresh timeout, because a method `list_wallets` doesn't refresh timeout anymore.
+      */
+      try
+      {
+        beekeeper.get_public_keys( token, _wallet_name );
+      }
+      catch(...)
+      {
+
+      }
+
       auto _wallets = beekeeper.list_wallets( token );
       BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
       BOOST_REQUIRE_EQUAL( _wallets[0].unlocked, true );
@@ -1428,7 +1471,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
 
     using action_type = std::function<void(beekeeper_wallet_manager& beekeeper, const std::string& token)>;
 
-    auto _refresh_timeout_simulation = []( action_type&& action, action_type&& aux_action = action_type() )
+    auto _refresh_timeout_simulation = [&_wallet_name]( action_type&& action, action_type&& aux_action = action_type() )
     {
       test_utils::beekeeper_mgr b_mgr;
       b_mgr.remove_wallets();
@@ -1442,7 +1485,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
       BOOST_REQUIRE( _beekeeper.start() );
 
       auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
-      auto _password = _beekeeper.create( _token, "0", std::optional<std::string>(), false/*is_temporary*/ );
+      auto _password = _beekeeper.create( _token, _wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
       _beekeeper.set_timeout( _token, 1 );
 
       for( uint32_t i = 0; i < 12; ++i )
