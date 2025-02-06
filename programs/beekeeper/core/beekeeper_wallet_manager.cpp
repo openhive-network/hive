@@ -50,7 +50,6 @@ void beekeeper_wallet_manager::close( const std::string& token, const std::strin
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
-  sessions->check_timeout( token );
   return sessions->get_wallet_manager( token )->list_wallets();
 }
 
