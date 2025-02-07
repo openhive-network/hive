@@ -85,8 +85,14 @@ void authority_verification_tracer::on_root_authority_start( const account_name_
   _trace.root.push_back( root_path_entry );
 }
 
-void authority_verification_tracer::on_root_authority_finish( unsigned int verification_status )
+void authority_verification_tracer::on_root_authority_finish( bool success,
+  unsigned int verification_status )
 {
+  if( success )
+  {
+    get_parent_entry().flags &= ~INSUFFICIENT_WEIGHT;
+  }
+
   _trace.verification_status = verification_status;
   fill_final_authority_path();
 }
