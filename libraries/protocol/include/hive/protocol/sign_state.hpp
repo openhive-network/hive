@@ -95,7 +95,7 @@ class sign_state
       if constexpr (IS_TRACED) {
           FC_ASSERT(tracer);
           // TODO: Provide appropriate set of flags.
-          tracer->on_root_authority_finish(0);
+          tracer->on_root_authority_finish(success, 0);
       }
 
       return success;
@@ -121,7 +121,7 @@ class sign_state
       if constexpr (IS_TRACED) {
           FC_ASSERT(tracer);
           // TODO: Provide appropriate set of flags.
-          tracer->on_root_authority_finish(0);
+          tracer->on_root_authority_finish(success, 0);
       }
 
       return success;
