@@ -55,8 +55,6 @@ void authority_verification_tracer::pop_parent_entry()
 
 void authority_verification_tracer::fill_final_authority_path()
 {
-  // 0. Clear possible recording of previous attempt (e.g. for different authority role)
-  _trace.final_authority_path.clear();
   // 1. Copy whole tree
   _trace.final_authority_path.push_back( get_root_entry() );
   path_entry* entry_to_clear = &( _trace.final_authority_path.back() );
@@ -216,6 +214,12 @@ void authority_verification_tracer::on_leaving_account_entry( unsigned int effec
     path_entry& parent_entry = get_parent_entry();
     parent_entry.weight += effective_weight;
   }
+}
+
+void authority_verification_tracer::trim_final_authority_path()
+{
+  FC_ASSERT(not _trace.final_authority_path.empty());
+  _trace.final_authority_path.pop_back();
 }
 
 } } // hive::protocol

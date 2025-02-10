@@ -35,6 +35,9 @@ class authority_verification_tracer
     void on_leaving_account_entry( unsigned int effective_weight, bool parent_threshold_reached );
     void on_root_authority_finish( bool success, unsigned int verification_status );
 
+    /// @brief In special cases we want to remove last recorded final_authority_path entry.
+    void trim_final_authority_path();
+
   private:
     bool detect_cycle(std::string account) const;
     path_entry& get_root_entry();
