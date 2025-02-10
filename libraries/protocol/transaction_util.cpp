@@ -90,8 +90,19 @@ FC_EXPAND_MACRO(                                        \
       }
       else
       {
-        VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || s.check_authority( get_active( id ), id, "active" ) ||
-          s.check_authority( get_owner( id ), id, "owner" ), verify_authority_problem::missing_posting, id );
+        auto check_with_role_upgrade = [&](const authority& auth, const string& role) -> bool {
+          if constexpr (IS_TRACED)
+          {
+            FC_ASSERT(tracer);
+            tracer->trim_final_authority_path();
+          }
+
+          return s.check_authority( auth, id, role );
+        };
+        VERIFY_AUTHORITY_CHECK( s.check_authority( id ) || 
+          check_with_role_upgrade( get_active( id ), "active" ) ||
+          check_with_role_upgrade( get_owner( id ), "owner" ),
+          verify_authority_problem::missing_posting, id );
       }
     }
 
@@ -133,8 +144,18 @@ FC_EXPAND_MACRO(                                        \
     }
     else
     {
+      auto check_with_role_upgrade = [&]() -> bool {
+        if constexpr (IS_TRACED)
+        {
+          FC_ASSERT(tracer);
+          tracer->trim_final_authority_path();
+        }
+
+        return s.check_authority( get_owner( id ), id, "owner" );
+      };
+
       VERIFY_AUTHORITY_CHECK( 
-        s.check_authority( id ) || s.check_authority( get_owner( id ), id, "owner" ),
+        s.check_authority( id ) || check_with_role_upgrade(),
         verify_authority_problem::missing_active, id );
     }
   }
