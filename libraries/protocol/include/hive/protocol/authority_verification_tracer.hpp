@@ -39,6 +39,7 @@ class authority_verification_tracer
     void trim_final_authority_path();
 
   private:
+    void copy_successful_offsprings( const path_entry& from, path_entry& to );
     bool detect_cycle(std::string account) const;
     path_entry& get_root_entry();
     const path_entry& get_root_entry() const;

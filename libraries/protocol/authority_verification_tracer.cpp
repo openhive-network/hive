@@ -53,20 +53,49 @@ void authority_verification_tracer::pop_parent_entry()
   _current_authority_path.pop_back();
 }
 
+void authority_verification_tracer::copy_successful_offsprings( const path_entry& from,
+  path_entry& to )
+{
+  for( const path_entry& child : from.visited_entries )
+  {
+    if( ( child.flags & MATCHING_KEY ) == 0 &&
+        ( child.weight < child.threshold ) )
+      continue;
+
+    to.visited_entries.push_back({
+      processed_entry: child.processed_entry,
+      processed_role: child.processed_role,
+      recursion_depth: child.recursion_depth,
+      threshold: child.threshold,
+      weight: child.weight,
+      flags: child.flags
+    });
+
+    path_entry& child_copy = to.visited_entries.back();
+    copy_successful_offsprings( child, child_copy );
+  }
+}
+
 void authority_verification_tracer::fill_final_authority_path()
 {
-  // 1. Copy whole tree
-  _trace.final_authority_path.push_back( get_root_entry() );
-  path_entry* entry_to_clear = &( _trace.final_authority_path.back() );
-  // 2. Clear visited except last ones.
-  while( not entry_to_clear->visited_entries.empty() )
-  {
-    auto& visited = entry_to_clear->visited_entries;
-    if( visited.size() > 1 ) 
-      visited.erase( visited.begin(), visited.end() - 1 );
+  const path_entry& root_entry = get_root_entry();
+  path_entry childless_root_entry {
+    processed_entry: root_entry.processed_entry,
+    processed_role: root_entry.processed_role,
+    recursion_depth: root_entry.recursion_depth,
+    threshold: root_entry.threshold,
+    weight: root_entry.weight,
+    flags: root_entry.flags
+  };
+  _trace.final_authority_path.push_back( childless_root_entry );
 
-    entry_to_clear = &( visited.back() );
-  }
+  // For failed attempt copy only root entry without its offsprings, as
+  // they are available in original root entry for detailed analysis if needed.
+  if( root_entry.weight < root_entry.threshold )
+    return;
+
+  // For successful attempt copy only successful offsprings.
+  copy_successful_offsprings( root_entry, _trace.final_authority_path.back() );
 }
 
 void authority_verification_tracer::on_root_authority_start( const account_name_type& account,
