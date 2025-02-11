@@ -243,11 +243,11 @@ class sign_state
               account_auth = get_current_authority( a.first );
             } catch( const std::runtime_error& e )
             {
-              tracer->on_unknown_account_entry( a.first, a.second, auth.weight_threshold, depth );
+              tracer->on_unknown_account_entry( a.first, a.second, 0 /*unknown too*/, depth );
               continue;
             }           
 
-            tracer->on_entering_account_entry( a.first, a.second, auth.weight_threshold, depth );
+            tracer->on_entering_account_entry( a.first, a.second, account_auth.weight_threshold, depth );
           }
           else
             account_auth = get_current_authority( a.first );

@@ -183,14 +183,13 @@ void authority_verification_tracer::on_unknown_account_entry( const account_name
 }
 
 void authority_verification_tracer::on_entering_account_entry( const account_name_type& account,
-  unsigned int weight, unsigned int parent_threshold, unsigned int parent_depth )
+  unsigned int weight, unsigned int account_threshold, unsigned int parent_depth )
 {
   path_entry entry{
     processed_entry: account,
     processed_role: _current_role,
     recursion_depth: parent_depth + 1,
-    threshold: parent_threshold,
-    weight: weight,
+    threshold: account_threshold,
     flags: INSUFFICIENT_WEIGHT
   };
 
