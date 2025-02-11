@@ -28,7 +28,7 @@ class authority_verification_tracer
                                    unsigned int parent_threshold, unsigned int parent_depth);
     /// called only if account is known
     void on_entering_account_entry( const account_name_type& account, unsigned int weight,
-                                    unsigned int parent_threshold, unsigned int parent_depth );
+                                    unsigned int account_threshold, unsigned int parent_depth );
     void on_account_processing_limit_exceeded();
     void on_recursion_depth_limit_exceeded();
     /// called only if account is known
