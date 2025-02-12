@@ -30,7 +30,7 @@ const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBe
   return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT,  {
     locateFile: (path, scriptDirectory) => {
         if (path === "beekeeper_wasm.common.wasm")
-            return new URL("./build/beekeeper_wasm.common.wasm", ENVIRONMENT_IS_WORKER ? self.location.href : import.meta.url).href;
+            return (ENVIRONMENT_IS_WORKER ? new URL("./build/beekeeper_wasm.common.wasm", self.location.href) : new URL("./build/beekeeper_wasm.common.wasm", import.meta.url)).href;
         return scriptDirectory + path;
     }
   }, process.env.ROLLUP_TARGET_ENV === "web", options);
