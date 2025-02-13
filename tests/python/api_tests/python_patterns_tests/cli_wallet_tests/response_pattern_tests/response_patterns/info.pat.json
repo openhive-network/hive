@@ -23,7 +23,7 @@
   "id": 0,
   "init_hbd_supply": "0.000 HBD",
   "last_budget_time": "2016-03-24T16:00:00",
-  "last_irreversible_block_num": 4999980,
+  "last_irreversible_block_num": 5000000,
   "max_consecutive_recurrent_transfer_failures": 10,
   "max_open_recurrent_transfers": 255,
   "max_recurrent_transfer_end_date": 730,
