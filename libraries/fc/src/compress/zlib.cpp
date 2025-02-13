@@ -1,5 +1,7 @@
 #include <fc/compress/zlib.hpp>
 
+#include <fc/exception/exception.hpp>
+
 #include "miniz.c"
 
 namespace fc
@@ -13,13 +15,23 @@ namespace fc
     return result;
   }
 
-  string gzip_decompress(const string& in)
+  string zip_decompress(const string& in)
   {
-    constexpr size_t gzip_header_size = 10;
-    size_t decompressed_message_length;
-    char* decompressed_message = (char*)tinfl_decompress_mem_to_heap(in.c_str()+gzip_header_size, in.size()-gzip_header_size, &decompressed_message_length, 0);
+    mz_zip_archive archive={0};
+    auto status = mz_zip_reader_init_mem(&archive, in.data(), in.size(), 0);
+
+    FC_ASSERT(status == MZ_TRUE, "mz_zip_reader_init_mem failed");
+
+    mz_uint fCount = mz_zip_reader_get_num_files(&archive);
+
+    FC_ASSERT(fCount == 1, "Single file archive is only supported");
+
+    size_t decompressed_message_length = 0;
+    char* decompressed_message = (char*)mz_zip_reader_extract_to_heap(&archive, 0, &decompressed_message_length, 0);
+
     string result(decompressed_message, decompressed_message_length);
-    free(decompressed_message);
+    mz_free(decompressed_message);
+
     return result;
   }
 }
