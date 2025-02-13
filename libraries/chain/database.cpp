@@ -3792,9 +3792,16 @@ void database::apply_block_extended(
   BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
   set_tx_status( database::TX_STATUS_P2P_BLOCK );
 
-  auto session = start_undo_session();
-  apply_block( full_block, skip, block_ctrl );
-  session.push();
+  if( skip & skip_undo_block )
+  {
+    apply_block( full_block, skip, block_ctrl );
+  }
+  else
+  {
+    auto session = start_undo_session();
+    apply_block( full_block, skip, block_ctrl );
+    session.push();
+  }
 }
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
@@ -3983,7 +3990,11 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
 
-  uint32_t old_last_irreversible = update_last_irreversible_block( std::optional<switch_forks_t>() );
+  uint32_t old_last_irreversible = get_last_irreversible_block_num();
+  if( skip & skip_undo_block )
+    set_last_irreversible_block_num( head_block_num() );
+  else
+    update_last_irreversible_block( std::optional<switch_forks_t>() );
 
   create_block_summary(full_block);
   clear_expired_transactions();
@@ -5016,7 +5027,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     _block_writer->store_block( get_last_irreversible_block_num(), 
                                 dpo.head_block_number );
 
-    // This deletes undo state
+    // This deletes undo state (when present)
     commit( get_last_irreversible_block_num() );
 
     if (old_last_irreversible < get_last_irreversible_block_num())
