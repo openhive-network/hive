@@ -10,7 +10,7 @@
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky && ./scripts/build_wasm_beekeeper.sh",
     "build": "tsc",
-    "postbuild": "rollup -c && size-limit",
+    "postbuild": "rollup -c && tsx utils/terser.ts && size-limit",
     "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
@@ -24,7 +24,7 @@
   "size-limit": [
     {
       "path": "./dist/bundle",
-      "limit": "3600 kB",
+      "limit": "3450 kB",
       "brotli": false
     }
   ],
@@ -82,7 +82,9 @@
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-dts": "^6.1.1",
     "size-limit": "11.1.6",
+    "terser": "^5.39.0",
     "tslib": "^2.8.1",
+    "tsx": "^4.19.2",
     "typedoc": "0.27.6",
     "typedoc-gitlab-wiki-theme": "^2.1.0",
     "typedoc-plugin-markdown": "4.4.1",
