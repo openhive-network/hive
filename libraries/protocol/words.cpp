@@ -36,7 +36,7 @@ namespace
 #ifdef __clang__
 
 const uint8_t word_list_zipped[] = {
-#embed "words.txt.gz"
+#embed "words.zip"
 };
 
 #else
@@ -71,7 +71,7 @@ class word_list_t
 #else
       const std::string word_list_zip = fc::base64_decode(word_list_b64);
 #endif //__clang__
-      raw_list = fc::gzip_decompress(word_list_zip);
+      raw_list = fc::zip_decompress(word_list_zip);
       list = new char*[hive::words::word_list_size];
 
       for (uint32_t pos = 0, i = 0; i != hive::words::word_list_size; ++i)
