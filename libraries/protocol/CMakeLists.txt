@@ -36,7 +36,7 @@ string(REPLACE "\n" "" WORD_LIST_SIZE ${WORD_LIST_SIZE}) # remove newline genera
 configure_file(${SOURCE_INCLUDE_DIR}/words.hpp.in ${BINARY_INCLUDE_DIR}/words.hpp @ONLY)
 
 # Generate words.txt.gz in source directory because #embed ignore INCLUDE paths
-execute_process(COMMAND "gzip" "-9" "-n" "-k" "-f" "words.txt"
+execute_process(COMMAND "zip" "-9" "-D" "-j" "-v" "words.zip" "words.txt"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 if( NOT(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") )
