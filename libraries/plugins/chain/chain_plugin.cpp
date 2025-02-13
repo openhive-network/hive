@@ -205,7 +205,7 @@ class chain_plugin_impl
     int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> checkpoints;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
-    bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
+    bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
 
@@ -475,6 +475,15 @@ void chain_plugin_impl::start_write_processing()
     {
       BOOST_SCOPE_EXIT(this_)
       {
+        this_->db.with_write_lock( [&]()
+        {
+          if( this_->last_pushed_block_was_before_checkpoint )
+          {
+            wlog( "main writer loop interrupted before last checkpoint was crossed and normal validation restored" );
+            this_->last_pushed_block_was_before_checkpoint = false;
+            this_->db.set_revision( this_->db.head_block_num() );
+          }
+        } );
         {
           std::unique_lock<std::mutex> _guard(this_->finish.mtx);
           this_->finish.status = true;
@@ -1048,6 +1057,7 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
           | database::skip_witness_schedule_check
           | database::skip_validate
           | database::skip_validate_invariants
+          | database::skip_undo_block
           ;
       if (!last_pushed_block_was_before_checkpoint)
       {
@@ -1061,6 +1071,7 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
     {
       ilog("final checkpoint reached, resuming normal block validation");
       last_pushed_block_was_before_checkpoint = false;
+      db.set_revision( db.head_block_num() );
     }
   }
 
