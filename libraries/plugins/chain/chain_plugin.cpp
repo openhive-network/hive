@@ -1241,6 +1241,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
       chain::database::skip_authority_check |
       chain::database::skip_validate; /// no need to validate operations
   }
+  skip_flags |= chain::database::skip_undo_block; // needed to keep head block == LIB
 
   uint32_t last_block_num = block_reader.head_block()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )

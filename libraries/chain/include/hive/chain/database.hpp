@@ -182,7 +182,7 @@ namespace chain {
         skip_witness_schedule_check = 1 << 9,  ///< used while reindexing
         skip_validate               = 1 << 10, ///< used prior to checkpoint, skips validate() call on transaction
         skip_validate_invariants    = 1 << 11, ///< used to skip database invariant check on block application
-        skip_undo_block             = 1 << 12, ///< used to skip undo db (during sync prior to last checkpoint)
+        skip_undo_block             = 1 << 12, ///< used to skip undo db (during sync prior to last checkpoint and during reindex)
         skip_block_log              = 1 << 13  ///< used to skip block logging on reindex
       };
 
