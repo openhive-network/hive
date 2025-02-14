@@ -1,7 +1,7 @@
 #! /bin/bash
 
 REGISTRY=${1:-registry.gitlab.syncad.com/hive/hive/}
-CI_IMAGE_TAG=ubuntu22.04-12
+CI_IMAGE_TAG=ubuntu22.04-13
 
 docker build --progress=plain --target=runtime \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
