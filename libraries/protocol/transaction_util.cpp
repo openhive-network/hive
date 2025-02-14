@@ -34,25 +34,23 @@ void verify_authority_impl(
   authority_verification_tracer* tracer
 )
 {
-#define VERIFY_AUTHORITY_CHECK( TEST, PROBLEM, ID )     \
-FC_EXPAND_MACRO(                                        \
-  FC_MULTILINE_MACRO_BEGIN                              \
-    if( UNLIKELY( !( TEST ) ) )                         \
-    {                                                   \
-      handler( #TEST, PROBLEM, ID );                    \
-      return;                                           \
-    }                                                   \
-  FC_MULTILINE_MACRO_END                                \
+#define VERIFY_AUTHORITY_CHECK( TEST, PROBLEM, ID )               \
+FC_EXPAND_MACRO(                                                  \
+  FC_MULTILINE_MACRO_BEGIN                                        \
+    if( UNLIKELY( !( TEST ) ) && handler( #TEST, PROBLEM, ID ) )  \
+    {                                                             \
+      return;                                                     \
+    }                                                             \
+  FC_MULTILINE_MACRO_END                                          \
 )
-#define VERIFY_AUTHORITY_CHECK_OTHER_AUTH( TEST, AUTH ) \
-FC_EXPAND_MACRO(                                        \
-  FC_MULTILINE_MACRO_BEGIN                              \
-    if( UNLIKELY( !( TEST ) ) )                         \
-    {                                                   \
-      other_handler( #TEST, AUTH );                     \
-      return;                                           \
-    }                                                   \
-  FC_MULTILINE_MACRO_END                                \
+#define VERIFY_AUTHORITY_CHECK_OTHER_AUTH( TEST, AUTH )         \
+FC_EXPAND_MACRO(                                                \
+  FC_MULTILINE_MACRO_BEGIN                                      \
+    if( UNLIKELY( !( TEST ) ) && other_handler( #TEST, AUTH ) ) \
+    {                                                           \
+      return;                                                   \
+    }                                                           \
+  FC_MULTILINE_MACRO_END                                        \
 )
 
   sign_state<IS_TRACED> s( sigs, get_posting, { allow_strict_and_mixed_authorities, max_recursion_depth, max_membership, max_account_auths }, tracer );
@@ -76,14 +74,14 @@ FC_EXPAND_MACRO(                                        \
 
     s.add_approved( posting_approvals );
 
-    if constexpr (IS_TRACED)
-    {
-      FC_ASSERT(tracer);
-      tracer->set_role("posting");
-    }
-
     for( const auto& id : required_authorities.required_posting )
     {
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT(tracer);
+        tracer->set_role("posting");
+      }
+
       if( allow_strict_and_mixed_authorities )
       {
         VERIFY_AUTHORITY_CHECK( s.check_authority( id ), verify_authority_problem::missing_posting, id );
@@ -117,12 +115,6 @@ FC_EXPAND_MACRO(                                        \
     }
   }
 
-  if constexpr (IS_TRACED)
-  {
-    FC_ASSERT(tracer);
-    tracer->set_role("active");
-  }
-  
   s.change_current_authority( get_active );
 
   s.clear_approved();
@@ -137,6 +129,12 @@ FC_EXPAND_MACRO(                                        \
   // fetch all of the top level authorities
   for( const auto& id : required_authorities.required_active )
   {
+    if constexpr (IS_TRACED)
+    {
+      FC_ASSERT(tracer);
+      tracer->set_role("active");
+    }
+      
     if( allow_strict_and_mixed_authorities )
     {
       VERIFY_AUTHORITY_CHECK( s.check_authority( id ),
@@ -252,10 +250,13 @@ FC_EXPAND_MACRO(                                                      \
         VERIFY_AUTHORITY_THROW( tx_irrelevant_sig,
           "Unnecessary signature(s) detected" );
       }
+
+      return true; // Break verification anyway
     },
     []( const char* checked_expr, const authority& auth )
     {
       VERIFY_AUTHORITY_THROW( tx_missing_other_auth, "Missing Authority", ( "auth", auth ) );
+      return true; // Break verification anyway
     },
     tracer );
 
@@ -339,8 +340,12 @@ authority_verification_trace verify_authority_with_tracing(
     active_approvals /* = flat_set<account_name_type>() */,
     owner_approvals /* = flat_set<account_name_type>() */,
     posting_approvals /* = flat_set<account_name_type>() */,
-    [&]( const char*, verify_authority_problem, const account_name_type& ){},
-    [&]( const char*, const authority& ){},
+    [&]( const char*, verify_authority_problem, const account_name_type& ){ 
+      return false; /*Continue verification*/
+    },
+    [&]( const char*, const authority& ){
+      return false; /*Continue verification*/
+    },
     &tracer
   );
   return tracer.get_trace();
@@ -360,8 +365,12 @@ bool has_authorization( bool allow_strict_and_mixed_authorities,
     get_active, get_owner, get_posting, get_witness_key,
     HIVE_MAX_SIG_CHECK_DEPTH, HIVE_MAX_AUTHORITY_MEMBERSHIP, HIVE_MAX_SIG_CHECK_ACCOUNTS,
     flat_set<account_name_type>(), flat_set<account_name_type>(), flat_set<account_name_type>(),
-    [&]( const char*, verify_authority_problem, const account_name_type& ){ result = false; },
-    [&]( const char*, const authority& ){ result = false; },
+    [&]( const char*, verify_authority_problem, const account_name_type& ){ 
+      result = false; return true; /*Break verification anyway*/
+    },
+    [&]( const char*, const authority& ){ 
+      result = false; return true; /*Break verification anyway*/
+    },
     nullptr );
   return result;
 }
