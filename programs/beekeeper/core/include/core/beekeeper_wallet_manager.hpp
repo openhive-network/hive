@@ -274,6 +274,15 @@ public:
    */
   bool has_wallet( const std::string& token, const std::string& wallet_name );
 
+  /**
+   * 
+   * Tests if a wallet exists
+   * @param token       Session's identifier.
+   * @param wallet_name A name of a wallet.
+   * @returns           Information if a wallet is unlocked.
+   */
+  is_wallet_unlocked_return is_wallet_unlocked( const std::string& token, const std::string& wallet_name );
+
 private:
 
   seconds_type unlock_timeout = 900;

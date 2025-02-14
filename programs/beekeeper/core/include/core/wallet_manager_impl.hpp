@@ -41,6 +41,7 @@ class wallet_manager_impl {
     std::string encrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& content, const std::optional<unsigned int>& nonce, const std::string& prefix );
     std::string decrypt_data( const public_key_type& from_public_key, const public_key_type& to_public_key, const std::string& wallet_name, const std::string& encrypted_content );
     bool has_wallet( const std::string& wallet_name );
+    is_wallet_unlocked_return is_wallet_unlocked( const std::string& wallet_name );
 
   private:
 

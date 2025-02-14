@@ -997,6 +997,33 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     expect(retVal).toBe('content');
   });
 
+  test('Check `is_wallet_unlocked` endpoint', async ({ beekeeperWasmTest }) => {
+    const retVal = await beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE, walletNames, keys) => {
+      const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
+
+      const is_wallet_unlocked_0 = api.isWalletUnlocked(api.implicitSessionToken, walletNames[9]);
+
+      api.create_with_password(api.implicitSessionToken, walletNames[9], 'pass');
+
+      const is_wallet_unlocked_1 = api.isWalletUnlocked(api.implicitSessionToken, walletNames[9]);
+
+      api.lock(api.implicitSessionToken, walletNames[9]);
+
+      const is_wallet_unlocked_2 = api.isWalletUnlocked(api.implicitSessionToken, walletNames[9]);
+
+      return {
+        w_0: is_wallet_unlocked_0,
+        w_1: is_wallet_unlocked_1,
+        w_2: is_wallet_unlocked_2
+      }
+
+    }, WALLET_OPTIONS_NODE, walletNames, keys);
+
+    expect(retVal.w_0.unlocked).toEqual(false);
+    expect(retVal.w_1.unlocked).toEqual(true);
+    expect(retVal.w_2.unlocked).toEqual(false);
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });

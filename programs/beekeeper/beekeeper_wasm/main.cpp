@@ -182,7 +182,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         {"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":true}]}
         wallets: a set of all opened wallets. Every wallet has information:
           name: a name of wallet
-          unlocked: information if a wallet is opened/closed
+          unlocked: information if a wallet is unlocked
     */
     .function("list_wallets(token)", &beekeeper_api::list_wallets)
 
@@ -307,6 +307,17 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         exists: true if a wallet exists otherwise false
     */
     .function("has_wallet(token, wallet_name)", &beekeeper_api::has_wallet)
+
+    /*
+      ****information about a wallet****
+      PARAMS:
+        token:        a token representing a session
+        wallet_name:  a name of wallet
+      RESULT:
+        {"unlocked":true}
+        unlocked: information if a wallet is unlocked
+    */
+    .function("is_wallet_unlocked(token, wallet_name)", &beekeeper_api::is_wallet_unlocked)
     ;
 }
 

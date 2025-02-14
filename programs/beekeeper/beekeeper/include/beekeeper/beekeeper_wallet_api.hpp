@@ -50,6 +50,7 @@ class beekeeper_wallet_api
       (decrypt_data)
       (get_version)
       (has_wallet)
+      (is_wallet_unlocked)
     )
 
   private:

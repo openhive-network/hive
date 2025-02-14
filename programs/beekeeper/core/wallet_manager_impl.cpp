@@ -408,4 +408,16 @@ bool wallet_manager_impl::has_wallet( const std::string& wallet_name )
     return scan_directory( [&wallet_name]( const std::string& current_wallet_name ){ return wallet_name == current_wallet_name; }, get_wallet_directory(), get_extension() );
 }
 
+is_wallet_unlocked_return wallet_manager_impl::is_wallet_unlocked( const std::string& wallet_name )
+{
+  const auto& _idx = content_deliverer.items.get<by_token_wallet_name>();
+
+  auto _itr = _idx.find( boost::make_tuple( token, wallet_name ) );
+
+  if( _itr == _idx.end() )
+    return is_wallet_unlocked_return();
+  else
+    return { !_itr->is_locked() };
+}
+
 } //beekeeper
