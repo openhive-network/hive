@@ -15,6 +15,19 @@ namespace fc
     return result;
   }
 
+  string zlib_inflate(const string& in)
+  {
+    size_t decompressed_message_length = 0;
+
+    char* decompressed_message = (char*)tinfl_decompress_mem_to_heap(in.data(), in.size(), &decompressed_message_length, 0);
+
+    string result(decompressed_message, decompressed_message_length);
+    mz_free(decompressed_message);
+
+    return result;
+  }
+
+
   string zip_decompress(const string& in)
   {
     mz_zip_archive archive={0};
