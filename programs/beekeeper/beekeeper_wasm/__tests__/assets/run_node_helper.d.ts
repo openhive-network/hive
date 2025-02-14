@@ -70,4 +70,6 @@ export declare class BeekeeperInstanceHelper {
   public deleteInstance(): void;
 
   public setTimeout(sessionToken: string, seconds: number): string;
+
+  public isWalletUnlocked(sessionToken: string, walletName: string): { unlocked: boolean};
 }

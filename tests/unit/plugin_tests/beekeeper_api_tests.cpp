@@ -324,6 +324,10 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
               BOOST_REQUIRE( e.to_string().find( "Wallet not found" )  != std::string::npos );
             }
           }break;
+          case 10:
+          {
+            _api.is_wallet_unlocked( beekeeper::is_wallet_unlocked_args{ _token, _wallet_name } );
+          }break;
         }
       }
     };

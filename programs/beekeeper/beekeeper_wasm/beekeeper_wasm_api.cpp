@@ -378,4 +378,14 @@ namespace beekeeper {
     };
     return exception_handler( _method );
   }
+
+  std::string beekeeper_api::is_wallet_unlocked( const std::string& token, const std::string& wallet_name )
+  {
+    auto _method = [&, this]()
+    {
+      is_wallet_unlocked_return _result{ _impl->app.get_wallet_manager()->is_wallet_unlocked( token, wallet_name ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
 };

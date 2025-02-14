@@ -127,4 +127,10 @@ namespace fc
     variant v = mutable_variant_object( "exists", var.exists );
     vo = v;
   }
+
+  void to_variant( const beekeeper::is_wallet_unlocked_return& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "unlocked", var.unlocked );
+    vo = v;
+  }
 } // fc

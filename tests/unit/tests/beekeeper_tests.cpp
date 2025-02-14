@@ -2339,6 +2339,48 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(is_wallet_unlocked)
+{
+  try
+  {
+    test_utils::beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+
+    const std::string _wallet_name = "wallet_name";
+    const std::string _password = "avocado";
+
+    {
+      auto _wallet_info = _beekeeper.is_wallet_unlocked( _token, _wallet_name );
+      BOOST_REQUIRE( _wallet_info.unlocked == false );
+    }
+
+    _beekeeper.create( _token, _wallet_name, _password, false/*is_temporary*/ );
+
+    {
+      auto _wallet_info = _beekeeper.is_wallet_unlocked( _token, _wallet_name );
+      BOOST_REQUIRE( _wallet_info.unlocked == true );
+    }
+
+    _beekeeper.lock( _token, _wallet_name );
+
+    {
+      auto _wallet_info = _beekeeper.is_wallet_unlocked( _token, _wallet_name );
+      BOOST_REQUIRE( _wallet_info.unlocked == false );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

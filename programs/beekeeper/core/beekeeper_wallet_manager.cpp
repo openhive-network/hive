@@ -171,4 +171,9 @@ bool beekeeper_wallet_manager::has_wallet( const std::string& token, const std::
   return sessions->get_wallet_manager( token )->has_wallet( wallet_name );
 }
 
+is_wallet_unlocked_return beekeeper_wallet_manager::is_wallet_unlocked( const std::string& token, const std::string& wallet_name )
+{
+  return sessions->get_wallet_manager( token )->is_wallet_unlocked( wallet_name );
+}
+
 } //beekeeper

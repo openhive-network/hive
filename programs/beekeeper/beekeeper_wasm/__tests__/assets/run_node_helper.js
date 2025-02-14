@@ -335,4 +335,9 @@ export class BeekeeperInstanceHelper {
 
     return this.#extract(returnedValue);
   }
+
+  isWalletUnlocked(sessionToken, walletName) {
+    const returnedValue = this.instance.is_wallet_unlocked(sessionToken, walletName);
+    return this.#extract(returnedValue);
+  }
 }

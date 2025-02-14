@@ -274,6 +274,12 @@ struct has_wallet_return
   bool exists = false;
 };
 
+using is_wallet_unlocked_args = wallet_args;
+struct is_wallet_unlocked_return
+{
+  bool unlocked = false;
+};
+
 struct exception
 {
   static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method, const std::string& additional_message = "" )
@@ -325,6 +331,7 @@ namespace fc
   void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo );
   void to_variant( const beekeeper::get_version_return& var, fc::variant& vo );
   void to_variant( const beekeeper::has_wallet_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::is_wallet_unlocked_return& var, fc::variant& vo );
 
   void from_variant( const fc::variant& var, beekeeper::wallet_data& vo );
   void to_variant( const beekeeper::wallet_data& var, fc::variant& vo );
@@ -364,3 +371,4 @@ FC_REFLECT( beekeeper::decrypt_data_return, (decrypted_content) )
 FC_REFLECT( beekeeper::wallet_data, (cipher_keys) )
 FC_REFLECT( beekeeper::plain_keys, (checksum)(keys) )
 FC_REFLECT( beekeeper::has_wallet_return, (exists) )
+FC_REFLECT( beekeeper::is_wallet_unlocked_return, (unlocked) )
