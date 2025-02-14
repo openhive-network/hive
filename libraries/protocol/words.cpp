@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 namespace
 {
@@ -68,7 +69,7 @@ class word_list_t
 #else
       const std::string word_list_zip = fc::base64_decode(word_list_b64);
 #endif // C23_EMBED_SUPPORTED
-      raw_list = fc::zip_decompress(word_list_zip);
+      raw_list = fc::zlib_inflate(word_list_zip);
 
       for (size_t pos = 0; raw_list[pos] != '\0'; ++pos)
         {
