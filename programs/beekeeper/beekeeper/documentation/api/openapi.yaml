@@ -348,6 +348,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/has_wallet_response'
+  beekeeper_api.is_wallet_unlocked:
+    post:
+      tags:
+        - wallets
+      summary: Check if a wallet is unlocked
+      description: Display information if given wallet is locked or not
+      operationId: is_wallet_unlocked
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/is_wallet_unlocked'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/is_wallet_unlocked_response'
   beekeeper_api.import_key:
     post:
       tags:
@@ -896,6 +916,26 @@ components:
         exists:
           type: boolean
           description: A `true` value if a wallet exists otherwise `false`
+    is_wallet_unlocked:
+      required:
+        - token
+        - wallet_name
+      type: object
+      properties:
+        token:
+          type: string
+          example: c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913
+          description: Session's identifier
+        wallet_name:
+          type: string
+          example: my_second_wallet
+          description: A name of a wallet
+    is_wallet_unlocked_response:
+      type: object
+      properties:
+        is_locked:
+          type: boolean
+          description: A `true` value if a wallet is unlocked otherwise `false`
     sign_digest:
       required:
         - token
