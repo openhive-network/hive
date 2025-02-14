@@ -33,17 +33,14 @@ namespace
 {
 
 // Assuming #embed supported only by clang
-#ifdef __clang__
-
-const uint8_t word_list_zipped[] = {
-#embed "words.zip"
-};
-
+#ifdef C23_EMBED_SUPPORTED
+extern "C" const uint8_t word_list_zipped[];
+extern "C" const uint32_t word_list_zipped_size;
 #else
 hive::words::const_char_ptr word_list_b64 =
 #include <hive/protocol/words.b64>
 ;
-#endif // __clang__
+#endif // C23_EMBED_SUPPORTED
 
 class word_list_t
   {
@@ -66,11 +63,11 @@ class word_list_t
   private:
     void initialize()
       {
-#ifdef __clang__
-      const std::string word_list_zip((const char*)word_list_zipped, sizeof(word_list_zipped));
+#ifdef C23_EMBED_SUPPORTED
+      const std::string word_list_zip((const char*)word_list_zipped, word_list_zipped_size);
 #else
       const std::string word_list_zip = fc::base64_decode(word_list_b64);
-#endif //__clang__
+#endif // C23_EMBED_SUPPORTED
       raw_list = fc::zip_decompress(word_list_zip);
 
       for (size_t pos = 0; raw_list[pos] != '\0'; ++pos)

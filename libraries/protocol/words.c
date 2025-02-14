@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 const uint8_t word_list_zipped[] = {
-#embed "words.txt.gz"
+#embed "words.zip"
 };
 const uint32_t word_list_zipped_size = sizeof(word_list_zipped);
 
