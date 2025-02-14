@@ -57,14 +57,13 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    ${HEADERS}
    ${hardfork_hpp_file}
    "${BINARY_INCLUDE_DIR}/hardfork.hpp"
+   "${BINARY_INCLUDE_DIR}/words.deflate" "${BINARY_INCLUDE_DIR}/words.b64"
 )
 
 # #embed directive start supported in Clang-19
 if( CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_COMPILER_VERSION STRGREATER_EQUAL "19.0.0" )
   set(CMAKE_C_STANDARD 23)
   set(C23_EMBED_SUPPORTED 1)
-else()
-  list(APPEND SOURCES "${BINARY_INCLUDE_DIR}/words.b64")
 endif()
 
 cmake_policy(SET CMP0041 NEW)
@@ -72,22 +71,19 @@ cmake_policy(SET CMP0041 NEW)
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol STATIC ${SOURCES} )
 
-file(MAKE_DIRECTORY ${BINARY_INCLUDE_DIR})
-execute_process(COMMAND "zip" "-9" "-D" "-j" "-v" "${BINARY_INCLUDE_DIR}/words.zip" "words.txt"
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                COMMAND_ERROR_IS_FATAL ANY)
+#file(MAKE_DIRECTORY ${BINARY_INCLUDE_DIR})
+
+add_custom_command(
+  COMMAND "bash" "-c" "\"${CMAKE_CURRENT_SOURCE_DIR}/generate_words.sh\" \"${CMAKE_CURRENT_SOURCE_DIR}/words.txt\" \"${BINARY_INCLUDE_DIR}/words.deflate\" \"${BINARY_INCLUDE_DIR}/words.b64\""
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/words.txt"
+  OUTPUT "${BINARY_INCLUDE_DIR}/words.deflate" "${BINARY_INCLUDE_DIR}/words.b64"
+  VERBATIM
+)
 
 if( C23_EMBED_SUPPORTED )
   target_compile_definitions(hive_protocol PRIVATE C23_EMBED_SUPPORTED)
   target_compile_options(hive_protocol PRIVATE "--embed-dir=${BINARY_INCLUDE_DIR}")
-else()
-  execute_process(COMMAND "base64" "-w 0" "words.zip"
-                  WORKING_DIRECTORY ${BINARY_INCLUDE_DIR}
-                  OUTPUT_VARIABLE B64_CONTENT
-                  COMMAND_ERROR_IS_FATAL ANY)
-  file(WRITE ${BINARY_INCLUDE_DIR}/words.b64 "\"")
-  file(APPEND ${BINARY_INCLUDE_DIR}/words.b64 ${B64_CONTENT})
-  file(APPEND ${BINARY_INCLUDE_DIR}/words.b64 "\"")
 endif()
 
 target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
