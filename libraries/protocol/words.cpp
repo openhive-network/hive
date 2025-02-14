@@ -53,14 +53,14 @@ class word_list_t
       initialize();
       }
 
-    ~word_list_t()
+    const hive::words::const_char_ptr* get_list() const
       {
-      delete [] list;
+      return list.data();
       }
 
-    const hive::words::const_char_ptr* get_list()
+    uint32_t get_list_size() const
       {
-      return list;
+      return list.size();
       }
 
   private:
@@ -72,23 +72,27 @@ class word_list_t
       const std::string word_list_zip = fc::base64_decode(word_list_b64);
 #endif //__clang__
       raw_list = fc::zip_decompress(word_list_zip);
-      list = new char*[hive::words::word_list_size];
 
-      for (uint32_t pos = 0, i = 0; i != hive::words::word_list_size; ++i)
+      for (size_t pos = 0; raw_list[pos] != '\0'; ++pos)
         {
-        list[i] = raw_list.data() + pos;
+        list.push_back(raw_list.data() + pos);
         pos = raw_list.find('\n', pos);
         if (pos == std::string::npos)
           break;
         raw_list[pos] = '\0';
-        ++pos;
         }
       }
 
   private:
-    char**      list = nullptr;
-    std::string raw_list;
+    std::vector<hive::words::const_char_ptr>  list;
+    std::string                               raw_list;
   };
+
+const word_list_t& init_word_list()
+  {
+  static word_list_t  word_list;
+  return word_list;
+  }
 
 } // namespace
 
@@ -96,8 +100,12 @@ namespace hive { namespace words {
 
 const const_char_ptr* get_word_list()
   {
-  static word_list_t  word_list;
-  return word_list.get_list();
+  return init_word_list().get_list();
+  }
+
+uint32_t get_word_list_size()
+  {
+  return init_word_list().get_list_size();
   }
 
 } } // hive::words

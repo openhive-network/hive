@@ -96,8 +96,9 @@ brain_key_info suggest_brain_key()
 
   for (int i = 0; i < BRAIN_KEY_WORD_COUNT; i++)
   {
-    fc::bigint choice = entropy % hive::words::word_list_size;
-    entropy /= hive::words::word_list_size;
+    const auto word_list_size = hive::words::get_word_list_size();
+    fc::bigint choice = entropy % word_list_size;
+    entropy /= word_list_size;
     if (i > 0)
       brain_key += " ";
     brain_key += hive::words::get_word_list()[choice.to_int64()];

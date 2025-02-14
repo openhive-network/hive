@@ -1860,13 +1860,14 @@ BOOST_AUTO_TEST_CASE( get_word_list )
 
   BOOST_REQUIRE( word_list != nullptr );
 
+  BOOST_TEST_MESSAGE( hive::words::get_word_list_size() );
   BOOST_TEST_MESSAGE( word_list[0] );
   BOOST_TEST_MESSAGE( word_list[1] );
   BOOST_TEST_MESSAGE( word_list[2] );
 
   BOOST_CHECK_EQUAL( word_list[0], "a" );
-  BOOST_CHECK_EQUAL( word_list[hive::words::word_list_size-5], "zymosis" );
-  BOOST_CHECK_EQUAL( word_list[hive::words::word_list_size-1], "zythum" );
+  BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-5], "zymosis" );
+  BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-1], "zythum" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

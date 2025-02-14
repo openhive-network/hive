@@ -29,6 +29,6 @@ namespace hive { namespace words {
 
 typedef const char* const_char_ptr;
 const const_char_ptr* get_word_list();
-const uint32_t word_list_size = @WORD_LIST_SIZE@;
+uint32_t get_word_list_size();
 
 } }
