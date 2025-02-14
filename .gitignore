@@ -44,7 +44,6 @@ build_version.cc
 libraries/appbase/examples/appbase_example
 libraries/chainbase/test/chainbase_test
 libraries/protocol/include/hive/protocol/hardfork.hpp
-libraries/protocol/words.txt.gz
 libraries/fc/git_revision.cpp
 libraries/fc/tests/all_tests
 libraries/fc/tests/api
