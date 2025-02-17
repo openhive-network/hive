@@ -105,7 +105,7 @@ public:
    * @param token Session's identifier.
    * @return      A list of wallets with information if given wallet is unlocked.
    */
-  std::vector<wallet_details> list_wallets( const std::string& token );
+  flat_set<wallet_details> list_wallets( const std::string& token );
 
   /**
    * 
@@ -113,7 +113,7 @@ public:
    * @param token Session's identifier.
    * @return      A list of created wallets. Size of vector equals to a number of created files.
    */
-  std::vector<wallet_details> list_created_wallets( const std::string& token );
+  flat_set<wallet_details> list_created_wallets( const std::string& token );
 
   /**
    * 

@@ -35,12 +35,17 @@ struct wallet_details
 {
   std::string name;
   bool unlocked = false;
+
+  bool operator<( const wallet_details& obj ) const
+  {
+    return name < obj.name;
+  }
 };
 
 struct public_key_details
 {
   std::string public_key;
-  bool operator<( const public_key_details& obj ) const ;
+  bool operator<( const public_key_details& obj ) const;
 };
 
 struct info
@@ -194,7 +199,7 @@ struct import_keys_args: public session_token_type
 using list_wallets_args = session_token_type;
 struct list_wallets_return
 {
-  std::vector<wallet_details> wallets;
+  flat_set<wallet_details> wallets;
 };
 
 using list_created_wallets_args = list_wallets_args;
