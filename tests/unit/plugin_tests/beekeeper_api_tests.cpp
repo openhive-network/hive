@@ -315,14 +315,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
           }break;
           case 9:
           {
-            try
-            {
-              _api.close( beekeeper::close_args{ _token, _wallet_name } );
-            }
-            catch( const fc::exception& e )
-            {
-              BOOST_REQUIRE( e.to_string().find( "Wallet not found" )  != std::string::npos );
-            }
+            _api.close( beekeeper::close_args{ _token, _wallet_name } );
           }break;
           case 10:
           {

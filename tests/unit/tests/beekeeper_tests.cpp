@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       BOOST_REQUIRE( _wallets.size() == 1 );
       BOOST_REQUIRE( _wallets.begin()->name == wallet_name_0 );
 
-      BOOST_REQUIRE_THROW( wm.close( _token, wallet_name_1 ), fc::exception );
+      wm.close( _token, wallet_name_1 );//Here is lack of an exception. Only a warning is generated.
       wm.close( _token, wallet_name_0 );
 
       _wallets = wm.list_wallets( _token );
