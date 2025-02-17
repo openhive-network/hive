@@ -12,7 +12,7 @@ namespace beekeeper {
 class wallet_manager_impl {
   private:
 
-    std::vector<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );
+    flat_set<wallet_details> list_wallets_impl( const std::vector< std::string >& wallet_files );
     bool scan_directory( std::function<bool( const std::string& )>&& processor, const boost::filesystem::path& directory, const std::string& extension ) const;
     std::vector< std::string > list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const;
 
@@ -26,8 +26,8 @@ class wallet_manager_impl {
     std::string create( const std::string& wallet_name, const std::optional<std::string>& password, const bool is_temporary );
     void open( const std::string& wallet_name );
     void close( const std::string& wallet_name );
-    std::vector<wallet_details> list_wallets();
-    std::vector<wallet_details> list_created_wallets();
+    flat_set<wallet_details> list_wallets();
+    flat_set<wallet_details> list_created_wallets();
     keys_details list_keys( const std::string& name, const std::string& password );
     keys_details get_public_keys( const std::optional<std::string>& wallet_name );
     void lock_all();

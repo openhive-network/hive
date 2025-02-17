@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
 
     auto _list_created_wallets_checker = [&_api]( const std::string& token, const set_type& unlock_statuses )
     {
-      std::vector<beekeeper::wallet_details> _wallets = _api.list_created_wallets( beekeeper::list_wallets_args{ token } ).wallets;
+      flat_set<beekeeper::wallet_details> _wallets = _api.list_created_wallets( beekeeper::list_wallets_args{ token } ).wallets;
       BOOST_REQUIRE( _wallets.size() == unlock_statuses.size() );
 
       for( auto& item : _wallets )
@@ -202,9 +202,9 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
 
     _api.open( beekeeper::wallet_args{ _token, _wallet_name } );
 
-    std::vector<beekeeper::wallet_details> _wallets = _api.list_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
+    flat_set<beekeeper::wallet_details> _wallets = _api.list_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
     BOOST_REQUIRE( _wallets.size() == 1 );
-    BOOST_REQUIRE( _wallets[0].unlocked == true );
+    BOOST_REQUIRE( _wallets.begin()->unlocked == true );
 
     const uint32_t _nr_threads = 10;
 

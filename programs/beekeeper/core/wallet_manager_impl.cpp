@@ -78,27 +78,25 @@ fc::optional<private_key_type> wallet_manager_impl::find_private_key_in_given_wa
   return fc::optional<private_key_type>();
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::vector< std::string >& wallet_files )
+flat_set<wallet_details> wallet_manager_impl::list_wallets_impl( const std::vector< std::string >& wallet_files )
 {
-  std::vector<wallet_details> _result;
-
-  for(const auto& wallet_file_name : wallet_files )
-  {
-    auto _wallet = content_deliverer.find( token, wallet_file_name );
-    /// For each not opened wallet perform implicit open - this is needed to correctly support a close method
-    if( !_wallet )
-      open( wallet_file_name );
-  }
+  flat_set<wallet_details> _result;
 
   const auto& _idx = content_deliverer.items.get<by_token_wallet_name>();
   auto _itr = _idx.find( token );
 
   while( _itr != _idx.end() && _itr->get_token() == token )
   {
-    _result.emplace_back( wallet_details{ _itr->get_wallet_name(), !_itr->is_locked() } );
+    _result.insert( wallet_details{ _itr->get_wallet_name(), !_itr->is_locked() } );
     ++_itr;
   }
 
+  for(const auto& wallet_file_name : wallet_files )
+  {
+    wallet_details _wallet_detail{ wallet_file_name, false/*unlocked*/ };
+    if( _result.find( _wallet_detail ) == _result.end() )
+      _result.emplace( std::move( _wallet_detail ) );
+  }
   return _result;
 }
 
@@ -138,12 +136,12 @@ std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const
   return _result;
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets()
+flat_set<wallet_details> wallet_manager_impl::list_wallets()
 {
   return list_wallets_impl( std::vector< std::string >() );
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
+flat_set<wallet_details> wallet_manager_impl::list_created_wallets()
 {
   return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
