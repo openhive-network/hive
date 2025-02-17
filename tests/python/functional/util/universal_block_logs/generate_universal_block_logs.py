@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import random
 from copy import deepcopy
 from pathlib import Path
@@ -65,10 +67,11 @@ def prepare_block_log(
 
     node = tt.InitNode()
     node.config.shared_file_size = "24G"
-    for witness in WITNESSES:
-        key = tt.Account(witness).private_key
+    for witness in ["initminer", *WITNESSES]:
+        witness_key = tt.Account(witness, secret="secret").private_key
         node.config.witness.append(witness)
-        node.config.private_key.append(key)
+        node.config.private_key.append(witness_key)
+        save_witness_keys_to_file(name=witness, key=witness_key, save_to_dir=block_log_directory)
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
@@ -113,7 +116,7 @@ def prepare_block_log(
     tt.logger.info("Wait 43 blocks...")
     node.wait_number_of_blocks(43)  # wait for the block size to change to 2mb
 
-    authority = generate_authority(wallet, signature_type)
+    authority = generate_authority(wallet, signature_type, save_to_dir=block_log_directory)
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
@@ -229,6 +232,9 @@ def prepare_block_log(
     node.close()
     node.block_log.copy_to(block_log_directory)
     tt.BlockLog(block_log_directory, "auto").generate_artifacts()
+    timestamp = tt.BlockLog(block_log_directory, "auto").get_head_block_time()
+    with open(block_log_directory.joinpath("timestamp"), "w", encoding="utf-8") as file:
+        file.write(timestamp.isoformat(timespec="seconds")[:19])
     tt.logger.info(f"Save block log file to {block_log_directory}")
 
 
@@ -245,51 +251,92 @@ def __delegate_vesting_shares(account: str, _) -> list:
     ]
 
 
-def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
+def save_witness_keys_to_file(name: str, key: tt.PrivateKey, save_to_dir: Path) -> None:
+    file_dir = save_to_dir.joinpath("account_specification.txt")
+    file_exists = os.path.exists(file_dir)
+
+    with open(file_dir, "a", encoding="utf-8") as file:
+        if not file_exists:
+            file.write("Witnesses keys".center(70, "-") + "\n")
+        file.write(f"{name} - {key}" + "\n")
+
+
+def generate_authority(
+    wallet: tt.OldWallet,
+    authority_type: Literal["open_sign", "multi_sign", "single_sign"],
+    save_to_dir: Path | None = None,
+) -> dict:
+    def __save(auth: dict) -> None:
+        with open(save_to_dir.joinpath("account_specification.txt"), encoding="utf-8") as file:
+            content = file.read()
+        with open(save_to_dir.joinpath("account_specification.txt"), "w", encoding="utf-8") as file:
+            file.write(
+                f"{authority_type.capitalize()} authority for account-0 to account-1999999".center(70, "-") + "\n"
+            )
+            file.write(
+                json.dumps(
+                    {
+                        "owner": [key[0] for key in auth["owner"]["key_auths"]],
+                        "posting": [key[0] for key in auth["posting"]["key_auths"]],
+                        "active": [key[0] for key in auth["active"]["key_auths"]],
+                        "memo": auth["memo"],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n"
+                + content
+                + "\n"
+            )
+
     match authority_type:
         case "open_sign":
-            return {
+            authority = {
                 "owner": {"weight_threshold": 0, "account_auths": [], "key_auths": []},
                 "active": {"weight_threshold": 0, "account_auths": [], "key_auths": []},
                 "posting": {"weight_threshold": 0, "account_auths": [], "key_auths": []},
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            __save(authority)
+            return authority
         case "multi_sign":
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"owner-{num}") for num in range(3)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"active-{num}") for num in range(6)])
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"posting-{num}") for num in range(10)])
+            wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(40)])
+            keys = [[tt.PublicKey("account", secret=f"secret-{num}"), 1] for num in range(40)]
 
-            owner_keys = [[tt.PublicKey("account", secret=f"owner-{num}"), 1] for num in range(3)]
-            active_keys = [[tt.PublicKey("account", secret=f"active-{num}"), 1] for num in range(6)]
-            posting_keys = [[tt.PublicKey("account", secret=f"posting-{num}"), 1] for num in range(10)]
-            return {
-                "owner": {"weight_threshold": 3, "account_auths": [], "key_auths": owner_keys},
-                "active": {"weight_threshold": 6, "account_auths": [], "key_auths": active_keys},
-                "posting": {"weight_threshold": 10, "account_auths": [], "key_auths": posting_keys},
+            authority = {
+                "owner": {"weight_threshold": 40, "account_auths": [], "key_auths": keys},
+                "active": {"weight_threshold": 40, "account_auths": [], "key_auths": keys},
+                "posting": {"weight_threshold": 40, "account_auths": [], "key_auths": keys},
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            __save(authority)
+            return authority
         case "single_sign":
-            wallet.api.import_key(tt.PrivateKey("account", secret="owner"))
-            wallet.api.import_key(tt.PrivateKey("account", secret="active"))
+            public_key = tt.PublicKey("account", secret="secret")
+            private_key = tt.PrivateKey("account", secret="secret")
+            wallet.api.import_key(private_key)
 
-            return {
+            authority = {
                 "owner": {
                     "weight_threshold": 1,
                     "account_auths": [],
-                    "key_auths": [[tt.PublicKey("account", secret="owner"), 1]],
+                    "key_auths": [[public_key, 1]],
                 },
                 "active": {
                     "weight_threshold": 1,
                     "account_auths": [],
-                    "key_auths": [[tt.PublicKey("account", secret="active"), 1]],
+                    "key_auths": [[public_key, 1]],
                 },
                 "posting": {
                     "weight_threshold": 1,
                     "account_auths": [],
-                    "key_auths": [[tt.PublicKey("account", secret="active"), 1]],
+                    "key_auths": [[public_key, 1]],
                 },
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+
+            __save(authority)
+            return authority
 
 
 def __create_account_and_fund_hive_and_hbd(account: str, authority: dict) -> list:
