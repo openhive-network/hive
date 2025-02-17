@@ -61,7 +61,8 @@ void wallet_manager_impl::open( const std::string& wallet_name )
 
 void wallet_manager_impl::close( const std::string& wallet_name )
 {
-  FC_ASSERT( content_deliverer.find( token, wallet_name ), "Wallet not found: ${w}", ("w", wallet_name));
+  if( !content_deliverer.find( token, wallet_name ) )
+    ilog( "Wallet not found: ${w}", ("w", wallet_name) );
 
   content_deliverer.erase( token, wallet_name );
 }

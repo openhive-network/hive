@@ -801,12 +801,12 @@ test.describe('WASM beekeeper_api tests for Node.js', () => {
     }, WALLET_OPTIONS_NODE, walletNames)).rejects.toThrowError('!password || password->size() < max_password_length');
   });
 
-  test('Should throw as the wallet does not exist', async ({ beekeeperWasmTest }) => {
-    await expect(beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
+  test('Should not throw when the wallet does not exist', async ({ beekeeperWasmTest }) => {
+    await (beekeeperWasmTest(async ({ provider, BeekeeperInstanceHelper }, WALLET_OPTIONS_NODE) => {
       const api = new BeekeeperInstanceHelper(provider, WALLET_OPTIONS_NODE);
 
       api.close(api.implicitSessionToken, 'abc');
-    }, WALLET_OPTIONS_NODE)).rejects.toThrowError('Wallet not found: abc');
+    }, WALLET_OPTIONS_NODE));
   });
 
   test('Should throw as there is no opened wallet', async ({ beekeeperWasmTest }) => {
