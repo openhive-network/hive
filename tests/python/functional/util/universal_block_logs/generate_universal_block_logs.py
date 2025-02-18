@@ -78,6 +78,7 @@ def prepare_block_log(
         witness_key = tt.Account(witness).private_key
         node.config.witness.append(witness)
         node.config.private_key.append(witness_key)
+        save_witness_keys_to_file(name=witness, key=witness_key, output_directory=block_log_directory)
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
@@ -344,6 +345,17 @@ def generate_random_text(min_length: int, max_length: int) -> str:
 
 def random_letter() -> str:
     return chr(random.randrange(97, 97 + 26))
+
+
+def save_witness_keys_to_file(name: str, key: str, output_directory: Path) -> None:
+    file_path = output_directory / "account_specification.txt"
+    output_directory.mkdir(parents=True, exist_ok=True)
+    file_exists = file_path.exists()
+
+    with file_path.open("a", encoding="utf-8") as file:
+        if not file_exists:
+            file.write("Witnesses keys".center(70, "-") + "\n")
+        file.write(f"{name} - {key}\n")
 
 
 if __name__ == "__main__":
