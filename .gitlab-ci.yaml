@@ -41,7 +41,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 94a6b023db6125970a062002d416c1ea322684fb
+    ref: ed209c4ac8ed21c84d997e011f17ac6af53e4bf0
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
@@ -221,7 +221,7 @@ supplement_documentation_url:
       set -xe
       scripts/generate_api_docs.sh "${CI_PROJECT_URL}/programs/beekeeper/beekeeper_wasm" "${CI_COMMIT_SHA}" "${GEN_DOC_URL}" tmp_doc
       cd "${SOURCE_DIR}"
-      npm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
+      pnpm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
       BUILT_PACKAGE_NAME=$(jq -r .[].filename "${DIST_DIR}/built_package_info.json")
       echo BUILT_PACKAGE_PATH="${DIST_DIR}/${BUILT_PACKAGE_NAME}" > ${CI_PROJECT_DIR}/built_package_info.env
 
