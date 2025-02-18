@@ -50,7 +50,7 @@ inline void pack(Stream& s, const book&)
   }
 
 template<typename Stream>
-inline void unpack(Stream& s, book& id, uint32_t depth = 0, bool limit_is_disabled = false)
+inline void unpack(Stream& s, book& id, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH)
   {
   }
 }}

@@ -18,16 +18,16 @@ namespace fc {
          }
        }
        template<typename Stream, typename T>
-       inline void unpack( Stream& s, flat_set<T>& value, uint32_t depth, bool limit_is_disabled ) {
+       inline void unpack( Stream& s, flat_set<T>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
          depth++;
-         FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-         unsigned_int size; unpack( s, size, depth, limit_is_disabled );
+         FC_ASSERT( depth <= max_depth );
+         unsigned_int size; unpack( s, size, depth, limit_is_disabled, max_depth );
          value.clear();
          FC_ASSERT( limit_is_disabled || size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              T tmp;
-             fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+             fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
              value.insert( std::move(tmp) );
          }
        }
@@ -42,17 +42,17 @@ namespace fc {
          }
        }
        template<typename Stream, typename K, typename V, typename... A>
-       inline void unpack( Stream& s, flat_map<K,V,A...>& value, uint32_t depth, bool limit_is_disabled )
+       inline void unpack( Stream& s, flat_map<K,V,A...>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
        {
          depth++;
-         FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-         unsigned_int size; unpack( s, size, depth, limit_is_disabled );
+         FC_ASSERT( depth <= max_depth );
+         unsigned_int size; unpack( s, size, depth, limit_is_disabled, max_depth );
          value.clear();
          FC_ASSERT( limit_is_disabled || size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              std::pair<K,V> tmp;
-             fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+             fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
              value.insert( std::move(tmp) );
          }
        }
@@ -73,17 +73,17 @@ namespace fc {
        }
 
        template<typename Stream, typename T, typename A>
-       void unpack( Stream& s, bip::vector<T,A>& value, uint32_t depth, bool limit_is_disabled ) {
+       void unpack( Stream& s, bip::vector<T,A>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth) {
           depth++;
-          FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+          FC_ASSERT( depth <= max_depth );
           unsigned_int size;
-          unpack( s, size, depth, limit_is_disabled );
+          unpack( s, size, depth, limit_is_disabled, max_depth );
           value.clear();
           if( !std::is_fundamental<T>::value ) {
              for ( size_t i = 0; i < size.value; i++ )
              {
                T tmp;
-               unpack( s, tmp, depth, limit_is_disabled );
+               unpack( s, tmp, depth, limit_is_disabled, max_depth );
                value.emplace_back( std::move( tmp ) );
              }
           } else {

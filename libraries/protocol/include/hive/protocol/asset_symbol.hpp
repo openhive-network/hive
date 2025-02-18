@@ -189,7 +189,7 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t, bool )
+inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t, bool, uint32_t )
 {
   uint64_t ser = 0;
   s.read( (char*) &ser, 4 );

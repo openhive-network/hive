@@ -34,18 +34,18 @@ namespace fc {
        fc::raw::pack( s, e.get_log() );
     }
     template<typename Stream>
-    inline void unpack( Stream& s, fc::exception& e, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, fc::exception& e, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+       FC_ASSERT( depth <= max_depth );
        int64_t code;
        std::string name, what;
        log_messages msgs;
 
-       fc::raw::unpack( s, code, depth );
-       fc::raw::unpack( s, name, depth );
-       fc::raw::unpack( s, what, depth );
-       fc::raw::unpack( s, msgs, depth );
+       fc::raw::unpack( s, code, depth, limit_is_disabled, max_depth );
+       fc::raw::unpack( s, name, depth, limit_is_disabled, max_depth );
+       fc::raw::unpack( s, what, depth, limit_is_disabled, max_depth );
+       fc::raw::unpack( s, msgs, depth, limit_is_disabled, max_depth );
 
        e = fc::exception( fc::move(msgs), code, name, what );
     }
@@ -56,12 +56,12 @@ namespace fc {
        fc::raw::pack( s, variant(msg) );
     }
     template<typename Stream>
-    inline void unpack( Stream& s, fc::log_message& msg, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, fc::log_message& msg, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+       FC_ASSERT( depth <= max_depth );
        fc::variant vmsg;
-       fc::raw::unpack( s, vmsg, depth );
+       fc::raw::unpack( s, vmsg, depth, limit_is_disabled, max_depth );
        msg = vmsg.as<log_message>();
     }
 
@@ -72,11 +72,11 @@ namespace fc {
     }
 
     template<typename Stream>
-    inline void unpack( Stream& s, fc::path& tp, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, fc::path& tp, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
        std::string p;
-       fc::raw::unpack( s, p, depth );
+       fc::raw::unpack( s, p, depth, limit_is_disabled, max_depth );
        tp = p;
     }
 
@@ -88,7 +88,7 @@ namespace fc {
     }
 
     template<typename Stream>
-    inline void unpack( Stream& s, fc::time_point_sec& tp, uint32_t, bool )
+    inline void unpack( Stream& s, fc::time_point_sec& tp, uint32_t, bool, uint32_t  )
     { try {
        uint32_t sec;
        s.read( (char*)&sec, sizeof(sec) );
@@ -103,7 +103,7 @@ namespace fc {
     }
 
     template<typename Stream>
-    inline void unpack( Stream& s, fc::time_point& tp, uint32_t, bool )
+    inline void unpack( Stream& s, fc::time_point& tp, uint32_t, bool, uint32_t )
     { try {
        uint64_t usec;
        s.read( (char*)&usec, sizeof(usec) );
@@ -118,7 +118,7 @@ namespace fc {
     }
 
     template<typename Stream>
-    inline void unpack( Stream& s, fc::microseconds& usec, uint32_t, bool )
+    inline void unpack( Stream& s, fc::microseconds& usec, uint32_t, bool, uint32_t )
     { try {
        uint64_t usec_as_int64;
        s.read( (char*)&usec_as_int64, sizeof(usec_as_int64) );
@@ -132,7 +132,7 @@ namespace fc {
     }
 
     template<typename Stream, typename T, size_t N>
-    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t, bool )
+    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t, bool, uint32_t )
     { try {
        s.read( (char*)&v.data[0], N*sizeof(T) );
     } FC_RETHROW_EXCEPTIONS( warn, "fc::array<type,length>", ("type",fc::get_typename<T>::name())("length",N) ) }
@@ -144,7 +144,7 @@ namespace fc {
     }
 
     template<typename Stream, typename T, size_t N>
-    inline void unpack( Stream& s, fc::int_array<T,N>& v, uint32_t, bool )
+    inline void unpack( Stream& s, fc::int_array<T,N>& v, uint32_t, bool, uint32_t )
     { try {
        s.read( (char*)&v.data[0], N*sizeof(T) );
     } FC_RETHROW_EXCEPTIONS( warn, "fc::int_array<type,length>", ("type",fc::get_typename<T>::name())("length",N) ) }
@@ -156,12 +156,12 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, std::shared_ptr<T>& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, std::shared_ptr<T>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+      FC_ASSERT( depth <= max_depth );
       v = std::make_shared<T>();
-      fc::raw::unpack( s, *v, depth, limit_is_disabled );
+      fc::raw::unpack( s, *v, depth, limit_is_disabled, max_depth );
     } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<T>", ("type",fc::get_typename<T>::name()) ) }
 
     template<typename Stream> inline void pack( Stream& s, const signed_int& v ) {
@@ -184,7 +184,7 @@ namespace fc {
       }while( val );
     }
 
-    template<typename Stream> inline void unpack( Stream& s, signed_int& vi, uint32_t, bool ) {
+    template<typename Stream> inline void unpack( Stream& s, signed_int& vi, uint32_t, bool, uint32_t ) {
       uint32_t v = 0, by = 0, limit = 0; char b = 0;
       do {
         s.get(b);
@@ -196,7 +196,7 @@ namespace fc {
       vi.value = v&0x01 ? vi.value : -vi.value;
       vi.value = -vi.value;
     }
-    template<typename Stream> inline void unpack( Stream& s, unsigned_int& vi, uint32_t, bool ) {
+    template<typename Stream> inline void unpack( Stream& s, unsigned_int& vi, uint32_t, bool, uint32_t ) {
       uint32_t v = 0, by = 0, limit = 0; char b = 0;
       do {
           s.get(b);
@@ -213,11 +213,11 @@ namespace fc {
     void pack( Stream& s, const safe<T>& v ) { fc::raw::pack( s, v.value ); }
 
     template<typename Stream, typename T>
-    void unpack( Stream& s, fc::safe<T>& v, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, fc::safe<T>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      fc::raw::unpack( s, v.value, depth, limit_is_disabled );
+      FC_ASSERT( depth <= max_depth );
+      fc::raw::unpack( s, v.value, depth, limit_is_disabled, max_depth );
     }
 
     template<typename Stream, typename T, unsigned int S, typename Align>
@@ -226,21 +226,21 @@ namespace fc {
     }
 
     template<typename Stream, typename T, unsigned int S, typename Align>
-    void unpack( Stream& s, fc::fwd<T,S,Align>& v, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, fc::fwd<T,S,Align>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-       fc::raw::unpack( *v, depth, limit_is_disabled );
+       FC_ASSERT( depth <= max_depth );
+       fc::raw::unpack( *v, depth, limit_is_disabled, max_depth );
     }
     template<typename Stream, typename T>
     void pack( Stream& s, const fc::smart_ref<T>& v ) { fc::raw::pack( s, *v ); }
 
     template<typename Stream, typename T>
-    void unpack( Stream& s, fc::smart_ref<T>& v, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, fc::smart_ref<T>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      fc::raw::unpack( s, *v, depth, limit_is_disabled );
+      FC_ASSERT( depth <= max_depth );
+      fc::raw::unpack( s, *v, depth, limit_is_disabled, max_depth );
     }
 
     // optional
@@ -251,12 +251,12 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    void unpack( Stream& s, fc::optional<T>& v, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, fc::optional<T>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      bool b; fc::raw::unpack( s, b, depth );
-      if( b ) { v = T(); fc::raw::unpack( s, *v, depth, limit_is_disabled ); }
+      FC_ASSERT( depth <= max_depth );
+      bool b; fc::raw::unpack( s, b, depth, limit_is_disabled, max_depth );
+      if( b ) { v = T(); fc::raw::unpack( s, *v, depth, limit_is_disabled, max_depth ); }
     } FC_RETHROW_EXCEPTIONS( warn, "optional<${type}>", ("type",fc::get_typename<T>::name() ) ) }
 
     // std::optional
@@ -267,12 +267,12 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    void unpack( Stream& s, std::optional<T>& v, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, std::optional<T>& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      bool b; fc::raw::unpack( s, b, depth );
-      if( b ) { v = T(); fc::raw::unpack( s, *v, depth, limit_is_disabled ); }
+      FC_ASSERT( depth <= max_depth );
+      bool b; fc::raw::unpack( s, b, depth, limit_is_disabled, max_depth );
+      if( b ) { v = T(); fc::raw::unpack( s, *v, depth, limit_is_disabled, max_depth ); }
     } FC_RETHROW_EXCEPTIONS( warn, "std::optional<${type}>", ("type",fc::get_typename<T>::name() ) ) }
 
     // std::vector<char>
@@ -281,9 +281,9 @@ namespace fc {
       if( value.size() )
         s.write( &value.front(), (uint32_t)value.size() );
     }
-    template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t depth, bool limit_is_disabled ) {
+    template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       FC_ASSERT( limit_is_disabled || size.value < MAX_ARRAY_ALLOC_SIZE );
       value.resize(size.value);
       if( value.size() )
@@ -296,9 +296,9 @@ namespace fc {
       if( v.size() ) s.write( v.c_str(), v.size() );
     }
 
-    template<typename Stream> inline void unpack( Stream& s, fc::string& value, uint32_t depth, bool limit_is_disabled )  {
+    template<typename Stream> inline void unpack( Stream& s, fc::string& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )  {
       depth++;
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       FC_ASSERT( limit_is_disabled || size.value < MAX_ARRAY_ALLOC_SIZE );
       value.resize(size.value);
       if( size.value )
@@ -307,11 +307,11 @@ namespace fc {
 
     // bool
     template<typename Stream> inline void pack( Stream& s, const bool& v ) { fc::raw::pack( s, uint8_t(v) );             }
-    template<typename Stream> inline void unpack( Stream& s, bool& v, uint32_t depth, bool limit_is_disabled )
+    template<typename Stream> inline void unpack( Stream& s, bool& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
        uint8_t b;
-       fc::raw::unpack( s, b, depth );
+       fc::raw::unpack( s, b, depth, limit_is_disabled, max_depth );
        FC_ASSERT( (b & ~1) == 0 );
        v=(b!=0);
     }
@@ -334,18 +334,20 @@ namespace fc {
 
       template<typename Stream, typename Class>
       struct unpack_object_visitor {
-        unpack_object_visitor(Class& _c, Stream& _s, bool _limit_is_disabled)
-        :c(_c),s(_s),limit_is_disabled(_limit_is_disabled){}
+        unpack_object_visitor(Class& _c, Stream& _s, bool _limit_is_disabled, const uint32_t _max_depth) :
+          c(_c), s(_s), limit_is_disabled(_limit_is_disabled), max_depth(_max_depth)
+        {}
 
         template<typename T, typename C, T(C::*p)>
         inline void operator()( const char* name )const
         { try {
-          fc::raw::unpack( s, c.*p, 0/*depth*/, limit_is_disabled );
+          fc::raw::unpack( s, c.*p, 0/*depth*/, limit_is_disabled, max_depth );
         } FC_RETHROW_EXCEPTIONS( warn, "Error unpacking field ${field}", ("field",name) ) }
         private:
           Class&  c;
           Stream& s;
           bool limit_is_disabled = false;
+          uint32_t max_depth = MAX_RECURSION_DEPTH;
       };
 
       template<typename IsClass=fc::true_type>
@@ -353,7 +355,7 @@ namespace fc {
         template<typename Stream, typename T>
         static inline void pack( Stream& s, const T& v ) { s << v; }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled  = false ) { s >> v; }
+        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH ) { s >> v; }
       };
 
       template<>
@@ -363,7 +365,7 @@ namespace fc {
           s.write( (char*)&v, sizeof(v) );
         }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled  = false ) {
+        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH ) {
           s.read( (char*)&v, sizeof(v) );
         }
       };
@@ -375,8 +377,8 @@ namespace fc {
           fc::reflector<T>::visit( pack_object_visitor<Stream,T>( v, s ) );
         }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t, bool limit_is_disabled ) {
-          fc::reflector<T>::visit( unpack_object_visitor<Stream,T>( v, s, limit_is_disabled ) );
+        static inline void unpack( Stream& s, T& v, uint32_t, bool limit_is_disabled, const uint32_t max_depth ) {
+          fc::reflector<T>::visit( unpack_object_visitor<Stream,T>( v, s, limit_is_disabled, max_depth ) );
         }
       };
       template<>
@@ -386,11 +388,11 @@ namespace fc {
           fc::raw::pack(s, (int64_t)v);
         }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false ) {
+        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH ) {
           depth++;
-          FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+          FC_ASSERT( depth <= max_depth );
           int64_t temp;
-          fc::raw::unpack(s, temp, depth, limit_is_disabled);
+          fc::raw::unpack(s, temp, depth, limit_is_disabled, max_depth);
           v = (T)temp;
         }
       };
@@ -402,10 +404,10 @@ namespace fc {
           if_class<typename fc::is_class<T>::type>::pack(s,v);
         }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false ) {
+        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH ) {
           depth++;
-          FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-          if_class<typename fc::is_class<T>::type>::unpack(s,v,depth,limit_is_disabled);
+          FC_ASSERT(depth <= max_depth, "Depth exceeds maximum recursion depth of ${max_depth}", (max_depth));
+          if_class<typename fc::is_class<T>::type>::unpack(s, v, depth, limit_is_disabled, max_depth);
         }
       };
       template<>
@@ -415,10 +417,10 @@ namespace fc {
           if_enum< typename fc::reflector<T>::is_enum >::pack(s,v);
         }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false ) {
+        static inline void unpack( Stream& s, T& v, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH ) {
           depth++;
-          FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-          if_enum< typename fc::reflector<T>::is_enum >::unpack(s,v,depth,limit_is_disabled);
+          FC_ASSERT( depth <= max_depth );
+          if_enum< typename fc::reflector<T>::is_enum >::unpack(s, v, depth, limit_is_disabled, max_depth);
         }
       };
 
@@ -435,16 +437,16 @@ namespace fc {
       }
     }
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, std::unordered_set<T>& value, uint32_t depth, bool limit_is_disabled ) {
+    inline void unpack( Stream& s, std::unordered_set<T>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       value.clear();
       FC_ASSERT( limit_is_disabled || size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
       for( uint32_t i = 0; i < size.value; ++i )
       {
           T tmp;
-          fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+          fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
           value.insert( std::move(tmp) );
       }
     }
@@ -456,12 +458,12 @@ namespace fc {
        fc::raw::pack( s, value.second );
     }
     template<typename Stream, typename K, typename V>
-    inline void unpack( Stream& s, std::pair<K,V>& value, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, std::pair<K,V>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-       fc::raw::unpack( s, value.first, depth, limit_is_disabled );
-       fc::raw::unpack( s, value.second, depth, limit_is_disabled );
+       FC_ASSERT( depth <= max_depth );
+       fc::raw::unpack( s, value.first, depth, limit_is_disabled, max_depth );
+       fc::raw::unpack( s, value.second, depth, limit_is_disabled, max_depth );
     }
 
    template<typename Stream, typename K, typename V>
@@ -475,17 +477,17 @@ namespace fc {
       }
     }
     template<typename Stream, typename K, typename V>
-    inline void unpack( Stream& s, std::unordered_map<K,V>& value, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, std::unordered_map<K,V>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       value.clear();
       FC_ASSERT( limit_is_disabled || size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
       for( uint32_t i = 0; i < size.value; ++i )
       {
           std::pair<K,V> tmp;
-          fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+          fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
           value.insert( std::move(tmp) );
       }
     }
@@ -500,17 +502,17 @@ namespace fc {
       }
     }
     template<typename Stream, typename K, typename V>
-    inline void unpack( Stream& s, std::map<K,V>& value, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, std::map<K,V>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       value.clear();
       FC_ASSERT( limit_is_disabled || size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
       for( uint32_t i = 0; i < size.value; ++i )
       {
           std::pair<K,V> tmp;
-          fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+          fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
           value.insert( std::move(tmp) );
       }
     }
@@ -527,16 +529,16 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, std::deque<T>& value, uint32_t depth, bool limit_is_disabled ) {
+    inline void unpack( Stream& s, std::deque<T>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       FC_ASSERT( limit_is_disabled || size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
       value.clear();
       for ( size_t i = 0; i < size.value; i++ )
       {
          T tmp;
-         fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+         fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
          value.emplace_back( std::move( tmp ) );
       }
     }
@@ -553,15 +555,15 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, std::vector<T>& value, uint32_t depth, bool limit_is_disabled ) {
+    inline void unpack( Stream& s, std::vector<T>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       FC_ASSERT( limit_is_disabled || size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
       value.clear();
       value.resize(size.value);
       for ( size_t i = 0; i < size.value; i++ )
-         fc::raw::unpack( s, value[i], depth, limit_is_disabled );
+         fc::raw::unpack( s, value[i], depth, limit_is_disabled, max_depth );
     }
 
     template<typename Stream, typename... T>
@@ -576,15 +578,15 @@ namespace fc {
     }
 
     template<typename Stream, typename... T>
-    inline void unpack( Stream& s, std::set<T...>& value, uint32_t depth, bool limit_is_disabled ) {
+    inline void unpack( Stream& s, std::set<T...>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       value.clear();
       for( uint64_t i = 0; i < size.value; ++i )
       {
         typename std::set<T...>::value_type tmp;
-        fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+        fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
         value.insert( std::move(tmp) );
       }
     }
@@ -601,15 +603,15 @@ namespace fc {
     }
 
     template<typename Stream, typename... T>
-    inline void unpack( Stream& s, std::multiset<T...>& value, uint32_t depth, bool limit_is_disabled ) {
+    inline void unpack( Stream& s, std::multiset<T...>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth ) {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( depth <= max_depth );
+      unsigned_int size; fc::raw::unpack( s, size, depth, limit_is_disabled, max_depth );
       value.clear();
       for( uint64_t i = 0; i < size.value; ++i )
       {
         typename std::multiset<T...>::value_type tmp;
-        fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+        fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
         value.insert( std::move(tmp) );
       }
     }
@@ -621,11 +623,11 @@ namespace fc {
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack(s,v);
     }
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, T& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, T& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-      fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack(s,v,depth, limit_is_disabled);
+      FC_ASSERT( depth <= max_depth );
+      fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack(s,v,depth, limit_is_disabled, max_depth);
     } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
     template<typename T>
@@ -702,12 +704,12 @@ namespace fc {
    }
 
     template<typename T>
-    inline void unpack_from_vector( const std::vector<char>& s, T& tmp, uint32_t depth = 0, bool limit_is_disabled = false )
+    inline void unpack_from_vector( const std::vector<char>& s, T& tmp, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH )
     { try  {
       depth++;
       if( s.size() ) {
         datastream<const char*>  ds( s.data(), size_t(s.size()) );
-        fc::raw::unpack(ds,tmp,depth,limit_is_disabled);
+        fc::raw::unpack(ds,tmp,depth,limit_is_disabled, max_depth);
       }
     } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
@@ -718,21 +720,21 @@ namespace fc {
     }
 
     template<typename T>
-    inline T unpack_from_char_array( const char* d, uint32_t s, uint32_t depth, bool limit_is_disabled )
+    inline T unpack_from_char_array( const char* d, uint32_t s, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
       T v;
       datastream<const char*>  ds( d, s );
-      fc::raw::unpack(ds,v,depth,limit_is_disabled);
+      fc::raw::unpack(ds,v,depth,limit_is_disabled, max_depth);
       return v;
     } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
     template<typename T>
-    inline void unpack_from_char_array( const char* d, uint32_t s, T& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack_from_char_array( const char* d, uint32_t s, T& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     { try {
       depth++;
       datastream<const char*>  ds( d, s );
-      fc::raw::unpack(ds,v,depth,limit_is_disabled);
+      fc::raw::unpack(ds,v,depth,limit_is_disabled, max_depth);
     } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
    template<typename Stream>
@@ -754,14 +756,16 @@ namespace fc {
       Stream& stream;
       uint32_t depth = 0;
       bool limit_is_disabled = false;
-      unpack_static_variant( Stream& s, uint32_t d, bool _limit_is_disabled):stream(s), depth(d), limit_is_disabled(_limit_is_disabled) {}
+      uint32_t max_depth = MAX_RECURSION_DEPTH;
+
+      unpack_static_variant( Stream& s, uint32_t d, bool _limit_is_disabled, const uint32_t _max_depth):stream(s), depth(d), limit_is_disabled(_limit_is_disabled), max_depth(_max_depth) {}
 
       typedef void result_type;
       template<typename T> void operator()( T& v )const
       {
          /// Here GCC 10.1 generates fake warning related to uninitialized variables.
          /// GCC 10.2 has fixed this problem
-         fc::raw::unpack( stream, v, depth, limit_is_disabled );
+         fc::raw::unpack( stream, v, depth, limit_is_disabled, max_depth );
       }
    };
 
@@ -774,13 +778,13 @@ namespace fc {
     }
 
     template<typename Stream, typename... T>
-    void unpack( Stream& s, static_variant<T...>& sv, uint32_t depth, bool limit_is_disabled )
+    void unpack( Stream& s, static_variant<T...>& sv, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+       FC_ASSERT( depth <= max_depth );
        unsigned_int w;
-       fc::raw::unpack( s, w, depth );
-       unpack_static_variant<Stream> v(s, depth, limit_is_disabled);
+       fc::raw::unpack( s, w, depth, limit_is_disabled, max_depth );
+       unpack_static_variant<Stream> v(s, depth, limit_is_disabled, max_depth);
        static_variant<T...> helper(static_cast<int64_t>(w.value), v);
        sv = helper;
     }

@@ -67,12 +67,12 @@ namespace fc
     }
 
     template<typename Stream, typename IntType, typename EnumType>
-    inline void unpack( Stream& s, fc::enum_type<IntType,EnumType>& tp, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, fc::enum_type<IntType,EnumType>& tp, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+       FC_ASSERT( depth <= max_depth );
        IntType t;
-       fc::raw::unpack( s, t, depth, limit_is_disabled );
+       fc::raw::unpack( s, t, depth, limit_is_disabled, max_depth );
        tp = t;
     }
   }

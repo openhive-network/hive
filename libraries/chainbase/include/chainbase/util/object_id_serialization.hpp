@@ -3,6 +3,7 @@
 #include <chainbase/util/object_id.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/reflect/variant.hpp>
+#include <fc/io/raw_constants.hpp>
 
 namespace fc
 {
@@ -65,7 +66,7 @@ inline void pack(Stream& s, const chainbase::oid<T>& id)
 }
 
 template<typename Stream, typename T>
-inline void unpack(Stream& s, chainbase::oid<T>& id, uint32_t depth = 0, bool limit_is_disabled = false)
+inline void unpack(Stream& s, chainbase::oid<T>& id, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH)
 {
   s.read((char*)&id, sizeof(id));
 }
@@ -77,7 +78,7 @@ void pack(Stream& s, const chainbase::oid_ref<T>& id)
 }
 
 template<typename Stream, typename T>
-void unpack(Stream& s, chainbase::oid_ref<T>& id, uint32_t depth = 0, bool limit_is_disabled = false)
+void unpack(Stream& s, chainbase::oid_ref<T>& id, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH)
 {
   s.read((char*)&id, sizeof(id));
 }

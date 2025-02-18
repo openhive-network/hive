@@ -95,7 +95,7 @@ namespace graphene { namespace net {
       *  opposite process from the constructor.
       */
      template<typename T>
-     T as()const 
+     T as(size_t depth = MAX_RECURSION_DEPTH)const 
      {
          try {
           FC_ASSERT( msg_type == T::type );
@@ -103,13 +103,13 @@ namespace graphene { namespace net {
           if( data.size() )
           {
              fc::datastream<const char*> ds( data.data(), data.size() );
-             fc::raw::unpack( ds, tmp );
+             fc::raw::unpack( ds, tmp, 0, false, depth );
           }
           else
           {
              // just to make sure that tmp shouldn't have any data
              fc::datastream<const char*> ds( nullptr, 0 );
-             fc::raw::unpack( ds, tmp );
+             fc::raw::unpack( ds, tmp, 0, false, depth );
           }
           return tmp;
          } FC_RETHROW_EXCEPTIONS( warn, 
