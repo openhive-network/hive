@@ -41,6 +41,7 @@ extern "C" const uint32_t word_list_zipped_size;
 hive::words::const_char_ptr word_list_b64 =
 #include <hive/protocol/words.b64>
 ;
+static_assert(sizeof(word_list_b64) != 0);
 #endif // C23_EMBED_SUPPORTED
 
 class word_list_t
