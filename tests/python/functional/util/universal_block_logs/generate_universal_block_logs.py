@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import random
 from datetime import timedelta
@@ -126,7 +127,7 @@ def prepare_block_log(
     tt.logger.info("Wait 43 blocks...")
     generate_block(node, 43)  # wait for the block size to change to 2mb
 
-    authority = generate_authority(wallet, signature_type)
+    authority = generate_authority(wallet, signature_type, output_directory=block_log_directory)
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
@@ -227,36 +228,67 @@ def __invest(account: str, _) -> tuple[TransferToVestingOperationLegacy]:
     return (TransferToVestingOperationLegacy(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
 
 
-def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
+def generate_authority(
+    wallet: tt.OldWallet,
+    authority_type: Literal["open_sign", "multi_sign", "single_sign"],
+    output_directory: Path | None = None,
+) -> dict:
+    def _save(
+        auth: dict,
+    ) -> None:
+        file_path = output_directory / "account_specification.txt"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(
+                f"Authority is the same for {ACCOUNT_NAMES[0]} to {ACCOUNT_NAMES[-1]} - {authority_type}".center(
+                    70, "-"
+                )
+                + "\n\n"
+            )
+            file.write(json.dumps(auth, default=lambda obj: dict(obj), indent=2))
+
     match authority_type:
         case "open_sign":
-            return {
+            authority = {
                 "owner": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "active": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "posting": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            save_keys_to_file(name="account", colony_key=False, file_path=output_directory / "colony_keys.txt")
+            _save(authority)
+            return authority
         case "multi_sign":
             wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)])
-            keys = [(tt.PublicKey("account", secret=f"secret-{num}"), HiveInt(1)) for num in range(5)]
+            public_keys = [(tt.PublicKey("account", secret=f"secret-{num}"), HiveInt(1)) for num in range(5)]
+            private_keys = [tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)]
 
-            return {
-                "owner": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=keys),
-                "active": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=keys),
-                "posting": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=keys),
+            authority = {
+                "owner": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=public_keys),
+                "active": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=public_keys),
+                "posting": Authority(weight_threshold=HiveInt(5), account_auths=[], key_auths=public_keys),
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            save_keys_to_file(name="account", colony_key=private_keys, file_path=output_directory / "colony_keys.txt")
+            _save(authority)
+            return authority
         case "single_sign":
-            wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
-            key = tt.PublicKey("account", secret="secret")
+            account = tt.Account("account", secret="secret")
+            public_key = account.public_key
+            private_key = account.private_key
+            wallet.api.import_key(private_key)
             weight = HiveInt(1)
 
-            return {
-                "owner": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
-                "active": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
-                "posting": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
-                "memo": key,
+            authority = {
+                "owner": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(public_key, weight)]),
+                "active": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(public_key, weight)]),
+                "posting": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(public_key, weight)]),
+                "memo": public_key,
             }
+            _save(authority)
+            save_keys_to_file(name=account.name, colony_key=private_key, file_path=output_directory / "colony_keys.txt")
+            return authority
 
 
 def __create_and_fund_account(
