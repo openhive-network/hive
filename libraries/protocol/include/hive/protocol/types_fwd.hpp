@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <fc/uint128.hpp>
+#include <fc/io/raw_constants.hpp>
 #include <boost/container/flat_set.hpp>
 
 namespace fc {
@@ -41,22 +42,22 @@ namespace fc { namespace raw {
 template<typename Stream, typename T>
 void pack( Stream& s, const flat_set_ex<T>& value );
 template<typename Stream, typename T>
-void unpack( Stream& s, flat_set_ex<T>& value, uint32_t depth = 0, bool limit_is_disabled = false );
+void unpack( Stream& s, flat_set_ex<T>& value, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH );
 
 template< typename Stream, typename Storage >
 inline void pack( Stream& s, const hive::protocol::fixed_string_impl< Storage >& u );
 template< typename Stream, typename Storage >
-inline void unpack( Stream& s, hive::protocol::fixed_string_impl< Storage >& u, uint32_t depth = 0, bool limit_is_disabled = false );
+inline void unpack( Stream& s, hive::protocol::fixed_string_impl< Storage >& u, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH );
 
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym );
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t depth = 0, bool limit_is_disabled = false );
+inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH );
 
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym );
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t depth = 0, bool limit_is_disabled = false );
+inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t depth = 0, bool limit_is_disabled = false, const uint32_t max_depth = MAX_RECURSION_DEPTH );
 
 } // raw
 

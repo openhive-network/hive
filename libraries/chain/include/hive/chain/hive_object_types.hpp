@@ -239,11 +239,11 @@ void pack( Stream& s, const chainbase::shared_string& ss )
 }
 
 template< typename Stream >
-void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth, bool limit_is_disabled )
+void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
 {
   depth++;
   std::string str;
-  fc::raw::unpack( s, str, depth );
+  fc::raw::unpack( s, str, depth, limit_is_disabled, max_depth );
   hive::chain::from_string( ss, str );
 }
 #endif
@@ -258,13 +258,13 @@ void pack( Stream& s, const boost::interprocess::deque<E, A>& dq )
 }
 
 template< typename Stream, typename E, typename A >
-void unpack( Stream& s, boost::interprocess::deque<E, A>& dq, uint32_t depth, bool limit_is_disabled )
+void unpack( Stream& s, boost::interprocess::deque<E, A>& dq, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
 {
   depth++;
-  FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+  FC_ASSERT( depth <= max_depth );
   // This could be optimized
   std::vector<E> temp;
-  unpack( s, temp, depth, limit_is_disabled );
+  unpack( s, temp, depth, limit_is_disabled, max_depth );
   dq.clear();
   std::copy( temp.begin(), temp.end(), std::back_inserter(dq) );
 }
@@ -283,18 +283,18 @@ void pack( Stream& s, const boost::interprocess::flat_map< K, V, C, A >& value )
 }
 
 template< typename Stream, typename K, typename V, typename C, typename A >
-void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint32_t depth, bool limit_is_disabled )
+void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
 {
   depth++;
-  FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+  FC_ASSERT( depth <= max_depth );
   unsigned_int size;
-  unpack( s, size, depth, limit_is_disabled );
+  unpack( s, size, depth, limit_is_disabled, max_depth );
   value.clear();
   FC_ASSERT( limit_is_disabled || size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
   for( uint32_t i = 0; i < size.value; ++i )
   {
     std::pair<K,V> tmp;
-    fc::raw::unpack( s, tmp, depth, limit_is_disabled );
+    fc::raw::unpack( s, tmp, depth, limit_is_disabled, max_depth );
     value.insert( std::move(tmp) );
   }
 }

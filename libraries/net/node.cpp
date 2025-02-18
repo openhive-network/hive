@@ -1972,7 +1972,19 @@ namespace graphene { namespace net {
         on_item_ids_inventory_message(originating_peer, received_message.as<item_ids_inventory_message>());
         break;
       case core_message_type_enum::closing_connection_message_type:
-        on_closing_connection_message(originating_peer, received_message.as<closing_connection_message>());
+        // For debugging a problem decoding some closing_connection_messages seen in the wild,
+        // try decoding with default depth, dump the message if an error is detected
+        try
+        {
+          received_message.as<closing_connection_message>();
+        }
+        catch (const fc::exception& e)
+        {
+          elog("Error decoding closing_connection_message: ${e}", (e));
+          elog("Raw message size is ${size}, hex is ${hex}", ("size", received_message.data.size())("hex", fc::to_hex(received_message.data)));
+        }
+        // then try unpacking with more depth to try to get a successful decode
+        on_closing_connection_message(originating_peer, received_message.as<closing_connection_message>(100));
         break;
       case core_message_type_enum::block_message_type:
       case core_message_type_enum::compressed_block_message_type:
@@ -3201,6 +3213,8 @@ namespace graphene { namespace net {
         wlog( "Peer ${peer} is disconnecting us because: ${msg}",
              ( "peer", originating_peer->get_remote_endpoint() )
              ( "msg", closing_connection_message_received.reason_for_closing ) );
+        if (closing_connection_message_received.error)
+          wlog("Error reported by peer was: ${error}", ("error", *closing_connection_message_received.error));
       }
       if( originating_peer->we_have_requested_close )
         originating_peer->close_connection();

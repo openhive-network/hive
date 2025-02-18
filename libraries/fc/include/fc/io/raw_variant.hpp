@@ -53,10 +53,10 @@ namespace fc { namespace raw {
        v.visit( variant_packer<Stream>(s) );
     }
     template<typename Stream> 
-    inline void unpack( Stream& s, variant& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, variant& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
       depth++;
-      FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+      FC_ASSERT( depth <= max_depth );
       uint8_t t;
       unpack( s, t, depth );
       switch( t )
@@ -94,21 +94,21 @@ namespace fc { namespace raw {
          case variant::string_type:
          {
             fc::string val;
-            raw::unpack(s,val,depth);
+            raw::unpack(s, val, depth, limit_is_disabled, max_depth);
             v = fc::move(val);
             return;
          }
          case variant::array_type:
          {
             variants val;
-            raw::unpack(s,val,depth);
+            raw::unpack(s, val, depth, limit_is_disabled, max_depth);
             v = fc::move(val);
             return;
          }
          case variant::object_type:
          {
             variant_object val; 
-            raw::unpack(s,val,depth);
+            raw::unpack(s, val, depth, limit_is_disabled, max_depth);
             v = fc::move(val);
             return;
          }
@@ -129,10 +129,10 @@ namespace fc { namespace raw {
        }
     }
     template<typename Stream> 
-    inline void unpack( Stream& s, variant_object& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, variant_object& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+       FC_ASSERT( depth <= max_depth );
        unsigned_int vs;
        unpack( s, vs, depth );
 
@@ -141,8 +141,8 @@ namespace fc { namespace raw {
        {
           fc::string key;
           fc::variant value;
-          fc::raw::unpack(s,key,depth);
-          fc::raw::unpack(s,value,depth);
+          fc::raw::unpack(s,key,depth, limit_is_disabled, max_depth);
+          fc::raw::unpack(s,value,depth, limit_is_disabled, max_depth);
           mvo.set( fc::move(key), fc::move(value) );
        }
        v = fc::move(mvo);

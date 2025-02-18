@@ -88,7 +88,7 @@ namespace fc {
        fc::raw::pack( s, uint32_t(v) );
     }
     template<typename Stream>
-    inline void unpack( Stream& s, ip::address& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, ip::address& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
        uint32_t _ip;
@@ -103,13 +103,13 @@ namespace fc {
        fc::raw::pack( s, v.port() );
     }
     template<typename Stream>
-    inline void unpack( Stream& s, ip::endpoint& v, uint32_t depth, bool limit_is_disabled )
+    inline void unpack( Stream& s, ip::endpoint& v, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth )
     {
        depth++;
        ip::address a;
        uint16_t p;
-       fc::raw::unpack( s, a, depth );
-       fc::raw::unpack( s, p, depth );
+       fc::raw::unpack( s, a, depth, limit_is_disabled, max_depth );
+       fc::raw::unpack( s, p, depth, limit_is_disabled, max_depth );
        v = ip::endpoint(a,p);
     }
 

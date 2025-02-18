@@ -102,8 +102,8 @@ namespace fc {
       }
 
       template<typename Stream, typename T>
-      inline void unpack( Stream& s, flat_set_ex<T>& value, uint32_t depth, bool limit_is_disabled ) {
-        unpack( s, static_cast< flat_set<T>& >( value ), depth, limit_is_disabled );
+      inline void unpack( Stream& s, flat_set_ex<T>& value, uint32_t depth, bool limit_is_disabled, const uint32_t max_depth) {
+        unpack( s, static_cast< flat_set<T>& >( value ), depth, limit_is_disabled, max_depth );
       }
 
   }
