@@ -26,3 +26,6 @@
 	path = libraries/vendor/rocksdb
 	url = https://github.com/facebook/rocksdb.git
 	shallow = true
+[submodule "npm-common-config"]
+	path = programs/beekeeper/beekeeper_wasm/npm-common-config
+	url = ../common-ci-configuration.git

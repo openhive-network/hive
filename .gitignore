@@ -114,7 +114,6 @@ build-*/
 build_*/
 /.vs
 /out/isenseconfig/Linux-Release
-.npmrc
 node_modules
 
 # various log and benchmark files
