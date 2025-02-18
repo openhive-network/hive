@@ -74,10 +74,12 @@ def prepare_block_log(
     node = tt.InitNode()
     node.config.shared_file_size = "48G"
     node.config.plugin.append("queen")
-    for witness in WITNESSES:
+    for witness in ["initminer", *WITNESSES]:
         witness_key = tt.Account(witness).private_key
-        node.config.witness.append(witness)
-        node.config.private_key.append(witness_key)
+        if witness != "initminer":
+            node.config.witness.append(witness)
+            node.config.private_key.append(witness_key)
+        save_keys_to_file(name=witness, witness_key=witness_key, file_path=block_log_directory / "witnesses_keys.txt")
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
@@ -344,6 +346,33 @@ def generate_random_text(min_length: int, max_length: int) -> str:
 
 def random_letter() -> str:
     return chr(random.randrange(97, 97 + 26))
+
+
+def save_keys_to_file(
+    name: str, file_path: Path, colony_key: str | list[str] | None | bool = None, witness_key: str | None = None
+) -> None:
+    output_directory = file_path.parent
+    output_directory.mkdir(parents=True, exist_ok=True)
+
+    content_written = False
+
+    with file_path.open("a", encoding="utf-8") as file:
+        if colony_key is False:
+            file.write("It's an open authority case, colony will be working without any provided key.\n")
+            content_written = True
+        elif colony_key:
+            if isinstance(colony_key, str):
+                colony_key = [colony_key]
+            for key in colony_key:
+                file.write(f"colony-sign-with = {key}\n")
+                content_written = True
+
+        if witness_key:
+            file.write(f'witness = "{name}"\nprivate-key = {witness_key}\n')
+            content_written = True
+
+    if not content_written:
+        file_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
