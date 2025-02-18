@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import random
 from datetime import timedelta
@@ -125,7 +126,7 @@ def prepare_block_log(
     tt.logger.info("Wait 43 blocks...")
     generate_block(node, 43)  # wait for the block size to change to 2mb
 
-    authority = generate_authority(wallet, signature_type)
+    authority = generate_authority(wallet, signature_type, output_directory=block_log_directory)
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
@@ -226,36 +227,69 @@ def __invest(account: str, _) -> tuple[TransferToVestingOperationLegacy]:
     return (TransferToVestingOperationLegacy(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
 
 
-def generate_authority(wallet: tt.OldWallet, authority_type: Literal["open_sign", "multi_sign", "single_sign"]) -> dict:
+def generate_authority(
+    wallet: tt.OldWallet,
+    authority_type: Literal["open_sign", "multi_sign", "single_sign"],
+    output_directory: Path | None = None,
+) -> dict:
+    def _save(auth: dict) -> None:
+        with open(output_directory.joinpath("account_specification.txt"), encoding="utf-8") as file:
+            content = file.read()
+        with open(output_directory.joinpath("account_specification.txt"), "w", encoding="utf-8") as file:
+            file.write(
+                f"{authority_type.capitalize()} authority for account-0 to account-1999999".center(70, "-") + "\n"
+            )
+            file.write(
+                json.dumps(
+                    {
+                        "owner": [key[0] for key in auth["owner"]["key_auths"]],
+                        "posting": [key[0] for key in auth["posting"]["key_auths"]],
+                        "active": [key[0] for key in auth["active"]["key_auths"]],
+                        "memo": auth["memo"],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n"
+                + content
+                + "\n"
+            )
+
     match authority_type:
         case "open_sign":
-            return {
+            authority = {
                 "owner": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "active": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "posting": Authority(weight_threshold=HiveInt(0), account_auths=[], key_auths=[]),
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            _save(authority)
+            return authority
         case "multi_sign":
             wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(40)])
             keys = [(tt.PublicKey("account", secret=f"secret-{num}"), HiveInt(1)) for num in range(40)]
 
-            return {
+            authority = {
                 "owner": Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys),
                 "active": Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys),
                 "posting": Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys),
                 "memo": tt.PublicKey("account", secret="memo"),
             }
+            _save(authority)
+            return authority
         case "single_sign":
             wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
             key = tt.PublicKey("account", secret="secret")
             weight = HiveInt(1)
 
-            return {
+            authority = {
                 "owner": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
                 "active": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
                 "posting": Authority(weight_threshold=HiveInt(1), account_auths=[], key_auths=[(key, weight)]),
                 "memo": key,
             }
+            _save(authority)
+            return authority
 
 
 def __create_and_fund_account(
@@ -365,6 +399,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
     args = parser.parse_args()
-    prepare_block_log(args.output_block_log_directory, "open_sign", 450)
-    prepare_block_log(args.output_block_log_directory, "single_sign", 570)
+    # prepare_block_log(args.output_block_log_directory, "open_sign", 450)
+    # prepare_block_log(args.output_block_log_directory, "single_sign", 570)
     prepare_block_log(args.output_block_log_directory, "multi_sign", 1300)
