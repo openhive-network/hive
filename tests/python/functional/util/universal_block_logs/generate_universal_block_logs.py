@@ -217,6 +217,9 @@ def prepare_block_log(
 
     node.close()
     node.block_log.copy_to(block_log_directory, artifacts="optional")
+    timestamp = tt.BlockLog(block_log_directory, "auto").get_head_block_time()
+    with open(block_log_directory.joinpath("timestamp"), "w", encoding="utf-8") as file:
+        file.write(timestamp.isoformat(timespec="seconds")[:19])
     tt.logger.info(f"Save block log file to {block_log_directory}")
 
 
