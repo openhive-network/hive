@@ -196,7 +196,7 @@ push_to_wiki:
   artifacts:
     reports:
       dotenv:
-        - "${SOURCE_DIR}/gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
+        - "gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
 
 
   tags:
@@ -219,16 +219,19 @@ supplement_documentation_url:
   script:
     - |
       set -xe
-      scripts/generate_api_docs.sh "${CI_PROJECT_URL}/programs/beekeeper/beekeeper_wasm" "${CI_COMMIT_SHA}" "${GEN_DOC_URL}" tmp_doc
       cd "${SOURCE_DIR}"
+      echo "Attempting to replace generated documentation url placeholder: "${GEN_DOC_URL}""
+      sed -i "s<\${GEN_DOC_URL}<${GEN_DOC_URL}<g" README.md
+      if grep -q "\${GEN_DOC_URL}" README.md; then exit 1; fi # Ensure that the placeholder was replaced
       pnpm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
+      cat "${DIST_DIR}/built_package_info.json"
       BUILT_PACKAGE_NAME=$(jq -r .[].filename "${DIST_DIR}/built_package_info.json")
-      echo BUILT_PACKAGE_PATH="${DIST_DIR}/${BUILT_PACKAGE_NAME}" > ${CI_PROJECT_DIR}/built_package_info.env
+      echo BUILT_PACKAGE_PATH="${DIST_DIR}/${BUILT_PACKAGE_NAME}" > "${CI_PROJECT_DIR}/built_package_info.env"
 
   artifacts:
     reports:
       dotenv:
-        - "built_package_info.env"  # contains path to produced tgz
+        - "${CI_PROJECT_DIR}/built_package_info.env"  # contains path to produced tgz
 
     paths:
       - "${DIST_DIR}/*.tgz"  # Built package
