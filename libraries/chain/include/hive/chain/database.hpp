@@ -719,6 +719,7 @@ namespace chain {
         operation_notification note(op);
         note.trx_id       = _current_trx_id;
         note.block        = _current_block_num;
+        note.timestamp    = get_current_timestamp();//_current_timestamp;
         note.trx_in_block = _current_trx_in_block;
         note.op_in_trx    = _current_op_in_trx;
         note.virtual_op   = hive::protocol::is_virtual_operation(op);
@@ -816,7 +817,7 @@ namespace chain {
 
     public:
 
-      time_point_sec get_current_timestamp()
+      time_point_sec get_current_timestamp() const
       {
         if( _current_timestamp )
           return *_current_timestamp;

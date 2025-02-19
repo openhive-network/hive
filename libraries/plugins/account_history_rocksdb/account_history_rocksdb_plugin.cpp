@@ -929,25 +929,6 @@ private:
 
   std::optional<std::pair<uint32_t, fc::time_point_sec>> _last_block_and_timestamp;
 
-  fc::time_point_sec find_block_timestamp( uint32_t block_num )
-  {
-    if( _last_block_and_timestamp )
-    {
-      if( _last_block_and_timestamp->first == block_num )
-        return _last_block_and_timestamp->second;
-    }
-    else
-      _last_block_and_timestamp = std::make_pair( block_num, fc::time_point_sec() );
-
-    std::shared_ptr<hive::chain::full_block_type> _blk = _block_reader.get_block_by_number( block_num );
-    FC_ASSERT( _blk, "Block doesn't exist" );
-
-    _last_block_and_timestamp->first = block_num;
-    _last_block_and_timestamp->second = _blk->get_block_header().timestamp;
-
-    return _last_block_and_timestamp->second;
-  }
-
   appbase::application& theApp;
 };
 
@@ -1974,7 +1955,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     obj.trx_in_block = n.trx_in_block;
     obj.op_in_trx = n.op_in_trx;
     obj.is_virtual = n.virtual_op;
-    obj.timestamp = find_block_timestamp( n.block );
+    obj.timestamp = n.timestamp;
     auto size = fc::raw::pack_size( n.op );
     obj.serialized_op.resize( size );
     fc::datastream< char* > ds( obj.serialized_op.data(), size );
@@ -1992,7 +1973,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.trx_in_block = n.trx_in_block;
       o.op_in_trx = n.op_in_trx;
       o.is_virtual = n.virtual_op;
-      o.timestamp = _mainDb.head_block_time();
+      o.timestamp = n.timestamp;
       auto size = fc::raw::pack_size( n.op );
       o.serialized_op.resize( size );
       fc::datastream< char* > ds( o.serialized_op.data(), size );
@@ -2052,7 +2033,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
         //dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
         //  ("txs", to_string(txs)));
         rocksdb_operation_object obj(operation);
-        obj.timestamp = find_block_timestamp( operation.block );
+        obj.timestamp = operation.timestamp;
         hive::protocol::operation hive_op = fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op);
         importOperation(obj, hive_op, operation.impacted);
         return true; /// Allow move_to_external_storage internals to erase this object
