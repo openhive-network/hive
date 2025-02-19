@@ -1,55 +1,11 @@
 {
+  "extends": "./npm-common-config/ts-common/tsconfig.base.json",
   "compilerOptions": {
-    "emitDecoratorMetadata": true,
-    "resolveJsonModule": true,
-    "experimentalDecorators": true,
-
-    "incremental": false,
-    "noEmit": false,
-
-    "declaration": true,
-    "declarationMap": false,
-    "sourceMap": false,
-
-    "noImplicitAny": false,
-    "noLib": false,
-
-    "allowUnreachableCode": false,
-    "allowSyntheticDefaultImports": true,
-    "allowUnusedLabels": false,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "noFallthroughCasesInSwitch": false,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
 
     "rootDir": "./src",
-
-    "outDir": "./dist",
-
-    "removeComments": false,
-    "checkJs": false,
-    "strict": true,
-    "alwaysStrict": true,
-
-    "allowJs": false,
-
-    "target": "ES2020",
-    "lib": [
-      "DOM",
-      "ES2020"
-    ],
-    "module": "ES2020",
-    "moduleResolution": "Bundler",
-    "esModuleInterop": true,
-
-    "noErrorTruncation": true,
-  },
-  "buildOptions": {
-    "force": true,
-    "verbose": true
+    "outDir": "./dist"
   },
   "include": [
     "./src/**/*.ts"
