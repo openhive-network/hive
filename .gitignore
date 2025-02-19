@@ -36,6 +36,8 @@ lcov
 doxygen
 test-results
 beekeeper_wasm.*.wasm
+tmp_doc
+built_package_info.json
 
 # Project generated files/directories
 
