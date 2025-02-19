@@ -73,7 +73,7 @@ def prepare_block_log(
     logger.disable("test_tools")
 
     node = tt.InitNode()
-    node.config.shared_file_size = "24G"
+    node.config.shared_file_size = "48G"
     node.config.plugin.append("queen")
     for witness in WITNESSES:
         witness_key = tt.Account(witness).private_key
