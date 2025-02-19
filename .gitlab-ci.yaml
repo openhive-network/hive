@@ -223,10 +223,9 @@ supplement_documentation_url:
       echo "Attempting to replace generated documentation url placeholder: "${GEN_DOC_URL}""
       sed -i "s<\${GEN_DOC_URL}<${GEN_DOC_URL}<g" README.md
       if grep -q "\${GEN_DOC_URL}" README.md; then exit 1; fi # Ensure that the placeholder was replaced
-      pnpm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
-      cat "${DIST_DIR}/built_package_info.json"
-      BUILT_PACKAGE_NAME=$(jq -r .[].filename "${DIST_DIR}/built_package_info.json")
-      echo BUILT_PACKAGE_PATH="${DIST_DIR}/${BUILT_PACKAGE_NAME}" > "${CI_PROJECT_DIR}/built_package_info.env"
+      pnpm pack --pack-destination "${DIST_DIR}" --json | tail -n +5 > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
+      BUILT_PACKAGE_NAME=$(jq -r .filename "${DIST_DIR}/built_package_info.json")
+      echo BUILT_PACKAGE_PATH="${BUILT_PACKAGE_NAME}" > "${CI_PROJECT_DIR}/built_package_info.env"
 
   artifacts:
     reports:
