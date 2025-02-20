@@ -21,6 +21,7 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
         ("block_log_multi_sign", {"owner": 5, "active": 5, "posting": 5}),
         ("block_log_open_sign", {"owner": 0, "active": 0, "posting": 0}),
         ("block_log_single_sign", {"owner": 1, "active": 1, "posting": 1}),
+        ("block_log_maximum_sign", {"owner": 0, "active": 0, "posting": 0}),
     ],
     ids=["block_log_multi_sign", "block_log_open_sign", "block_log_single_sign"],
     indirect=True,
