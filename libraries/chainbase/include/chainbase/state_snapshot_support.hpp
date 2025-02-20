@@ -163,7 +163,7 @@ class snapshot_reader : public snapshot_base_serializer
 
     typedef std::vector<worker*> workers;
 
-    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id) = 0;
+    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id, size_t* snapshot_dumped_items) = 0;
     virtual void start(const workers& workers) = 0;
 
   protected:
@@ -502,8 +502,9 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
         };
 
       size_t index_next_id = 0;
+      size_t dumped_items = 0;
 
-      auto workers = _reader.prepare(indexName, converter, &index_next_id);
+      auto workers = _reader.prepare(indexName, converter, &index_next_id, &dumped_items);
 
       std::vector<std::unique_ptr<loader_t>> workerData;
 
@@ -514,6 +515,9 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
         }
 
       _reader.start(workers);
+
+      FC_ASSERT( index.size() == dumped_items, "Incorrect number of objects was loaded. Expected ${expected} objects, but got ${size} objects from ${s}",
+                                          ("expected", (dumped_items))("size", index.size())("s", indexName));
 
       return id_type(index_next_id);
       }
