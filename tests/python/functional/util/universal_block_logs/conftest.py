@@ -8,12 +8,17 @@ import pytest
 import test_tools as tt
 from python.functional.util.universal_block_logs.generate_universal_block_logs import (
     CHAIN_ID,
-    WITNESSES,
     SIGNERS,
+    WITNESSES,
 )
 
 SHARED_MEMORY_FILE_SIZE: Final[int] = 24
 WEBSERVER_THREAD_POOL_SIZE: Final[int] = 16
+
+
+@pytest.fixture()
+def test_id(request: pytest.FixtureRequest) -> str:
+    return request.node.callspec.id
 
 
 @pytest.fixture()
