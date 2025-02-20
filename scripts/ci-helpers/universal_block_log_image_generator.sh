@@ -63,6 +63,7 @@ FROM nginx:alpine3.20-slim
 COPY block_log_open_sign /usr/share/nginx/html/universal_block_logs/block_log_open_sign
 COPY block_log_single_sign /usr/share/nginx/html/universal_block_logs/block_log_single_sign
 COPY block_log_multi_sign /usr/share/nginx/html/universal_block_logs/block_log_multi_sign
+COPY block_log_maximum_sign /usr/share/nginx/html/universal_block_logs/block_log_maximum_sign
 RUN sed -i "/index  index.html index.htm;/a \    autoindex on;" /etc/nginx/conf.d/default.conf
 EXPOSE 80
 EOF
