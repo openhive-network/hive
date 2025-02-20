@@ -28,10 +28,11 @@ from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 
 CHAIN_ID: Final[int] = 24
 
-NUMBER_OF_ACCOUNTS: Final[int] = 2_000_000
+NUMBER_OF_ACCOUNTS: int = 2_000_000
 NUMBER_OF_COMMENTS: Final[int] = 10_000  # There are active posts from account-0 to account-9999
 ACCOUNT_NAMES: list[AccountName] = [AccountName(f"account-{account}") for account in range(NUMBER_OF_ACCOUNTS)]
 WITNESSES: Final[list[AccountName]] = [AccountName(f"witness-{w}") for w in range(20)]
+SIGNERS: Final[list[AccountName]] = [AccountName(f"signer-{num}") for num in range(40)]
 
 INIT_SUPPLY: Final[int] = 400_000_000_000
 INITIAL_VESTING: Final[int] = 50_000_000_000
@@ -50,7 +51,7 @@ MAX_WORKERS: Final[int] = os.cpu_count() * 2
 
 def prepare_block_log(
     output_block_log_directory: Path,
-    signature_type: Literal["open_sign", "multi_sign", "single_sign"],
+    signature_type: Literal["open_sign", "multi_sign", "single_sign", "maximum_sign"],
     activate_current_hf: int,
 ) -> None:
     """
@@ -127,11 +128,33 @@ def prepare_block_log(
     tt.logger.info("Wait 43 blocks...")
     generate_block(node, 43)  # wait for the block size to change to 2mb
 
+    if signature_type == "maximum_sign":
+        global NUMBER_OF_ACCOUNTS
+        global ACCOUNT_NAMES
+        NUMBER_OF_ACCOUNTS = 10_000
+        ACCOUNT_NAMES = ACCOUNT_NAMES[:NUMBER_OF_ACCOUNTS]
+        tt.logger.info(f"Start creating signers! @Block: {node.get_last_block_number()}")
+        execute_function_in_threads(
+            __generate_and_broadcast_transaction,
+            args=(
+                __create_signer,
+                node,
+                wallet,
+                None,
+            ),
+            args_sequences=(SIGNERS,),
+            amount=40,
+            chunk_size=40,
+            max_workers=MAX_WORKERS,
+        )
+        generate_block(node, 1)
+        tt.logger.info(f"Finish creating signers! @Block: {node.get_last_block_number()}")
+
     authority = generate_authority(wallet, signature_type, output_directory=block_log_directory)
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
-    size = {"open_sign": 1300, "single_sign": 1000, "multi_sign": 500}
+    size = {"open_sign": 1300, "single_sign": 1000, "multi_sign": 500, "maximum_sign": 300}
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(
@@ -230,7 +253,7 @@ def __invest(account: str, _) -> tuple[TransferToVestingOperationLegacy]:
 
 def generate_authority(
     wallet: tt.OldWallet,
-    authority_type: Literal["open_sign", "multi_sign", "single_sign"],
+    authority_type: Literal["open_sign", "multi_sign", "single_sign", "maximum_sign"],
     output_directory: Path | None = None,
 ) -> dict:
     def _save(
@@ -289,6 +312,43 @@ def generate_authority(
             _save(authority)
             save_keys_to_file(name=account.name, colony_key=private_key, file_path=output_directory / "colony_keys.txt")
             return authority
+        case "maximum_sign":
+            # authority for signers
+            for signer in SIGNERS:
+                signer_keys = [tt.PrivateKey(signer, secret=f"secret-{num}") for num in range(40)]
+                wallet.api.import_keys(signer_keys)
+                save_keys_to_file(name=signer, colony_key=signer_keys, file_path=output_directory / "colony_keys.txt")
+            # authority for account-0 to account-9999
+            wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
+            key = tt.PublicKey("account", secret="secret")
+            auths = [(name, HiveInt(1)) for name in SIGNERS]
+
+            authority = {
+                "owner": Authority(weight_threshold=HiveInt(40), account_auths=auths, key_auths=[]),
+                "active": Authority(weight_threshold=HiveInt(40), account_auths=auths, key_auths=[]),
+                "posting": Authority(weight_threshold=HiveInt(40), account_auths=auths, key_auths=[]),
+                "memo": key,
+            }
+            _save(authority)
+            return authority
+
+
+def __create_signer(account: str, _: None) -> tuple[AccountCreateOperationLegacy]:
+    keys = [(tt.PublicKey(account, secret=f"secret-{num}"), HiveInt(1)) for num in range(40)]
+    signer_authority = Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys)
+
+    return (
+        AccountCreateOperationLegacy(
+            fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
+            creator=AccountName("initminer"),
+            new_account_name=AccountName(account),
+            owner=signer_authority,
+            active=signer_authority,
+            posting=signer_authority,
+            memo_key=tt.PublicKey(account, secret="secret"),
+            json_metadata="",
+        ),
+    )
 
 
 def __create_and_fund_account(
@@ -417,3 +477,4 @@ if __name__ == "__main__":
     prepare_block_log(args.output_block_log_directory, "open_sign", 450)
     prepare_block_log(args.output_block_log_directory, "single_sign", 570)
     prepare_block_log(args.output_block_log_directory, "multi_sign", 1200)
+    prepare_block_log(args.output_block_log_directory, "maximum_sign", 100)

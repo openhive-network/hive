@@ -9,6 +9,7 @@ import test_tools as tt
 from python.functional.util.universal_block_logs.generate_universal_block_logs import (
     CHAIN_ID,
     WITNESSES,
+    SIGNERS,
 )
 
 SHARED_MEMORY_FILE_SIZE: Final[int] = 24
@@ -64,3 +65,6 @@ def import_keys(wallet: tt.OldWallet, block_log_type: str) -> None:
             wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)])
         case "block_log_single_sign":
             wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
+        case "block_log_maximum_sign":
+            for signer in SIGNERS:
+                wallet.api.import_keys([tt.PrivateKey(signer, secret=f"secret-{num}") for num in range(40)])
