@@ -463,7 +463,7 @@ class index_dump_reader final : public snapshot_processor_data<chainbase::snapsh
 
     virtual ~index_dump_reader() = default;
 
-    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id) override;
+    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id, size_t* snapshot_dumped_items) override;
     virtual void start(const workers& workers) override;
 
     size_t getCurrentlyProcessedId() const;
@@ -848,7 +848,7 @@ void loading_worker::perform_load()
   }
 
 chainbase::snapshot_reader::workers 
-index_dump_reader::prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id)
+index_dump_reader::prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id, size_t* snapshot_dumped_items)
   {
   _converter = converter;
   _indexDescription = indexDescription;
@@ -866,6 +866,7 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
   const index_manifest_info& manifestInfo = *snapshotIt;
 
   *snapshot_index_next_id = manifestInfo.indexNextId;
+  *snapshot_dumped_items = manifestInfo.dumpedItems;
 
   _builtWorkers.emplace_back(std::make_unique<loading_worker>(manifestInfo, _rootPath, *this));
 
@@ -1417,6 +1418,13 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
   {
     wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
     wlog( "${details}", ("details",ex.what()) );
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+    throw;
+  }
+  catch( fc::exception& e )
+  {
+    wlog( "Problem with a snapshot loading." );
+    wlog( "${e}", (e) );
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
     throw;
   }
