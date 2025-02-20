@@ -958,6 +958,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       uint32_t                _num_threads = 0;
       bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
+      std::exception_ptr      _exception;
   };
 
 void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& options)
@@ -1419,19 +1420,33 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
     wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
     wlog( "${details}", ("details",ex.what()) );
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-    throw;
+    _exception = std::current_exception();
+    /*
+      https://www.boost.org/doc/libs/1_74_0/doc/html/thread/thread_management.html
+
+      A running thread can be interrupted by invoking the interrupt() member function of the corresponding boost::thread object.
+      When the interrupted thread next executes one of the specified interruption points
+      (or if it is currently blocked whilst executing one) with interruption enabled,
+      then a boost::thread_interrupted exception will be thrown in the interrupted thread.
+      Unless this exception is caught inside the interrupted thread's thread-main function,
+      the stack unwinding process (as with any other exception) causes the destructors with automatic storage duration to be executed.
+      Unlike other exceptions, when boost::thread_interrupted is propagated out of thread-main function, this does not cause the call to std::terminate
+    */
+    throw boost::thread_interrupted();
   }
   catch( fc::exception& e )
   {
     wlog( "Problem with a snapshot loading." );
     wlog( "${e}", (e) );
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-    throw;
+    _exception = std::current_exception();
+    throw boost::thread_interrupted();
   }
   catch(...)
   {
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-    throw fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unknown error occured when a snapshot's loading" ), std::current_exception() );
+    _exception = std::current_exception();
+    throw boost::thread_interrupted();
   }
   }
 
@@ -1615,6 +1630,8 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     ilog("Waiting for loading jobs completion");
     work.reset();
     threadpool.join_all();
+    if( _exception )
+      std::rethrow_exception( _exception );
   }
   else
   {
