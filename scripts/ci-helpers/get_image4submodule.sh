@@ -29,20 +29,7 @@ print_help () {
     echo
 }
 
-
-IMGNAME=base
 IMGNAME_INSTANCE=
-IMGNAME_MINIMAL_INSTANCE=minimal
-# For use in haf_api_node, we always tag the minimal instance with the top-level
-# registry path for the project.  Normally, CI_REGISTRY_IMAGE for that project,
-# so registry.gitlab.syncad.com/hive/haf for this project.
-# Ideally, we'd rename registry.gitlab.syncad.com/hive/haf/minimal-instance to
-# registry.gitlab.syncad.com/hive/haf.  I don't know if anything depends on
-# the existence of an image named minimal-instance.  For that reason,
-# I'm just adding an additional tag that points to the same minimal-instance
-# image.  If it's determined to be safe, we should remove the tag for
-# minimal-instance.
-RETAG_MINIMAL_INSTANCE=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -52,16 +39,10 @@ while [ $# -gt 0 ]; do
 
         case $NETWORK_TYPE in
           "testnet"*)
-            IMGNAME=testnet-base
             IMGNAME_INSTANCE=testnet
-            IMGNAME_MINIMAL_INSTANCE=testnet-minimal
-            RETAG_MINIMAL_INSTANCE=0
             ;;
           "mirrornet"*)
-            IMGNAME=mirrornet-base
             IMGNAME_INSTANCE=mirrornet
-            IMGNAME_MINIMAL_INSTANCE=mirrornet-minimal
-            RETAG_MINIMAL_INSTANCE=0
             ;;
           "mainnet"*)
             ;;
@@ -116,42 +97,31 @@ pushd "${submodule_path}"
 short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
-img=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME )
-img_path=$( build_image_registry_path "$short_commit" "$REGISTRY" $IMGNAME )
+img_path=$( build_image_registry_path "$short_commit" "$REGISTRY" "" )
 img_tag="$short_commit"
 
 img_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_INSTANCE )
-img_minimal_instance=$( build_image_name "$short_commit" "$REGISTRY" $IMGNAME_MINIMAL_INSTANCE )
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
 
-docker_image_exists "$img_path" image_exists
+docker_image_exists "$img_instance" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
-  echo "Image already exists..."
-  "$SCRIPTPATH/export-data-from-docker-image.sh" "${img}" "${BINARY_CACHE_PATH}"
+  echo "Image $img_instance already exists..."
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${img_instance}" "${BINARY_CACHE_PATH}"
 else
   # Here continue an image build.
-  echo "${img} image is missing. Building it..."
+  echo "${img_instance} image is missing. Building it..."
 
   "$SCRIPTPATH/build_instance4commit.sh" "$commit" "$REGISTRY" --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE" --image-tag="$short_commit"
-  time docker push "$img"
   time docker push "$img_instance"
-  time docker push "$img_minimal_instance"
-  if [ "$RETAG_MINIMAL_INSTANCE" -eq 1 ]; then
-    echo "Retagging minimal-instance"
-    docker tag "$img_minimal_instance" "${REGISTRY}:${short_commit}"
-    time docker push "${REGISTRY}:${short_commit}"
-  fi
 fi
 
-echo "${DOTENV_VAR_NAME}_IMAGE_NAME=$img" > docker_image_name.env
+echo "${DOTENV_VAR_NAME}_IMAGE_NAME=$img_instance" > docker_image_name.env
 {
-  echo "${DOTENV_VAR_NAME}_BASE_INSTANCE=$img"
   echo "${DOTENV_VAR_NAME}_INSTANCE=$img_instance"
-  echo "${DOTENV_VAR_NAME}_MINIMAL_INSTANCE=$img_minimal_instance"
   echo "${DOTENV_VAR_NAME}_REGISTRY_PATH=$img_path"
   echo "${DOTENV_VAR_NAME}_REGISTRY_TAG=$img_tag"
   echo "${DOTENV_VAR_NAME}_COMMIT=$commit"
