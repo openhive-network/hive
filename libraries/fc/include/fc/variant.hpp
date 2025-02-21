@@ -9,8 +9,6 @@
 #include <vector>
 #include <optional>
 
-#include <string.h> // memset
-
 #include <fc/optional.hpp>
 #include <fc/string.hpp>
 #include <fc/container/deque_fwd.hpp>
@@ -356,19 +354,28 @@ namespace fc
         template<typename T>
         variant( const optional<T>& v )
         {
-           memset( this, 0, sizeof(*this) );
+           set_variant_type(null_type);
            if( v.valid() ) *this = variant(*v);
         }
 
         template<typename T>
         explicit variant( const T& val );
 
-
         void    clear();
+
       private:
-        void    init();
-        double  _data;                ///< Alligned according to double requirements
-        char    _type[sizeof(void*)]; ///< pad to void* size
+        /**
+         *  The TypeID is stored in the 'last byte' of the variant.
+         */
+        void set_variant_type( type_id t )
+        {
+           char* data = reinterpret_cast<char*>(this);
+           data[ sizeof(variant) -1 ] = t;
+        }
+
+      private:
+        double  _data = 0;                  ///< Alligned according to double requirements
+        char    _type[sizeof(void*)] = {0}; ///< pad to void* size
    };
    typedef optional<variant> ovariant;
 
@@ -582,7 +589,7 @@ namespace fc
    template<typename T>
    variant::variant( const T& val )
    {
-      memset( this, 0, sizeof(*this) );
+      set_variant_type(null_type);
       to_variant( val, *this );
    }
 
