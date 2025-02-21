@@ -74,8 +74,8 @@ EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing universal_block_logs"
-  docker build -t $img .
-  docker push $img
+  docker build -t "$img" .
+  docker push "$img"
   echo "Created and push docker image with universal block logs: $img"
 fi
 

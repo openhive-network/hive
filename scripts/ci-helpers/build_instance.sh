@@ -115,7 +115,6 @@ if [ -z "$GIT_CURRENT_BRANCH" ]; then
   fi
 fi
 
-
 GIT_LAST_LOG_MESSAGE="$(git log -1 --pretty=%B || true)"
 if [ -z "$GIT_LAST_LOG_MESSAGE" ]; then
   GIT_LAST_LOG_MESSAGE="[unknown]"
@@ -131,31 +130,25 @@ if [ -z "$GIT_LAST_COMMIT_DATE" ]; then
   GIT_LAST_COMMIT_DATE="[unknown]"
 fi
 
-echo -e "\nBuilding base instance image...\n"
+echo -e "Building Docker build image...\n"
 
-docker build --target=base \
+docker build --target=build \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-  --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
-  --build-arg HIVE_CONVERTER_BUILD="$HIVE_CONVERTER_BUILD" \
+  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
+  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --build-arg BUILD_TIME="$BUILD_TIME" \
-  --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
-  --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
-  --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
-  --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
-  --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
-  --tag "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}base:${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
-echo -e "\nDone!\nBuilding instance image...\n"
+echo -e "\nDone!\nBuilding Docker instance image...\n"
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --build-arg BUILD_TIME="$BUILD_TIME" \
   --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
   --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
@@ -164,25 +157,8 @@ docker build --target=instance \
   --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+  --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
-  --file Dockerfile "$SOURCE_DIR"
-
-echo -e "\nDone!\nBuilding minimal instance image...\n"
-
-docker build --target=minimal \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --build-arg BUILD_TIME="$BUILD_TIME" \
-  --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
-  --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
-  --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
-  --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
-  --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-  --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
-  --tag "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}minimal:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 
 echo -e "\nDone!\n"
@@ -191,6 +167,6 @@ popd
 
 if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}/${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}base:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 
