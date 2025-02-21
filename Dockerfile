@@ -99,7 +99,7 @@ RUN \
 # This prevents crash if testnet is not build
 RUN mkdir -p /home/hived_admin/build/libraries/vendor/rocksdb/tools
 
-FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS base
+FROM ${CI_REGISTRY_IMAGE}minimal-runtime:$CI_IMAGE_TAG AS instance
 
 ARG BUILD_TIME
 ARG GIT_COMMIT_SHA
@@ -177,13 +177,6 @@ ENV SHM_DIR=${DATADIR}/blockchain
 
 STOPSIGNAL SIGINT
 
-# JSON rpc service
-EXPOSE ${HTTP_PORT}
-
-ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
-
-FROM ${CI_REGISTRY_IMAGE}${IMAGE_TAG_PREFIX}base:${BUILD_IMAGE_TAG} AS instance
-
 #p2p service
 EXPOSE ${P2P_PORT}
 # websocket service
@@ -193,9 +186,4 @@ EXPOSE ${HTTP_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
 
-# We don't have a separate 'minimal-instance' version of hive.  We could create one, based
-# off `minimal-runtime` instead of `runtime` and probably save a hundred MB or so, but
-# the current `instance` isn't bad.  Our current focus is shrinking the haf image size,
-# and since we use the same scripts for building both hive and haf, we need a
-# 'minimal-instance' target here to match the one in haf.  Don't use this.
-FROM instance AS minimal
+ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
