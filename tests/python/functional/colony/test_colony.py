@@ -246,7 +246,9 @@ def test_colony_with_unknown_colony_signer(
 
 def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
     node.config.plugin.append("colony")
-    node.config.colony_sign_with = ["5JqgqkuYAPx2xbSuttJst6Z1mTS3dJh7wdKi8b99MUcrsyT6fyM"]
+    node.config.colony_sign_with = [
+        "5JU5vHLxvs6RhAmUnyZHzdu6DpiJ9cbpkkqKWkD3GDpser9Qa6p"
+    ]  # key for workers with single authority
     node.config.colony_article = '{"min": 100, "max": 5000, "weight": 16, "exponent": 4}'
     node.config.colony_reply = '{"min": 30, "max": 1000, "weight": 110, "exponent": 5}'
     node.config.colony_vote = '{"weight": 2070}'
