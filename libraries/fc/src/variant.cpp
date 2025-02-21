@@ -13,109 +13,100 @@
 
 namespace fc
 {
-/**
- *  The TypeID is stored in the 'last byte' of the variant.
- */
-void set_variant_type( variant* v, variant::type_id t)
-{
-   char* data = reinterpret_cast<char*>(v);
-   data[ sizeof(variant) -1 ] = t;
-}
-
 variant::variant()
 {
-   set_variant_type( this, null_type );
+   set_variant_type( null_type );
 }
 
 variant::variant( fc::nullptr_t )
 {
-   set_variant_type( this, null_type );
+   set_variant_type( null_type );
 }
 
 variant::variant( uint8_t val )
 {
    *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+   set_variant_type( uint64_type );
 }
 
 variant::variant( int8_t val )
 {
    *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+   set_variant_type( int64_type );
 }
 
 variant::variant( uint16_t val )
 {
    *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+   set_variant_type( uint64_type );
 }
 
 variant::variant( int16_t val )
 {
    *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+   set_variant_type( int64_type );
 }
 
 variant::variant( uint32_t val )
 {
    *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+   set_variant_type( uint64_type );
 }
 
 variant::variant( int32_t val )
 {
    *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+   set_variant_type( int64_type );
 }
 
 variant::variant(unsigned long long val)
 {
   *reinterpret_cast<unsigned long long*>(this) = val;
-  set_variant_type(this, uint64_type);
+  set_variant_type( uint64_type );
 }
 
 variant::variant(unsigned long val)
 {
   unsigned long long temp = val;
   *reinterpret_cast<unsigned long long*>(this) = temp;
-  set_variant_type(this, uint64_type);
+  set_variant_type( uint64_type );
 
 }
 
 variant::variant( int64_t val )
 {
    *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+   set_variant_type( int64_type );
 }
 
 variant::variant( float val )
 {
    *reinterpret_cast<double*>(this)  = val;
-   set_variant_type( this, double_type );
+   set_variant_type( double_type );
 }
 
 variant::variant( double val )
 {
    *reinterpret_cast<double*>(this)  = val;
-   set_variant_type( this, double_type );
+   set_variant_type( double_type );
 }
 
 variant::variant( bool val )
 {
    *reinterpret_cast<bool*>(this)  = val;
-   set_variant_type( this, bool_type );
+   set_variant_type( bool_type );
 }
 
 variant::variant( char* str )
 {
    *reinterpret_cast<string**>(this)  = new string( str );
-   set_variant_type( this, string_type );
+   set_variant_type( string_type );
 }
 
 variant::variant( const char* str )
 {
    *reinterpret_cast<string**>(this)  = new string( str );
-   set_variant_type( this, string_type );
+   set_variant_type( string_type );
 }
 
 // TODO: do a proper conversion to utf8
@@ -126,7 +117,7 @@ variant::variant( wchar_t* str )
    for (unsigned i = 0; i < len; ++i)
      buffer[i] = (char)str[i];
    *reinterpret_cast<string**>(this)  = new string(buffer.get(), len);
-   set_variant_type( this, string_type );
+   set_variant_type( string_type );
 }
 
 // TODO: do a proper conversion to utf8
@@ -137,35 +128,35 @@ variant::variant( const wchar_t* str )
    for (unsigned i = 0; i < len; ++i)
      buffer[i] = (char)str[i];
    *reinterpret_cast<string**>(this)  = new string(buffer.get(), len);
-   set_variant_type( this, string_type );
+   set_variant_type( string_type );
 }
 
 variant::variant( fc::string val )
 {
    *reinterpret_cast<string**>(this)  = new string( fc::move(val) );
-   set_variant_type( this, string_type );
+   set_variant_type( string_type );
 }
 variant::variant( blob val )
 {
    *reinterpret_cast<blob**>(this)  = new blob( fc::move(val) );
-   set_variant_type( this, blob_type );
+   set_variant_type( blob_type );
 }
 
 variant::variant( variant_object obj)
 {
    *reinterpret_cast<variant_object**>(this)  = new variant_object(fc::move(obj));
-   set_variant_type(this,  object_type );
+   set_variant_type( object_type );
 }
 variant::variant( mutable_variant_object obj)
 {
    *reinterpret_cast<variant_object**>(this)  = new variant_object(fc::move(obj));
-   set_variant_type(this,  object_type );
+   set_variant_type( object_type );
 }
 
 variant::variant( variants arr )
 {
    *reinterpret_cast<variants**>(this)  = new variants(fc::move(arr));
-   set_variant_type(this,  array_type );
+   set_variant_type( array_type );
 }
 
 
@@ -190,7 +181,7 @@ void variant::clear()
      default:
         break;
    }
-   set_variant_type( this, null_type );
+   set_variant_type( null_type );
 }
 
 variant::variant( const variant& v )
@@ -200,27 +191,29 @@ variant::variant( const variant& v )
        case object_type:
           *reinterpret_cast<variant_object**>(this)  =
              new variant_object(**reinterpret_cast<const const_variant_object_ptr*>(&v));
-          set_variant_type( this, object_type );
+          set_variant_type( object_type );
           return;
        case array_type:
           *reinterpret_cast<variants**>(this)  =
              new variants(**reinterpret_cast<const const_variants_ptr*>(&v));
-          set_variant_type( this,  array_type );
+          set_variant_type( array_type );
           return;
        case string_type:
           *reinterpret_cast<string**>(this)  =
              new string(**reinterpret_cast<const const_string_ptr*>(&v) );
-          set_variant_type( this, string_type );
+          set_variant_type( string_type );
           return;
        default:
-          memcpy( this, &v, sizeof(v) );
+          _data = v._data;
+          set_variant_type( v.get_type() );
    }
 }
 
 variant::variant( variant&& v )
 {
-   memcpy( this, &v, sizeof(v) );
-   set_variant_type( &v, null_type );
+   _data = v._data;
+   set_variant_type( v.get_type() );
+   v.set_variant_type( null_type );
 }
 
 variant::~variant()
@@ -232,8 +225,9 @@ variant& variant::operator=( variant&& v )
 {
    if( this == &v ) return *this;
    clear();
-   memcpy( (char*)this, (char*)&v, sizeof(v) );
-   set_variant_type( &v, null_type );
+   _data = v._data;
+   set_variant_type( v.get_type() );
+   v.set_variant_type( null_type );
    return *this;
 }
 
@@ -258,9 +252,9 @@ variant& variant::operator=( const variant& v )
          break;
 
       default:
-         memcpy( this, &v, sizeof(v) );
+         _data = v._data;
    }
-   set_variant_type( this, v.get_type() );
+   set_variant_type( v.get_type() );
    return *this;
 }
 
