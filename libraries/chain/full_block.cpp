@@ -113,7 +113,11 @@ full_block_type::~full_block_type()
   decoded_block_storage->block = signed_block();
   signed_block& new_block = *decoded_block_storage->block; // alias to keep things shorter
   (block_header&)new_block = header;
+  //fc::time_point compute_begin = fc::time_point::now();
   full_block->merkle_root = compute_merkle_root(full_transactions);
+  //fc::time_point compute_end = fc::time_point::now();
+  //full_block->compute_merkle_root_time = compute_end - compute_begin;
+  //fc_ilog(fc::logger::get("worker_thread"), "merkle_root calculation took ${t}μs", ( "t", full_block->compute_merkle_root_time ));
   new_block.transaction_merkle_root = *full_block->merkle_root;
 
   // let's start generating the serialized version of the block:
