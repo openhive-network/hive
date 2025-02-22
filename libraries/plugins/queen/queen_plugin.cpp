@@ -112,8 +112,11 @@ void queen_plugin_impl::on_post_apply_transaction( const chain::transaction_noti
       // produce block and put it in write queue (it will be placed in front of potential
       // transactions and there should be no other blocks to process)
       const auto& data = _witness.get_production_data();
+      uint32_t skip = chain::database::skip_validate // transactions were validated when added to pending
+        | chain::database::skip_validate_invariants // currently dead, but we wouldn't want it in queen
+        | chain::database::skip_undo_block; // all blocks produced by queen must be valid, no undo needed
       const auto generate_block_ctrl = std::make_shared< queen_generate_block_flow_control >( *this,
-        data.next_slot_time, data.scheduled_witness, data.scheduled_private_key, chain::database::skip_nothing );
+        data.next_slot_time, data.scheduled_witness, data.scheduled_private_key, skip );
       _chain.queue_generate_block_request( generate_block_ctrl ); //note - this call won't wait for block to be produced
       ++blocks_produced;
     }
