@@ -9,7 +9,7 @@ from hive_local_tools.functional import connect_nodes
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_transaction_timestamp_consistency_before_and_after_irreversibility(node):
+def test_transaction_timestamp_consistency_before_and_after_irreversibility(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     trx = wallet.api.create_account("initminer", "alice", "{}")
