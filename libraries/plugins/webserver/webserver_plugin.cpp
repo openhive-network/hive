@@ -758,6 +758,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   }
   else
   {
+    ilog("xxxxxxxxxxxxxxxx 00");
     if( options.count( "webserver-https-certificate-file-name" ) )
       ilog( "Option `webserver-https-certificate-file-name` is avoided. It's used only for https connection." );
 
@@ -767,20 +768,32 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     if( _ws_deflate_enabled )
       my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
     else
+    {
+      ilog("xxxxxxxxxxxxxxxx 01");
       my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, get_app() ) );
+      ilog("xxxxxxxxxxxxxxxx 02");
+    }
   }
 
   if( options.count( "webserver-http-endpoint" ) || options.count( "webserver-https-endpoint" ) )
   {
+    ilog("xxxxxxxxxxxxxxxx 03");
     std::string _http_or_https_endpoint = my->tls ? options.at( "webserver-https-endpoint" ).as< string >() : options.at( "webserver-http-endpoint" ).as< string >();
+    ilog("xxxxxxxxxxxxxxxx 04");
 
     auto endpoints = fc::resolve_string_to_ip_endpoints( _http_or_https_endpoint );
+    ilog("xxxxxxxxxxxxxxxx 05");
 
     FC_ASSERT( endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
               ("http-endpoint-type", my->tls ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
 
+    ilog("xxxxxxxxxxxxxxxx 06");
+
     my->http_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
+
+    ilog("xxxxxxxxxxxxxxxx 07");
     ilog( "configured ${type} to listen on ${ep}", ("type", my->tls ? "https" : "http")("ep", endpoints[0]) );
+    ilog("xxxxxxxxxxxxxxxx 08");
   }
 
   if( options.count( "webserver-unix-endpoint" ) )
