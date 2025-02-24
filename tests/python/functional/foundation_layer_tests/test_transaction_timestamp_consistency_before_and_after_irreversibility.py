@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import shutil
+
 import test_tools as tt
 from hive_local_tools import run_for
+from hive_local_tools.constants import filters_enum_virtual_ops
+from hive_local_tools.functional import connect_nodes
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
@@ -20,3 +24,42 @@ def test_transaction_timestamp_consistency_before_and_after_irreversibility(node
     )
 
     assert reversible_ah_trx.ops[0].timestamp == irreversible_ah_trx.ops[0].timestamp, "Timestamps isn't the same"
+
+
+def test_account_history_data_consistency_on_replayed_and_full_pruned_node(
+    block_log_empty_30_mono: tt.BlockLog,
+) -> None:
+    node = tt.InitNode()
+    node.config.enable_stale_production = True
+    node.config.required_participation = 0
+
+    # fixme: after repair use `stop_at_block=50`
+    node.run(replay_from=block_log_empty_30_mono)
+
+    api_node = tt.ApiNode()
+    api_node.config.plugin.append("account_history_api")
+    api_node.run(replay_from=block_log_empty_30_mono, wait_for_live=False)
+
+    snapshot = api_node.dump_snapshot(close=True)
+
+    shutil.rmtree(api_node.directory / "blockchain")
+
+    connect_nodes(node, api_node)
+    api_node.config.block_log_split = 0
+    api_node.run(load_snapshot_from=snapshot)
+
+    check_at_block: int = 50
+    api_node.wait_for_block_with_number(check_at_block)  # wait for api node catch up producer node
+
+    assert api_node.get_last_block_number() == node.get_last_block_number()
+    assert (
+        len(
+            api_node.api.account_history.enum_virtual_ops(
+                block_range_begin=0,
+                block_range_end=check_at_block + 1,  # last block number exclusive
+                include_reversible=True,
+                filter_=filters_enum_virtual_ops["producer_reward_operation"],
+            ).ops
+        )
+        == node.get_last_block_number()
+    )
