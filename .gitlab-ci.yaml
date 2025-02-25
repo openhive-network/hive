@@ -494,6 +494,22 @@ formatting_with_black_check:
   tags:
     - public-runner-docker
 
+.test_block_logs_service_base:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: generate_testing_block_logs_and_save_image
+  variables:
+    NODE_ADDRESS: "test-block-log-server:80"
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+  services:
+    - *test-block-log-service
+  script:
+    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
+    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
+
 beem_testnet_tests:
   extends: .beem_tests_base
   needs:
@@ -658,19 +674,11 @@ test_tools_tests:
   stage: test
   extends: .test_tools_based
   needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - !reference [.test_block_logs_service_base, needs]
   variables:
-    NODE_ADDRESS: "test-block-log-server:80"
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-  services:
-    - *test-block-log-service
   script:
-    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
-    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
     - !reference [.run-pytest, script]
@@ -916,21 +924,13 @@ message_format_live_mainnet_tests:
 
 foundation_layer_tests:
   stage: test
-  extends: .test_tools_based
+  extends: .test_block_logs_service_base
   needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - !reference [.test_block_logs_service_base, needs]
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
-    NODE_ADDRESS: "test-block-log-server:80"
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-  services:
-    - *test-block-log-service
   script:
-    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
-    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
     - cd tests/python/functional/foundation_layer_tests
     - !reference [.run-pytest, script]
   tags:
