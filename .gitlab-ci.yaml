@@ -124,17 +124,28 @@ beekeeper_tsc_build:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     DIST_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/dist"
 
+    # Since beekeeper shares repo with Hived, we can't overwrite Wiki home here
+    PROJECT_URL: "https://gitlab.syncad.com/hive/beekeeper-doc"
+
     NPM_PACKAGE_SCOPE: "@hiveio"
     NPM_PACKAGE_NAME: "beekeeper"
+    REPLACE_DOC_URL_ENV: "GEN_DOC_URL"
+    REPLACE_FILE_PATH: "${SOURCE_DIR}/README.md"
 
   artifacts:
     paths:
       - "${SOURCE_DIR}/dist/*.tgz"
+      - "${REPLACE_FILE_PATH}"  # Modified README
       - "${SOURCE_DIR}/src/build/*.wasm"
       - "${SOURCE_DIR}/src/build/*.js"
       - "${SOURCE_DIR}/src/build/*.d.ts"
       - "${SOURCE_DIR}/src/build/node"
       - "${SOURCE_DIR}/src/build/web"
+    reports:
+      dotenv:
+        - "${SOURCE_DIR}/gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
+        - "${SOURCE_DIR}/built_package_info.env"  # contains path to produced tgz
+        - "${SOURCE_DIR}/built_package_version_info.env"  # contains information related to generated package version and git revision
 
     when: always
     expire_in: 1 week
@@ -144,14 +155,13 @@ beekeeper_tsc_build:
 
 generate_beekeeper_docs:
   stage: build
-  extends: .npm_process_built_package_tarball
+  extends: .npm_based_job_base
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
-    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
 
   script:
-    - scripts/generate_api_docs.sh "${CI_PROJECT_URL}/programs/beekeeper/beekeeper_wasm" "${CI_COMMIT_SHA}"
+    - $CI_PROJECT_DIR/scripts/generate_api_docs.sh "${CI_PROJECT_URL}" "${CI_COMMIT_SHA}"
 
   needs:
     - job: beekeeper_tsc_build
@@ -181,51 +191,8 @@ push_to_wiki:
     DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
     # Since beekeeper shares repo with Hived, we can't overwrite Wiki home here
     PROJECT_URL: "https://gitlab.syncad.com/hive/beekeeper-doc"
-
-  artifacts:
-    reports:
-      dotenv:
-        - "gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
-
-
-  tags:
-    - public-runner-docker
-
-supplement_documentation_url:
-  extends: .npm_process_built_package_tarball
-  stage: build
-  needs:
-    - job: beekeeper_tsc_build
-      artifacts: true
-    - job: push_to_wiki
-      artifacts: true
-
-  variables:
-    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
-    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
 
-  script:
-    - |
-      set -xe
-      cd "${SOURCE_DIR}"
-      echo "Attempting to replace generated documentation url placeholder: "${GEN_DOC_URL}""
-      sed -i "s<\${GEN_DOC_URL}<${GEN_DOC_URL}<g" README.md
-      if grep -q "\${GEN_DOC_URL}" README.md; then exit 1; fi # Ensure that the placeholder was replaced
-      pnpm pack --pack-destination "${DIST_DIR}" --json > "${DIST_DIR}/built_package_info.json" # repack to include updated README in final package
-      BUILT_PACKAGE_NAME=$(jq -r .filename "${DIST_DIR}/built_package_info.json")
-      echo BUILT_PACKAGE_PATH="${BUILT_PACKAGE_NAME}" > "${CI_PROJECT_DIR}/built_package_info.env"
-
-  artifacts:
-    reports:
-      dotenv:
-        - "${CI_PROJECT_DIR}/built_package_info.env"  # contains path to produced tgz
-
-    paths:
-      - "${DIST_DIR}/*.tgz"  # Built package
-
-    when: always
-    expire_in: 1 week
   tags:
     - public-runner-docker
 
@@ -1187,7 +1154,8 @@ deploy_beekeeper_wasm_dev_package:
 
   needs:
     - job: test_beekeeper_wasm
-    - job: supplement_documentation_url
+    - job: beekeeper_tsc_build
+    - job: push_to_wiki
       artifacts: true
 
   tags:
@@ -1204,7 +1172,8 @@ deploy_beekeeper_wasm_production_public_npm:
 
   needs:
     - job: test_beekeeper_wasm
-    - job: supplement_documentation_url
+    - job: beekeeper_tsc_build
+    - job: push_to_wiki
       artifacts: true
 
   tags:
