@@ -4,7 +4,7 @@ Test scenarios: https://gitlab.syncad.com/hive/hive/-/issues/484
 from __future__ import annotations
 
 import pytest
-from helpy.exceptions import ErrorInResponseError
+from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import (

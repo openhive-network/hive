@@ -5,7 +5,7 @@ import inspect
 from typing import Callable, Iterable
 
 import pytest
-from helpy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from helpy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools import run_for
