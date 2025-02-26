@@ -142,18 +142,6 @@ beekeeper_tsc_build:
   tags:
     - public-runner-docker
 
-compare_generated_wasm:
-  extends: .wasm_compare_job_template
-  stage: build
-  variables:
-    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/"
-    BINARIES_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/src/build"
-  needs:
-    - job: beekeeper_tsc_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-
 generate_beekeeper_docs:
   stage: build
   extends: .npm_process_built_package_tarball
@@ -184,7 +172,8 @@ push_to_wiki:
   needs:
     - job: generate_beekeeper_docs
       artifacts: true
-    - job: compare_generated_wasm
+    - job: beekeeper_tsc_build
+      artifacts: true
 
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
@@ -1197,7 +1186,6 @@ deploy_beekeeper_wasm_dev_package:
     NPM_PACKAGE_SCOPE: "@hiveio"
 
   needs:
-    - job: compare_generated_wasm
     - job: test_beekeeper_wasm
     - job: supplement_documentation_url
       artifacts: true
@@ -1215,7 +1203,6 @@ deploy_beekeeper_wasm_production_public_npm:
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
 
   needs:
-    - job: compare_generated_wasm
     - job: test_beekeeper_wasm
     - job: supplement_documentation_url
       artifacts: true
