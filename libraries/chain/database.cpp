@@ -167,7 +167,6 @@ void database::pre_open( const open_args& args )
   try
   {
     init_schema();
-
     helpers::environment_extension_resources environment_extension(
                                                 theApp.get_version_string(),
                                                 theApp.get_plugins_names(),
@@ -184,14 +183,7 @@ void database::open( const open_args& args )
   try
   {
     FC_ASSERT(get_is_open(), "database::pre_open must be called first!");
-
-    helpers::environment_extension_resources environment_extension(
-                                                theApp.get_version_string(),
-                                                theApp.get_plugins_names(),
-                                                []( const std::string& message ){ wlog( message.c_str() ); }
-                                              );
-    const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
-    initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
+    initialize_state_independent_data(args);
     _block_writer->on_state_independent_data_initialized();
     load_state_initial_data(args);
 
@@ -201,7 +193,7 @@ void database::open( const open_args& args )
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args, const bool throw_an_error_on_state_definitions_mismatch)
+void database::initialize_state_independent_data(const open_args& args)
 {
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
@@ -209,7 +201,7 @@ void database::initialize_state_independent_data(const open_args& args, const bo
   initialize_indexes();
 
   if (!args.load_snapshot)
-    verify_match_of_state_objects_definitions_from_shm(throw_an_error_on_state_definitions_mismatch);
+    verify_match_of_state_objects_definitions_from_shm();
 
   initialize_evaluators();
 
@@ -3442,15 +3434,15 @@ void database::initialize_irreversible_storage()
   cached_lib = last_irreversible_object->_irreversible_block_data.create_full_block();
 }
 
-void database::verify_match_of_state_objects_definitions_from_shm(const bool throw_an_error_on_state_definitions_mismatch)
+void database::verify_match_of_state_objects_definitions_from_shm()
 {
   FC_ASSERT(_my->_decoded_types_data_storage);
-  const std::string decoded_state_objects_data = get_decoded_state_objects_data_from_shm();
+  const std::string shm_decoded_state_objects_data = get_decoded_state_objects_data_from_shm();
 
-  if (decoded_state_objects_data.empty())
+  if (shm_decoded_state_objects_data.empty())
     set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
   else
-    util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), decoded_state_objects_data, throw_an_error_on_state_definitions_mismatch, /* used in snapshot plugin*/ false);
+    util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), shm_decoded_state_objects_data, /* used in snapshot plugin*/ false);
 
   _my->delete_decoded_types_data_storage();
 }

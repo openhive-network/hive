@@ -1320,25 +1320,25 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
         "{\"type\":\"fc::time_point_sec\",\"name\":\"effective_date\",\"offset\":24}]},"
       "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"reflected\":true,\"enum_values\":["
         "[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]]},"
-        "{\"name\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"size_of\":16,\"align_of\":8,\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false}"
+      "{\"name\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"size_of\":16,\"align_of\":8,\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false}"
       "]";
 
     BOOST_CHECK_EQUAL(current_decoded_types_data_in_json, json_pattern);
     const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(current_decoded_types_data_in_json);
-    BOOST_CHECK(response.first);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::state_definitions_matches);
     BOOST_CHECK(response.second.empty());
   }
+  // 6. passing json which should not match to current decoded types map data and error should be thrown.
   {
-    // 6. passing json with should not match to current decoded types map data.
+    
     const std::string wrong_json_pattern = "["
       "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"enum_values\":["
         "[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]],"
         "\"name\":\"N4hive5chain14witness_object21witness_schedule_typeE\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d5\",\"reflected\":true},"
       "{\"size_of\":4,\"align_of\":4,\"name\":\"hive::protocol::votable_asset_info_v1\",\"checksum\":\"54476168fefcb79dfec29bf9ac036acaf11f0a92\",\"reflected\":false}"
       "]";
-
     const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
-    BOOST_CHECK(!response.first);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::mismatch_throw_error);
 
     const std::string response_pattern =
     "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: 6, loaded amount of decoded types: 2\n"
@@ -1352,6 +1352,77 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
 
     BOOST_CHECK_EQUAL(response.second, response_pattern);
   }
+
+  {
+    const std::string wrong_json_pattern = "["
+      "{\"name\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"size_of\":4,\"align_of\":4,\"checksum\":\"cd1883f4c4665b69da64199ce965393405513f21\",\"reflected\":false},"
+      "{\"name\":\"fc::erpair<unsigned long, unsigned long>\",\"size_of\":16,\"align_of\":8,\"checksum\":\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\",\"reflected\":false},"
+      "{\"name\":\"fc::time_point_sec\",\"size_of\":4,\"align_of\":4,\"checksum\":\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\",\"reflected\":false},"
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"size_of\":32,\"align_of\":8,\"checksum\":\"4a7b6e131317bdbf49e169e959f913c5e837fcad\",\"reflected\":true,\"members\":["
+        "{\"type\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"name\":\"id\",\"offset\":0},"
+        "{\"type\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"name\":\"account\",\"offset\":8},"
+        "{\"type\":\"fc::time_point_sec\",\"name\":\"effective_date\",\"offset\":24},"
+        "{\"type\":\"fake_type\",\"name\":\"fake_name\",\"offset\":32}]},"
+      "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"reflected\":true,\"enum_values\":["
+        "[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]]},"
+      "{\"name\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"size_of\":16,\"align_of\":8,\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false}"
+      "]";
+    const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::mismatch_throw_error);
+    const std::string response_pattern =
+    "Reflected type: hive::chain::decline_voting_rights_request_object has checksum: 4a7b6e131317bdbf49e169e959f913c5e837fdaa, which diffs from loaded type: 4a7b6e131317bdbf49e169e959f913c5e837fcad\n";
+
+    BOOST_CHECK_EQUAL(response.second, response_pattern);
+  }
+
+  {
+    const std::string wrong_json_pattern = "["
+      "{\"name\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"size_of\":4,\"align_of\":4,\"checksum\":\"cd1883f4c4665b69da64199ce965393405513f21\",\"reflected\":false},"
+      "{\"name\":\"fc::erpair<unsigned long, unsigned long>\",\"size_of\":16,\"align_of\":8,\"checksum\":\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\",\"reflected\":false},"
+      "{\"name\":\"fc::time_point_sec\",\"size_of\":4,\"align_of\":4,\"checksum\":\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\",\"reflected\":false},"
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"size_of\":32,\"align_of\":8,\"checksum\":\"4a7b6e131317bdbf49e169e959f913c5e837fdaa\",\"reflected\":true,\"members\":["
+        "{\"type\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"name\":\"id\",\"offset\":0},"
+        "{\"type\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"name\":\"account\",\"offset\":8},"
+        "{\"type\":\"fc::time_point_sec\",\"name\":\"effective_date\",\"offset\":24}]},"
+      "{\"name\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"size_of\":16,\"align_of\":8,\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false}"
+      "]";
+
+    const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::mismatch_throw_error);
+
+    const std::string response_pattern =
+    "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: 6, loaded amount of decoded types: 5\n"
+    "Type is in current decoded types map but not in loaded decoded types map: hive::chain::witness_object::witness_schedule_type\n";
+
+    BOOST_CHECK_EQUAL(response.second, response_pattern);
+    }
+
+    {
+      // here we have more in loaded, so only warning should be logged.
+    const std::string wrong_json_pattern = "["
+      "{\"name\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"size_of\":4,\"align_of\":4,\"checksum\":\"cd1883f4c4665b69da64199ce965393405513f21\",\"reflected\":false},"
+      "{\"name\":\"fc::erpair<unsigned long, unsigned long>\",\"size_of\":16,\"align_of\":8,\"checksum\":\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\",\"reflected\":false},"
+      "{\"name\":\"fc::time_point_sec\",\"size_of\":4,\"align_of\":4,\"checksum\":\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\",\"reflected\":false},"
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"size_of\":32,\"align_of\":8,\"checksum\":\"4a7b6e131317bdbf49e169e959f913c5e837fdaa\",\"reflected\":true,\"members\":["
+        "{\"type\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"name\":\"id\",\"offset\":0},"
+        "{\"type\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"name\":\"account\",\"offset\":8},"
+        "{\"type\":\"fc::time_point_sec\",\"name\":\"effective_date\",\"offset\":24}]},"
+      "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"reflected\":true,\"enum_values\":["
+        "[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]]},"
+      "{\"name\":\"hive::protocol::fixed_string_impl<fc::erpair<unsigned long, unsigned long> >\",\"size_of\":16,\"align_of\":8,\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false},"
+      "{\"size_of\":4,\"align_of\":4,\"name\":\"hive::protocol::votable_asset_info_v1\",\"checksum\":\"54476168fefcb79dfec29bf9ac036acaf11f0a92\",\"reflected\":false}"
+      "]";
+
+    const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::mismatch_log_warning);
+
+    const std::string response_pattern =
+    "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: 6, loaded amount of decoded types: 7\n"
+    "Type is in loaded decoded types map but not in current decoded types map: hive::protocol::votable_asset_info_v1\n";
+
+    BOOST_CHECK_EQUAL(response.second, response_pattern);
+  }
+
   {
     // 7. Pass wrong json or something else than json. Exception should be thrown.
     BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("asdf"), fc::parse_error_exception);

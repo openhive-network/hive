@@ -9,11 +9,11 @@
 
 namespace hive { namespace chain { namespace util {
 
-void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data, const bool throw_exception, const bool used_in_snapshot_plugin)
+void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data, const bool used_in_snapshot_plugin)
 {
   auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);
 
-  if (!result.first)
+  if (result.first != state_definitions_verification_result::state_definitions_matches)
   {
     std::fstream loaded_decoded_types_details, current_decoded_types_details;
     constexpr char current_data_filename[] = "current_decoded_types_details.log";
@@ -31,7 +31,7 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
     current_decoded_types_details.flush();
     current_decoded_types_details.close();
 
-    if (throw_exception)
+    if (result.first == state_definitions_verification_result::mismatch_throw_error)
     {
       if (used_in_snapshot_plugin)
         FC_THROW_EXCEPTION(hive::chain::snapshot_state_definitions_mismatch_exception,

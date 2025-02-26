@@ -71,6 +71,13 @@ namespace decoders
     }
 }
 
+enum class state_definitions_verification_result : uint8_t
+{
+  state_definitions_matches = 0,
+  mismatch_log_warning = 1,
+  mismatch_throw_error = 2
+};
+
 class decoded_types_data_storage final
 {
   private:
@@ -117,8 +124,8 @@ class decoded_types_data_storage final
     std::string generate_decoded_types_data_pretty_string(const std::string& decoded_types_data_json = std::string()) const;
     std::string generate_decoded_types_data_json_string() const;
 
-    // bool - comparing result, string - details of detected differences.
-    std::pair<bool, std::string> check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const;
+    // state_definitions_verification_result - comparing result, in case of mismatch_throw_error - exception should be thrown , string - details of detected differences.
+    std::pair<state_definitions_verification_result, std::string> check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const;
 
   private:
     using decoding_types_set_t = std::unordered_set<std::string>;
