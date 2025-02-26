@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-from helpy.exceptions import ErrorInResponseError
+from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 import wax

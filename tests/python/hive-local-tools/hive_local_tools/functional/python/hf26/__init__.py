@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from helpy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
 from shared_tools.complex_networks import init_network

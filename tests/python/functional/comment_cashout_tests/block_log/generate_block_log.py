@@ -6,8 +6,6 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Callable, Final
 
-from helpy._interfaces.wax import calculate_tapos_data
-
 import shared_tools.networks_architecture as networks
 import test_tools as tt
 from hive_local_tools.functional.python import generate_block
@@ -21,6 +19,8 @@ from schemas.operations.transfer_to_vesting_operation import TransferToVestingOp
 from schemas.operations.vote_operation import VoteOperation
 from shared_tools.complex_networks import generate_networks
 from test_tools.__private.wallet.constants import SimpleTransaction
+from wax import get_tapos_data
+from wax._private.result_tools import to_cpp_string
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
 AMOUNT_OF_ALL_VOTERS: Final[int] = 50_000
@@ -207,7 +207,7 @@ def __generate_and_broadcast_transaction(
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
-    tapos_data = calculate_tapos_data(block_id)
+    tapos_data = get_tapos_data(to_cpp_string(block_id))
     ref_block_num = tapos_data.ref_block_num
     ref_block_prefix = tapos_data.ref_block_prefix
 

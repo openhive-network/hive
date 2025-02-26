@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from helpy._interfaces.wax import WaxOperationFailedError
-from helpy.exceptions import ErrorInResponseError, HelpyError
+from beekeepy.exceptions import BeekeepyError, ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
+from wax._private.exceptions import WaxError, WaxValidationFailedError
 
 UPDATED_COMMENT_OPTIONS = {
     "max_accepted_payout": tt.Asset.Tbd(100),
@@ -261,7 +261,7 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
 @pytest.mark.parametrize(
     ("beneficiaries", "error_message", "error_type"),
     [
-        ([], "Must specify at least one beneficiary", WaxOperationFailedError),
+        ([], "Must specify at least one beneficiary", WaxValidationFailedError),
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment already has beneficiaries specified.",
@@ -276,7 +276,7 @@ def test_beneficiary_after_comment(
     reply_type: str,
     beneficiaries: list,
     error_message: str,
-    error_type: HelpyError,
+    error_type: BeekeepyError | WaxError,
 ) -> None:
     """
     Test case 26, 27, 29, 30 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
@@ -298,16 +298,18 @@ def test_beneficiary_after_comment(
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["comment", "post"])
 @pytest.mark.parametrize(
-    ("beneficiaries", "error_message"),
+    ("beneficiaries", "error_message", "error_type"),
     [
         (
             [{"account": "initminer", "weight": 100}],
             "Comment must not have been voted on before specifying beneficiaries.",
+            ErrorInResponseError,
         ),
-        ([], "Must specify at least one beneficiary"),
+        ([], "Must specify at least one beneficiary", WaxValidationFailedError),
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment must not have been voted on before specifying beneficiaries.",
+            ErrorInResponseError,
         ),
     ],
     ids=[
@@ -317,7 +319,12 @@ def test_beneficiary_after_comment(
     ],
 )
 def test_beneficiary_after_vote(
-    prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str, beneficiaries: list, error_message: str
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    reply_type: str,
+    beneficiaries: list,
+    error_message: str,
+    error_type: WaxError | BeekeepyError,
 ) -> None:
     """
     Test case 31:36 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
@@ -330,13 +337,10 @@ def test_beneficiary_after_vote(
 
     comment.vote()
 
-    with pytest.raises(HelpyError) as error:
+    with pytest.raises(error_type) as error:
         comment.options(beneficiaries=beneficiaries)
 
-    if isinstance(error.value, WaxOperationFailedError):
-        error_value = error.value.args[0]
-    if isinstance(error.value, ErrorInResponseError):
-        error_value = error.value.error
+    error_value = error.value.args[0]
 
     assert error_message in error_value, "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
