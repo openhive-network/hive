@@ -173,21 +173,27 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev327+6dbc448"
+version = "0.0.1.dev338+58e0bf7"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "beekeepy-0.0.1.dev327+6dbc448-py3-none-any.whl", hash = "sha256:84420db8aa9858a8522e48b5ef491c4aa973658e0ef34fee9fdbd2a3a73fa0e8"},
+    {file = "beekeepy-0.0.1.dev338+58e0bf7-py3-none-any.whl", hash = "sha256:380dce868a3c6a326f8fc53890f6135eeeceb9f79639b41896dd406b43ed3f89"},
 ]
 
 [package.dependencies]
-helpy = "0.0.1.dev327+6dbc448"
+aiohttp = "3.9.1"
+httpx = {version = "0.23.3", extras = ["http2"]}
+loguru = "0.7.2"
+pydantic = "1.10.18"
+python-dateutil = "2.8.2"
+requests = "2.27.1"
+schemas = "0.0.1.dev323+e5a1ba1"
 
 [package.source]
 type = "legacy"
 url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
-reference = "gitlab-helpy-beekeepy"
+reference = "gitlab-beekeepy"
 
 [[package]]
 name = "black"
@@ -474,30 +480,6 @@ files = [
 [package.dependencies]
 hpack = ">=4.0,<5"
 hyperframe = ">=6.0,<7"
-
-[[package]]
-name = "helpy"
-version = "0.0.1.dev327+6dbc448"
-description = "Easily interact with the Hive blockchain using Python."
-optional = false
-python-versions = ">=3.10,<4.0"
-files = [
-    {file = "helpy-0.0.1.dev327+6dbc448-py3-none-any.whl", hash = "sha256:cd22b4c98a9e16065db8e889d8488050ee305d6b2577e5b0256ff04f9a2950f3"},
-]
-
-[package.dependencies]
-aiohttp = "3.9.1"
-httpx = {version = "0.23.3", extras = ["http2"]}
-loguru = "0.7.2"
-python-dateutil = "2.8.2"
-requests = "2.27.1"
-schemas = "0.0.1.dev323+e5a1ba1"
-wax = "0.3.10.dev321+1384595"
-
-[package.source]
-type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
-reference = "gitlab-helpy-beekeepy"
 
 [[package]]
 name = "hpack"
@@ -1592,10 +1574,12 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "0.0.1.dev327+6dbc448"
+beekeepy = "0.0.1.dev338+58e0bf7"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
+typing-extensions = "4.12.2"
+wax = "0.3.10.dev558+3a636d1"
 
 [package.source]
 type = "directory"
@@ -1669,13 +1653,13 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.8.0"
+version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.8.0-py3-none-any.whl", hash = "sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0"},
-    {file = "typing_extensions-4.8.0.tar.gz", hash = "sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef"},
+    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
+    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
 [[package]]
@@ -1716,16 +1700,22 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev321+1384595"
+version = "0.3.10.dev558+3a636d1"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "wax-0.3.10.dev321+1384595-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:747429dfa159864212acf5f4ad57684f551b33152fa6b2dc0a6d62b7cd50d1d0"},
+    {file = "wax-0.3.10.dev558+3a636d1-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:ca430196868d2be71c442993192e214c81e2f0d4d86b322a0fc53628cf9003cc"},
 ]
 
 [package.dependencies]
+aiohttp = "3.9.1"
+beekeepy = "0.0.1.dev338+58e0bf7"
+httpx = {version = "0.23.3", extras = ["http2"]}
+loguru = "0.7.2"
 protobuf = "4.24.4"
+python-dateutil = "2.8.2"
+requests = "2.27.1"
 
 [package.source]
 type = "legacy"
@@ -1847,4 +1837,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "eaf61d0ce14e2e39ff5c14c040777534bfde77007f37faba176ce68f0d9c317d"
+content-hash = "099f951637fb9c5e87be99d61789106e0b674a40bb5220c8373510a23b414442"
