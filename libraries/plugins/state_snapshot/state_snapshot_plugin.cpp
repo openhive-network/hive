@@ -1657,7 +1657,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   {
     chain::util::decoded_types_data_storage dtds(_mainDb.get_current_decoded_types_data_json());
-    chain::util::verify_match_of_state_definitions(dtds, loaded_decoded_type_data, throw_exception_if_state_definitions_mismatch, /* used in snapshot plugin*/ true);
+    chain::util::verify_match_of_state_definitions(dtds, loaded_decoded_type_data, /* used in snapshot plugin*/ true);
   }
 
   const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);

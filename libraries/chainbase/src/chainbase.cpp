@@ -137,12 +137,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         }
       }
 
-      bool test_set_plugins(const helpers::environment_extension_resources* environment_extension )
+      bool test_set_plugins(const helpers::environment_extension_resources& environment_extension )
       {
         if( created_storage )
         {
           std::string list_of_plugins;
-          for( auto& item : environment_extension->plugins )
+          for( auto& item : environment_extension.plugins )
           {
             plugins.insert( shared_string( item.c_str(), version_info.get_allocator()));
             list_of_plugins += item + " ";
@@ -151,7 +151,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         }
         else
         {
-          std::set<std::string> current_plugins_editable = environment_extension->plugins;
+          std::set<std::string> current_plugins_editable = environment_extension.plugins;
           bool less_current_plugins_than_plugins_in_db = false;
 
           for (const auto& plugin : plugins)
@@ -166,26 +166,26 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           if (!current_plugins_editable.empty())
           {
             const std::string loaded_plugins = dump(plugins);
-            const std::string all_current_plugins = dump(environment_extension->plugins);
+            const std::string all_current_plugins = dump(environment_extension.plugins);
             const std::string missing_plugins = dump(current_plugins_editable);
 
             const std::string error_message = "Database misses plugins: " + missing_plugins + " which are requested"
                                               ".\n Enabled plugins: " + all_current_plugins +
                                               "\n Plugins in database: " + loaded_plugins;
 
-            environment_extension->logger(error_message);
+            environment_extension.logger(error_message);
             return true;
           }
 
           else if (less_current_plugins_than_plugins_in_db)
           {
             const std::string loaded_plugins = dump(plugins);
-            const std::string all_current_plugins = dump(environment_extension->plugins);
+            const std::string all_current_plugins = dump(environment_extension.plugins);
             const std::string warning_message = "Not all plugins from database were requested to load."
                                                 "\n Enabled plugins: " + all_current_plugins +
                                                 "\n Plugins in database: " + loaded_plugins;
 
-            environment_extension->logger(warning_message);
+            environment_extension.logger(warning_message);
             return false;
           }
         }
@@ -268,7 +268,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     auto env = _segment->find< environment_check >( "environment" );
     if( environment_extension )
+    {
       env.first->test_version(*environment_extension);
+      env.first->test_set_plugins(*environment_extension);
+    }
 
 
     _flock = bip::file_lock( abs_path.generic_string().c_str() );
@@ -277,13 +280,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #endif
 
     _is_open = true;
-  }
-
-  bool database::check_plugins(const helpers::environment_extension_resources* environment_extension)
-  {
-    auto env = _segment->find< environment_check >( "environment" );
-    assert(env.first);
-    return env.first->test_set_plugins(environment_extension);
   }
 
   void database::flush() {

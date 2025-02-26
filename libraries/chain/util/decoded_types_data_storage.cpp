@@ -168,10 +168,10 @@ std::string decoded_types_data_storage::generate_decoded_types_data_pretty_strin
     return generate_pretty_string_from_map(generate_data_map_from_json(decoded_types_data_json));
 }
 
-std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const
+std::pair<state_definitions_verification_result, std::string> decoded_types_data_storage::check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const
 {
   auto loaded_decoded_types_map = generate_data_map_from_json(decoded_types_data_json);
-  bool no_difference_detected = true;
+  state_definitions_verification_result comparision_result = state_definitions_verification_result::state_definitions_matches;
   std::stringstream error_ss;
 
   /* Check if both maps have the same size. */
@@ -179,18 +179,16 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
   const size_t current_decoded_types_data_map_size = decoded_types_data_map.size();
 
   if (loaded_decoded_types_data_map_size != current_decoded_types_data_map_size)
-  {
-    no_difference_detected = false;
     error_ss << "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: " << std::to_string(current_decoded_types_data_map_size)
              << ", loaded amount of decoded types: " << std::to_string(loaded_decoded_types_data_map_size) << "\n";
-  }
 
   for (const auto& [dtdm_key, dtdm_decoded_type] : decoded_types_data_map)
   {
     if (loaded_decoded_types_map.find(dtdm_key) == loaded_decoded_types_map.end())
     {
-      if (no_difference_detected)
-        no_difference_detected = false;
+      // Throw an exception - there are more definitions in current hived than shm/snapshot than.
+      if (comparision_result != state_definitions_verification_result::mismatch_throw_error)
+        comparision_result = state_definitions_verification_result::mismatch_throw_error;
 
       error_ss << "Type is in current decoded types map but not in loaded decoded types map: " << dtdm_decoded_type.name << "\n";
     }
@@ -199,8 +197,8 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
       if (const auto& ldtm_decoded_type = loaded_decoded_types_map.at(dtdm_key);
           dtdm_decoded_type.checksum != ldtm_decoded_type.checksum)
       {
-        if (no_difference_detected)
-          no_difference_detected = false;
+        if (comparision_result != state_definitions_verification_result::mismatch_throw_error)
+          comparision_result = state_definitions_verification_result::mismatch_throw_error;
 
         error_ss << "Reflected type: " << dtdm_decoded_type.name
                  << " has checksum: " << dtdm_decoded_type.checksum
@@ -213,13 +211,14 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
 
   for (const auto& [ldtm_key, ldtm_decoded_type] : loaded_decoded_types_map)
   {
-    if (no_difference_detected)
-      no_difference_detected = false;
+    // Log warning - there are more definitions in shm/snapshot than in current hived.
+    if (comparision_result != state_definitions_verification_result::mismatch_throw_error && comparision_result != state_definitions_verification_result::mismatch_log_warning)
+      comparision_result = state_definitions_verification_result::mismatch_log_warning;
 
     error_ss << "Type is in loaded decoded types map but not in current decoded types map: " << ldtm_decoded_type.name << "\n";
   }
 
-  return std::pair<bool, std::string>(no_difference_detected, error_ss.str());
+  return std::pair<state_definitions_verification_result, std::string>(comparision_result, error_ss.str());
 }
 
 decoded_types_data_storage::decoded_types_data_storage(const std::string& decoded_types_data_json)
