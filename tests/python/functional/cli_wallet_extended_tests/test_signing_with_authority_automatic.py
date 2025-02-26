@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from helpy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
 

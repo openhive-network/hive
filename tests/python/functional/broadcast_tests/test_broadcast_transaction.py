@@ -5,7 +5,7 @@ from __future__ import annotations
 from time import sleep
 
 import pytest
-from helpy.exceptions import ErrorInResponseError
+from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for

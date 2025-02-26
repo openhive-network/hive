@@ -8,7 +8,6 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Final, Literal
 
-from helpy._interfaces.wax import calculate_tapos_data
 from loguru import logger
 
 import test_tools as tt
@@ -25,6 +24,8 @@ from schemas.operations.delegate_vesting_shares_operation import DelegateVesting
 from schemas.operations.transfer_operation import TransferOperationLegacy
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperationLegacy
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
+from wax import get_tapos_data
+from wax._private.result_tools import to_cpp_string
 
 CHAIN_ID: Final[int] = 24
 
@@ -409,7 +410,7 @@ def __generate_and_broadcast_transaction(
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
-    tapos_data = calculate_tapos_data(block_id)
+    tapos_data = get_tapos_data(to_cpp_string(block_id))
     ref_block_num = tapos_data.ref_block_num
     ref_block_prefix = tapos_data.ref_block_prefix
 

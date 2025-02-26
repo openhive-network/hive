@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from helpy._interfaces.wax import WaxOperationFailedError
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -19,6 +18,7 @@ from hive_local_tools.functional.python.cli_wallet import (
     get_list_proposal_votes_args,
     prepare_proposal,
 )
+from wax._private.exceptions import WaxValidationFailedError
 
 
 def list_proposals_by_creator(wallet: tt.Wallet, creator_name: str) -> list:
@@ -79,7 +79,7 @@ def test_create_proposal_fail_negative_payment(
     prepared_proposal.create_proposal_arguments["daily_pay"] = negative_value  # "-1.000 TBD"
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
 
-    with pytest.raises(WaxOperationFailedError) as exception:
+    with pytest.raises(WaxValidationFailedError) as exception:
         wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
 
     response = exception.value.args[0]
