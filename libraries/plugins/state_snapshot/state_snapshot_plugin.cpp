@@ -421,9 +421,9 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
   {
   public:
     index_dump_writer(const chain::database& mainDb, const chainbase::abstract_index& index, const bfs::path& outputRootPath,
-      bool allow_concurrency) :
+      bool allow_concurrency, const std::atomic_bool& is_error) :
       snapshot_processor_data<chainbase::snapshot_writer>(outputRootPath), _mainDb(mainDb), _index(index), _firstId(0), _lastId(0),
-      _nextId(0), _allow_concurrency(allow_concurrency) {}
+      _nextId(0), _allow_concurrency(allow_concurrency), _is_error(is_error) {}
 
     index_dump_writer(const index_dump_writer&) = delete;
     index_dump_writer& operator=(const index_dump_writer&) = delete;
@@ -449,14 +449,15 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
     size_t _lastId;
     size_t _nextId;
     bool   _allow_concurrency;
+    const std::atomic_bool& _is_error;
   };
 
 class index_dump_reader final : public snapshot_processor_data<chainbase::snapshot_reader>
   {
   public:
-    index_dump_reader(const snapshot_manifest& snapshotManifest, const bfs::path& rootPath) :
+    index_dump_reader(const snapshot_manifest& snapshotManifest, const bfs::path& rootPath, const std::atomic_bool& is_error) :
       snapshot_processor_data<chainbase::snapshot_reader>(rootPath),
-      _snapshotManifest(snapshotManifest), currentWorker(nullptr) {}
+      _snapshotManifest(snapshotManifest), currentWorker(nullptr), _is_error(is_error) {}
 
     index_dump_reader(const index_dump_reader&) = delete;
     index_dump_reader& operator=(const index_dump_reader&) = delete;
@@ -472,14 +473,15 @@ class index_dump_reader final : public snapshot_processor_data<chainbase::snapsh
     const snapshot_manifest& _snapshotManifest;
     std::vector <std::unique_ptr<loading_worker>> _builtWorkers;
     const loading_worker* currentWorker;
+    const std::atomic_bool& _is_error;
   };
 
 class dumping_worker final : public chainbase::snapshot_writer::worker
   {
   public:
-    dumping_worker(const bfs::path& outputFile, index_dump_writer& writer, size_t startId, size_t endId) :
+    dumping_worker(const bfs::path& outputFile, index_dump_writer& writer, size_t startId, size_t endId, const std::atomic_bool& is_error) :
       chainbase::snapshot_writer::worker(writer, startId, endId), _controller(writer), _outputFile(outputFile),
-      _writtenEntries(0), _write_finished(false)
+      _writtenEntries(0), _write_finished(false), _is_error(is_error)
       {
       }
 
@@ -531,6 +533,7 @@ class dumping_worker final : public chainbase::snapshot_writer::worker
     ::rocksdb::ExternalSstFileInfo _sstFileInfo;
     size_t _writtenEntries;
     bool _write_finished;
+    const std::atomic_bool& _is_error;
   };
 
 void dumping_worker::perform_dump()
@@ -577,6 +580,12 @@ void dumping_worker::flush_converted_data(const serialized_object_cache& cache)
 
   for(const auto& kv : cache)
     {
+
+    if( BOOST_UNLIKELY( _is_error.load() ) )
+    {
+      FC_ASSERT( false, "During a snapshot writing an error is detected. Writing is stopped.");
+    }
+
     Slice key(reinterpret_cast<const char*>(&kv.first), sizeof(kv.first));
     Slice value(kv.second.data(), kv.second.size());
     auto status = _writer->Put(key, value);
@@ -651,7 +660,7 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
     bfs::path actualOutputPath(outputPath);
     actualOutputPath /= fileName;
 
-    _builtWorkers.emplace_back(std::make_unique<dumping_worker>(actualOutputPath, *this, left, right));
+    _builtWorkers.emplace_back(std::make_unique<dumping_worker>(actualOutputPath, *this, left, right, _is_error));
 
     retVal.emplace_back(_builtWorkers.back().get());
 
@@ -741,9 +750,9 @@ void index_dump_writer::store_index_manifest(index_manifest_info* manifest) cons
 class loading_worker final : public chainbase::snapshot_reader::worker
   {
   public:
-    loading_worker(const index_manifest_info& manifestInfo, const bfs::path& inputPath, index_dump_reader& reader) :
+    loading_worker(const index_manifest_info& manifestInfo, const bfs::path& inputPath, index_dump_reader& reader, const std::atomic_bool& is_error) :
       chainbase::snapshot_reader::worker(reader, 0, 0),
-      _manifestInfo(manifestInfo), _controller(reader), _inputPath(inputPath), _load_finished(false)
+      _manifestInfo(manifestInfo), _controller(reader), _inputPath(inputPath), _is_error(is_error)
       {
       _startId = manifestInfo.firstId;
       _endId = manifestInfo.lastId;
@@ -773,7 +782,7 @@ class loading_worker final : public chainbase::snapshot_reader::worker
     bfs::path _inputPath;
     std::unique_ptr<::rocksdb::SstFileReader> _reader;
     std::unique_ptr<::rocksdb::Iterator> _entryIt;
-    bool _load_finished;
+    const std::atomic_bool& _is_error;
   };
 
 void loading_worker::load_converted_data(worker_common_base::serialized_object_cache* cache)
@@ -784,6 +793,12 @@ void loading_worker::load_converted_data(worker_common_base::serialized_object_c
   cache->reserve(maxSize);
   for(size_t n = 0; _entryIt->Valid() && n < maxSize; _entryIt->Next(), ++n)
     {
+
+    if( BOOST_UNLIKELY( _is_error.load() ) )
+    {
+      FC_ASSERT( false, "During a snapshot loading an error is detected in ${s}. Loading is stopped.", ("s", _manifestInfo.name));
+    }
+
     auto key = _entryIt->key();
     auto value = _entryIt->value();
 
@@ -868,7 +883,7 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
   *snapshot_index_next_id = manifestInfo.indexNextId;
   *snapshot_dumped_items = manifestInfo.dumpedItems;
 
-  _builtWorkers.emplace_back(std::make_unique<loading_worker>(manifestInfo, _rootPath, *this));
+  _builtWorkers.emplace_back(std::make_unique<loading_worker>(manifestInfo, _rootPath, *this, _is_error));
 
   workers retVal;
   retVal.emplace_back(_builtWorkers.front().get());
@@ -959,6 +974,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
       std::exception_ptr      _exception;
+      std::atomic_bool        _is_error{false};
   };
 
 void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& options)
@@ -1005,12 +1021,52 @@ std::string state_snapshot_plugin::impl::generate_name() const
 void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abstract_index* idx, index_dump_writer* writer)
   {
   try
-    {
+  {
     writer->set_processing_success(false);
     idx->dump_snapshot(*writer);
     writer->set_processing_success(true);
-    }
-  FC_CAPTURE_AND_LOG(())
+  }
+  catch( boost::interprocess::bad_alloc& ex )
+  {
+    wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
+    wlog( "${details}", ("details",ex.what()) );
+
+    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
+    _exception = std::current_exception();
+    /*
+      https://www.boost.org/doc/libs/1_74_0/doc/html/thread/thread_management.html
+
+      A running thread can be interrupted by invoking the interrupt() member function of the corresponding boost::thread object.
+      When the interrupted thread next executes one of the specified interruption points
+      (or if it is currently blocked whilst executing one) with interruption enabled,
+      then a boost::thread_interrupted exception will be thrown in the interrupted thread.
+      Unless this exception is caught inside the interrupted thread's thread-main function,
+      the stack unwinding process (as with any other exception) causes the destructors with automatic storage duration to be executed.
+      Unlike other exceptions, when boost::thread_interrupted is propagated out of thread-main function, this does not cause the call to std::terminate
+    */
+    throw boost::thread_interrupted();
+  }
+  catch( fc::exception& e )
+  {
+    wlog( "Problem with a snapshot writing." );
+    wlog( "${e}", (e) );
+
+    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
+    _exception = std::current_exception();
+    throw boost::thread_interrupted();
+  }
+  catch(...)
+  {
+    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
+    _exception = std::current_exception();
+    throw boost::thread_interrupted();
+  }
   }
 
 void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actualStoragePath,
@@ -1420,6 +1476,10 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
     wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
     wlog( "${details}", ("details",ex.what()) );
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+
+    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
     _exception = std::current_exception();
     /*
       https://www.boost.org/doc/libs/1_74_0/doc/html/thread/thread_management.html
@@ -1439,12 +1499,20 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
     wlog( "Problem with a snapshot loading." );
     wlog( "${e}", (e) );
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+
+    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
     _exception = std::current_exception();
     throw boost::thread_interrupted();
   }
   catch(...)
   {
     wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+
+    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
     _exception = std::current_exception();
     throw boost::thread_interrupted();
   }
@@ -1484,19 +1552,24 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
     for(const chainbase::abstract_index* idx : indices)
     {
-      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, true /* allow_concurrency */));
+      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, true /* allow_concurrency */, _is_error));
       index_dump_writer* writer = builtWriters.back().get();
       ioService.post(boost::bind(&impl::safe_spawn_snapshot_dump, this, idx, writer));
     }
     ilog("Waiting for dumping jobs completion");
     work.reset();
     threadpool.join_all();
+    if( _exception )
+    {
+      wlog("Snapshot writing is aborted because of some errors");
+      std::rethrow_exception( _exception );
+    }
   }
   else
   {
     for(const chainbase::abstract_index* idx : indices)
     {
-      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, false /* allow_concurrency */));
+      builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, false /* allow_concurrency */, _is_error));
       index_dump_writer* writer = builtWriters.back().get();
       safe_spawn_snapshot_dump(idx, writer);
     }
@@ -1622,7 +1695,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
     for(chainbase::abstract_index* idx : indices)
     {
-      builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath));
+      builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath, _is_error));
       index_dump_reader* reader = builtReaders.back().get();
       ioService.post(boost::bind(&impl::safe_spawn_snapshot_load, this, idx, reader));
     }
@@ -1631,13 +1704,16 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     work.reset();
     threadpool.join_all();
     if( _exception )
+    {
+      wlog("Snapshot loading is aborted because of some errors");
       std::rethrow_exception( _exception );
+    }
   }
   else
   {
     for(chainbase::abstract_index* idx : indices)
     {
-      std::unique_ptr< index_dump_reader> reader = std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath);
+      std::unique_ptr< index_dump_reader> reader = std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath, _is_error);
       safe_spawn_snapshot_load(idx, reader.get());
     }
   }
