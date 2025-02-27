@@ -23,6 +23,8 @@ cat <<EOF
     --data-dir=DIRECTORY_PATH             Specify path to a hived data directory on the host.
     --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host.
     --name=CONTAINER_NAME                 Specify a dedicated name for the spawned container instance.
+    --preserve-container                  Allows to preserve a docker container created at docker run spawn (by default it is removed on finish to avoid host machine pollution).
+                                          Once used, caller is responsible for choosing unique container name (by passing --name option), or manually removing already existing container.
     --detach                              Starts the container instance in detached mode. Note: you can detach later using Ctrl+p+q key binding.
     --docker-option=OPTION                Specify a docker option to be passed to the underlying docker run command.
     --help,-h,-?                          Display this help screen and exit
@@ -32,6 +34,7 @@ EOF
 
 DOCKER_ARGS=()
 HIVED_ARGS=()
+REMOVE_CONTAINER=1
 
 CONTAINER_NAME=instance
 IMAGE_NAME=
@@ -114,6 +117,10 @@ while [ $# -gt 0 ]; do
 
     --detach)
       add_docker_arg "--detach"
+      ;;
+
+    --preserve-container)
+      REMOVE_CONTAINER=0
       ;;
 
     --docker-option=*)
@@ -200,7 +207,10 @@ then
   add_docker_arg "LINES=$(tput lines)"
 fi
 
-docker container rm -f -v "$CONTAINER_NAME" 2>/dev/null || true
+if [ ${REMOVE_CONTAINER} -eq 1 ]; then
+  add_docker_arg "--rm"
+  docker container rm -f -v "$CONTAINER_NAME" 2>/dev/null || true
+fi
 
 # echo "DOCKER_ARGS: ${DOCKER_ARGS[*]}"
 
