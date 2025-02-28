@@ -1222,7 +1222,9 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
   const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
-  uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
+  uint64_t skip_flags = chain::database::skip_validate_invariants
+                      | chain::database::skip_block_log
+                      | chain::database::skip_undo_block; // needed to keep head block == LIB
   if (args.validate_during_replay)
     ulog("Doing full validation during replay at user request");
   else
@@ -1236,7 +1238,6 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
       chain::database::skip_authority_check |
       chain::database::skip_validate; /// no need to validate operations
   }
-  skip_flags |= chain::database::skip_undo_block; // needed to keep head block == LIB
 
   uint32_t last_block_num = block_reader.head_block()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
@@ -1252,6 +1253,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
 
   std::shared_ptr<full_block_type> last_applied_block;
   const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
+    test_checkpoint( full_block );
     const uint32_t current_block_num = full_block->get_block_num();
 
     if (current_block_num % 100000 == 0)
