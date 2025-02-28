@@ -168,9 +168,7 @@ class chain_plugin_impl
     void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
 
-    void add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool );
-    const flat_map<uint32_t,block_id_type> get_checkpoints()const { return checkpoints; }
-    bool before_last_checkpoint()const;
+    bool test_checkpoint( const std::shared_ptr<full_block_type>& block );
 
     void finish_request();
 
@@ -204,7 +202,6 @@ class chain_plugin_impl
     bool                             load_snapshot = false;
     int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> checkpoints;
-    flat_map<uint32_t,block_id_type> loaded_checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
@@ -843,7 +840,8 @@ void chain_plugin_impl::initial_settings()
   }
 
   db.set_flush_interval( flush_interval );
-  add_checkpoints( loaded_checkpoints, thread_pool  );
+  if( !checkpoints.empty() )
+    thread_pool.set_last_checkpoint( checkpoints.rbegin()->first );
   db.set_require_locking( check_locks );
 
   db._max_mempool_size = max_mempool_size;
@@ -1011,23 +1009,31 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
   FC_CAPTURE_AND_RETHROW((trx))
 }
 
-void chain_plugin_impl::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool )
-{
-  for( const auto& i : checkpts )
-    checkpoints[i.first] = i.second;
-  if (!checkpoints.empty())
-    thread_pool.set_last_checkpoint(checkpoints.rbegin()->first);
-}
-
-bool chain_plugin_impl::before_last_checkpoint()const
-{
-  return (checkpoints.size() > 0) && (checkpoints.rbegin()->first >= db.head_block_num());
-}
-
 void chain_plugin_impl::finish_request()
 {
   std::unique_lock<std::mutex> _guard( finish.mtx );
   finish.cv.wait( _guard, [this](){ return finish.status.load(); } );
+}
+
+bool chain_plugin_impl::test_checkpoint( const std::shared_ptr<full_block_type>& block )
+{
+  uint32_t block_num = block->get_block_num();
+  bool before_last_checkpoint = !checkpoints.empty() && block_num <= checkpoints.rbegin()->first;
+
+  if( before_last_checkpoint )
+  {
+    auto checkpointIt = checkpoints.find( block_num );
+    if( checkpointIt != checkpoints.end() )
+    {
+      FC_ASSERT( block->get_block_id() == checkpointIt->second,
+        "Block did not match checkpoint", ( "checkpoint", *checkpointIt )( "block_id", block->get_block_id() ) );
+      ilog( "Checkpoint [${block_num},${id}] reached.", (block_num)( "id", block->get_block_id() ) );
+      // Note: even though we could detect when it was final checkpoint, we can't execute
+      // last_pushed_block_was_before_checkpoint related code until current block is fully processed
+    }
+  }
+
+  return before_last_checkpoint;
 }
 
 bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32_t skip )
@@ -1037,42 +1043,28 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
   const signed_block_header& new_block_header = new_block;
 
   uint32_t block_num = full_block->get_block_num();
-  if( checkpoints.size() && checkpoints.rbegin()->second != block_id_type() )
+  if( !checkpoints.empty() && block_num <= checkpoints.rbegin()->first )
   {
-    auto itr = checkpoints.find( block_num );
-    if( itr != checkpoints.end() )
-      FC_ASSERT(full_block->get_block_id() == itr->second, "Block did not match checkpoint", ("checkpoint", *itr)("block_id", full_block->get_block_id()));
-
-    if( checkpoints.rbegin()->first >= block_num )
-    {
-      skip = database::skip_witness_signature
-          | database::skip_transaction_signatures
-          | database::skip_transaction_dupe_check
-          /*| skip_fork_db Fork db cannot be skipped or else blocks will not be written out to block log */
-          | database::skip_block_size_check
-          | database::skip_tapos_check
-          | database::skip_authority_check
-          /* | skip_merkle_check While blockchain is being downloaded, txs need to be validated against block headers */
-          | database::skip_undo_history_check
-          | database::skip_witness_schedule_check
-          | database::skip_validate
-          | database::skip_validate_invariants
-          | database::skip_undo_block
-          ;
-      if (!last_pushed_block_was_before_checkpoint)
-      {
-        // log something to let the node operator know that checkpoints are in force
-        ilog("checkpoints enabled, doing reduced validation until final checkpoint, block ${block_num}, id ${block_id}",
-             ("block_num", checkpoints.rbegin()->first)("block_id", checkpoints.rbegin()->second));
-        last_pushed_block_was_before_checkpoint = true;
-      }
-    }
-    else if (last_pushed_block_was_before_checkpoint)
-    {
-      ilog("final checkpoint reached, resuming normal block validation");
-      last_pushed_block_was_before_checkpoint = false;
-      db.set_revision( db.head_block_num() );
-    }
+    skip = database::skip_witness_signature
+         | database::skip_transaction_signatures
+         | database::skip_transaction_dupe_check // Note: transaction_index is not filled
+      // | skip_fork_db Fork db cannot be skipped or else blocks will not be written out to block log
+         | database::skip_block_size_check
+         | database::skip_tapos_check
+         | database::skip_authority_check
+      // | skip_merkle_check While blockchain is being downloaded, txs need to be validated against block headers
+         | database::skip_undo_history_check
+         | database::skip_witness_schedule_check
+         | database::skip_validate
+         | database::skip_validate_invariants
+         | database::skip_undo_block;
+    last_pushed_block_was_before_checkpoint = true;
+  }
+  else if( last_pushed_block_was_before_checkpoint )
+  {
+    ilog( "Final checkpoint reached, resuming normal block validation." );
+    last_pushed_block_was_before_checkpoint = false;
+    db.set_revision( db.head_block_num() );
   }
 
   bool result;
@@ -1117,7 +1109,10 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
     skip,
     [&] ( const std::shared_ptr< full_block_type >& fb,
           uint32_t skip, const block_flow_control* block_ctrl )
-      { db.apply_block_extended(fb,skip,block_ctrl); },
+    {
+      test_checkpoint( fb );
+      db.apply_block_extended(fb,skip,block_ctrl);
+    },
     [&] ( const block_id_type end_block ) -> uint32_t
       { return db.pop_block_extended( end_block ); }
     );
@@ -1598,14 +1593,17 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   else
     my->flush_interval = 10000;
 
-  if(options.count("checkpoint"))
+  if( options.count( "checkpoint" ) )
   {
-    auto cps = options.at("checkpoint").as<vector<string>>();
-    my->loaded_checkpoints.reserve(cps.size());
-    for(const auto& cp : cps)
+    auto cps = options.at( "checkpoint" ).as<vector<string>>();
+    my->checkpoints.reserve( cps.size() );
+    for( const auto& cp : cps )
     {
-      auto item = fc::json::from_string(cp, fc::json::format_validation_mode::full).as<std::pair<uint32_t,block_id_type>>();
-      my->loaded_checkpoints[item.first] = item.second;
+      auto item = fc::json::from_string( cp, fc::json::format_validation_mode::full ).as<std::pair<uint32_t, block_id_type>>();
+      uint32_t num_from_id = block_header::num_from_id( item.second );
+      FC_ASSERT( item.first == num_from_id, "Invalid checkpoint specification, block number (${n}) does not match number embedded in block id (${i})",
+        ( "n", item.first )( "i", num_from_id ) );
+      my->checkpoints[ item.first ] = item.second;
     }
   }
 
@@ -1834,6 +1832,14 @@ void chain_plugin::plugin_startup()
         replay = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
     }
   }
+
+  if( !my->checkpoints.empty() )
+  {
+    // log something to let the node operator know that checkpoints are in force
+    ilog( "Checkpoints enabled, blocks will be subject to reduced validation until final checkpoint [${block_num}, ${block_id}]",
+      ( "block_num", my->checkpoints.rbegin()->first )( "block_id", my->checkpoints.rbegin()->second ) );
+  }
+
   if( replay )
   {
     std::shared_ptr< block_write_i > reindex_block_writer =
