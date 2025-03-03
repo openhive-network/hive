@@ -9,7 +9,7 @@
 
 namespace hive { namespace chain { namespace util {
 
-void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data, const bool used_in_snapshot_plugin)
+void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data)
 {
   auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);
 
@@ -17,7 +17,7 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
   {
     std::fstream loaded_decoded_types_details, current_decoded_types_details;
     constexpr char current_data_filename[] = "current_decoded_types_details.log";
-    const std::string loaded_data_filename = used_in_snapshot_plugin ? "loaded_from_snapshot_decoded_types_details" : "loaded_from_shm_decoded_types_details.log";
+    const std::string loaded_data_filename = "loaded_from_shm_decoded_types_details.log";
 
     loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
     if (loaded_decoded_types_details.good())
@@ -32,33 +32,18 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
     current_decoded_types_details.close();
 
     if (result.first == state_definitions_verification_result::mismatch_throw_error)
-    {
-      if (used_in_snapshot_plugin)
-        FC_THROW_EXCEPTION(hive::chain::snapshot_state_definitions_mismatch_exception,
-                            "Details:\n ${details}"
-                            "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-                            ("details", result.second)(current_data_filename)(loaded_data_filename));
-      else
-        FC_THROW_EXCEPTION(hive::chain::shm_state_definitions_mismatch_exception,
-                          "Details:\n ${details}"
-                          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-                          ("details", result.second)(current_data_filename)(loaded_data_filename));
-    }
+      FC_THROW_EXCEPTION(hive::chain::shm_state_definitions_mismatch_exception,
+                        "Details:\n ${details}"
+                        "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+                        ("details", result.second)(current_data_filename)(loaded_data_filename));
     else
-    {
-      if (used_in_snapshot_plugin)
-        wlog("Snapshot state definitions mismatch current hived version. Details:\n ${details}"
-          "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-          ("details", result.second)(current_data_filename)(loaded_data_filename));
-      else
-        wlog("Mismatch between current and loaded from shm state definitions. Details:\n ${details}"
-              "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-              ("details", result.second)(current_data_filename)(loaded_data_filename));
-    }
+      wlog("Mismatch between current and loaded from shm state definitions. Details:\n ${details}"
+            "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+            ("details", result.second)(current_data_filename)(loaded_data_filename));
   }
 }
 
-void verify_match_of_blockchain_configuration(fc::mutable_variant_object current_blockchain_config, const fc::variant& full_current_blockchain_config_as_variant, const std::string& full_stored_blockchain_config_json, const uint32_t hardfork, const bool used_in_snapshot_plugin)
+void verify_match_of_blockchain_configuration(fc::mutable_variant_object current_blockchain_config, const fc::variant& full_current_blockchain_config_as_variant, const std::string& full_stored_blockchain_config_json, const uint32_t hardfork)
 {
   constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
   constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
@@ -105,7 +90,7 @@ void verify_match_of_blockchain_configuration(fc::mutable_variant_object current
   {
     std::fstream loaded_blockchain_config_file, current_blockchain_config_file;
     constexpr char current_config_filename[] = "current_blockchain_config.log";
-    const std::string loaded_config_filename = used_in_snapshot_plugin ? "loaded_from_snapshot_blockchain_config" : "loaded_from_shm_blockchain_config.log";
+    const std::string loaded_config_filename = "loaded_from_shm_blockchain_config.log";
 
     loaded_blockchain_config_file.open(loaded_config_filename, std::ios::out | std::ios::trunc);
     if (loaded_blockchain_config_file.good())
@@ -119,16 +104,10 @@ void verify_match_of_blockchain_configuration(fc::mutable_variant_object current
     current_blockchain_config_file.flush();
     current_blockchain_config_file.close();
 
-    if (used_in_snapshot_plugin)
-      FC_THROW_EXCEPTION(blockchain_config_mismatch_exception,
-                          "Mismatch between blockchain configuration loaded from snapshot and the current one"
-                          "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
-                          (current_config_filename)(loaded_config_filename));
-    else
-      FC_THROW_EXCEPTION(snapshot_blockchain_config_mismatch_exception,
-                          "Mismatch between blockchain configuration loaded from shared memory file and the current one"
-                          "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
-                          (current_config_filename)(loaded_config_filename));
+    FC_THROW_EXCEPTION(snapshot_blockchain_config_mismatch_exception,
+                        "Mismatch between blockchain configuration loaded from shared memory file and the current one"
+                        "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
+                        (current_config_filename)(loaded_config_filename));
   }
 }
 
