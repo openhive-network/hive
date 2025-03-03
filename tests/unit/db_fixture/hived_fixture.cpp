@@ -168,6 +168,11 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
         ah_plugin->set_destroy_database_on_startup();
         ah_plugin->set_destroy_database_on_shutdown();
       }
+      if( _chain != nullptr )
+      {
+        _chain->set_destroy_database_on_startup();
+        _chain->set_destroy_database_on_shutdown();
+      }
 
       app.startup();
     } );

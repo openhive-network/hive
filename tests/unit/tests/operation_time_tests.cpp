@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     //const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
     //idump( (rf) );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "mypost" ) ) )->get_cashout_time(), true );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "mypost" ) ) )->get_cashout_time(), true );
     /*
     for( const auto& author : authors )
     {
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     push_transaction( tx, bob_post_key );
     validate_database();
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
 
     // If comments are paid out independent of order, then the last satoshi of HIVE cannot be divided among them
     const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -323,7 +323,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_post_key );
 
-    auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_net_rshares(),
+    auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_net_rshares(),
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
 
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.operations.push_back( vote );
     push_transaction( tx, bob_post_key );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -346,8 +346,8 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
       validate_database();
     }
 
-    auto bob_cashout_time = db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->get_cashout_time();
-    auto bob_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->get_net_rshares(),
+    auto bob_cashout_time = db->find_comment_cashout( *db->get_comment( "bob", string( "test" ) ) )->get_cashout_time();
+    auto bob_vshares = util::evaluate_reward_curve( db->find_comment_cashout( *db->get_comment( "bob", string( "test" ) ) )->get_net_rshares(),
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
 
@@ -2540,14 +2540,14 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vote.permlink = "test";
     push_transaction( vote, bob_post_key );
 
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::min() );
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::min() );
+    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::maximum() );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 
     {
-      const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
-      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+      const auto _comment = db->get_comment( "alice", string( "test" ) );
+      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
       BOOST_REQUIRE( _comment_cashout == nullptr );
     }
 
@@ -2556,8 +2556,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     push_transaction( vote, sam_post_key );
 
     {
-      const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
-      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+      const auto _comment = db->get_comment( "alice", string( "test" ) );
+      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
       BOOST_REQUIRE( _comment_cashout == nullptr );
     }
 
@@ -2567,8 +2567,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     push_transaction( vote, bob_post_key );
 
     {
-      const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
-      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+      const auto _comment = db->get_comment( "alice", string( "test" ) );
+      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
       BOOST_REQUIRE( _comment_cashout == nullptr );
     }
 
@@ -2578,8 +2578,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     push_transaction( vote, dave_post_key );
 
     {
-      const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
-      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+      const auto _comment = db->get_comment( "alice", string( "test" ) );
+      const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
       BOOST_REQUIRE( _comment_cashout == nullptr );
     }
 
@@ -2661,7 +2661,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
-    generate_blocks( fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true );
+    generate_blocks( fc::time_point_sec( db->find_comment_cashout( *db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true );
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
@@ -2783,7 +2783,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_post_key );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 
     BOOST_TEST_MESSAGE( "Setting HBD percent to greater than 10% market cap." );
 

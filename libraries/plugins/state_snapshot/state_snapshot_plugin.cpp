@@ -11,8 +11,10 @@
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
 
+#include <hive/chain/external_storage/state_snapshot_provider.hpp>
+#include <hive/chain/external_storage/types.hpp>
+
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/protocol/get_config.hpp>
 
@@ -222,6 +224,8 @@ public:
   {
     const std::string& name = plugin.get_name();
 
+    ilog("Load an external data info from ${name} a plugin", (name));
+
     auto i = ext_data_idx.find(name);
 
     if(i == ext_data_idx.end())
@@ -261,74 +265,7 @@ namespace {
 class dumping_worker;
 class loading_worker;
 
-/** Helper base class to cover all common functionality across defined comparators.
-  *
-  */
-class AComparator : public ::rocksdb::Comparator
-  {
-  public:
-    virtual const char* Name() const override final
-      {
-      static const std::string name = boost::core::demangle(typeid(this).name());
-      return name.c_str();
-      }
-
-    virtual void FindShortestSeparator(std::string* start, const Slice& limit) const override final
-      {
-        /// Nothing to do.
-      }
-
-    virtual void FindShortSuccessor(std::string* key) const override final
-      {
-        /// Nothing to do.
-      }
-
-  protected:
-    AComparator() = default;
-  };
-
-template <typename T>
-class PrimitiveTypeComparatorImpl final : public AComparator
-  {
-  public:
-    virtual int Compare(const Slice& a, const Slice& b) const override
-      {
-      if(a.size() != sizeof(T) || b.size() != sizeof(T))
-        return a.compare(b);
-
-      const T& id1 = retrieveKey(a);
-      const T& id2 = retrieveKey(b);
-
-      if(id1 < id2)
-        return -1;
-
-      if(id1 > id2)
-        return 1;
-
-      return 0;
-      }
-
-    virtual bool Equal(const Slice& a, const Slice& b) const override
-      {
-      if(a.size() != sizeof(T) || b.size() != sizeof(T))
-        return a == b;
-
-      const auto& id1 = retrieveKey(a);
-      const auto& id2 = retrieveKey(b);
-
-      return id1 == id2;
-      }
-
-  private:
-    const T& retrieveKey(const Slice& slice) const
-      {
-      assert(sizeof(T) == slice.size());
-      const char* rawData = slice.data();
-      return *reinterpret_cast<const T*>(rawData);
-      }
-  };
-
-typedef PrimitiveTypeComparatorImpl<size_t> size_t_comparator;
+typedef hive::chain::PrimitiveTypeComparatorImpl<size_t> size_t_comparator;
 
 size_t_comparator _size_t_comparator;
 
@@ -1129,6 +1066,8 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     Slice key(plugin_name);
     Slice value(relativePathStr);
 
+    ilog("Save a plugin ${plugin_name} stored in a path ${relativePathStr}",(plugin_name)(relativePathStr));
+
     auto status = db->Put(writeOptions, externalDataCF, key, value);
     if(status.ok() == false)
     {
@@ -1320,7 +1259,7 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
 
       buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
 
-      std::string plugin_name = keySlice.data();
+      std::string plugin_name = { keySlice.data(), keySlice.data() + keySlice.size() };
       std::string relative_path = { buffer.begin(), buffer.end() };
 
       buffer.clear();

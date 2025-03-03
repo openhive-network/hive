@@ -652,8 +652,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   */
 void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
-  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+  auto comment = _db.get_comment( o.author, o.permlink );
+  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
   if( comment_cashout )
     FC_ASSERT( !comment_cashout->has_replies(), "Cannot delete a comment with replies." );
 
@@ -685,7 +685,10 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( !comment.is_root() )
   {
-    const comment_cashout_object* parent = _db.find_comment_cashout( _db.get_comment( comment.get_parent_id() ) );
+    const comment_cashout_object* parent = nullptr;
+    const comment_object* _comment = _db.find_comment( comment.get_parent_id() );
+    if( _comment )
+      parent = _db.find_comment_cashout( *_comment );
     if( parent )
     {
       _db.modify( *parent, [&]( comment_cashout_object& p )
@@ -697,11 +700,11 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_19 ) )
   {
-    const auto* c_ex = _db.find_comment_cashout_ex( comment );
+    const auto* c_ex = _db.find_comment_cashout_ex( *comment );
     _db.remove( *c_ex );
   }
   _db.remove( *comment_cashout );
-  _db.remove( comment );
+  _db.remove( *comment );
 }
 
 struct comment_options_extension_visitor
@@ -757,9 +760,9 @@ struct comment_options_extension_visitor
 
 void comment_options_evaluator::do_apply( const comment_options_operation& o )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
+  auto comment = _db.get_comment( o.author, o.permlink );
 
-  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   /*
     If `comment_cashout` doesn't exist then setting members needed for payout is not necessary
@@ -797,24 +800,23 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   const auto& auth = _db.get_account( o.author ); /// prove it exists
 
-  const auto& by_permlink_idx = _db.get_index< comment_index >().indices().get< by_permlink >();
-  auto itr = by_permlink_idx.find( comment_object::compute_author_and_permlink_hash( auth.get_id(), o.permlink ) );
+  auto _comment = _db.find_comment( auth.get_id(), o.permlink );
   auto _now = _db.head_block_time();
 
-  const comment_object* parent = nullptr;
+  comment parent;
   if( o.parent_author != HIVE_ROOT_POST_PARENT )
   {
-    parent = &_db.get_comment( o.parent_author, o.parent_permlink );
+    parent = _db.get_comment( o.parent_author, o.parent_permlink );
     uint16_t depth_limit = !_db.has_hardfork( HIVE_HARDFORK_0_17__767 ) ? HIVE_MAX_COMMENT_DEPTH_PRE_HF17 : HIVE_MAX_COMMENT_DEPTH;
     if( _db.is_in_control() && depth_limit > HIVE_SOFT_MAX_COMMENT_DEPTH )
       depth_limit = HIVE_SOFT_MAX_COMMENT_DEPTH; // soft check moved from witness plugin
-    FC_ASSERT( parent->get_depth() < depth_limit,
-      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent->get_depth() )( "y", depth_limit ) );
+    FC_ASSERT( parent.get_depth() < depth_limit,
+      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent.get_depth() )( "y", depth_limit ) );
   }
 
   FC_ASSERT( fc::is_utf8( o.json_metadata ), "JSON Metadata must be UTF-8" );
 
-  if ( itr == by_permlink_idx.end() )
+  if ( !_comment )
   {
     if( parent )
     {
@@ -878,7 +880,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
       validate_permlink_0_1( o.permlink );
     }
 
-    const auto& new_comment = _db.create< comment_object >( auth, o.permlink, parent );
+    const auto& new_comment = _db.create< comment_object >(
+                                                        auth, o.permlink,
+                                                        parent ? parent.get_id() : comment_id_type::null_id(),
+                                                        parent ? parent.get_depth() + 1 : 0
+                                                      );
 
     fc::time_point_sec cashout_time;
     if( _db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
@@ -912,8 +918,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
   }
   else // start edit case
   {
-    const auto& comment = *itr;
-
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
       FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
@@ -921,17 +925,17 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
     {
-      const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+      const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *_comment );
       FC_ASSERT( comment_cashout, "Comment cashout object must exist" );
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__306 ) )
-        FC_ASSERT( _db.calculate_discussion_payout_time( comment, *comment_cashout ) != fc::time_point_sec::maximum(), "The comment is archived." );
+        FC_ASSERT( _db.calculate_discussion_payout_time( *_comment, *comment_cashout ) != fc::time_point_sec::maximum(), "The comment is archived." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_10 ) )
-        FC_ASSERT( !_db.find_comment_cashout_ex( comment )->was_paid(), "Can only edit during the first 24 hours." );
+        FC_ASSERT( !_db.find_comment_cashout_ex( *_comment )->was_paid(), "Can only edit during the first 24 hours." );
     }
 
     if( !parent )
     {
-      FC_ASSERT( comment.is_root(), "The parent of a comment cannot change." );
+      FC_ASSERT( _comment.is_root(), "The parent of a comment cannot change." );
       //note for HiveMind: if someone tries to change 'category' (that no longer is part of consensus)
       //by providing different 'o.parent_permlink' than before, such change should be silently ignored
     }
@@ -939,8 +943,8 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       //ABW: see creation tx 11ad62ee8f8e892cd5bd75fc2d3098427f7e47ac and edit tx dca209592c7129be36b069d033dfdb0f1f143b4e
       //both happened prior to HF21 when check was slightly more relaxed
-      auto& parent_comment = _db.get_comment( o.parent_author, o.parent_permlink );
-      FC_ASSERT( comment.get_parent_id() == parent_comment.get_id(), "The parent of a comment cannot change." );
+      auto parent_comment = _db.get_comment( o.parent_author, o.parent_permlink );
+      FC_ASSERT( _comment.get_parent_id() == parent_comment.get_id(), "The parent of a comment cannot change." );
     }
 
     _db.modify( auth, [&]( account_object& a )
@@ -1460,8 +1464,8 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
 void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
-  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+  auto comment = _db.get_comment( o.author, o.permlink );
+  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter = _db.get_account( o.voter );
 
@@ -1473,7 +1477,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) &&
-    _db.calculate_discussion_payout_time( comment, *comment_cashout ) == fc::time_point_sec::maximum() ) )
+    _db.calculate_discussion_payout_time( *comment, *comment_cashout ) == fc::time_point_sec::maximum() ) )
   {
     return; // comment already paid
   }
@@ -1534,7 +1538,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
         FC_ASSERT( _now < comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
-        FC_ASSERT( _now < _db.calculate_discussion_payout_time( comment, *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+        FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment, *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
   }
 
@@ -1547,7 +1551,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
   fc::uint128_t old_rshares = std::max( comment_cashout->get_net_rshares(), int64_t( 0 ) );
-  const auto* comment_cashout_ex = _db.find_comment_cashout_ex( comment );
+  const auto* comment_cashout_ex = _db.find_comment_cashout_ex( *comment );
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
   {
@@ -1570,7 +1574,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       }
       else
       {
-        fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( comment, *comment_cashout ).sec_since_epoch();
+        fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( *comment, *comment_cashout ).sec_since_epoch();
         fc::uint128_t avg_cashout_sec = 0;
         if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
         {
@@ -1703,7 +1707,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       }
     }
 
-    _db.create<comment_vote_object>( voter, comment, _now, o.weight, vote_weight, rshares );
+    _db.create<comment_vote_object>( voter, *comment, _now, o.weight, vote_weight, rshares );
 
     if( max_vote_weight ) // Optimization
     {
@@ -1753,8 +1757,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
 void hf20_vote_evaluator( const vote_operation& o, database& _db )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
-  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+  auto comment = _db.get_comment( o.author, o.permlink );
+  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter   = _db.get_account( o.voter );
   const auto& dgpo    = _db.get_dynamic_global_properties();
@@ -1766,7 +1770,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( o.weight > 0 ) FC_ASSERT( comment_cashout->allows_votes(), "Votes are not allowed on the comment." );
   }
 
-  if( !comment_cashout || _db.calculate_discussion_payout_time( comment, *comment_cashout ) == fc::time_point_sec::maximum() )
+  if( !comment_cashout || _db.calculate_discussion_payout_time( *comment, *comment_cashout ) == fc::time_point_sec::maximum() )
   {
     return; // comment already paid
   }
@@ -1989,7 +1993,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( itr == comment_vote_idx.end() ) // new vote
   {
-    _db.create<comment_vote_object>( voter, comment, _now, o.weight, vote_weight, rshares );
+    _db.create<comment_vote_object>( voter, *comment, _now, o.weight, vote_weight, rshares );
   }
   else // edit of existing vote
   {
