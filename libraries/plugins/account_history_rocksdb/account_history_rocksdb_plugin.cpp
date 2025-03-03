@@ -12,7 +12,11 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/chain/state_snapshot_provider.hpp>
+
+#include <hive/chain/external_storage/state_snapshot_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_snapshot.hpp>
+#include <hive/chain/external_storage/types.hpp>
+#include <hive/plugins/account_history_rocksdb/rocksdb_ah_storage_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 
@@ -34,6 +38,7 @@
 #include <condition_variable>
 #include <mutex>
 
+#include <memory>
 #include <limits>
 #include <string>
 #include <typeindex>
@@ -42,330 +47,31 @@
 namespace bpo = boost::program_options;
 
 #define HIVE_NAMESPACE_PREFIX "hive::protocol::"
-#define OPEN_FILE_LIMIT 750
-
-enum Columns
-{
-  CURRENT_LIB = 1,
-  LAST_REINDEX_POINT = CURRENT_LIB,
-  OPERATION_BY_ID,
-  OPERATION_BY_BLOCK,
-  AH_INFO_BY_NAME,
-  AH_OPERATION_BY_ID,
-  BY_TRANSACTION_ID
-};
 
 #define WRITE_BUFFER_FLUSH_LIMIT     10
 #define ACCOUNT_HISTORY_LENGTH_LIMIT 30
 #define ACCOUNT_HISTORY_TIME_LIMIT   30
-
-/** Because localtion_id_pair stores block_number paired with operation_id_vop_pair, which stores operation id on 63 bits,
-  *  max allowed operation-id is max_int64 (instead of max_uint64).
-  */
-#define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
-
-#define STORE_MAJOR_VERSION          1
-#define STORE_MINOR_VERSION          1
 
 namespace hive { namespace plugins { namespace account_history_rocksdb {
 
 using hive::protocol::account_name_type;
 using hive::protocol::block_id_type;
 using hive::protocol::operation;
-using hive::protocol::signed_block;
-using hive::protocol::signed_block_header;
-using hive::protocol::signed_transaction;
 
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
 using hive::protocol::legacy_asset;
-using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
-using ::rocksdb::DBOptions;
-using ::rocksdb::Options;
 using ::rocksdb::PinnableSlice;
 using ::rocksdb::ReadOptions;
 using ::rocksdb::Slice;
-using ::rocksdb::Comparator;
 using ::rocksdb::ColumnFamilyDescriptor;
-using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
-using ::rocksdb::WriteBatch;
-
-/** Represents an AH entry in mapped to account name.
-  *  Holds additional informations, which are needed to simplify pruning process.
-  *  All operations specific to given account, are next mapped to ID of given object.
-  */
-class account_history_info
-{
-public:
-  int64_t        id = 0;
-  uint32_t       oldestEntryId = 0;
-  uint32_t       newestEntryId = 0;
-  /// Timestamp of oldest operation, just to quickly decide if start detail prune checking at all.
-  time_point_sec oldestEntryTimestamp;
-
-  uint32_t getAssociatedOpCount() const
-  {
-    return newestEntryId - oldestEntryId + 1;
-  }
-};
 
 namespace
 {
-template <class T>
-serialize_buffer_t dump(const T& obj)
-  {
-  serialize_buffer_t serializedObj;
-  auto size = fc::raw::pack_size(obj);
-  serializedObj.resize(size);
-  fc::datastream<char*> ds(serializedObj.data(), size);
-  fc::raw::pack(ds, obj);
-  return serializedObj;
-  }
-
-template <class T>
-void load(T& obj, const char* data, size_t size)
-  {
-  fc::datastream<const char*> ds(data, size);
-  fc::raw::unpack(ds, obj);
-  }
-
-template <class T>
-void load(T& obj, const serialize_buffer_t& source)
-  {
-  load(obj, source.data(), source.size());
-  }
-
-/** Helper class to simplify construction of Slice objects holding primitive type values.
-  *
-  */
-template <typename T>
-class PrimitiveTypeSlice final : public Slice
-  {
-  public:
-    explicit PrimitiveTypeSlice(T value) : _value(value)
-    {
-    data_ = reinterpret_cast<const char*>(&_value);
-    size_ = sizeof(T);
-    }
-
-    static const T& unpackSlice(const Slice& s)
-    {
-    assert(sizeof(T) == s.size());
-    return *reinterpret_cast<const T*>(s.data());
-    }
-
-    static const T& unpackSlice(const std::string& s)
-    {
-    assert(sizeof(T) == s.size());
-    return *reinterpret_cast<const T*>(s.data());
-    }
-
-  private:
-    T _value;
-  };
-
-class TransactionIdSlice : public Slice
-  {
-  public:
-    explicit TransactionIdSlice(const transaction_id_type& trxId) : _trxId(&trxId)
-    {
-    data_ = _trxId->data();
-    size_ = _trxId->data_size();
-    }
-
-    static void unpackSlice(const Slice& s, transaction_id_type* storage)
-    {
-    assert(storage != nullptr);
-    assert(storage->data_size() == s.size());
-    memcpy(storage->data(), s.data(), s.size());
-    }
-
-  private:
-    const transaction_id_type* _trxId;
-  };
-
-/** Helper base class to cover all common functionality across defined comparators.
-  *
-  */
-class AComparator : public Comparator
-  {
-  public:
-    virtual const char* Name() const override final
-    {
-    static const std::string name = boost::core::demangle(typeid(this).name());
-    return name.c_str();
-    }
-
-    virtual void FindShortestSeparator(std::string* start, const Slice& limit) const override final
-    {
-      /// Nothing to do.
-    }
-
-    virtual void FindShortSuccessor(std::string* key) const override final
-    {
-      /// Nothing to do.
-    }
-
-  protected:
-    AComparator() = default;
-  };
-
-  /// Pairs account_name storage type and the ID to make possible nonunique index definition over names.
-typedef std::pair<account_name_type::Storage, size_t> account_name_storage_id_pair;
-
-template <typename T>
-class PrimitiveTypeComparatorImpl final : public AComparator
-  {
-  public:
-    virtual int Compare(const Slice& a, const Slice& b) const override
-    {
-    if(a.size() != sizeof(T) || b.size() != sizeof(T))
-      return a.compare(b);
-
-    const T& id1 = retrieveKey(a);
-    const T& id2 = retrieveKey(b);
-
-    if(id1 < id2)
-      return -1;
-
-    if(id1 > id2)
-      return 1;
-
-    return 0;
-    }
-
-    virtual bool Equal(const Slice& a, const Slice& b) const override
-    {
-    if(a.size() != sizeof(T) || b.size() != sizeof(T))
-      return a == b;
-
-    const auto& id1 = retrieveKey(a);
-    const auto& id2 = retrieveKey(b);
-
-    return id1 == id2;
-    }
-
-  private:
-    const T& retrieveKey(const Slice& slice) const
-    {
-    assert(sizeof(T) == slice.size());
-    const char* rawData = slice.data();
-    return *reinterpret_cast<const T*>(rawData);
-    }
-  };
-
-typedef PrimitiveTypeComparatorImpl<uint32_t> by_id_ComparatorImpl;
-
-typedef PrimitiveTypeComparatorImpl<account_name_type::Storage> by_account_name_ComparatorImpl;
-
-typedef PrimitiveTypeSlice< uint32_t > lib_id_slice_t;
-typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
-
-#define LIB_ID lib_id_slice_t( 0 )
-#define REINDEX_POINT_ID lib_id_slice_t( 1 )
-
-struct operation_id_vop_pair
-{
-  operation_id_vop_pair(uint64_t id = 0, bool is_virtual_op = false) : _op_id(id), _is_virtual_op(is_virtual_op)
-  {
-    FC_ASSERT(id < static_cast<uint64_t>(MAX_OPERATION_ID));
-  }
-
-  bool operator < (const operation_id_vop_pair& rhs) const
-  {
-    return _op_id < rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
-  }
-
-  bool operator > (const operation_id_vop_pair& rhs) const
-  {
-    return _op_id > rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
-  }
-
-  bool operator == (const operation_id_vop_pair& rhs) const
-  {
-    return _op_id == rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
-  }
-
-  uint64_t get_id() const { return _op_id; }
-  bool is_virtual() const { return _is_virtual_op; }
-
-private:
-  uint64_t _op_id : 63;
-  uint64_t _is_virtual_op : 1;
-};
-
-/** Location index is nonunique. Since RocksDB supports only unique indexes, it must be extended
-  *  by some unique part (ie ID).
-  *
-  */
-typedef std::pair< uint32_t, operation_id_vop_pair > block_op_id_pair;
-typedef PrimitiveTypeComparatorImpl< block_op_id_pair > op_by_block_num_ComparatorImpl;
-
-/// Compares account_history_info::id and rocksdb_operation_object::id pair
-typedef std::pair< int64_t, uint32_t > ah_op_id_pair;
-typedef PrimitiveTypeComparatorImpl< ah_op_id_pair > ah_op_by_id_ComparatorImpl;
-
-typedef PrimitiveTypeSlice< int64_t > id_slice_t;
-typedef PrimitiveTypeSlice< block_op_id_pair > op_by_block_num_slice_t;
-typedef PrimitiveTypeSlice< uint32_t > by_block_slice_t;
-typedef PrimitiveTypeSlice< account_name_type::Storage > ah_info_by_name_slice_t;
-typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
-
-
-class TransactionIdComparator final : public AComparator
-  {
-  public:
-    virtual int Compare(const Slice& a, const Slice& b) const override
-    {
-    /// Nothing more to do. Just compare buffers holding 20Bytes hash
-    return a.compare(b);
-    }
-
-    virtual bool Equal(const Slice& a, const Slice& b) const override
-    {
-    return a == b;
-    }
-  };
-
-typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
-typedef PrimitiveTypeSlice<block_no_tx_in_block_pair> block_no_tx_in_block_slice_t;
-
-const Comparator* by_id_Comparator()
-{
-  static by_id_ComparatorImpl c;
-  return &c;
-}
-
-const Comparator* op_by_block_num_Comparator()
-{
-  static op_by_block_num_ComparatorImpl c;
-  return &c;
-}
-
-const Comparator* by_account_name_Comparator()
-{
-  static by_account_name_ComparatorImpl c;
-  return &c;
-}
-
-const Comparator* ah_op_by_id_Comparator()
-{
-  static ah_op_by_id_ComparatorImpl c;
-  return &c;
-}
-
-const Comparator* by_txId_Comparator()
-  {
-  static TransactionIdComparator c;
-  return &c;
-  }
-
-#define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
-
 class operation_name_provider
 {
 public:
@@ -392,198 +98,92 @@ private:
   mutable std::string _name;
 };
 
-class CachableWriteBatch : public WriteBatch
-{
-public:
-  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles) :
-    _storage(storage), _columnHandles(columnHandles) {}
-
-  bool getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
-  {
-    auto fi = _ahInfoCache.find(name);
-    if(fi != _ahInfoCache.end())
-    {
-      *ahInfo = fi->second;
-      return true;
-    }
-
-    ah_info_by_name_slice_t key(name.data);
-    PinnableSlice buffer;
-    auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
-    if(s.ok())
-    {
-      load(*ahInfo, buffer.data(), buffer.size());
-      return true;
-    }
-
-    FC_ASSERT(s.IsNotFound());
-    return false;
-  }
-
-  void putAHInfo(const account_name_type& name, const account_history_info& ahInfo)
-  {
-    _ahInfoCache[name] = ahInfo;
-    auto serializeBuf = dump(ahInfo);
-    ah_info_by_name_slice_t nameSlice(name.data);
-    auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
-    checkStatus(s);
-  }
-
-  void Clear()
-  {
-    _ahInfoCache.clear();
-    WriteBatch::Clear();
-  }
-
-private:
-  const std::unique_ptr<DB>&                        _storage;
-  const std::vector<ColumnFamilyHandle*>&           _columnHandles;
-  std::map<account_name_type, account_history_info> _ahInfoCache;
-};
-
 } /// anonymous
 
 class account_history_rocksdb_plugin::impl final
 {
 public:
-  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app) :
+  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app, bool destroyOnStartup) :
     _self(self),
     _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
-    _writeBuffer(_storage, _columnHandles),
     _block_reader( app.get_plugin< hive::plugins::chain::chain_plugin >().block_reader() ),
     _filter("ah-rb"),
     theApp( app )
     {
-    collectOptions(options);
+      auto _rasp = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
+      _rasp->init( destroyOnStartup );
 
-    _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
-      {
-        on_pre_reindex( note );
-      }, _self, 0);
+      _provider = _rasp;
+      _snapshot = std::shared_ptr<rocksdb_snapshot>(
+              new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storagePath, _provider ) );
 
-    _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
-      {
-        on_post_reindex( note );
-      }, _self, 0);
+      collectOptions(options);
 
-    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
-      {
-        supplement_snapshot(note);
-      }, _self, 0);
+      _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
+        {
+          on_pre_reindex( note );
+        }, _self, 0);
 
-    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
-      {
-        load_additional_data_from_snapshot(note);
-      }, _self, 0);
+      _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
+        {
+          on_post_reindex( note );
+        }, _self, 0);
 
-    _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
-      [&]( const operation_notification& note )
-      {
-        on_pre_apply_operation(note);
-      },
-      _self
-    );
+      _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
+        {
+          _snapshot->supplement_snapshot(note);
+        }, _self, 0);
 
-    _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
-      [&]( uint32_t block_num )
-      {
-        on_irreversible_block( block_num );
-      },
-      _self
-    );
+      _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
+        {
+          _snapshot->load_additional_data_from_snapshot(note);
+        }, _self, 0);
 
-    _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_post_apply_block(bn);
-      },
-      _self
-    );
+      _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
+        [&]( const operation_notification& note )
+        {
+          on_pre_apply_operation(note);
+        },
+        _self
+      );
 
-    _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_post_apply_block(bn);
-      },
-      _self
-    );
+      _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
+        [&]( uint32_t block_num )
+        {
+          on_irreversible_block( block_num );
+        },
+        _self
+      );
 
-    _cached_irreversible_block.store(0);
-    _cached_reindex_point = 0;
+      _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_post_apply_block(bn);
+        },
+        _self
+      );
 
-    HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
+      _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_post_apply_block(bn);
+        },
+        _self
+      );
+
+      HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
 
   ~impl()
   {
-
     chain::util::disconnect_signal(_on_pre_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
-    shutdownDb();
-  }
 
-  void openDb( bool cleanDatabase )
-  {
-    //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
-    bfs::create_directories( _blockchainStoragePath );
-
-    if( cleanDatabase )
-      ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-
-    auto _result = createDbSchema(_storagePath);
-    if(  !std::get<1>( _result ) )
-      return;
-
-    auto columnDefs = prepareColumnDefinitions(true);
-
-    DB* storageDb = nullptr;
-    auto strPath = _storagePath.string();
-    Options options;
-    /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
-    options.IncreaseParallelism();
-    options.OptimizeLevelStyleCompaction();
-    options.max_open_files = OPEN_FILE_LIMIT;
-
-    DBOptions dbOptions(options);
-
-    auto status = DB::Open(dbOptions, strPath, columnDefs, &_columnHandles, &storageDb);
-
-    if(status.ok())
-    {
-      ilog("RocksDB opened successfully storage at location: `${p}'.", ("p", strPath));
-      verifyStoreVersion(storageDb);
-      loadSeqIdentifiers(storageDb);
-      _storage.reset(storageDb);
-
-      // I do not like using exceptions for control paths, but column definitions are set multiple times
-      // opening the db, so that is not a good place to write the initial lib.
-      try
-      {
-        load_lib();
-        try
-        {
-          load_reindex_point();
-        }
-        catch( fc::assert_exception& )
-        {
-          update_reindex_point( 0 );
-        }
-      }
-      catch( fc::assert_exception& )
-      {
-        update_lib( 0 );
-        update_reindex_point( 0 );
-      }
-    }
-    else
-    {
-      elog("RocksDB cannot open database at location: `${p}'.\nReturned error: ${e}",
-        ("p", strPath)("e", status.ToString()));
-    }
+    _provider->shutdownDb();
   }
 
   void printReport(uint32_t blockNo, const char* detailText) const;
@@ -607,67 +207,14 @@ public:
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
-  void shutdownDb( bool removeDB = false )
-  {
-    if(_storage)
-    {
-      flushStorage();
-      cleanupColumnHandles();
-      _storage->Close();
-      _storage.reset();
-
-      if( removeDB )
-      {
-        ilog( "Attempting to destroy current AHR storage..." );
-        ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-        ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
-      }
-    }
-  }
+  void shutdownDb( bool destroyOnShutdown );
 
 private:
-  void supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note);
-  void load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note);
-
-  //loads last irreversible block from DB to _cached_irreversible_block
-  void load_lib();
-  //stores new value of last irreversible block in DB and _cached_irreversible_block
-  void update_lib( uint32_t );
-  //loads reindex point from DB to _cached_reindex_point
-  void load_reindex_point();
-  //stores new value of reindex point in DB and _cached_reindex_point
-  void update_reindex_point( uint32_t );
-
-  typedef std::vector<ColumnFamilyDescriptor> ColumnDefinitions;
-  ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn);
-
-  /// std::tuple<A, B>
-  /// A - returns true if database will need data import.
-  /// B - returns false if problems with opening db appeared.
-  std::tuple<bool, bool> createDbSchema(const bfs::path& path);
-
-  void cleanupColumnHandles()
-  {
-    if(_storage)
-      cleanupColumnHandles(_storage.get());
-  }
-
-  void cleanupColumnHandles(::rocksdb::DB* db)
-  {
-    for(auto* h : _columnHandles)
-    {
-      auto s = db->DestroyColumnFamilyHandle(h);
-      if(s.ok() == false)
-      {
-        elog("Cannot destroy column family handle. Error: `${e}'", ("e", s.ToString()));
-      }
-    }
-    _columnHandles.clear();
-  }
 
   uint64_t build_next_operation_id(const rocksdb_operation_object& obj, const hive::protocol::operation& processed_op)
   {
-    auto number_in_block = _operationSeqId++;
+    auto number_in_block = _provider->get_operationSeqId();
+    _provider->set_operationSeqId( _provider->get_operationSeqId() + 1 );
 
     //msb.....................lsb
     // || block | seq | type ||
@@ -705,19 +252,20 @@ private:
     }
 
     id_slice_t idSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandle( Columns::OPERATION_BY_ID ), idSlice, Slice(serializedObj.data(), serializedObj.size()));
     checkStatus(s);
 
     op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, operation_id_vop_pair(obj.id, obj.is_virtual)));
 
-    s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_BLOCK], blockLocSlice, idSlice);
+    s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandle( Columns::OPERATION_BY_BLOCK ), blockLocSlice, idSlice);
     checkStatus(s);
 
     for(const auto& name : impacted)
       buildAccountHistoryRecord( name, obj );
 
-    if(++_collectedOps >= _collectedOpsWriteLimit)
-      flushWriteBuffer();
+    _provider->set_collectedOps( _provider->get_collectedOps() + 1 );
+    if(_provider->get_collectedOps() >= _collectedOpsWriteLimit)
+      _provider->flushWriteBuffer();
 
     ++_totalOps;
   }
@@ -728,90 +276,14 @@ private:
   void prunePotentiallyTooOldItems(account_history_info* ahInfo, const account_name_type& name,
     const fc::time_point_sec& now);
 
-  void saveStoreVersion()
-  {
-    PrimitiveTypeSlice<uint32_t> majorVSlice(STORE_MAJOR_VERSION);
-    PrimitiveTypeSlice<uint32_t> minorVSlice(STORE_MINOR_VERSION);
-
-    auto s = _writeBuffer.Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
-    checkStatus(s);
-    s = _writeBuffer.Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
-    checkStatus(s);
-  }
-
-  void verifyStoreVersion(DB* storageDb)
-  {
-    ReadOptions rOptions;
-
-    std::string buffer;
-    auto s = storageDb->Get(rOptions, "STORE_MAJOR_VERSION", &buffer);
-    checkStatus(s);
-    const auto major = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
-
-    FC_ASSERT(major == STORE_MAJOR_VERSION, "Store major version mismatch");
-
-    s = storageDb->Get(rOptions, "STORE_MINOR_VERSION", &buffer);
-    checkStatus(s);
-    const auto minor = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
-
-    FC_ASSERT(minor == STORE_MINOR_VERSION, "Store minor version mismatch");
-  }
-
   void storeSequenceIds()
   {
     Slice ahSeqIdName("AH_SEQ_ID");
 
-    id_slice_t ahId(_accountHistorySeqId);
+    hive::chain::id_slice_t ahId( _provider->get_accountHistorySeqId() );
 
-    auto s = _writeBuffer.Put(ahSeqIdName, ahId);
+    auto s = _provider->getCachableWriteBuffer().Put(ahSeqIdName, ahId);
     checkStatus(s);
-  }
-
-  void loadSeqIdentifiers(DB* storageDb)
-  {
-    Slice ahSeqIdName("AH_SEQ_ID");
-
-    ReadOptions rOptions;
-
-    std::string buffer;
-    /// OP-seq-id is local to block num
-    _operationSeqId = 0; /// id_slice_t::unpackSlice(buffer);
-
-    auto s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
-    checkStatus(s);
-    _accountHistorySeqId = id_slice_t::unpackSlice(buffer);
-
-    ilog("Loaded AccountHistoryObject seqId: ${ah}.", ("ah", _accountHistorySeqId));
-  }
-
-  void flushWriteBuffer(DB* storage = nullptr)
-  {
-    storeSequenceIds();
-
-    if(storage == nullptr)
-      storage = _storage.get();
-
-    ::rocksdb::WriteOptions wOptions;
-    auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
-    checkStatus(s);
-    _writeBuffer.Clear();
-    _collectedOps = 0;
-  }
-
-  void flushStorage()
-  {
-    if(_storage == nullptr)
-      return;
-
-    // lib (last irreversible block) has not been saved so far
-    flushWriteBuffer();
-
-    ::rocksdb::FlushOptions fOptions;
-    for(const auto& cf : _columnHandles)
-    {
-      auto s = _storage->Flush(fOptions, cf);
-      checkStatus(s);
-    }
   }
 
   void on_pre_apply_operation(const operation_notification& opNote);
@@ -852,9 +324,6 @@ private:
   chain::database&                 _mainDb;
   bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
-  std::unique_ptr<DB>              _storage;
-  std::vector<ColumnFamilyHandle*> _columnHandles;
-  CachableWriteBatch               _writeBuffer;
   const hive::chain::block_read_i& _block_reader;
 
   boost::signals2::connection      _on_pre_apply_operation_con;
@@ -871,31 +340,13 @@ private:
   size_t                           _excludedOps = 0;
   /// Total number of accounts (impacted by ops) excluded from processing because of filtering.
   mutable size_t                   _excludedAccountCount = 0;
-  /// IDs to be assigned to object.id field.
-  uint64_t                         _operationSeqId = 0;
-  uint64_t                         _accountHistorySeqId = 0;
 
-  /// Number of data-chunks for ops being stored inside _writeBuffer. To decide when to flush.
-  unsigned int                     _collectedOps = 0;
   /** Limit which value depends on block data source:
     *    - if blocks come from network, there is no need for delaying write, becasue they appear quite rare (limit == 1)
     *    - if reindex process or direct import has been spawned, this massive operation can need reduction of direct
         writes (limit == WRITE_BUFFER_FLUSH_LIMIT).
     */
   unsigned int                     _collectedOpsWriteLimit = 1;
-
-  /// <summary>
-  /// Last block of most recent reindex - all such blocks are in inreversible storage already, since
-  /// the data is put there directly during reindex (it also means there is no volatile data for such
-  /// blocks), but _cached_irreversible_block might point to earlier block because it reflects
-  /// the state of dgpo. Once node starts syncing normally, the _cached_irreversible_block will catch up.
-  /// </summary>
-  unsigned int                     _cached_reindex_point = 0;
-
-  /// <summary>
-  /// Block being irreversible atm.
-  /// </summary>
-  std::atomic_uint                 _cached_irreversible_block;
 
   account_filter                   _filter;
   flat_set<std::string>            _op_list;
@@ -930,6 +381,9 @@ private:
   std::optional<std::pair<uint32_t, fc::time_point_sec>> _last_block_and_timestamp;
 
   appbase::application& theApp;
+
+  external_ah_storage_provider::ptr _provider;
+  external_storage_snapshot::ptr    _snapshot;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -1064,12 +518,12 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 
   return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
-    *collectedIrreversibleBlock = _cached_irreversible_block;
-    if( *collectedIrreversibleBlock < _cached_reindex_point )
+    *collectedIrreversibleBlock = _provider->get_cached_irreversible_block();
+    if( *collectedIrreversibleBlock < _provider->get_cached_reindex_point() )
     {
       wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
-        ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
-      *collectedIrreversibleBlock = _cached_reindex_point;
+        ( "a", *collectedIrreversibleBlock )( "b", _provider->get_cached_reindex_point() ) );
+      *collectedIrreversibleBlock = _provider->get_cached_reindex_point();
     }
 
     if( *blockRangeEnd < *collectedIrreversibleBlock )
@@ -1114,7 +568,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
 
   ah_info_by_name_slice_t nameSlice(name.data);
   PinnableSlice buffer;
-  auto s = _storage->Get(rOptions, _columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, &buffer);
+  auto s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandle( Columns::AH_INFO_BY_NAME ), nameSlice, &buffer);
 
   if(s.IsNotFound())
   {
@@ -1137,7 +591,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   ah_op_by_id_slice_t key(std::make_pair(ahInfo.id, start));
   id_slice_t ahIdSlice(ahInfo.id);
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[Columns::AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandle( Columns::AH_OPERATION_BY_ID )));
 
   it->SeekForPrev(key);
 
@@ -1188,7 +642,7 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   if(number_of_irreversible_ops <= start)
   {
     uint32_t collectedIrreversibleBlock = 0;
-    uint32_t rangeBegin = _cached_irreversible_block;
+    uint32_t rangeBegin = _provider->get_cached_irreversible_block();
     if( BOOST_UNLIKELY( rangeBegin == 0) )
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
@@ -1237,7 +691,7 @@ bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, ro
 {
   std::string data;
   id_slice_t idSlice(opId);
-  ::rocksdb::Status s = _storage->Get(ReadOptions(), _columnHandles[Columns::OPERATION_BY_ID], idSlice, &data);
+  ::rocksdb::Status s = _provider->getStorage()->Get(ReadOptions(), _provider->getColumnHandle( Columns::OPERATION_BY_ID), idSlice, &data);
 
   if(s.ok())
   {
@@ -1268,7 +722,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
       return; /// If requested block was reversible, there is no more data in the persistent storage to process.
   }
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _columnHandles[Columns::OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(ReadOptions(), _provider->getColumnHandle( Columns::OPERATION_BY_BLOCK )));
   by_block_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
 
@@ -1367,7 +821,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   ReadOptions rOptions;
   rOptions.iterate_upper_bound = &upperBoundSlice;
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[Columns::OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandle( Columns::OPERATION_BY_BLOCK )));
 
   dlog("Looking RocksDB storage for blocks from range: <${b}, ${e})", ("b", blockRangeBegin)("e", lookupUpperBound));
 
@@ -1415,7 +869,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
     rOptions = ReadOptions();
     rOptions.iterate_lower_bound = &lowerBoundSlice;
-    it.reset(_storage->NewIterator(rOptions, _columnHandles[Columns::OPERATION_BY_BLOCK]));
+    it.reset(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandle( Columns::OPERATION_BY_BLOCK )));
 
     op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock, 0));
     for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
@@ -1437,7 +891,7 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   ReadOptions rOptions;
   TransactionIdSlice idSlice(trxId);
   std::string dataBuffer;
-  ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[Columns::BY_TRANSACTION_ID], idSlice, &dataBuffer);
+  ::rocksdb::Status s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandle( Columns::BY_TRANSACTION_ID ), idSlice, &dataBuffer);
 
   if(s.ok())
     {
@@ -1474,233 +928,9 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   return false;
 }
 
-void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note)
+void account_history_rocksdb_plugin::impl::shutdownDb( bool destroyOnShutdown )
 {
-  fc::path actual_path(note.external_data_storage_base_path);
-  actual_path /= "account_history_rocksdb_data";
-
-  if(bfs::exists(actual_path) == false)
-    bfs::create_directories(actual_path);
-
-  auto pathString = actual_path.to_native_ansi_path();
-
-  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
-
-  std::unique_ptr<::rocksdb::BackupEngine> backupEngine;
-  ::rocksdb::BackupEngine* _backupEngine = nullptr;
-  auto status = ::rocksdb::BackupEngine::Open(backupEnv, backupableDbOptions, &_backupEngine);
-
-  checkStatus(status);
-
-  backupEngine.reset(_backupEngine);
-
-  ilog("Attempting to create an AccountHistoryRocksDB backup in the location: `${p}'", ("p", pathString));
-
-  std::string meta_data = "Account History RocksDB plugin data. Current head block: ";
-  meta_data += std::to_string(_mainDb.head_block_num());
-
-  status = _backupEngine->CreateNewBackupWithMetadata(this->_storage.get(), meta_data, true);
-  checkStatus(status);
-
-  std::vector<::rocksdb::BackupInfo> backupInfos;
-  _backupEngine->GetBackupInfo(&backupInfos);
-
-  FC_ASSERT(backupInfos.size() == 1);
-
-  note.dump_helper.store_external_data_info(_self, actual_path);
-}
-
-void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note)
-{
-  fc::path extdata_path;
-  if(note.load_helper.load_external_data_info(_self, &extdata_path) == false)
-  {
-    wlog("No external data present for Account History RocksDB plugin...");
-    return;
-  }
-
-  auto pathString = extdata_path.to_native_ansi_path();
-
-  ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", pathString));
-
-  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
-
-  std::unique_ptr<::rocksdb::BackupEngineReadOnly> backupEngine;
-  ::rocksdb::BackupEngineReadOnly* _backupEngine = nullptr;
-  auto status = ::rocksdb::BackupEngineReadOnly::Open(backupEnv, backupableDbOptions, &_backupEngine);
-
-  checkStatus(status);
-
-  backupEngine.reset(_backupEngine);
-
-  ilog("Attempting to restore an AccountHistoryRocksDB backup from the backup location: `${p}'", ("p", pathString));
-
-  shutdownDb( true );
-
-  ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
-
-  bfs::path walDir(_storagePath);
-  walDir /= "WAL";
-  status = backupEngine->RestoreDBFromLatestBackup(_storagePath.string(), walDir.string());
-  checkStatus(status);
-
-  ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
-
-  openDb( false );
-}
-
-void account_history_rocksdb_plugin::impl::load_lib()
-{
-  std::string data;
-  auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
-
-  if(s.code() == ::rocksdb::Status::kNotFound)
-  {
-    ilog( "RocksDB LIB not present in DB." );
-    update_lib( 0 ); ilog( "RocksDB LIB set to 0." );
-    return;
-  }
-
-  FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
-
-  uint32_t lib = lib_slice_t::unpackSlice(data);
-
-  FC_ASSERT( lib >= _cached_irreversible_block,
-    "Inconsistency in last irreversible block - cached ${c}, stored ${s}",
-    ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
-  _cached_irreversible_block.store( lib );
-  ilog( "RocksDB LIB loaded with value ${l}.", ( "l", lib ) );
-}
-
-void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
-{
-  //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
-  _cached_irreversible_block.store(lib);
-  auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
-  checkStatus( s );
-}
-
-void account_history_rocksdb_plugin::impl::load_reindex_point()
-{
-  std::string data;
-  auto s = _storage->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
-
-  if( s.code() == ::rocksdb::Status::kNotFound )
-  {
-    ilog( "RocksDB reindex point not present in DB." );
-    update_reindex_point( 0 );
-    return;
-  }
-
-  FC_ASSERT( s.ok(), "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
-
-  uint32_t rp = lib_slice_t::unpackSlice(data);
-
-  FC_ASSERT( rp >= _cached_reindex_point,
-    "Inconsistency in reindex point - cached ${c}, stored ${s}",
-    ( "c", _cached_reindex_point )( "s", rp ) );
-  _cached_reindex_point = rp;
-  ilog( "RocksDB reindex point loaded with value ${p}.", ( "p", rp ) );
-}
-
-void account_history_rocksdb_plugin::impl::update_reindex_point( uint32_t rp )
-{
-  ilog( "RocksDB reindex point set to ${p}.", ( "p", rp ) );
-  _cached_reindex_point = rp;
-  auto s = _writeBuffer.Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
-  checkStatus( s );
-}
-
-account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_plugin::impl::prepareColumnDefinitions(bool addDefaultColumn)
-{
-  ColumnDefinitions columnDefs;
-  if(addDefaultColumn)
-    columnDefs.emplace_back(::rocksdb::kDefaultColumnFamilyName, ColumnFamilyOptions());
-
-  //see definition of Columns enum
-  columnDefs.emplace_back("current_lib", ColumnFamilyOptions());
-  //columnDefs.emplace_back("last_reindex_point", ColumnFamilyOptions() ); reused above as another record
-
-  columnDefs.emplace_back("operation_by_id", ColumnFamilyOptions());
-  auto& byIdColumn = columnDefs.back();
-  byIdColumn.options.comparator = by_id_Comparator();
-
-  columnDefs.emplace_back("operation_by_block", ColumnFamilyOptions());
-  auto& byLocationColumn = columnDefs.back();
-  byLocationColumn.options.comparator = op_by_block_num_Comparator();
-
-  columnDefs.emplace_back("account_history_info_by_name", ColumnFamilyOptions());
-  auto& byAccountNameColumn = columnDefs.back();
-  byAccountNameColumn.options.comparator = by_account_name_Comparator();
-
-  columnDefs.emplace_back("ah_operation_by_id", ColumnFamilyOptions());
-  auto& byAHInfoColumn = columnDefs.back();
-  byAHInfoColumn.options.comparator = ah_op_by_id_Comparator();
-
-  columnDefs.emplace_back("by_tx_id", ColumnFamilyOptions());
-  auto& byTxIdColumn = columnDefs.back();
-  byTxIdColumn.options.comparator = by_txId_Comparator();
-
-  return columnDefs;
-}
-
-std::tuple<bool, bool> account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
-{
-  DB* db = nullptr;
-
-  auto columnDefs = prepareColumnDefinitions(true);
-  auto strPath = path.string();
-  Options options;
-  /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
-  options.IncreaseParallelism();
-  options.OptimizeLevelStyleCompaction();
-  options.max_open_files = OPEN_FILE_LIMIT;
-
-  auto s = DB::OpenForReadOnly(options, strPath, columnDefs, &_columnHandles, &db);
-
-  if(s.ok())
-  {
-    cleanupColumnHandles(db);
-    delete db;
-    return { false, true }; /// { DB does not need data import, an application is not closed }
-  }
-
-  options.create_if_missing = true;
-
-  s = DB::Open(options, strPath, &db);
-  if(s.ok())
-  {
-    columnDefs = prepareColumnDefinitions(false);
-    s = db->CreateColumnFamilies(columnDefs, &_columnHandles);
-    if(s.ok())
-    {
-      ilog("RocksDB column definitions created successfully.");
-      saveStoreVersion();
-      /// Store initial values of Seq-IDs for held objects.
-      flushWriteBuffer(db);
-      cleanupColumnHandles(db);
-    }
-    else
-    {
-      elog("RocksDB can not create column definitions at location: `${p}'.\nReturned error: ${e}",
-        ("p", strPath)("e", s.ToString()));
-    }
-
-    delete db;
-
-    return { true, true }; /// { DB needs data import, an application is not closed }
-  }
-  else
-  {
-    elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
-      ("p", strPath)("e", s.ToString()));
-
-    theApp.generate_interrupt_request();
-
-    return { false, false };/// { DB does not need data import, an application is closed }
-  }
+  _provider->shutdownDb( destroyOnShutdown );
 }
 
 void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const account_name_type& name, const rocksdb_operation_object& obj )
@@ -1713,7 +943,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
   ah_info_by_name_slice_t nameSlice(name.data);
 
   account_history_info ahInfo;
-  bool found = _writeBuffer.getAHInfo(name, &ahInfo);
+  bool found = _provider->getCachableWriteBuffer().getAHInfo(name, &ahInfo);
 
   if(found)
   {
@@ -1726,25 +956,26 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
       }
 
     auto nextEntryId = ++ahInfo.newestEntryId;
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _provider->getCachableWriteBuffer().putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, nextEntryId));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandle( Columns::AH_OPERATION_BY_ID ), ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
   else
   {
     /// New entry must be created - there is first operation recorded.
-    ahInfo.id = _accountHistorySeqId++;
+    ahInfo.id = _provider->get_accountHistorySeqId();
+    _provider->set_accountHistorySeqId( _provider->get_accountHistorySeqId() + 1 );
     ahInfo.newestEntryId = ahInfo.oldestEntryId = 0;
     ahInfo.oldestEntryTimestamp = obj.timestamp;
 
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _provider->getCachableWriteBuffer().putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, 0));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandle( Columns::AH_OPERATION_BY_ID ), ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
 }
@@ -1755,7 +986,7 @@ void account_history_rocksdb_plugin::impl::storeTransactionInfo(const chain::tra
   block_no_tx_in_block_pair block_no_tx_no(blockNo, trx_in_block);
   block_no_tx_in_block_slice_t valueSlice(block_no_tx_no);
 
-  auto s = _writeBuffer.Put(_columnHandles[Columns::BY_TRANSACTION_ID], txSlice, valueSlice);
+  auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandle( Columns::BY_TRANSACTION_ID ), txSlice, valueSlice);
   checkStatus(s);
   }
 
@@ -1778,10 +1009,10 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
   rOptions.iterate_lower_bound = &oldestEntrySlice;
   rOptions.iterate_upper_bound = &newestEntrySlice;
 
-  auto s = _writeBuffer.SingleDelete(_columnHandles[Columns::AH_OPERATION_BY_ID], oldestEntrySlice);
+  auto s = _provider->getCachableWriteBuffer().SingleDelete(_provider->getColumnHandle( Columns::AH_OPERATION_BY_ID ), oldestEntrySlice);
   checkStatus(s);
 
-  std::unique_ptr<::rocksdb::Iterator> dataItr(_storage->NewIterator(rOptions, _columnHandles[Columns::AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> dataItr(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandle( Columns::AH_OPERATION_BY_ID )));
 
   /** To clean outdated records we have to iterate over all AH records having subsequent number greater than limit
     *  and additionally verify date of operation, to clean up only these exceeding a date limit.
@@ -1815,7 +1046,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
       rightBoundary = foundEntry.second;
       ah_op_by_id_slice_t rightBoundarySlice(
         std::make_pair(ahInfo->id, rightBoundary));
-      s = _writeBuffer.SingleDelete(_columnHandles[4], rightBoundarySlice);
+      s = _provider->getCachableWriteBuffer().SingleDelete(_provider->getColumnHandle( Columns::OPERATION_BY_BLOCK ), rightBoundarySlice);
       checkStatus(s);
     }
     else
@@ -1831,7 +1062,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
 
 void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::reindex_notification& note)
 {
-  shutdownDb();
+  _provider->shutdownDb();
   std::string strPath = _storagePath.string();
 
   if( note.force_replay )
@@ -1841,7 +1072,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  openDb( false );
+  _provider->openDb( false );
 
   ilog("Setting write limit to massive level");
 
@@ -1861,12 +1092,12 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   ilog("Reindex completed up to block: ${b}. Setting back write limit to non-massive level.",
     ("b", note.last_block_number));
 
-  flushStorage();
+  _provider->flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
   uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
-  update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
-  update_reindex_point( note.last_block_number );
+  _provider->update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
+  _provider->update_reindex_point( note.last_block_number );
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
@@ -1994,18 +1225,18 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  if( block_num <= _cached_reindex_point )
+  if( block_num <= _provider->get_cached_reindex_point() )
   {
     // during reindex all data is pushed directly to storage, however the LIB reflects
     // state in dgpo; this means there is a small window of inconsistency when data is stored
     // in permanent storage but LIB would indicate it should be in volatile index
     wlog( "Incoming LIB value ${l} within reindex range ${r} - that block is already effectively irreversible",
-      ( "l", block_num )( "r", _cached_reindex_point ) );
+      ( "l", block_num )( "r", _provider->get_cached_reindex_point() ) );
   }
   else
   {
-    FC_ASSERT( block_num > _cached_irreversible_block, "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
-      ( "nb", block_num )( "ob", static_cast< uint32_t >(_cached_irreversible_block) ) );
+    FC_ASSERT( block_num > _provider->get_cached_irreversible_block(), "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
+      ( "nb", block_num )( "ob", static_cast< uint32_t >(_provider->get_cached_irreversible_block()) ) );
   }
 
   /// Here is made assumption, that thread processing block/transaction and sending this notification ALREADY holds write lock.
@@ -2016,14 +1247,14 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
 
   /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
-  auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
+  auto moveRangeBeginI = volatile_idx.upper_bound( _provider->get_cached_irreversible_block() );
 
   FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
 
   auto moveRangeEndI = volatile_idx.upper_bound(block_num);
-  FC_ASSERT( block_num > _cached_reindex_point || moveRangeBeginI == moveRangeEndI,
+  FC_ASSERT( block_num > _provider->get_cached_reindex_point() || moveRangeBeginI == moveRangeEndI,
     "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
-    ( "b", block_num )( "r", _cached_reindex_point ) );
+    ( "b", block_num )( "r", _provider->get_cached_reindex_point() ) );
 
   volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> bool
     {
@@ -2048,7 +1279,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     }
   );
 
-  update_lib(block_num);
+  _provider->update_lib(block_num);
   //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
@@ -2161,7 +1392,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
     }
   }
 
-  _operationSeqId = 0;
+  _provider->set_operationSeqId(0);
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
@@ -2208,9 +1439,7 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
     dbPath = actualPath;
   }
 
-  _my = std::make_unique<impl>( *this, options, dbPath, get_app() );
-
-  _my->openDb(_destroyOnStartup);
+  _my = std::make_unique<impl>( *this, options, dbPath, get_app(), _destroyOnStartup );
 }
 
 void account_history_rocksdb_plugin::plugin_startup()
@@ -2255,8 +1484,5 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
 }
 
 } } }
-
-FC_REFLECT( hive::plugins::account_history_rocksdb::account_history_info,
-  (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_history_rocksdb::volatile_operation_index)

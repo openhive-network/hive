@@ -902,7 +902,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
 
         // wait long enough for alice/shopping comment to show up and a bit more
         fc::usleep( fc::seconds( 8 * HIVE_BLOCK_INTERVAL ) );
-        while( db->find_comment( "alice", std::string( "shopping" ) ) == nullptr && !theApp.is_interrupt_request() )
+        while( !db->find_comment( "alice", std::string( "shopping" ) ) && !theApp.is_interrupt_request() )
           fc::usleep( fc::seconds( 1 ) );
         fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
 

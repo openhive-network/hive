@@ -28,6 +28,7 @@ add_library( hive_chain
              index-11.cpp
              index-12.cpp
              index-13.cpp
+             index-14.cpp
 
              full_block.cpp
              full_transaction.cpp
@@ -82,10 +83,16 @@ add_library( hive_chain
              rc/resource_sizes.cpp
              rc/resource_user.cpp
 
+             external_storage/rocksdb_storage_provider.cpp
+             external_storage/rocksdb_storage_processor.cpp
+             external_storage/comment.cpp
+             external_storage/rocksdb_snapshot.cpp
+             external_storage/types.cpp
+
              ${HEADERS}
            )
 
-target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_schema appbase libzstd_static ${COMPRESSION_DICTIONARY_LIBRARIES}
+target_link_libraries( hive_chain rocksdb hive_jsonball hive_protocol fc chainbase hive_schema appbase libzstd_static ${COMPRESSION_DICTIONARY_LIBRARIES}
                        ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARIES})
 target_include_directories( hive_chain
                             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"

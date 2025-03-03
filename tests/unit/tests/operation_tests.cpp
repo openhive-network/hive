@@ -447,8 +447,8 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_post_key );
 
-    const comment_object& alice_comment = db->get_comment( "alice", string( "lorem" ) );
-    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
+    const auto alice_comment = db->get_comment( "alice", string( "lorem" ) );
+    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
 
     BOOST_REQUIRE( alice_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "alice" ), "lorem" ) );
     BOOST_REQUIRE( alice_comment_cashout != nullptr );
@@ -479,8 +479,8 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_post_key );
 
-    const comment_object& bob_comment = db->get_comment( "bob", string( "ipsum" ) );
-    const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
+    const auto bob_comment = db->get_comment( "bob", string( "ipsum" ) );
+    const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
     BOOST_CHECK_EQUAL( bob_comment.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_account_id( "bob" ), "ipsum" ) );
     BOOST_REQUIRE( bob_comment_cashout != nullptr );
@@ -504,8 +504,8 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.push_back( op );
     push_transaction( tx, sam_post_key );
 
-    const comment_object& sam_comment = db->get_comment( "sam", string( "dolor" ) );
-    const comment_cashout_object* sam_comment_cashout = db->find_comment_cashout( sam_comment );
+    const auto sam_comment = db->get_comment( "sam", string( "dolor" ) );
+    const comment_cashout_object* sam_comment_cashout = db->find_comment_cashout( *sam_comment );
 
     BOOST_REQUIRE( sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( sam_comment_cashout != nullptr );
@@ -521,11 +521,11 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL + 1 );
 
     BOOST_TEST_MESSAGE( "--- Test modifying a comment" );
-    const auto& mod_sam_comment = db->get_comment( "sam", string( "dolor" ) );
-    const auto& mod_bob_comment = db->get_comment( "bob", string( "ipsum" ) );
+    const auto mod_sam_comment = db->get_comment( "sam", string( "dolor" ) );
+    const auto mod_bob_comment = db->get_comment( "bob", string( "ipsum" ) );
     const auto& mod_alice_comment = db->get_comment( "alice", string( "lorem" ) );
 
-    const comment_cashout_object* mod_sam_comment_cashout = db->find_comment_cashout( mod_sam_comment );
+    const comment_cashout_object* mod_sam_comment_cashout = db->find_comment_cashout( *mod_sam_comment );
 
     FC_UNUSED(mod_bob_comment, mod_alice_comment);
 
@@ -645,7 +645,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     push_transaction( tx, alice_post_key );
 
     auto test_comment = db->find_comment( "alice", string( "test1" ) );
-    BOOST_REQUIRE( test_comment == nullptr );
+    BOOST_REQUIRE( !test_comment );
 
 
     BOOST_TEST_MESSAGE( "--- Test failure deleting a comment past cashout" );
@@ -658,8 +658,8 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
 
     generate_blocks( HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL );
 
-    const comment_object& _comment = db->get_comment( "alice", string( "test1" ) );
-    const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+    const auto _comment = db->get_comment( "alice", string( "test1" ) );
+    const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
     BOOST_REQUIRE( _comment_cashout == nullptr );
 
     tx.clear();
@@ -743,13 +743,13 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     post_comment( "bob", "foo", "bar", "foo bar", "test", bob_post_key );
     post_comment_to_comment( "sam", "foo", "bar", "foo bar", "alice", "foo", sam_post_key );
     generate_block();
-    const auto& alice_comment = db->get_comment( alice_id, string( "foo" ) );
-    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
-    const auto& bob_comment = db->get_comment( bob_id, string( "foo" ) );
-    const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
+    const auto alice_comment = db->get_comment( alice_id, string( "foo" ) );
+    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
+    const auto bob_comment = db->get_comment( bob_id, string( "foo" ) );
+    const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
     BOOST_TEST_MESSAGE( "--- Testing voting on a non-existent comment" );
-    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "comment_ptr != nullptr" );
+    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "!comment_is_required || _external_comment" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
@@ -1084,8 +1084,8 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     const auto& dgpo = db->get_dynamic_global_properties();
     fc::time_point_sec creation_time, cashout_time;
     {
-      const auto& comment = db->get_comment( "author0", string( "permlink" ) );
-      const auto* cashout = db->find_comment_cashout( comment );
+      const auto comment = db->get_comment( "author0", string( "permlink" ) );
+      const auto* cashout = db->find_comment_cashout( *comment );
       creation_time = cashout->get_creation_time();
       cashout_time = cashout->get_cashout_time();
     }
@@ -1147,14 +1147,12 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     generate_block();
 
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
-    std::vector<const hive::chain::comment_object*> commentObjs;
     std::vector<const hive::chain::account_object*> voterObjs;
     std::vector<const hive::chain::comment_vote_object*> voteObjs;
     for( i = 0; i < 40; ++i )
     {
-      const auto& comment = db->get_comment( authors[i].name, string( "permlink" ) );
-      commentObjs.emplace_back( &comment );
-      const auto& cashout = *( db->find_comment_cashout( comment ) );
+      const auto comment = db->get_comment( authors[i].name, string( "permlink" ) );
+      const auto& cashout = *( db->find_comment_cashout( *comment ) );
       const auto& voter = db->get_account( voters[i].name );
       voterObjs.emplace_back( &voter );
       const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) ) );
@@ -7589,8 +7587,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     const auto& vote_idx = db->get_index< comment_vote_index >().indices().get< by_comment_voter >();
 
-    auto& alice_comment = db->get_comment( "alice", string( "foo" ) );
-    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
+    auto alice_comment = db->get_comment( "alice", string( "foo" ) );
+    const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_id() ) );
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( itr->get_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
@@ -8012,7 +8010,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     tx.operations.push_back( vote );
     push_transaction( tx, bob_post_key );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
     db_plugin->debug_update( [=]( database& db )
     {
@@ -8027,8 +8025,8 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     generate_block();
 
     //note: below we are mixing HIVE and HBD but it works due to use of amount instead of whole asset plus the exchange rate is 1-1
-    const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
-    const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
+    const auto _comment = db->get_comment( "alice", string( "test" ) );
+    const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
     BOOST_REQUIRE( _comment_cashout == nullptr );
 
     BOOST_REQUIRE( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + db->get_treasury().get_hbd_balance().amount ) == get_vest_rewards_as_hive( "bob" ).amount + get_hbd_rewards( "bob" ).amount + 1 );
@@ -8163,7 +8161,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     push_transaction( vote, dave_post_key );
 
     BOOST_TEST_MESSAGE( "--- Payout and verify rewards on comment with disabled curation rewards" );
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
+    generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test1" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
     auto set_reward_pool = [=]( database& db )
     {
@@ -8178,7 +8176,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     db_plugin->debug_update( set_reward_pool );
     generate_block();
 
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) ) == nullptr );
+    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test1" ) ) ) == nullptr );
     //no reward for test1 comment
     BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 0 );
@@ -8190,7 +8188,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     db_plugin->debug_update( set_reward_pool );
     generate_block();
 
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
+    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
     //alice got reward for test2 comment as author...
     BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 );
@@ -8203,7 +8201,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     db_plugin->debug_update( set_reward_pool );
     generate_block();
 
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
+    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
     //alice and dave got reward for test3 comment but they sum to 0.010 HBD
     BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 + 2 );
@@ -8260,8 +8258,8 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment has curations and voting blocked, small max payout; vote exists" );
-    const auto& old_comment = db->get_comment( "alice", string( "test" ) );
-    const auto* comment_cashout = db->find_comment_cashout( old_comment );
+    const auto old_comment = db->get_comment( "alice", string( "test" ) );
+    const auto* comment_cashout = db->find_comment_cashout( *old_comment );
     auto old_comment_id = old_comment.get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), false );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), false );
@@ -8277,7 +8275,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );
-    BOOST_REQUIRE( db->find_comment( "alice", string( "test" ) ) == nullptr );
+    BOOST_REQUIRE( !db->find_comment( "alice", string( "test") ) );
     voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
     BOOST_REQUIRE( voteI == vote_idx.end() );
 
@@ -8287,8 +8285,8 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- New comment has default options, no vote on it exists" );
-    const auto& new_comment = db->get_comment( "alice", string( "test" ) );
-    comment_cashout = db->find_comment_cashout( new_comment );
+    const auto new_comment = db->get_comment( "alice", string( "test" ) );
+    comment_cashout = db->find_comment_cashout( *new_comment );
     auto new_comment_id = new_comment.get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), true );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), true );
