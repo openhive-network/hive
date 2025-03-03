@@ -4,6 +4,8 @@
 #include <chainbase/util/object_id.hpp>
 #include <chainbase/util/object_id_serialization.hpp>
 
+#include <chainbase/dumper_custom_data.hpp>
+
 #include <boost/core/demangle.hpp>
 
 #include <fc/io/datastream.hpp>
@@ -168,6 +170,9 @@ class snapshot_reader : public snapshot_base_serializer
 
   protected:
     virtual ~snapshot_reader() {}
+
+  public:
+    std::shared_ptr<chainbase::dumper_custom_data> _dumper_custom_data;
   };
 
 class generic_index_serialize_base
@@ -428,10 +433,12 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
     class loader_data final : public snapshot_reader::worker_data
       {
       public:
-        loader_data(GenericIndexType& genericIndex, MultiIndexType& multiIndex, const snapshot_reader::worker* worker, const std::string& indexDescription) :
+        loader_data(GenericIndexType& genericIndex, MultiIndexType& multiIndex, const snapshot_reader::worker* worker, const std::string& indexDescription,
+                    std::shared_ptr<dumper_custom_data> dumperCustomData):
           _generic_index(genericIndex),
           _data_source(multiIndex),
-          _indexDescription(indexDescription)
+          _indexDescription(indexDescription),
+          _dumper_custom_data(dumperCustomData)
           {
           }
 
@@ -472,6 +479,10 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
                 [this, &buffer](typename MultiIndexType::value_type& object)
                 {
                 serialization::unpack_from_buffer(object, buffer.second);
+                if( _dumper_custom_data )
+                {
+                  _dumper_custom_data->dump_object( object );
+                }
                 },
                 std::move(prettyDump)
                 );
@@ -485,6 +496,7 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
         GenericIndexType& _generic_index;
         MultiIndexType& _data_source;
         std::string _indexDescription;
+        std::shared_ptr<dumper_custom_data> _dumper_custom_data;
       };
 
     template <class MultiIndexType>
@@ -510,7 +522,7 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
 
       for(auto* w : workers)
         {
-        workerData.emplace_back(std::make_unique<loader_t>(_index, index, w, indexName));
+        workerData.emplace_back(std::make_unique<loader_t>(_index, index, w, indexName, _reader._dumper_custom_data));
         w->associate_data(*workerData.back());
         }
 

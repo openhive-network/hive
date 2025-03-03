@@ -6,6 +6,8 @@
 
 #include <chainbase/state_snapshot_support.hpp>
 
+#include <hive/plugins/state_snapshot/dumper_comment_data.hpp>
+
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
@@ -867,6 +869,9 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
 
   *snapshot_index_next_id = manifestInfo.indexNextId;
   *snapshot_dumped_items = manifestInfo.dumpedItems;
+
+  if( manifestInfo.name == "comment_object" )
+    _dumper_custom_data =  std::shared_ptr<hive::dumper_comment_data>( new hive::dumper_comment_data() ) ;
 
   _builtWorkers.emplace_back(std::make_unique<loading_worker>(manifestInfo, _rootPath, *this));
 

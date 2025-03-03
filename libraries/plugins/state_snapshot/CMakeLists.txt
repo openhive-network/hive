@@ -2,6 +2,7 @@ file(GLOB HEADERS "include/hive/plugins/state_snapshot/*.hpp")
 
 add_library( state_snapshot_plugin
              state_snapshot_plugin.cpp
+             dumper_comment_data.cpp
              ${HEADERS}
            )
 
