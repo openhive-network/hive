@@ -151,8 +151,15 @@ public:
   void finish_request();
   bool is_finished_write_processing() const;
 
+  // makes plugin remove database on startup - useful for tests where each test needs fresh database
+  void set_destroy_database_on_startup( bool set = true ) { _destroyOnStartup = set; }
+  // makes plugin remove database on shutdown - useful for tests where each test needs fresh database
+  void set_destroy_database_on_shutdown( bool set = true ) { _destroyOnShutdown = set; }
+
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
+  bool                  _destroyOnStartup = false;
+  bool                  _destroyOnShutdown = false;
 };
 
 } } } // hive::plugins::chain
