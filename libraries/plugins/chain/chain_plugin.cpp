@@ -9,6 +9,10 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
+#include <hive/chain/index.hpp>
+
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_storage.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -54,6 +58,85 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 #define NUM_THREADS 1
 
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
+
+class external_storage_mgr
+{
+  public:
+
+    external_storage_mgr( chain_plugin& chain, database& _db, const bfs::path& path );
+    ~external_storage_mgr();
+
+    void on_pre_apply_operation( const operation_notification& note );
+    void on_irreversible_block( uint32_t block_num );
+
+    database&                   db;
+
+    boost::signals2::connection _pre_apply_operation_conn;
+    boost::signals2::connection _on_irreversible_block_conn;
+};
+
+struct pre_operation_visitor
+{
+  external_storage_mgr& external_storage;
+
+  pre_operation_visitor( external_storage_mgr& external_storage ) : external_storage( external_storage ) {}
+
+  typedef void result_type;
+
+  template< typename T >
+  void operator()( const T& )const {}
+
+  void operator()( const comment_operation& op )const
+  {
+    if( external_storage.db.get_external_storage_provider() )
+    {
+      auto _found = external_storage.db.find_comment( op.author, op.permlink );
+      FC_ASSERT( _found );
+      external_storage.db.get_external_storage_provider()->store_comment( _found->get_id(), external_storage.db.head_block_num() );
+    }
+  }
+
+};
+
+external_storage_mgr::external_storage_mgr( chain_plugin& chain, database& db, const bfs::path& path ): db( db )
+{
+  db.set_external_storage_provider( std::make_shared<comment_rocksdb_storage>( path, false, db ) );
+
+  HIVE_ADD_CORE_INDEX( db, hive::chain::volatile_comment_index );
+
+  try
+  {
+    ilog( "Initializing comment_rocksdb plugin" );
+
+    _pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ on_pre_apply_operation( note ); }, chain, 0 );
+
+    _on_irreversible_block_conn = db.add_irreversible_block_handler(
+      [&]( uint32_t block_num )
+      {
+        on_irreversible_block( block_num );
+      },
+      chain
+    );
+  }
+  FC_CAPTURE_AND_RETHROW()
+
+}
+
+external_storage_mgr::~external_storage_mgr()
+{
+  chain::util::disconnect_signal( _pre_apply_operation_conn );
+  chain::util::disconnect_signal( _on_irreversible_block_conn );
+}
+
+void external_storage_mgr::on_pre_apply_operation( const operation_notification& note )
+{
+  note.op.visit( pre_operation_visitor( *this ) );
+}
+
+void external_storage_mgr::on_irreversible_block( uint32_t block_num )
+{
+
+}
 
 class transaction_flow_control
 {
@@ -121,12 +204,14 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl( appbase::application& app ):
+    chain_plugin_impl( appbase::application& app, const bfs::path& comment_data_dir ):
       thread_pool( app ),
       db( app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
-      theApp( app )
-    {}
+      theApp( app ),
+      external_storage( app.get_plugin<hive::plugins::chain::chain_plugin>(), db, comment_data_dir )
+    {
+    }
 
     ~chain_plugin_impl()
     {
@@ -276,6 +361,8 @@ class chain_plugin_impl
     hive::plugins::webserver::webserver_plugin& webserver;
 
     appbase::application& theApp;
+
+    external_storage_mgr external_storage;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
@@ -1481,6 +1568,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
+      ("comments-data-dir", bpo::value<bfs::path>()->default_value("comments_data"), "the location of the comments data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1491,7 +1579,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
 
-  my.reset( new detail::chain_plugin_impl( get_app() ) );
+  my.reset( new detail::chain_plugin_impl( get_app(), options.at("comments-data-dir").as<bfs::path>() ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
   std::string block_storage_description( "single block in memory" );

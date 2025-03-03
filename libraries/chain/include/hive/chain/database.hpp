@@ -9,6 +9,7 @@
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/external_storage/external_storage_support.hpp>
 
 #include <hive/chain/rc/rc_utility.hpp>
 
@@ -815,7 +816,20 @@ namespace chain {
 
       std::optional<time_point_sec> _current_timestamp;
 
+      external_storage_provider::ptr _external_storage_provider;
+
     public:
+
+      void set_external_storage_provider( external_storage_provider::ptr obj )
+      {
+        _external_storage_provider = obj;
+      }
+
+      external_storage_provider::ptr& get_external_storage_provider()
+      {
+        return _external_storage_provider;
+      }
+
 
       time_point_sec get_current_timestamp() const
       {

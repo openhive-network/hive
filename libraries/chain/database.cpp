@@ -2685,7 +2685,13 @@ void database::process_comment_cashout()
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_19 ) )
+    {
+      if( get_external_storage_provider() )
+      {
+        get_external_storage_provider()->cashout_is_done( _current->get_comment_id() );
+      }
       remove( *_current );
+    }
     _current = cidx.begin();
   }
   if( _benchmark_dumper.is_enabled() && count )
