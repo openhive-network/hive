@@ -10,6 +10,8 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
+#include <hive/chain/external_storage/rocksdb_storage_connector.hpp>
+
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 #include <hive/plugins/statsd/utility.hpp>
@@ -121,12 +123,14 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl( appbase::application& app ):
+    chain_plugin_impl( appbase::application& app, const bfs::path& comment_data_dir ):
       thread_pool( app ),
       db( app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
-    {}
+    {
+      external_connector = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( theApp.get_plugin< chain::chain_plugin >(), db, comment_data_dir ) );
+    }
 
     ~chain_plugin_impl()
     {
@@ -295,6 +299,8 @@ class chain_plugin_impl
     hive::plugins::webserver::webserver_plugin& webserver;
 
     appbase::application& theApp;
+
+    external_storage_connector::ptr external_connector;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
@@ -1515,6 +1521,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
+      ("comments-data-dir", bpo::value<bfs::path>()->default_value("comments_data"), "the location of the comments data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1524,8 +1531,14 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 
 void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
+  auto _comments_data_dir = options.at("comments-data-dir").as<bfs::path>();
+  if( !_comments_data_dir.is_absolute() )
+  {
+    auto basePath = get_app().data_dir();
+    _comments_data_dir = basePath / _comments_data_dir;
+  }
 
-  my.reset( new detail::chain_plugin_impl( get_app() ) );
+  my.reset( new detail::chain_plugin_impl( get_app(), _comments_data_dir ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
   std::string block_storage_description( "single block in memory" );

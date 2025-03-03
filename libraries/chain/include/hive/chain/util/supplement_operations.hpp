@@ -29,7 +29,7 @@ namespace hive
           if (op.pending_payout.amount != 0)
             return; //estimated payout was already calculated
 
-          const auto *cashout = _db.find_comment_cashout(_db.get_comment(op.author, op.permlink));
+          const auto *cashout = _db.find_comment_cashout( *_db.get_comment(op.author, op.permlink) );
           if (cashout == nullptr || cashout->get_net_rshares() <= 0)
             return; //voting can happen even after cashout; there will be no new payout though
 
