@@ -97,7 +97,10 @@ fc::path common_init( appbase::application& app, bool remove_db_files, const fc:
   fc::remove_all( ( _data_dir_str + "/logs" ).c_str() );
   // and blockchain directory (including shared memory file)
   if( remove_db_files )
+  {
     fc::remove_all( ( _data_dir_str + "/blockchain" ).c_str() );
+    fc::remove_all( ( _data_dir_str + "/comments_data" ).c_str() );
+  }
 
   app_initializer( app, argc, (char**)argv_ext.data() );
   return _data_dir;
