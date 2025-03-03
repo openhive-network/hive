@@ -1,3 +1,5 @@
+#pragma once
+
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 

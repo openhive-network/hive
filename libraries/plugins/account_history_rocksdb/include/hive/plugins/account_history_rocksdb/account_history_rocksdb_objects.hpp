@@ -2,6 +2,7 @@
 
 #include <hive/chain/buffer_type.hpp>
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/external_storage/utilities.hpp>
 
 #include <hive/protocol/types.hpp>
 
@@ -14,8 +15,6 @@
 namespace hive { namespace plugins { namespace account_history_rocksdb {
 
 using namespace hive::chain;
-
-typedef std::vector<char> serialize_buffer_t;
 
 enum account_history_rocksdb_object_types
 {

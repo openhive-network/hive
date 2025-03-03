@@ -32,6 +32,9 @@ namespace hive { namespace chain {
         const account_object& _author, const std::string& _permlink,
         const comment_object* _parent_comment );
 
+      comment_object( uint64_t _id, const comment_id_type& parent_comment,
+                      const author_and_permlink_hash_type&  author_and_permlink_hash, uint16_t depth );
+
       //returns comment identification hash
       const author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
 
@@ -76,6 +79,12 @@ namespace hive { namespace chain {
     {
       parent_comment = comment_id_type::null_id();
     }
+  }
+
+  inline comment_object::comment_object( uint64_t _id, const comment_id_type& parent_comment,
+                  const author_and_permlink_hash_type&  author_and_permlink_hash, uint16_t depth )
+                  : id ( _id ), parent_comment( parent_comment ), author_and_permlink_hash( author_and_permlink_hash ), depth( depth )
+  {
   }
 
   inline comment_object::author_and_permlink_hash_type comment_object::compute_author_and_permlink_hash(

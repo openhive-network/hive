@@ -59,9 +59,9 @@ struct pre_operation_visitor
     try
     {
       auto& db = _plugin._db;
-      const auto& c = db.get_comment( op.author, op.permlink );
+      auto c = db.get_comment( op.author, op.permlink );
 
-      if( db.calculate_discussion_payout_time( c ) == fc::time_point_sec::maximum() ) return;
+      if( db.calculate_discussion_payout_time( *c ) == fc::time_point_sec::maximum() ) return;
 
       const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
       auto cv = cv_idx.find( boost::make_tuple( c.get_id(), db.get_account( op.voter ).get_id() ) );
@@ -117,9 +117,9 @@ struct post_operation_visitor
     try
     {
       auto& db = _plugin._db;
-      const auto& comment = db.get_comment( op.author, op.permlink );
+      auto comment = db.get_comment( op.author, op.permlink );
 
-      if( db.calculate_discussion_payout_time( comment ) == fc::time_point_sec::maximum() )
+      if( db.calculate_discussion_payout_time(*comment ) == fc::time_point_sec::maximum() )
         return;
 
       const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();

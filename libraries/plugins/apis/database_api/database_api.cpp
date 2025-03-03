@@ -1258,8 +1258,8 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
 
   for(const auto& key : args.comments)
   {
-    const comment_object* comment = _db.find_comment(key.first, key.second);
-    if(comment != nullptr)
+    auto comment = _db.get_comment(key.first, key.second);
+    if(comment)
     {
       retval.cashout_infos.emplace_back();
       comment_pending_payout_info& info = retval.cashout_infos.back();
@@ -1285,9 +1285,9 @@ DEFINE_API_IMPL( database_api_impl, find_comments )
 
   for( auto& key: args.comments )
   {
-    auto comment = _db.find_comment( key.first, key.second );
+    auto comment = _db.get_comment( key.first, key.second );
 
-    if( comment != nullptr )
+    if( comment )
       result.comments.emplace_back( *comment, _db );
   }
 

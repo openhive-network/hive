@@ -815,7 +815,7 @@ namespace detail
     CHECK_ARG_SIZE( 2 )
 
     vector< vote_state > votes;
-    const auto& comment = _db.get_comment( args.at(0).as< account_name_type >(), args.at(1).as< string >() );
+    auto comment = _db.get_comment( args.at(0).as< account_name_type >(), args.at(1).as< string >() );
     const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
     chain::comment_id_type cid( comment.get_id() );
     auto itr = idx.lower_bound( cid );

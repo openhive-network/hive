@@ -643,8 +643,8 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_post_key );
 
-    auto test_comment = db->find_comment( "alice", string( "test1" ) );
-    BOOST_REQUIRE( test_comment == nullptr );
+    auto test_comment = db->get_comment( "alice", string( "test1" ) );
+    BOOST_REQUIRE( test_comment );
 
 
     BOOST_TEST_MESSAGE( "--- Test failure deleting a comment past cashout" );
@@ -8276,7 +8276,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );
-    BOOST_REQUIRE( db->find_comment( "alice", string( "test" ) ) == nullptr );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ) );
     voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
     BOOST_REQUIRE( voteI == vote_idx.end() );
 
