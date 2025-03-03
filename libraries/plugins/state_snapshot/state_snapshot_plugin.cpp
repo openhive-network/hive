@@ -1625,8 +1625,6 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   std::shared_ptr<hive::chain::full_block_type> lib;
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
 
-  bool throw_exception_if_state_definitions_mismatch = false;
-
   {
     const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);
     fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
@@ -1644,40 +1642,21 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
     if (snapshot_has_more_plugins)
       wlog("Snaphot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-    else
-    {
-      throw_exception_if_state_definitions_mismatch = true;
-
-      if (!current_plugins.empty())
-        elog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-    }
+    else if (!current_plugins.empty())
+      wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
   }
 
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
-
-  {
-    chain::util::decoded_types_data_storage dtds(_mainDb.get_current_decoded_types_data_json());
-    chain::util::verify_match_of_state_definitions(dtds, loaded_decoded_type_data, /* used in snapshot plugin*/ true);
-  }
-
   const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
-  {
-    fc::mutable_variant_object current_blockchain_config = protocol::get_config(_mainDb.get_treasury_name(), _mainDb.get_chain_id());
-    fc::variant full_current_blockchain_config_as_variant;
-    fc::to_variant(current_blockchain_config, full_current_blockchain_config_as_variant);
-
-    if (_mainDb.head_block_num() > 0 && full_loaded_blockchain_configuration_json != fc::json::to_string(full_current_blockchain_config_as_variant))
-      chain::util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_loaded_blockchain_configuration_json, _mainDb.get_hardfork(), /* used_in_snapshot_plugin */ true);
-  }
 
   wlog("Snapshot state definitions matches current app version - wiping DB.");
   _mainDb.close();
   _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.pre_open(openArgs);
-  _mainDb.open(openArgs);
   dlog("Updating DB decoded state objects data and blockchain config with data from snapshot.");
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
   _mainDb.set_blockchain_config(full_loaded_blockchain_configuration_json);
+  _mainDb.open(openArgs);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
   ilog("Attempting to load contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));

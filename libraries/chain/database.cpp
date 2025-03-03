@@ -186,9 +186,7 @@ void database::open( const open_args& args )
     initialize_state_independent_data(args);
     _block_writer->on_state_independent_data_initialized();
     load_state_initial_data(args);
-
-    if (!args.load_snapshot)
-      verify_match_of_blockchain_configuration();
+    verify_match_of_blockchain_configuration();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
@@ -199,10 +197,7 @@ void database::initialize_state_independent_data(const open_args& args)
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
 
   initialize_indexes();
-
-  if (!args.load_snapshot)
-    verify_match_of_state_objects_definitions_from_shm();
-
+  verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 
   if(!find< dynamic_global_property_object >())
@@ -3442,7 +3437,7 @@ void database::verify_match_of_state_objects_definitions_from_shm()
   if (shm_decoded_state_objects_data.empty())
     set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
   else
-    util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), shm_decoded_state_objects_data, /* used in snapshot plugin*/ false);
+    util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), shm_decoded_state_objects_data);
 
   _my->delete_decoded_types_data_storage();
 }
@@ -3459,7 +3454,7 @@ void database::verify_match_of_blockchain_configuration()
   if (full_stored_blockchain_config_json.empty())
     set_blockchain_config(full_current_blockchain_config_as_json_string);
   else if (full_stored_blockchain_config_json != full_current_blockchain_config_as_json_string)
-    util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json, get_hardfork(), /* used_in_snapshot_plugin */ false);
+    util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json, get_hardfork());
 }
 
 std::string database::get_current_decoded_types_data_json()
