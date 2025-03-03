@@ -415,64 +415,51 @@ const account_object* database::find_account( const account_name_type& name )con
   return find< account_object, by_name >( name );
 }
 
-const comment_object& database::get_comment( comment_id_type comment_id )const try
+const comment_object* database::find_comment( comment_id_type comment_id )const
 {
-  return get< comment_object, by_id >( comment_id );
-}
-FC_CAPTURE_AND_RETHROW( (comment_id) )
-
-const comment_object& database::get_comment( const account_id_type& author, const shared_string& permlink )const
-{ try {
-  const comment_object* comment_ptr = find_comment( author, permlink );
-  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
-
-const comment_object* database::find_comment( const account_id_type& author, const shared_string& permlink )const
-{
-  return find< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, to_string( permlink ) ) );
+  return find< comment_object, by_id >( comment_id );
 }
 
-const comment_object& database::get_comment( const account_name_type& author, const shared_string& permlink )const
+comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
 {
-  const comment_object* comment_ptr = find_comment( get_account( author ).get_id(), permlink );
-  FC_ASSERT( comment_ptr != nullptr, "Comment ${author}/${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
+  return get_comments_handler()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
 }
 
-const comment_object* database::find_comment( const account_name_type& author, const shared_string& permlink )const
+comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  const account_object* acc = find_account(author);
-  if(acc == nullptr) return nullptr;
-  return find_comment( acc->get_id(), permlink );
+  return get_comments_handler()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
+{
+  return get_comments_handler()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_name_type& author, const shared_string& permlink )const
+{
+  return get_comments_handler()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
 
-const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
-{ try {
-  const comment_object* comment_ptr = find_comment( author, permlink );
-  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
-
-const comment_object* database::find_comment( const account_id_type& author, const string& permlink )const
+comment database::get_comment( const account_id_type& author, const string& permlink )const
 {
-  return find< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
+  return get_comments_handler()->get_comment( author, permlink, true /*comment_is_required*/ );
 }
 
-const comment_object& database::get_comment( const account_name_type& author, const string& permlink )const
+comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
-  const comment_object* comment_ptr = find_comment( get_account( author ).get_id(), permlink );
-  FC_ASSERT( comment_ptr != nullptr, "Comment ${author}/${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
+  return get_comments_handler()->get_comment( author, permlink, true /*comment_is_required*/ );
 }
 
-const comment_object* database::find_comment( const account_name_type& author, const string& permlink )const
+comment database::find_comment( const account_id_type& author, const string& permlink )const
 {
-  const account_object* acc = find_account(author);
-  if(acc == nullptr) return nullptr;
-  return find_comment( acc->get_id(), permlink );
+  return get_comments_handler()->get_comment( author, permlink, false /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_name_type& author, const string& permlink )const
+{
+  return get_comments_handler()->get_comment( author, permlink, false /*comment_is_required*/ );
 }
 
 #endif
@@ -665,6 +652,7 @@ void database::remove_old_cashouts()
   {
     const auto& current = *itr;
     ++itr;
+    notify_remove_comment_cashout( { current.get_comment_id(), current.get_author_id(), current.get_permlink() } );
     remove( current );
   }
 }
@@ -904,6 +892,11 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
 void database::notify_comment_reward(const comment_reward_notification& note)
 {
   HIVE_TRY_NOTIFY(_comment_reward_signal, note)
+}
+
+void database::notify_remove_comment_cashout(const remove_comment_cashout_notification& note)
+{
+  HIVE_TRY_NOTIFY(_remove_comment_cashout_signal, note) 
 }
 
 void database::notify_end_of_syncing()
@@ -2668,10 +2661,11 @@ void database::process_comment_cashout()
         ctx.total_reward_shares2 = gpo.total_reward_shares2;
         ctx.total_reward_fund_hive = gpo.get_total_reward_fund_hive();
 
-        const comment_object& comment = get_comment( comment_cashout_ex.get_comment_id() );
+        const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
+        FC_ASSERT( comment );
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment_cashout );
-        auto reward = cashout_comment_helper( ctx, comment, *comment_cashout, &comment_cashout_ex );
+        auto reward = cashout_comment_helper( ctx, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
 
         if( reward > 0 )
@@ -2685,7 +2679,10 @@ void database::process_comment_cashout()
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_19 ) )
+    {
+      notify_remove_comment_cashout( { _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() } );
       remove( *_current );
+    }
     _current = cidx.begin();
   }
   if( _benchmark_dumper.is_enabled() && count )
@@ -4665,6 +4662,11 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const load
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl<true>(_comment_reward_signal, func, plugin, group, "comment_reward");
+}
+
+boost::signals2::connection database::add_remove_comment_cashout_handler(const remove_comment_cashout_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl<true>(_remove_comment_cashout_signal, func, plugin, group, "remove_comment_cashout");
 }
 
 boost::signals2::connection database::add_end_of_syncing_handler(const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)

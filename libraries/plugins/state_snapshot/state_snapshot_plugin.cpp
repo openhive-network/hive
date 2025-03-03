@@ -10,9 +10,9 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
+#include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/protocol/get_config.hpp>
 

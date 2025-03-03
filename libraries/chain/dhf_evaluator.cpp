@@ -48,11 +48,11 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
       ("r", o.receiver));
 
-    const auto* commentObject = _db.find_comment(o.creator, o.permlink);
-    if(commentObject == nullptr)
+    auto commentObject = _db.find_comment(o.creator, o.permlink);
+    if(!commentObject)
     {
       commentObject = _db.find_comment(o.receiver, o.permlink);
-      FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or receiver");
+      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or receiver");
     }
 
     uint32_t proposal_id = 0;
@@ -93,11 +93,11 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
 
     FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
 
-    const auto* commentObject = _db.find_comment(proposal.creator, o.permlink);
-    if(commentObject == nullptr)
+    auto commentObject = _db.find_comment(proposal.creator, o.permlink);
+    if(!commentObject)
     {
       commentObject = _db.find_comment(proposal.receiver, o.permlink);
-      FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver");
+      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or the receiver");
     }
 
     FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");

@@ -12,7 +12,9 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/chain/state_snapshot_provider.hpp>
+
+#include <hive/chain/external_storage/state_snapshot_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_snapshot.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 
@@ -34,6 +36,7 @@
 #include <condition_variable>
 #include <mutex>
 
+#include <memory>
 #include <limits>
 #include <string>
 #include <typeindex>
@@ -115,29 +118,6 @@ public:
 
 namespace
 {
-template <class T>
-serialize_buffer_t dump(const T& obj)
-  {
-  serialize_buffer_t serializedObj;
-  auto size = fc::raw::pack_size(obj);
-  serializedObj.resize(size);
-  fc::datastream<char*> ds(serializedObj.data(), size);
-  fc::raw::pack(ds, obj);
-  return serializedObj;
-  }
-
-template <class T>
-void load(T& obj, const char* data, size_t size)
-  {
-  fc::datastream<const char*> ds(data, size);
-  fc::raw::unpack(ds, obj);
-  }
-
-template <class T>
-void load(T& obj, const serialize_buffer_t& source)
-  {
-  load(obj, source.data(), source.size());
-  }
 
 /** Helper class to simplify construction of Slice objects holding primitive type values.
   *
@@ -456,6 +436,9 @@ public:
     _filter("ah-rb"),
     theApp( app )
     {
+    _snapshot = std::shared_ptr<rocksdb_snapshot>(
+            new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storage, _storagePath ) );
+
     collectOptions(options);
 
     _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
@@ -470,12 +453,12 @@ public:
 
     _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
       {
-        supplement_snapshot(note);
+        _snapshot->supplement_snapshot(note);
       }, _self, 0);
 
     _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
       {
-        load_additional_data_from_snapshot(note);
+        _snapshot->load_additional_data_from_snapshot(note);
       }, _self, 0);
 
     _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
@@ -626,8 +609,6 @@ public:
   }
 
 private:
-  void supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note);
-  void load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note);
 
   //loads last irreversible block from DB to _cached_irreversible_block
   void load_lib();
@@ -930,6 +911,8 @@ private:
   std::optional<std::pair<uint32_t, fc::time_point_sec>> _last_block_and_timestamp;
 
   appbase::application& theApp;
+
+  external_storage_snapshot::ptr _snapshot;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -1472,83 +1455,6 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   }
 
   return false;
-}
-
-void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note)
-{
-  fc::path actual_path(note.external_data_storage_base_path);
-  actual_path /= "account_history_rocksdb_data";
-
-  if(bfs::exists(actual_path) == false)
-    bfs::create_directories(actual_path);
-
-  auto pathString = actual_path.to_native_ansi_path();
-
-  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
-
-  std::unique_ptr<::rocksdb::BackupEngine> backupEngine;
-  ::rocksdb::BackupEngine* _backupEngine = nullptr;
-  auto status = ::rocksdb::BackupEngine::Open(backupEnv, backupableDbOptions, &_backupEngine);
-
-  checkStatus(status);
-
-  backupEngine.reset(_backupEngine);
-
-  ilog("Attempting to create an AccountHistoryRocksDB backup in the location: `${p}'", ("p", pathString));
-
-  std::string meta_data = "Account History RocksDB plugin data. Current head block: ";
-  meta_data += std::to_string(_mainDb.head_block_num());
-
-  status = _backupEngine->CreateNewBackupWithMetadata(this->_storage.get(), meta_data, true);
-  checkStatus(status);
-
-  std::vector<::rocksdb::BackupInfo> backupInfos;
-  _backupEngine->GetBackupInfo(&backupInfos);
-
-  FC_ASSERT(backupInfos.size() == 1);
-
-  note.dump_helper.store_external_data_info(_self, actual_path);
-}
-
-void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note)
-{
-  fc::path extdata_path;
-  if(note.load_helper.load_external_data_info(_self, &extdata_path) == false)
-  {
-    wlog("No external data present for Account History RocksDB plugin...");
-    return;
-  }
-
-  auto pathString = extdata_path.to_native_ansi_path();
-
-  ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", pathString));
-
-  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
-
-  std::unique_ptr<::rocksdb::BackupEngineReadOnly> backupEngine;
-  ::rocksdb::BackupEngineReadOnly* _backupEngine = nullptr;
-  auto status = ::rocksdb::BackupEngineReadOnly::Open(backupEnv, backupableDbOptions, &_backupEngine);
-
-  checkStatus(status);
-
-  backupEngine.reset(_backupEngine);
-
-  ilog("Attempting to restore an AccountHistoryRocksDB backup from the backup location: `${p}'", ("p", pathString));
-
-  shutdownDb( true );
-
-  ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
-
-  bfs::path walDir(_storagePath);
-  walDir /= "WAL";
-  status = backupEngine->RestoreDBFromLatestBackup(_storagePath.string(), walDir.string());
-  checkStatus(status);
-
-  ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
-
-  openDb( false );
 }
 
 void account_history_rocksdb_plugin::impl::load_lib()

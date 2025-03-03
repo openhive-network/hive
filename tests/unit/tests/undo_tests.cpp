@@ -326,8 +326,17 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     BOOST_TEST_MESSAGE( "--- Object 'obj1' retrieves old key from object 'obj0'." );
 
     undo_scenario< comment_object > co( *db );
+
+    auto _create_comment = [&co]( const account_object& author, const std::string& permlink, const comment_object* parent_comment )-> const comment_object&
+    {
+      return co.create( author, permlink,
+                        parent_comment ? parent_comment->get_id() : comment_id_type::null_id(),
+                        parent_comment ? parent_comment->get_depth() + 1 : 0
+                      );
+    };
+
     undo_scenario< comment_cashout_object > co_cashout( *db );
-    const comment_object& objc0 = co.create( fake_account_object, "permlink", fake_parent_comment );
+    const comment_object& objc0 = _create_comment( fake_account_object, "permlink", fake_parent_comment );
     const comment_cashout_object& objc0_cashout = co_cashout.create( objc0, fake_account_object, "permlink", time_point_sec( 10 ), time_point_sec( 20 ) );
 
     BOOST_REQUIRE( objc0_cashout.get_comment_id() == objc0.get_id() );
@@ -342,7 +351,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
 
     co_cashout.modify( objc0_cashout, [&]( comment_cashout_object& obj ){ obj.set_cashout_time( time_point_sec( 21 ) ); } );
 
-    const comment_object& objc1 = co.create( fake_account_object, "permlink2", fake_parent_comment );
+    const comment_object& objc1 = _create_comment( fake_account_object, "permlink2", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "permlink2", time_point_sec( 10 ), time_point_sec( 20 ) );
 
     BOOST_REQUIRE( objc1_cashout.get_comment_id() == objc1.get_id() );
@@ -376,6 +385,14 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     uint32_t old_size_co;
     uint32_t old_size_co_cashout;
 
+    auto _create_comment = [&co]( const account_object& author, const std::string& permlink, const comment_object* parent_comment )-> const comment_object&
+    {
+      return co.create( author, permlink,
+                        parent_comment ? parent_comment->get_id() : comment_id_type::null_id(),
+                        parent_comment ? parent_comment->get_depth() + 1 : 0
+                      );
+    };
+
     BOOST_TEST_MESSAGE( "--- 2 objects( different types )" );
     ao.remember_old_values< account_index >();
     co.remember_old_values< comment_index >();
@@ -387,7 +404,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     BOOST_REQUIRE( std::string( obja0.get_name() ) == "name00" );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
-    const comment_object& objc0 = co.create( fake_account_object, "11", fake_parent_comment );
+    const comment_object& objc0 = _create_comment( fake_account_object, "11", fake_parent_comment );
     BOOST_CHECK_EQUAL( objc0.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( fake_account_object.get_id(), "11" ) );
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
 
@@ -414,8 +431,8 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     ao.remove( obja2 );
     BOOST_REQUIRE( old_size_ao + 2 == ao.size< account_index >() );
 
-    co.create( fake_account_object, "11", fake_parent_comment );
-    const comment_object& objc1 = co.create( fake_account_object, "12", fake_parent_comment );
+    _create_comment( fake_account_object, "11", fake_parent_comment );
+    const comment_object& objc1 = _create_comment( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
     co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){} );
     BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
@@ -439,7 +456,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     udb.undo_begin();
 
     ao.create( "name01", time );
-    const comment_object& objc2 = co.create( fake_account_object, "12", fake_parent_comment );
+    const comment_object& objc2 = _create_comment( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc2_cashout = co_cashout.create( objc2, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
@@ -460,7 +477,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     BOOST_TEST_MESSAGE( "--- 'comment_object' - create/remove" );
     BOOST_TEST_MESSAGE( "--- 'comment_cashout_object' - create/5*modify/remove" );
 
-    const comment_object& co1 = co.create( fake_account_object, "12", fake_parent_comment );
+    const comment_object& co1 = _create_comment( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& co1_cashout = co_cashout.create( co1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
     const account_object& ao1 = ao.create( std::to_string(0), time );
 

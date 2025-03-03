@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     comment.parent_author = "alice";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
 
-    HIVE_REQUIRE_ASSERT( push_transaction( comment, alice_post_key ), "comment_ptr != nullptr" );
+    HIVE_REQUIRE_ASSERT( push_transaction( comment, alice_post_key ), "!comment_is_required || _external_comment" );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating first block after transaction" );
