@@ -10,8 +10,11 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
+#include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
+#include <hive/chain/external_storage/state_snapshot_provider.hpp>
+
 #include <hive/plugins/chain/abstract_block_producer.hpp>
-#include <hive/plugins/chain/state_snapshot_provider.hpp>
+
 #include <hive/plugins/statsd/utility.hpp>
 
 #include <hive/utilities/notifications.hpp>
@@ -134,7 +137,19 @@ class chain_plugin_impl
 
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
+
+      chain::util::disconnect_signal(_on_irreversible_block_conn);
+      chain::util::disconnect_signal(_on_remove_comment_cashout_conn);
+      chain::util::disconnect_signal(_on_prepare_snapshot_supplement_conn);
+      chain::util::disconnect_signal(_on_load_snapshot_supplement_conn);
+
+      if( rocksdb_processor )
+        rocksdb_processor->shutdown();
     }
+
+    void shutdown( bool destroyOnShutdown );
+
+    void init_rocksdb_storage( const bfs::path& comments_storage_path, bool destroy_on_startup );
 
     void register_snapshot_provider(state_snapshot_provider& provider)
     {
@@ -179,6 +194,7 @@ class chain_plugin_impl
     uint16_t                         shared_file_scale_rate = 0;
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
+    bfs::path                        comments_storage_path;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -216,6 +232,12 @@ class chain_plugin_impl
     std::condition_variable          queue_condition_variable;
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
+
+    boost::signals2::connection     _post_apply_operation_conn;
+    boost::signals2::connection     _on_irreversible_block_conn;
+    boost::signals2::connection     _on_remove_comment_cashout_conn;
+    boost::signals2::connection     _on_prepare_snapshot_supplement_conn;
+    boost::signals2::connection     _on_load_snapshot_supplement_conn;
 
     template<typename Promise>
     void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx, Promise& promise )
@@ -295,6 +317,8 @@ class chain_plugin_impl
     hive::plugins::webserver::webserver_plugin& webserver;
 
     appbase::application& theApp;
+
+    external_storage_processor::ptr rocksdb_processor;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
@@ -441,6 +465,46 @@ struct chain_plugin_impl::write_request_visitor
     return last_block_number;
   }
 };
+
+void chain_plugin_impl::shutdown( bool destroyOnShutdown )
+{
+  rocksdb_processor->shutdown( destroyOnShutdown );
+}
+
+void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_path, bool destroy_on_startup )
+{
+  auto& _plugin = theApp.get_plugin< chain::chain_plugin >();
+
+  rocksdb_processor = std::make_shared<rocksdb_storage_processor>( _plugin, db, _plugin.state_storage_dir(), comments_storage_path, theApp, destroy_on_startup );
+
+  db.set_comments_handler( rocksdb_processor );
+
+  _on_irreversible_block_conn = db.add_irreversible_block_handler(
+    [&]( uint32_t block_num )
+    {
+      FC_ASSERT( rocksdb_processor );
+      rocksdb_processor->move_to_external_storage( block_num );
+    }, _plugin
+  );
+
+  _on_remove_comment_cashout_conn = db.add_remove_comment_cashout_handler(
+    [&]( const remove_comment_cashout_notification& note )
+    {
+      FC_ASSERT( rocksdb_processor );
+      rocksdb_processor->allow_move_to_external_storage( note.comment_id, note.account_id, note.permlink );
+    }, _plugin
+  );
+
+  _on_prepare_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
+    {
+      rocksdb_processor->supplement_snapshot( note );
+    }, _plugin, 0);
+
+  _on_load_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
+    {
+      rocksdb_processor->load_additional_data_from_snapshot( note );
+    }, _plugin, 0);
+}
 
 bool chain_plugin_impl::is_interrupt_request() const
 {
@@ -1515,6 +1579,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
+      ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1524,7 +1589,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 
 void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
-
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
@@ -1550,6 +1614,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     else
       my->shared_memory_dir = sfd;
   }
+
+  my->comments_storage_path = my->shared_memory_dir / options.at("comments-rocksdb-path").as<bfs::path>();
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
@@ -1824,6 +1890,9 @@ void chain_plugin::plugin_startup()
   ilog("Database opening...");
   my->open();
 
+  ilog("Preparing rocksDB storage for comments...");
+  my->init_rocksdb_storage( my->comments_storage_path, _destroyOnStartup );
+
   ilog("Looking for snapshot processing requests...");
   my->process_snapshot();
 
@@ -1888,6 +1957,8 @@ void chain_plugin::plugin_shutdown()
   my->db.close();
   my->default_block_writer->close();
   my->block_storage->close_storage();
+
+  my->shutdown(_destroyOnShutdown);
 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");

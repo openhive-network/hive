@@ -2,6 +2,7 @@ file(GLOB HEADERS "include/hive/plugins/account_history_rocksdb/*.hpp")
 
 add_library( account_history_rocksdb_plugin
              account_history_rocksdb_plugin.cpp
+             rocksdb_ah_storage_provider.cpp
              ${HEADERS}
            )
 
