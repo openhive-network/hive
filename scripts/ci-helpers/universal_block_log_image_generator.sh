@@ -38,6 +38,12 @@ docker_image_exists $IMGNAME "$tag" "$REGISTRY" image_exists
 if [ "$image_exists" -eq 1 ];
 then
   echo "Universal block log image is up to date. Skipping generation..."
+elif [ "$CI_COMMIT_BRANCH" == "master"] || [$CI_COMMIT_REF_PROTECTED == "true"]; then
+  latest_tag=$(get_latest_image_tag)
+  short_commit=$(echo "$latest_tag" | sed 's/.*-\(.*\)/\1/')
+  img=$( build_image_name $IMGNAME "$latest_tag" "$REGISTRY" )
+  echo "Pipeline started from branch tagged as master or protected. Skipping generate universal-block-logs. Tests based on it use last version of existing block-logs."
+  echo "Registry container: ${img}"
 else
   echo "${img} image is missing. Start generate universal block logs..."
   echo "Save block logs to directory: $UNIVERSAL_BLOCK_LOGS_DIR"
@@ -76,3 +82,26 @@ fi
 
 echo "UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/universal_block_log_latest_version.env
 echo "UNIVERSAL_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/universal_block_log_latest_commit_short_sha.env
+
+
+get_latest_image_tag() {
+    local repo_url="https://gitlab.syncad.com/api/v4/registry/repositories/646?tags=true"
+
+    tags=$(curl -s --header "PRIVATE-TOKEN: $REGISTRY_READ_API_TOKEN" "$repo_url" | jq -r '.[].name')
+
+    latest_tag=""
+    latest_date=""
+
+    for tag in $tags; do
+        image_details="https://gitlab.syncad.com/api/v4/projects/198/registry/repositories/646/tags/$tag"
+
+        created_at=$(curl -s --header "PRIVATE-TOKEN: $REGISTRY_READ_API_TOKEN" "$image_details" | jq -r '.created_at')
+
+        if [[ -z "$latest_date" || "$created_at" > "$latest_date" ]]; then
+            latest_date="$created_at"
+            latest_tag="$tag"
+        fi
+    done
+
+    echo "$latest_tag"
+}
