@@ -703,6 +703,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   else
     ilog( "Opening single split block log file numbered ${to}", ("to", head_part_number) );
 
+  block_id_type last_block_id;
   _logs.resize( head_part_number, block_log_ptr_t() );
   for( auto cit = part_file_names.cbegin(); cit != part_file_names.cend(); ++cit )
   {
@@ -717,6 +718,30 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     internal_open_and_init( nth_part_log, cit->part_file, open_ro );
     // Part numbers are always positive.
     std::atomic_store( &( _logs[ part_number-1 ] ), nth_part_log );
+    if( last_block_id != block_id_type() )
+    {
+      // Verify that part's tail block links with previous part's head block.
+      uint32_t first_block_num = 
+        get_number_of_first_block_in_part( part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG );
+      ilog( "Verifying whether block #${first_block_num} links with previous block's hash (${last_block_id}).",
+            (first_block_num)(last_block_id) );
+      std::shared_ptr<full_block_type> first_block = nth_part_log->read_block_by_num( first_block_num );
+      FC_ASSERT( first_block, 
+                "Block #${first_block_num} not found in ${part_file}. Is the file empty?",
+                (first_block_num)("part_file", cit->part_file.generic_string()) );
+      block_id_type first_block_prev = first_block->get_block().previous;
+      if( last_block_id != first_block_prev )
+        throw std::runtime_error(
+          "Mismatch detected between block log part files: id of last block of part #" +
+          std::to_string( part_number -1 ) + " is " + last_block_id.str() +
+          " while previous block id of first block of part #" +
+          std::to_string( part_number ) + " is " + first_block_prev.str()
+         );
+    }
+
+    const auto head_block = nth_part_log->head();
+    if( head_block )
+      last_block_id = head_block->get_block_id();
   }
 }
 
