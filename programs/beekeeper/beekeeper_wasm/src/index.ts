@@ -17,6 +17,26 @@ declare global {
 }
 const ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope != 'undefined';
 
+const getModuleExt = () => {
+  // Warning: important change is moving conditional ternary expression outside of URL constructor call, what confused parcel analyzer.
+  // Seems it must have simple variables & literals present to correctly translate code.
+  const wasmFilePath = (ENVIRONMENT_IS_WORKER ? new URL("./build/beekeeper_wasm.common.wasm", self.location.href) : new URL("./build/beekeeper_wasm.common.wasm", import.meta.url)).href;
+  // Fallback for client-bundled inlined WASM, e.g. when using webpack
+  let wasmBinary: Buffer | undefined;
+  if (wasmFilePath.startsWith("data:application/wasm;base64,"))
+      wasmBinary = Buffer.from(wasmFilePath.slice(29), "base64");
+
+  return {
+    locateFile(path: string, scriptDirectory: string): string {
+      if (path === "beekeeper_wasm.common.wasm") {
+        return wasmFilePath;
+      }
+      return scriptDirectory + path;
+    },
+    wasmBinary
+  };
+};
+
 /**
  * Creates a Beekeeper instance able to own sessions and wallets
  *
@@ -27,13 +47,7 @@ const ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope != 'undefined';
  * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
  */
 const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBeekeeperInstance> => {
-  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT,  {
-    locateFile: (path, scriptDirectory) => {
-        if (path === "beekeeper_wasm.common.wasm")
-            return (ENVIRONMENT_IS_WORKER ? new URL("./build/beekeeper_wasm.common.wasm", self.location.href) : new URL("./build/beekeeper_wasm.common.wasm", import.meta.url)).href;
-        return scriptDirectory + path;
-    }
-  }, process.env.ROLLUP_TARGET_ENV === "web", options);
+  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, getModuleExt(), process.env.ROLLUP_TARGET_ENV === "web", options);
 };
 
 export default createBeekeeper;
