@@ -6,7 +6,8 @@ import { safeAsyncWasmCall } from "./util/wasm_error.js";
 
 const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot'> = {
   enableLogs: true,
-  unlockTimeout: 900
+  unlockTimeout: 900,
+  inMemory: false
 };
 
 interface IOptionalModuleArgs {
@@ -22,9 +23,9 @@ const createBeekeeper = async(
   options: Partial<IBeekeeperOptions> = {}
 ): Promise<IBeekeeperInstance> => {
   const beekeeperProvider = await safeAsyncWasmCall(() => beekeeperContstructor(ModuleExt), "Beekeeper WASM module loading");
-  const api = new BeekeeperApi(beekeeperProvider, isWebEnvironment);
+  const api = new BeekeeperApi(beekeeperProvider, { ...DEFAULT_BEEKEEPER_OPTIONS, storageRoot, ...options }, isWebEnvironment);
 
-  await api.init({ ...DEFAULT_BEEKEEPER_OPTIONS, storageRoot, ...options });
+  await api.init();
 
   return api;
 };

@@ -8,16 +8,18 @@ import { safeWasmCall } from './util/wasm_error.js';
 
 // We would like to expose our api using BeekeeperInstance interface, but we would not like to expose users a way of creating instance of BeekeeperApi
 export class BeekeeperApi implements IBeekeeperInstance {
-  public readonly fs: BeekeeperFileSystem;
+  public readonly fs?: BeekeeperFileSystem;
   public api!: Readonly<beekeeper_api>;
 
   public readonly sessions: Map<string, BeekeeperSession> = new Map();
 
   public constructor(
     private readonly provider: MainModule,
+    private readonly options: IBeekeeperOptions,
     isWebEnvironment: boolean
   ) {
-    this.fs = new BeekeeperFileSystem(this.provider.FS, isWebEnvironment);
+    if (!this.options.inMemory)
+      this.fs = new BeekeeperFileSystem(this.provider.FS, isWebEnvironment);
   }
 
   public get version(): string {
@@ -43,10 +45,10 @@ export class BeekeeperApi implements IBeekeeperInstance {
     }
   }
 
-  public async init({ storageRoot, enableLogs, unlockTimeout }: IBeekeeperOptions) {
-    await this.fs.init(storageRoot);
+  public async init() {
+    await this.fs?.init(this.options.storageRoot);
 
-    const WALLET_OPTIONS = ['--wallet-dir', `${storageRoot}/.beekeeper`, '--enable-logs', Boolean(enableLogs).toString(), '--unlock-timeout', String(unlockTimeout)];
+    const WALLET_OPTIONS = ['--wallet-dir', `${this.options.storageRoot}/.beekeeper`, '--enable-logs', Boolean(this.options.enableLogs).toString(), '--unlock-timeout', String(this.options.unlockTimeout)];
 
     const beekeeperOptions = new this.provider.StringList();
     WALLET_OPTIONS.forEach((opt) => void beekeeperOptions.push_back(opt));
@@ -79,6 +81,6 @@ export class BeekeeperApi implements IBeekeeperInstance {
 
     safeWasmCall(() => this.api.delete(), "WASM api deletion");
 
-    await this.fs.sync();
+    await this.fs?.sync();
   }
 }
