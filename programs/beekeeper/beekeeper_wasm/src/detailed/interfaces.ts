@@ -62,6 +62,15 @@ export interface IBeekeeperOptions {
   storageRoot: string;
 
   /**
+   * Disables filesystem support (persistent storage) per this beekeeper instance and runs in-memory only.
+   * By default, filesystem support is enabled
+   *
+   * @type {boolean}
+   * @default false
+   */
+  inMemory: boolean;
+
+  /**
    * Whether logs can be written. By default logs are enabled
    *
    * @default true
@@ -232,7 +241,7 @@ export interface IBeekeeperSession {
    *
    * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
    *
-   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.) or when trying to create a persistent wallet with {@link IBeekeeperOptions inMemory} option Enabled
    */
   createWallet(name: string, password?: string): Promise<IWalletCreated>;
 
@@ -245,7 +254,7 @@ export interface IBeekeeperSession {
    *
    * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
    *
-   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.) or when trying to create a persistent wallet with {@link IBeekeeperOptions inMemory} option Enabled
    */
   createWallet(name: string, password: string, isTemporary: boolean): Promise<IWalletCreated>;
 

@@ -50,7 +50,7 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   public async importKey(wifKey: string): Promise<TPublicKey> {
     const { public_key } = this.api.extract(safeWasmCall(() => this.api.api.import_key(this.session.token, this.locked.name, wifKey) as string, `importing key to wallet '${this.locked.name}'`)) as IImportKeyResponse;
 
-    await this.api.fs.sync();
+    await this.api.fs?.sync();
 
     return public_key;
   }
@@ -58,7 +58,7 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   public async removeKey(publicKey: TPublicKey): Promise<void> {
     this.api.extract(safeWasmCall(() => this.api.api.remove_key(this.session.token, this.locked.name, publicKey) as string, `removing key '${publicKey}' from wallet '${this.locked.name}'`));
 
-    await this.api.fs.sync();
+    await this.api.fs?.sync();
   }
 
   public signDigest(publicKey: string, sigDigest: string): TSignature {
