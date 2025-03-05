@@ -24,13 +24,6 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/filesystem.hpp>
 
-
-#define OPEN_FILE_LIMIT 750
-
-#define WRITE_BUFFER_FLUSH_LIMIT     10
-#define ACCOUNT_HISTORY_LENGTH_LIMIT 30
-#define ACCOUNT_HISTORY_TIME_LIMIT   30
-
 namespace xxx {
 
 namespace bfs = boost::filesystem;
@@ -49,29 +42,6 @@ using ::rocksdb::WriteBatch;
 
 namespace
 {
-class TransactionIdSlice : public Slice
-  {
-  public:
-    explicit TransactionIdSlice(const fc::ripemd160& trxId) : _trxId(&trxId)
-    {
-    data_ = _trxId->data();
-    size_ = _trxId->data_size();
-    }
-
-    static void unpackSlice(const Slice& s, fc::ripemd160* storage)
-    {
-    assert(storage != nullptr);
-    assert(storage->data_size() == s.size());
-    memcpy(storage->data(), s.data(), s.size());
-    }
-
-  private:
-    const fc::ripemd160* _trxId;
-  };
-
-/** Helper base class to cover all common functionality across defined comparators.
-  *
-  */
 class AComparator : public Comparator
   {
   public:
@@ -95,54 +65,11 @@ class AComparator : public Comparator
     AComparator() = default;
   };
 
-
-template <typename T>
-class PrimitiveTypeComparatorImpl final : public AComparator
+class HashComparator final : public AComparator
   {
   public:
     virtual int Compare(const Slice& a, const Slice& b) const override
     {
-    if(a.size() != sizeof(T) || b.size() != sizeof(T))
-      return a.compare(b);
-
-    const T& id1 = retrieveKey(a);
-    const T& id2 = retrieveKey(b);
-
-    if(id1 < id2)
-      return -1;
-
-    if(id1 > id2)
-      return 1;
-
-    return 0;
-    }
-
-    virtual bool Equal(const Slice& a, const Slice& b) const override
-    {
-    if(a.size() != sizeof(T) || b.size() != sizeof(T))
-      return a == b;
-
-    const auto& id1 = retrieveKey(a);
-    const auto& id2 = retrieveKey(b);
-
-    return id1 == id2;
-    }
-
-  private:
-    const T& retrieveKey(const Slice& slice) const
-    {
-    assert(sizeof(T) == slice.size());
-    const char* rawData = slice.data();
-    return *reinterpret_cast<const T*>(rawData);
-    }
-  };
-
-class TransactionIdComparator final : public AComparator
-  {
-  public:
-    virtual int Compare(const Slice& a, const Slice& b) const override
-    {
-    /// Nothing more to do. Just compare buffers holding 20Bytes hash
     return a.compare(b);
     }
 
@@ -152,9 +79,9 @@ class TransactionIdComparator final : public AComparator
     }
   };
 
-const Comparator* by_txId_Comparator()
+const Comparator* by_Hash_Comparator()
   {
-  static TransactionIdComparator c;
+  static HashComparator c;
   return &c;
   }
 
@@ -192,7 +119,7 @@ struct core
     /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
     options.IncreaseParallelism();
     options.OptimizeLevelStyleCompaction();
-    options.max_open_files = OPEN_FILE_LIMIT;
+    options.max_open_files = 1000;
 
     DBOptions dbOptions(options);
 
@@ -240,7 +167,7 @@ struct core
 
     columnDefs.emplace_back("my_hashes", ColumnFamilyOptions());
     auto& byTxIdColumn = columnDefs.back();
-    byTxIdColumn.options.comparator = by_txId_Comparator();
+    byTxIdColumn.options.comparator = by_Hash_Comparator();
 
     return columnDefs;
   }
@@ -258,7 +185,7 @@ struct core
     /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
     options.IncreaseParallelism();
     options.OptimizeLevelStyleCompaction();
-    options.max_open_files = OPEN_FILE_LIMIT;
+    options.max_open_files = 1000;
 
     auto s = DB::OpenForReadOnly(options, strPath, columnDefs, &_columnHandles, &db);
 
@@ -321,13 +248,32 @@ struct core
     _columnHandles.clear();
   }
 
-  void storeHash(const fc::ripemd160& trx_id)
+  void storeHash(const fc::ripemd160& hash)
   {
-    TransactionIdSlice txSlice(trx_id);
+    Slice keySlice( hash.data(), hash.data_size() );
     Slice valueSlice;
 
-    auto s = _writeBuffer.Put(_columnHandles[0], txSlice, valueSlice);
+    auto s = _writeBuffer.Put(_columnHandles[0], keySlice, valueSlice);
     checkStatus(s);
+  }
+
+  std::string getHash( const std::string& account, const std::string& permlink )
+  {
+    auto _hash = fc::ripemd160::hash( permlink + "@" + account );
+
+    ReadOptions rOptions;
+
+    Slice keySlice( _hash.data(), _hash.data_size() );
+
+    std::string dataBuffer;
+    ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[0], keySlice, &dataBuffer);
+
+    if( s.ok() )
+      return _hash.str();
+    else
+      return "xxx";
+
+    FC_ASSERT(s.IsNotFound());
   }
 
   void flushWriteBuffer(DB* storage = nullptr)
