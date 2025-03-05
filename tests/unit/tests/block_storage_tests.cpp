@@ -317,6 +317,67 @@ void remove_block_log_part( fc::path& data_dir, uint32_t part_number )
   fc::remove_all( part_path_str );
 }
 
+bool is_block_link_broken( fc::exception const& ex )
+{ 
+  std::string s( ex.what() );
+  return ( s.rfind("Mismatch detected between block log part files", 0) == 0 );
+}
+
+BOOST_AUTO_TEST_CASE( split_over_split )
+{
+  try {
+    ilog( "Testing partial overriding of existing split block log." );
+
+    // Get dedicated temporary directory for database (shm) files 
+    // which is used to hide database from second (replay) run.
+    fc::temp_directory shm_dir( hive::utilities::temp_directory_path() );
+
+    fc::path data_dir;
+    {
+      // Generate longer (two-part) block log.
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ) );
+
+      for( int i = 0; i < BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1; ++i )
+        fixture.generate_block();
+
+      data_dir = fixture.get_data_dir();
+    }
+    // Store head (second) file of block log.
+    fc::path temp_name( data_dir / "temp_name.log" );
+    fc::path temp_artifacts_name( data_dir / "temp_name.artifacts.log" );
+    std::string second_part_path_str = get_block_log_part_path( data_dir, 2 );
+    std::string second_part_artifacts_path_str = second_part_path_str + ".artifacts";
+    fc::rename( second_part_path_str, temp_name );
+    fc::rename( second_part_artifacts_path_str, temp_artifacts_name );
+    {
+      // Generate shorter (one-part) block log.
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_2( "block-log-split", std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ),
+                      "shared-file-dir", shm_dir.path().string() );
+
+      for( int i = 0; i < BLOCKS_IN_SPLIT_BLOCK_LOG_FILE / 2; ++i )
+        fixture.generate_block();
+    }
+    // Restore head (second) file of block log.
+    fc::rename( temp_name, second_part_path_str );
+    fc::rename( temp_artifacts_name, second_part_artifacts_path_str );
+    {
+      // Fail before replay attempt, due to block log files consistency check.
+      hived_fixture fixture( false /*remove blockchain*/ );
+      BOOST_CHECK_EXCEPTION(
+        INIT_FIXTURE_2( "block-log-split", std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ),
+                        "replay-blockchain", "" ),
+        fc::exception,
+        is_block_link_broken );  
+    }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 void require_blocks( hived_fixture& fixture, uint32_t block_num1, uint32_t block_num2 )
 {
   const block_read_i& block_reader = fixture.get_chain_plugin().block_reader();
