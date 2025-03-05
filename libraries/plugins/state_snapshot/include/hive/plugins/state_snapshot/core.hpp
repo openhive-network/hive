@@ -2,24 +2,9 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
-#include <rocksdb/utilities/backup_engine.h>
-#include <rocksdb/utilities/write_batch_with_index.h>
 
-#include <boost/type.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/range/adaptor/indexed.hpp>
-#include <boost/range/adaptor/sliced.hpp>
-#include <boost/range/adaptor/reversed.hpp>
+#include <boost/core/demangle.hpp>
 #include <boost/filesystem/path.hpp>
-
-#include <condition_variable>
-#include <mutex>
-
-#include <limits>
-#include <string>
-#include <typeindex>
-#include <typeinfo>
 
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/filesystem.hpp>
@@ -31,7 +16,6 @@ namespace bfs = boost::filesystem;
 using ::rocksdb::DB;
 using ::rocksdb::DBOptions;
 using ::rocksdb::Options;
-using ::rocksdb::PinnableSlice;
 using ::rocksdb::ReadOptions;
 using ::rocksdb::Slice;
 using ::rocksdb::Comparator;
@@ -142,10 +126,15 @@ struct core
   {
     if(_storage)
     {
+      ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 00");
       flushStorage();
+      ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 01");
       cleanupColumnHandles();
+      ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 02");
       _storage->Close();
+      ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 03");
       _storage.reset();
+      ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 04");
 
       if( removeDB )
       {

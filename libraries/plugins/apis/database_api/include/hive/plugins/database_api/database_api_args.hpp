@@ -416,6 +416,7 @@ struct list_comments_return
 
 struct find_comments_args
 {
+  bool from_ah = false;
   vector< std::pair< account_name_type, string > > comments;
 };
 
@@ -868,7 +869,7 @@ FC_REFLECT( hive::plugins::database_api::list_comments_return,
   (comments) )
 
 FC_REFLECT( hive::plugins::database_api::find_comments_args,
-  (comments) )
+  (from_ah)(comments) )
 
 FC_REFLECT(hive::plugins::database_api::get_comment_pending_payouts_args,
   (comments)
