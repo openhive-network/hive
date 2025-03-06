@@ -63,12 +63,12 @@ void authority_verification_tracer::copy_successful_offsprings( const path_entry
       continue;
 
     to.visited_entries.push_back({
-      processed_entry: child.processed_entry,
-      processed_role: child.processed_role,
-      recursion_depth: child.recursion_depth,
-      threshold: child.threshold,
-      weight: child.weight,
-      flags: child.flags
+      child.processed_entry, 
+      child.processed_role,
+      child.recursion_depth,
+      child.threshold,
+      child.weight,
+      child.flags
     });
 
     path_entry& child_copy = to.visited_entries.back();
@@ -80,12 +80,12 @@ void authority_verification_tracer::fill_final_authority_path()
 {
   const path_entry& root_entry = get_root_entry();
   path_entry childless_root_entry {
-    processed_entry: root_entry.processed_entry,
-    processed_role: root_entry.processed_role,
-    recursion_depth: root_entry.recursion_depth,
-    threshold: root_entry.threshold,
-    weight: root_entry.weight,
-    flags: root_entry.flags
+    root_entry.processed_entry,
+    root_entry.processed_role,
+    root_entry.recursion_depth,
+    root_entry.threshold,
+    root_entry.weight,
+    root_entry.flags
   };
   _trace.final_authority_path.push_back( childless_root_entry );
 
@@ -102,11 +102,12 @@ void authority_verification_tracer::on_root_authority_start( const account_name_
   unsigned int threshold, unsigned int depth )
 {
   path_entry root_path_entry {
-    processed_entry: account,
-    processed_role: _current_role,
-    recursion_depth: depth,
-    threshold: threshold,
-    flags: INSUFFICIENT_WEIGHT
+    account,
+    _current_role,
+    depth,
+    threshold,
+    0,
+    INSUFFICIENT_WEIGHT
   };
 
   _trace.root.push_back( root_path_entry );
@@ -143,12 +144,12 @@ void authority_verification_tracer::on_approved_authority( const account_name_ty
   else
   {
     path_entry entry{
-      processed_entry: account,
-      processed_role: _current_role,
-      recursion_depth: parent.recursion_depth + 1,
-      threshold: parent.threshold,
-      weight: weight,
-      flags: RESOLVED_BY_APPROVAL
+      account,
+      _current_role,
+      parent.recursion_depth + 1,
+      parent.threshold,
+      weight,
+      RESOLVED_BY_APPROVAL
     };
 
     parent.visited_entries.push_back( entry );
@@ -160,12 +161,12 @@ void authority_verification_tracer::on_matching_key( const public_key_type& key,
   bool parent_threshold_reached )
 {
   path_entry key_entry {
-    processed_entry: (std::string)key,
-    processed_role: _current_role,
-    recursion_depth: depth,
-    threshold: parent_threshold,
-    weight: weight,
-    flags: MATCHING_KEY
+    (std::string)key,
+    _current_role,
+    depth,
+    parent_threshold,
+    weight,
+    MATCHING_KEY
   };
 
   if (weight < parent_threshold)
@@ -200,12 +201,12 @@ void authority_verification_tracer::on_unknown_account_entry( const account_name
   unsigned int weight, unsigned int parent_threshold, unsigned int parent_depth )
 {
   path_entry entry{
-    processed_entry: account,
-    processed_role: _current_role,
-    recursion_depth: parent_depth,
-    threshold: parent_threshold,
-    weight: weight,
-    flags: MISSING_ACCOUNT
+    account,
+    _current_role,
+    parent_depth,
+    parent_threshold,
+    weight,
+    MISSING_ACCOUNT
   };
 
   get_parent_entry().visited_entries.push_back(entry);
@@ -215,11 +216,12 @@ void authority_verification_tracer::on_entering_account_entry( const account_nam
   unsigned int weight, unsigned int account_threshold, unsigned int parent_depth )
 {
   path_entry entry{
-    processed_entry: account,
-    processed_role: _current_role,
-    recursion_depth: parent_depth + 1,
-    threshold: account_threshold,
-    flags: INSUFFICIENT_WEIGHT
+    account,
+    _current_role,
+    parent_depth + 1,
+    account_threshold,
+    0,
+    INSUFFICIENT_WEIGHT
   };
 
   if(detect_cycle(account))
