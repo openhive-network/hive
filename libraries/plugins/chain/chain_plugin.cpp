@@ -1605,6 +1605,13 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       uint32_t num_from_id = block_header::num_from_id( item.second );
       FC_ASSERT( item.first == num_from_id, "Invalid checkpoint specification, block number (${n}) does not match number embedded in block id (${i})",
         ( "n", item.first )( "i", num_from_id ) );
+      auto it = my->checkpoints.find( item.first );
+      if( it != my->checkpoints.end() )
+      {
+        FC_ASSERT( it->second == item.second, "Conflicting checkpoint specification: ${i1} vs ${i2} for block ${n}",
+          ( "i1", it->second )( "i2", item.second )( "n", it->first ) );
+        wlog( "Duplicate checkpoint specification [${n},${i}]", ( "n", it->first )( "i", it->second ) );
+      }
       my->checkpoints[ item.first ] = item.second;
     }
   }
@@ -1838,7 +1845,7 @@ void chain_plugin::plugin_startup()
   if( !my->checkpoints.empty() )
   {
     // log something to let the node operator know that checkpoints are in force
-    ilog( "Checkpoints enabled, blocks will be subject to reduced validation until final checkpoint [${block_num}, ${block_id}]",
+    ilog( "Checkpoints enabled, blocks will be subject to reduced validation until final checkpoint [${block_num},${block_id}]",
       ( "block_num", my->checkpoints.rbegin()->first )( "block_id", my->checkpoints.rbegin()->second ) );
   }
 
