@@ -104,7 +104,7 @@ void verify_match_of_blockchain_configuration(fc::mutable_variant_object current
     current_blockchain_config_file.flush();
     current_blockchain_config_file.close();
 
-    FC_THROW_EXCEPTION(snapshot_blockchain_config_mismatch_exception,
+    FC_THROW_EXCEPTION(blockchain_config_mismatch_exception,
                         "Mismatch between blockchain configuration loaded from shared memory file and the current one"
                         "\nFull data about blockchain configuration are in files: ${current_config_filename}, ${loaded_config_filename}",
                         (current_config_filename)(loaded_config_filename));
