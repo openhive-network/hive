@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
@@ -121,7 +122,7 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     node.config.plugin.append("block_log_info")
     node.run(exit_before_synchronization=True, replay_from=block_log)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(subprocess.CalledProcessError):
         node.run(load_snapshot_from=snap_0, exit_before_synchronization=True)
 
     # two files should be created which will show difference between state definitions in shm and current hived
