@@ -4,8 +4,8 @@ import os
 from typing import TYPE_CHECKING
 
 import pytest
-import test_tools as tt
 
+import test_tools as tt
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
 
 if TYPE_CHECKING:
@@ -72,6 +72,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
     node.wait_for_block_with_number(block_log_length + 7)
     node.close()
 
+
 def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> None:
     def clear_state(node: tt.InitNode):
         from os.path import join as join_paths
@@ -100,6 +101,7 @@ def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> N
 
     warning_msg = "Snaphot has more plugins than current hived configuration"
     assert warning_msg in (node.directory / "stderr.txt").read_text()
+
 
 def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> None:
     def clear_state(node: tt.InitNode):
