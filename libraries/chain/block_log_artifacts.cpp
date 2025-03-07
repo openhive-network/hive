@@ -1044,6 +1044,12 @@ void block_log_artifacts::truncate(uint32_t new_head_block_num)
   _impl->truncate_file(new_head_block_num);
 }
 
+void block_log_artifacts::flush()
+{
+  dlog( "flushing artifacts" );
+  _impl->flush_header();
+}
+
 std::string block_log_artifacts::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
 {
   return _impl->get_artifacts_contents(starting_block_number, ending_block_number, header_only);

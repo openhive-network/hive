@@ -110,6 +110,7 @@ public:
   void store_block_artifacts(artifact_data_container_t& artifacts_data, const bool is_at_live_sync);
 
   void truncate(uint32_t new_head_block_num);
+  void flush();
 
   // for block_log_util
   std::string get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;

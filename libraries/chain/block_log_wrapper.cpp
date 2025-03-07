@@ -770,6 +770,12 @@ void block_log_wrapper::internal_append( uint32_t first_block_num, size_t block_
   // Is it time to switch to a new file & append there?
   if( is_last_number_of_the_file( first_block_num -1 ) && ( block_part_number > _logs.size() ) )
   {
+    if( not _logs.empty() )
+    {
+      auto current_part_log = get_head_log();
+      if( current_part_log )
+        current_part_log->flush();
+    }
     fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( block_part_number ).c_str();
     const auto new_part_log = std::make_shared<block_log>( _app );
     internal_open_and_init( new_part_log, new_path, false /*read_only*/ );

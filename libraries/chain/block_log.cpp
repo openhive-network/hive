@@ -460,6 +460,7 @@ namespace hive { namespace chain {
   // no restrictions
   void block_log::flush()
   {
+    my->_artifacts->flush();
     // writes to file descriptors are flushed automatically
   }
 
