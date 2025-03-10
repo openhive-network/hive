@@ -183,10 +183,7 @@ void transaction_builder::finalize()
     fc::usleep( fc::milliseconds( 50 ) );
   }
 
-  fc::promise<void>::ptr quitDone(new fc::promise<void>(name.c_str()));
-  _worker.quit(quitDone.get());
-  quitDone->wait();
-
+  _worker.quit();
 
   ilog( "Production stats for thread ${t}", ( "t", name ) );
   ilog( "Number of transactions: ${t}", ( "t", _tx_num ) );
