@@ -302,17 +302,21 @@ void comment_rocksdb_storage::store_comment( const comment_id_type& comment_id, 
   });
 }
 
-void comment_rocksdb_storage::comment_was_paid( const comment_id_type& comment_id )
+void comment_rocksdb_storage::comment_was_paid( const comment_cashout_object& comment_cashout )
 {
   const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
-
-  auto _found = _volatile_idx.find( comment_id );
-
+  auto _found = _volatile_idx.find( comment_cashout.get_comment_id() );
   FC_ASSERT( _found != _volatile_idx.end() );
 
-  _db.modify( *_found, []( volatile_comment_object& vc )
+  const auto& _comment = _db.get_comment( comment_cashout.get_comment_id() );
+
+  _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
   {
-    vc.was_paid = true;
+    vc.parent_comment           = _comment.get_parent_id();
+    vc.author_and_permlink_hash = _comment.get_author_and_permlink_hash();
+    vc.depth                    = _comment.get_depth(); 
+
+    vc.was_paid                 = true;
   });
 }
 

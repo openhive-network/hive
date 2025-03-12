@@ -2688,7 +2688,7 @@ void database::process_comment_cashout()
     {
       if( get_external_storage_provider() )
       {
-        get_external_storage_provider()->comment_was_paid( _current->get_comment_id() );
+        get_external_storage_provider()->comment_was_paid( *_current );
       }
       remove( *_current );
     }

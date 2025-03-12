@@ -24,9 +24,13 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_comment_object )
 
-    comment_id_type comment_id;
-    uint32_t        block_number = 0;
-    bool            was_paid = false;
+    comment_id_type                               comment_id;
+    comment_id_type                               parent_comment;
+    comment_object::author_and_permlink_hash_type author_and_permlink_hash;
+    uint16_t                                      depth = 0; 
+
+    uint32_t                                      block_number = 0;
+    bool                                          was_paid = false;
 };
 
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
