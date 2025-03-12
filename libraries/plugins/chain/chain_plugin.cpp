@@ -215,6 +215,7 @@ class chain_plugin_impl
     bool                             enable_block_log_compression = true;
     bool                             enable_block_log_auto_fixing = true;
     bool                             load_snapshot = false;
+    bool                             dump_snapshot = false;
     int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> checkpoints;
     bool                             last_pushed_block_was_before_checkpoint = false;
@@ -1656,6 +1657,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   if (options.count("load-snapshot"))
     my->load_snapshot = true;
 
+  if (options.count("dump-snapshot"))
+    my->dump_snapshot = true;
+
   if( options.count( "flush-state-interval" ) )
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
   else
@@ -1893,15 +1897,16 @@ void chain_plugin::plugin_startup()
   ilog("Preparing rocksDB storage for comments...");
   my->init_rocksdb_storage( my->comments_storage_path, _destroyOnStartup );
 
-  ilog("Looking for snapshot processing requests...");
-  my->process_snapshot();
-
   my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
 
   bool start = false;
   bool replay = my->replay;
+
   if( not replay )
   {
+    ilog("Looking for snapshot processing requests...");
+    my->process_snapshot();
+
     ilog( "Consistency data checking..." );
     if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
     {
@@ -1920,10 +1925,22 @@ void chain_plugin::plugin_startup()
 
   if( replay )
   {
+    if (my->load_snapshot)
+    {
+      ilog("Looking for snapshot processing requests...");
+      my->process_snapshot();
+    }
+
     std::shared_ptr< block_write_i > reindex_block_writer =
       std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
+
+    if (my->dump_snapshot)
+    {
+      ilog("Looking for snapshot processing requests...");
+      my->process_snapshot();
+    }
   }
   if( start )
   {
