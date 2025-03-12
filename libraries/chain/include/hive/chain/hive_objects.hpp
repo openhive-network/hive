@@ -439,7 +439,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< limit_order_object >
+    multi_index_allocator< limit_order_object >
   > limit_order_index;
 
   struct by_owner;
@@ -462,7 +462,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< convert_request_object >
+    multi_index_allocator< convert_request_object >
   > convert_request_index;
 
   struct by_owner;
@@ -485,7 +485,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< collateralized_convert_request_object >
+    multi_index_allocator< collateralized_convert_request_object >
   > collateralized_convert_request_index;
 
   struct by_owner;
@@ -506,7 +506,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::greater< fc::uint128 >, std::less< account_id_type > >
       >
     >,
-    allocator< liquidity_reward_balance_object >
+    multi_index_allocator< liquidity_reward_balance_object >
   > liquidity_reward_balance_index;
 
   typedef multi_index_container<
@@ -515,7 +515,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< feed_history_object, feed_history_object::id_type, &feed_history_object::get_id > >
     >,
-    allocator< feed_history_object >
+    multi_index_allocator< feed_history_object >
   > feed_history_index;
 
   struct by_withdraw_route;
@@ -539,7 +539,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< withdraw_vesting_route_object >
+    multi_index_allocator< withdraw_vesting_route_object >
   > withdraw_vesting_route_index;
 
   struct by_from_id {};
@@ -564,7 +564,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< bool >, std::less< time_point_sec >, std::less< escrow_id_type > >
       >
     >,
-    allocator< escrow_object >
+    multi_index_allocator< escrow_object >
   > escrow_index;
 
   struct by_from_rid {};
@@ -596,7 +596,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< savings_withdraw_object >
+    multi_index_allocator< savings_withdraw_object >
   > savings_withdraw_index;
 
   struct by_account;
@@ -617,7 +617,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< time_point_sec >, std::less< account_name_type > >
       >
     >,
-    allocator< decline_voting_rights_request_object >
+    multi_index_allocator< decline_voting_rights_request_object >
   > decline_voting_rights_request_index;
 
   typedef multi_index_container<
@@ -628,7 +628,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_name >,
         member< reward_fund_object, reward_fund_name_type, &reward_fund_object::name > >
     >,
-    allocator< reward_fund_object >
+    multi_index_allocator< reward_fund_object >
   > reward_fund_index;
 
   struct by_from_to_id;
@@ -660,7 +660,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< account_id_type >, std::less< account_id_type >, std::less< uint8_t > >
       >
     >,
-    allocator< recurrent_transfer_object >
+    multi_index_allocator< recurrent_transfer_object >
   > recurrent_transfer_index;
 
 } } // hive::chain

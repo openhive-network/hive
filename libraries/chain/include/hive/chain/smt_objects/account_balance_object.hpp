@@ -93,7 +93,7 @@ typedef multi_index_container <
       >
     >
   >,
-  allocator< account_regular_balance_object >
+  multi_index_allocator< account_regular_balance_object >
 > account_regular_balance_index;
 
 typedef multi_index_container <
@@ -109,7 +109,7 @@ typedef multi_index_container <
       >
     >
   >,
-  allocator< account_rewards_balance_object >
+  multi_index_allocator< account_rewards_balance_object >
 > account_rewards_balance_index;
 
 } } // namespace hive::chain

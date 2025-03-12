@@ -57,7 +57,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< block_log_hash_state_object, block_log_hash_state_object::id_type, &block_log_hash_state_object::get_id > >
   >,
-  allocator< block_log_hash_state_object >
+  multi_index_allocator< block_log_hash_state_object >
 > block_log_hash_state_index;
 
 typedef multi_index_container<
@@ -66,7 +66,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< block_log_pending_message_object, block_log_pending_message_object::id_type, &block_log_pending_message_object::get_id > >
   >,
-  allocator< block_log_pending_message_object >
+  multi_index_allocator< block_log_pending_message_object >
 > block_log_pending_message_index;
 
 } } } // hive::plugins::block_log_info
