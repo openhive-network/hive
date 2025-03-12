@@ -603,6 +603,61 @@ BOOST_AUTO_TEST_CASE( auto_split_4 )
   }
 }
 
+BOOST_AUTO_TEST_CASE( incremental_replay_pruned )
+{
+  try {
+    ilog( "Testing replay stopped at block with block log set to pruning." );
+
+    const uint32_t initial_log_block_count = 5 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+
+    { // Generate split log, full 5 parts.
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ) );
+
+      for( uint32_t i = 0; i < initial_log_block_count; ++i )
+        fixture.generate_block();
+      
+      // Check that state head block num matches full 5 part block log's.
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), initial_log_block_count );
+    }
+    { // Switch to pruned log, check that block num 3 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 1
+      // is the tail block - previous one is unavailable.
+      const uint32_t tail_block_num = 3 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 1;
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_2( "block-log-split", "1",
+                      "stop-at-block", std::to_string( initial_log_block_count ) );
+
+      const block_read_i& block_reader = fixture.get_chain_plugin().block_reader();  
+      auto tail = block_reader.get_block_by_number( tail_block_num );
+      BOOST_REQUIRE( tail );
+      BOOST_REQUIRE_THROW( block_reader.get_block_by_number( tail_block_num -1 ), fc::assert_exception );
+    }
+    { // Keep pruned configuration, replay up to block count below pruned tail.
+      // i.e. block num 3 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE / 2 is below pruned tail.
+      const uint32_t middle_of_second_part = 3 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE / 2;
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_3( "block-log-split", "1",
+                      "force-replay", "",
+                      "stop-at-block", std::to_string( middle_of_second_part ) );
+      // Check that replay was forced and that it ended at desired block, below pruned tail.  
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), middle_of_second_part );
+    }
+    { // Make another incremental partial replay, staying below pruned tail.
+      const uint32_t two_and_a_quarter_part = 9 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE / 4;
+      hived_fixture fixture( false /*remove blockchain*/ );
+      INIT_FIXTURE_3( "block-log-split", "1",
+                      "replay-blockchain", "",
+                      "stop-at-block", std::to_string( two_and_a_quarter_part ) );
+      // Check that replay ended at desired block, below pruned tail.  
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), two_and_a_quarter_part );
+    }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 void post_snapshot_block_storage_switch( int initial_block_storage, int target_block_storage, 
                                          bool force_no_tail )
 {
