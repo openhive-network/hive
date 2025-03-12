@@ -585,7 +585,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< account_object >
+    multi_index_allocator< account_object >
   > account_index;
 
   struct by_account {};
@@ -598,7 +598,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_account >,
         member< account_metadata_object, account_id_type, &account_metadata_object::account > >
     >,
-    allocator< account_metadata_object >
+    multi_index_allocator< account_metadata_object >
   > account_metadata_index;
 
   typedef multi_index_container <
@@ -615,7 +615,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< account_name_type >, std::less< time_point_sec >, std::less< owner_authority_history_id_type > >
       >
     >,
-    allocator< owner_authority_history_object >
+    multi_index_allocator< owner_authority_history_object >
   > owner_authority_history_index;
 
   typedef multi_index_container <
@@ -631,7 +631,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< account_name_type >, std::less< account_authority_id_type > >
       >
     >,
-    allocator< account_authority_object >
+    multi_index_allocator< account_authority_object >
   > account_authority_index;
 
   struct by_delegation {};
@@ -648,7 +648,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< vesting_delegation_object >
+    multi_index_allocator< vesting_delegation_object >
   > vesting_delegation_index;
 
   struct by_expiration {};
@@ -673,7 +673,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< vesting_delegation_expiration_object >
+    multi_index_allocator< vesting_delegation_expiration_object >
   > vesting_delegation_expiration_index;
 
   struct by_expiration;
@@ -694,7 +694,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
-    allocator< account_recovery_request_object >
+    multi_index_allocator< account_recovery_request_object >
   > account_recovery_request_index;
 
   struct by_effective_date {};
@@ -715,7 +715,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
-    allocator< change_recovery_account_request_object >
+    multi_index_allocator< change_recovery_account_request_object >
   > change_recovery_account_request_index;
 } }
 

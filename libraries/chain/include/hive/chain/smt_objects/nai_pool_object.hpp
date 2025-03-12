@@ -38,7 +38,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< nai_pool_object, nai_pool_object::id_type, &nai_pool_object::get_id > >
     >,
-    allocator< nai_pool_object >
+    multi_index_allocator< nai_pool_object >
   > nai_pool_index;
 
 } } // namespace hive::chain

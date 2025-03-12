@@ -42,7 +42,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_account >,
       member< reputation_object, account_name_type, &reputation_object::account > >
   >,
-  allocator< reputation_object >
+  multi_index_allocator< reputation_object >
 > reputation_index;
 
 } } } // hive::plugins::reputation

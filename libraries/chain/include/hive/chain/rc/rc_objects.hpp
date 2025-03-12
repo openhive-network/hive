@@ -261,7 +261,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_resource_param_object, rc_resource_param_object::id_type, &rc_resource_param_object::get_id > >
   >,
-  allocator< rc_resource_param_object >
+  multi_index_allocator< rc_resource_param_object >
 > rc_resource_param_index;
 
 typedef multi_index_container<
@@ -270,7 +270,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_pool_object, rc_pool_object::id_type, &rc_pool_object::get_id > >
   >,
-  allocator< rc_pool_object >
+  multi_index_allocator< rc_pool_object >
 > rc_pool_index;
 
 typedef multi_index_container<
@@ -279,7 +279,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_stats_object, rc_stats_object::id_type, &rc_stats_object::get_id > >
   >,
-  allocator< rc_stats_object >
+  multi_index_allocator< rc_stats_object >
 > rc_stats_index;
 
 struct by_from_to;
@@ -296,7 +296,7 @@ typedef multi_index_container<
       >
     >
   >,
-  allocator< rc_direct_delegation_object >
+  multi_index_allocator< rc_direct_delegation_object >
 > rc_direct_delegation_index;
 
 typedef multi_index_container<
@@ -307,7 +307,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_account >,
       member< rc_expired_delegation_object, account_id_type, &rc_expired_delegation_object::from > >
   >,
-  allocator< rc_expired_delegation_object >
+  multi_index_allocator< rc_expired_delegation_object >
 > rc_expired_delegation_index;
 
 struct by_timestamp;
@@ -320,7 +320,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_timestamp >,
       const_mem_fun< rc_usage_bucket_object, time_point_sec, &rc_usage_bucket_object::get_timestamp > >
   >,
-  allocator< rc_usage_bucket_object >
+  multi_index_allocator< rc_usage_bucket_object >
 > rc_usage_bucket_index;
 
 } } // hive::chain
