@@ -35,7 +35,7 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
 
-struct by_block_number;
+struct by_block;
 struct by_comment_id;
 
 typedef multi_index_container<
@@ -43,7 +43,7 @@ typedef multi_index_container<
     indexed_by<
       ordered_unique< tag< by_id >,
         const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id > >,
-      ordered_unique< tag< by_block_number >,
+      ordered_unique< tag< by_block >,
         composite_key< volatile_comment_object,
           member< volatile_comment_object, uint32_t, &volatile_comment_object::block_number>,
           const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >

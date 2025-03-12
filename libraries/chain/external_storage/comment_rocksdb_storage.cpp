@@ -1,5 +1,5 @@
-#include <hive/chain/external_storage//comment_rocksdb_objects.hpp>
-#include <hive/chain/external_storage//comment_rocksdb_storage.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_storage.hpp>
 
 namespace hive { namespace chain {
 
@@ -233,31 +233,6 @@ std::string comment_rocksdb_storage::getHash( const fc::ripemd160& content )
     return "";
 }
 
-void comment_rocksdb_storage::storeString( const std::string& content )
-{
-  Slice keySlice( content.data(), content.size() );
-  Slice valueSlice;
-
-  auto s = _writeBuffer.Put(_columnHandles[0], keySlice, valueSlice);
-  checkStatus(s);
-
-}
-
-std::string comment_rocksdb_storage::getString( const std::string& content )
-{
-  ReadOptions rOptions;
-
-  Slice keySlice( content.data(), content.size() );
-
-  PinnableSlice _buffer;
-  ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[0], keySlice, &_buffer);
-
-  if( s.ok() )
-    return { content };
-  else
-    return "";
-}
-
 void comment_rocksdb_storage::flushWriteBuffer(DB* storage)
 {
   ilog("xxxxxxxxxxxxxxxxxxx shutdownDb B");
@@ -318,6 +293,15 @@ void comment_rocksdb_storage::comment_was_paid( const comment_cashout_object& co
 
     vc.was_paid                 = true;
   });
+}
+
+void comment_rocksdb_storage::move_to_external_storage( const volatile_comment_object& volatile_object )
+{
+  Slice keySlice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
+  Slice valueSlice;
+
+  auto s = _writeBuffer.Put(_columnHandles[0], keySlice, valueSlice);
+  checkStatus(s);
 }
 
 }}

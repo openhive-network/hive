@@ -63,9 +63,6 @@ class comment_rocksdb_storage: public external_storage_provider
     void storeHash( const fc::ripemd160& content );
     std::string getHash( const fc::ripemd160& content );
 
-    void storeString( const std::string& content );
-    std::string getString( const std::string& content );
-
     void flushWriteBuffer(DB* storage = nullptr);
 
     void flushStorage();
@@ -77,7 +74,7 @@ class comment_rocksdb_storage: public external_storage_provider
 
     void store_comment( const comment_id_type& comment_id, uint32_t block_number ) override;
     void comment_was_paid( const comment_cashout_object& comment_cashout ) override;
-
+    void move_to_external_storage( const volatile_comment_object& volatile_object ) override;
 };
 
 }}

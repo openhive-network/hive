@@ -88,12 +88,11 @@ struct pre_operation_visitor
 
   void operator()( const comment_operation& op )const
   {
-    if( external_storage.db.get_external_storage_provider() )
-    {
-      auto _found = external_storage.db.find_comment( op.author, op.permlink );
-      FC_ASSERT( _found );
-      external_storage.db.get_external_storage_provider()->store_comment( _found->get_id(), external_storage.db.head_block_num() );
-    }
+    FC_ASSERT( external_storage.db.get_external_storage_provider() );
+
+    auto _found = external_storage.db.find_comment( op.author, op.permlink );
+    FC_ASSERT( _found );
+    external_storage.db.get_external_storage_provider()->store_comment( _found->get_id(), external_storage.db.head_block_num() );
   }
 
 };
@@ -106,7 +105,7 @@ external_storage_mgr::external_storage_mgr( chain_plugin& chain, database& db, c
 
   try
   {
-    ilog( "Initializing comment_rocksdb plugin" );
+    ilog( "Initializing external storage manager" );
 
     _pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ on_pre_apply_operation( note ); }, chain, 0 );
 
@@ -135,7 +134,22 @@ void external_storage_mgr::on_pre_apply_operation( const operation_notification&
 
 void external_storage_mgr::on_irreversible_block( uint32_t block_num )
 {
+  FC_ASSERT( db.get_external_storage_provider() );
 
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
+
+  auto _it = _volatile_idx.find( block_num );
+
+  while( _it != _volatile_idx.end() && _it->block_number <= block_num )
+  {
+    db.get_external_storage_provider()->move_to_external_storage( *_it );
+
+    //temporary disabled!!!!
+    //const auto& _comment = db.get_comment( _it->comment_id );
+    //db.remove( _comment );
+
+    ++_it;
+  }
 }
 
 class transaction_flow_control
