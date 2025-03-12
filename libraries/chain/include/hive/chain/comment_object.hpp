@@ -436,7 +436,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< comment_vote_object >
+    multi_index_allocator< comment_vote_object >
   > comment_vote_index;
 
 
@@ -454,7 +454,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_permlink >, /// used by consensus to find posts referenced in ops
         const_mem_fun< comment_object, const comment_object::author_and_permlink_hash_type&, &comment_object::get_author_and_permlink_hash > >
     >,
-    allocator< comment_object >
+    multi_index_allocator< comment_object >
   > comment_index;
 
   struct by_cashout_time; /// cashout_time
@@ -471,7 +471,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< comment_cashout_object >
+    multi_index_allocator< comment_cashout_object >
   > comment_cashout_index;
 
   struct by_root;
@@ -489,7 +489,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< comment_cashout_ex_object >
+    multi_index_allocator< comment_cashout_ex_object >
   > comment_cashout_ex_index;
 
 } } // hive::chain
