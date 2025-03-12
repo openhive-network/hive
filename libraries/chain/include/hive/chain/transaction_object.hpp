@@ -44,7 +44,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< transaction_object >
+    multi_index_allocator< transaction_object >
   > transaction_index;
 
 } } // hive::chain
