@@ -44,7 +44,7 @@ typedef multi_index_container<
       >
     >
   >,
-  allocator< key_lookup_object >
+  multi_index_allocator< key_lookup_object >
 > key_lookup_index;
 
 } } } // hive::plugins::account_by_key
