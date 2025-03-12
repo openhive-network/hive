@@ -302,9 +302,18 @@ void comment_rocksdb_storage::store_comment( const comment_id_type& comment_id, 
   });
 }
 
-void comment_rocksdb_storage::cashout_is_done( const comment_id_type& comment_id )
+void comment_rocksdb_storage::comment_was_paid( const comment_id_type& comment_id )
 {
+  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
 
+  auto _found = _volatile_idx.find( comment_id );
+
+  FC_ASSERT( _found != _volatile_idx.end() );
+
+  _db.modify( *_found, []( volatile_comment_object& vc )
+  {
+    vc.was_paid = true;
+  });
 }
 
 }}

@@ -76,7 +76,7 @@ class comment_rocksdb_storage: public external_storage_provider
     ~comment_rocksdb_storage();
 
     void store_comment( const comment_id_type& comment_id, uint32_t block_number ) override;
-    void cashout_is_done( const comment_id_type& comment_id ) override;
+    void comment_was_paid( const comment_id_type& comment_id ) override;
 
 };
 
