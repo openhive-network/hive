@@ -205,7 +205,7 @@ typedef multi_index_container <
     >
 // #endif
   >,
-  allocator< smt_contribution_object >
+  multi_index_allocator< smt_contribution_object >
 > smt_contribution_index;
 
 struct by_symbol {};
@@ -225,7 +225,7 @@ typedef multi_index_container <
       >
     >
   >,
-  allocator< smt_token_object >
+  multi_index_allocator< smt_token_object >
 > smt_token_index;
 
 typedef multi_index_container <
@@ -236,7 +236,7 @@ typedef multi_index_container <
     ordered_unique< tag< by_symbol >,
       member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol > >
   >,
-  allocator< smt_ico_object >
+  multi_index_allocator< smt_ico_object >
 > smt_ico_index;
 
 struct by_symbol_time;
@@ -253,7 +253,7 @@ typedef multi_index_container <
       >
     >
   >,
-  allocator< smt_token_emissions_object >
+  multi_index_allocator< smt_token_emissions_object >
 > smt_token_emissions_index;
 
 } } // namespace hive::chain

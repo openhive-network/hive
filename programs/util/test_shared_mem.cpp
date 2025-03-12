@@ -47,6 +47,7 @@ namespace bip=boost::interprocess;
 using chainbase::shared_string;
 using chainbase::t_deque;
 using chainbase::allocator;
+using chainbase::multi_index_allocator;
 
 /* Book record. All its members can be placed in shared memory,
   * hence the structure itself can too.
@@ -85,7 +86,7 @@ typedef multi_index_container<
     ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,shared_string,name) >,
     ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,int32_t,prize) >
   >,
-  allocator< book >
+  multi_index_allocator< book >
 > book_container;
 
 

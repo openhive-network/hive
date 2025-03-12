@@ -95,7 +95,7 @@ typedef multi_index_container<
         >
       >
     >,
-    allocator< volatile_operation_object >
+    multi_index_allocator< volatile_operation_object >
   > volatile_operation_index;
 
 } } } // hive::plugins::account_history_rocksdb

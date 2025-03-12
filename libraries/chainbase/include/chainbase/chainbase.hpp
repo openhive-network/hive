@@ -139,6 +139,7 @@ namespace chainbase {
   namespace bfs = boost::filesystem;
   using std::unique_ptr;
   using std::vector;
+  using helpers::get_allocator_helper_t;
 
   struct strcmp_less
   {
@@ -243,8 +244,8 @@ namespace chainbase {
       typedef allocator< std::pair<const id_type, value_type> > id_value_allocator_type;
       typedef allocator< id_type >                              id_allocator_type;
 
-      template<typename T>
-      undo_state( allocator<T> al )
+      template<typename Allocator>
+      undo_state( Allocator al )
       :old_values( id_value_allocator_type( al ) ),
         removed_values( id_value_allocator_type( al ) ),
         new_ids( id_allocator_type( al ) ){}
@@ -338,11 +339,19 @@ namespace chainbase {
       typedef allocator< generic_index >                            allocator_type;
       typedef undo_state< value_type >                              undo_state_type;
 
-      generic_index( allocator<value_type> a, bfs::path p )
-      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
+      template <typename Allocator>
+      generic_index( Allocator a, bfs::path p )
+      : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+        _indices( a, p ),
+        _size_of_value_type( sizeof(value_type) ),
+        _size_of_this(sizeof(*this)) {}
 
-      generic_index( allocator<value_type> a )
-      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
+      template <typename Allocator>
+      generic_index( Allocator a )
+      : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+        _indices( a ),
+        _size_of_value_type( sizeof(value_type) ),
+        _size_of_this(sizeof(*this)) {}
 
       size_t get_item_additional_allocation() const {
         return _item_additional_allocation;
@@ -361,8 +370,8 @@ namespace chainbase {
       template<typename ...Args>
       const value_type& emplace( Args&&... args ) {
         auto new_id = _next_id;
-
-        auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
+        auto a = _indices.get_allocator();
+        auto insert_result = _indices.emplace( get_allocator_helper_t<value_type>::get_generic_allocator(a), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
@@ -382,7 +391,8 @@ namespace chainbase {
       void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack,
         std::function<std::string(const fc::variant&)>&& preetify) {
         _next_id = objectId;
-        value_type tmp(_indices.get_allocator(), objectId, std::move(unpack));
+        auto a = _indices.get_allocator();
+        value_type tmp(get_allocator_helper_t<value_type>::get_generic_allocator(a), objectId, std::move(unpack));
 
         auto insert_result = _indices.emplace(std::move(tmp));
 
@@ -571,7 +581,8 @@ namespace chainbase {
       {
         ++_revision;
 
-        _stack.emplace_back( _indices.get_allocator() );
+        auto a = _indices.get_allocator();
+        _stack.emplace_back( get_allocator_helper_t<value_type>::get_generic_allocator(a) );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
         return session( *this, _revision );
@@ -1416,8 +1427,8 @@ namespace chainbase {
       template<typename MultiIndexType>
       void add_index_helper() {
         const uint16_t type_id = generic_index<MultiIndexType>::value_type::type_id;
-        typedef generic_index<MultiIndexType>          index_type;
-        typedef typename index_type::allocator_type    index_alloc;
+        typedef generic_index<MultiIndexType>           index_type;
+        typedef typename MultiIndexType::allocator_type index_alloc;
 
         std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
 

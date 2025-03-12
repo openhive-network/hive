@@ -136,7 +136,7 @@ typedef multi_index_container<
       composite_key_compare< std::less< uint32_t >, std::less< fc::time_point_sec > >
     >
   >,
-  allocator< bucket_object >
+  multi_index_allocator< bucket_object >
 > bucket_index;
 
 struct by_time;
@@ -152,7 +152,7 @@ typedef multi_index_container<
       >
     >
   >,
-  allocator< order_history_object >
+  multi_index_allocator< order_history_object >
 > order_history_index;
 
 } } } // hive::plugins::market_history

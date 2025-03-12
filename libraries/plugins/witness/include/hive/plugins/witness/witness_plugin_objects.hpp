@@ -37,7 +37,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_account >,
       member< witness_custom_op_object, account_name_type, &witness_custom_op_object::account > >
   >,
-  allocator< witness_custom_op_object >
+  multi_index_allocator< witness_custom_op_object >
 > witness_custom_op_index;
 
 } } }
