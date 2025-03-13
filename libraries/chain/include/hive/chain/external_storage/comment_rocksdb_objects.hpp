@@ -59,10 +59,34 @@ typedef multi_index_container<
     allocator< volatile_comment_object >
   > volatile_comment_index;
 
+class rocksdb_comment_object
+{
+  public:
+
+    rocksdb_comment_object( const volatile_comment_object& obj )
+    {
+      id                        = obj.get_id();
+
+      comment_id                = obj.comment_id;
+      parent_comment            = obj.parent_comment;
+      author_and_permlink_hash  = obj.author_and_permlink_hash.str();
+      depth                     = obj.depth;
+    }
+
+    uint64_t    id = 0;
+
+    uint32_t    comment_id;
+    uint32_t    parent_comment;
+    std::string author_and_permlink_hash;
+    uint16_t    depth = 0;
+};
+
 } } // hive::chain
 
 
-FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(block_number)(was_paid) )
+FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(author_and_permlink_hash)(depth)(block_number)(was_paid) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_comment_object, hive::chain::volatile_comment_index )
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::volatile_comment_index)
+
+FC_REFLECT( hive::chain::rocksdb_comment_object, (id)(comment_id)(parent_comment)(author_and_permlink_hash)(depth) )

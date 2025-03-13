@@ -1,5 +1,8 @@
-#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+
 #include <hive/chain/external_storage/comment_rocksdb_storage.hpp>
+
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/utilities.hpp>
 
 namespace hive { namespace chain {
 
@@ -297,10 +300,14 @@ void comment_rocksdb_storage::comment_was_paid( const comment_cashout_object& co
 
 void comment_rocksdb_storage::move_to_external_storage( const volatile_comment_object& volatile_object )
 {
-  Slice keySlice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
-  Slice valueSlice;
+  Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
 
-  auto s = _writeBuffer.Put(_columnHandles[0], keySlice, valueSlice);
+  rocksdb_comment_object _obj( volatile_object );
+
+  auto _serialize_buffer = dump( _obj );
+  Slice _value_slice( _serialize_buffer.data(), _serialize_buffer.size() );
+
+  auto s = _writeBuffer.Put(_columnHandles[0], _key_slice, _value_slice );
   checkStatus(s);
 }
 
