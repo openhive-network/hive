@@ -72,7 +72,7 @@ namespace fc {
     // See https://github.com/cryptonomex/graphene/issues/597
     //
 
-    ptr p_this = ptr( this, true );
+    ptr p_this = shared_from_this();
 
     try
     {
@@ -123,7 +123,7 @@ namespace fc {
       blocked_thread = _blocked_thread;
     }
     if( blocked_thread ) 
-      blocked_thread->notify(ptr(this,true));
+      blocked_thread->notify( shared_from_this() );
   }
   promise_base::~promise_base() { }
   void promise_base::_set_timeout(){

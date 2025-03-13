@@ -1,9 +1,8 @@
 #include <fc/thread/thread.hpp>
-#include <fc/string.hpp>
 #include <fc/time.hpp>
 #include <boost/thread.hpp>
 #include "context.hpp"
-#include <condition_variable>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 #include <vector>
@@ -15,12 +14,23 @@ namespace fc {
             return a->resume_time > b->resume_time;
         }
     };
+
+    namespace detail {
+       class idle_guard {
+       public:
+          explicit idle_guard( thread_d* t );
+          ~idle_guard();
+       private:
+          thread_idle_notifier* notifier;
+       };
+    }
+
     class thread_d {
 
         public:
            using context_pair = std::pair<thread_d*, fc::context*>;
 
-           thread_d(fc::thread& s)
+           thread_d( fc::thread& s, thread_idle_notifier* n = 0 )
             :self(s), boost_thread(0),
              task_in_queue(0),
              next_posted_num(1),
@@ -28,7 +38,8 @@ namespace fc {
              current(0),
              pt_head(0),
              blocked(0),
-             next_unused_task_storage_slot(0)
+             next_unused_task_storage_slot(0),
+             notifier(n)
 #ifndef NDEBUG
              ,non_preemptable_scope_count(0)
 #endif
@@ -46,9 +57,17 @@ namespace fc {
             ~thread_d()
             {
               delete current;
+              current = nullptr;
               fc::context* temp;
               for (fc::context* ready_context : ready_heap)
-                delete ready_context;
+              {
+                  if (ready_context->cur_task)
+                  {
+                     ready_context->cur_task->release();
+                     ready_context->cur_task = nullptr;
+                  }
+                  delete ready_context;
+              }
               ready_heap.clear();
               while (blocked)
               {
@@ -75,8 +94,8 @@ namespace fc {
            fc::thread&             self;
            boost::thread* boost_thread;
            stack_allocator                  stack_alloc;
-           std::condition_variable          task_ready;
-           std::mutex                       task_ready_mutex;
+           boost::condition_variable        task_ready;
+           boost::mutex                     task_ready_mutex;
 
            boost::atomic<task_base*>       task_in_queue;
            std::vector<task_base*>         task_pqueue;    // heap of tasks that have never started, ordered by proirity & scheduling time
@@ -86,7 +105,7 @@ namespace fc {
            std::vector<fc::context*>       free_list;      // list of unused contexts that are ready for deletion
 
            bool                     done;
-           fc::string               name;
+           std::string               name;
            fc::context*             current;     // the currently-executing task in this thread
 
            fc::context*             pt_head;     // list of contexts that can be reused for new tasks
@@ -103,13 +122,16 @@ namespace fc {
            std::vector<detail::specific_data_info> non_task_specific_data;
            unsigned next_unused_task_storage_slot;
 
+           thread_idle_notifier *notifier;
+
 #ifndef NDEBUG
            unsigned                 non_preemptable_scope_count;
 #endif
 
 #if 0
-           void debug( const fc::string& s ) {
+           void debug( const std::string& s ) {
           return;
+              //boost::unique_lock<boost::mutex> lock(log_mutex());
 
               fc::cerr<<"--------------------- "<<s.c_str()<<" - "<<current;
               if( current && current->cur_task ) fc::cerr<<'('<<current->cur_task->get_desc()<<')';
@@ -318,7 +340,7 @@ namespace fc {
                  if( (*task_itr)->canceled() )
                  {
                     (*task_itr)->run();
-                    (*task_itr)->release();
+                    (*task_itr)->release(); // HERE BE DRAGONS
                     task_itr = task_sch_queue.erase(task_itr);
                     canceled_task = true;
                     continue;
@@ -505,7 +527,6 @@ namespace fc {
               }
               self->free_list.push_back(self->current);
               self->start_next_fiber( false );
-              std::cerr << "existing start process tasks \n ";
            }
 
            void run_next_task()
@@ -517,7 +538,7 @@ namespace fc {
               next->run();
               current->cur_task = 0;
               next->_set_active_context(0);
-              next->release();
+              next->release(); // HERE BE DRAGONS
               current->reinitialize();
            }
 
@@ -582,14 +603,19 @@ namespace fc {
                 clear_free_list();
 
                 { // lock scope
-                  std::unique_lock<std::mutex> lock(task_ready_mutex);
-                  if( has_next_task() )
+                  boost::unique_lock<boost::mutex> lock(task_ready_mutex);
+                  if( has_next_task() ) 
                     continue;
                   time_point timeout_time = check_for_timeouts();
 
                   if( done )
                     return;
-                  if( timeout_time == time_point::maximum() )
+
+                  detail::idle_guard guard( this );
+                  if( task_in_queue.load(boost::memory_order_relaxed) )
+                     continue;
+
+                  if( timeout_time == time_point::maximum() ) 
                     task_ready.wait( lock );
                   else if( timeout_time != time_point::min() )
                   {
@@ -612,9 +638,9 @@ namespace fc {
                      * from a function that takes a relative time like fc::usleep() vs something
                      * that takes an absolute time like fc::promise::wait_until(), so we can't always
                      * do the right thing here.
-                     */
-                    task_ready.wait_until( lock, std::chrono::steady_clock::now() +
-                                                 std::chrono::microseconds(timeout_time.time_since_epoch().count() - time_point::now().time_since_epoch().count()) );
+                     */ 
+                    task_ready.wait_until( lock, boost::chrono::steady_clock::now() + 
+                                                 boost::chrono::microseconds(timeout_time.time_since_epoch().count() - time_point::now().time_since_epoch().count()) );
                   }
                 }
               }
@@ -670,7 +696,7 @@ namespace fc {
         {
           if( fc::thread::current().my != this )
           {
-            self.async( [=](){ unblock(c); }, "thread_d::unblock" );
+            self.async( [this,c](){ unblock(c); }, "thread_d::unblock" );
             return;
           }
 
