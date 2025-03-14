@@ -7,6 +7,8 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/filesystem.hpp>
 
+#include <fstream>
+
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 

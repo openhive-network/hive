@@ -15,6 +15,7 @@
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 
+#include <deque>
 #include <type_traits>
 
 namespace chainbase {

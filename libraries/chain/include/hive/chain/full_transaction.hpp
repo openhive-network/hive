@@ -4,6 +4,7 @@
 #include <chrono>
 #include <mutex>
 #include <atomic>
+#include <variant>
 
 namespace hive { namespace chain {
 
