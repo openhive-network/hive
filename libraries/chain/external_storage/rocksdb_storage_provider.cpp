@@ -1,4 +1,5 @@
 
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 
@@ -45,6 +46,25 @@ void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_
   Slice _value_slice( _serialize_buffer.data(), _serialize_buffer.size() );
 
   mgr->save( _key_slice, _value_slice, 0/*column_number*/ );
+}
+
+std::shared_ptr<comment_object> rocksdb_storage_provider::find_comment( const account_id_type& author, const std::string& permlink )
+{
+  auto _hash = comment_object::compute_author_and_permlink_hash( author, permlink );
+
+  Slice _key( _hash.data(), _hash.data_size() );
+
+  std::string _buffer;
+
+  mgr->read( _key, _buffer, 0/*column_number*/ );
+
+  rocksdb_comment_object _obj;
+
+  load( _obj, _buffer.data(), _buffer.size() );
+
+  return std::shared_ptr<comment_object>( new comment_object ( _obj.id,
+                                                  oid_ref< comment_object>( oid<comment_object>( _obj.parent_comment ) ),
+                                                   _hash, _obj.depth ) );
 }
 
 }}

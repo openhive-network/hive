@@ -59,7 +59,6 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
     void cleanupColumnHandles(::rocksdb::DB* db);
 
-    void storeHash( const fc::ripemd160& content );
     std::string getHash( const fc::ripemd160& content );
 
     void flushWriteBuffer(DB* storage = nullptr);
@@ -73,6 +72,7 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
     database& get_database() override;
     void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
+    void read( const Slice& key, std::string& value, const uint32_t& column_number ) override;
 };
 
 }}

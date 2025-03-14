@@ -14,7 +14,8 @@ class external_storage_provider
 
     virtual void store_comment( const comment_id_type& comment_id, uint32_t block_number ) = 0;
     virtual void comment_was_paid( const comment_cashout_object& comment_cashout ) = 0;
-    virtual void move_to_external_storage( const volatile_comment_object& volatile_object ) = 0 ;
+    virtual void move_to_external_storage( const volatile_comment_object& volatile_object ) = 0;
+    virtual std::shared_ptr<comment_object> find_comment( const account_id_type& author, const std::string& permlink ) = 0;
 };
 
 } } // hive::chain

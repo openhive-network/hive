@@ -63,6 +63,8 @@ class rocksdb_comment_object
 {
   public:
 
+    rocksdb_comment_object(){}
+
     rocksdb_comment_object( const volatile_comment_object& obj )
     {
       id                        = obj.get_id();

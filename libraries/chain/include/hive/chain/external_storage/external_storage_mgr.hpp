@@ -18,6 +18,7 @@ class external_storage_mgr
 
     virtual database& get_database() = 0;
     virtual void save( const Slice& key, const Slice& value, const uint32_t& column_number ) = 0;
+    virtual void read( const Slice& key, std::string& value, const uint32_t& column_number ) = 0;
 };
 
 }}

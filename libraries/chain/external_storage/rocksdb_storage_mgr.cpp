@@ -7,7 +7,7 @@
 namespace hive { namespace chain {
 
 using ::rocksdb::PinnableSlice;
-using hive::chain::volatile_comment_object;
+
 namespace
 {
 class AComparator : public Comparator
@@ -212,15 +212,6 @@ void rocksdb_storage_mgr::cleanupColumnHandles(::rocksdb::DB* db)
   _columnHandles.clear();
 }
 
-void rocksdb_storage_mgr::storeHash( const fc::ripemd160& content )
-{
-  Slice keySlice( content.data(), content.data_size() );
-  Slice valueSlice;
-
-  auto s = _writeBuffer.Put(_columnHandles[0], keySlice, valueSlice);
-  checkStatus(s);
-}
-
 std::string rocksdb_storage_mgr::getHash( const fc::ripemd160& content )
 {
   ReadOptions rOptions;
@@ -279,6 +270,14 @@ database& rocksdb_storage_mgr::get_database()
 void rocksdb_storage_mgr::save( const Slice& key, const Slice& value, const uint32_t& column_number )
 {
   auto s = _writeBuffer.Put( _columnHandles[column_number], key, value );
+  checkStatus(s);
+}
+
+void rocksdb_storage_mgr::read( const Slice& key, std::string& value, const uint32_t& column_number )
+{
+  ReadOptions rOptions;
+
+  ::rocksdb::Status s = _storage->Get( rOptions, _columnHandles[column_number], key, &value );
   checkStatus(s);
 }
 
