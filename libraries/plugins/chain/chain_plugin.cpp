@@ -12,7 +12,8 @@
 #include <hive/chain/index.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
-#include <hive/chain/external_storage/comment_rocksdb_storage.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -59,12 +60,12 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
-class external_storage_mgr
+class external_storage_connector
 {
   public:
 
-    external_storage_mgr( chain_plugin& chain, database& _db, const bfs::path& path );
-    ~external_storage_mgr();
+    external_storage_connector( chain_plugin& chain, database& _db, const bfs::path& path );
+    ~external_storage_connector();
 
     void on_pre_apply_operation( const operation_notification& note );
     void on_irreversible_block( uint32_t block_num );
@@ -77,9 +78,9 @@ class external_storage_mgr
 
 struct pre_operation_visitor
 {
-  external_storage_mgr& external_storage;
+  external_storage_connector& external_storage;
 
-  pre_operation_visitor( external_storage_mgr& external_storage ) : external_storage( external_storage ) {}
+  pre_operation_visitor( external_storage_connector& external_storage ) : external_storage( external_storage ) {}
 
   typedef void result_type;
 
@@ -97,9 +98,9 @@ struct pre_operation_visitor
 
 };
 
-external_storage_mgr::external_storage_mgr( chain_plugin& chain, database& db, const bfs::path& path ): db( db )
+external_storage_connector::external_storage_connector( chain_plugin& chain, database& db, const bfs::path& path ): db( db )
 {
-  db.set_external_storage_provider( std::make_shared<comment_rocksdb_storage>( path, false, db ) );
+  db.set_external_storage_provider( std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) ) );
 
   HIVE_ADD_CORE_INDEX( db, hive::chain::volatile_comment_index );
 
@@ -121,18 +122,18 @@ external_storage_mgr::external_storage_mgr( chain_plugin& chain, database& db, c
 
 }
 
-external_storage_mgr::~external_storage_mgr()
+external_storage_connector::~external_storage_connector()
 {
   chain::util::disconnect_signal( _pre_apply_operation_conn );
   chain::util::disconnect_signal( _on_irreversible_block_conn );
 }
 
-void external_storage_mgr::on_pre_apply_operation( const operation_notification& note )
+void external_storage_connector::on_pre_apply_operation( const operation_notification& note )
 {
   note.op.visit( pre_operation_visitor( *this ) );
 }
 
-void external_storage_mgr::on_irreversible_block( uint32_t block_num )
+void external_storage_connector::on_irreversible_block( uint32_t block_num )
 {
   FC_ASSERT( db.get_external_storage_provider() );
 
@@ -376,7 +377,7 @@ class chain_plugin_impl
 
     appbase::application& theApp;
 
-    external_storage_mgr external_storage;
+    external_storage_connector external_storage;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );

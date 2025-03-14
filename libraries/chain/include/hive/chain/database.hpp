@@ -9,7 +9,7 @@
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/external_storage/external_storage_support.hpp>
+#include <hive/chain/external_storage/external_storage_provider.hpp>
 
 #include <hive/chain/rc/rc_utility.hpp>
 

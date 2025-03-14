@@ -1,9 +1,8 @@
 #pragma once
 
-#include <hive/chain/database.hpp>
-#include <hive/chain/external_storage/external_storage_support.hpp>
+#include <hive/chain/external_storage/external_storage_mgr.hpp>
 
-#include <hive/chain/external_storage//comment_rocksdb_objects.hpp>
+#include <hive/chain/database.hpp>
 
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
@@ -30,7 +29,7 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
-class comment_rocksdb_storage: public external_storage_provider
+class rocksdb_storage_mgr: public external_storage_mgr
 {
   public:
 
@@ -69,12 +68,11 @@ class comment_rocksdb_storage: public external_storage_provider
 
   public:
 
-    comment_rocksdb_storage( const bfs::path& storage_path, bool cleanDatabase, database& db );
-    ~comment_rocksdb_storage();
+    rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase, database& db );
+    ~rocksdb_storage_mgr();
 
-    void store_comment( const comment_id_type& comment_id, uint32_t block_number ) override;
-    void comment_was_paid( const comment_cashout_object& comment_cashout ) override;
-    void move_to_external_storage( const volatile_comment_object& volatile_object ) override;
+    database& get_database() override;
+    void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
 };
 
 }}

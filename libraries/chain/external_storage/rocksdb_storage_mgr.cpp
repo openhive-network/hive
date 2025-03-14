@@ -1,5 +1,5 @@
 
-#include <hive/chain/external_storage/comment_rocksdb_storage.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
@@ -57,18 +57,18 @@ const Comparator* by_Hash_Comparator()
 
 } /// anonymous
 
-comment_rocksdb_storage::comment_rocksdb_storage( const bfs::path& storage_path, bool cleanDatabase, database& db ): _db( db )
+rocksdb_storage_mgr::rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase, database& db ): _db( db )
 {
   _storagePath = storage_path;
   openDb( cleanDatabase );
 }
 
-comment_rocksdb_storage::~comment_rocksdb_storage()
+rocksdb_storage_mgr::~rocksdb_storage_mgr()
 {
   shutdownDb();
 }
 
-void comment_rocksdb_storage::openDb( bool cleanDatabase )
+void rocksdb_storage_mgr::openDb( bool cleanDatabase )
 {
   if( cleanDatabase )
     ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
@@ -102,7 +102,7 @@ void comment_rocksdb_storage::openDb( bool cleanDatabase )
   }
 }
 
-void comment_rocksdb_storage::shutdownDb( bool removeDB )
+void rocksdb_storage_mgr::shutdownDb( bool removeDB )
 {
   if(_storage)
   {
@@ -125,7 +125,7 @@ void comment_rocksdb_storage::shutdownDb( bool removeDB )
   }
 }
 
-comment_rocksdb_storage::ColumnDefinitions comment_rocksdb_storage::prepareColumnDefinitions( bool addDefaultColumn)
+rocksdb_storage_mgr::ColumnDefinitions rocksdb_storage_mgr::prepareColumnDefinitions( bool addDefaultColumn)
 {
   ColumnDefinitions columnDefs;
 
@@ -139,7 +139,7 @@ comment_rocksdb_storage::ColumnDefinitions comment_rocksdb_storage::prepareColum
   return columnDefs;
 }
 
-std::tuple<bool, bool> comment_rocksdb_storage::createDbSchema(const bfs::path& path)
+std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path)
 {
   DB* db = nullptr;
 
@@ -193,13 +193,13 @@ std::tuple<bool, bool> comment_rocksdb_storage::createDbSchema(const bfs::path& 
   }
 }
 
-void comment_rocksdb_storage::cleanupColumnHandles()
+void rocksdb_storage_mgr::cleanupColumnHandles()
 {
   if(_storage)
     cleanupColumnHandles(_storage.get());
 }
 
-void comment_rocksdb_storage::cleanupColumnHandles(::rocksdb::DB* db)
+void rocksdb_storage_mgr::cleanupColumnHandles(::rocksdb::DB* db)
 {
   for(auto* h : _columnHandles)
   {
@@ -212,7 +212,7 @@ void comment_rocksdb_storage::cleanupColumnHandles(::rocksdb::DB* db)
   _columnHandles.clear();
 }
 
-void comment_rocksdb_storage::storeHash( const fc::ripemd160& content )
+void rocksdb_storage_mgr::storeHash( const fc::ripemd160& content )
 {
   Slice keySlice( content.data(), content.data_size() );
   Slice valueSlice;
@@ -221,7 +221,7 @@ void comment_rocksdb_storage::storeHash( const fc::ripemd160& content )
   checkStatus(s);
 }
 
-std::string comment_rocksdb_storage::getHash( const fc::ripemd160& content )
+std::string rocksdb_storage_mgr::getHash( const fc::ripemd160& content )
 {
   ReadOptions rOptions;
 
@@ -236,7 +236,7 @@ std::string comment_rocksdb_storage::getHash( const fc::ripemd160& content )
     return "";
 }
 
-void comment_rocksdb_storage::flushWriteBuffer(DB* storage)
+void rocksdb_storage_mgr::flushWriteBuffer(DB* storage)
 {
   ilog("xxxxxxxxxxxxxxxxxxx shutdownDb B");
   if(storage == nullptr)
@@ -250,7 +250,7 @@ void comment_rocksdb_storage::flushWriteBuffer(DB* storage)
   ilog("xxxxxxxxxxxxxxxxxxx shutdownDb D");
 }
 
-void comment_rocksdb_storage::flushStorage()
+void rocksdb_storage_mgr::flushStorage()
 {
   if(_storage == nullptr)
     return;
@@ -271,43 +271,14 @@ void comment_rocksdb_storage::flushStorage()
   ilog("xxxxxxxxxxxxxxxxxxx shutdownDb H");
 }
 
-void comment_rocksdb_storage::store_comment( const comment_id_type& comment_id, uint32_t block_number )
+database& rocksdb_storage_mgr::get_database()
 {
-  _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
-  {
-    o.comment_id = comment_id;
-    o.block_number = block_number;
-  });
+  return _db;
 }
 
-void comment_rocksdb_storage::comment_was_paid( const comment_cashout_object& comment_cashout )
+void rocksdb_storage_mgr::save( const Slice& key, const Slice& value, const uint32_t& column_number )
 {
-  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
-  auto _found = _volatile_idx.find( comment_cashout.get_comment_id() );
-  FC_ASSERT( _found != _volatile_idx.end() );
-
-  const auto& _comment = _db.get_comment( comment_cashout.get_comment_id() );
-
-  _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
-  {
-    vc.parent_comment           = _comment.get_parent_id();
-    vc.author_and_permlink_hash = _comment.get_author_and_permlink_hash();
-    vc.depth                    = _comment.get_depth(); 
-
-    vc.was_paid                 = true;
-  });
-}
-
-void comment_rocksdb_storage::move_to_external_storage( const volatile_comment_object& volatile_object )
-{
-  Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
-
-  rocksdb_comment_object _obj( volatile_object );
-
-  auto _serialize_buffer = dump( _obj );
-  Slice _value_slice( _serialize_buffer.data(), _serialize_buffer.size() );
-
-  auto s = _writeBuffer.Put(_columnHandles[0], _key_slice, _value_slice );
+  auto s = _writeBuffer.Put( _columnHandles[column_number], key, value );
   checkStatus(s);
 }
 
