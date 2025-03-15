@@ -1747,16 +1747,16 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
   {
     if(_do_immediate_load)
     {
-      _self.get_app().save_status("loading snapshot");
+      _self.get_app().status.save_status("loading snapshot");
       load_snapshot(_snapshot_name, openArgs);
-      _self.get_app().save_status("finished loading snapshot");
+      _self.get_app().status.save_status("finished loading snapshot");
     }
 
     if(_do_immediate_dump)
     {
-      _self.get_app().save_status("dumping snapshot");
+      _self.get_app().status.save_status("dumping snapshot");
       prepare_snapshot(_snapshot_name);
-      _self.get_app().save_status("finished dumping snapshot");
+      _self.get_app().status.save_status("finished dumping snapshot");
     }
   }
 
