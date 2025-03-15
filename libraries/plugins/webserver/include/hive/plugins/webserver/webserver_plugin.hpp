@@ -13,7 +13,6 @@ namespace hive { namespace plugins { namespace webserver {
 namespace detail { class webserver_base; }
 
 using namespace appbase;
-using data_collector = hive::utilities::data_collector;
 
 /**
   * This plugin starts an HTTP/ws webserver and dispatches queries to
