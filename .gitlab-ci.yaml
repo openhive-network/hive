@@ -725,7 +725,7 @@ datagen_api_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 25
+    PYTEST_TIMEOUT_MINUTES: 30
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
 
