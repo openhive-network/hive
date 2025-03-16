@@ -2,10 +2,15 @@
 
 #include <chainbase/allocator_helpers.hpp>
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/core/demangle.hpp>
 
 namespace chainbase {
+
+  using namespace boost::multi_index;
 
   const uint32_t DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 12; // 4k
   //constexpr uint32_t DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 5; // 32
@@ -53,9 +58,8 @@ namespace chainbase {
     public:
       template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
       pool_allocator_t(TSegmentManager* _segment_manager, std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr)
-        : block_allocator(_segment_manager),
-          blocks(typename decltype(blocks)::allocator_type(_segment_manager)),
-          free_list(typename decltype(free_list)::allocator_type(_segment_manager))
+        : block_index(typename decltype(block_index)::allocator_type(_segment_manager)),
+          block_list(typename decltype(block_list)::allocator_type(_segment_manager))
         {
         }
       template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
@@ -65,9 +69,8 @@ namespace chainbase {
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
       pool_allocator_t(const pool_allocator_t<T2, BLOCK_SIZE, TSegmentManager, USE_MANAGED_MAPPED_FILE>& other,
         std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr)
-        : block_allocator(other.get_segment_manager()),
-          blocks(typename decltype(blocks)::allocator_type(other.get_segment_manager())),
-          free_list(typename decltype(free_list)::allocator_type(other.get_segment_manager()))
+        : block_index(typename decltype(block_index)::allocator_type(other.get_segment_manager())),
+          block_list(typename decltype(block_list)::allocator_type(other.get_segment_manager()))
         {
         }
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
@@ -78,8 +81,6 @@ namespace chainbase {
 
       ~pool_allocator_t()
         {
-        for (auto& block : blocks)
-          deallocate_block(block);
         }
 
       T* allocate(size_type n = 1)
@@ -96,7 +97,17 @@ namespace chainbase {
         return_object_memory(p);
         }
 
-      segment_manager_t* get_segment_manager() const { return block_allocator.get_segment_manager(); }
+      template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
+      segment_manager_t* get_segment_manager(std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) const
+        {
+        return block_index.get_allocator().get_segment_manager();
+        }
+
+      template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
+      segment_manager_t* get_segment_manager(std::enable_if_t<!_USE_MANAGED_MAPPED_FILE>* = nullptr) const
+        {
+        return nullptr;
+        }
 
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
       allocator<T2> get_generic_allocator(std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) const
@@ -122,26 +133,27 @@ namespace chainbase {
         return pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE>();
         }
 
-      uint32_t get_block_count() const { return blocks.size(); }
+      uint32_t get_block_count() const { return block_index.size(); }
 
       uint32_t get_allocated_count() const { return allocated_count; }
 
       std::string get_allocation_summary() const
         {
-        std::string result(get_allocator_name() + "allocation summary:");
+        std::string result(get_allocator_name() + " allocation summary:");
         result += "\nblocks: ";
-        result += std::to_string(blocks.size());
+        result += std::to_string(block_index.size());
         result += "\nallocated: ";
         result += std::to_string(allocated_count);
-        result += "\nfree_list: ";
-        result += std::to_string(free_list_size);
+        result += "\nnon-full blocks: ";
+        result += std::to_string(block_list_size);
         return result;
         }
 
     private:
-      struct chunk_t
+      union chunk_t
         {
-        char  object_memory[sizeof(T)];
+        char      object_memory[sizeof(T)];
+        chunk_t*  next;
 
         T* get_object_memory()
           {
@@ -151,9 +163,78 @@ namespace chainbase {
 
       struct block_t
         {
-        chunk_t   memory[BLOCK_SIZE]; // allocated memory block
-        uint32_t  first_free = 0; // memory+first_free point to first free memory chunk to use
+        chunk_t   chunks[BLOCK_SIZE];
+        chunk_t*  current = nullptr;
+        uint32_t  free_count = BLOCK_SIZE;
+        bool      on_list = false;
+
+        block_t()
+          {
+          current = chunks;
+          for (uint32_t i = 1; i < BLOCK_SIZE; ++i, ++current)
+            current->next = chunks + i;
+          current->next = nullptr;
+          print();
+          current = chunks;
+          }
+
+        void print()
+          {
+          return;
+          /*std::cout << chunks << std::endl;
+          for (int i = 0; i < BLOCK_SIZE; ++i)
+            std::cout << chunks[i].next << std::endl;*/
+          }
+
+        T* get_object_memory()
+          {
+          print();
+          assert(current != nullptr);
+          T* result = current->get_object_memory();
+          current = current->next;
+          --free_count;
+          assert((current == nullptr) == empty());
+          return result;
+          }
+
+        bool return_object_memory(chunk_t* chunk)
+          {
+          assert(chunk >= get_chunks_address() && chunk < (get_chunks_address()+BLOCK_SIZE));
+          chunk->next = current;
+          current = chunk;
+          return ++free_count == BLOCK_SIZE;
+          }
+
+        const chunk_t* get_chunks_address() const
+          {
+          return chunks;
+          }
+
+        // true if whole memory is free
+        bool full() const
+          {
+          return free_count == BLOCK_SIZE;
+          }
+
+        // true if no more free memory
+        bool empty() const
+          {
+          return free_count == 0;
+          }
         };
+
+      struct by_address;
+      using block_index_t = multi_index_container<
+        block_t,
+        indexed_by<
+          ordered_unique<tag<by_address>,
+            const_mem_fun<block_t, const chunk_t*, &block_t::get_chunks_address>,
+            std::greater<const chunk_t*>
+          >
+        >,
+        allocator<block_t>
+      >;
+      using block_list_t = forward_list_t<block_t*>;
 
     private:
       template <typename _T = T>
@@ -170,67 +251,83 @@ namespace chainbase {
 
       std::string get_allocator_name() const
         {
-        return std::string("pool_allocator_t<") + get_type_name() + ">";
+        return std::string("pool_allocator<") + get_type_name() + ">";
         }
 
       T* get_object_memory()
         {
-        if (!free_list.empty())
+        if (current_block == nullptr)
           {
-          --free_list_size;
-          T* result = free_list.front();
-          free_list.pop_front();
-          return result;
+          while (!block_list.empty())
+            {
+            block_t* block = get_from_block_list();
+
+            if (block->full() && !block_list.empty())
+              {
+              auto& index = block_index.template get<by_address>();
+              index.erase(block->get_chunks_address());
+              }
+            else
+              {
+              current_block = block;
+              break;
+              }
+            }
+
+          if (current_block == nullptr)
+            current_block = allocate_block();
           }
 
-        if (current_block == nullptr)
-          current_block = allocate_block();
-
-        T* result = current_block->memory[current_block->first_free++].get_object_memory();
-        if (current_block->first_free == BLOCK_SIZE)
-          current_block = nullptr; // block has no more free memory space
+        T* result = current_block->get_object_memory();
+        if (current_block->empty())
+          current_block = nullptr;
 
         return result;
         }
 
-      void return_object_memory(T* object_memory)
+      void return_object_memory(T* object)
         {
-        assert(check_valid_memory(object_memory));
-        ++free_list_size;
-        free_list.push_front(object_memory);
+        chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
+        const auto& index = block_index.template get<by_address>();
+        const auto found = index.lower_bound(chunk);
+        assert(found != index.cend());
+        block_t* block = const_cast<block_t*>(&(*found));
+        block->return_object_memory(chunk);
+        if (block != current_block)
+          add_to_block_list(block);
         }
 
       block_t* allocate_block()
         {
-        block_t* result = &(*block_allocator.allocate(1));
-        ::new (result) block_t();
-        blocks.push_back(result);
-        return result;
+        auto insert_result = block_index.emplace();
+        return const_cast<block_t*>(&(*insert_result.first));
         }
 
-      void deallocate_block(block_t* block)
+      void add_to_block_list(block_t* block)
         {
-        block_allocator.deallocate(block, 1);
+        if (!block->on_list)
+          {
+          block->on_list = true;
+          block_list.push_front(block);
+          ++block_list_size;
+          }
         }
 
-      bool check_valid_memory(const T* object_memory) const
+      block_t* get_from_block_list()
         {
-        for (auto& block : blocks)
-          if (object_memory >= block->memory && object_memory < (block->memory+BLOCK_SIZE) && ((object_memory - block->memory) % sizeof(T)) == 0)
-            return true;
-
-        return false;
+        assert(!block_list.empty());
+        block_t* block = block_list.front();
+        block->on_list = false;
+        block_list.pop_front();
+        return block;
         }
 
     private:
-      allocator<block_t>  block_allocator;
-      block_t*            current_block = nullptr;
-      t_vector<block_t*>  blocks;
-      //std::vector<block_t*> blocks;
-      t_slist<T*>         free_list; // list of freed memory chunks for reusing
-      //std::forward_list<T*> free_list;
-      uint32_t            allocated_count = 0;
-      uint32_t            free_list_size = 0;
+      block_index_t             block_index;
+      block_list_t              block_list;
+      block_t*                  current_block = nullptr;
+      uint32_t                  allocated_count = 0;
+      uint32_t                  block_list_size = 0;
     };
 
   template <typename T>
