@@ -17,6 +17,7 @@
 
 #include <deque>
 #include <type_traits>
+#include <deque>
 
 namespace chainbase {
 
