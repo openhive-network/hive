@@ -62,7 +62,7 @@ network_broadcast_api::~network_broadcast_api() {}
 
 void network_broadcast_api::check_p2p()
 {
-  if( not my->_chain.is_p2p_enabled() )
+  if( !my->_chain.is_p2p_enabled() )
     my->_p2p = nullptr;
   else
     FC_ASSERT( my->_p2p != nullptr ); // constructor should fill it properly

@@ -705,7 +705,7 @@ void colony_plugin_impl::start( uint32_t block_num )
     _max_threads = i;
   }
 
-  if( not _disable_broadcast && not theApp.is_interrupt_request() )
+  if( !_disable_broadcast && !theApp.is_interrupt_request() )
   {
     auto* _p2p_plugin = theApp.find_plugin< hive::plugins::p2p::p2p_plugin >();
     if( _p2p_plugin == nullptr )
@@ -730,7 +730,7 @@ void colony_plugin_impl::end_of_sync()
   if( _start_at_block <= head_block )
     start( head_block ); // while not under write lock, we can still call it safely, since it is called from writer thread
 
-  if( not theApp.is_interrupt_request() )
+  if( !theApp.is_interrupt_request() )
   {
     // only now attach to main signals
     _post_apply_transaction_conn = _db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )

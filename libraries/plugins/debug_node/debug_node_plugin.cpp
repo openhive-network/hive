@@ -338,7 +338,7 @@ uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private
     debug_public_key = debug_private_key->get_public_key();
   if( my->_witness_plugin_ptr )
     signing_keys = &my->_witness_plugin_ptr->get_signing_keys();
-  if( not debug_private_key.valid() and ( signing_keys == nullptr or signing_keys->empty() ) )
+  if( !debug_private_key.valid() && ( signing_keys == nullptr || signing_keys->empty() ) )
   {
     elog( "Skipping generation because I don't know the private key" );
     FC_ASSERT( false, "Skipping generation because I don't know the private key" );

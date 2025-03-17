@@ -141,7 +141,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
     _wso.account_subsidy_witness_rd.min_decay = min_decay;
   } );
 
-  if( not db.has_hardfork( HIVE_HARDFORK_1_28_GLOBAL_WITNESS_PROPS ) ) // after HF28 it is copied from active wso
+  if( !db.has_hardfork( HIVE_HARDFORK_1_28_GLOBAL_WITNESS_PROPS ) ) // after HF28 it is copied from active wso
     update_global_witness_properties( db, wso );
 
 } FC_CAPTURE_AND_RETHROW() }

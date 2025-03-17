@@ -761,7 +761,7 @@ string format_string( const string& format, const variant_object& args,
             ss << ")";
          }
       }
-      if( not is_first )
+      if( !is_first )
          ss << ")";
    }
 

@@ -20,13 +20,13 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
 {
-  FC_ASSERT( not _trace.root.empty() );
+  FC_ASSERT( !_trace.root.empty() );
   return _trace.root.back();
 }
 
 const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
 {
-  FC_ASSERT( not _trace.root.empty() );
+  FC_ASSERT( !_trace.root.empty() );
   return _trace.root.back();
 }
 
@@ -49,7 +49,7 @@ void authority_verification_tracer::push_parent_entry()
 
 void authority_verification_tracer::pop_parent_entry()
 {
-  FC_ASSERT(not _current_authority_path.empty());
+  FC_ASSERT(!_current_authority_path.empty());
   _current_authority_path.pop_back();
 }
 
@@ -248,7 +248,7 @@ void authority_verification_tracer::on_leaving_account_entry( unsigned int effec
 
 void authority_verification_tracer::trim_final_authority_path()
 {
-  FC_ASSERT(not _trace.final_authority_path.empty());
+  FC_ASSERT(!_trace.final_authority_path.empty());
   _trace.final_authority_path.pop_back();
 }
 

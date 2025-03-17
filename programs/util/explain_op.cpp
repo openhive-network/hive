@@ -57,7 +57,7 @@ inline constexpr bool is_to_string_invocable_v = is_to_string_invocable<T>::valu
 template<typename T>
 void explain_member(const std::string& name, const fc::optional<T>& v);
 template<typename T>
-auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<not std::is_same_v<T, char>>;
+auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<!std::is_same_v<T, char>>;
 template<typename T>
 auto explain_member(const std::string& name, const boost::container::flat_set<T>& v);
 template<typename T>
@@ -69,7 +69,7 @@ auto explain_member(const std::string& name, const boost::container::flat_map<K,
 template<typename... Types>
 void explain_member(const std::string& name, const fc::static_variant<Types...>& v);
 template<typename T>
-auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<not is_to_string_invocable_v<T>>;
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<!is_to_string_invocable_v<T>>;
 template<typename T>
 auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<is_to_string_invocable_v<T>>;
 template<typename U, typename V>
@@ -131,7 +131,7 @@ void explain_member(const std::string& name, const fc::optional<T>& v)
 }
 
 template<typename T>
-auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<not std::is_same_v<T, char>>
+auto explain_member(const std::string& name, const std::vector<T>& v) -> std::enable_if_t<!std::is_same_v<T, char>>
 {
   explain_member(name+".size", static_cast<fc::unsigned_int>(v.size()));
   size_t idx = 0;
@@ -178,7 +178,7 @@ void explain_member(const std::string& name, const fc::static_variant<Types...>&
 }
 
 template<typename T>
-auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<not is_to_string_invocable_v<T>>
+auto explain_member(const std::string& name, const T& v) -> std::enable_if_t<!is_to_string_invocable_v<T>>
 {
   fc::reflector<T>::visit(member_explainer<T>(v, name));
 }

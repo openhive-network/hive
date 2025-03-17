@@ -24,7 +24,7 @@ void generate_artifacts(const fc::path& block_log_path, appbase::application& ap
   bl.open(block_log_path, thread_pool, true, false);
   auto bla = block_log_artifacts::open(block_log_path, bl, false /*read_only*/, 
                                        false /*write_fallback*/, false /*full_match_verification*/,
-                                       not block_log_existed /*new_block_log_created*/, app, thread_pool);
+                                       !block_log_existed /*new_block_log_created*/, app, thread_pool);
   bla.reset();
   ilog("open and generation finished...");
 }

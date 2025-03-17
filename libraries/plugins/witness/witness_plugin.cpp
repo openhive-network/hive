@@ -386,7 +386,7 @@ class witness_plugin_impl
 
       // we must control the witness scheduled to produce the next block.
       scheduled_witness = _db.get_scheduled_witness( slot );
-      if( not _queen_mode && _witnesses.find( scheduled_witness ) == _witnesses.end() )
+      if( !_queen_mode && _witnesses.find( scheduled_witness ) == _witnesses.end() )
         return block_production_condition::not_my_turn;
 
       const chain::public_key_type& scheduled_key = _db.get< chain::witness_object, chain::by_name >( scheduled_witness ).signing_key;

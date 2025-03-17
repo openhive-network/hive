@@ -150,7 +150,7 @@ std::deque<block_id_type>::const_iterator single_block_storage::find_first_item_
 block_id_type single_block_storage::find_block_id_for_num( uint32_t block_num ) const
 {
   const auto lib = head_block();
-  if( not lib || lib->get_block_num() != block_num )
+  if( !lib || lib->get_block_num() != block_num )
     FC_THROW_EXCEPTION( fc::key_not_found_exception,
                         "block number ${block_num} not found", (block_num) );
 

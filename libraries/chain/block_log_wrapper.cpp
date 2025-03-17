@@ -11,7 +11,7 @@ namespace hive { namespace chain {
   const fc::path& the_path, appbase::application& app,
   blockchain_worker_thread_pool& thread_pool, bool read_only )
 {
-  FC_ASSERT( not fc::exists( the_path ) || fc::is_regular_file( the_path ),
+  FC_ASSERT( !fc::exists( the_path ) || fc::is_regular_file( the_path ),
     "Path ${p} does NOT point to regular file.", ("p", the_path) );
 
   if( the_path.filename().string() == block_log_file_name_info::_legacy_file_name )
@@ -110,12 +110,12 @@ void block_log_wrapper::dispose_garbage( bool closing_time )
 {
   for( auto it = _garbage_collection.begin(); it != _garbage_collection.end(); ++it )
   {
-    if( not (*it) )
+    if( !(*it) )
       continue;
 
     block_log_ptr_t& log_ref = *it; 
 
-    FC_ASSERT( not closing_time || it->use_count() == 1,
+    FC_ASSERT( !closing_time || it->use_count() == 1,
       "Failed to close block log ${file}. Most likely some API thread is still using it.",
       ("file", log_ref->get_log_file()) );
     
@@ -236,7 +236,7 @@ void block_log_wrapper::process_blocks(uint32_t starting_block_number,
   do
   {
     current_log = get_block_log_corresponding_to( starting_block_number );
-    if( not current_log )
+    if( !current_log )
       return;
 
     uint32_t last_block_of_part = 
@@ -248,7 +248,7 @@ void block_log_wrapper::process_blocks(uint32_t starting_block_number,
     starting_block_number = last_block_of_part + 1;
   }
   while( ( starting_block_number < ending_block_number && current_log != head_log ) &&
-         ( not _app.is_interrupt_request() ) );
+         ( !_app.is_interrupt_request() ) );
 }
 
 std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id( 
@@ -427,7 +427,7 @@ block_log_wrapper::full_block_range_t block_log_wrapper::read_block_range_by_num
   while( count > 0 )
   {
     current_log = get_block_log_corresponding_to( starting_block_num );
-    if( not current_log )
+    if( !current_log )
       return result;
 
     FC_ASSERT( current_log->head(), "Empty or unopened log! ${io}", ("io", current_log->is_open() ) );
@@ -553,8 +553,8 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
       << "].";
 
     // Examine possibility of generating missing part files.
-    if( not allow_splitting_monolithic_log || // splitting not allowed or
-        blocking_part_exists )                // there's a part that we don't want to overwrite.
+    if( !allow_splitting_monolithic_log || // splitting not allowed or
+        blocking_part_exists )             // there's a part that we don't want to overwrite.
     {
       msg <<
         ( allow_splitting_monolithic_log ? " Existing part file is blocking" : " Not allowed" ) <<
@@ -565,9 +565,9 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
     size_t needed_part_count = high_missing_part_number - low_missing_part_number + 1;
     uint32_t head_block_number = 
       block_log_wrapper::get_number_of_last_block_in_part( high_missing_part_number, _block_log_split );
-    if( not try_splitting_monolithic_log_file( state_head_block, 
-                                               head_block_number,
-                                               needed_part_count ) )
+    if( !try_splitting_monolithic_log_file( state_head_block, 
+                                            head_block_number,
+                                            needed_part_count ) )
     {
       msg <<
         " Failed to generate missing block log part file(s) by splitting legacy monolithic block log file.";
@@ -580,7 +580,7 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
 
 void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names )
 {
-  if( not exists( _open_args.data_dir ) )
+  if( !exists( _open_args.data_dir ) )
   {
     create_directories( _open_args.data_dir );
   }
@@ -679,7 +679,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   }
   else
   {
-    if ( _open_args.replay && not _open_args.force_replay && state_head_block )
+    if ( _open_args.replay && !_open_args.force_replay && state_head_block )
     {
       // For regular replay require all parts beginning from state head block to be present & opened.
       actual_tail_number_needed = 
@@ -747,7 +747,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
 
 void block_log_wrapper::wipe_storage_files( const fc::path& dir )
 {
-  if( not exists( dir ) )
+  if( !exists( dir ) )
     return;
 
   auto remove_artifacts = [&]( const fc::path& block_file ) {
@@ -795,7 +795,7 @@ void block_log_wrapper::internal_append( uint32_t first_block_num, size_t block_
   // Is it time to switch to a new file & append there?
   if( is_last_number_of_the_file( first_block_num -1 ) && ( block_part_number > _logs.size() ) )
   {
-    if( not _logs.empty() )
+    if( !_logs.empty() )
     {
       auto current_part_log = get_head_log();
       if( current_part_log )
@@ -845,11 +845,11 @@ uint32_t block_log_wrapper::get_actual_tail_block_num() const
   
   /*uint32_t block_num = 1;
   block_log_ptr_t another_log;
-  for(; not another_log; block_num += BLOCKS_IN_SPLIT_BLOCK_LOG_FILE )
+  for(; !another_log; block_num += BLOCKS_IN_SPLIT_BLOCK_LOG_FILE )
   {
     another_log = get_block_log_corresponding_to( block_num );
   }
-  while( not another_log ); // Will finally happen, see initial assertion.
+  while( !another_log ); // Will finally happen, see initial assertion.
 
   return block_num;*/
 }

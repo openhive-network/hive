@@ -81,7 +81,7 @@ namespace hive { namespace chain {
     // "^block_log_part\\.\\d{4}$"
     if (file.stem().string() != _split_file_name_core ||
         extension.size() != _split_file_name_extension_length ||
-        not std::all_of( extension.begin(), extension.end(), [](unsigned char ch){ return std::isdigit(ch); } ))
+        !std::all_of( extension.begin(), extension.end(), [](unsigned char ch){ return std::isdigit(ch); } ))
       return 0;
 
     return std::stoul(extension);
@@ -216,7 +216,7 @@ namespace hive { namespace chain {
       if (read_only)
       {
         flags = O_RDONLY | O_CLOEXEC;
-        if(not file_existed && write_fallback)
+        if(!file_existed && write_fallback)
         {
           int temp_flags = flags | O_CREAT;
           int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
@@ -286,7 +286,7 @@ namespace hive { namespace chain {
       if (auto_open_artifacts)
           my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback, 
                                                      false /*full_match_verification*/,
-                                                     not file_existed /*log_file_created*/,
+                                                     !file_existed /*log_file_created*/,
                                                      theApp, thread_pool);
   }
 

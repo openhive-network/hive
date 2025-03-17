@@ -122,7 +122,7 @@ void blockchain_worker_thread_pool::impl::thread_function()
 void blockchain_worker_thread_pool::impl::lazy_init( uint32_t new_thread_pool_size )
 {
   thread_pool_size = new_thread_pool_size;
-  if( (thread_pool_size == 0) || not threads.empty() )
+  if( thread_pool_size == 0 || !threads.empty() )
   {
     if( thread_pool_size == 0 )
     {
@@ -139,17 +139,17 @@ void blockchain_worker_thread_pool::impl::lazy_init( uint32_t new_thread_pool_si
   }
   
   ilog("Emplacing worker threads");
-    for (unsigned i = 1; i <= thread_pool_size; ++i)
-    {
-      threads.emplace_back([i, this]() {
-        std::ostringstream thread_name_stream;
-        thread_name_stream << "worker_" << i << "_of_" << thread_pool_size;
-        std::string thread_name = thread_name_stream.str();
-        fc::set_thread_name(thread_name.c_str()); // tells the OS the thread's name
-        fc::thread::current().set_name(thread_name); // tells fc the thread's name for logging
-        thread_function();
-      });
-    }
+  for (unsigned i = 1; i <= thread_pool_size; ++i)
+  {
+    threads.emplace_back([i, this]() {
+      std::ostringstream thread_name_stream;
+      thread_name_stream << "worker_" << i << "_of_" << thread_pool_size;
+      std::string thread_name = thread_name_stream.str();
+      fc::set_thread_name(thread_name.c_str()); // tells the OS the thread's name
+      fc::thread::current().set_name(thread_name); // tells fc the thread's name for logging
+      thread_function();
+    });
+  }
   ilog("Emplacing worker threads done");
 }
 

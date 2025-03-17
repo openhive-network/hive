@@ -49,7 +49,7 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
     for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
       _block_storage.append( block_itr->get()->full_block, _is_at_live_sync );
 
-    if( not blocks_to_write.empty() )
+    if( !blocks_to_write.empty() )
       _db.set_last_irreversible_block_data( blocks_to_write.rbegin()->get()->full_block );
 
     _block_storage.flush_head_storage();

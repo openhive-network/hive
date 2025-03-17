@@ -777,7 +777,7 @@ bool get_block_artifacts(const fc::path &block_log_path, const int32_t first_blo
     hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts =
       hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log,
         true /*read_only*/, false /*write_fallback*/, full_match_verification,
-        not block_log_existed /*new_block_log_created*/, app, thread_pool);
+        !block_log_existed /*new_block_log_created*/, app, thread_pool);
 
     if (full_match_verification)
       ilog("Artifacts file match verification done");

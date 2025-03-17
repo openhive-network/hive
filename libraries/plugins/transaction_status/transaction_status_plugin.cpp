@@ -74,7 +74,7 @@ void transaction_status_impl::on_post_apply_transaction( const transaction_notif
 void transaction_status_impl::on_pre_apply_block( const block_notification& note )
 {
   fc::time_point_sec block_timestamp = note.get_block_timestamp();
-  if ( not tracking && estimated_starting_timestamp <= block_timestamp )
+  if ( !tracking && estimated_starting_timestamp <= block_timestamp )
   {
     // Make sure we caught up with blockchain head fast enough.
     estimated_starting_timestamp = estimate_starting_timestamp();

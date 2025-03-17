@@ -427,7 +427,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       if (errno == ENOENT)
       {
         // To avoid confusion warn about missing artifacts only when block log existed earlier.
-        if( not new_block_log_created )
+        if( !new_block_log_created )
           wlog("Could not find artifacts file in ${_artifact_file_name}. Creating new artifacts file ...", (_artifact_file_name));
 
         _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);

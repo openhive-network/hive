@@ -695,7 +695,7 @@ void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
   {
-    FC_ASSERT( not is_fast_confirm_transaction(full_transaction),
+    FC_ASSERT( !is_fast_confirm_transaction(full_transaction),
                "Use chain_plugin::push_transaction for transaction ${trx}", (trx) );
 
     size_t trx_size = full_transaction->get_transaction_size();
@@ -4958,7 +4958,7 @@ uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t>
                                                       _my->_last_fast_approved_block_by_witness,
                                                       witnesses_required_for_irreversiblity,
                                                       old_last_irreversible );
-  if( not new_lib_info )
+  if( !new_lib_info )
   {
     return old_last_irreversible;
   }

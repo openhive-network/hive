@@ -476,8 +476,8 @@ int main(int argc, char** argv)
 
     fc::path output_block_log_path = options_map["output-block-log"].as<std::string>();
     if (fc::exists(output_block_log_path) &&
-        (not fc::is_regular_file(output_block_log_path) ||
-         not hive::chain::block_log_file_name_info::is_block_log_file_name(output_block_log_path)))
+        (!fc::is_regular_file(output_block_log_path) ||
+         !hive::chain::block_log_file_name_info::is_block_log_file_name(output_block_log_path)))
     {
       std::cerr << "Error: parameter output-block-log is not a block log file name (single or split)\n";
       return 1;
@@ -505,9 +505,9 @@ int main(int argc, char** argv)
       input_block_log_path = options_map["input-read-only-block-log"].as<std::string>();
     }
 
-    if (not fc::exists(input_block_log_path) ||
-        not fc::is_regular_file(input_block_log_path) ||
-        not hive::chain::block_log_file_name_info::is_block_log_file_name(input_block_log_path))
+    if (!fc::exists(input_block_log_path) ||
+        !fc::is_regular_file(input_block_log_path) ||
+        !hive::chain::block_log_file_name_info::is_block_log_file_name(input_block_log_path))
     {
       std::cerr << "Error: parameter input-[read-only-]block-log is not a block log file name (single or split)\n";
       return 1;

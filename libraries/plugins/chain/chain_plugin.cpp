@@ -580,7 +580,7 @@ void chain_plugin_impl::start_write_processing()
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
             continue;
           // otherwise, we woke because the priority_write_queue or write_queue is non-empty
-          if( not priority_write_queue.empty() )
+          if( !priority_write_queue.empty() )
           {
             cxt = priority_write_queue.front();
             priority_write_queue.pop();
@@ -676,7 +676,7 @@ void chain_plugin_impl::start_write_processing()
                           ("per_block", write_queue_processed_duration.count() / write_queue_items_processed));
                 break;
               }
-              if( not priority_write_queue.empty() )
+              if( !priority_write_queue.empty() )
               {
                 cxt = priority_write_queue.front();
                 priority_write_queue.pop();
@@ -951,7 +951,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
   {
-    if( not db.is_fast_confirm_transaction( full_transaction ) )
+    if( !db.is_fast_confirm_transaction( full_transaction ) )
     {
       db.process_non_fast_confirm_transaction( full_transaction, skip );
       return;
@@ -1812,7 +1812,7 @@ void chain_plugin::plugin_startup()
 
   bool start = false;
   bool replay = my->replay;
-  if( not replay )
+  if( !replay )
   {
     ilog( "Consistency data checking..." );
     if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )

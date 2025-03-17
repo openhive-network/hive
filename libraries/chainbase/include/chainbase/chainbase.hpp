@@ -109,7 +109,7 @@ namespace helpers
 
     template < class IndexType >
     index_statistic_info gather_statistics( const IndexType& index, bool onlyStaticInfo,
-      typename std::enable_if_t< not IndexType::value_type::has_dynamic_alloc_t::value >* = nullptr ) const
+      typename std::enable_if_t< !IndexType::value_type::has_dynamic_alloc_t::value >* = nullptr ) const
     {
       index_statistic_info info;
       gather_index_static_data( index, &info );
@@ -123,7 +123,7 @@ namespace helpers
       index_statistic_info info;
       gather_index_static_data( index, &info );
 
-      if( not onlyStaticInfo )
+      if( !onlyStaticInfo )
         for( const auto& o : index )
           info._item_additional_allocation += o.get_dynamic_alloc();
 
