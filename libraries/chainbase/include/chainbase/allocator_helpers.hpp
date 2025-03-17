@@ -6,12 +6,12 @@
 #include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/containers/slist.hpp>
+#include <boost/interprocess/containers/set.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 
-#include <cstring>
-#include <forward_list>
+#include <string>
 #include <vector>
+#include <set>
 #include <type_traits>
 
 // If you want to use the std allocator instead of the boost::interprocess one (for testing purposes) uncomment the following line:
@@ -100,8 +100,8 @@ namespace chainbase {
 
   template<typename T>
   using t_vector = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::vector<T, allocator<T> >,
-    bip::vector<T, allocator<T> > >;
+    std::vector< T, allocator<T> >,
+    bip::vector< T, allocator<T> > >;
 
   template< typename FIRST_TYPE, typename SECOND_TYPE >
   using t_pair = std::pair< FIRST_TYPE, SECOND_TYPE >;
@@ -117,17 +117,16 @@ namespace chainbase {
   template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
   using t_flat_map = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >,
-    bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, t_allocator_pair< KEY_TYPE, VALUE_TYPE > > >;
+    bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > > >;
 
   template< typename T >
   using t_deque = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     std::deque< T, allocator< T > >,
     bip::deque< T, allocator< T > > >;
 
-  template <typename T>
-  using t_slist = std::conditional_t<
-    _ENABLE_STD_ALLOCATOR,
-    std::forward_list<T, allocator<T> >,
-    bip::slist<T, allocator<T> > >;
+  template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE> >
+  using t_set = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
+    std::set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
+    bip::set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > > >;
 
 } // namespace chainbase
