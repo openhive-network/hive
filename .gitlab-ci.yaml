@@ -31,7 +31,7 @@ variables:
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "590bfd88a491efba5a39571bc2c82ffbabda2ec8"
+  CI_COMMON_JOB_VERSION: "efbc857615dcde7aabaaca5e63d2d3880b6ea353"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
@@ -42,7 +42,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 590bfd88a491efba5a39571bc2c82ffbabda2ec8
+    ref: efbc857615dcde7aabaaca5e63d2d3880b6ea353
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
@@ -428,6 +428,8 @@ verify_poetry_lock_sanity:
 
 pre_commit_checks:
   stage: static_code_analysis
+  variables:
+    POETRY_INSTALL_ARGS: --only pre-commit
   extends:
     - .pre_commit_checks_template
     - .python_static_analysis_configuration
@@ -437,12 +439,16 @@ pre_commit_checks:
 
 lint_code_with_ruff:
   stage: static_code_analysis
+  variables:
+    POETRY_INSTALL_ARGS: --only ruff
   extends:
     - .lint_code_with_ruff_template
     - .python_static_analysis_configuration
 
 formatting_with_black_check:
   stage: static_code_analysis
+  variables:
+    POETRY_INSTALL_ARGS: --only black
   extends:
     - .formatting_with_black_check_template
     - .python_static_analysis_configuration
