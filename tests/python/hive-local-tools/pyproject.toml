@@ -40,6 +40,14 @@ pre-commit = "3.4.0"
 black = "23.9.1"
 ruff = "0.0.292"
 
+[tool.poetry.group.black.dependencies]
+black = "23.9.1"
+
+[tool.poetry.group.ruff.dependencies]
+ruff = "0.0.292"
+
+[tool.poetry.group.pre-commit.dependencies]
+pre-commit = "3.4.0"
 
 [tool.black]
 line-length = 120
