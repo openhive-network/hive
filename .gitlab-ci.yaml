@@ -35,6 +35,7 @@ variables:
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+  BEEKEEPY_INITIALIZATION_TIMEOUT: 30
 
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
