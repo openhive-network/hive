@@ -2,11 +2,11 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=ubuntu22.04-13
+ARG CI_IMAGE_TAG=ubuntu24.04-1
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 
-FROM phusion/baseimage:jammy-1.0.1 AS runtime
+FROM phusion/baseimage:noble-1.0.1 AS runtime
 
 ENV LANG=en_US.UTF-8
 
@@ -22,7 +22,7 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hi
 USER hived_admin
 WORKDIR /home/hived_admin
 
-FROM ubuntu:22.04 AS minimal-runtime
+FROM ubuntu:24.04 AS minimal-runtime
 
 ENV LANG=en_US.UTF-8
 
@@ -58,7 +58,7 @@ WORKDIR /home/hived_admin
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
 # Install Docker CLI
-RUN /usr/local/src/scripts/setup_ubuntu.sh --docker-cli=26.1.4
+RUN /usr/local/src/scripts/setup_ubuntu.sh --docker-cli=28.0.1
 
 FROM ${CI_REGISTRY_IMAGE}ci-base-image:$CI_IMAGE_TAG AS build
 
