@@ -133,9 +133,9 @@ namespace chainbase {
         return pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE>();
         }
 
-      uint32_t get_block_count() const { return block_index.size(); }
+      uint32_t get_block_count() const noexcept { return block_index.size(); }
 
-      uint32_t get_allocated_count() const { return allocated_count; }
+      uint32_t get_allocated_count() const noexcept { return allocated_count; }
 
       std::string get_allocation_summary() const
         {
@@ -145,17 +145,17 @@ namespace chainbase {
         result += "\nallocated: ";
         result += std::to_string(allocated_count);
         result += "\nnon-full blocks: ";
-        result += std::to_string(block_list_size);
+        result += std::to_string(block_list.size());
         return result;
         }
 
     private:
       union chunk_t
         {
-        char      object_memory[sizeof(T)];
-        chunk_t*  next;
+        alignas(T) char object_memory[sizeof(T)];
+        chunk_t*        next;
 
-        T* get_object_memory()
+        T* get_memory_address() noexcept
           {
           return reinterpret_cast<T*>(object_memory);
           }
@@ -168,75 +168,130 @@ namespace chainbase {
         uint32_t  free_count = BLOCK_SIZE;
         bool      on_list = false;
 
-        block_t()
+        block_t() noexcept
           {
           current = chunks;
           for (uint32_t i = 1; i < BLOCK_SIZE; ++i, ++current)
             current->next = chunks + i;
           current->next = nullptr;
-          print();
           current = chunks;
           }
 
-        void print()
+        T* get_object_memory() noexcept
           {
-          return;
-          /*std::cout << chunks << std::endl;
-          for (int i = 0; i < BLOCK_SIZE; ++i)
-            std::cout << chunks[i].next << std::endl;*/
-          }
-
-        T* get_object_memory()
-          {
-          print();
-          assert(current != nullptr);
-          T* result = current->get_object_memory();
+          T* result = current->get_memory_address();
           current = current->next;
           --free_count;
           assert((current == nullptr) == empty());
           return result;
           }
 
-        bool return_object_memory(chunk_t* chunk)
+        bool return_object_memory(chunk_t* chunk) noexcept
           {
-          assert(chunk >= get_chunks_address() && chunk < (get_chunks_address()+BLOCK_SIZE));
+          assert(chunk >= get_chunks_address() && chunk < (get_chunks_address() + BLOCK_SIZE) &&
+            ((reinterpret_cast<std::size_t>(chunk) - reinterpret_cast<std::size_t>(get_chunks_address())) % sizeof(T)) == 0);
           chunk->next = current;
           current = chunk;
           return ++free_count == BLOCK_SIZE;
           }
 
-        const chunk_t* get_chunks_address() const
+        const chunk_t* get_chunks_address() const noexcept
           {
           return chunks;
           }
 
         // true if whole memory is free
-        bool full() const
+        bool full() const noexcept
           {
           return free_count == BLOCK_SIZE;
           }
 
         // true if no more free memory
-        bool empty() const
+        bool empty() const noexcept
           {
           return free_count == 0;
           }
         };
 
-      struct by_address;
-      using block_index_t = multi_index_container<
-        block_t,
-        indexed_by<
-          ordered_unique<tag<by_address>,
-            const_mem_fun<block_t, const chunk_t*, &block_t::get_chunks_address>,
-            std::greater<const chunk_t*>
-          >
-        >,
-        allocator<block_t>
-      >;
-      using block_list_t = forward_list_t<block_t*>;
+      struct block_comparator_t
+        {
+        bool operator () (const block_t& b1, const block_t& b2) const noexcept
+          {
+          return b1.get_chunks_address() > b2.get_chunks_address();
+          }
+        };
+
+      using block_index_t = t_set<block_t, block_comparator_t>;
+      using block_list_t = t_vector<block_t*>;
 
     private:
+      T* get_object_memory()
+        {
+        if (current_block == nullptr)
+          {
+          while (!block_list.empty())
+            {
+            block_t* block = remove_from_block_list();
+
+            if (block->full() && !block_list.empty())
+              {
+              block_index.erase(*block);
+              }
+            else
+              {
+              current_block = block;
+              break;
+              }
+            }
+
+          if (current_block == nullptr)
+            current_block = allocate_block();
+          }
+
+        T* result = current_block->get_object_memory();
+
+        if (current_block->empty())
+          current_block = nullptr;
+
+        return result;
+        }
+
+      void return_object_memory(T* object)
+        {
+        block_t* block = reinterpret_cast<block_t*>(object);
+        const auto found = block_index.lower_bound(*block);
+        assert(found != block_index.cend());
+        block = const_cast<block_t*>(&(*found));
+        block->return_object_memory(reinterpret_cast<chunk_t*>(object));
+        if (block != current_block)
+          add_to_block_list(block);
+        }
+
+      block_t* allocate_block()
+        {
+        auto insert_result = block_index.emplace();
+        block_t* block = const_cast<block_t*>(&(*insert_result.first));
+        return block;
+        }
+
+      void add_to_block_list(block_t* block)
+        {
+        if (!block->on_list)
+          {
+          block->on_list = true;
+          block_list.push_back(block);
+          }
+        }
+
+      block_t* remove_from_block_list() noexcept
+        {
+        assert(!block_list.empty());
+        block_t* block = block_list.back();
+        block->on_list = false;
+        block_list.pop_back();
+        return block;
+        }
+
       template <typename _T = T>
       std::string get_type_name(std::enable_if_t<helpers::type_traits::has_value_type_member_v<_T>>* = nullptr) const
         {
@@ -254,80 +309,11 @@ namespace chainbase {
         return std::string("pool_allocator<") + get_type_name() + ">";
         }
 
-      T* get_object_memory()
-        {
-        if (current_block == nullptr)
-          {
-          while (!block_list.empty())
-            {
-            block_t* block = get_from_block_list();
-
-            if (block->full() && !block_list.empty())
-              {
-              auto& index = block_index.template get<by_address>();
-              index.erase(block->get_chunks_address());
-              }
-            else
-              {
-              current_block = block;
-              break;
-              }
-            }
-
-          if (current_block == nullptr)
-            current_block = allocate_block();
-          }
-
-        T* result = current_block->get_object_memory();
-        if (current_block->empty())
-          current_block = nullptr;
-
-        return result;
-        }
-
-      void return_object_memory(T* object)
-        {
-        chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
-        const auto& index = block_index.template get<by_address>();
-        const auto found = index.lower_bound(chunk);
-        assert(found != index.cend());
-        block_t* block = const_cast<block_t*>(&(*found));
-        block->return_object_memory(chunk);
-        if (block != current_block)
-          add_to_block_list(block);
-        }
-
-      block_t* allocate_block()
-        {
-        auto insert_result = block_index.emplace();
-        return const_cast<block_t*>(&(*insert_result.first));
-        }
-
-      void add_to_block_list(block_t* block)
-        {
-        if (!block->on_list)
-          {
-          block->on_list = true;
-          block_list.push_front(block);
-          ++block_list_size;
-          }
-        }
-
-      block_t* get_from_block_list()
-        {
-        assert(!block_list.empty());
-        block_t* block = block_list.front();
-        block->on_list = false;
-        block_list.pop_front();
-        return block;
-        }
-
     private:
-      block_index_t             block_index;
-      block_list_t              block_list;
-      block_t*                  current_block = nullptr;
-      uint32_t                  allocated_count = 0;
-      uint32_t                  block_list_size = 0;
+      block_index_t block_index;
+      block_list_t  block_list;
+      block_t*      current_block = nullptr;
+      uint32_t      allocated_count = 0;
     };
 
   template <typename T>
