@@ -1,6 +1,7 @@
 #pragma once
 #include <hive/protocol/transaction.hpp>
 #include <fc/reflect/reflect.hpp>
+#include <variant>
 #include <chrono>
 #include <mutex>
 #include <atomic>

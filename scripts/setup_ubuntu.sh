@@ -42,7 +42,7 @@ install_all_runtime_packages() {
 
   apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
 
-  #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0 
+  #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0
   # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
   cp "${SCRIPTPATH}/openssl.conf" /etc/ssl/hive-openssl.conf
   echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf
@@ -53,15 +53,16 @@ install_all_dev_packages() {
   assert_is_root
 
   apt-get update && apt-get install -y \
-  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
+  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
   autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build zopfli \
   xxd liburing-dev \
   \
   screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil \
   python3-dev p7zip-full \
   && \
+  (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  pip3 install -U secp256k1prp
+  pip3 install --break-system-packages -U secp256k1prp
 }
 
 preconfigure_faketime() {
@@ -101,7 +102,7 @@ install_user_packages() {
 }
 
 install_docker_cli() {
-  DOCKER_VERSION=$1 
+  DOCKER_VERSION=$1
   curl -fsSLO "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"
   sudo tar xzvf "docker-${DOCKER_VERSION}.tgz" --strip 1 -C /usr/local/bin docker/docker
   rm "docker-${DOCKER_VERSION}.tgz"
