@@ -100,14 +100,12 @@ struct pre_operation_visitor
 
 external_storage_connector::external_storage_connector( chain_plugin& chain, database& db, const bfs::path& path ): db( db )
 {
+  ilog( "Initializing external storage manager" );
   db.set_external_storage_provider( std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) ) );
-
-  HIVE_ADD_CORE_INDEX( db, hive::chain::volatile_comment_index );
+  ilog( "External storage manager has been initialized" );
 
   try
   {
-    ilog( "Initializing external storage manager" );
-
     _pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ on_pre_apply_operation( note ); }, chain, 0 );
 
     _on_irreversible_block_conn = db.add_irreversible_block_handler(

@@ -89,6 +89,4 @@ class rocksdb_comment_object
 FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(author_and_permlink_hash)(depth)(block_number)(was_paid) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_comment_object, hive::chain::volatile_comment_index )
 
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::volatile_comment_index)
-
 FC_REFLECT( hive::chain::rocksdb_comment_object, (id)(comment_id)(parent_comment)(author_and_permlink_hash)(depth) )
