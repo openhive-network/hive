@@ -7,7 +7,6 @@ namespace hive { namespace chain {
 
 void rocksdb_storage_provider::store_comment( const comment_id_type& comment_id, uint32_t block_number )
 {
-  ilog("rocksdb_storage_provider: store a comment");
   auto& _db = mgr->get_database();
 
   _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
@@ -19,8 +18,13 @@ void rocksdb_storage_provider::store_comment( const comment_id_type& comment_id,
 
 void rocksdb_storage_provider::comment_was_paid( const comment_cashout_object& comment_cashout )
 {
-  ilog("rocksdb_storage_provider: a comment was paid");
   auto& _db = mgr->get_database();
+
+  auto& _account = _db.get_account( comment_cashout.get_author_id() );
+
+  ilog("A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+        ("id", comment_cashout.get_comment_id())("hash", comment_object::compute_author_and_permlink_hash(comment_cashout.get_author_id(), comment_cashout.get_permlink().c_str()))
+        ("permlink", comment_cashout.get_permlink())("author", _account.get_name()) );
 
   const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
   auto _found = _volatile_idx.find( comment_cashout.get_comment_id() );
@@ -40,7 +44,6 @@ void rocksdb_storage_provider::comment_was_paid( const comment_cashout_object& c
 
 void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_object& volatile_object )
 {
-  ilog("rocksdb_storage_provider: move a comment into RocksDB");
   Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
 
   rocksdb_comment_object _obj( volatile_object );
