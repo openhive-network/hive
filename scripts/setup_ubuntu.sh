@@ -44,8 +44,10 @@ install_all_runtime_packages() {
 
   #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0
   # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
-  cp "${SCRIPTPATH}/openssl.conf" /etc/ssl/hive-openssl.conf
-  echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf
+  if [ "$(lsb_release -rs | cut -d. -f1)" -lt 24 ]; then
+    cp "${SCRIPTPATH}/openssl.conf" /etc/ssl/hive-openssl.conf
+    echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf
+  fi
 }
 
 install_all_dev_packages() {
