@@ -44,6 +44,7 @@ using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
 
+
 BOOST_FIXTURE_TEST_SUITE( serialization_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( serialization_raw_test )
@@ -757,9 +758,6 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
 {
   try
   {
-    std::stringstream ss1;
-    std::stringstream ss2;
-
     signed_block b1;
 
     for ( int i = 0; i < 10; i++ )
@@ -805,14 +803,14 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
       b2.transactions.push_back( tx );
     }
 
-    fc::raw::pack( ss2, b2 );
-    fc::raw::pack( ss1, b1 );
+    std::vector<char> ss2_vector = fc::raw::pack_to_vector(b2);
+    std::vector<char> ss1_vector = fc::raw::pack_to_vector(b1);
 
     signed_block unpacked_block;
-    fc::raw::unpack( ss2, unpacked_block );
+    fc::raw::unpack_from_vector( ss2_vector, unpacked_block );
 
     // This operation should completely overwrite signed block 'b2'
-    fc::raw::unpack( ss1, unpacked_block );
+    fc::raw::unpack_from_vector( ss1_vector, unpacked_block );
 
     BOOST_REQUIRE( b1.transactions.size() == unpacked_block.transactions.size() );
     for ( size_t i = 0; i < unpacked_block.transactions.size(); i++ )
