@@ -67,20 +67,20 @@ class external_storage_connector
     external_storage_connector( chain_plugin& chain, database& _db, const bfs::path& path );
     ~external_storage_connector();
 
-    void on_pre_apply_operation( const operation_notification& note );
+    void on_post_apply_operation( const operation_notification& note );
     void on_irreversible_block( uint32_t block_num );
 
     database&                   db;
 
-    boost::signals2::connection _pre_apply_operation_conn;
+    boost::signals2::connection _post_apply_operation_conn;
     boost::signals2::connection _on_irreversible_block_conn;
 };
 
-struct pre_operation_visitor
+struct post_operation_visitor
 {
   external_storage_connector& external_storage;
 
-  pre_operation_visitor( external_storage_connector& external_storage ) : external_storage( external_storage ) {}
+  post_operation_visitor( external_storage_connector& external_storage ) : external_storage( external_storage ) {}
 
   typedef void result_type;
 
@@ -90,7 +90,6 @@ struct pre_operation_visitor
   void operator()( const comment_operation& op )const
   {
     FC_ASSERT( external_storage.db.get_external_storage_provider() );
-
 
     auto& _account = external_storage.db.get_account( op.author );
     auto _found = external_storage.db.find_comment( op.author, op.permlink );
@@ -111,7 +110,7 @@ external_storage_connector::external_storage_connector( chain_plugin& chain, dat
 
   try
   {
-    _pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ on_pre_apply_operation( note ); }, chain, 0 );
+    _post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ on_post_apply_operation( note ); }, chain, 0 );
 
     _on_irreversible_block_conn = db.add_irreversible_block_handler(
       [&]( uint32_t block_num )
@@ -127,13 +126,13 @@ external_storage_connector::external_storage_connector( chain_plugin& chain, dat
 
 external_storage_connector::~external_storage_connector()
 {
-  chain::util::disconnect_signal( _pre_apply_operation_conn );
+  chain::util::disconnect_signal( _post_apply_operation_conn );
   chain::util::disconnect_signal( _on_irreversible_block_conn );
 }
 
-void external_storage_connector::on_pre_apply_operation( const operation_notification& note )
+void external_storage_connector::on_post_apply_operation( const operation_notification& note )
 {
-  note.op.visit( pre_operation_visitor( *this ) );
+  note.op.visit( post_operation_visitor( *this ) );
 }
 
 void external_storage_connector::on_irreversible_block( uint32_t block_num )
