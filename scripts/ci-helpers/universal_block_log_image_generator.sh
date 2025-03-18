@@ -15,7 +15,12 @@ IMGNAME=/universal-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
 
-CHANGES=(tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py)
+CHANGES=(
+  "tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py"
+  "scripts/ci-helpers/universal_block_log_image_generator.sh"
+)
+
+final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
 commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
 echo "commit with last source code changes is $commit"
 
@@ -24,7 +29,7 @@ short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
 prefix_tag="universal-block-log"
-tag=$prefix_tag-$short_commit
+tag=$prefix_tag-$final_checksum
 
 img=$( build_image_name $IMGNAME "$tag" "$REGISTRY" )
 img_path=$( build_image_registry_path $IMGNAME "$tag" "$REGISTRY" )
