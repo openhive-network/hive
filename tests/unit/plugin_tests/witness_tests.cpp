@@ -64,9 +64,27 @@ struct witness_fixture : public hived_fixture
     configuration_data.set_hardfork_schedule( genesis_time, { { HIVE_NUM_HARDFORKS, 1 } } );
     configuration_data.set_init_witnesses( initial_witnesses );
 
+    std::string _p2p_parameters_value =
+    R"({
+      "listen_endpoint": "0.0.0.0:0",
+      "accept_incoming_connections": false,
+      "wait_if_endpoint_is_busy": true,
+      "private_key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "desired_number_of_connections": 20,
+      "maximum_number_of_connections": 200,
+      "peer_connection_retry_timeout": 30,
+      "peer_inactivity_timeout": 5,
+      "peer_advertising_disabled": false,
+      "maximum_number_of_blocks_to_handle_at_one_time": 200,
+      "maximum_number_of_sync_blocks_to_prefetch": 20000,
+      "maximum_blocks_per_peer_during_syncing": 200,"active_ignored_request_timeout_microseconds":6000000
+    }
+    )";
+
     config_arg_override_t config_args = {
       config_line_t( { "shared-file-size", { shared_file_size } } ),
-      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
+      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } ),
+      config_line_t( { "p2p-parameters", { _p2p_parameters_value } } )
     };
     for( auto& name : represented_witnesses )
       config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
