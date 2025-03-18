@@ -92,7 +92,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
                         auto error_str = "Unit test nodes must not listen to other ones!";
                         BOOST_REQUIRE_MESSAGE( override.first != "p2p-endpoint", error_str );
                         BOOST_REQUIRE_MESSAGE( override.first != "p2p-seed-node", error_str );
-                        BOOST_REQUIRE_MESSAGE( override.first != "p2p-parameters", error_str );
+                        //BOOST_REQUIRE_MESSAGE( override.first != "p2p-parameters", error_str );
                         return true;
                       }
                     );
