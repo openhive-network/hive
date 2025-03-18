@@ -5,14 +5,23 @@
 
 namespace hive { namespace chain {
 
-void rocksdb_storage_provider::store_comment( const comment_id_type& comment_id, uint32_t block_number )
+void rocksdb_storage_provider::store_comment( const hive::protocol::comment_operation& op )
 {
   auto& _db = mgr->get_database();
 
+    auto& _account = _db.get_account( op.author );
+    auto _found = _db.find_comment( op.author, op.permlink );
+
+    FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
+
+    ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ("hash", comment_object::compute_author_and_permlink_hash(_account.get_id(), op.permlink))
+    ("permlink", op.permlink)("author", op.author) );
+
   _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
-    o.comment_id = comment_id;
-    o.block_number = block_number;
+    o.comment_id = _found->get_id();
+    o.block_number = _db.head_block_num();
   });
 }
 
@@ -22,7 +31,7 @@ void rocksdb_storage_provider::comment_was_paid( const comment_cashout_object& c
 
   auto& _account = _db.get_account( comment_cashout.get_author_id() );
 
-  ilog("A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+  ilog("rocksdb_storage_provider: A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
         ("id", comment_cashout.get_comment_id())("hash", comment_object::compute_author_and_permlink_hash(comment_cashout.get_author_id(), comment_cashout.get_permlink().c_str()))
         ("permlink", comment_cashout.get_permlink())("author", _account.get_name()) );
 
@@ -44,6 +53,8 @@ void rocksdb_storage_provider::comment_was_paid( const comment_cashout_object& c
 
 void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_object& volatile_object )
 {
+  ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}", ("comment_id", volatile_object.comment_id)("hash", volatile_object.author_and_permlink_hash) );
+
   Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
 
   rocksdb_comment_object _obj( volatile_object );

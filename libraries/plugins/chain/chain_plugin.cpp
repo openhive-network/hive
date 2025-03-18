@@ -78,9 +78,9 @@ class external_storage_connector
 
 struct post_operation_visitor
 {
-  external_storage_connector& external_storage;
+  external_storage_connector& external_connector;
 
-  post_operation_visitor( external_storage_connector& external_storage ) : external_storage( external_storage ) {}
+  post_operation_visitor( external_storage_connector& external_connector ) : external_connector( external_connector ) {}
 
   typedef void result_type;
 
@@ -89,15 +89,9 @@ struct post_operation_visitor
 
   void operator()( const comment_operation& op )const
   {
-    FC_ASSERT( external_storage.db.get_external_storage_provider() );
+    FC_ASSERT( external_connector.db.get_external_storage_provider() );
 
-    auto& _account = external_storage.db.get_account( op.author );
-    auto _found = external_storage.db.find_comment( op.author, op.permlink );
-
-    FC_ASSERT( _found, "Store a comment with hash: ${hash}. Comment ${permlink}/${author} has to exist",
-    ("hash", comment_object::compute_author_and_permlink_hash(_account.get_id(), op.permlink))
-    ("permlink", op.permlink)("author", op.author) );
-    external_storage.db.get_external_storage_provider()->store_comment( _found->get_id(), external_storage.db.head_block_num() );
+    external_connector.db.get_external_storage_provider()->store_comment( op );
   }
 
 };
@@ -145,7 +139,9 @@ void external_storage_connector::on_irreversible_block( uint32_t block_num )
 
   while( _it != _volatile_idx.end() && _it->block_number <= block_num )
   {
-    ilog( "Move to external storage a comment with id: ${comment_id}, hash: ${hash}", ("comment_id", _it->comment_id)("hash", _it->author_and_permlink_hash) );
+    if( !_it->was_paid )
+      continue;
+
     db.get_external_storage_provider()->move_to_external_storage( *_it );
 
     //temporary disabled!!!!
@@ -227,7 +223,7 @@ class chain_plugin_impl
       db( app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app ),
-      external_storage( app.get_plugin<hive::plugins::chain::chain_plugin>(), db, comment_data_dir )
+      external_connector( app.get_plugin<hive::plugins::chain::chain_plugin>(), db, comment_data_dir )
     {
     }
 
@@ -380,7 +376,7 @@ class chain_plugin_impl
 
     appbase::application& theApp;
 
-    external_storage_connector external_storage;
+    external_storage_connector external_connector;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
