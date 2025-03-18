@@ -59,8 +59,6 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
     void cleanupColumnHandles(::rocksdb::DB* db);
 
-    std::string getHash( const fc::ripemd160& content );
-
     void flushWriteBuffer(DB* storage = nullptr);
 
     void flushStorage();

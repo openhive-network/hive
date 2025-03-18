@@ -1593,8 +1593,14 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 
 void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
+  auto _comments_data_dir = options.at("comments-data-dir").as<bfs::path>();
+  if( !_comments_data_dir.is_absolute() )
+  {
+    auto basePath = get_app().data_dir();
+    _comments_data_dir = basePath / _comments_data_dir;
+  }
 
-  my.reset( new detail::chain_plugin_impl( get_app(), options.at("comments-data-dir").as<bfs::path>() ) );
+  my.reset( new detail::chain_plugin_impl( get_app(), _comments_data_dir ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
   std::string block_storage_description( "single block in memory" );

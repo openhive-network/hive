@@ -71,7 +71,10 @@ rocksdb_storage_mgr::~rocksdb_storage_mgr()
 void rocksdb_storage_mgr::openDb( bool cleanDatabase )
 {
   if( cleanDatabase )
+  {
+    ilog("Clean a database at location ${path}", ("path", _storagePath.string()));
     ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+  }
 
   auto _result = createDbSchema(_storagePath);
   if(  !std::get<1>( _result ) )
@@ -106,15 +109,14 @@ void rocksdb_storage_mgr::shutdownDb( bool removeDB )
 {
   if(_storage)
   {
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 00");
+    ilog("Shutdown RocksDB: flush storage");
     flushStorage();
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 01");
+    ilog("Shutdown RocksDB: cleanup column handles");
     cleanupColumnHandles();
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 02");
+    ilog("Shutdown RocksDB: close storage");
     _storage->Close();
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 03");
+    ilog("Shutdown RocksDB: clear storage");
     _storage.reset();
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb 04");
 
     if( removeDB )
     {
@@ -143,6 +145,7 @@ std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path
 {
   DB* db = nullptr;
 
+  ilog("Prepare column definitions");
   auto columnDefs = prepareColumnDefinitions(true);
   auto strPath = path.string();
   Options options;
@@ -151,10 +154,12 @@ std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path
   options.OptimizeLevelStyleCompaction();
   options.max_open_files = 1000;
 
+  ilog("Open RocksDB for read only");
   auto s = DB::OpenForReadOnly(options, strPath, columnDefs, &_columnHandles, &db);
 
   if(s.ok())
   {
+    ilog("Cleanup column handles in read only database");
     cleanupColumnHandles(db);
     delete db;
     return { false, true }; /// { DB does not need data import, an application is not closed }
@@ -162,16 +167,20 @@ std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path
 
   options.create_if_missing = true;
 
+  ilog("Open RocksDB");
   s = DB::Open(options, strPath, &db);
   if(s.ok())
   {
+    ilog("Prepare column definitions");
     columnDefs = prepareColumnDefinitions(false);
+    ilog("Create column families");
     s = db->CreateColumnFamilies(columnDefs, &_columnHandles);
     if(s.ok())
     {
-
+      ilog("Flush write buffer");
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
+      ilog("Cleanup column handles");
       cleanupColumnHandles(db);
     }
     else
@@ -180,6 +189,7 @@ std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path
         ("p", strPath)("e", s.ToString()));
     }
 
+    ilog("Destroy a temporary database");
     delete db;
 
     return { true, true }; /// { DB needs data import, an application is not closed }
@@ -212,33 +222,17 @@ void rocksdb_storage_mgr::cleanupColumnHandles(::rocksdb::DB* db)
   _columnHandles.clear();
 }
 
-std::string rocksdb_storage_mgr::getHash( const fc::ripemd160& content )
-{
-  ReadOptions rOptions;
-
-  Slice keySlice( content.data(), content.data_size() );
-
-  PinnableSlice _buffer;
-  ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[0], keySlice, &_buffer);
-
-  if( s.ok() )
-    return { content.str() };
-  else
-    return "";
-}
-
 void rocksdb_storage_mgr::flushWriteBuffer(DB* storage)
 {
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb B");
   if(storage == nullptr)
     storage = _storage.get();
 
   ::rocksdb::WriteOptions wOptions;
+  ilog("FlushWriteBuffer: write into storage");
   auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb C");
   checkStatus(s);
+  ilog("FlushWriteBuffer: clear write buffer");
   _writeBuffer.Clear();
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb D");
 }
 
 void rocksdb_storage_mgr::flushStorage()
@@ -247,19 +241,17 @@ void rocksdb_storage_mgr::flushStorage()
     return;
 
   // lib (last irreversible block) has not been saved so far
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb A");
+  ilog("Flush storage: flush write buffer");
   flushWriteBuffer();
 
   ::rocksdb::FlushOptions fOptions;
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb E");
+  ilog("Flush storage: flush column handles");
   for(const auto& cf : _columnHandles)
   {
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb F");
+    ilog("Flush storage: flush column handle");
     auto s = _storage->Flush(fOptions, cf);
-    ilog("xxxxxxxxxxxxxxxxxxx shutdownDb G");
     checkStatus(s);
   }
-  ilog("xxxxxxxxxxxxxxxxxxx shutdownDb H");
 }
 
 database& rocksdb_storage_mgr::get_database()
