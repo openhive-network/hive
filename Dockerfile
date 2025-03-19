@@ -14,9 +14,10 @@ SHELL ["/bin/bash", "-c"]
 
 USER root
 WORKDIR /usr/local/src
-ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
+ADD ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
+RUN userdel --remove ubuntu
 RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
 
 USER hived_admin
@@ -33,6 +34,7 @@ WORKDIR /usr/local/src
 ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
+RUN userdel --remove ubuntu
 RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
 
 USER hived_admin
