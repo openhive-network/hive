@@ -24,3 +24,9 @@ def block_logs_for_testing_location() -> Path:
 def block_log_empty_30_mono(block_logs_for_testing_location: Path) -> tt.BlockLog:
     block_logs_location: Path = block_logs_for_testing_location
     return tt.BlockLog(path=block_logs_location / "empty_30", mode="monolithic")
+
+
+@pytest.fixture()
+def block_log_empty_430_split(block_logs_for_testing_location: Path) -> tt.BlockLog:
+    block_logs_location: Path = block_logs_for_testing_location
+    return tt.BlockLog(path=block_logs_location / "empty_430", mode="split")
