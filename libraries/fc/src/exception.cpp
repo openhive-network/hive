@@ -1,4 +1,5 @@
 #include <fc/exception/exception.hpp>
+#include <fc/crypto/city.hpp>
 #include <boost/exception/all.hpp>
 #include <fc/io/sstream.hpp>
 #include <fc/log/logger.hpp>
@@ -185,7 +186,11 @@ namespace fc
 
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-        ss << it->value().as_string() << "\n";
+      {
+        const auto& expr = it->value();
+        ss << hash_expr( expr ) << ": ";
+        ss << expr.as_string() << "\n";
+      }
 
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
@@ -207,7 +212,11 @@ namespace fc
       ss << what() << ":";
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-         ss << it->value().as_string() << ": ";
+      {
+        const auto& expr = it->value();
+        ss << hash_expr( expr ) << ": ";
+        ss << expr.as_string() << ": ";
+      }
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
          if( itr->get_format().size() )
@@ -236,6 +245,12 @@ namespace fc
    exception_ptr exception::dynamic_copy_exception()const
    {
        return std::make_shared<exception>(*this);
+   }
+
+   /*static*/ uint64_t exception::hash_expr( const variant& expr )
+   {
+      auto aes = expr.as_string();
+      return fc::city_hash64( aes.c_str(), aes.size() );
    }
 
    fc::string except_str()

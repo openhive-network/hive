@@ -131,6 +131,8 @@ namespace fc
           */
           virtual std::shared_ptr<exception> dynamic_copy_exception()const;
 
+         static uint64_t hash_expr( const variant& expr );
+
          friend void to_variant( const exception& e, variant& v );
          friend void from_variant( const variant& e, exception& ll );
 
