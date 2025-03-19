@@ -5,6 +5,10 @@
 
 namespace hive { namespace chain {
 
+rocksdb_storage_provider::rocksdb_storage_provider( const external_storage_mgr::ptr& mgr ): mgr( mgr )
+{
+}
+
 void rocksdb_storage_provider::store_comment( const hive::protocol::comment_operation& op )
 {
   auto& _db = mgr->get_database();

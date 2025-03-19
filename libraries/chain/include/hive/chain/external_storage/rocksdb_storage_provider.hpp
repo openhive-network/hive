@@ -13,9 +13,7 @@ class rocksdb_storage_provider: public external_storage_provider
 
   public:
 
-    rocksdb_storage_provider( const external_storage_mgr::ptr& mgr ): mgr( mgr )
-    {
-    }
+    rocksdb_storage_provider( const external_storage_mgr::ptr& mgr );
 
     void store_comment( const hive::protocol::comment_operation& op ) override;
     void comment_was_paid( const comment_cashout_object& comment_cashout ) override;

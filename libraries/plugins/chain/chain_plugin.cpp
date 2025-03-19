@@ -9,11 +9,8 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
-#include <hive/chain/index.hpp>
 
-#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_connector.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -60,97 +57,7 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
-class external_storage_connector
-{
-  public:
 
-    external_storage_connector( chain_plugin& chain, database& _db, const bfs::path& path );
-    ~external_storage_connector();
-
-    void on_post_apply_operation( const operation_notification& note );
-    void on_irreversible_block( uint32_t block_num );
-
-    database&                   db;
-
-    boost::signals2::connection _post_apply_operation_conn;
-    boost::signals2::connection _on_irreversible_block_conn;
-};
-
-struct post_operation_visitor
-{
-  external_storage_connector& external_connector;
-
-  post_operation_visitor( external_storage_connector& external_connector ) : external_connector( external_connector ) {}
-
-  typedef void result_type;
-
-  template< typename T >
-  void operator()( const T& )const {}
-
-  void operator()( const comment_operation& op )const
-  {
-    FC_ASSERT( external_connector.db.get_external_storage_provider() );
-
-    external_connector.db.get_external_storage_provider()->store_comment( op );
-  }
-
-};
-
-external_storage_connector::external_storage_connector( chain_plugin& chain, database& db, const bfs::path& path ): db( db )
-{
-  ilog( "Initializing external storage manager" );
-  db.set_external_storage_provider( std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) ) );
-  ilog( "External storage manager has been initialized" );
-
-  try
-  {
-    _post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ on_post_apply_operation( note ); }, chain, 0 );
-
-    _on_irreversible_block_conn = db.add_irreversible_block_handler(
-      [&]( uint32_t block_num )
-      {
-        on_irreversible_block( block_num );
-      },
-      chain
-    );
-  }
-  FC_CAPTURE_AND_RETHROW()
-
-}
-
-external_storage_connector::~external_storage_connector()
-{
-  chain::util::disconnect_signal( _post_apply_operation_conn );
-  chain::util::disconnect_signal( _on_irreversible_block_conn );
-}
-
-void external_storage_connector::on_post_apply_operation( const operation_notification& note )
-{
-  note.op.visit( post_operation_visitor( *this ) );
-}
-
-void external_storage_connector::on_irreversible_block( uint32_t block_num )
-{
-  FC_ASSERT( db.get_external_storage_provider() );
-
-  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
-
-  auto _it = _volatile_idx.find( block_num );
-
-  while( _it != _volatile_idx.end() && _it->block_number <= block_num )
-  {
-    if( !_it->was_paid )
-    {
-      db.get_external_storage_provider()->move_to_external_storage( *_it );
-    }
-
-    //temporary disabled!!!!
-    //const auto& _comment = db.get_comment( _it->comment_id );
-    //db.remove( _comment );
-
-    ++_it;
-  }
-}
 
 class transaction_flow_control
 {
@@ -222,9 +129,9 @@ class chain_plugin_impl
       thread_pool( app ),
       db( app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
-      theApp( app ),
-      external_connector( app.get_plugin<hive::plugins::chain::chain_plugin>(), db, comment_data_dir )
+      theApp( app )
     {
+      external_connector = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( theApp.get_plugin< chain::chain_plugin >(), db, comment_data_dir ) );
     }
 
     ~chain_plugin_impl()
@@ -376,7 +283,7 @@ class chain_plugin_impl
 
     appbase::application& theApp;
 
-    external_storage_connector external_connector;
+    external_storage_connector::ptr external_connector;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
