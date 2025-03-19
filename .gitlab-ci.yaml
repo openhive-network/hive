@@ -15,7 +15,7 @@ variables:
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-1
-  TEST_IMAGE_TAG: "@sha256:a7bcfa93cd3a2f275c7336bb9179ac842ab480d5ba82681a804fdd9ecfc1974a"
+  TEST_IMAGE_TAG: "@sha256:813f18c42929193036fc4e0017981c16913766442ef8d146313c64785df29c2e"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
