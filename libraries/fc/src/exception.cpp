@@ -1,4 +1,5 @@
 #include <fc/exception/exception.hpp>
+#include <fc/crypto/city.hpp>
 #include <boost/exception/all.hpp>
 #include <fc/io/sstream.hpp>
 #include <fc/log/logger.hpp>
@@ -185,7 +186,11 @@ namespace fc
 
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-        ss << it->value().as_string() << "\n";
+      {
+        auto aes = it->value().as_string();
+        ss << fc::city_hash64( aes.c_str(), aes.size() ) << ": ";
+        ss << aes << "\n";
+      }
 
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
@@ -207,7 +212,11 @@ namespace fc
       ss << what() << ":";
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-         ss << it->value().as_string() << ": ";
+      {
+        auto aes = it->value().as_string();
+        ss << fc::city_hash64( aes.c_str(), aes.size() ) << ": ";
+        ss << aes << ": ";
+      }
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
          if( itr->get_format().size() )

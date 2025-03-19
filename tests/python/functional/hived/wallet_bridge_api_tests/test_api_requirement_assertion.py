@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ApiNotFoundError, ErrorInResponseError
+from beekeepy.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -88,7 +88,10 @@ def test_reporting_exception_when_account_history_api_is_missing(
     with pytest.raises(ErrorInResponseError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert "Assert Exception:_account_history_api: account_history_api_plugin not enabled." in exception.value.error
+    assert (
+        "Assert Exception:7661709827765573339: _account_history_api: account_history_api_plugin not enabled."
+        in exception.value.error
+    )
 
 
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
@@ -109,7 +112,7 @@ def test_reporting_exception_when_market_history_api_is_missing(node: tt.InitNod
 
 @pytest.mark.enabled_plugins("witness")
 def test_reporting_exception_when_wallet_bridge_api_is_missing(node: tt.InitNode) -> None:
-    with pytest.raises(ApiNotFoundError) as exception:
+    with pytest.raises(ErrorInResponseError) as exception:
         node.api.wallet_bridge.get_version()
 
-    assert "Could not find API wallet_bridge_api" in str(exception.value.response)
+    assert "Could not find API wallet_bridge_api" in exception.value.error

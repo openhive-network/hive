@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( database_api_negative )
     const char* message = nullptr;
 
     // empty list of accounts to find
-    message = "Assert Exception:0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT: list of accounts to find not filled or too big";
+    message = "Assert Exception:16016890266862695388: 0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT: list of accounts to find not filled or too big";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\", {}], \"id\":15}";
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE( database_api_negative )
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
 
     // limit cannot be (default) 0
-    message = "Assert Exception:0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT: limit not set or too big";
+    message = "Assert Exception:17514538304006355483: 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT: limit not set or too big";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{}, \"id\":10}";
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE( database_api_negative )
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
 
     // order not set
-    message = "Assert Exception:false: Unknown or unsupported sort order 'not_set'";
+    message = "Assert Exception:3372626016653902757: false: Unknown or unsupported sort order 'not_set'";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10}, \"id\":10}";
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );

@@ -96,7 +96,7 @@ namespace fc {
      return o << boost::lexical_cast<std::string>(v).c_str();
   }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
   ostream& operator<<( ostream& o, const size_t& v )
   {
      return o << boost::lexical_cast<std::string>(v).c_str();
