@@ -5,6 +5,8 @@
 
 namespace hive { namespace chain {
 
+bool dbg_info = false;
+
 rocksdb_storage_provider::rocksdb_storage_provider( const external_storage_mgr::ptr& mgr ): mgr( mgr )
 {
 }
@@ -18,9 +20,12 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
 
   FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
 
-  ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
-  ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
-  ("permlink", op.permlink)("author", op.author) );
+  if( dbg_info )
+  {
+    ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
+    ("permlink", op.permlink)("author", op.author) );
+  }
 
   _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
@@ -35,9 +40,12 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
 
   auto& _account = _db.get_account( account_id );
 
-  ilog("rocksdb_storage_provider: A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
-        ("id", comment_id)("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
-        ("permlink", permlink)("author", _account.get_name()) );
+  if( dbg_info )
+  {
+    ilog("rocksdb_storage_provider: A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+          ("id", comment_id)("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
+          ("permlink", permlink)("author", _account.get_name()) );
+  }
 
   const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
   auto _found = _volatile_idx.find( comment_id );
@@ -57,7 +65,11 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
 
 void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_object& volatile_object )
 {
-  ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}", ("comment_id", volatile_object.comment_id)("hash", volatile_object.author_and_permlink_hash) );
+  if( dbg_info )
+  {
+    ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
+          ("comment_id", volatile_object.comment_id)("hash", volatile_object.author_and_permlink_hash) );
+  }
 
   Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
 
