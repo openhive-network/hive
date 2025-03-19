@@ -140,9 +140,9 @@ void external_storage_connector::on_irreversible_block( uint32_t block_num )
   while( _it != _volatile_idx.end() && _it->block_number <= block_num )
   {
     if( !_it->was_paid )
-      continue;
-
-    db.get_external_storage_provider()->move_to_external_storage( *_it );
+    {
+      db.get_external_storage_provider()->move_to_external_storage( *_it );
+    }
 
     //temporary disabled!!!!
     //const auto& _comment = db.get_comment( _it->comment_id );

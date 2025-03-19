@@ -9,14 +9,14 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
 {
   auto& _db = mgr->get_database();
 
-    auto& _account = _db.get_account( op.author );
-    auto _found = _db.find_comment( op.author, op.permlink );
+  auto& _account = _db.get_account( op.author );
+  auto _found = _db.find_comment( op.author, op.permlink );
 
-    FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
+  FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
 
-    ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
-    ("hash", comment_object::compute_author_and_permlink_hash(_account.get_id(), op.permlink))
-    ("permlink", op.permlink)("author", op.author) );
+  ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+  ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
+  ("permlink", op.permlink)("author", op.author) );
 
   _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
