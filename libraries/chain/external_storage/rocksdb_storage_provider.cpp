@@ -63,8 +63,11 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
   });
 }
 
-void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_object& volatile_object )
+void rocksdb_storage_provider::move_to_external_storage_impl( const volatile_comment_object& volatile_object )
 {
+  if( !volatile_object.was_paid )
+    return;
+
   if( dbg_info )
   {
     ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
@@ -79,6 +82,26 @@ void rocksdb_storage_provider::move_to_external_storage( const volatile_comment_
   Slice _value_slice( _serialize_buffer.data(), _serialize_buffer.size() );
 
   mgr->save( _key_slice, _value_slice, 0/*column_number*/ );
+}
+
+void rocksdb_storage_provider::move_to_external_storage( uint32_t block_num )
+{
+  auto& _db = mgr->get_database();
+
+  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_block >();
+
+  auto _it = _volatile_idx.find( block_num );
+
+  while( _it != _volatile_idx.end() && _it->block_number <= block_num )
+  {
+    move_to_external_storage_impl( *_it );
+
+    //temporary disabled!!!!
+    //const auto& _comment = db.get_comment( _it->comment_id );
+    //db.remove( _comment );
+
+    ++_it;
+  }
 }
 
 std::shared_ptr<comment_object> rocksdb_storage_provider::find_comment( const account_id_type& author, const std::string& permlink )

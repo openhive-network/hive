@@ -19,7 +19,6 @@ struct post_operation_visitor
   void operator()( const comment_operation& op )const
   {
     FC_ASSERT( provider );
-
     provider->store_comment( op );
   }
 
@@ -73,28 +72,12 @@ void rocksdb_storage_connector::on_post_apply_operation( const operation_notific
 void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 {
   FC_ASSERT( provider );
-
-  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
-
-  auto _it = _volatile_idx.find( block_num );
-
-  while( _it != _volatile_idx.end() && _it->block_number <= block_num )
-  {
-    if( _it->was_paid )
-    {
-      provider->move_to_external_storage( *_it );
-    }
-
-    //temporary disabled!!!!
-    //const auto& _comment = db.get_comment( _it->comment_id );
-    //db.remove( _comment );
-
-    ++_it;
-  }
+  provider->move_to_external_storage( block_num );
 }
 
 void rocksdb_storage_connector::on_remove_comment_cashout( const remove_comment_cashout_notification& note )
 {
+  FC_ASSERT( provider );
   provider->comment_was_paid( note.comment_id, note.account_id, note.permlink );
 }
 
