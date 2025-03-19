@@ -31,6 +31,7 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   {
     o.comment_id = _found->get_id();
     o.block_number = _db.head_block_num();
+    o.set_author_and_permlink_hash( _found->get_author_and_permlink_hash() );
   });
 }
 
@@ -56,7 +57,6 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
   _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
   {
     vc.parent_comment           = _comment.get_parent_id();
-    vc.author_and_permlink_hash = _comment.get_author_and_permlink_hash();
     vc.depth                    = _comment.get_depth(); 
 
     vc.was_paid                 = true;
@@ -71,10 +71,10 @@ void rocksdb_storage_provider::move_to_external_storage_impl( const volatile_com
   if( dbg_info )
   {
     ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
-          ("comment_id", volatile_object.comment_id)("hash", volatile_object.author_and_permlink_hash) );
+          ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash()) );
   }
 
-  Slice _key_slice( volatile_object.author_and_permlink_hash.data(), volatile_object.author_and_permlink_hash.data_size() );
+  Slice _key_slice( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
 
   rocksdb_comment_object _obj( volatile_object );
 
