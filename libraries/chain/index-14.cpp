@@ -1,5 +1,7 @@
 #include <hive/chain/rc/rc_objects.hpp>
 
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+
 #include <hive/chain/index.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>

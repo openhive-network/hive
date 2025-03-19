@@ -7,9 +7,9 @@ namespace hive { namespace chain {
 
 struct post_operation_visitor
 {
-  database& db;
+  external_storage_provider::ptr& provider;
 
-  post_operation_visitor( database& db ) : db( db ) {}
+  post_operation_visitor( external_storage_provider::ptr& provider ) : provider( provider ) {}
 
   typedef void result_type;
 
@@ -18,9 +18,9 @@ struct post_operation_visitor
 
   void operator()( const comment_operation& op )const
   {
-    FC_ASSERT( db.get_external_storage_provider() );
+    FC_ASSERT( provider );
 
-    db.get_external_storage_provider()->store_comment( op );
+    provider->store_comment( op );
   }
 
 };
@@ -29,19 +29,29 @@ rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plu
                           : external_storage_connector( db )
 {
   ilog( "Initializing external storage manager" );
-  db.set_external_storage_provider( std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) ) );
+  provider = std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) );
   ilog( "External storage manager has been initialized" );
 
   try
   {
-    _post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ on_post_apply_operation( note ); }, plugin, 0 );
+    _post_apply_operation_conn = db.add_post_apply_operation_handler(
+      [&]( const operation_notification& note )
+      {
+        on_post_apply_operation( note );
+      }, plugin );
 
     _on_irreversible_block_conn = db.add_irreversible_block_handler(
       [&]( uint32_t block_num )
       {
         on_irreversible_block( block_num );
-      },
-      plugin
+      }, plugin
+    );
+
+    _on_remove_comment_cashout_conn = db.add_remove_comment_cashout_handler(
+      [&]( const remove_comment_cashout_notification& note )
+      {
+        on_remove_comment_cashout( note );
+      }, plugin
     );
   }
   FC_CAPTURE_AND_RETHROW()
@@ -52,16 +62,17 @@ rocksdb_storage_connector::~rocksdb_storage_connector()
 {
   chain::util::disconnect_signal( _post_apply_operation_conn );
   chain::util::disconnect_signal( _on_irreversible_block_conn );
+  chain::util::disconnect_signal( _on_remove_comment_cashout_conn );
 }
 
 void rocksdb_storage_connector::on_post_apply_operation( const operation_notification& note )
 {
-  note.op.visit( post_operation_visitor( db ) );
+  note.op.visit( post_operation_visitor( provider ) );
 }
 
 void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 {
-  FC_ASSERT( db.get_external_storage_provider() );
+  FC_ASSERT( provider );
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
 
@@ -71,7 +82,7 @@ void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
   {
     if( _it->was_paid )
     {
-      db.get_external_storage_provider()->move_to_external_storage( *_it );
+      provider->move_to_external_storage( *_it );
     }
 
     //temporary disabled!!!!
@@ -80,6 +91,11 @@ void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 
     ++_it;
   }
+}
+
+void rocksdb_storage_connector::on_remove_comment_cashout( const remove_comment_cashout_notification& note )
+{
+  provider->comment_was_paid( note.comment_id, note.account_id, note.permlink );
 }
 
 }}

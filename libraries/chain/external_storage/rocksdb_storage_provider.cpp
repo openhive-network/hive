@@ -29,21 +29,21 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   });
 }
 
-void rocksdb_storage_provider::comment_was_paid( const comment_cashout_object& comment_cashout )
+void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_id, const account_id_type& account_id, const shared_string& permlink )
 {
   auto& _db = mgr->get_database();
 
-  auto& _account = _db.get_account( comment_cashout.get_author_id() );
+  auto& _account = _db.get_account( account_id );
 
   ilog("rocksdb_storage_provider: A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
-        ("id", comment_cashout.get_comment_id())("hash", comment_object::compute_author_and_permlink_hash(comment_cashout.get_author_id(), comment_cashout.get_permlink().c_str()))
-        ("permlink", comment_cashout.get_permlink())("author", _account.get_name()) );
+        ("id", comment_id)("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
+        ("permlink", permlink)("author", _account.get_name()) );
 
   const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
-  auto _found = _volatile_idx.find( comment_cashout.get_comment_id() );
+  auto _found = _volatile_idx.find( comment_id );
   FC_ASSERT( _found != _volatile_idx.end() );
 
-  const auto& _comment = _db.get_comment( comment_cashout.get_comment_id() );
+  const auto& _comment = _db.get_comment( comment_id );
 
   _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
   {

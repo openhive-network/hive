@@ -57,8 +57,6 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
-
-
 class transaction_flow_control
 {
 public:
