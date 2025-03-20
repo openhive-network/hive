@@ -98,7 +98,6 @@ files = [
 
 [package.dependencies]
 aiosignal = ">=1.1.2"
-async-timeout = {version = ">=4.0,<5.0", markers = "python_version < \"3.11\""}
 attrs = ">=17.3.0"
 frozenlist = ">=1.1.1"
 multidict = ">=4.5,<7.0"
@@ -133,7 +132,6 @@ files = [
 ]
 
 [package.dependencies]
-exceptiongroup = {version = ">=1.0.2", markers = "python_version < \"3.11\""}
 idna = ">=2.8"
 sniffio = ">=1.1"
 
@@ -141,17 +139,6 @@ sniffio = ">=1.1"
 doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)"]
 test = ["anyio[trio]", "coverage[toml] (>=7)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.17)"]
 trio = ["trio (>=0.22)"]
-
-[[package]]
-name = "async-timeout"
-version = "4.0.3"
-description = "Timeout context manager for asyncio programs"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f"},
-    {file = "async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"},
-]
 
 [[package]]
 name = "attrs"
@@ -173,12 +160,12 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev338+58e0bf7"
+version = "0.0.1.dev350+7f1d74e"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = ">=3.12,<4.0"
 files = [
-    {file = "beekeepy-0.0.1.dev338+58e0bf7-py3-none-any.whl", hash = "sha256:380dce868a3c6a326f8fc53890f6135eeeceb9f79639b41896dd406b43ed3f89"},
+    {file = "beekeepy-0.0.1.dev350+7f1d74e-py3-none-any.whl", hash = "sha256:fe99708bd6c52f717f318cdc88f2aa0c7bd4b084ab5a8f2d9e6fe491cc9d7219"},
 ]
 
 [package.dependencies]
@@ -188,7 +175,9 @@ loguru = "0.7.2"
 pydantic = "1.10.18"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev323+e5a1ba1"
+schemas = "0.0.1.dev331+7181389"
+setuptools = "77.0.3"
+types-setuptools = "76.0.0.20250313"
 
 [package.source]
 type = "legacy"
@@ -232,8 +221,6 @@ mypy-extensions = ">=0.4.3"
 packaging = ">=22.0"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
-tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
-typing-extensions = {version = ">=4.0.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
@@ -340,20 +327,6 @@ python-versions = "*"
 files = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
 ]
-
-[[package]]
-name = "exceptiongroup"
-version = "1.1.3"
-description = "Backport of PEP 654 (exception groups)"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "exceptiongroup-1.1.3-py3-none-any.whl", hash = "sha256:343280667a4585d195ca1cf9cef84a4e178c4b6cf2274caef9859782b567d5e3"},
-    {file = "exceptiongroup-1.1.3.tar.gz", hash = "sha256:097acd85d473d75af5bb98e41b61ff7fe35efe6675e4f9370ec6ec5126d160e9"},
-]
-
-[package.extras]
-test = ["pytest (>=6)"]
 
 [[package]]
 name = "execnet"
@@ -1009,11 +982,9 @@ files = [
 [package.dependencies]
 attrs = ">=19.2.0"
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
-exceptiongroup = {version = ">=1.0.0rc8", markers = "python_version < \"3.11\""}
 iniconfig = "*"
 packaging = "*"
 pluggy = ">=0.12,<2.0"
-tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
@@ -1456,12 +1427,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev323+e5a1ba1"
+version = "0.0.1.dev331+7181389"
 description = "Tools for checking if message fits expected format"
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = ">=3.12,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev323+e5a1ba1-py3-none-any.whl", hash = "sha256:b97546f24f54f58d71fade176e3fdfa8e113c040d35f56f04e5a567b0fa63d5f"},
+    {file = "schemas-0.0.1.dev331+7181389-py3-none-any.whl", hash = "sha256:f0b51978f6a440bbc2e19b32aeec103cd5621d17902e9a4b3703d32ddd3f3ec3"},
 ]
 
 [package.dependencies]
@@ -1474,19 +1445,23 @@ reference = "gitlab-schemas"
 
 [[package]]
 name = "setuptools"
-version = "68.2.2"
+version = "77.0.3"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "setuptools-68.2.2-py3-none-any.whl", hash = "sha256:b454a35605876da60632df1a60f736524eb73cc47bbc9f3f1ef1b644de74fd2a"},
-    {file = "setuptools-68.2.2.tar.gz", hash = "sha256:4ac1475276d2f1c48684874089fefcd83bd7162ddaafb81fac866ba0db282a87"},
+    {file = "setuptools-77.0.3-py3-none-any.whl", hash = "sha256:67122e78221da5cf550ddd04cf8742c8fe12094483749a792d56cd669d6cf58c"},
+    {file = "setuptools-77.0.3.tar.gz", hash = "sha256:583b361c8da8de57403743e756609670de6fb2345920e36dc5c2d914c319c945"},
 ]
 
 [package.extras]
-docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
-testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-ruff", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
-testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "packaging (>=23.1)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
+check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)", "ruff (>=0.8.0)"]
+core = ["importlib_metadata (>=6)", "jaraco.functools (>=4)", "jaraco.text (>=3.7)", "more_itertools", "more_itertools (>=8.8)", "packaging (>=24.2)", "platformdirs (>=4.2.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+cover = ["pytest-cov"]
+doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
+enabler = ["pytest-enabler (>=2.2)"]
+test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.7.2)", "jaraco.test (>=5.5)", "packaging (>=24.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-home (>=0.5)", "pytest-perf", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
+type = ["importlib_metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.14.*)", "pytest-mypy"]
 
 [[package]]
 name = "shared-tools"
@@ -1568,18 +1543,18 @@ name = "test-tools"
 version = "0.0.0"
 description = "Tools for testing hive software"
 optional = false
-python-versions = "^3.10"
+python-versions = "^3.12"
 files = []
 develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-beekeepy = "0.0.1.dev338+58e0bf7"
+beekeepy = "0.0.1.dev350+7f1d74e"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
 typing-extensions = "4.12.2"
-wax = "0.3.10.dev558+3a636d1"
+wax = "0.3.10.dev596+99cf5a3"
 
 [package.source]
 type = "directory"
@@ -1605,17 +1580,6 @@ type = "directory"
 url = "tests_api"
 
 [[package]]
-name = "tomli"
-version = "2.0.1"
-description = "A lil' TOML parser"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
-    {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
-]
-
-[[package]]
 name = "types-pyyaml"
 version = "6.0.12.11"
 description = "Typing stubs for PyYAML"
@@ -1639,6 +1603,20 @@ files = [
 
 [package.dependencies]
 types-urllib3 = "*"
+
+[[package]]
+name = "types-setuptools"
+version = "76.0.0.20250313"
+description = "Typing stubs for setuptools"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "types_setuptools-76.0.0.20250313-py3-none-any.whl", hash = "sha256:bf454b2a49b8cfd7ebcf5844d4dd5fe4c8666782df1e3663c5866fd51a47460e"},
+    {file = "types_setuptools-76.0.0.20250313.tar.gz", hash = "sha256:b2be66f550f95f3cad2a7d46177b273c7e9c80df7d257fa57addbbcfc8126a9e"},
+]
+
+[package.dependencies]
+setuptools = "*"
 
 [[package]]
 name = "types-urllib3"
@@ -1700,17 +1678,17 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev558+3a636d1"
+version = "0.3.10.dev596+99cf5a3"
 description = ""
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = ">=3.12,<4.0"
 files = [
-    {file = "wax-0.3.10.dev558+3a636d1-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:ca430196868d2be71c442993192e214c81e2f0d4d86b322a0fc53628cf9003cc"},
+    {file = "wax-0.3.10.dev596+99cf5a3-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:6e83c7787a57446cd4ffbfe775a5bd2791b2d8c6810eedec020d0e02c45da5b4"},
 ]
 
 [package.dependencies]
 aiohttp = "3.9.1"
-beekeepy = "0.0.1.dev338+58e0bf7"
+beekeepy = "0.0.1.dev350+7f1d74e"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
 protobuf = "4.24.4"
@@ -1836,5 +1814,5 @@ multidict = ">=4.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.10"
-content-hash = "099f951637fb9c5e87be99d61789106e0b674a40bb5220c8373510a23b414442"
+python-versions = "^3.12"
+content-hash = "f6a6bdadc5d1d24d1776c28f7baea376bfb385c002fb6fd803b198e31372d65e"
