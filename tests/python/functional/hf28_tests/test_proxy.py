@@ -142,6 +142,7 @@ def test_set_the_proxy_on_the_same_account_twice(node: tt.InitNode) -> None:
 @run_for("testnet")
 def test_long_single_layer_proxy_chain(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
+    wallet.api.set_transaction_expiration(seconds=240)
 
     number_of_accounts = 10_000
     step = 1000
