@@ -31,7 +31,7 @@ variables:
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "efbc857615dcde7aabaaca5e63d2d3880b6ea353"
+  CI_COMMON_JOB_VERSION: "35efd55e10a4cf71284e75544e5d62dffa4feb9d"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
@@ -42,7 +42,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: efbc857615dcde7aabaaca5e63d2d3880b6ea353
+    ref: 35efd55e10a4cf71284e75544e5d62dffa4feb9d
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
