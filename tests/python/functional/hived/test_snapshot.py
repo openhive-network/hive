@@ -44,7 +44,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
 
     node = tt.InitNode()
     node.config.plugin.append("state_snapshot")
-    node.run(exit_before_synchronization=True, replay_from=block_log)
+    node.run(exit_before_synchronization=True, replay_from=block_log, arguments=["--force-replay"])
     node.close()
 
     snap_0 = node.dump_snapshot(close=True)
@@ -120,7 +120,7 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     clear_state(node)
     # add extra plugin to node - now snapshot has less plugins
     node.config.plugin.append("block_log_info")
-    node.run(exit_before_synchronization=True, replay_from=block_log)
+    node.run(exit_before_synchronization=True, replay_from=block_log, arguments=["--force-replay"])
 
     with pytest.raises(subprocess.CalledProcessError):
         node.run(load_snapshot_from=snap_0, exit_before_synchronization=True)
