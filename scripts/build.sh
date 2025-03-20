@@ -27,6 +27,7 @@ Allows to build Hive sources
                            the directory structure, that is installation directory (optional, not set by default, must exist)
   --cmake-arg=ARG          Specify additional arguments to the CMake tool spawn.
   --clean-after-build      Remove compiled files after build
+  --haf-build              Set if build is called from HAF         
   --help                   Display this help screen and exit.
 
 EOF
@@ -36,6 +37,7 @@ HIVED_BINARY_DIR="../build"
 HIVED_SOURCE_DIR="."
 HIVED_INSTALLATION_DIR=""
 CLEAN_AFTER_BUILD="false"
+HAF_BUILD=""
 
 CMAKE_ARGS=()
 
@@ -64,6 +66,9 @@ while [ $# -gt 0 ]; do
         ;;
     --clean-after-build)
         CLEAN_AFTER_BUILD="true"
+        ;;
+    --haf-build)
+        HAF_BUILD="true"
         ;;
     --help)
         print_help
@@ -109,27 +114,27 @@ popd
 if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     # Move all the binaries to the $HIVED_INSTALLATION_DIR directory
-    sudo mv "$abs_build_dir/"*"/programs/hived/hived" \
-    "$abs_build_dir/"*"/programs/cli_wallet/cli_wallet" \
-    "$abs_build_dir/"*"/programs/beekeeper/beekeeper/beekeeper" \
-    "$abs_build_dir/"*"/programs/util/"* \
+    sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/hived/hived" \
+    "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/cli_wallet/cli_wallet" \
+    "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/beekeeper/beekeeper/beekeeper" \
+    "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/util/"* \
     "$HIVED_INSTALLATION_DIR/"
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles"
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/programs/blockchain_converter/blockchain_converter"*)" ]]; then
-        sudo mv "$abs_build_dir/"*"/programs/blockchain_converter/blockchain_converter"* \
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"*)" ]]; then
+        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/tests/unit/"*)" ]]; then
-        sudo mv "$abs_build_dir/"*"/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/tests/unit/"*)" ]]; then
+        sudo mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
     fi
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
-        sudo mv "$abs_build_dir/"*"/libraries/vendor/rocksdb/tools/sst_dum"* \
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
+        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
