@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-bool dbg_info = false;
+bool dbg_info = true;
 
 rocksdb_storage_provider::rocksdb_storage_provider( const external_storage_mgr::ptr& mgr ): mgr( mgr )
 {
@@ -19,6 +19,12 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   auto _found = _db.find_comment( op.author, op.permlink );
 
   FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
+
+  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_permlink >();
+  auto _vfound = _volatile_idx.find( _found->get_author_and_permlink_hash() );
+
+  if( _vfound != _volatile_idx.end() )
+    return;
 
   if( dbg_info )
   {
@@ -35,7 +41,7 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   });
 }
 
-void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_id, const account_id_type& account_id, const shared_string& permlink )
+void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_id, const shared_string& permlink )
 {
   auto& _db = mgr->get_database();
 
@@ -43,16 +49,16 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
 
   if( dbg_info )
   {
-    ilog("rocksdb_storage_provider: A comment with id: ${id}, hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
-          ("id", comment_id)("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
+    ilog("rocksdb_storage_provider: A comment with hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+          ("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
           ("permlink", permlink)("author", _account.get_name()) );
   }
 
-  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_comment_id >();
-  auto _found = _volatile_idx.find( comment_id );
+  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_permlink >();
+  auto _found = _volatile_idx.find( comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()) );
   FC_ASSERT( _found != _volatile_idx.end() );
 
-  const auto& _comment = _db.get_comment( comment_id );
+  const auto& _comment = _db.get_comment( _found->comment_id );
 
   _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
   {
@@ -65,8 +71,8 @@ void rocksdb_storage_provider::comment_was_paid( const comment_id_type& comment_
 
 void rocksdb_storage_provider::move_to_external_storage_impl( const volatile_comment_object& volatile_object )
 {
-  if( !volatile_object.was_paid )
-    return;
+  // if( !volatile_object.was_paid )
+  //   return;
 
   if( dbg_info )
   {

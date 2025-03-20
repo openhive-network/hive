@@ -78,7 +78,7 @@ void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 void rocksdb_storage_connector::on_remove_comment_cashout( const remove_comment_cashout_notification& note )
 {
   FC_ASSERT( provider );
-  provider->comment_was_paid( note.comment_id, note.account_id, note.permlink );
+  provider->comment_was_paid( note.account_id, note.permlink );
 }
 
 }}

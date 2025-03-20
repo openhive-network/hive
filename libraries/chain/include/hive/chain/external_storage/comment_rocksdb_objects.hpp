@@ -42,7 +42,7 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
 
 struct by_block;
-struct by_comment_id;
+struct by_permlink;
 
 typedef multi_index_container<
     volatile_comment_object,
@@ -55,12 +55,8 @@ typedef multi_index_container<
           const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
         >
       >,
-      ordered_unique< tag< by_comment_id >,
-        composite_key< volatile_comment_object,
-          member< volatile_comment_object, comment_id_type, &volatile_comment_object::comment_id>,
-          const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
-        >
-      >
+      ordered_unique< tag< by_permlink >,
+        const_mem_fun< volatile_comment_object, const comment_object::author_and_permlink_hash_type&, &volatile_comment_object::get_author_and_permlink_hash > >
     >,
     allocator< volatile_comment_object >
   > volatile_comment_index;
