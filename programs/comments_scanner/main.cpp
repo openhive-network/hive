@@ -21,6 +21,8 @@
 
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
+#include <hive/chain/external_storage/utilities.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/interprocess/signals.hpp>
@@ -34,6 +36,7 @@
 #include <iostream>
 #include <csignal>
 #include <vector>
+#include <limits>
 
 #include <fstream>
 
@@ -41,6 +44,7 @@ namespace bpo = boost::program_options;
 namespace bfs = boost::filesystem;
 
 using std::string;
+using ::rocksdb::Slice;
 
 string version_string()
 {
@@ -49,14 +53,14 @@ string version_string()
   return fc::json::to_string(fc::mutable_variant_object("version", version_storage));
 }
 
-struct scanner
+struct shm_scanner
 {
   hive::plugins::chain::chain_plugin& chain;
   bfs::path path;
 
   hive::chain::database& db;
 
-  scanner( hive::plugins::chain::chain_plugin& chain, const bfs::path& path )
+  shm_scanner( hive::plugins::chain::chain_plugin& chain, const bfs::path& path )
         : chain( chain ), path( path ), db( chain.db() )
   {
   }
@@ -85,14 +89,48 @@ struct scanner
     dlog("************** ${_cnt} ${name} **************", (_cnt)(name));
   }
 
-  void scan_comment_objects( const std::string& file_name, const std::string& name )
+  void get_comment_objects( const std::string& file_name, const std::string& name )
   {
     scan_any_objects<hive::chain::comment_index>( file_name, name );
   }
 
-  void scan_volatile_comment_objects( const std::string& file_name, const std::string& name )
+  void get_volatile_comment_objects( const std::string& file_name, const std::string& name )
   {
     scan_any_objects<hive::chain::volatile_comment_index>( file_name, name );
+  }
+
+};
+
+struct rb_scanner
+{
+  uint32_t scan_rocksdb_comment_objects_impl( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, hive::chain::rocksdb_storage_mgr& rb_mgr )
+  {
+    return rb_mgr.read( start, limit, values, 0);
+  }
+
+  void get_rocksdb_comment_objects( const bfs::path& file_path, const bfs::path& comment_data_dir, const std::string& name )
+  {
+    std::ofstream _file;
+    _file.open( file_path );
+
+    hive::chain::rocksdb_storage_mgr _rb_mgr( comment_data_dir, false );
+    uint32_t _cnt = 0;
+
+    std::vector<std::string> _values;
+    std::optional<Slice> _start;
+
+    _cnt += scan_rocksdb_comment_objects_impl( _start, std::numeric_limits<uint32_t>::max(), _values, _rb_mgr );
+
+    for( auto& value : _values )
+    {
+      hive::chain::rocksdb_comment_object _obj;
+      load( _obj, value.data(), value.size() );
+      _file << _obj.author_and_permlink_hash << std::endl;
+    }
+
+    _file.close();
+
+    dlog("************** ${_cnt} ${name} **************", (_cnt)(name));
   }
 };
 
@@ -100,6 +138,12 @@ int main( int argc, char** argv )
 {
   try
   {
+    {
+      rb_scanner _rb_scanner;
+      bfs::path _path = "/home/mario/src/hive-data-5mln-rb";
+      _rb_scanner.get_rocksdb_comment_objects( _path / "02.rocksdb_comments.txt", _path / "comments_data", "rocksdb_comments" );
+    }
+
     appbase::application theApp;
     bool _started_loop = false;
 
@@ -163,9 +207,9 @@ int main( int argc, char** argv )
 
       theApp.startup();
 
-      scanner _scanner( chainPlugin, theApp.data_dir() );
-      _scanner.scan_comment_objects( "00.comment_object.txt", "comment_object" );
-      _scanner.scan_volatile_comment_objects( "01.volatile_comment_object.txt", "volatile_comment_object" );
+      shm_scanner _scanner( chainPlugin, theApp.data_dir() );
+      _scanner.get_comment_objects( "00.comment_object.txt", "comment_object" );
+      _scanner.get_volatile_comment_objects( "01.volatile_comment_object.txt", "volatile_comment_object" );
     }
     catch(const std::exception& e)
     {

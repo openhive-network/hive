@@ -7,20 +7,18 @@ namespace hive { namespace chain {
 
 bool dbg_info = true;
 
-rocksdb_storage_provider::rocksdb_storage_provider( const external_storage_mgr::ptr& mgr ): mgr( mgr )
+rocksdb_storage_provider::rocksdb_storage_provider( database& db, const external_storage_mgr::ptr& mgr ): db( db ), mgr( mgr )
 {
 }
 
 void rocksdb_storage_provider::store_comment( const hive::protocol::comment_operation& op )
 {
-  auto& _db = mgr->get_database();
-
-  auto& _account = _db.get_account( op.author );
-  auto _found = _db.find_comment( op.author, op.permlink );
+  auto& _account = db.get_account( op.author );
+  auto _found = db.find_comment( op.author, op.permlink );
 
   FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
 
-  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_permlink >();
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
   auto _vfound = _volatile_idx.find( _found->get_author_and_permlink_hash() );
 
   if( _vfound != _volatile_idx.end() )
@@ -33,19 +31,17 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
     ("permlink", op.permlink)("author", op.author) );
   }
 
-  _db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
+  db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
     o.comment_id = _found->get_id();
-    o.block_number = _db.head_block_num();
+    o.block_number = db.head_block_num();
     o.set_author_and_permlink_hash( _found->get_author_and_permlink_hash() );
   });
 }
 
 void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_id, const shared_string& permlink )
 {
-  auto& _db = mgr->get_database();
-
-  auto& _account = _db.get_account( account_id );
+  auto& _account = db.get_account( account_id );
 
   if( dbg_info )
   {
@@ -54,13 +50,13 @@ void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_
           ("permlink", permlink)("author", _account.get_name()) );
   }
 
-  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_permlink >();
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
   auto _found = _volatile_idx.find( comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()) );
   FC_ASSERT( _found != _volatile_idx.end() );
 
-  const auto& _comment = _db.get_comment( _found->comment_id );
+  const auto& _comment = db.get_comment( _found->comment_id );
 
-  _db.modify( *_found, [&_comment]( volatile_comment_object& vc )
+  db.modify( *_found, [&_comment]( volatile_comment_object& vc )
   {
     vc.parent_comment           = _comment.get_parent_id();
     vc.depth                    = _comment.get_depth(); 
@@ -92,9 +88,7 @@ void rocksdb_storage_provider::move_to_external_storage_impl( const volatile_com
 
 void rocksdb_storage_provider::move_to_external_storage( uint32_t block_num )
 {
-  auto& _db = mgr->get_database();
-
-  const auto& _volatile_idx = _db.get_index< volatile_comment_index, by_block >();
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
 
   auto _it = _volatile_idx.find( block_num );
 

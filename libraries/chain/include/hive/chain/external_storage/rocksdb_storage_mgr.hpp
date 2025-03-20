@@ -42,8 +42,6 @@ class rocksdb_storage_mgr: public external_storage_mgr
     std::vector<ColumnFamilyHandle*>  _columnHandles;
     WriteBatch                        _writeBuffer;
 
-    database& _db;
-
     void openDb( bool cleanDatabase );
 
     void shutdownDb( bool removeDB = false );
@@ -65,12 +63,12 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
   public:
 
-    rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase, database& db );
+    rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase );
     ~rocksdb_storage_mgr();
 
-    database& get_database() override;
     void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
     void read( const Slice& key, std::string& value, const uint32_t& column_number ) override;
+    uint32_t read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, const uint32_t& column_number );
 };
 
 }}

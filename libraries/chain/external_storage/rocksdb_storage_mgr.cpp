@@ -6,8 +6,6 @@
 
 namespace hive { namespace chain {
 
-using ::rocksdb::PinnableSlice;
-
 namespace
 {
 class AComparator : public Comparator
@@ -57,7 +55,7 @@ const Comparator* by_Hash_Comparator()
 
 } /// anonymous
 
-rocksdb_storage_mgr::rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase, database& db ): _db( db )
+rocksdb_storage_mgr::rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase )
 {
   _storagePath = storage_path;
   openDb( cleanDatabase );
@@ -254,11 +252,6 @@ void rocksdb_storage_mgr::flushStorage()
   }
 }
 
-database& rocksdb_storage_mgr::get_database()
-{
-  return _db;
-}
-
 void rocksdb_storage_mgr::save( const Slice& key, const Slice& value, const uint32_t& column_number )
 {
   auto s = _writeBuffer.Put( _columnHandles[column_number], key, value );
@@ -271,6 +264,34 @@ void rocksdb_storage_mgr::read( const Slice& key, std::string& value, const uint
 
   ::rocksdb::Status s = _storage->Get( rOptions, _columnHandles[column_number], key, &value );
   checkStatus(s);
+}
+
+uint32_t rocksdb_storage_mgr::read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, const uint32_t& column_number )
+{
+  const uint32_t _max_limit = 1000;
+
+  if( limit > _max_limit )
+    limit = _max_limit;
+
+  ReadOptions rOptions;
+  std::unique_ptr<::rocksdb::Iterator> _it( _storage->NewIterator( rOptions, _columnHandles[column_number]) );
+
+  uint32_t _cnt = 0;
+
+  values.resize( limit );
+
+  if( start )
+    _it->Seek( *start );
+  else
+    _it->SeekToFirst();
+
+  for( ; _it->Valid() && _cnt < limit; _it->Next(), ++_cnt )
+  {
+    auto _value = _it->value();
+    values.emplace_back( _value.data(), _value.size() );
+  }
+
+  return _cnt;
 }
 
 }}

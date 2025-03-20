@@ -28,7 +28,7 @@ rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plu
                           : external_storage_connector( db )
 {
   ilog( "Initializing external storage manager" );
-  provider = std::make_shared<rocksdb_storage_provider>( std::make_shared<rocksdb_storage_mgr>( path, false, db ) );
+  provider = std::make_shared<rocksdb_storage_provider>( db, std::make_shared<rocksdb_storage_mgr>( path, false ) );
   ilog( "External storage manager has been initialized" );
 
   try

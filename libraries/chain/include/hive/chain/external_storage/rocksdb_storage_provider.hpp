@@ -9,13 +9,15 @@ class rocksdb_storage_provider: public external_storage_provider
 {
   private:
 
+    database& db;
+
     external_storage_mgr::ptr mgr;
 
     void move_to_external_storage_impl( const volatile_comment_object& volatile_object );
 
   public:
 
-    rocksdb_storage_provider( const external_storage_mgr::ptr& mgr );
+    rocksdb_storage_provider( database& db, const external_storage_mgr::ptr& mgr );
 
     void store_comment( const hive::protocol::comment_operation& op ) override;
     void comment_was_paid( const account_id_type& account_id, const shared_string& permlink ) override;
