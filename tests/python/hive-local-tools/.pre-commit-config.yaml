@@ -43,11 +43,12 @@ repos:
       - id: end-of-file-fixer
         exclude: *exclude_pattern_files_regex
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.6.1
+    rev: 1.7.1
     hooks:
       - id: poetry-lock
         name: checking if poetry.lock is consistent with pyproject.toml
         args: [ "--directory", "tests/python/hive-local-tools", "--no-update" ]
+        language_version: python3.12
   - repo: https://github.com/lk16/detect-missing-init
     rev: v0.1.6
     hooks:
@@ -69,7 +70,7 @@ repos:
         name: format code using black
         args: [ "--config", "tests/python/hive-local-tools/pyproject.toml" ]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.292'
+    rev: 'v0.6.5'
     hooks:
       - id: ruff
         name: linting code with Ruff
