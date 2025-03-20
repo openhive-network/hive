@@ -177,6 +177,10 @@ init_data beekeeper_app::initialize( int argc, char** argv )
       api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
       instance->get_app().status.save_status( "beekeeper is starting" );
     }
+    else
+    {
+      instance->get_app().status.save_status( "opening beekeeper failed");
+    }
 
     return _initialization;
   }
@@ -193,10 +197,6 @@ void beekeeper_app::start()
   {
     _webserver_plugin.start_webserver();
     instance->get_app().status.save_status( "beekeeper is ready" );
-  }
-  else
-  {
-    instance->get_app().status.save_status( "opening beekeeper failed. Beekeeper API is disabled" );
   }
 
   ilog("beekeeper is waiting");
