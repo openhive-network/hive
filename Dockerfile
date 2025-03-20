@@ -88,7 +88,6 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 RUN <<-EOF
   set -e
 
-  # mkdir -p "./build/tests/unit/"
   INSTALLATION_DIR="/home/hived/bin"
   sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
 
@@ -100,7 +99,7 @@ RUN <<-EOF
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 
-  sudo chown hived "${INSTALLATION_DIR}/"*
+  sudo chown -R hived "${INSTALLATION_DIR}/"*
 EOF
 
 FROM ${CI_REGISTRY_IMAGE}minimal-runtime:$CI_IMAGE_TAG AS instance

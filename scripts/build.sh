@@ -109,27 +109,27 @@ popd
 if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     # Move all the binaries to the $HIVED_INSTALLATION_DIR directory
-    sudo mv "$abs_build_dir/programs/hived/hived" \
-    "$abs_build_dir/programs/cli_wallet/cli_wallet" \
-    "$abs_build_dir/programs/beekeeper/beekeeper/beekeeper" \
-    "$abs_build_dir/programs/util/"* \
+    sudo mv "$abs_build_dir/"*"/programs/hived/hived" \
+    "$abs_build_dir/"*"/programs/cli_wallet/cli_wallet" \
+    "$abs_build_dir/"*"/programs/beekeeper/beekeeper/beekeeper" \
+    "$abs_build_dir/"*"/programs/util/"* \
     "$HIVED_INSTALLATION_DIR/"
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles"
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/programs/blockchain_converter/blockchain_converter"*)" ]]; then
-        sudo mv "$abs_build_dir/programs/blockchain_converter/blockchain_converter"* \
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/programs/blockchain_converter/blockchain_converter"*)" ]]; then
+        sudo mv "$abs_build_dir/"*"/programs/blockchain_converter/blockchain_converter"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/tests/unit/"*)" ]]; then
-        sudo mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/tests/unit/"*)" ]]; then
+        sudo mv "$abs_build_dir/"*"/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
     fi
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
-        sudo mv "$abs_build_dir/libraries/vendor/rocksdb/tools/sst_dum"* \
+    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/"*"/libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
+        sudo mv "$abs_build_dir/"*"/libraries/vendor/rocksdb/tools/sst_dum"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
