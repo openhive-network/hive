@@ -489,7 +489,7 @@ formatting_with_black_check:
   stage: test
   extends: .test_tools_based
   script:
-    - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+    - git clone --depth=1 --single-branch --branch bw_ubuntu24.04_upgrade https://gitlab.syncad.com/hive/beem.git
     - pip3 install junit-xml==${PYTHON_JUNIT_XML_VERSION} python-dateutil==${PYTHON_DATEUTIL_VERSION}
     - cd beem
     - python3 -m pip install .[tests]
