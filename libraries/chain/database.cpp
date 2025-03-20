@@ -6746,7 +6746,7 @@ void database::retally_witness_vote_counts( bool force )
   }
 }
 
-optional< chainbase::database::session >& database::pending_transaction_session()
+optional< chainbase::database::undo_session_guard >& database::pending_transaction_session()
 {
   return _pending_tx_session;
 }
