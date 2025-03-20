@@ -117,7 +117,7 @@ struct rb_scanner
     std::vector<std::pair<key_type, value_type>> _records;
     std::optional<Slice> _start;
 
-    _cnt += _rb_mgr.read( _start, 1000, _records, 0);
+    _cnt += _rb_mgr.read( _start, 1'000'000, _records, 0);
 
     for( auto& record : _records )
     {

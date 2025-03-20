@@ -26,9 +26,9 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_provider: Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ilog( "rocksdb_storage_provider: head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
     ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
-    ("permlink", op.permlink)("author", op.author) );
+    ("permlink", op.permlink)("author", op.author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
 
   db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
@@ -65,15 +65,15 @@ void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_
   });
 }
 
-void rocksdb_storage_provider::move_to_external_storage_impl( const volatile_comment_object& volatile_object )
+void rocksdb_storage_provider::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
   // if( !volatile_object.was_paid )
   //   return;
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_provider: Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
-          ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash()) );
+    ilog( "rocksdb_storage_provider: lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
+          ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
   }
 
   Slice _key_slice( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
@@ -94,7 +94,7 @@ void rocksdb_storage_provider::move_to_external_storage( uint32_t block_num )
 
   while( _it != _volatile_idx.end() && _it->block_number <= block_num )
   {
-    move_to_external_storage_impl( *_it );
+    move_to_external_storage_impl( block_num, *_it );
 
     //temporary disabled!!!!
     //const auto& _comment = db.get_comment( _it->comment_id );

@@ -13,7 +13,7 @@ class rocksdb_storage_provider: public external_storage_provider
 
     external_storage_mgr::ptr mgr;
 
-    void move_to_external_storage_impl( const volatile_comment_object& volatile_object );
+    void move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object );
 
   public:
 

@@ -79,7 +79,7 @@ class rocksdb_storage_mgr: public external_storage_mgr
     template<typename Key, typename Value>
     uint32_t read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::pair<Key, Value>>& records, const uint32_t& column_number )
     {
-      const uint32_t _max_limit = 1000;
+      const uint32_t _max_limit = 1'000'000;
 
       if( limit > _max_limit )
         limit = _max_limit;
