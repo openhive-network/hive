@@ -623,7 +623,7 @@ namespace chain {
 
       void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing );
 
-      optional< chainbase::database::session >& pending_transaction_session();
+      optional< chainbase::database::undo_session_guard >& pending_transaction_session();
 
 #ifdef IS_TEST_NET
       bool liquidity_rewards_enabled = true;
@@ -665,7 +665,7 @@ namespace chain {
       struct irreversible_block_data_type *last_irreversible_object = nullptr;
       std::shared_ptr<full_block_type> cached_lib;
 
-      optional< chainbase::database::session > _pending_tx_session;
+      optional< chainbase::database::undo_session_guard > _pending_tx_session;
 
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);

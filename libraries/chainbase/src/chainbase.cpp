@@ -329,9 +329,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::resize( size_t new_shared_file_size )
   {
-    if( _undo_session_count )
-      BOOST_THROW_EXCEPTION( std::runtime_error( "Cannot resize shared memory file while undo session is active" ) );
-
     _segment.reset();
     _meta.reset();
 
@@ -393,14 +390,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
   }
 
-  database::session database::start_undo_session()
+  database::undo_session_guard database::start_undo_session()
   {
-    vector< std::unique_ptr<abstract_session> > _sub_sessions;
-    _sub_sessions.reserve( _index_list.size() );
-    for( auto& item : _index_list ) {
-      _sub_sessions.push_back( item->start_undo_session() );
-    }
-    return session( std::move( _sub_sessions ), _undo_session_count );
+    for( auto& item : _index_list )
+      item->start_undo_session();
+    return undo_session_guard( *this );
   }
 
   void database::set_decoded_state_objects_data(const std::string& json)

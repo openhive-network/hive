@@ -278,37 +278,6 @@ namespace chainbase {
       int64_t                      revision = 0;
   };
 
-  /**
-    * The code we want to implement is this:
-    *
-    * ++target; try { ... } finally { --target }
-    *
-    * In C++ the only way to implement finally is to create a class
-    * with a destructor, so that's what we do here.
-    */
-  class session_int_incrementer
-  {
-  public:
-    session_int_incrementer(int32_t& target) :
-      _target(&target)
-    {
-      ++*_target;
-    }
-    session_int_incrementer(session_int_incrementer&& rhs) :
-      _target(rhs._target)
-    {
-      rhs._target = nullptr;
-    }
-    ~session_int_incrementer()
-    {
-      if (_target)
-        --*_target;
-    }
-
-  private:
-    int32_t* _target;
-  };
-
   class int_incrementer
   {
   public:
@@ -568,49 +537,8 @@ namespace chainbase {
         _item_additional_allocation = 0;
       }
 
-      class session {
-        public:
-          session( session&& mv )
-          :_index(mv._index),_apply(mv._apply){ mv._apply = false; }
-
-          ~session() {
-            if( _apply ) {
-              _index.undo();
-            }
-          }
-
-          /** leaves the UNDO state on the stack when session goes out of scope */
-          void push()   { _apply = false; }
-          /** combines this session with the prior session */
-          void squash() { if( _apply ) _index.squash(); _apply = false; }
-          void undo()   { if( _apply ) _index.undo();  _apply = false; }
-
-          session& operator = ( session&& mv ) {
-            if( this == &mv ) return *this;
-            if( _apply ) _index.undo();
-            _apply = mv._apply;
-            mv._apply = false;
-            return *this;
-          }
-
-          int64_t revision()const { return _revision; }
-
-        private:
-          friend class generic_index;
-
-          session( generic_index& idx, int64_t revision )
-          :_index(idx),_revision(revision) {
-            if( revision == -1 )
-              _apply = false;
-          }
-
-          generic_index& _index;
-          bool           _apply = true;
-          int64_t        _revision = 0;
-      };
-
       // TODO: This function needs some work to make it consistent on failure.
-      session start_undo_session()
+      void start_undo_session()
       {
         ++_revision;
 
@@ -618,7 +546,6 @@ namespace chainbase {
         _stack.emplace_back( get_allocator_helper_t<value_type>::get_generic_allocator(a) );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
-        return session( *this, _revision );
       }
 
       const index_type& indicies()const { return _indices; }
@@ -910,29 +837,6 @@ namespace chainbase {
       uint32_t                        _size_of_this = 0;
   };
 
-  class abstract_session {
-    public:
-      virtual ~abstract_session(){};
-      virtual void push()             = 0;
-      virtual void squash()           = 0;
-      virtual void undo()             = 0;
-      virtual int64_t revision()const  = 0;
-  };
-
-  template<typename SessionType>
-  class session_impl : public abstract_session
-  {
-    public:
-      session_impl( SessionType&& s ):_session( std::move( s ) ){}
-
-      virtual void push() override  { _session.push();  }
-      virtual void squash() override{ _session.squash(); }
-      virtual void undo() override  { _session.undo();  }
-      virtual int64_t revision()const override  { return _session.revision();  }
-    private:
-      SessionType _session;
-  };
-
   class index_extension
   {
     public:
@@ -950,13 +854,13 @@ namespace chainbase {
       abstract_index( void* i ):_idx_ptr(i){}
       virtual ~abstract_index(){}
       virtual void     set_revision( int64_t revision ) = 0;
-      virtual unique_ptr<abstract_session> start_undo_session() = 0;
+      virtual void     start_undo_session() = 0;
 
-      virtual int64_t revision()const = 0;
-      virtual void    undo()const = 0;
-      virtual void    squash()const = 0;
-      virtual void    commit( int64_t revision )const = 0;
-      virtual void    undo_all()const = 0;
+      virtual int64_t  revision()const = 0;
+      virtual void     undo()const = 0;
+      virtual void     squash()const = 0;
+      virtual void     commit( int64_t revision )const = 0;
+      virtual void     undo_all()const = 0;
       virtual uint32_t type_id()const  = 0;
 
       virtual statistic_info get_statistics() const = 0;
@@ -982,10 +886,7 @@ namespace chainbase {
 
       index_impl( BaseIndex& base ):abstract_index( &base ),_base(base){}
 
-      virtual unique_ptr<abstract_session> start_undo_session() override {
-        return unique_ptr<abstract_session>(new session_impl<typename BaseIndex::session>( _base.start_undo_session() ) );
-      }
-
+      virtual void     start_undo_session() override { _base.start_undo_session(); }
       virtual void     set_revision( int64_t revision ) override { _base.set_revision( revision ); }
       virtual int64_t  revision()const  override { return _base.revision(); }
       virtual void     undo()const  override { _base.undo(); }
@@ -1102,58 +1003,57 @@ namespace chainbase {
       }
 #endif
 
-      struct session {
-        public:
-          session( session&& s )
-            : _index_sessions( std::move(s._index_sessions) ),
-              _revision( s._revision ),
-              _session_incrementer(std::move(s._session_incrementer))
-          {}
+      struct undo_session_guard
+      {
+      public:
+        undo_session_guard( undo_session_guard&& guard )
+          : _db( guard._db ), _undo_on_destroy( guard._undo_on_destroy )
+        {
+          guard._undo_on_destroy = false;
+        }
+        undo_session_guard( const undo_session_guard& guard ) = delete;
+        // move/copy operators not possible due to reference
 
-          session( vector<std::unique_ptr<abstract_session>>&& s, int32_t& session_count )
-            : _index_sessions( std::move(s) ), _session_incrementer( session_count )
-          {
-            if( _index_sessions.size() )
-              _revision = _index_sessions[0]->revision();
-          }
-
-          ~session() {
+        ~undo_session_guard()
+        {
+          if( _undo_on_destroy )
             undo();
-          }
+        }
 
-          void push()
-          {
-            for( auto& i : _index_sessions ) i->push();
-            _index_sessions.clear();
-          }
+        void push()
+        {
+          _undo_on_destroy = false;
+        }
 
-          void squash()
-          {
-            for( auto& i : _index_sessions ) i->squash();
-            _index_sessions.clear();
-          }
+        void squash()
+        {
+          _db.squash();
+          _undo_on_destroy = false;
+        }
 
-          void undo()
-          {
-            for( auto& i : _index_sessions ) i->undo();
-            _index_sessions.clear();
-          }
+        void undo()
+        {
+          _db.undo();
+          _undo_on_destroy = false;
+        }
 
-          int64_t revision()const { return _revision; }
+      private:
+        friend database;
 
-        private:
-          friend class database;
+        undo_session_guard( database& db )
+          : _db( db ), _undo_on_destroy( not db._index_list.empty() )
+        {}
 
-          vector< std::unique_ptr<abstract_session> > _index_sessions;
-          int64_t _revision = -1;
-          session_int_incrementer _session_incrementer;
+        database& _db;
+        bool _undo_on_destroy = false;
       };
 
-      session start_undo_session();
+      undo_session_guard start_undo_session();
 
-      int64_t revision()const {
-          if( _index_list.size() == 0 ) return -1;
-          return _index_list[0]->revision();
+      int64_t revision()const
+      {
+        if( _index_list.empty() ) return -1;
+        return _index_list[0]->revision();
       }
 
       void undo();
@@ -1534,7 +1434,6 @@ namespace chainbase {
 
       bool                                                        _is_open = false;
 
-      int32_t                                                     _undo_session_count = 0;
       size_t                                                      _file_size = 0;
       boost::any                                                  _database_cfg = nullptr;
 

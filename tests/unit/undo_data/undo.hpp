@@ -117,7 +117,7 @@ namespace hive { namespace chain {
   {
     private:
 
-      database::session* session = nullptr;
+      database::undo_session_guard* session = nullptr;
       chain::database& db;
 
     protected:
@@ -136,7 +136,7 @@ namespace hive { namespace chain {
           session = nullptr;
         }
 
-        session = new database::session( db.start_undo_session() );
+        session = new database::undo_session_guard( db.start_undo_session() );
       }
 
       //Revert all changes.
