@@ -1111,7 +1111,7 @@ BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
     const int BLOCK_CAPACITY = 7000;
 
     int mempool_size = 0;
-    fc::optional<chainbase::database::session> pending_tx_session;
+    fc::optional<chainbase::database::undo_session_guard> pending_tx_session;
 
     auto start_time = fc::time_point::now();
     for( int block_num = 1; block_num <= 10; ++block_num )
