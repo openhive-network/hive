@@ -266,32 +266,4 @@ void rocksdb_storage_mgr::read( const Slice& key, std::string& value, const uint
   checkStatus(s);
 }
 
-uint32_t rocksdb_storage_mgr::read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, const uint32_t& column_number )
-{
-  const uint32_t _max_limit = 1000;
-
-  if( limit > _max_limit )
-    limit = _max_limit;
-
-  ReadOptions rOptions;
-  std::unique_ptr<::rocksdb::Iterator> _it( _storage->NewIterator( rOptions, _columnHandles[column_number]) );
-
-  uint32_t _cnt = 0;
-
-  values.resize( limit );
-
-  if( start )
-    _it->Seek( *start );
-  else
-    _it->SeekToFirst();
-
-  for( ; _it->Valid() && _cnt < limit; _it->Next(), ++_cnt )
-  {
-    auto _value = _it->value();
-    values.emplace_back( _value.data(), _value.size() );
-  }
-
-  return _cnt;
-}
-
 }}

@@ -61,6 +61,13 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
     void flushStorage();
 
+    template<typename Object>
+    const Object& unpackSlice( const Slice& s )
+    {
+      assert(sizeof(Object) == s.size());
+      return *reinterpret_cast<const Object*>(s.data());
+    }
+
   public:
 
     rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase );
@@ -68,7 +75,32 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
     void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
     void read( const Slice& key, std::string& value, const uint32_t& column_number ) override;
-    uint32_t read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, const uint32_t& column_number );
+
+    template<typename Key, typename Value>
+    uint32_t read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::pair<Key, Value>>& records, const uint32_t& column_number )
+    {
+      const uint32_t _max_limit = 1000;
+
+      if( limit > _max_limit )
+        limit = _max_limit;
+
+      ReadOptions rOptions;
+      std::unique_ptr<::rocksdb::Iterator> _it( _storage->NewIterator( rOptions, _columnHandles[column_number]) );
+
+      uint32_t _cnt = 0;
+
+      if( start )
+        _it->Seek( *start );
+      else
+        _it->SeekToFirst();
+
+      for( ; _it->Valid() && _cnt < limit; _it->Next(), ++_cnt )
+      {
+        records.push_back( std::make_pair( unpackSlice<Key>( _it->key() ), unpackSlice<Value>( _it->value() ) ) );
+      }
+
+      return _cnt;
+    }
 };
 
 }}

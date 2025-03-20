@@ -69,7 +69,7 @@ struct shm_scanner
   void scan_any_objects( const std::string& file_name, const std::string& name )
   {
     std::ofstream _file;
-    _file.open( path / file_name );
+    _file.open( path / file_name, std::ios::out );
 
     const auto& _idx = db.get_index< index_type, hive::chain::by_id >();
 
@@ -103,29 +103,25 @@ struct shm_scanner
 
 struct rb_scanner
 {
-  uint32_t scan_rocksdb_comment_objects_impl( const std::optional<Slice>& start, uint32_t limit, std::vector<std::string>& values, hive::chain::rocksdb_storage_mgr& rb_mgr )
-  {
-    return rb_mgr.read( start, limit, values, 0);
-  }
-
   void get_rocksdb_comment_objects( const bfs::path& file_path, const bfs::path& comment_data_dir, const std::string& name )
   {
     std::ofstream _file;
-    _file.open( file_path );
+    _file.open( file_path, std::ios::out );
 
     hive::chain::rocksdb_storage_mgr _rb_mgr( comment_data_dir, false );
     uint32_t _cnt = 0;
 
-    std::vector<std::string> _values;
+    using key_type = hive::chain::comment_object::author_and_permlink_hash_type;
+    using value_type = hive::chain::rocksdb_comment_object;
+
+    std::vector<std::pair<key_type, value_type>> _records;
     std::optional<Slice> _start;
 
-    _cnt += scan_rocksdb_comment_objects_impl( _start, std::numeric_limits<uint32_t>::max(), _values, _rb_mgr );
+    _cnt += _rb_mgr.read( _start, 1000, _records, 0);
 
-    for( auto& value : _values )
+    for( auto& record : _records )
     {
-      hive::chain::rocksdb_comment_object _obj;
-      load( _obj, value.data(), value.size() );
-      _file << _obj.author_and_permlink_hash << std::endl;
+      _file << record.first.str() << std::endl;
     }
 
     _file.close();
