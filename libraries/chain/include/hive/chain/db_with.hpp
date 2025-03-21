@@ -227,7 +227,6 @@ void without_pending_transactions(database& db,
                                   const block_flow_control& block_ctrl,
                                   Lambda callback)
 {
-  db._pending_tx_size = 0;
   pending_transactions_restorer restorer( db, block_ctrl, std::move( db._pending_tx ) );
   callback();
 }
