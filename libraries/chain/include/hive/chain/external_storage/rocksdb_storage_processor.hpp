@@ -2,6 +2,7 @@
 
 #include <hive/chain/external_storage/external_storage_processor.hpp>
 #include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 
 namespace hive { namespace chain {
 
