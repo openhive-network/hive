@@ -30,25 +30,12 @@ variables:
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
-  # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "35efd55e10a4cf71284e75544e5d62dffa4feb9d"
-  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
-  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
-  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
   BEEKEEPY_INITIALIZATION_TIMEOUT: 30
 
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
-  - project: 'hive/common-ci-configuration'
-    ref: 35efd55e10a4cf71284e75544e5d62dffa4feb9d
-    file:
-      - '/templates/npm_projects.gitlab-ci.yml'
-      - '/templates/wasm_build.gitlab-ci.yml'
-      - '/templates/python_projects.gitlab-ci.yml'
-      - '/templates/cache_cleanup.gitlab-ci.yml'
-      - '/templates/docker_image_jobs.gitlab-ci.yml'
 
 prepare_hived_image:
   extends: .prepare_hived_image

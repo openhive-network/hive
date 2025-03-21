@@ -8,7 +8,12 @@ variables:
 include:
   - project: 'hive/common-ci-configuration'
     ref: 35efd55e10a4cf71284e75544e5d62dffa4feb9d # develop
-    file: '/templates/docker_image_jobs.gitlab-ci.yml'
+    file:
+      - '/templates/npm_projects.gitlab-ci.yml'
+      - '/templates/wasm_build.gitlab-ci.yml'
+      - '/templates/python_projects.gitlab-ci.yml'
+      - '/templates/cache_cleanup.gitlab-ci.yml'
+      - '/templates/docker_image_jobs.gitlab-ci.yml'
   - local: scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
 
 .docker_image_builder_job:
