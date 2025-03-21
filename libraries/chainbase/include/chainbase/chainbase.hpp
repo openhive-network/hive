@@ -305,11 +305,11 @@ namespace chainbase {
     virtual void     start_undo_session() = 0;
 
     virtual int64_t  revision()const = 0;
-    virtual void     undo()const = 0;
-    virtual void     squash()const = 0;
+    virtual void     undo( bool keep_alive = false )const = 0;
+    virtual void     squash( bool keep_alive = false )const = 0;
     virtual void     commit( int64_t revision )const = 0;
     virtual void     undo_all()const = 0;
-    virtual uint32_t type_id()const  = 0;
+    virtual uint32_t type_id()const = 0;
 
     virtual statistic_info get_statistics() const = 0;
     virtual size_t size() const = 0;
@@ -563,7 +563,7 @@ namespace chainbase {
         *  Restores the state to how it was prior to the current session discarding all changes
         *  made between the last revision and the current revision.
         */
-      void undo()
+      void undo( bool keep_alive = false )
       {
         if( !enabled() ) return;
 
@@ -638,8 +638,19 @@ namespace chainbase {
             _item_additional_allocation += new_size;
         }
 
-        _stack.pop_back();
-        --_revision;
+        if( keep_alive )
+        {
+          head.old_values.clear();
+          head.new_ids.clear();
+          head.removed_values.clear();
+          //head.old_next_id stays the same
+          //head.revision and _revision stay the same
+        }
+        else
+        {
+          _stack.pop_back();
+          --_revision;
+        }
       }
 
       /**
@@ -648,13 +659,26 @@ namespace chainbase {
         *
         *  This method does not change the state of the index, only the state of the undo buffer.
         */
-      void squash()
+      void squash( bool keep_alive = false )
       {
         if( !enabled() ) return;
         if( _stack.size() == 1 )
         {
           // squashing the only revision into empty stack effectively acts as commit
-          _stack.pop_front();
+          if( keep_alive )
+          {
+            auto& head = _stack.back();
+            head.old_values.clear();
+            head.new_ids.clear();
+            head.removed_values.clear();
+            head.old_next_id = _next_id;
+            ++_revision;
+            head.revision = _revision;
+          }
+          else
+          {
+            _stack.pop_front();
+          }
           return;
         }
 
@@ -748,8 +772,19 @@ namespace chainbase {
           prev_state.removed_values.emplace( std::move(obj) ); //[obj.second->get_id()] = std::move(obj.second);
         }
 
-        _stack.pop_back();
-        --_revision;
+        if( keep_alive )
+        {
+          state.old_values.clear();
+          state.new_ids.clear();
+          state.removed_values.clear();
+          state.old_next_id = _next_id;
+          //head.revision and _revision stay the same
+        }
+        else
+        {
+          _stack.pop_back();
+          --_revision;
+        }
       }
 
       /**
@@ -857,8 +892,8 @@ namespace chainbase {
       virtual void     start_undo_session() override { _base.start_undo_session(); }
       virtual void     set_revision( int64_t revision ) override { _base.set_revision( revision ); }
       virtual int64_t  revision() const override { return _base.revision(); }
-      virtual void     undo() const override { _base.undo(); }
-      virtual void     squash() const override { _base.squash(); }
+      virtual void     undo( bool keep_alive = false ) const override { _base.undo( keep_alive ); }
+      virtual void     squash( bool keep_alive = false ) const override { _base.squash( keep_alive ); }
       virtual void     commit( int64_t revision ) const override { _base.commit(revision); }
       virtual void     undo_all() const override {_base.undo_all(); }
       virtual uint32_t type_id() const override { return BaseIndex::value_type::type_id; }
@@ -987,20 +1022,22 @@ namespace chainbase {
           _undo_on_destroy = false;
         }
 
-        void squash()
+        void squash( bool keep_alive = false )
         {
-          _db.squash();
-          _undo_on_destroy = false;
+          _db.squash( keep_alive );
+          if( !keep_alive )
+            _undo_on_destroy = false;
         }
 
-        void undo()
+        void undo( bool keep_alive = false )
         {
-          _db.undo();
-          _undo_on_destroy = false;
+          _db.undo( keep_alive );
+          if( !keep_alive )
+            _undo_on_destroy = false;
         }
 
       private:
-        friend database;
+        friend class database;
 
         undo_session_guard( database& db )
           : _db( db ), _undo_on_destroy( not db._index_list.empty() )
@@ -1014,12 +1051,13 @@ namespace chainbase {
 
       int64_t revision()const
       {
-        if( _index_list.empty() ) return -1;
+        if( _index_list.empty() )
+          return -1;
         return _index_list[0]->revision();
       }
 
-      void undo();
-      void squash();
+      void undo( bool keep_alive = false );
+      void squash( bool keep_alive = false );
       void commit( int64_t revision );
       void undo_all();
 

@@ -358,19 +358,19 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
 #endif
 
-  void database::undo()
+  void database::undo( bool keep_alive )
   {
     for( auto& item : _index_list )
     {
-      item->undo();
+      item->undo( keep_alive );
     }
   }
 
-  void database::squash()
+  void database::squash( bool keep_alive )
   {
     for( auto& item : _index_list )
     {
-      item->squash();
+      item->squash( keep_alive );
     }
   }
 
