@@ -7,9 +7,9 @@ namespace hive { namespace chain {
 
 struct post_operation_visitor
 {
-  external_storage_processor::ptr& provider;
+  external_storage_processor::ptr& processor;
 
-  post_operation_visitor( external_storage_processor::ptr& provider ) : provider( provider ) {}
+  post_operation_visitor( external_storage_processor::ptr& processor ) : processor( processor ) {}
 
   typedef void result_type;
 
@@ -18,25 +18,22 @@ struct post_operation_visitor
 
   void operator()( const delete_comment_operation& op )const
   {
-    FC_ASSERT( provider );
-    provider->delete_comment( op.author, op.permlink );
+    FC_ASSERT( processor );
+    processor->delete_comment( op.author, op.permlink );
   }
 
   void operator()( const comment_operation& op )const
   {
-    FC_ASSERT( provider );
-    provider->store_comment( op.author, op.permlink );
+    FC_ASSERT( processor );
+    processor->store_comment( op.author, op.permlink );
   }
 
 };
 
 rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plugin, database& db, const bfs::path& path )
-                          : external_storage_connector( db )
+                          : external_storage_connector( std::make_shared<rocksdb_storage_processor>( db, std::make_shared<rocksdb_storage_provider>( path, false ) ) ),
+                            db( db )
 {
-  ilog( "Initializing external storage manager" );
-  provider = std::make_shared<rocksdb_storage_processor>( db, std::make_shared<rocksdb_storage_provider>( path, false ) );
-  ilog( "External storage manager has been initialized" );
-
   try
   {
     _post_apply_operation_conn = db.add_post_apply_operation_handler(
@@ -72,19 +69,19 @@ rocksdb_storage_connector::~rocksdb_storage_connector()
 
 void rocksdb_storage_connector::on_post_apply_operation( const operation_notification& note )
 {
-  note.op.visit( post_operation_visitor( provider ) );
+  note.op.visit( post_operation_visitor( processor ) );
 }
 
 void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 {
-  FC_ASSERT( provider );
-  provider->move_to_external_storage( block_num );
+  FC_ASSERT( processor );
+  processor->move_to_external_storage( block_num );
 }
 
 void rocksdb_storage_connector::on_remove_comment_cashout( const remove_comment_cashout_notification& note )
 {
-  FC_ASSERT( provider );
-  provider->comment_was_paid( note.account_id, note.permlink );
+  FC_ASSERT( processor );
+  processor->comment_was_paid( note.account_id, note.permlink );
 }
 
 }}
