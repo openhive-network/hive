@@ -1,17 +1,17 @@
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 
 namespace hive { namespace chain {
 
 bool dbg_info = true;
 
-rocksdb_storage_provider::rocksdb_storage_provider( database& db, const external_storage_mgr::ptr& mgr ): db( db ), mgr( mgr )
+rocksdb_storage_processor::rocksdb_storage_processor( database& db, const external_storage_mgr::ptr& mgr ): db( db ), mgr( mgr )
 {
 }
 
-void rocksdb_storage_provider::store_comment( const hive::protocol::comment_operation& op )
+void rocksdb_storage_processor::store_comment( const hive::protocol::comment_operation& op )
 {
   auto& _account = db.get_account( op.author );
   auto _found = db.find_comment( op.author, op.permlink );
@@ -26,7 +26,7 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_provider: head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ilog( "rocksdb_storage_processor: head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
     ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
     ("permlink", op.permlink)("author", op.author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
@@ -39,7 +39,7 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   });
 }
 
-void rocksdb_storage_provider::delete_comment( const account_name_type& author, const std::string& permlink )
+void rocksdb_storage_processor::delete_comment( const account_name_type& author, const std::string& permlink )
 {
   auto& _account = db.get_account( author );
   auto _found = db.find_comment( author, permlink );
@@ -54,7 +54,7 @@ void rocksdb_storage_provider::delete_comment( const account_name_type& author, 
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_provider: head: ${head} lib: ${lib} Delete a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ilog( "rocksdb_storage_processor: head: ${head} lib: ${lib} Delete a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
     ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
     ("permlink", permlink)("author", author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
@@ -62,13 +62,13 @@ void rocksdb_storage_provider::delete_comment( const account_name_type& author, 
   db.remove( *_vfound );
 }
 
-void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_id, const shared_string& permlink )
+void rocksdb_storage_processor::comment_was_paid( const account_id_type& account_id, const shared_string& permlink )
 {
   auto& _account = db.get_account( account_id );
 
   if( dbg_info )
   {
-    ilog("rocksdb_storage_provider: A comment with hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+    ilog("rocksdb_storage_processor: A comment with hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
           ("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
           ("permlink", permlink)("author", _account.get_name()) );
   }
@@ -88,14 +88,14 @@ void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_
   });
 }
 
-void rocksdb_storage_provider::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
+void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
   // if( !volatile_object.was_paid )
   //   return;
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_provider: lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
+    ilog( "rocksdb_storage_processor: lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
           ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
   }
 
@@ -109,7 +109,7 @@ void rocksdb_storage_provider::move_to_external_storage_impl( uint32_t block_num
   mgr->save( _key_slice, _value_slice, 0/*column_number*/ );
 }
 
-void rocksdb_storage_provider::move_to_external_storage( uint32_t block_num )
+void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
 {
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
 
@@ -127,7 +127,7 @@ void rocksdb_storage_provider::move_to_external_storage( uint32_t block_num )
   }
 }
 
-std::shared_ptr<comment_object> rocksdb_storage_provider::find_comment( const account_id_type& author, const std::string& permlink )
+std::shared_ptr<comment_object> rocksdb_storage_processor::find_comment( const account_id_type& author, const std::string& permlink )
 {
   auto _hash = comment_object::compute_author_and_permlink_hash( author, permlink );
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/external_storage_processor.hpp>
 #include <hive/chain/external_storage/external_storage_mgr.hpp>
 
 namespace hive { namespace chain {
 
-class rocksdb_storage_provider: public external_storage_provider
+class rocksdb_storage_processor: public external_storage_processor
 {
   private:
 
@@ -17,7 +17,7 @@ class rocksdb_storage_provider: public external_storage_provider
 
   public:
 
-    rocksdb_storage_provider( database& db, const external_storage_mgr::ptr& mgr );
+    rocksdb_storage_processor( database& db, const external_storage_mgr::ptr& mgr );
 
     void store_comment( const hive::protocol::comment_operation& op ) override;
     void delete_comment( const account_name_type& author, const std::string& permlink ) override;

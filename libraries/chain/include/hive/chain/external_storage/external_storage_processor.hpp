@@ -6,11 +6,11 @@
 
 namespace hive { namespace chain {
 
-class external_storage_provider
+class external_storage_processor
 {
   public:
 
-    using ptr = std::shared_ptr<external_storage_provider>;
+    using ptr = std::shared_ptr<external_storage_processor>;
 
     virtual void store_comment( const hive::protocol::comment_operation& op ) = 0;
     virtual void delete_comment( const account_name_type& author, const std::string& permlink ) = 0;

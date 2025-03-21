@@ -84,7 +84,7 @@ add_library( hive_chain
              rc/resource_user.cpp
 
              external_storage/rocksdb_storage_mgr.cpp
-             external_storage/rocksdb_storage_provider.cpp
+             external_storage/rocksdb_storage_processor.cpp
              external_storage/rocksdb_storage_connector.cpp
 
              ${HEADERS}

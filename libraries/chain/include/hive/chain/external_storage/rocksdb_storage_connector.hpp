@@ -2,7 +2,7 @@
 
 #include <hive/chain/external_storage/external_storage_connector.hpp>
 
-#include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/external_storage_processor.hpp>
 
 namespace hive { namespace chain {
 
@@ -12,7 +12,7 @@ class rocksdb_storage_connector: public external_storage_connector
 {
   private:
 
-    external_storage_provider::ptr provider;
+    external_storage_processor::ptr provider;
 
     void on_post_apply_operation( const operation_notification& note );
     void on_irreversible_block( uint32_t block_num );
