@@ -36,6 +36,8 @@ rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plu
 {
   try
   {
+    db.set_external_storage_finder( processor );
+
     _post_apply_operation_conn = db.add_post_apply_operation_handler(
       [&]( const operation_notification& note )
       {

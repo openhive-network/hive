@@ -15,6 +15,7 @@
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
 #include <hive/chain/util/type_registrar.hpp>
+#include <hive/chain/external_storage/external_storage_finder.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -819,6 +820,8 @@ namespace chain {
 
       std::optional<time_point_sec> _current_timestamp;
 
+      hive::chain::external_storage_finder::ptr _external_storage_finder;
+
     public:
 
       time_point_sec get_current_timestamp() const
@@ -827,6 +830,17 @@ namespace chain {
           return *_current_timestamp;
         else
           return get_dynamic_global_properties().time;
+      }
+
+      void set_external_storage_finder( hive::chain::external_storage_finder::ptr obj )
+      {
+        _external_storage_finder = obj;
+      }
+
+      hive::chain::external_storage_finder::ptr get_external_storage_finder() const
+      {
+        FC_ASSERT( _external_storage_finder );
+        return _external_storage_finder;
       }
 
     private:
