@@ -563,12 +563,14 @@ namespace chainbase {
         *  Restores the state to how it was prior to the current session discarding all changes
         *  made between the last revision and the current revision.
         */
-      void undo() {
+      void undo()
+      {
         if( !enabled() ) return;
 
         auto& head = _stack.back();
 
-        for( auto& item : head.old_values ) {
+        for( auto& item : head.old_values )
+        {
           bool ok = false;
           size_t old_size = 0;
           size_t new_size = 0;
@@ -580,9 +582,10 @@ namespace chainbase {
               old_size = itr->get_dynamic_alloc();
               new_size = item.second.get_dynamic_alloc();
             }
-            ok = _indices.modify( itr, [&]( value_type& v ) {
+            ok = _indices.modify( itr, [&]( value_type& v )
+            {
               v = std::move( item.second );
-            });
+            } );
           }
           else
           {
@@ -620,7 +623,8 @@ namespace chainbase {
         }
         _next_id = head.old_next_id;
 
-        for( auto& item : head.removed_values ) {
+        for( auto& item : head.removed_values )
+        {
           size_t new_size = 0;
           if constexpr( value_type::has_dynamic_alloc_t::value )
             new_size = item.second.get_dynamic_alloc();
@@ -647,7 +651,9 @@ namespace chainbase {
       void squash()
       {
         if( !enabled() ) return;
-        if( _stack.size() == 1 ) {
+        if( _stack.size() == 1 )
+        {
+          // squashing the only revision into empty stack effectively acts as commit
           _stack.pop_front();
           return;
         }
@@ -775,7 +781,8 @@ namespace chainbase {
     private:
       bool enabled()const { return _stack.size(); }
 
-      void on_modify( const value_type& v ) {
+      void on_modify( const value_type& v )
+      {
         if( !enabled() ) return;
 
         auto& head = _stack.back();
@@ -790,17 +797,20 @@ namespace chainbase {
         head.old_values.emplace( v.get_id(), v.copy_chain_object() );
       }
 
-      void on_remove( const value_type& v ) {
+      void on_remove( const value_type& v )
+      {
         if( !enabled() ) return;
 
         auto& head = _stack.back();
-        if( head.new_ids.count( v.get_id() ) ) {
+        if( head.new_ids.count( v.get_id() ) )
+        {
           head.new_ids.erase( v.get_id() );
           return;
         }
 
         auto itr = head.old_values.find( v.get_id() );
-        if( itr != head.old_values.end() ) {
+        if( itr != head.old_values.end() )
+        {
           head.removed_values.emplace( std::move( *itr ) );
           head.old_values.erase( v.get_id() );
           return;
@@ -812,7 +822,8 @@ namespace chainbase {
         head.removed_values.emplace( v.get_id(), v.copy_chain_object() );
       }
 
-      void on_create( const value_type& v ) {
+      void on_create( const value_type& v )
+      {
         if( !enabled() ) return;
         auto& head = _stack.back();
 
@@ -1020,8 +1031,9 @@ namespace chainbase {
 
       void set_revision( int64_t revision )
       {
-          CHAINBASE_REQUIRE_WRITE_LOCK( "set_revision", int64_t );
-          for( const auto& i : _index_list ) i->set_revision( revision );
+        CHAINBASE_REQUIRE_WRITE_LOCK( "set_revision", int64_t );
+        for( const auto& i : _index_list )
+          i->set_revision( revision );
       }
 
       template<typename MultiIndexType>
@@ -1034,7 +1046,8 @@ namespace chainbase {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnonnull"
-      auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager()) {
+      auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager())
+      {
         return _segment->get_segment_manager();
       }
 #pragma GCC diagnostic pop
