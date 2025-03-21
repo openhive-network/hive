@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/external_storage/external_storage_mgr.hpp>
+#include <hive/chain/external_storage/external_storage_provider.hpp>
 
 #include <hive/chain/database.hpp>
 
@@ -29,7 +29,7 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
-class rocksdb_storage_mgr: public external_storage_mgr
+class rocksdb_storage_provider: public external_storage_provider
 {
   public:
 
@@ -70,8 +70,8 @@ class rocksdb_storage_mgr: public external_storage_mgr
 
   public:
 
-    rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase );
-    ~rocksdb_storage_mgr();
+    rocksdb_storage_provider( const bfs::path& storage_path, bool cleanDatabase );
+    ~rocksdb_storage_provider();
 
     void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
     void read( const Slice& key, std::string& value, const uint32_t& column_number ) override;

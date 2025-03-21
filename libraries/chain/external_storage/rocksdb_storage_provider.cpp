@@ -1,5 +1,5 @@
 
-#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
@@ -55,18 +55,18 @@ const Comparator* by_Hash_Comparator()
 
 } /// anonymous
 
-rocksdb_storage_mgr::rocksdb_storage_mgr( const bfs::path& storage_path, bool cleanDatabase )
+rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& storage_path, bool cleanDatabase )
 {
   _storagePath = storage_path;
   openDb( cleanDatabase );
 }
 
-rocksdb_storage_mgr::~rocksdb_storage_mgr()
+rocksdb_storage_provider::~rocksdb_storage_provider()
 {
   shutdownDb();
 }
 
-void rocksdb_storage_mgr::openDb( bool cleanDatabase )
+void rocksdb_storage_provider::openDb( bool cleanDatabase )
 {
   if( cleanDatabase )
   {
@@ -103,7 +103,7 @@ void rocksdb_storage_mgr::openDb( bool cleanDatabase )
   }
 }
 
-void rocksdb_storage_mgr::shutdownDb( bool removeDB )
+void rocksdb_storage_provider::shutdownDb( bool removeDB )
 {
   if(_storage)
   {
@@ -125,7 +125,7 @@ void rocksdb_storage_mgr::shutdownDb( bool removeDB )
   }
 }
 
-rocksdb_storage_mgr::ColumnDefinitions rocksdb_storage_mgr::prepareColumnDefinitions( bool addDefaultColumn)
+rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareColumnDefinitions( bool addDefaultColumn)
 {
   ColumnDefinitions columnDefs;
 
@@ -139,7 +139,7 @@ rocksdb_storage_mgr::ColumnDefinitions rocksdb_storage_mgr::prepareColumnDefinit
   return columnDefs;
 }
 
-std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path)
+std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path& path)
 {
   DB* db = nullptr;
 
@@ -201,13 +201,13 @@ std::tuple<bool, bool> rocksdb_storage_mgr::createDbSchema(const bfs::path& path
   }
 }
 
-void rocksdb_storage_mgr::cleanupColumnHandles()
+void rocksdb_storage_provider::cleanupColumnHandles()
 {
   if(_storage)
     cleanupColumnHandles(_storage.get());
 }
 
-void rocksdb_storage_mgr::cleanupColumnHandles(::rocksdb::DB* db)
+void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
 {
   for(auto* h : _columnHandles)
   {
@@ -220,7 +220,7 @@ void rocksdb_storage_mgr::cleanupColumnHandles(::rocksdb::DB* db)
   _columnHandles.clear();
 }
 
-void rocksdb_storage_mgr::flushWriteBuffer(DB* storage)
+void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 {
   if(storage == nullptr)
     storage = _storage.get();
@@ -233,7 +233,7 @@ void rocksdb_storage_mgr::flushWriteBuffer(DB* storage)
   _writeBuffer.Clear();
 }
 
-void rocksdb_storage_mgr::flushStorage()
+void rocksdb_storage_provider::flushStorage()
 {
   if(_storage == nullptr)
     return;
@@ -252,13 +252,13 @@ void rocksdb_storage_mgr::flushStorage()
   }
 }
 
-void rocksdb_storage_mgr::save( const Slice& key, const Slice& value, const uint32_t& column_number )
+void rocksdb_storage_provider::save( const Slice& key, const Slice& value, const uint32_t& column_number )
 {
   auto s = _writeBuffer.Put( _columnHandles[column_number], key, value );
   checkStatus(s);
 }
 
-void rocksdb_storage_mgr::read( const Slice& key, std::string& value, const uint32_t& column_number )
+void rocksdb_storage_provider::read( const Slice& key, std::string& value, const uint32_t& column_number )
 {
   ReadOptions rOptions;
 

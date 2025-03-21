@@ -21,7 +21,7 @@
 
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 
 #include <fc/exception/exception.hpp>
@@ -108,7 +108,7 @@ struct rb_scanner
     std::ofstream _file;
     _file.open( file_path, std::ios::out );
 
-    hive::chain::rocksdb_storage_mgr _rb_mgr( comment_data_dir, false );
+    hive::chain::rocksdb_storage_provider _rb_mgr( comment_data_dir, false );
     uint32_t _cnt = 0;
 
     using key_type = hive::chain::comment_object::author_and_permlink_hash_type;

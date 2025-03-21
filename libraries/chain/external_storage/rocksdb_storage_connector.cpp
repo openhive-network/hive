@@ -1,6 +1,6 @@
 #include <hive/chain/external_storage/rocksdb_storage_connector.hpp>
 
-#include <hive/chain/external_storage/rocksdb_storage_mgr.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
 
 namespace hive { namespace chain {
@@ -34,7 +34,7 @@ rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plu
                           : external_storage_connector( db )
 {
   ilog( "Initializing external storage manager" );
-  provider = std::make_shared<rocksdb_storage_processor>( db, std::make_shared<rocksdb_storage_mgr>( path, false ) );
+  provider = std::make_shared<rocksdb_storage_processor>( db, std::make_shared<rocksdb_storage_provider>( path, false ) );
   ilog( "External storage manager has been initialized" );
 
   try

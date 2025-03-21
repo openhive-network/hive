@@ -7,7 +7,7 @@ namespace hive { namespace chain {
 
 bool dbg_info = true;
 
-rocksdb_storage_processor::rocksdb_storage_processor( database& db, const external_storage_mgr::ptr& mgr ): db( db ), mgr( mgr )
+rocksdb_storage_processor::rocksdb_storage_processor( database& db, const external_storage_provider::ptr& mgr ): db( db ), mgr( mgr )
 {
 }
 
