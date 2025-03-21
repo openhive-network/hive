@@ -11,12 +11,12 @@ rocksdb_storage_processor::rocksdb_storage_processor( database& db, const extern
 {
 }
 
-void rocksdb_storage_processor::store_comment( const hive::protocol::comment_operation& op )
+void rocksdb_storage_processor::store_comment( const account_name_type& author, const std::string& permlink )
 {
-  auto& _account = db.get_account( op.author );
-  auto _found = db.find_comment( op.author, op.permlink );
+  auto& _account = db.get_account( author );
+  auto _found = db.find_comment( author, permlink );
 
-  FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", op.permlink)("author", op.author) );
+  FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", permlink)("author", author) );
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
   auto _vfound = _volatile_idx.find( _found->get_author_and_permlink_hash() );
@@ -27,8 +27,8 @@ void rocksdb_storage_processor::store_comment( const hive::protocol::comment_ope
   if( dbg_info )
   {
     ilog( "rocksdb_storage_processor: head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
-    ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), op.permlink ))
-    ("permlink", op.permlink)("author", op.author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
+    ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
+    ("permlink", permlink)("author", author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
 
   db.create< volatile_comment_object >( [&]( volatile_comment_object& o )

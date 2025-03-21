@@ -19,7 +19,7 @@ class rocksdb_storage_processor: public external_storage_processor
 
     rocksdb_storage_processor( database& db, const external_storage_provider::ptr& mgr );
 
-    void store_comment( const hive::protocol::comment_operation& op ) override;
+    void store_comment( const account_name_type& author, const std::string& permlink ) override;
     void delete_comment( const account_name_type& author, const std::string& permlink ) override;
     void comment_was_paid( const account_id_type& account_id, const shared_string& permlink ) override;
     void move_to_external_storage( uint32_t block_num ) override;

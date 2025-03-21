@@ -25,7 +25,7 @@ struct post_operation_visitor
   void operator()( const comment_operation& op )const
   {
     FC_ASSERT( provider );
-    provider->store_comment( op );
+    provider->store_comment( op.author, op.permlink );
   }
 
 };
