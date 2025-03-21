@@ -368,9 +368,9 @@ void database::set_chain_id( const chain_id_type& chain_id )
 
 const witness_object& database::get_witness( const account_name_type& name ) const
 { try {
-    const auto* _witness = find_witness( name );
-    FC_ASSERT( _witness != nullptr, "Witness ${w} doesn't exist", ("w", name) );
-    return *_witness;
+  const auto* _witness = find_witness( name );
+  FC_ASSERT( _witness != nullptr, "Witness ${w} doesn't exist", ("w", name) );
+  return *_witness;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
 const witness_object* database::find_witness( const account_name_type& name ) const
@@ -393,8 +393,8 @@ bool database::is_treasury( const account_name_type& name )const
 
 const account_object& database::get_account( const account_id_type id )const
 { try {
-    const auto* _account = find_account( id );
-    FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
+  const auto* _account = find_account( id );
+  FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
   return *_account;
 } FC_CAPTURE_AND_RETHROW( (id) ) }
 
@@ -405,9 +405,9 @@ const account_object* database::find_account( const account_id_type& id )const
 
 const account_object& database::get_account( const account_name_type& name )const
 { try {
-    const auto* _account = find_account( name );
-    FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
-    return *_account;
+  const auto* _account = find_account( name );
+  FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
+  return *_account;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
 const account_object* database::find_account( const account_name_type& name )const
@@ -479,9 +479,9 @@ const comment_object* database::find_comment( const account_name_type& author, c
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
 { try {
-    const auto* _escrow = find_escrow( name, escrow_id );
-    FC_ASSERT( _escrow != nullptr, "Escrow balance with 'name' ${name} 'escrow_id' ${escrow_id} doesn't exist.", (name)(escrow_id) );
-    return *_escrow;
+  const auto* _escrow = find_escrow( name, escrow_id );
+  FC_ASSERT( _escrow != nullptr, "Escrow balance with 'name' ${name} 'escrow_id' ${escrow_id} doesn't exist.", (name)(escrow_id) );
+  return *_escrow;
 } FC_CAPTURE_AND_RETHROW( (name)(escrow_id) ) }
 
 const escrow_object* database::find_escrow( const account_name_type& name, uint32_t escrow_id )const
@@ -496,7 +496,6 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
 
   const auto* _limit_order = find_limit_order( name, orderid );
   FC_ASSERT( _limit_order != nullptr, "Limit order with 'name' ${name} 'order_id' ${orderid} doesn't exist.", (name)(orderid) );
-
   return *_limit_order;
 } FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
 
@@ -510,10 +509,8 @@ const limit_order_object* database::find_limit_order( const account_name_type& n
 
 const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
 { try {
-
   const auto* _savings_withdraw = find_savings_withdraw( owner, request_id );
   FC_ASSERT( _savings_withdraw != nullptr, "Savings withdraw for `owner` ${owner} and 'request_id' ${request_id} doesn't exist.", (owner)(request_id) );
-
   return *_savings_withdraw;
 } FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
 
@@ -2735,16 +2732,19 @@ void database::process_funds()
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
     safe<int64_t> new_hive;
-    if (has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
+    if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
+    {
       auto median_price = get_feed_history().current_median_history;
-      FC_ASSERT( median_price.is_null() == false  );
+      FC_ASSERT( median_price.is_null() == false );
 
-      const auto &treasury_account = get_treasury();
+      const auto& treasury_account = get_treasury();
       const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.hbd_balance);
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.current_supply;
 
       new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
-    } else {
+    }
+    else
+    {
       new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
     }
 
