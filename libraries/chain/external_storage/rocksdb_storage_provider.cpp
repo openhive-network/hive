@@ -266,4 +266,10 @@ void rocksdb_storage_provider::read( const Slice& key, std::string& value, const
   checkStatus(s);
 }
 
+void rocksdb_storage_provider::remove( const Slice& key, const uint32_t& column_number )
+{
+  ::rocksdb::Status s = _writeBuffer.Delete( _columnHandles[column_number], key );
+  checkStatus(s);
+}
+
 }}

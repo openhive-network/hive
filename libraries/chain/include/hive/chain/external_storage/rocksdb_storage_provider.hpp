@@ -75,6 +75,7 @@ class rocksdb_storage_provider: public external_storage_provider
 
     void save( const Slice& key, const Slice& value, const uint32_t& column_number ) override;
     void read( const Slice& key, std::string& value, const uint32_t& column_number ) override;
+    void remove( const Slice& key, const uint32_t& column_number ) override;
 
     template<typename Key, typename Value>
     uint32_t read( const std::optional<Slice>& start, uint32_t limit, std::vector<std::pair<Key, Value>>& records, const uint32_t& column_number )
