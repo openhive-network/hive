@@ -39,6 +39,29 @@ void rocksdb_storage_provider::store_comment( const hive::protocol::comment_oper
   });
 }
 
+void rocksdb_storage_provider::delete_comment( const account_name_type& author, const std::string& permlink )
+{
+  auto& _account = db.get_account( author );
+  auto _found = db.find_comment( author, permlink );
+
+  FC_ASSERT( _found == nullptr, "Comment ${permlink}/${author} has to be deleted", ("permlink", permlink)("author", author) );
+
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
+  auto _vfound = _volatile_idx.find( comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ) );
+
+  if( _vfound == _volatile_idx.end() )
+    return;
+
+  if( dbg_info )
+  {
+    ilog( "rocksdb_storage_provider: head: ${head} lib: ${lib} Delete a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
+    ("permlink", permlink)("author", author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
+  }
+
+  db.remove( *_vfound );
+}
+
 void rocksdb_storage_provider::comment_was_paid( const account_id_type& account_id, const shared_string& permlink )
 {
   auto& _account = db.get_account( account_id );

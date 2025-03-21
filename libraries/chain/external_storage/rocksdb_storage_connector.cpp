@@ -16,6 +16,12 @@ struct post_operation_visitor
   template< typename T >
   void operator()( const T& )const {}
 
+  void operator()( const delete_comment_operation& op )const
+  {
+    FC_ASSERT( provider );
+    provider->delete_comment( op.author, op.permlink );
+  }
+
   void operator()( const comment_operation& op )const
   {
     FC_ASSERT( provider );
