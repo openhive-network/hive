@@ -847,22 +847,23 @@ namespace chainbase {
   };
 
   template<typename BaseIndex>
-  class index_impl : public abstract_index {
+  class index final : public abstract_index
+  {
     public:
       using abstract_index::statistic_info;
 
-      index_impl( BaseIndex& base ):abstract_index( &base ),_base(base){}
+      index( BaseIndex& base ):abstract_index( &base ),_base(base){}
 
       virtual void     start_undo_session() override { _base.start_undo_session(); }
       virtual void     set_revision( int64_t revision ) override { _base.set_revision( revision ); }
-      virtual int64_t  revision()const  override { return _base.revision(); }
-      virtual void     undo()const  override { _base.undo(); }
-      virtual void     squash()const  override { _base.squash(); }
-      virtual void     commit( int64_t revision )const  override { _base.commit(revision); }
+      virtual int64_t  revision() const override { return _base.revision(); }
+      virtual void     undo() const override { _base.undo(); }
+      virtual void     squash() const override { _base.squash(); }
+      virtual void     commit( int64_t revision ) const override { _base.commit(revision); }
       virtual void     undo_all() const override {_base.undo_all(); }
-      virtual uint32_t type_id()const override { return BaseIndex::value_type::type_id; }
+      virtual uint32_t type_id() const override { return BaseIndex::value_type::type_id; }
 
-      virtual statistic_info get_statistics() const override final
+      virtual statistic_info get_statistics() const override
       {
         helpers::index_statistic_provider provider;
         /* For testing:
@@ -877,23 +878,23 @@ namespace chainbase {
         return stats;
       }
 
-      virtual size_t size() const override final
+      virtual size_t size() const override
       {
         return _base.indicies().size();
       }
 
-      virtual void clear() override final
+      virtual void clear() override
       {
         _base.clear();
       }
 
-      virtual void dump_snapshot(snapshot_writer& writer) const override final
+      virtual void dump_snapshot(snapshot_writer& writer) const override
       {
         generic_index_snapshot_dumper<BaseIndex> dumper(_base, writer);
         dumper.dump(_base.get_next_id());
       }
 
-      virtual void load_snapshot(snapshot_reader& reader) override final
+      virtual void load_snapshot(snapshot_reader& reader) override
       {
         clear();
         generic_index_snapshot_loader<BaseIndex> loader(_base, reader);
@@ -904,12 +905,6 @@ namespace chainbase {
 
     private:
       BaseIndex& _base;
-  };
-
-  template<typename IndexType>
-  class index : public index_impl<IndexType> {
-    public:
-      index( IndexType& i ):index_impl<IndexType>( i ){}
   };
 
   struct lock_exception : public std::exception
