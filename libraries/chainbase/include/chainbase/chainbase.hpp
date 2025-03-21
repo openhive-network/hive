@@ -304,6 +304,48 @@ namespace chainbase {
     uint32_t _lock_serial_number; // allows us to associate the "locking" log with the "releasing" log
   };
 
+  class index_extension
+  {
+  public:
+    index_extension() {}
+    virtual ~index_extension() {}
+  };
+
+  typedef std::vector< std::shared_ptr< index_extension > > index_extensions;
+
+  class abstract_index
+  {
+  public:
+    typedef helpers::index_statistic_info statistic_info;
+
+    abstract_index( void* i ):_idx_ptr(i){}
+    virtual ~abstract_index(){}
+    virtual void     set_revision( int64_t revision ) = 0;
+    virtual void     start_undo_session() = 0;
+
+    virtual int64_t  revision()const = 0;
+    virtual void     undo()const = 0;
+    virtual void     squash()const = 0;
+    virtual void     commit( int64_t revision )const = 0;
+    virtual void     undo_all()const = 0;
+    virtual uint32_t type_id()const  = 0;
+
+    virtual statistic_info get_statistics() const = 0;
+    virtual size_t size() const = 0;
+    virtual void clear() = 0;
+
+    virtual void dump_snapshot( snapshot_writer& writer ) const = 0;
+    virtual void load_snapshot( snapshot_reader& reader ) = 0;
+
+    void add_index_extension( std::shared_ptr< index_extension > ext ) { _extensions.push_back( ext ); }
+    const index_extensions& get_index_extensions()const { return _extensions; }
+    void* get()const { return _idx_ptr; }
+  protected:
+    void*              _idx_ptr;
+  private:
+    index_extensions   _extensions;
+  };
+
   /**
     *  The value_type stored in the multiindex container must have a integer field accessible through
     *  constant function 'get_id'.  This will be the primary key and it will be assigned and managed by generic_index.
@@ -835,48 +877,6 @@ namespace chainbase {
       index_type                      _indices;
       uint32_t                        _size_of_value_type = 0;
       uint32_t                        _size_of_this = 0;
-  };
-
-  class index_extension
-  {
-    public:
-      index_extension() {}
-      virtual ~index_extension() {}
-  };
-
-  typedef std::vector< std::shared_ptr< index_extension > > index_extensions;
-
-  class abstract_index
-  {
-    public:
-      typedef helpers::index_statistic_info statistic_info;
-
-      abstract_index( void* i ):_idx_ptr(i){}
-      virtual ~abstract_index(){}
-      virtual void     set_revision( int64_t revision ) = 0;
-      virtual void     start_undo_session() = 0;
-
-      virtual int64_t  revision()const = 0;
-      virtual void     undo()const = 0;
-      virtual void     squash()const = 0;
-      virtual void     commit( int64_t revision )const = 0;
-      virtual void     undo_all()const = 0;
-      virtual uint32_t type_id()const  = 0;
-
-      virtual statistic_info get_statistics() const = 0;
-      virtual size_t size() const = 0;
-      virtual void clear() = 0;
-
-      virtual void dump_snapshot(snapshot_writer& writer) const = 0;
-      virtual void load_snapshot(snapshot_reader& reader) = 0;
-
-      void add_index_extension( std::shared_ptr< index_extension > ext )  { _extensions.push_back( ext ); }
-      const index_extensions& get_index_extensions()const  { return _extensions; }
-      void* get()const { return _idx_ptr; }
-    protected:
-      void*              _idx_ptr;
-    private:
-      index_extensions   _extensions;
   };
 
   template<typename BaseIndex>
