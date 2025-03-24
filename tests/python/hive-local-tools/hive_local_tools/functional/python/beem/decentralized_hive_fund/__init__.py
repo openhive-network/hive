@@ -13,7 +13,7 @@ CREATOR: Final[str] = "initminer"
 TREASURY: Final[str] = "hive.fund"
 
 
-@pytest.fixture()
+@pytest.fixture
 def node() -> tt.InitNode:
     """
     Some tests in decentralized_hive_fund_tests produces around 90k blocks which results in a large size of
