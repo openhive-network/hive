@@ -5,7 +5,7 @@ from beekeepy.exceptions import BeekeepyError, ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
-from wax._private.exceptions import WaxError, WaxValidationFailedError
+from wax.exceptions import WaxError, WaxValidationFailedError
 
 UPDATED_COMMENT_OPTIONS = {
     "max_accepted_payout": tt.Asset.Tbd(100),
