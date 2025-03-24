@@ -222,7 +222,7 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
     sub_networks = []
     init_node = None
 
-    for sub_networks_size in sub_networks_sizes:
+    for cnt, sub_networks_size in enumerate(sub_networks_sizes):
         tt.logger.info(f"Preparing sub-network nr: {cnt} that consists of {sub_networks_size} witnesses")
 
         witness_names = [f"witness-{cnt}-{i}" for i in range(sub_networks_size)]
@@ -235,7 +235,6 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
         tt.WitnessNode(witnesses=witness_names, network=sub_network)
         tt.ApiNode(network=sub_network)
 
-        cnt += 1
     return sub_networks, init_node, all_witness_names
 
 
@@ -333,10 +332,8 @@ def prepare_network(
 def prepare_time_offsets(limit: int):
     time_offsets: int = []
 
-    cnt = 0
-    for _ in range(limit):
+    for cnt, _ in enumerate(range(limit)):
         time_offsets.append(cnt % 3 + 1)
-        cnt += 1
 
     result = ",".join(str(time_offset) for time_offset in time_offsets)
     tt.logger.info(f"Generated: {result}")

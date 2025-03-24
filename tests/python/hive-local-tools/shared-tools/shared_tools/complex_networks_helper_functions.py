@@ -254,12 +254,11 @@ def display_info(node):
 def prepare_nodes(sub_networks_sizes: list) -> list:
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
 
-    cnt = 0
     all_witness_names = []
     sub_networks = []
     init_node = None
 
-    for sub_networks_size in sub_networks_sizes:
+    for cnt, sub_networks_size in enumerate(sub_networks_sizes):
         tt.logger.info(f"Preparing sub-network nr: {cnt} that consists of {sub_networks_size} witnesses")
 
         witness_names = [f"witness-{cnt}-{i}" for i in range(sub_networks_size)]
@@ -272,5 +271,4 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
         tt.WitnessNode(witnesses=witness_names, network=sub_network)
         tt.ApiNode(network=sub_network)
 
-        cnt += 1
     return sub_networks, init_node, all_witness_names
