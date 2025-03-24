@@ -66,7 +66,7 @@ def prepare_network(
 
 
 def prepare_environment(hard_fork_26_time: str) -> tt.Network:
-    all_witness_names, alpha_net, init_node, api_node = prepare_network(
+    all_witness_names, alpha_net, init_node, _ = prepare_network(
         witnesses_number=20, network_name="alpha", allow_create_init_node=True, allow_create_api_node=True
     )
 
@@ -85,10 +85,10 @@ def prepare_environment_with_2_sub_networks(
     hard_fork_26_time_alpha: str, hard_fork_26_time_beta: str
 ) -> tuple[tt.Network, tt.Network]:
     # Because HIVE_HARDFORK_REQUIRED_WITNESSES = 17 // 17 of the 21 dpos witnesses (20 elected and 1 chosen) required for hardfork
-    witness_names_alpha, alpha_net, init_node, api_node = prepare_network(
+    witness_names_alpha, alpha_net, init_node, _ = prepare_network(
         witnesses_number=8, network_name="alpha", allow_create_init_node=True, allow_create_api_node=True
     )
-    witness_names_beta, beta_net, init_node2, api_node2 = prepare_network(
+    witness_names_beta, beta_net, _, _ = prepare_network(
         witnesses_number=12, network_name="beta", allow_create_init_node=False, allow_create_api_node=False
     )
 

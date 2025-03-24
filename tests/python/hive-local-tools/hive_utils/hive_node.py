@@ -70,7 +70,7 @@ class HiveNode:
         self.last_returncode = None
 
     def get_output(self):
-        out, err = self.hived_process.communicate()
+        out, _ = self.hived_process.communicate()
         return out
 
     def __exit__(self, exc, value, tb):
