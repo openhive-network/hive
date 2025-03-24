@@ -291,7 +291,7 @@ if __name__ == "__main__":
 
             print(config)
 
-            with open(work_dir + "/config.ini", "w") as conf_file:
+            with open(work_dir + "/config.ini", "w") as conf_file:  # noqa FURB103
                 conf_file.write(config)
 
             node = HiveNode(binary_path, work_dir, [])

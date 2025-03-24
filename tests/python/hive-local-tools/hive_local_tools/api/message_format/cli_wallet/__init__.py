@@ -11,13 +11,13 @@ if TYPE_CHECKING:
 
 
 def __read_from_text_pattern(directory: Path, method_name: str) -> str:
-    with open(f"{directory}/{method_name}.pat.txt") as text_file:
+    with open(f"{directory}/{method_name}.pat.txt") as text_file:  # noqa FURB101
         return text_file.read()
 
 
 def __write_to_text_pattern(directory: Path, method_name: str, text: str) -> None:
     directory.mkdir(parents=True, exist_ok=True)
-    with open(f"{directory}/{method_name}.pat.txt", "w") as text_file:
+    with open(f"{directory}/{method_name}.pat.txt", "w") as text_file:  # noqa FURB103
         text_file.write(text)
 
 
