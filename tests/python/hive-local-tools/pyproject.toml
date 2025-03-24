@@ -38,13 +38,13 @@ tests_api = { path = "tests_api", develop = true }
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.4.0"
 black = "23.9.1"
-ruff = "0.0.292"
+ruff = "0.6.5"
 
 [tool.poetry.group.black.dependencies]
 black = "23.9.1"
 
 [tool.poetry.group.ruff.dependencies]
-ruff = "0.0.292"
+ruff = "0.6.5"
 
 [tool.poetry.group.pre-commit.dependencies]
 pre-commit = "3.4.0"
