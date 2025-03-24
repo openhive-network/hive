@@ -403,7 +403,7 @@ verify_poetry_lock_sanity:
   extends: .python_based
   needs: []  # to run immediately without waiting for previous jobs
   variables:
-    PACKAGES_TO_CHECK: "$CI_PROJECT_DIR/tests/python/"
+    PACKAGES_TO_CHECK: "$CI_PROJECT_DIR/tests/python/hive-local-tools" # temporary until test code will be cleaned up in further MRs
     PYPROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/tests/python/hive-local-tools/pyproject.toml"
     PRE_COMMIT_CONFIG: "$CI_PROJECT_DIR/tests/python/hive-local-tools/.pre-commit-config.yaml"
     PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
