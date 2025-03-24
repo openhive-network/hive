@@ -18,7 +18,7 @@ from hive_local_tools.functional.python.cli_wallet import (
     get_list_proposal_votes_args,
     prepare_proposal,
 )
-from wax._private.exceptions import WaxValidationFailedError
+from wax.exceptions import WaxValidationFailedError
 
 
 def list_proposals_by_creator(wallet: tt.Wallet, creator_name: str) -> list:
