@@ -1,5 +1,5 @@
 # this configuration should be used for linting and formatting a python tests-related code
-files: ^tests/python
+files: ^tests/python/hive-local-tools
 
 exclude_pattern_files_regex: &exclude_pattern_files_regex
   "\
