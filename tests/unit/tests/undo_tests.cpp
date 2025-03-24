@@ -1081,6 +1081,326 @@ BOOST_AUTO_TEST_CASE( undo_state_on_push_and_commit )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing changes to undo state with call to squash and undo with 'keep_alive'" );
+
+    // generate couple blocks to push revision up
+    generate_blocks( 2 * HIVE_MAX_WITNESSES );
+    auto revision_on_empty = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision_on_empty ) );
+    db->commit( revision_on_empty );
+    db->clear_pending();
+    ilog( "Undo stack is now empty" );
+    BOOST_REQUIRE_EQUAL( revision_on_empty, db->revision() );
+    auto time = db->head_block_time();
+
+    // since we are not pushing new blocks nor transactions we can use just any index for
+    // testing modifications - we are going to use transaction_index
+    auto& index = db->get_index< transaction_index >();
+    auto next_id = index.get_next_id();
+    ilog( "Revision inside specific index is the same as global (${r}), next_id is ${n}",
+      ( "r", index.revision() )( "n", next_id ) );
+    BOOST_REQUIRE_EQUAL( index.revision(), revision_on_empty );
+
+    auto create = [&]( const std::string& seed ) -> const transaction_object&
+    {
+      return db->create<transaction_object>( [&]( transaction_object& transaction )
+      {
+        transaction.trx_id = transaction_id_type::hash( seed );
+        transaction.expiration = time;
+      } );
+    };
+    auto modify = [&]( transaction_object_id_type i, const time_point_sec& time )
+    {
+      db->modify( index.get( i ), [&]( transaction_object& transaction )
+      {
+        transaction.expiration = time;
+      } );
+    };
+    auto remove = [&]( transaction_object_id_type i )
+    {
+      db->remove( index.get( i ) );
+    };
+
+    // create couple out-of-undo objects to test modifications and removals on
+    const int DEPTH = 6;
+    std::array<transaction_object_id_type, DEPTH> to_modify;
+    std::array<transaction_object_id_type, DEPTH> to_remove;
+    std::array<transaction_object_id_type, DEPTH> created;
+    int count = 0;
+    for( int i = 0; i < DEPTH; ++i )
+    {
+      to_modify[i] = create( "mod" + std::to_string(i) ).get_id();
+      to_remove[i] = create( "rem" + std::to_string(i) ).get_id();
+    };
+    {
+      auto next_id_after_create = index.get_next_id();
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", next_id_after_create ) );
+      BOOST_REQUIRE_EQUAL( index.revision(), revision_on_empty );
+      BOOST_REQUIRE_EQUAL( next_id + 2 * DEPTH, next_id_after_create );
+      next_id = next_id_after_create;
+    }
+
+    auto saved_next_id = next_id;
+    // open base session
+    {
+      auto base_session = db->start_undo_session();
+      auto revision_with_base_session = db->revision();
+      ilog( "Creation of first session increases revision (${r}), does not change next_id (${n})",
+        ( "r", revision_with_base_session )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_on_empty + 1, revision_with_base_session );
+      BOOST_REQUIRE_EQUAL( next_id, index.get_next_id() );
+      // create and change objects within the only session
+      created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+      modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+      remove( to_remove[ count ] );
+      ++count;
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+      ++next_id;
+      // test undo with 'keep_alive' on the only session
+      base_session.undo( true );
+      auto revision_after_base_undo_alive = db->revision();
+      ilog( "Undoing of the only session with 'keep_alive' (equivalent of undo and new session) does not change revision (${r}), reverts next_id to value from start of session (${n})",
+        ( "r", revision_after_base_undo_alive )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_with_base_session, revision_after_base_undo_alive );
+      BOOST_REQUIRE_EQUAL( saved_next_id, index.get_next_id() );
+      next_id = saved_next_id;
+      ilog( "Last one newly created object is not accessible, modified and deleted are restored" );
+      for( int i = 0; i < 1; ++i )
+      {
+        --count;
+        BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+      }
+      // create and change objects again within reused session
+      created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+      modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+      remove( to_remove[ count ] );
+      ++count;
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+      ++next_id;
+      // test undo with 'keep_alive' on the only reused session
+      base_session.undo( true );
+      revision_after_base_undo_alive = db->revision();
+      ilog( "You can undo with 'keep_alive' multiple times on the same base session (${r}, ${n})",
+        ( "r", revision_after_base_undo_alive )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_with_base_session, revision_after_base_undo_alive );
+      BOOST_REQUIRE_EQUAL( saved_next_id, index.get_next_id() );
+      next_id = saved_next_id;
+      ilog( "Last one newly created object is not accessible, modified and deleted are restored" );
+      for( int i = 0; i < 1; ++i )
+      {
+        --count;
+        BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+      }
+      // create and change objects yet again within reused session
+      created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+      modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+      remove( to_remove[ count ] );
+      ++count;
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+      ++next_id;
+      // test squash with 'keep_alive' on the only session into committed state
+      base_session.squash( true );
+      auto revision_after_base_squash_alive = db->revision();
+      ilog( "Squashing of the only session with 'keep_alive' (equivalent of commit and new session) increases revision (${r}), solidifies next_id after last created object (${n})",
+        ( "r", revision_after_base_squash_alive )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_with_base_session + 1, revision_after_base_squash_alive );
+      BOOST_REQUIRE_EQUAL( next_id, index.get_next_id() );
+      ++revision_with_base_session; ++revision_on_empty; // move start revision since we have effective commit
+      saved_next_id = next_id; // also current next_id becomes baseline since last created object was effectively moved to permanent state
+      // create and change another layer of objects within reused session
+      created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+      modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+      remove( to_remove[ count ] );
+      ++count;
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+      ++next_id;
+      // test secondary squash with 'keep_alive' on the only session into committed state
+      base_session.squash( true );
+      revision_after_base_squash_alive = db->revision();
+      ilog( "You can squash with 'keep_alive' multiple times on the same base session (${r}), next_id won't change (${n})",
+        ( "r", revision_after_base_squash_alive )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_with_base_session + 1, revision_after_base_squash_alive );
+      ++revision_with_base_session; ++revision_on_empty; // like above
+      saved_next_id = next_id;
+      // create and change third layer of objects within reused session
+      created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+      modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+      remove( to_remove[ count ] );
+      ++count;
+      ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+        ( "r", index.revision() )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+      ++next_id;
+      // open nested session
+      auto saved_nested_next_id = next_id;
+      {
+        auto nested_session = db->start_undo_session();
+        auto revision_with_nested_session = db->revision();
+        ilog( "Creation of nested session increases revision (${r}), does not change next_id (${n})",
+          ( "r", revision_with_nested_session )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( revision_with_base_session + 1, revision_with_nested_session );
+        BOOST_REQUIRE_EQUAL( next_id, index.get_next_id() );
+        // create and change objects within nested session
+        created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+        modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+        remove( to_remove[ count ] );
+        ++count;
+        ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+          ( "r", index.revision() )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+        ++next_id;
+        // test undo with 'keep_alive' on nested session
+        nested_session.undo( true );
+        auto revision_after_nested_undo_alive = db->revision();
+        ilog( "Undoing of nested session with 'keep_alive' (equivalent of undo and new session) does not change revision (${r}), reverts next_id to value from start of session (${n})",
+          ( "r", revision_after_nested_undo_alive )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( revision_with_nested_session, revision_after_nested_undo_alive );
+        BOOST_REQUIRE_EQUAL( saved_nested_next_id, index.get_next_id() );
+        next_id = saved_nested_next_id;
+        ilog( "Last one newly created object is not accessible, modified and deleted are restored" );
+        for( int i = 0; i < 1; ++i )
+        {
+          --count;
+          BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+          BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+          BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+        }
+        // create and change objects again within reused nested session
+        created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+        modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+        remove( to_remove[ count ] );
+        ++count;
+        ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+          ( "r", index.revision() )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+        ++next_id;
+        // test undo with 'keep_alive' on reused nested session
+        nested_session.undo( true );
+        revision_after_nested_undo_alive = db->revision();
+        ilog( "You can undo with 'keep_alive' multiple times on the same nested session (${r}, ${n})",
+          ( "r", revision_after_nested_undo_alive )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( revision_with_nested_session, revision_after_nested_undo_alive );
+        BOOST_REQUIRE_EQUAL( saved_nested_next_id, index.get_next_id() );
+        next_id = saved_nested_next_id;
+        ilog( "Last one newly created object is not accessible, modified and deleted are restored" );
+        for( int i = 0; i < 1; ++i )
+        {
+          --count;
+          BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+          BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+          BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+        }
+        // create and change objects yet again within reused nested session
+        created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+        modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+        remove( to_remove[ count ] );
+        ++count;
+        ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+          ( "r", index.revision() )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+        ++next_id;
+        // test squash with 'keep_alive' on nested session into base session
+        nested_session.squash( true );
+        auto revision_after_nested_squash_alive = db->revision();
+        ilog( "Squashing of nested session with 'keep_alive' (equivalent of squash and new session) does not change revision (${r}), does not change next_id (${n})",
+          ( "r", revision_after_nested_squash_alive )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( revision_with_nested_session, revision_after_nested_squash_alive );
+        BOOST_REQUIRE_EQUAL( next_id, index.get_next_id() );
+        // create and change another layer of objects within reused nested session
+        created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+        modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+        remove( to_remove[ count ] );
+        ++count;
+        ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+          ( "r", index.revision() )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+        ++next_id;
+        // test secondary squash with 'keep_alive' on nested session into base session
+        nested_session.squash( true );
+        revision_after_nested_squash_alive = db->revision();
+        ilog( "You can squash with 'keep_alive' multiple times on the same nested session (${r}, ${n})",
+          ( "r", revision_after_nested_squash_alive )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( revision_with_nested_session, revision_after_nested_squash_alive );
+        BOOST_REQUIRE_EQUAL( next_id, index.get_next_id() );
+        saved_nested_next_id = next_id;
+        // create and change third layer of objects within reused nested session
+        created[ count ] = create( "new" + std::to_string( count ) ).get_id();
+        modify( to_modify[ count ], time + HIVE_BLOCK_INTERVAL * count );
+        remove( to_remove[ count ] );
+        ++count;
+        ilog( "Index revision did not change with creation of objects (${r}), but next_id increased (${n})",
+          ( "r", index.revision() )( "n", index.get_next_id() ) );
+        BOOST_REQUIRE_EQUAL( next_id + 1, index.get_next_id() );
+        ++next_id;
+      }
+      // test implicit undo of nested session
+      auto revision_after_nested_removed = db->revision();
+      ilog( "Removal of live nested session reduces revision (${r}), restores next_id to value from before last change (${n})",
+        ( "r", revision_after_nested_removed )( "n", index.get_next_id() ) );
+      BOOST_REQUIRE_EQUAL( revision_with_base_session, revision_after_nested_removed );
+      BOOST_REQUIRE_EQUAL( saved_nested_next_id, index.get_next_id() );
+      next_id = saved_nested_next_id;
+      ilog( "Last one newly created object is not accessible, modified and deleted are restored" );
+      for( int i = 0; i < 1; ++i )
+      {
+        --count;
+        BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+      }
+      ilog( "All previous objects that were in squashed nested sessions and earlier are in their modified state" );
+      // the objects are: two squashed from nested into base, one in base handled before nesting and two squashed into committed state
+      BOOST_REQUIRE_EQUAL( count, 5 );
+      for( int i = count - 1; i >= 0; --i )
+      {
+        BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
+        BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+        BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
+      }
+    }
+    // test implicit undo of base session
+    auto revision_after_base_removed = db->revision();
+    ilog( "Removal of live base session reduces revision (${r}), restores next_id to state from after last base squash (${n})",
+      ( "r", revision_after_base_removed )( "n", index.get_next_id() ) );
+    BOOST_REQUIRE_EQUAL( revision_on_empty, revision_after_base_removed );
+    BOOST_REQUIRE_EQUAL( saved_next_id, index.get_next_id() );
+    next_id = saved_next_id;
+    ilog( "Last newly created object in base session and two squashed from nexted are not accessible, modified and deleted are restored" );
+    for( int i = 0; i < 3; ++i )
+    {
+      --count;
+      BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
+      BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+      BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
+    }
+    ilog( "All previous objects that were squashed into committed state are in their modified state" );
+    BOOST_REQUIRE_EQUAL( count, 2 );
+    for( int i = count - 1; i >= 0; --i )
+    {
+      BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
+      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
 {
