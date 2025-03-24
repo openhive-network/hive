@@ -256,7 +256,7 @@ def wait_for_string_in_file(log_file_name, string, timeout):
         if exists(log_file_name):
             with open(log_file_name) as log_file:
                 leave = False
-                for line in log_file.readlines():
+                for line in log_file.readlines():  # noqa: FURB129
                     if string in line:
                         leave = True
                         break
@@ -332,9 +332,8 @@ def detect_process_by_name(proc_name, exec_path, port):
         if exec_path in line and str(port) in line:
             line = line.strip().split()
             pids.append(line[0])
-    if pids:
-        return True
-    return False
+
+    return bool(pids)
 
 
 BLOCK_TYPE_HEADBLOCK = "within_reversible_block"

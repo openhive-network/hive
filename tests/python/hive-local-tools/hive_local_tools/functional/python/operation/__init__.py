@@ -129,7 +129,10 @@ class Account:
         acc_info = _find_account(self.node, self._name) if current else self._acc_info
         return tt.Asset.from_nai(
             {
-                "amount": str(int(acc_info.vesting_shares.amount) - sum([vote.val for vote in acc_info.delayed_votes])),
+                "amount": str(
+                    int(acc_info.vesting_shares.amount)
+                    - sum([vote.val for vote in acc_info.delayed_votes])  # noqa: C419
+                ),
                 "precision": 6,
                 "nai": "@@000000037",
             }
@@ -192,7 +195,7 @@ class Account:
             return
 
         last_unlock_date = max(
-            [
+            [  # noqa: C419
                 tt.Time.parse(delay_vote["time"])
                 for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
                 .accounts[0]
@@ -499,7 +502,7 @@ def get_virtual_operations(
             if isinstance(
                 vop.op.value, TransferToVestingCompletedOperation
             ) and vop.op.value.hive_vested == tt.Asset.Test(10_000_000):
-                result.ops.pop(vop_number)
+                result.ops.pop(vop_number)  # noqa: B909
     return result.ops
 
 

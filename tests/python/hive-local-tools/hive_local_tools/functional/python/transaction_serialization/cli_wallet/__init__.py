@@ -39,7 +39,7 @@ def run_for_all_cases(**assets: tt.Asset.AnyT):
             ],
         )
 
-        @pytest.mark.parametrize(
+        @pytest.mark.parametrize(  # noqa: RET503
             f'description, formats_matches, prepared_wallet{"".join([f", {key}" for key in assets])}',
             [
                 ("legacy wallet and legacy assets (matched)", True, "legacy", *__serialize_legacy(assets.values())),
@@ -56,7 +56,7 @@ def run_for_all_cases(**assets: tt.Asset.AnyT):
                 return test(**kwargs)
 
             with pytest.raises(CommunicationError):
-                test(**kwargs)  # noqa: RET503
+                test(**kwargs)
 
         return __decorated_test
 
