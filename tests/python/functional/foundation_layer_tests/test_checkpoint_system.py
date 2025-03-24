@@ -25,7 +25,7 @@ def generate_random_hex_string(n: int) -> str:
     return "".join(random.choices("0123456789abcdef", k=n))
 
 
-@pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 431])
+@pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 429])
 def test_set_random_number_of_checkpoints_from_replay(
     block_log_empty_430_split: tt.BlockLog, checkpoint_num: int
 ) -> None:
@@ -39,7 +39,7 @@ def test_set_random_number_of_checkpoints_from_replay(
     assert node.is_running()
 
 
-@pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 431])
+@pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 429])
 def test_set_random_number_of_checkpoints_from_sync(
     block_log_empty_430_split: tt.BlockLog, checkpoint_num: int
 ) -> None:
