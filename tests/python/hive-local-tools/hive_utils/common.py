@@ -228,7 +228,7 @@ def save_pid_file(pid_file_name, exec_name, port, start_time):
         port -- port number for running executable,
         start_time -- execution start time.
     """
-    with open(pid_file_name, "w") as pid_file:
+    with open(pid_file_name, "w") as pid_file:  # noqa FURB103
         pid_file.write(f"{exec_name}-{port}-{start_time}\n")
 
 
