@@ -424,14 +424,6 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
-formatting_with_black_check:
-  stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only black
-  extends:
-    - .formatting_with_black_check_template
-    - .python_static_analysis_configuration
-
 .pytest_based:
   extends: .python_based
   variables:
