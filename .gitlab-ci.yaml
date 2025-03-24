@@ -424,14 +424,6 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
-lint_code_with_ruff:
-  stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only ruff
-  extends:
-    - .lint_code_with_ruff_template
-    - .python_static_analysis_configuration
-
 formatting_with_black_check:
   stage: static_code_analysis
   variables:
