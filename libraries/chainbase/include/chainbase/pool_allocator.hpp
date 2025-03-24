@@ -57,8 +57,7 @@ namespace chainbase {
       pool_allocator_t(TSegmentManager* _segment_manager, std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) noexcept
         : base_class_t(_segment_manager),
           block_allocator(_segment_manager),
-          blocks(typename decltype(blocks)::allocator_type(_segment_manager)),
-          free_list(typename decltype(free_list)::allocator_type(_segment_manager))
+          blocks(typename decltype(blocks)::allocator_type(_segment_manager))
         {
         }
       template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
@@ -70,8 +69,7 @@ namespace chainbase {
         std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) noexcept
         : base_class_t(other.get_segment_manager()),
           block_allocator(other.get_segment_manager()),
-          blocks(typename decltype(blocks)::allocator_type(other.get_segment_manager())),
-          free_list(typename decltype(free_list)::allocator_type(other.get_segment_manager()))
+          blocks(typename decltype(blocks)::allocator_type(other.get_segment_manager()))
         {
         }
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
@@ -150,15 +148,18 @@ namespace chainbase {
         result += "\nallocated: ";
         result += std::to_string(allocated_count);
         result += "\nfree_list: ";
-        //result += std::to_string(free_list_size);
-        result += std::to_string(free_list.size());
+        result += std::to_string(free_list_size);
         return result;
         }
 
     private:
-      struct alignas(T) chunk_t
+      union chunk_t;
+      using chunk_ptr_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::offset_ptr<chunk_t>, chunk_t*>;
+
+      union alignas(std::max(alignof(T), alignof(chunk_ptr_t))) chunk_t
         {
-        char  memory[sizeof(T)];
+        char        memory[sizeof(T)];
+        chunk_ptr_t next;
 
         T* get_object_memory()
           {
@@ -169,19 +170,20 @@ namespace chainbase {
       struct block_t
         {
         chunk_t   memory[BLOCK_SIZE]; // allocated memory block
-        uint32_t  first_free = 0; // memory+first_free point to first free memory chunk to use
+        uint32_t  first_free; // memory+first_free point to first free memory chunk to use
         };
 
-      using block_ptr_t = bip::offset_ptr<block_t>;
+      using block_ptr_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::offset_ptr<block_t>, block_t*>;
 
     private:
       pointer get_object_memory()
         {
-        if (!free_list.empty())
+        if (free_list_size != 0)
           {
-          pointer result = free_list.back();
-          free_list.pop_back();
-          return result;
+          chunk_ptr_t result = free_list;
+          free_list = free_list->next;
+          --free_list_size;
+          return *reinterpret_cast<pointer*>(&result);
           }
 
         if (current_block == nullptr)
@@ -197,13 +199,16 @@ namespace chainbase {
 
       void return_object_memory(pointer object_memory)
         {
-        free_list.emplace_back(object_memory);
+        chunk_ptr_t chunk = *reinterpret_cast<chunk_ptr_t*>(&object_memory);
+        chunk->next = free_list;
+        free_list = chunk;
+        ++free_list_size;
         }
 
       block_t* allocate_block()
         {
         block_t* result = &(*block_allocator.allocate(1));
-        ::new (result) block_t();
+        result->first_free = 0; // avoid call ctor
         blocks.emplace_back(result);
         return result;
         }
@@ -234,7 +239,8 @@ namespace chainbase {
       allocator<block_t>    block_allocator;
       block_ptr_t           current_block = nullptr;
       t_vector<block_ptr_t> blocks;
-      t_vector<pointer>     free_list; // list of freed memory chunks for reusing
+      chunk_ptr_t           free_list = nullptr; // list of freed memory chunks for reusing
+      uint32_t              free_list_size = 0;
       uint32_t              allocated_count = 0;
     };
 
