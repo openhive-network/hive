@@ -56,25 +56,21 @@ namespace helpers {
   template <typename T>
   struct get_allocator_helper_t
     {
-    template <typename Allocator, bool USE_POOL_ALLOCATOR = _ENABLE_MULTI_INDEX_POOL_ALLOCATOR>
-    static auto get_generic_allocator(const Allocator& a,
-      std::enable_if_t<USE_POOL_ALLOCATOR>* = nullptr)
+    template <template <typename, uint32_t, typename, bool> class Allocator,
+              typename T2, uint32_t BLOCK_SIZE, typename TSegmentManager, bool USE_MANAGED_MAPPED_FILE>
+    static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, TSegmentManager, USE_MANAGED_MAPPED_FILE>& a)
       {
       return a.template get_generic_allocator<T>();
       }
 
-    template <template <typename, typename> class Allocator, typename T2, typename SegmentManager,
-              bool USE_POOL_ALLOCATOR = _ENABLE_MULTI_INDEX_POOL_ALLOCATOR, bool USE_MANAGED_MAPPED_FILE = !_ENABLE_STD_ALLOCATOR>
-    static auto get_generic_allocator(const Allocator<T2, SegmentManager>& a,
-      std::enable_if_t<!USE_POOL_ALLOCATOR && USE_MANAGED_MAPPED_FILE>* = nullptr)
+    template <template <typename, typename> class Allocator, typename T2, typename SegmentManager>
+    static auto get_generic_allocator(const Allocator<T2, SegmentManager>& a)
       {
       return Allocator<T, SegmentManager>(a.get_segment_manager());
       }
 
-    template <template <typename> class Allocator, typename T2,
-              bool USE_POOL_ALLOCATOR = _ENABLE_MULTI_INDEX_POOL_ALLOCATOR, bool USE_MANAGED_MAPPED_FILE = !_ENABLE_STD_ALLOCATOR>
-    static auto get_generic_allocator(const Allocator<T2>& a,
-      std::enable_if_t<!USE_POOL_ALLOCATOR && !USE_MANAGED_MAPPED_FILE>* = nullptr)
+    template <template <typename> class Allocator, typename T2>
+    static auto get_generic_allocator(const Allocator<T2>& a)
       {
       return Allocator<T>();
       }
