@@ -139,14 +139,13 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
   if( !db.has_hardfork( HIVE_HARDFORK_0_19 ) )
     return;
 
-  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
-
-  auto _itr = _volatile_idx.begin();
-  auto _itr_end = _volatile_idx.upper_bound( block_num );
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_paid_block >();
 
   if( _volatile_idx.size() < volatile_objects_limit )
     return;
- 
+
+  auto _itr = _volatile_idx.find( true );
+
   if( dbg_move_info )
   {
     ilog( "rocksdb_storage_processor: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
@@ -154,13 +153,10 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
 
   bool _do_flush = false;
 
-  while( _itr != _itr_end )
+  while( _itr != _volatile_idx.end() && _itr->was_paid && _itr->block_number <= block_num )
   {
     const auto& _current = *_itr;
     ++_itr;
-
-    if( !_current.was_paid )
-      continue;
 
     move_to_external_storage_impl( block_num, _current );
 
