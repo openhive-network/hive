@@ -6,6 +6,7 @@
 namespace hive { namespace chain {
 
 bool dbg_info = false;
+bool dbg_move_info = true;
 
 rocksdb_storage_processor::rocksdb_storage_processor( database& db, const external_storage_provider::ptr& provider ): db( db ), provider( provider )
 {
@@ -47,7 +48,8 @@ void rocksdb_storage_processor::delete_comment( const account_name_type& author,
   auto& _account = db.get_account( author );
   auto _found = db.get_comment( author, permlink );
 
-  FC_ASSERT( !_found, "Comment ${permlink}/${author} has to be deleted", ("permlink", permlink)("author", author) );
+  if( _found )
+    return;
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
 
@@ -145,6 +147,11 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
   if( _volatile_idx.size() < volatile_objects_limit )
     return;
  
+  if( dbg_move_info )
+  {
+    ilog( "rocksdb_storage_processor: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
+  }
+
   bool _do_flush = false;
 
   while( _itr != _itr_end )

@@ -226,10 +226,8 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
     storage = _storage.get();
 
   ::rocksdb::WriteOptions wOptions;
-  ilog("FlushWriteBuffer: write into storage");
   auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
   checkStatus(s);
-  ilog("FlushWriteBuffer: clear write buffer");
   _writeBuffer.Clear();
 }
 
