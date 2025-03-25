@@ -16,11 +16,10 @@ def generate_and_copy_empty_log(
     node = tt.InitNode()
     node.config.block_log_split = split_value
 
-    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10))
-    tt.logger.info(f"Waiting for block {block_count}...")
-    node.wait_for_block_with_number(block_count)
+    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10), exit_at_block=block_count)
 
-    node.close()
+    hbn = node.block_log.get_head_block_number()
+    assert hbn == block_count, f"generated block_log has invalid length. Expected: {block_count}, actual value {hbn}"
     node.block_log.copy_to(target_dir / f"_{block_count}", artifacts="required")
 
 
