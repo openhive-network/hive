@@ -179,7 +179,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< dynamic_global_property_object, dynamic_global_property_object::id_type, &dynamic_global_property_object::get_id > >
     >,
-    multi_index_allocator< dynamic_global_property_object >
+    allocator< dynamic_global_property_object >
   > dynamic_global_property_index;
 
 } } // hive::chain

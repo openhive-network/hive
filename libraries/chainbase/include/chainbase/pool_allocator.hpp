@@ -7,16 +7,14 @@
 
 namespace chainbase {
 
-  const uint32_t DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 12; // 4k
-  //constexpr uint32_t DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 5; // 32
+  constexpr uint32_t DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 12; // 4k
 
 #if defined(ENABLE_MULTI_INDEX_POOL_ALLOCATOR)
   static_assert((DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE & (DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE-1)) == 0,
     "DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE should be power of 2!");
 #endif
 
-  //const uint32_t DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 12; // 4k
-  constexpr uint32_t DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 5; // 32
+  constexpr uint32_t DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 12; // 4k
 
 #if defined(ENABLE_UNDO_STATE_POOL_ALLOCATOR)
   static_assert((DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE & (DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE-1)) == 0,
@@ -111,27 +109,25 @@ namespace chainbase {
         }
 
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      allocator<T2> get_generic_allocator(std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
+      auto get_generic_allocator(std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
         {
         return allocator<T2>(get_segment_manager());
         }
 
       template <typename T2, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      allocator<T2> get_generic_allocator(std::enable_if_t<!_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
+      auto get_generic_allocator(std::enable_if_t<!_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
         {
         return allocator<T2>();
         }
 
       template <typename T2, uint32_t BLOCK_SIZE2 = BLOCK_SIZE, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE> get_pool_allocator(
-        std::enable_if<_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
+      auto get_pool_allocator(std::enable_if<_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
         {
         return pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE>(get_segment_manager());
         }
 
       template <typename T2, uint32_t BLOCK_SIZE2 = BLOCK_SIZE, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE> get_pool_allocator(
-        std::enable_if<!_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
+      auto get_pool_allocator(std::enable_if<!_USE_MANAGED_MAPPED_FILE>* = nullptr) const noexcept
         {
         return pool_allocator_t<T2, BLOCK_SIZE2, TSegmentManager, USE_MANAGED_MAPPED_FILE>();
         }
