@@ -71,7 +71,7 @@ void rocksdb_storage_processor::delete_comment( const account_name_type& author,
   //provider->remove( _key, 0/*column_number*/ );
 }
 
-void rocksdb_storage_processor::move_to_volatile_storage( const account_id_type& account_id, const shared_string& permlink )
+void rocksdb_storage_processor::allow_move_to_external_storage( const account_id_type& account_id, const shared_string& permlink )
 {
   auto& _account = db.get_account( account_id );
 

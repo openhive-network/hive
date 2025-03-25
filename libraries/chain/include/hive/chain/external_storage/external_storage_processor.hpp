@@ -13,7 +13,7 @@ class external_storage_processor: public external_storage_finder
 
     virtual void store_comment( const account_name_type& author, const std::string& permlink ) = 0;
     virtual void delete_comment( const account_name_type& author, const std::string& permlink ) = 0;
-    virtual void move_to_volatile_storage( const account_id_type& account_id, const shared_string& permlink ) = 0;
+    virtual void allow_move_to_external_storage( const account_id_type& account_id, const shared_string& permlink ) = 0;
     virtual void move_to_external_storage( uint32_t block_num ) = 0;
 };
 

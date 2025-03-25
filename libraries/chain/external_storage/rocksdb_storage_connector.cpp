@@ -83,7 +83,7 @@ void rocksdb_storage_connector::on_irreversible_block( uint32_t block_num )
 void rocksdb_storage_connector::on_remove_comment_cashout( const remove_comment_cashout_notification& note )
 {
   FC_ASSERT( processor );
-  processor->move_to_volatile_storage( note.account_id, note.permlink );
+  processor->allow_move_to_external_storage( note.account_id, note.permlink );
 }
 
 }}

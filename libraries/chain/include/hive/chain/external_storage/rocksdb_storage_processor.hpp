@@ -25,7 +25,7 @@ class rocksdb_storage_processor: public external_storage_processor
 
     void store_comment( const account_name_type& author, const std::string& permlink ) override;
     void delete_comment( const account_name_type& author, const std::string& permlink ) override;
-    void move_to_volatile_storage( const account_id_type& account_id, const shared_string& permlink ) override;
+    void allow_move_to_external_storage( const account_id_type& account_id, const shared_string& permlink ) override;
     void move_to_external_storage( uint32_t block_num ) override;
 
     comment get_comment( const account_id_type& author, const std::string& permlink ) const override;
