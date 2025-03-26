@@ -96,7 +96,6 @@ struct transaction_builder
   uint32_t                                            _block_num = 0;
   uint32_t                                            _tx_to_produce = 0;
   uint32_t                                            _concurrent_tx_count = 0;
-  std::atomic<uint32_t>                               _accept_transaction_count = {0};
 
   hive::protocol::signed_transaction                  _tx;
   std::atomic_bool                                    _tx_needs_update = { true };
@@ -179,10 +178,10 @@ void transaction_builder::finalize()
     There are some unknown problems in `fc::thread`. Better is to wait until all `accept_transaction` calls are finished.
     After changing `fc` library to newer version, maybe below code could be removed.
   */
-  while( _accept_transaction_count )
+  while( _concurrent_tx_count )
   {
-    ilog( "${name}: waiting for ${c} pending transactions to close",
-      ( name )( "c", _accept_transaction_count.load() ) );
+    ilog( "${name}: waiting for ${_concurrent_tx_count} pending transactions to close",
+      ( name )( _concurrent_tx_count ) );
     fc::usleep( fc::milliseconds( 50 ) );
   }
 
@@ -241,26 +240,20 @@ bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
 {
   BOOST_SCOPE_EXIT( this_ )
   {
-    this_->_accept_transaction_count.store( this_->_accept_transaction_count.load() - 1 );
+    --( this_->_concurrent_tx_count );
   } BOOST_SCOPE_EXIT_END
 
-  _accept_transaction_count.store( _accept_transaction_count.load() + 1 );
+  ++_concurrent_tx_count;
 
   if( _common.theApp.is_interrupt_request() )
-  {
-    ilog( "Thread ${t} stopped accepting transactions.",
-      ( "t", _worker.name() ) );
     return true;
-  }
 
   bool result = false;
   try
   {
-    ++_concurrent_tx_count;
     _common._chain.accept_transaction( full_tx, chain::chain_plugin::lock_type::fc );
     if( _common._p2p_ptr )
       _common._p2p_ptr->broadcast_transaction( full_tx );
-    --_concurrent_tx_count;
     result = true;
   }
   catch( const fc::canceled_exception& ex )
