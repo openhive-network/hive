@@ -27,7 +27,7 @@ void rocksdb_storage_processor::store_comment( const account_name_type& author, 
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_processor: head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
     ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
     ("permlink", permlink)("author", author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
@@ -46,7 +46,7 @@ void rocksdb_storage_processor::store_comment( const account_name_type& author, 
 void rocksdb_storage_processor::delete_comment( const account_name_type& author, const std::string& permlink )
 {
   auto& _account = db.get_account( author );
-  auto _found = db.get_comment( author, permlink );
+  auto _found = db.get_comment( author, permlink, false/*comment_is_required*/ );
 
   if( _found )
     return;
@@ -62,7 +62,7 @@ void rocksdb_storage_processor::delete_comment( const account_name_type& author,
 
   if( dbg_info )
   {
-    ilog( "rocksdb_storage_processor: head: ${head} lib: ${lib} Delete a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+    ilog( "head: ${head} lib: ${lib} Delete a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
     ("hash", _hash)
     ("permlink", permlink)("author", author)("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
   }
@@ -79,7 +79,7 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const account_id
 
   if( dbg_info )
   {
-    ilog("rocksdb_storage_processor: A comment with hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
+    ilog("A comment with hash: ${hash} permlink/author: ${permlink}/${author} was paid.",
           ("hash", comment_object::compute_author_and_permlink_hash( account_id, permlink.c_str()))
           ("permlink", permlink)("author", _account.get_name()) );
   }
@@ -96,9 +96,9 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const account_id
 
 void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
-  if( dbg_info )
+  if( dbg_move_info )
   {
-    ilog( "rocksdb_storage_processor: lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
+    ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
           ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
   }
 
@@ -172,22 +172,26 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
     provider->flush();
 }
 
-comment rocksdb_storage_processor::get_comment( const account_id_type& author, const std::string& permlink ) const
+comment rocksdb_storage_processor::get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const
 {
   const auto* _comment = db.find< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
   if( _comment )
     return comment( _comment );
   else
-    return comment( get_comment_impl( author, permlink ) );
+  {
+    const auto& _external_comment = get_comment_impl( author, permlink );
+    FC_ASSERT( !comment_is_required || _external_comment, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
+    return comment( _external_comment );
+  }
 }
 
-comment rocksdb_storage_processor::get_comment( const account_name_type& author, const std::string& permlink ) const
+comment rocksdb_storage_processor::get_comment( const account_name_type& author, const std::string& permlink, bool comment_is_required ) const
 {
   const account_object* _account = db.find_account( author );
   if( !_account )
     return nullptr;
 
-  return get_comment( _account->get_id(), permlink );
+  return get_comment( _account->get_id(), permlink, comment_is_required );
 }
 
 }}

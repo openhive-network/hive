@@ -266,18 +266,12 @@ namespace chain {
 
       const comment_object&  get_comment( comment_id_type comment_id )const;
 
-      const comment_object& get_comment_object( const account_id_type& author, const shared_string& permlink )const;
-      const comment_object& get_comment_object( const account_name_type& author, const shared_string& permlink )const;
-
-      comment get_comment( const account_id_type& author, const shared_string& permlink )const;
-      comment get_comment( const account_name_type& author, const shared_string& permlink )const;
+      comment get_comment( const account_id_type& author, const shared_string& permlink, bool comment_is_required = true )const;
+      comment get_comment( const account_name_type& author, const shared_string& permlink, bool comment_is_required = true )const;
 
 #ifndef ENABLE_STD_ALLOCATOR
-      const comment_object& get_comment_object( const account_id_type& author, const string& permlink )const;
-      const comment_object& get_comment_object( const account_name_type& author, const string& permlink )const;
-
-      comment get_comment( const account_id_type& author, const string& permlink )const;
-      comment get_comment( const account_name_type& author, const string& permlink )const;
+      comment get_comment( const account_id_type& author, const string& permlink, bool comment_is_required = true )const;
+      comment get_comment( const account_name_type& author, const string& permlink, bool comment_is_required = true )const;
 #endif
 
       const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const;

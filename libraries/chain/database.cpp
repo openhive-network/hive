@@ -421,52 +421,26 @@ const comment_object& database::get_comment( comment_id_type comment_id )const t
 }
 FC_CAPTURE_AND_RETHROW( (comment_id) )
 
-const comment_object& database::get_comment_object( const account_id_type& author, const shared_string& permlink )const
-{ try {
-  const comment_object* comment_ptr = find< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, to_string( permlink ) ) );
-  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
-
-const comment_object& database::get_comment_object( const account_name_type& author, const shared_string& permlink )const
+comment database::get_comment( const account_id_type& author, const shared_string& permlink, bool comment_is_required )const
 {
-  const account_object* acc = find_account(author);
-  FC_ASSERT( acc != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return get_comment_object( acc->get_id(), to_string( permlink ) );
-}
-comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
-{
-  return get_external_storage_finder()->get_comment( author, to_string( permlink ) );
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), comment_is_required );
 }
 
-comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
+comment database::get_comment( const account_name_type& author, const shared_string& permlink, bool comment_is_required )const
 {
-  return get_external_storage_finder()->get_comment( author, to_string( permlink ) );
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), comment_is_required );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
 
-const comment_object& database::get_comment_object( const account_id_type& author, const string& permlink )const
-{ try {
-  const comment_object* comment_ptr = find< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
-  FC_ASSERT( comment_ptr != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return *comment_ptr;
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
-
-const comment_object& database::get_comment_object( const account_name_type& author, const string& permlink )const
+comment database::get_comment( const account_id_type& author, const string& permlink, bool comment_is_required )const
 {
-  const account_object* acc = find_account(author);
-  FC_ASSERT( acc != nullptr, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
-  return get_comment_object( acc->get_id(), permlink );
-}
-comment database::get_comment( const account_id_type& author, const string& permlink )const
-{
-  return get_external_storage_finder()->get_comment( author, permlink );
+  return get_external_storage_finder()->get_comment( author, permlink, comment_is_required );
 }
 
-comment database::get_comment( const account_name_type& author, const string& permlink )const
+comment database::get_comment( const account_name_type& author, const string& permlink, bool comment_is_required )const
 {
-  return get_external_storage_finder()->get_comment( author, permlink );
+  return get_external_storage_finder()->get_comment( author, permlink, comment_is_required );
 }
 
 #endif

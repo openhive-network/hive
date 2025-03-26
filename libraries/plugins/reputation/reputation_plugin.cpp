@@ -59,7 +59,7 @@ struct pre_operation_visitor
     try
     {
       auto& db = _plugin._db;
-      const auto& c = db.get_comment( op.author, op.permlink );
+      auto c = db.get_comment( op.author, op.permlink );
 
       if( db.calculate_discussion_payout_time( *c ) == fc::time_point_sec::maximum() ) return;
 
@@ -117,7 +117,7 @@ struct post_operation_visitor
     try
     {
       auto& db = _plugin._db;
-      const auto& comment = db.get_comment( op.author, op.permlink );
+      auto comment = db.get_comment( op.author, op.permlink );
 
       if( db.calculate_discussion_payout_time(*comment ) == fc::time_point_sec::maximum() )
         return;

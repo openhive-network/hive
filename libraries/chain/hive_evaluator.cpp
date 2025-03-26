@@ -652,8 +652,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   */
 void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 {
-  const auto& comment = _db.get_comment_object( o.author, o.permlink );
-  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
+  auto comment = _db.get_comment( o.author, o.permlink );
+  const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
   if( comment_cashout )
     FC_ASSERT( !comment_cashout->has_replies(), "Cannot delete a comment with replies." );
 
@@ -697,11 +697,11 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_19 ) )
   {
-    const auto* c_ex = _db.find_comment_cashout_ex( comment );
+    const auto* c_ex = _db.find_comment_cashout_ex( *comment );
     _db.remove( *c_ex );
   }
   _db.remove( *comment_cashout );
-  _db.remove( comment );
+  _db.remove( *comment );
 }
 
 struct comment_options_extension_visitor
@@ -757,7 +757,7 @@ struct comment_options_extension_visitor
 
 void comment_options_evaluator::do_apply( const comment_options_operation& o )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
+  auto comment = _db.get_comment( o.author, o.permlink );
 
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
@@ -797,7 +797,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   const auto& auth = _db.get_account( o.author ); /// prove it exists
 
-  auto _comment = _db.get_comment( auth.get_id(), o.permlink );
+  auto _comment = _db.get_comment( auth.get_id(), o.permlink, false /*comment_is_required*/ );
   auto _now = _db.head_block_time();
 
   comment parent;
@@ -1457,7 +1457,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
 void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
+  auto comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter = _db.get_account( o.voter );
@@ -1750,7 +1750,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
 void hf20_vote_evaluator( const vote_operation& o, database& _db )
 {
-  const auto& comment = _db.get_comment( o.author, o.permlink );
+  auto comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter   = _db.get_account( o.voter );
