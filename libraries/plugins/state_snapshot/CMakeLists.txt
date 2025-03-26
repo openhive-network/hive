@@ -2,6 +2,8 @@ file(GLOB HEADERS "include/hive/plugins/state_snapshot/*.hpp")
 
 add_library( state_snapshot_plugin
              state_snapshot_plugin.cpp
+             state_snapshot_tools.cpp
+             state_snapshot_manifest.cpp
              ${HEADERS}
            )
 
