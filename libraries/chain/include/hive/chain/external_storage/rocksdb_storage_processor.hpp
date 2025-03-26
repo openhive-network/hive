@@ -10,7 +10,7 @@ class rocksdb_storage_processor: public external_storage_processor
 {
   private:
 
-    const size_t volatile_objects_limit = 10'000;
+    const size_t volatile_objects_limit = 800'000;
 
     database& db;
 
