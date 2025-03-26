@@ -638,6 +638,12 @@ void chain_plugin_impl::start_write_processing()
                 theApp.notify_status( "entering API mode" );
                 wlog( "entering API mode" );
               }
+              else
+              {
+                // either we are about to exit or we are in queen mode? (disabled p2p)
+                // we need to stop other plugins before we exit main loop
+                theApp.generate_interrupt_request();
+              }
             }
 
             if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
