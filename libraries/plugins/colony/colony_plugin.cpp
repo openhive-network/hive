@@ -180,6 +180,8 @@ void transaction_builder::finalize()
   */
   while( _accept_transaction_count )
   {
+    ilog( "${name}: waiting for ${c} pending transactions to close",
+      ( name )( "c", _accept_transaction_count.load() ) );
     fc::usleep( fc::milliseconds( 50 ) );
   }
 
