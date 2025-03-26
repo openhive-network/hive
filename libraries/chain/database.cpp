@@ -415,11 +415,10 @@ const account_object* database::find_account( const account_name_type& name )con
   return find< account_object, by_name >( name );
 }
 
-const comment_object& database::get_comment( comment_id_type comment_id )const try
+const comment_object* database::find_comment( comment_id_type comment_id )const
 {
-  return get< comment_object, by_id >( comment_id );
+  return find< comment_object, by_id >( comment_id );
 }
-FC_CAPTURE_AND_RETHROW( (comment_id) )
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink, bool comment_is_required )const
 {
@@ -2642,10 +2641,11 @@ void database::process_comment_cashout()
         ctx.total_reward_shares2 = gpo.total_reward_shares2;
         ctx.total_reward_fund_hive = gpo.get_total_reward_fund_hive();
 
-        const comment_object& comment = get_comment( comment_cashout_ex.get_comment_id() );
+        const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
+        FC_ASSERT( comment );
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment_cashout );
-        auto reward = cashout_comment_helper( ctx, comment, *comment_cashout, &comment_cashout_ex );
+        auto reward = cashout_comment_helper( ctx, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
 
         if( reward > 0 )

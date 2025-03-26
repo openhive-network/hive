@@ -163,8 +163,10 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
     if( !_do_flush )
       _do_flush = true;
 
-    const auto& _comment = db.get_comment( _current.comment_id );
-    db.remove( _comment );
+    const auto* _comment = db.find_comment( _current.comment_id );
+    FC_ASSERT( _comment );
+
+    db.remove( *_comment );
     db.remove( _current );
   }
 

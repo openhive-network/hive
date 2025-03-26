@@ -685,7 +685,10 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( !comment.is_root() )
   {
-    const comment_cashout_object* parent = _db.find_comment_cashout( _db.get_comment( comment.get_parent_id() ) );
+    const comment_cashout_object* parent = nullptr;
+    const comment_object* _comment = _db.find_comment( comment.get_parent_id() );
+    if( _comment )
+      parent = _db.find_comment_cashout( *_comment );
     if( parent )
     {
       _db.modify( *parent, [&]( comment_cashout_object& p )
