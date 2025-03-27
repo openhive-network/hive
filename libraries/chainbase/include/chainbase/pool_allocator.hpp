@@ -188,11 +188,17 @@ namespace chainbase {
           bool return_object_memory(T* object) noexcept
             {
             chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
-            assert(chunk >= chunks && chunk < (chunks + BLOCK_SIZE) &&
+            assert(check_address_in_block(object) &&
               ((reinterpret_cast<std::size_t>(chunk) - reinterpret_cast<std::size_t>(chunks)) % sizeof(T)) == 0);
             chunk->next = current;
             current = chunk - chunks;
             return ++free_count == BLOCK_SIZE;
+            }
+
+          bool check_address_in_block(T* object) const noexcept
+            {
+            chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
+            return chunk >= chunks && chunk < (chunks + BLOCK_SIZE);
             }
 
           void set_on_list(bool value) noexcept
@@ -276,13 +282,22 @@ namespace chainbase {
 
       void return_object_memory(T* object)
         {
-        block_t* block = reinterpret_cast<block_t*>(object);
-        const auto found = block_index.lower_bound(*block);
-        assert(found != block_index.cend());
-        block = const_cast<block_t*>(&(*found));
-        block->return_object_memory(object);
-        if (block != current_block)
+        block_t* block;
+
+        if (current_block != nullptr && current_block->check_address_in_block(object))
+          {
+          block = &(*current_block);
+          }
+        else
+          {
+          block = reinterpret_cast<block_t*>(object);
+          const auto found = block_index.lower_bound(*block);
+          assert(found != block_index.cend());
+          block = const_cast<block_t*>(&(*found));
           add_to_block_list(block);
+          }
+
+        block->return_object_memory(object);
         }
 
       block_ptr_t allocate_block()
