@@ -120,7 +120,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   uint64_t maximum_block_size = gpo.maximum_block_size;
 
   //
-  // The following code throws away existing pending_tx_session and
+  // The following code throws away existing _pending_tx_session and
   // rebuilds it by re-applying pending transactions.
   //
   // This rebuild is necessary because pending transactions' validity
@@ -130,8 +130,9 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   // the value of the "when" variable is known, which means we need to
   // re-apply pending transactions in this method.
   //
-  _db.pending_transaction_session().reset();
-  _db.pending_transaction_session() = _db.start_undo_session();
+  auto& _pending_tx_session = _db.pending_transaction_session();
+  _pending_tx_session.reset();
+  _pending_tx_session.emplace( _db.start_undo_session(), _db.start_undo_session() );
 
   /// modify current witness so transaction evaluators can know who included the transaction
   _db.modify(_db.get_dynamic_global_properties(), [&]( chain::dynamic_global_property_object& dgp )
@@ -169,29 +170,29 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
     try
     {
-      auto temp_session = _db.start_undo_session();
       _db.apply_transaction(full_transaction, _db.get_node_skip_flags());
-      temp_session.squash();
+      _pending_tx_session->second.squash( true );
 
       total_block_size = new_total_size;
       full_transactions.push_back(full_transaction);
     }
-    catch ( const fc::exception& e )
+    catch( const fc::exception& e )
     {
       ++failed_tx_count;
+      _pending_tx_session->second.undo( true );
       // Do nothing, transaction will be re-applied after this block is reapplied (and possibly
       // after processing further blocks) until it expires or repeats the exception during that time
       //wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
       //wlog( "The transaction was ${t}", ("t", tx) );
     }
   }
-  if (unused_tx_count > 0 || failed_tx_count > 0)
+  if( unused_tx_count > 0 || failed_tx_count > 0 )
   {
     wlog( "${x} transactions could not fit in newly produced block (${failed_tx_count} failed/expired)",
       ( "x", _db._pending_tx.size() - full_transactions.size() )( failed_tx_count ) );
   }
 
-  _db.pending_transaction_session().reset();
+  _pending_tx_session.reset();
 }
 
 void block_producer::fill_block_with_transactions( const chain::account_name_type& witness_owner,

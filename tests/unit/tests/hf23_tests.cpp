@@ -710,8 +710,8 @@ BOOST_AUTO_TEST_CASE( basic_test_01 )
 }
 
 #define CLEAR( who ) \
-  if( !db->pending_transaction_session().valid() ) \
-    db->pending_transaction_session() = db->start_undo_session(); \
+  if( !db->pending_transaction_session().has_value() ) \
+    db->pending_transaction_session().emplace( db->start_undo_session(), db->start_undo_session() ); \
   db->clear_account( db->get_account( who ) ); \
   database_fixture::validate_database()
 //since generating block runs undo and reapplies transactions since last block (and clear_account is not a transaction)
