@@ -1610,5 +1610,129 @@ BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Test for undo related bug with debug_update" );
+
+    ACTOR(alice)
+    generate_block();
+
+    const auto& alice_account = db->get_account( "alice" );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 0 );
+
+    db->clear_pending();
+    auto revision = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision ) );
+    db->commit( revision );
+    ilog( "Undo stack is now empty" );
+    BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 0 );
+
+    // increase claimed tokens when undo stack is empty
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 0 );
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( alice_account, [&]( account_object& a )
+      {
+        ++a.pending_claimed_accounts;
+      } );
+    } );
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+
+    db->clear_pending();
+    revision = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision ) );
+    auto previous_revision = revision;
+    ilog( "Undo stack contains one block session" );
+    BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 1 );
+
+    // increase claimed tokens when undo stack has block session
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( alice_account, [&]( account_object& a )
+      {
+        ++a.pending_claimed_accounts;
+      } );
+    } );
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 2 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 2 );
+
+    fund( "alice", ASSET( "1.000 TESTS" ) ); // this makes sure there is pending session open - normally
+      // it could happen that it is open when there are some reapplied transactions, but not in unit tests
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+    revision = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision ) );
+    ilog( "Undo stack contains block and pending tx sessions" );
+    BOOST_REQUIRE_GT( revision, previous_revision + 1 ); // on top of one new revision from block session there should be pending tx related
+    ++previous_revision;
+
+    // increase claimed tokens when undo stack has pending tx session
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( alice_account, [&]( account_object& a )
+      {
+        ++a.pending_claimed_accounts;
+      } );
+    } );
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+
+    fund( "alice", ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+    revision = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision ) );
+    ilog( "Undo stack contains block and pending tx sessions" );
+    BOOST_REQUIRE_GT( revision, previous_revision + 1 );
+    ++previous_revision;
+
+    // increase claimed tokens when undo stack has pending tx session but then cause exception with another transaction
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( alice_account, [&]( account_object& a )
+      {
+        ++a.pending_claimed_accounts;
+      } );
+    } );
+    HIVE_REQUIRE_THROW( transfer( "alice", "bob", ASSET( "1.000 TESTS" ), "", alice_private_key ), fc::exception );
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+
+    fund( "alice", ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+    revision = db->revision();
+    ilog( "Undo revision is ${r}", ( "r", revision ) );
+    ilog( "Undo stack contains block and pending tx sessions" );
+    BOOST_REQUIRE_GT( revision, previous_revision + 1 );
+    ++previous_revision;
+
+    // increase claimed tokens when undo stack has pending tx session but then cause exception within debug_update itself
+    HIVE_REQUIRE_THROW( db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( alice_account, [&]( account_object& a )
+      {
+        ++a.pending_claimed_accounts;
+      } );
+      FC_ASSERT( false );
+    } ), fc::exception );
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
