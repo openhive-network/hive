@@ -857,6 +857,10 @@ namespace chainbase {
         _revision = revision;
       }
 
+#ifdef IS_TEST_NET
+      // for debug purposes only
+      size_t get_undo_depth() const { return _stack.size(); }
+#endif
     private:
       bool enabled()const { return _stack.size(); }
 
