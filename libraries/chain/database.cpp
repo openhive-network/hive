@@ -722,30 +722,32 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
 {
   // If this is the first transaction pushed after applying a block, start a new undo session.
   // This allows us to quickly rewind to the clean state of the head block, in case a new block arrives.
-  if (!_pending_tx_session.valid())
-    _pending_tx_session = start_undo_session();
+  if (!_pending_tx_session.has_value())
+    _pending_tx_session.emplace( start_undo_session(), start_undo_session() );
 
-  // Create a temporary undo session as a child of _pending_tx_session.
-  // The temporary session will be discarded by the destructor if
-  // _apply_transaction fails.  If we make it to squash(), we
-  // apply the changes.
-
-  auto temp_session = start_undo_session();
-  _apply_transaction(full_transaction);
-  if( full_transaction->check_privilege() && is_validating_one_tx() )
+  try
   {
-    // reuse mechanism used for forks to make sure privileged transaction gets rewritten to the start
-    // of pendling list and therefore won't be delayed indefinitely by the transaction flood
-    _popped_tx.emplace_front( full_transaction );
-  }
-  else
-  {
-    _pending_tx.push_back( full_transaction );
-    _pending_tx_size += full_transaction->get_transaction_size();
-  }
+    _apply_transaction(full_transaction);
+    if( full_transaction->check_privilege() && is_validating_one_tx() )
+    {
+      // reuse mechanism used for forks to make sure privileged transaction gets rewritten to the start
+      // of pendling list and therefore won't be delayed indefinitely by the transaction flood
+      _popped_tx.emplace_front( full_transaction );
+    }
+    else
+    {
+      _pending_tx.push_back( full_transaction );
+      _pending_tx_size += full_transaction->get_transaction_size();
+    }
 
-  // The transaction applied successfully. Merge its changes into the pending block session.
-  temp_session.squash();
+    // The transaction applied successfully. Merge its changes into the pending block session.
+    _pending_tx_session->second.squash( true );
+  }
+  catch( ... )
+  {
+    _pending_tx_session->second.undo( true );
+    throw;
+  }
 }
 
 /**
@@ -815,7 +817,7 @@ void database::clear_pending()
 {
   try
   {
-    assert( _pending_tx.empty() || _pending_tx_session.valid() );
+    assert( _pending_tx.empty() || _pending_tx_session.has_value() );
     _pending_tx.clear();
     _pending_tx_size = 0;
     _pending_tx_session.reset();
@@ -3815,9 +3817,9 @@ void database::apply_block_extended(
   }
   else
   {
-    auto session = start_undo_session();
+    auto block_session = start_undo_session();
     apply_block( full_block, skip, block_ctrl );
-    session.push();
+    block_session.push();
   }
 }
 
@@ -6744,11 +6746,6 @@ void database::retally_witness_vote_counts( bool force )
       } );
     }
   }
-}
-
-optional< chainbase::database::undo_session_guard >& database::pending_transaction_session()
-{
-  return _pending_tx_session;
 }
 
 void database::remove_expired_governance_votes()
