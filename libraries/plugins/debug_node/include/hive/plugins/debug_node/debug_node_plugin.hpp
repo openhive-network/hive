@@ -74,7 +74,21 @@ class debug_node_plugin : public plugin< debug_node_plugin >
         // artificial transaction (most likely on next block generation)
         const auto& dummy_tx_id = make_artificial_transaction_for_debug_update();
         apply_callback_to_debug_updates( dummy_tx_id, true );
-        callback( database() );
+        // wrap callback in undo session
+        try
+        {
+          FC_ASSERT( database().pending_transaction_session().valid(),
+            "Pending tx session should have been opened when related internal transaction was created" );
+          auto temp_session = database().start_undo_session();
+          callback( database() );
+          temp_session.squash();
+        }
+        catch( ... )
+        {
+          // remove faulty callback from list for transaction
+          _debug_updates.at( dummy_tx_id ).callbacks.pop_back();
+          throw;
+        }
       }
     }
 
