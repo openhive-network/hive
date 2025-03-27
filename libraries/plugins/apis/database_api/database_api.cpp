@@ -1258,7 +1258,7 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
 
   for(const auto& key : args.comments)
   {
-    auto comment = _db.get_comment(key.first, key.second);
+    auto comment = _db.get_comment(key.first, key.second, false/*comment_is_required*/);
     if(comment)
     {
       retval.cashout_infos.emplace_back();
@@ -1285,7 +1285,7 @@ DEFINE_API_IMPL( database_api_impl, find_comments )
 
   for( auto& key: args.comments )
   {
-    auto comment = _db.get_comment( key.first, key.second );
+    auto comment = _db.get_comment( key.first, key.second, false/*comment_is_required*/ );
 
     if( comment )
       result.comments.emplace_back( *comment, _db );
