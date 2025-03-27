@@ -1278,7 +1278,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     comment.body = "test";
     push_transaction( comment, pattern2_post_key );
     generate_block();
-    auto cashout_time = db->find_comment_cashout( db->get_comment( "pattern2", std::string( "test" ) ) )->get_cashout_time();
+    auto cashout_time = db->find_comment_cashout( *db->get_comment( "pattern2", std::string( "test" ) ) )->get_cashout_time();
 
     vote_operation vote;
     vote.voter = "delegator2";
