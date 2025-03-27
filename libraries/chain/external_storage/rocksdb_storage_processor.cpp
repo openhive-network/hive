@@ -5,8 +5,9 @@
 
 namespace hive { namespace chain {
 
-bool dbg_info = false;
-bool dbg_move_info = true;
+//#define DBG_INFO
+//#define DBG_MOVE_INFO
+//#define DBG_MOVE_DETAILS_INFO
 
 rocksdb_storage_processor::rocksdb_storage_processor( database& db, const external_storage_provider::ptr& provider ): db( db ), provider( provider )
 {
@@ -25,12 +26,11 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id
   if( _vfound != _volatile_idx.end() )
     return;
 
-  if( dbg_info )
-  {
-    ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
-    ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
-    ("permlink", permlink)("author", _account.get_name())("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
-  }
+#ifdef DBG_INFO
+  ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+  ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
+  ("permlink", permlink)("author", _account.get_name())("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
+#endif
 
   db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
@@ -45,11 +45,10 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id
 
 void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
-  if( dbg_move_info )
-  {
-    ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
-          ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
-  }
+#ifdef DBG_MOVE_DETAILS_INFO
+  ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
+        ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
+#endif
 
   Slice _key( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
 
@@ -95,10 +94,9 @@ void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
 
   auto _itr = _volatile_idx.begin();
 
-  if( dbg_move_info )
-  {
-    ilog( "rocksdb_storage_processor: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
-  }
+#ifdef DBG_MOVE_INFO
+  ilog( "rocksdb_storage_processor: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
+#endif
 
   bool _do_flush = false;
 
