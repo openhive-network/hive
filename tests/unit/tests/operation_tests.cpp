@@ -250,10 +250,13 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     ACTORS( (alice)(bob) )
     private_key_type active_key = generate_private_key( "new_key" );
 
-    db->modify( db->get< account_authority_object, by_account >( "alice" ), [&]( account_authority_object& a )
+    db_plugin->debug_update( [&]( database& db )
     {
-      a.active = authority( 1, active_key.get_public_key(), 1 );
-    });
+      db.modify( db.get< account_authority_object, by_account >( "alice" ), [&]( account_authority_object& a )
+      {
+        a.active = authority( 1, active_key.get_public_key(), 1 );
+      } );
+    } );
 
     account_update_operation op;
     op.account = "alice";
@@ -530,15 +533,18 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
     fc::time_point_sec created = mod_sam_comment_cashout->get_creation_time();
 
-    db->modify( *mod_sam_comment_cashout, [&]( comment_cashout_object& com )
+    db_plugin->debug_update( [&]( database& db )
     {
-      com.accumulate_vote_rshares( -com.get_net_rshares() + 10, 0 ); //com.net_rshares = 10;
-    });
+      db.modify( *mod_sam_comment_cashout, [&]( comment_cashout_object& com )
+      {
+        com.accumulate_vote_rshares( -com.get_net_rshares() + 10, 0 ); //com.net_rshares = 10;
+      } );
 
-    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& o)
-    {
-      o.total_reward_shares2 = hive::chain::util::evaluate_reward_curve( 10 );
-    });
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& o )
+      {
+        o.total_reward_shares2 = hive::chain::util::evaluate_reward_curve( 10 );
+      } );
+    } );
 
     tx.operations.clear();
     op.title = "foo";
