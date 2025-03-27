@@ -1430,177 +1430,165 @@ BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
     const int INVALID_TX_FREQUENCY = 5;
     const int BLOCK_CAPACITY = 7000;
 
-    int mempool_size = 0;
-    fc::optional<chainbase::database::undo_session_guard> pending_tx_session;
-
     auto start_time = fc::time_point::now();
-    for( int block_num = 1; block_num <= 10; ++block_num )
     {
-      // new transactions incoming
-      for( int tx = 0; tx < NEW_TX_BEFORE_BLOCK; ++tx )
+      int mempool_size = 0;
+      fc::optional<chainbase::database::undo_session_guard> pending_tx_session;
+      for( int block_num = 1; block_num <= 10; ++block_num )
       {
-        // database::_push_transaction start
-        if( !pending_tx_session.valid() )
-          pending_tx_session = db->start_undo_session();
-        auto temp_session = db->start_undo_session();
-        // TRANSACTION APPLIED HERE
-        if( ( tx % INVALID_TX_FREQUENCY ) > 0 )
+        // new transactions incoming
+        for( int tx = 0; tx < NEW_TX_BEFORE_BLOCK; ++tx )
         {
-          temp_session.squash();
-          ++mempool_size;
-        }
-        // database::_push_transaction end
-      }
-
-      if( block_num == 5 ) // block produced locally
-      {
-        // block_producer::apply_pending_transactions start
-        pending_tx_session.reset();
-        pending_tx_session = db->start_undo_session();
-
-        for( int tx = 0; tx < BLOCK_CAPACITY; ++tx )
-        {
-          auto temp_session = db->start_undo_session();
-          // TRANSACTION APPLIED HERE
-          temp_session.squash();
-        }
-
-        pending_tx_session.reset();
-        // block_producer::apply_pending_transactions end
-      }
-
-      // apply block (even if produced locally)
-      {
-        // database::clear_pending called from detail::without_pending_transactions:
-        pending_tx_session.reset();
-        // database::apply_block_extended start
-        auto block_session = db->start_undo_session();
-        // BLOCK APPLIED HERE
-        block_session.push();
-        // database::apply_block_extended end
-        // reapplication of pending called on exit from detail::without_pending_transactions:
-        for( int tx = 0; tx < mempool_size; ++tx )
-        {
-          if( tx < BLOCK_CAPACITY )
-          {
-            --mempool_size; // transaction that is part of recent block
-            continue;
-          }
           // database::_push_transaction start
           if( !pending_tx_session.valid() )
             pending_tx_session = db->start_undo_session();
           auto temp_session = db->start_undo_session();
           // TRANSACTION APPLIED HERE
-          temp_session.squash();
+          if( ( tx % INVALID_TX_FREQUENCY ) > 0 )
+          {
+            temp_session.squash();
+            ++mempool_size;
+          }
           // database::_push_transaction end
         }
-      }
 
-      // handle OBI transactions and set irreversible
-      switch( block_num )
-      {
-      case 4: db->commit( 1 ); break;
-      case 7: db->commit( 5 ); break;
-      case 10: db->commit( 10 ); break;
+        if( block_num == 5 ) // block produced locally
+        {
+          // block_producer::apply_pending_transactions start
+          pending_tx_session.reset();
+          pending_tx_session = db->start_undo_session();
+
+          for( int tx = 0; tx < BLOCK_CAPACITY; ++tx )
+          {
+            auto temp_session = db->start_undo_session();
+            // TRANSACTION APPLIED HERE
+            temp_session.squash();
+          }
+
+          pending_tx_session.reset();
+          // block_producer::apply_pending_transactions end
+        }
+
+        // apply block (even if produced locally)
+        {
+          // database::clear_pending called from detail::without_pending_transactions:
+          pending_tx_session.reset();
+          // database::apply_block_extended start
+          auto block_session = db->start_undo_session();
+          // BLOCK APPLIED HERE
+          block_session.push();
+          // database::apply_block_extended end
+          // reapplication of pending called on exit from detail::without_pending_transactions:
+          for( int tx = 0; tx < mempool_size; ++tx )
+          {
+            if( tx < BLOCK_CAPACITY )
+            {
+              --mempool_size; // transaction that is part of recent block
+              continue;
+            }
+            // database::_push_transaction start
+            if( !pending_tx_session.valid() )
+              pending_tx_session = db->start_undo_session();
+            auto temp_session = db->start_undo_session();
+            // TRANSACTION APPLIED HERE
+            temp_session.squash();
+            // database::_push_transaction end
+          }
+        }
+
+        // handle OBI transactions and set irreversible
+        switch( block_num )
+        {
+        case 4: db->commit( 1 ); break;
+        case 7: db->commit( 5 ); break;
+        case 10: db->commit( 10 ); break;
+        }
       }
     }
-    pending_tx_session.reset();
 
     fc::microseconds total_time = fc::time_point::now() - start_time;
     ilog( "Total time for undo session handling: ${t}µs, revision ${r}",
       ( "t", total_time )( "r", db->revision() ) );
     BOOST_REQUIRE_EQUAL( start_revision + 10, db->revision() );
 
-    mempool_size = 0;
     start_revision += 10;
-    fc::optional<chainbase::database::undo_session_guard> temp_tx_session;
 
     start_time = fc::time_point::now();
-    for( int block_num = 1; block_num <= 10; ++block_num )
     {
-      // new transactions incoming
-      for( int tx = 0; tx < NEW_TX_BEFORE_BLOCK; ++tx )
+      int mempool_size = 0;
+      std::optional<std::pair<chainbase::database::undo_session_guard, chainbase::database::undo_session_guard>> pending_tx_session;
+      for( int block_num = 1; block_num <= 10; ++block_num )
       {
-        // database::_push_transaction start
-        if( !temp_tx_session.valid() )
+        // new transactions incoming
+        for( int tx = 0; tx < NEW_TX_BEFORE_BLOCK; ++tx )
         {
-          FC_ASSERT( !pending_tx_session.valid() );
-          pending_tx_session = db->start_undo_session();
-          temp_tx_session = db->start_undo_session();
-        }
-        // TRANSACTION APPLIED HERE
-        if( ( tx % INVALID_TX_FREQUENCY ) > 0 )
-        {
-          temp_tx_session->squash( true );
-          ++mempool_size;
-        }
-        else
-        {
-          temp_tx_session->undo( true );
-        }
-        // database::_push_transaction end
-      }
-
-      if( block_num == 5 ) // block produced locally
-      {
-        // block_producer::apply_pending_transactions start
-        temp_tx_session.reset();
-        pending_tx_session.reset();
-        pending_tx_session = db->start_undo_session();
-        temp_tx_session = db->start_undo_session();
-
-        for( int tx = 0; tx < BLOCK_CAPACITY; ++tx )
-        {
-          // TRANSACTION APPLIED HERE
-          temp_tx_session->squash( true );
-        }
-
-        temp_tx_session.reset();
-        pending_tx_session.reset();
-        // block_producer::apply_pending_transactions end
-      }
-
-      // apply block (even if produced locally)
-      {
-        // database::clear_pending called from detail::without_pending_transactions:
-        temp_tx_session.reset();
-        pending_tx_session.reset();
-        // database::apply_block_extended start
-        auto block_session = db->start_undo_session();
-        // BLOCK APPLIED HERE
-        block_session.push();
-        // database::apply_block_extended end
-        // reapplication of pending called on exit from detail::without_pending_transactions:
-        for( int tx = 0; tx < mempool_size; ++tx )
-        {
-          if( tx < BLOCK_CAPACITY )
-          {
-            --mempool_size; // transaction that is part of recent block
-            continue;
-          }
           // database::_push_transaction start
-          if( !temp_tx_session.valid() )
-          {
-            FC_ASSERT( !pending_tx_session.valid() );
-            pending_tx_session = db->start_undo_session();
-            temp_tx_session = db->start_undo_session();
-          }
+          if( !pending_tx_session.has_value() )
+            pending_tx_session.emplace( db->start_undo_session(), db->start_undo_session() );
           // TRANSACTION APPLIED HERE
-          temp_tx_session->squash( true );
+          if( ( tx % INVALID_TX_FREQUENCY ) > 0 )
+          {
+            pending_tx_session->second.squash( true );
+            ++mempool_size;
+          }
+          else
+          {
+            pending_tx_session->second.undo( true );
+          }
           // database::_push_transaction end
         }
-      }
 
-      // handle OBI transactions and set irreversible
-      switch( block_num )
-      {
-      case 4: db->commit( 1 ); break;
-      case 7: db->commit( 5 ); break;
-      case 10: db->commit( 10 ); break;
+        if( block_num == 5 ) // block produced locally
+        {
+          // block_producer::apply_pending_transactions start
+          pending_tx_session.reset();
+          pending_tx_session.emplace( db->start_undo_session(), db->start_undo_session() );
+
+          for( int tx = 0; tx < BLOCK_CAPACITY; ++tx )
+          {
+            // TRANSACTION APPLIED HERE
+            pending_tx_session->second.squash( true );
+          }
+
+          pending_tx_session.reset();
+          // block_producer::apply_pending_transactions end
+        }
+
+        // apply block (even if produced locally)
+        {
+          // database::clear_pending called from detail::without_pending_transactions:
+          pending_tx_session.reset();
+          // database::apply_block_extended start
+          auto block_session = db->start_undo_session();
+          // BLOCK APPLIED HERE
+          block_session.push();
+          // database::apply_block_extended end
+          // reapplication of pending called on exit from detail::without_pending_transactions:
+          for( int tx = 0; tx < mempool_size; ++tx )
+          {
+            if( tx < BLOCK_CAPACITY )
+            {
+              --mempool_size; // transaction that is part of recent block
+              continue;
+            }
+            // database::_push_transaction start
+            if( !pending_tx_session.has_value() )
+              pending_tx_session.emplace( db->start_undo_session(), db->start_undo_session() );
+            // TRANSACTION APPLIED HERE
+            pending_tx_session->second.squash( true );
+            // database::_push_transaction end
+          }
+        }
+
+        // handle OBI transactions and set irreversible
+        switch( block_num )
+        {
+        case 4: db->commit( 1 ); break;
+        case 7: db->commit( 5 ); break;
+        case 10: db->commit( 10 ); break;
+        }
       }
     }
-    temp_tx_session.reset();
-    pending_tx_session.reset();
 
     total_time = fc::time_point::now() - start_time;
     ilog( "Total time for undo session handling with 'keep_alive': ${t}µs, revision ${r}",

@@ -2822,7 +2822,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
-    FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer savings to ${s}", ("s", op.to ) );
+    FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer to savings of treasury ${s}", ("s", op.to ) );
   }
 
   _db.adjust_balance( from, -op.amount );
