@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <set>
 #include <type_traits>
 
