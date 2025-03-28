@@ -60,6 +60,12 @@ SET( SOURCES authority_verification_tracer.cpp
    "${BINARY_INCLUDE_DIR}/words.deflate" "${BINARY_INCLUDE_DIR}/words.b64"
 )
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/get_config.d/protocol_assert_id.cmake")
+protocol_assert_id(
+  "${SOURCES}"
+  "${CMAKE_CURRENT_BINARY_DIR}"
+)
+
 # #embed directive start supported in Clang-19
 if( CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_COMPILER_VERSION STRGREATER_EQUAL "19.0.0" )
   set(CMAKE_C_STANDARD 23)
