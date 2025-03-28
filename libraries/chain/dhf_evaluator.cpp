@@ -48,10 +48,10 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
       ("r", o.receiver));
 
-    auto commentObject = _db.get_comment(o.creator, o.permlink);
+    auto commentObject = _db.find_comment(o.creator, o.permlink);
     if(!commentObject)
     {
-      commentObject = _db.get_comment(o.receiver, o.permlink);
+      commentObject = _db.find_comment(o.receiver, o.permlink);
       FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or receiver");
     }
 
@@ -93,10 +93,10 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
 
     FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
 
-    auto commentObject = _db.get_comment(proposal.creator, o.permlink);
+    auto commentObject = _db.find_comment(proposal.creator, o.permlink);
     if(!commentObject)
     {
-      commentObject = _db.get_comment(proposal.receiver, o.permlink);
+      commentObject = _db.find_comment(proposal.receiver, o.permlink);
       FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or the receiver");
     }
 

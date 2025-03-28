@@ -420,26 +420,46 @@ const comment_object* database::find_comment( comment_id_type comment_id )const
   return find< comment_object, by_id >( comment_id );
 }
 
-comment database::get_comment( const account_id_type& author, const shared_string& permlink, bool comment_is_required )const
+comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
 {
-  return get_external_storage_finder()->get_comment( author, to_string( permlink ), comment_is_required );
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
 }
 
-comment database::get_comment( const account_name_type& author, const shared_string& permlink, bool comment_is_required )const
+comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  return get_external_storage_finder()->get_comment( author, to_string( permlink ), comment_is_required );
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
+{
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_name_type& author, const shared_string& permlink )const
+{
+  return get_external_storage_finder()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
 
-comment database::get_comment( const account_id_type& author, const string& permlink, bool comment_is_required )const
+comment database::get_comment( const account_id_type& author, const string& permlink )const
 {
-  return get_external_storage_finder()->get_comment( author, permlink, comment_is_required );
+  return get_external_storage_finder()->get_comment( author, permlink, true /*comment_is_required*/ );
 }
 
-comment database::get_comment( const account_name_type& author, const string& permlink, bool comment_is_required )const
+comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
-  return get_external_storage_finder()->get_comment( author, permlink, comment_is_required );
+  return get_external_storage_finder()->get_comment( author, permlink, true /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_id_type& author, const string& permlink )const
+{
+  return get_external_storage_finder()->get_comment( author, permlink, false /*comment_is_required*/ );
+}
+
+comment database::find_comment( const account_name_type& author, const string& permlink )const
+{
+  return get_external_storage_finder()->get_comment( author, permlink, false /*comment_is_required*/ );
 }
 
 #endif

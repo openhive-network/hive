@@ -129,7 +129,7 @@ comment rocksdb_storage_processor::get_comment( const account_id_type& author, c
   else
   {
     const auto& _external_comment = get_comment_impl( author, permlink );
-    FC_ASSERT( !comment_is_required || _external_comment, "Comment with `id` ${author} `permlink` ${permlink} not found", (author)(permlink) );
+    FC_ASSERT( !comment_is_required || _external_comment, "Comment with `id`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
     return comment( _external_comment );
   }
 }

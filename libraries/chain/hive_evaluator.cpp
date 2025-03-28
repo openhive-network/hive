@@ -800,7 +800,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   const auto& auth = _db.get_account( o.author ); /// prove it exists
 
-  auto _comment = _db.get_comment( auth.get_id(), o.permlink, false /*comment_is_required*/ );
+  auto _comment = _db.find_comment( auth.get_id(), o.permlink );
   auto _now = _db.head_block_time();
 
   comment parent;
