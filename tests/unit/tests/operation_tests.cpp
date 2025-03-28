@@ -643,8 +643,8 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_post_key );
 
-    auto test_comment = db->get_comment( "alice", string( "test1" ) );
-    BOOST_REQUIRE( test_comment );
+    auto test_comment = db->get_comment( "alice", string( "test1" ), false/*comment_is_required*/ );
+    BOOST_REQUIRE( !test_comment );
 
 
     BOOST_TEST_MESSAGE( "--- Test failure deleting a comment past cashout" );
@@ -748,7 +748,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
     BOOST_TEST_MESSAGE( "--- Testing voting on a non-existent comment" );
-    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "comment_ptr != nullptr" );
+    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "!comment_is_required || _external_comment" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
@@ -8274,7 +8274,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ) );
+    BOOST_REQUIRE( !db->get_comment( "alice", string( "test"), false/*comment_is_required*/ ) );
     voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
     BOOST_REQUIRE( voteI == vote_idx.end() );
 
