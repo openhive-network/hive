@@ -25,7 +25,7 @@ The global parameters:
 | Parameter name | Description | Example |                                                                                                                              
 | -------------- | ------------------------------------------------------------------ | ------------ |
 | from           | The account the funds are coming from                              |              |
-| to             | The account the funds are going to. If null, then the same as from |              |
+| to             | The account the funds are going to. If empty string, then the same as from |              |
 | amount         | Must be HIVE, amount >0                                            | 100.000 HIVE |
 
 
