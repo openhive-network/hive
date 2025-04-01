@@ -8,6 +8,8 @@
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/core/demangle.hpp>
 
+#include <limits>
+
 namespace chainbase {
 
   using namespace boost::multi_index;
@@ -201,14 +203,24 @@ namespace chainbase {
             return chunk >= chunks && chunk < (chunks + BLOCK_SIZE);
             }
 
-          void set_on_list(bool value) noexcept
+          void set_on_list_index(uint32_t index) noexcept
             {
-            on_list = value;
+            on_list_index = index;
+            }
+
+          void reset_on_list_index() noexcept
+            {
+            on_list_index = invalid_list_index;
             }
 
           bool is_on_list() const noexcept
             {
-            return on_list;
+            return on_list_index != invalid_list_index;
+            }
+
+          uint32_t get_on_list_index() const noexcept
+            {
+            return on_list_index;
             }
 
           // true if whole memory is free
@@ -228,11 +240,13 @@ namespace chainbase {
             return chunks;
             }
 
+          static constexpr uint32_t invalid_list_index = std::numeric_limits<uint32_t>::max();
+
         private:
           chunk_t   chunks[BLOCK_SIZE];
           uint32_t  current = 0;
           uint32_t  free_count = BLOCK_SIZE;
-          bool      on_list = false;
+          uint32_t  on_list_index = invalid_list_index;
         };
 
       using block_ptr_t = std::conditional_t<_ENABLE_STD_ALLOCATOR, block_t*, bip::offset_ptr<block_t>>;
@@ -257,14 +271,17 @@ namespace chainbase {
             {
             block_ptr_t block = remove_from_block_list();
 
-            if (block->full() && !block_list.empty())
+            if (block != nullptr)
               {
-              block_index.erase(*block);
-              }
-            else
-              {
-              current_block = block;
-              break;
+              if (block->full() && !block_list.empty())
+                {
+                block_index.erase(*block);
+                }
+              else
+                {
+                current_block = block;
+                break;
+                }
               }
             }
 
@@ -286,7 +303,7 @@ namespace chainbase {
 
         if (current_block != nullptr && current_block->check_address_in_block(object))
           {
-          block = &(*current_block);
+          current_block->return_object_memory(object);
           }
         else
           {
@@ -294,10 +311,28 @@ namespace chainbase {
           const auto found = block_index.lower_bound(*block);
           assert(found != block_index.cend());
           block = const_cast<block_t*>(&(*found));
-          add_to_block_list(block);
-          }
+          block->return_object_memory(object);
 
-        block->return_object_memory(object);
+          if (block->full())
+            {
+            const auto index = block->get_on_list_index();
+
+            if (index == (block_list.size()-1))
+              {
+              block_list.pop_back();
+              }
+            else
+              {
+              block_list[index] = nullptr;
+              }
+
+            block_index.erase(found);
+            }
+          else
+            {
+            add_to_block_list(block);
+            }
+          }
         }
 
       block_ptr_t allocate_block()
@@ -311,8 +346,8 @@ namespace chainbase {
         {
         if (!block->is_on_list())
           {
-          block->set_on_list(true);
           block_list.emplace_back(block);
+          block->set_on_list_index(static_cast<uint32_t>(block_list.size()-1));
           }
         }
 
@@ -320,7 +355,8 @@ namespace chainbase {
         {
         assert(!block_list.empty());
         block_ptr_t block = block_list.back();
-        block->set_on_list(false);
+        if (block != nullptr)
+          block->reset_on_list_index();
         block_list.pop_back();
         return block;
         }
@@ -348,6 +384,9 @@ namespace chainbase {
       block_ptr_t               current_block = nullptr;
       uint32_t                  allocated_count = 0;
     };
+
+  template <typename T, uint32_t BLOCK_SIZE, typename TSegmentManager, bool USE_MANAGED_MAPPED_FILE>
+    constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, TSegmentManager, USE_MANAGED_MAPPED_FILE>::block_t::invalid_list_index;
 
   template <typename T>
   using multi_index_allocator = std::conditional_t<_ENABLE_MULTI_INDEX_POOL_ALLOCATOR,
