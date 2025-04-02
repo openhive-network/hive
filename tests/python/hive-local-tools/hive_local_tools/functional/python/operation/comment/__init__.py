@@ -16,7 +16,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.fields.assets.hive import AssetHiveHF26
+from schemas.fields.assets import AssetHive
 from schemas.operations import (
     CommentOptionsOperation,
     DeleteCommentOperation,
@@ -82,7 +82,7 @@ def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
         wax.hbd(int(hbd_to_hive_feed.base.amount)),
         wax.hive(int(hbd_to_hive_feed.quote.amount)),
     )
-    return AssetHiveHF26(
+    return AssetHive(
         amount=calculated_hive.amount.decode(), precision=calculated_hive.precision, nai=calculated_hive.nai.decode()
     )
 
@@ -96,7 +96,7 @@ def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
         wax.hive(int(total_vesting_fund_hive.amount)),
         wax.vests(int(total_vesting_shares.amount)),
     )
-    return AssetHiveHF26(
+    return AssetHive(
         amount=calculated_hp.amount.decode(), precision=calculated_hp.precision, nai=calculated_hp.nai.decode()
     )
 

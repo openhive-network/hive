@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
+from schemas.decoders import get_hf26_decoder
 
 from .complex_networks_helper_functions import connect_sub_networks
 
@@ -136,7 +137,7 @@ def run_networks(
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
         if (acs_path := blocklog_directory / "alternate-chain-spec.json").is_file():
-            alternate_chain_spec = tt.AlternateChainSpecs.parse_file(acs_path)
+            alternate_chain_spec = tt.AlternateChainSpecs.parse_file(acs_path, get_hf26_decoder)
     else:
         tt.logger.info("'block_log' directory hasn't been defined")
 

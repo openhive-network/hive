@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 def get_next_maintenance_time(node: tt.InitNode) -> datetime:
-    return tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
+    return node.api.database.get_dynamic_global_properties().next_maintenance_time
 
 
 def wait_for_maintenance_block(node: tt.InitNode, maintenance_time: datetime) -> None:

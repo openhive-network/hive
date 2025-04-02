@@ -47,7 +47,7 @@ class Operation:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
 
-ApiAccountItem = AccountItemFundament[tt.Asset.TestT, tt.Asset.TbdT, tt.Asset.VestsT]
+ApiAccountItem = AccountItemFundament
 
 
 def _find_account(node: tt.InitNode, account_name: str) -> ApiAccountItem:
@@ -260,9 +260,9 @@ class _BaseManabar(ABC):
         return int(
             wax.calculate_current_manabar_value(
                 now=int(head_block_time.timestamp()),
-                max_mana=self.max_mana,
-                current_mana=self.current_mana,
-                last_update_time=self.last_update_time,
+                max_mana=int(self.max_mana),
+                current_mana=int(self.current_mana),
+                last_update_time=int(self.last_update_time),
             ).result
         )
 
