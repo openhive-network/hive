@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import pytest
+from clive.__private.core.iwax import WaxOperationFailedError
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
-
-from clive.__private.core.iwax import WaxOperationFailedError
 
 
 @run_for("testnet")

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-
 from clive.__private.core.iwax import WaxOperationFailedError
 
 if TYPE_CHECKING:
