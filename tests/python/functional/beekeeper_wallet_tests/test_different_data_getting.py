@@ -54,7 +54,7 @@ def test_getters(node: tt.InitNode, wallet: tt.Wallet) -> None:
     response = wallet.api.get_transaction(transaction_id)
 
     _ops = response.operations
-    assert _ops[0].type == "account_create_operation"
+    assert _ops[0].type_ == "account_create_operation"
 
     assert "fee" in str(_ops[0].value)
     assert _ops[0].value.fee == tt.Asset.Test(0)

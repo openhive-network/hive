@@ -10,7 +10,8 @@ import shared_tools.networks_architecture as networks
 import test_tools as tt
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHiveHF26
+from schemas.fields.assets import AssetHive
+from schemas.fields.assets._base import AssetNaiAmount
 from schemas.fields.basic import AccountName, PublicKey
 from schemas.fields.compound import Authority
 from schemas.fields.hive_int import HiveInt
@@ -246,7 +247,7 @@ def __create_voter(voter: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(voter),
         json_metadata="{}",
-        fee=AssetHiveHF26(amount=3000),
+        fee=AssetHive(amount=AssetNaiAmount(3000)),
         owner=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
         active=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
         posting=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
@@ -255,7 +256,7 @@ def __create_voter(voter: str) -> AccountCreateOperation:
 
 
 def __fund_voter(voter: str) -> TransferToVestingOperation:
-    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHiveHF26(amount=10))
+    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=AssetNaiAmount(10)))
 
 
 if __name__ == "__main__":

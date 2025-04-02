@@ -217,7 +217,7 @@ def test_colony_with_unknown_colony_signer(
     prepare_colony_config(node)
     node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
-    node.config.colony_sign_with = [tt.PrivateKey("unknown-signer-account")]
+    node.config.colony_sign_with = [tt.PrivateKey("unknown-sig-acc")]
 
     for witness in WITNESSES:
         key = tt.Account(witness).private_key

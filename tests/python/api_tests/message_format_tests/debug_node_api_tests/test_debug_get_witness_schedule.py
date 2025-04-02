@@ -13,6 +13,4 @@ if TYPE_CHECKING:
 def test_debug_get_witness_schedule(node: tt.InitNode) -> None:
     debug_api_method_response = node.api.debug_node.debug_get_witness_schedule()
     database_api_method_response = node.api.database.get_witness_schedule()
-    assert debug_api_method_response.dict(by_alias=True, exclude_none=True) == database_api_method_response.dict(
-        by_alias=True, exclude_none=True
-    )
+    assert debug_api_method_response.dict(exclude_none=True) == database_api_method_response.dict(exclude_none=True)
