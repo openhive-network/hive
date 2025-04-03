@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Create transaction 0
       _tx0.operations.push_back( op0 );
       _tx0.set_expiration( _tx0_expiration );
-      auto tx0 = fixture.push_transaction( _tx0, alice_private_key, 0, hive::protocol::pack_type::legacy );
+      auto tx0 = fixture.push_transaction( _tx0, alice_private_key );
 
       // Tracking should not be enabled until we have reached 
       // TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET - TRANSACTION_STATUS_TEST_BLOCK_DEPTH blocks
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Create transaction 1
       _tx1.operations.push_back( op1 );
       _tx1.set_expiration( _tx1_expiration );
-      auto tx1 = fixture.push_transaction( _tx1, alice_private_key, 0, hive::protocol::pack_type::legacy );
+      auto tx1 = fixture.push_transaction( _tx1, alice_private_key );
 
       // Transaction 1 exists in the mem pool
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
       _tx2.operations.push_back( op2 );
       _tx2.set_expiration( _tx2_expiration );
-      auto tx2 = fixture.push_transaction( _tx2, alice_private_key, 0, hive::protocol::pack_type::legacy );
+      auto tx2 = fixture.push_transaction( _tx2, alice_private_key );
 
       // Create transaction 3
       signed_transaction _tx3;
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
       _tx3.operations.push_back( op3 );
       _tx3.set_expiration( _tx3_expiration );
-      auto tx3 = fixture.push_transaction( _tx3, bob_private_key, 0, hive::protocol::pack_type::legacy );
+      auto tx3 = fixture.push_transaction( _tx3, bob_private_key );
 
       // Transaction 1 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );

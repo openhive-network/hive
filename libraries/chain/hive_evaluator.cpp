@@ -290,6 +290,7 @@ const account_object& create_account( database& db, const account_name_type& nam
     rc_adjustment_from_fee = ( fee_for_rc_adjustment * dgpo.get_vesting_share_price() ).amount.value;
   }
 
+  FC_ASSERT( db.find_account( name ) == nullptr, "Account ${name} already exists.", ( name ) );
   return db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account,
     !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
 }

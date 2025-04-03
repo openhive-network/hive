@@ -933,12 +933,13 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction_2 )
           HIVE_REQUIRE_THROW( executor->push_transaction( _tx_01, { bob_post_key } ), tx_missing_active_auth );
 
           BOOST_TEST_MESSAGE("Success: a mixed transaction has sufficient number of keys");
-          executor->push_transaction( _tx_01, { bob_private_key, bob_post_key }, database::skip_transaction_dupe_check );
+          executor->push_transaction( _tx_01, { bob_private_key, bob_post_key } );
 
           executor->generate_blocks( executor->db->head_block_time() + HIVE_MIN_COMMENT_EDIT_INTERVAL );
 
           BOOST_TEST_MESSAGE("Success: a mixed transaction has sufficient number of keys");
-          executor->push_transaction( _tx_01, { bob_post_key, bob_private_key }, database::skip_transaction_dupe_check );
+          _tx_01.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+          executor->push_transaction( _tx_01, { bob_post_key, bob_private_key } );
         }
         else
         {
