@@ -82,6 +82,7 @@ struct pending_transactions_restorer
 #endif
       _db._pending_tx.clear();
       _db._pending_tx_size = 0;
+      _db._pending_tx_index.clear();
     }
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 
@@ -115,7 +116,7 @@ struct pending_transactions_restorer
           {
             ++expired_txs;
           }
-          else if (_db.is_known_transaction(full_transaction->get_transaction_id()))
+          else if( _db.is_known_transaction( full_transaction->get_transaction_id() ) )
           {
             ++known_txs; // transaction already part of block
           }
@@ -123,7 +124,7 @@ struct pending_transactions_restorer
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
-            _db._push_transaction(full_transaction);
+            _db._push_transaction( full_transaction );
             ++applied_txs;
           }
         }
@@ -160,13 +161,19 @@ struct pending_transactions_restorer
         {
           _db._pending_tx.emplace_back(full_transaction);
           _db._pending_tx_size += full_transaction->get_transaction_size();
+          // NOTE: while recording all postponed in _pending_tx_index would slow us down in a minor
+          // way (another 200-300ms per 1M transactions which would already likely exceed flood limits)
+          // checking against known transactions from blocks could be too slow (because they can be
+          // a lot more numerous, especially with big blocks and 1 day expiration limit)
           ++postponed_txs;
         }
       }
     };
 
     uint32_t skip = _db.get_node_skip_flags()
-      | database::skip_validate | database::skip_transaction_signatures;
+      | database::skip_validate
+      | database::skip_transaction_signatures
+      | database::skip_transaction_dupe_check;
       //1. operations once validated cannot become invalid;
       //2. signatures might become invalid if transaction that changes keys happens to arrive in some
       //block in different order than when pending transaction became pending, however for that super
@@ -178,9 +185,9 @@ struct pending_transactions_restorer
       //RC so next one is no longer affordable or costs were pushed upward by other payers - the latter
       //rarely happens unless payer is running on fumes but can happen a lot when pools are almost empty
       //(mostly in flood scenarios; note that new account token pool is frequently drained)
-      //5. while we have duplication check pulled outside, skip_transaction_dupe_check flag also
-      //governs creation of transaction_objects - those contain packed version of transaction that is
-      //used by p2p, so we can't skip that
+      //5. duplication check is performed in _push_transaction regardless of skip flags, but the flag
+      //prevents transaction_index being filled with data on pending transactions - we have separate
+      //in-memory index for that
 
     with_skip_flags( _db, skip, [&]()
     {
