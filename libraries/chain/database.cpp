@@ -327,10 +327,13 @@ void database::close()
   * method is called with a VERY old transaction we will return false, they should
   * query things by blocks if they are that old.
   */
-bool database::is_known_transaction( const transaction_id_type& id )const
+bool database::is_known_transaction( const transaction_id_type& id, bool ignore_pending )const
 { try {
-  const auto& trx_idx = get_index<transaction_index>().indices().get<by_trx_id>();
-  return trx_idx.find( id ) != trx_idx.end();
+  const auto& trx_idx = get_index<transaction_index, by_trx_id>();
+  bool found = trx_idx.find( id ) != trx_idx.end();
+  if( found || ignore_pending )
+    return found;
+  return _pending_tx_index.find( id ) != _pending_tx_index.end();
 } FC_CAPTURE_AND_RETHROW() }
 
 chain_id_type database::get_chain_id() const
@@ -715,6 +718,9 @@ void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_
 
 void database::_push_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
+  const auto& trx_id = full_transaction->get_transaction_id();
+  FC_ASSERT( !is_known_transaction( trx_id ), "Duplicate transaction check failed", ( trx_id ) );
+
   // If this is the first transaction pushed after applying a block, start a new undo session.
   // This allows us to quickly rewind to the clean state of the head block, in case a new block arrives.
   if (!_pending_tx_session.has_value())
@@ -734,7 +740,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
       _pending_tx.push_back( full_transaction );
       _pending_tx_size += full_transaction->get_transaction_size();
     }
-
+    _pending_tx_index.emplace( trx_id );
     // The transaction applied successfully. Merge its changes into the pending block session.
     _pending_tx_session->second.squash( true );
   }
@@ -816,6 +822,7 @@ void database::clear_pending()
     _pending_tx.clear();
     _pending_tx_size = 0;
     _pending_tx_session.reset();
+    _pending_tx_index.clear();
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -4405,7 +4412,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
   if( !( skip & skip_transaction_dupe_check ) )
   {
-    FC_ASSERT( !is_known_transaction( trx_id ), "Duplicate transaction check failed", ( trx_id ) );
+    FC_ASSERT( !is_known_transaction( trx_id, true ), "Duplicate transaction check failed", ( trx_id ) );
   }
 
   const signed_transaction& trx = full_transaction->get_transaction();

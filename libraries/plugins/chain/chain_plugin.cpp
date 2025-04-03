@@ -966,7 +966,9 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
   {
     if( not db.is_fast_confirm_transaction( full_transaction ) )
     {
-      db.process_non_fast_confirm_transaction( full_transaction, skip );
+      // skip_transaction_dupe_check prevents populating of transaction_index - check is done anyway
+      // but with dedicated in-memory index for pending transactions
+      db.process_non_fast_confirm_transaction( full_transaction, skip | database::skip_transaction_dupe_check );
       return;
     }
 

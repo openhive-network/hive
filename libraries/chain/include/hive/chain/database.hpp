@@ -232,10 +232,10 @@ namespace chain {
       //////////////////// db_block.cpp ////////////////////
 
     public:
-      bool                       is_known_transaction( const transaction_id_type& id )const;
-      fc::sha256                 get_pow_target()const;
-      uint32_t                   get_pow_summary_target()const;
-    public:
+      bool          is_known_transaction( const transaction_id_type& id, bool ignore_pending = false )const;
+      fc::sha256    get_pow_target()const;
+      uint32_t      get_pow_summary_target()const;
+
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
       /// Returns current chain-id being in use depending on applied HF
@@ -587,6 +587,8 @@ namespace chain {
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
       size_t                                                   _pending_tx_size = 0;
       size_t                                                   _max_mempool_size = 0;
+      // alternative for transaction_index holding ids of pending and popped transactions
+      std::unordered_set<transaction_id_type>                  _pending_tx_index;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
