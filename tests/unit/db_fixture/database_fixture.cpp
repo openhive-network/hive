@@ -492,19 +492,19 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   signed_transaction tx;
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  push_transaction(tx, key, 0);
+  push_transaction_ex( tx, key );
 }
 
-full_transaction_ptr database_fixture::push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key,
+full_transaction_ptr database_fixture::push_transaction_ex( const signed_transaction& tx, const fc::ecc::private_key& key,
   uint32_t skip_flags, hive::protocol::pack_type pack_type )
 {
   if( key == fc::ecc::private_key() )
-    return push_transaction( tx, std::vector<fc::ecc::private_key>(), skip_flags, pack_type );
+    return push_transaction_ex( tx, std::vector<fc::ecc::private_key>(), skip_flags, pack_type );
   else
-    return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, pack_type );
+    return push_transaction_ex( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, pack_type );
 }
 
-full_transaction_ptr database_fixture::push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
+full_transaction_ptr database_fixture::push_transaction_ex( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
   uint32_t skip_flags, hive::protocol::pack_type pack_type )
 {
   full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );

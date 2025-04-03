@@ -54,22 +54,24 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key() ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, { alice_private_key, alice_private_key } ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes." );
     tx.operations.clear();
     op.orderid++;
     tx.operations.push_back( op );
-    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
+    push_transaction( tx, { alice_private_key, bob_private_key } );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -101,22 +103,24 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key() ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, { alice_private_key, alice_private_key } ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes." );
     tx.operations.clear();
     op.orderid++;
     tx.operations.push_back( op );
-    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
+    push_transaction( tx, { alice_private_key, bob_private_key } );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -479,22 +483,24 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     tx.operations.push_back( op );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key() ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, { alice_private_key, alice_private_key } ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now the transaction passes" );
     tx.operations.clear();
     op.orderid = 2;
     tx.operations.push_back( op );
-    push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check );
+    push_transaction( tx, { alice_private_key, bob_private_key } );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -1821,7 +1827,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      push_transaction( tx, alice_private_key, 0, hive::protocol::pack_type::hf26 );
+      push_transaction( tx, alice_private_key );
 
       BOOST_REQUIRE( npo.num_available_nais == SMT_MAX_NAI_POOL_COUNT - i );
       BOOST_REQUIRE( npo.nais[ npo.num_available_nais ] == asset_symbol_type() );
@@ -3011,7 +3017,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 0, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 10000, symbol ) );
@@ -3020,8 +3026,8 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     BOOST_TEST_MESSAGE( "--- Test transferring non-existent funds" );
     tx.operations.clear();
     tx.operations.push_back( op );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "available >= -delta" );
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 0, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 10000, symbol ) );

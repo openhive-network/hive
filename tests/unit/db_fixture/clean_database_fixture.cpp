@@ -181,7 +181,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
 
     tx.operations.push_back( op );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    this->push_transaction( tx, key, 0, hive::protocol::serialization_mode_controller::get_current_pack() );
+    this->push_transaction( tx, key );
 
     this->generate_block();
   }
@@ -248,7 +248,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     tx.operations.push_back( op1 );
     tx.operations.push_back( op2 );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    this->push_transaction( tx, key, 0, hive::protocol::serialization_mode_controller::get_current_pack() );
+    this->push_transaction( tx, key );
 
     this->generate_block();
 
@@ -272,8 +272,7 @@ void t_smt_database_fixture< T >::push_invalid_operation( const operation& inval
   signed_transaction tx;
   tx.operations.push_back( invalid_op );
   tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  HIVE_REQUIRE_THROW( this->push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check,
-    hive::protocol::serialization_mode_controller::get_current_pack() ), fc::assert_exception );
+  HIVE_REQUIRE_THROW( this->push_transaction( tx, fc::ecc::private_key() ), fc::assert_exception );
 }
 
 template< typename T >
