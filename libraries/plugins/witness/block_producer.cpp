@@ -144,6 +144,12 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   // the flag also covers time of processing of required and optional actions
   _db.set_tx_status( chain::database::TX_STATUS_GEN_BLOCK );
 
+  // since due to postponed we can't make sure all pending transactions are truly unique, we still
+  // need to make that check here, but we can use _pending_tx_index instead of transaction_index
+  _db._pending_tx_index.clear();
+  auto skip = _db.get_node_skip_flags();
+  skip |= chain::database::skip_transaction_dupe_check;
+
   uint32_t unused_tx_count = 0;
   uint32_t failed_tx_count = 0;
   for( const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : _db._pending_tx )
@@ -170,8 +176,15 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
     try
     {
-      _db.apply_transaction(full_transaction, _db.get_node_skip_flags());
+      const auto& trx_id = full_transaction->get_transaction_id();
+      if( _db.is_known_transaction( trx_id ) )
+      {
+        ++failed_tx_count;
+        continue;
+      }
+      _db.apply_transaction( full_transaction, skip );
       _pending_tx_session->second.squash( true );
+      _db._pending_tx_index.emplace( trx_id );
 
       total_block_size = new_total_size;
       full_transactions.push_back(full_transaction);
