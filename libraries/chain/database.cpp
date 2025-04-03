@@ -4422,9 +4422,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
   if( !( skip & skip_transaction_dupe_check ) )
   {
-    auto& trx_idx = get_index<transaction_index>();
-    FC_ASSERT(trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end(),
-              "Duplicate transaction check failed", (trx_id));
+    FC_ASSERT( !is_known_transaction( trx_id ), "Duplicate transaction check failed", ( trx_id ) );
   }
 
   const signed_transaction& trx = full_transaction->get_transaction();

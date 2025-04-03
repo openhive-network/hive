@@ -495,8 +495,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_02_test )
           {
             if( msg_duplicate )
             {
-              HIVE_REQUIRE_ASSERT( _passed_op(),
-                "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
+              HIVE_REQUIRE_ASSERT( _passed_op(), "!is_known_transaction( trx_id )" );
             }
             else
             {
@@ -649,8 +648,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 
           schedule_block();
 
-          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_01 ),
-            "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_01 ), "!is_known_transaction( trx_id )" );
           HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_01_a ),
             "now < full_transaction->get_runtime_expiration()" );
 
@@ -658,8 +656,7 @@ BOOST_AUTO_TEST_CASE( witness_basic_with_runtime_expiration_03_test )
 
           schedule_block();
 
-          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_02 ),
-            "trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end()" );
+          HIVE_REQUIRE_ASSERT( schedule_transaction( _trx_02 ), "!is_known_transaction( trx_id )" );
 
           db->with_read_lock( [&]()
           {
