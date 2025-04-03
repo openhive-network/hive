@@ -829,7 +829,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
-    push_transaction( tx2, alice_private_key, 0 ); //t2 becomes pending
+    push_transaction( tx2, alice_private_key ); //t2 becomes pending
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
 
@@ -870,7 +870,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       //it was dropped, we can send it again after couple blocks, because it won't be treated as duplicate
       generate_block();
       generate_block();
-      push_transaction( tx2, alice_private_key, 0 );
+      push_transaction( tx2, alice_private_key );
 
       //check that t2 did not expire while RC was regenerating and got accepted when send second time
       BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );

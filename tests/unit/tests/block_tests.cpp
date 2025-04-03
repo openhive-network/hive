@@ -895,29 +895,26 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     BOOST_TEST_MESSAGE( "proper ref_block_num, ref_block_prefix" );
 
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
+    tx.set_reference_block( db->head_block_id() );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "ref_block_num=0, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 0;
     tx.ref_block_prefix = 0x12345678;
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), transaction_tapos_exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=1, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 1;
     tx.ref_block_prefix = 0x12345678;
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), transaction_tapos_exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=9999, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 9999;
     tx.ref_block_prefix = 0x12345678;
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), transaction_tapos_exception );
   }
   catch (fc::exception& e)
   {
@@ -941,7 +938,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   trx.validate();
 
-  push_transaction(trx, fc::ecc::private_key(), ~0);
+  push_transaction( trx, init_account_priv_key );
 
   trx.operations.clear();
   t.from = "bob";
@@ -951,16 +948,17 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.validate();
 
   BOOST_TEST_MESSAGE( "Verify that not-signing causes an exception" );
-  HIVE_REQUIRE_THROW( push_transaction(trx), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction(trx), tx_missing_active_auth );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
   HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, bob_private_key} ), tx_duplicate_sig );
 
   BOOST_TEST_MESSAGE( "Up to HF28 it was a verify that signing with an extra, unused key fails. Now the transaction passes." );
-  push_transaction(trx, {bob_private_key, generate_private_key( "bogus") }, database::skip_transaction_dupe_check);
+  push_transaction( trx, { bob_private_key, generate_private_key( "bogus" ) } );
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
-  push_transaction(trx, bob_private_key );
+  trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+  push_transaction( trx, bob_private_key );
 
 } FC_LOG_AND_RETHROW() }
 

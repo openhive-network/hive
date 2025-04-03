@@ -75,8 +75,5 @@ def test_try_to_create_claimed_account_operation_with_already_existing_account(
     with pytest.raises(ErrorInResponseError) as exception:
         CreateClaimedAccount(node, wallet_alice, alice.name, "bob")
 
-    assert (
-        "could not insert object, most likely a uniqueness constraint was violated inside index holding types"
-        in exception.value.error
-    )
+    assert "Account bob already exists." in exception.value.error
     assert alice.get_pending_claimed_accounts() == 1, "Claim token was used. Shouldn't be."
