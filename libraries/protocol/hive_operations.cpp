@@ -48,7 +48,7 @@ namespace hive { namespace protocol {
   {
     validate_account_name( new_account_name );
     validate_account_name( creator );
-    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ), "Account creation fee must be HIVE" );
+    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ) && "Account creation fee must be HIVE" );
     FC_ASSERT( is_asset_type( delegation, VESTS_SYMBOL ), "Delegation must be VESTS" );
 
     owner.validate();
@@ -58,7 +58,7 @@ namespace hive { namespace protocol {
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
+    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account creation fee cannot be negative" );
     FC_ASSERT( delegation >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
   }
 
@@ -133,7 +133,7 @@ namespace hive { namespace protocol {
     validate_account_name( beneficiaries[0].account );
     FC_ASSERT( beneficiaries[0].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
     sum += beneficiaries[0].weight;
-    FC_ASSERT( sum <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
+    FC_ASSERT( sum <= HIVE_100_PERCENT && "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
 
     for( size_t i = 1; i < beneficiaries.size(); i++ )
     {
@@ -165,9 +165,9 @@ namespace hive { namespace protocol {
   void claim_account_operation::validate()const
   {
     validate_account_name( creator );
-    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ), "Account creation fee must be HIVE" );
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
-    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account creation fee cannot be too large" );
+    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ) && "Account claiming fee must be HIVE" );
+    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account claiming fee cannot be negative" );
+    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account claiming fee cannot be too large" );
 
     FC_ASSERT( extensions.size() == 0, "There are no extensions for claim_account_operation." );
   }
@@ -186,7 +186,7 @@ namespace hive { namespace protocol {
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
-    FC_ASSERT( extensions.size() == 0, "There are no extensions for create_claimed_account_operation." );
+    FC_ASSERT( extensions.size() == 0 && "There are no extensions for create_claimed_account_operation." );
   }
 
   void vote_operation::validate() const
@@ -201,10 +201,10 @@ namespace hive { namespace protocol {
   { try {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.symbol.is_vesting() == false, "Transfer of vesting is not allowed." );
-    FC_ASSERT( amount.amount > 0, "Cannot transfer a negative amount (aka: stealing)" );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+    FC_ASSERT( amount.symbol.is_vesting() == false && "Transfer of vesting is not allowed." );
+    FC_ASSERT( amount.amount > 0 && "Cannot transfer a negative amount (aka: stealing)" );
+    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer memo is too large" );
+    FC_ASSERT( fc::is_utf8( memo ) && "Transfer memo is not UTF8" );
   } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   void transfer_to_vesting_operation::validate() const
@@ -214,7 +214,7 @@ namespace hive { namespace protocol {
             ( amount.symbol.space() == asset_symbol_type::smt_nai_space && amount.symbol.is_vesting() == false ),
             "Amount must be HIVE or SMT liquid" );
     if ( to != account_name_type() ) validate_account_name( to );
-    FC_ASSERT( amount.amount > 0, "Must transfer a nonzero amount" );
+    FC_ASSERT( amount.amount > 0 && "Must transfer a nonzero amount" );
   }
 
   void withdraw_vesting_operation::validate() const
@@ -238,7 +238,7 @@ namespace hive { namespace protocol {
 
     FC_ASSERT( url.size() > 0, "URL size must be greater than 0" );
     FC_ASSERT( fc::is_utf8( url ), "URL is not valid UTF8" );
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Fee cannot be negative" );
+    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Fee cannot be negative" );
     props.validate< false >();
   }
 
@@ -255,7 +255,7 @@ namespace hive { namespace protocol {
       asset account_creation_fee;
       fc::raw::unpack_from_vector( itr->second, account_creation_fee );
       FC_ASSERT( account_creation_fee.symbol == HIVE_SYMBOL, "account_creation_fee must be in HIVE" );
-      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE, "account_creation_fee smaller than minimum account creation fee" );
+      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && "account_creation_fee smaller than minimum account creation fee" );
     }
 
     itr = props.find( "maximum_block_size" );
@@ -263,7 +263,7 @@ namespace hive { namespace protocol {
     {
       uint32_t maximum_block_size = 0u;
       fc::raw::unpack_from_vector( itr->second, maximum_block_size );
-      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
+      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && "maximum_block_size smaller than minimum max block size" );
     }
 
     itr = props.find( "sbd_interest_rate" );
@@ -274,8 +274,8 @@ namespace hive { namespace protocol {
     {
       uint16_t hbd_interest_rate = 0u;
       fc::raw::unpack_from_vector( itr->second, hbd_interest_rate );
-      FC_ASSERT( hbd_interest_rate >= 0, "hbd_interest_rate must be positive" );
-      FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT, "hbd_interest_rate must not exceed 100%" );
+      FC_ASSERT( hbd_interest_rate >= 0 && "hbd_interest_rate must be positive" );
+      FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT && "hbd_interest_rate must not exceed 100%" );
     }
 
     itr = props.find( "new_signing_key" );
@@ -305,9 +305,9 @@ namespace hive { namespace protocol {
       std::string url;
       fc::raw::unpack_from_vector< std::string >( itr->second, url );
 
-      FC_ASSERT( url.size() <= HIVE_MAX_WITNESS_URL_LENGTH, "URL is too long" );
-      FC_ASSERT( url.size() > 0, "URL size must be greater than 0" );
-      FC_ASSERT( fc::is_utf8( url ), "URL is not valid UTF8" );
+      FC_ASSERT( url.size() <= HIVE_MAX_WITNESS_URL_LENGTH && "URL is too long" );
+      FC_ASSERT( url.size() > 0 && "URL size must be greater than 0" );
+      FC_ASSERT( fc::is_utf8( url ) && "URL is not valid UTF8" );
     }
 
     itr = props.find( "account_subsidy_budget" );
@@ -357,7 +357,7 @@ namespace hive { namespace protocol {
   void custom_binary_operation::validate() const {
     /// required auth accounts are the ones whose bandwidth is consumed
     FC_ASSERT( (required_owner_auths.size() + required_active_auths.size() + required_posting_auths.size()) > 0, "at least one account must be specified" );
-    FC_ASSERT( id.size() <= HIVE_CUSTOM_OP_ID_MAX_LENGTH,
+    FC_ASSERT( HIVE_CUSTOM_OP_ID_MAX_LENGTH >= id.size(),
       "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size()) );
     for( const auto& a : required_auths ) a.validate();
   }
@@ -554,7 +554,7 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
     /// only allow conversion from HBD to HIVE, allowing the opposite can enable traders to abuse
     /// market fluxuations through converting large quantities without moving the price.
     FC_ASSERT( is_asset_type( amount, HBD_SYMBOL ), "Can only convert HBD to HIVE" );
-    FC_ASSERT( amount.amount > 0, "Must convert some HBD" );
+    FC_ASSERT( amount.amount > 0 && "Must convert some HBD" );
   }
 
   void collateralized_convert_operation::validate()const
@@ -562,7 +562,7 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
     validate_account_name( owner );
     /// only allow conversion from HIVE to HBD (at least for now)
     FC_ASSERT( is_asset_type( amount, HIVE_SYMBOL ), "Can only convert HIVE to HBD" );
-    FC_ASSERT( amount.amount > 0, "Must convert some HIVE" );
+    FC_ASSERT( amount.amount > 0 && "Must convert some HIVE" );
   }
 
   void escrow_transfer_operation::validate()const
@@ -610,11 +610,11 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
     validate_account_name( receiver );
     FC_ASSERT( who == from || who == to || who == agent, "who must be from or to or agent" );
     FC_ASSERT( receiver == from || receiver == to, "receiver must be from or to" );
-    FC_ASSERT( hbd_amount.amount >= 0, "HBD amount cannot be negative" );
-    FC_ASSERT( hive_amount.amount >= 0, "HIVE amount cannot be negative" );
-    FC_ASSERT( hbd_amount.amount > 0 || hive_amount.amount > 0, "escrow must release a non-zero amount" );
-    FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL, "HBD amount must contain HBD asset" );
-    FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL, "HIVE amount must contain HIVE asset" );
+    FC_ASSERT( hbd_amount.amount >= 0 && "HBD amount cannot be negative" );
+    FC_ASSERT( hive_amount.amount >= 0 && "HIVE amount cannot be negative" );
+    FC_ASSERT( (hbd_amount.amount > 0 || hive_amount.amount > 0) && "escrow must release a non-zero amount" );
+    FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL && "HBD amount must contain HBD asset" );
+    FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL && "HIVE amount must contain HIVE asset" );
   }
 
   void request_account_recovery_operation::validate()const
@@ -644,18 +644,18 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
   void transfer_to_savings_operation::validate()const {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.amount > 0 );
+    FC_ASSERT( amount.amount > 0 && "Must transfer to savings some amount" );
     FC_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer to savings memo is too large" );
+    FC_ASSERT( fc::is_utf8( memo ) && "Transfer to savings memo is not UTF8" );
   }
   void transfer_from_savings_operation::validate()const {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.amount > 0 );
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+    FC_ASSERT( amount.amount > 0 && "Must transfer from savings some amount" );
+    FC_ASSERT( (amount.symbol == HIVE_SYMBOL ||  amount.symbol == HBD_SYMBOL) && "Must transfer HIVE or HBD" );
+    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer from savings memo is too large" );
+    FC_ASSERT( fc::is_utf8( memo ), "Transfer from savings memo is not UTF8" );
   }
   void cancel_transfer_from_savings_operation::validate()const {
     validate_account_name( from );
@@ -670,8 +670,8 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
   {
     validate_account_name( reset_account );
     validate_account_name( account_to_reset );
-    FC_ASSERT( !new_owner_authority.is_impossible(), "new owner authority cannot be impossible" );
-    FC_ASSERT( new_owner_authority.weight_threshold, "new owner authority cannot be trivial" );
+    FC_ASSERT( not new_owner_authority.is_impossible(), "new owner authority cannot be impossible" );
+    FC_ASSERT( new_owner_authority.weight_threshold > 0, "new owner authority cannot be trivial" );
     new_owner_authority.validate();
   }
 
@@ -729,11 +729,11 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
   { try {
       validate_account_name( from );
       validate_account_name( to );
-      FC_ASSERT( amount.symbol.is_vesting() == false, "Transfer of vesting is not allowed." );
-      FC_ASSERT( amount.amount >= 0, "Cannot transfer a negative amount (aka: stealing)" );
+      FC_ASSERT( amount.symbol.is_vesting() == false && "Recurrent transfer of vesting is not allowed." );
+      FC_ASSERT( amount.amount >= 0 && "Cannot transfer a negative amount (aka: stealing)" );
       FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
-      FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
-      FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+      FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Recurrent transfer memo is too large" );
+      FC_ASSERT( fc::is_utf8( memo ) && "Recurrent transfer memo is not UTF8" );
       FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
       FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
     } FC_CAPTURE_AND_RETHROW( (*this) )

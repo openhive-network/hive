@@ -46,7 +46,7 @@ void transaction::validate() const
 
 void transaction::validate( const std::function<void( const operation& op, bool post )>& notify ) const
 {
-  FC_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("trx",*this) );
+  FC_ASSERT( 0 < operations.size(), "A transaction must have at least one operation", ("trx",*this) );
   for( const auto& op : operations )
   {
     notify( op, false );

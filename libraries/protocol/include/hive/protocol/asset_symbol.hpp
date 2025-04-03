@@ -155,37 +155,31 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 {
-  switch( sym.space() )
+  FC_ASSERT( sym.space() == hive::protocol::asset_symbol_type::legacy_space ||
+             sym.space() == hive::protocol::asset_symbol_type::smt_nai_space,
+             "Cannot serialize unknown asset symbol" );
+
+  if( sym.space() == hive::protocol::asset_symbol_type::legacy_space  && 
+      hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
   {
-    case hive::protocol::asset_symbol_type::legacy_space:
-      if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
-      {
-        uint64_t ser = 0;
-        switch( sym.asset_num )
-        {
-          case HIVE_ASSET_NUM_HIVE:
-            ser = OBSOLETE_SYMBOL_SER;
-            break;
-          case HIVE_ASSET_NUM_HBD:
-            ser = OBD_SYMBOL_SER;
-            break;
-          case HIVE_ASSET_NUM_VESTS:
-            ser = VESTS_SYMBOL_SER;
-            break;
-          default:
-            FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
-        }
-        pack( s, ser );
-        break;
-      }
-      //else
-      //  continue to next case
-    case hive::protocol::asset_symbol_type::smt_nai_space:
-      pack( s, sym.asset_num );
-      break;
-    default:
-      FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
+    if( sym.asset_num == HIVE_ASSET_NUM_HIVE )
+    {
+      pack( s, OBSOLETE_SYMBOL_SER );
+    }
+    else if( sym.asset_num == HIVE_ASSET_NUM_HBD )
+    {
+      pack( s, OBD_SYMBOL_SER );
+    }
+    else
+    {
+      FC_ASSERT( sym.asset_num == HIVE_ASSET_NUM_VESTS, "Cannot serialize unknown asset symbol" );
+      pack( s, VESTS_SYMBOL_SER );
+    }
+
+    return;
   }
+
+  pack( s, sym.asset_num );
 }
 
 template< typename Stream >
@@ -236,7 +230,7 @@ inline void from_variant( const fc::variant& var, hive::protocol::asset_symbol_t
 
   try
   {
-    FC_ASSERT( var.is_object(), "Asset symbol is expected to be an object." );
+    FC_ASSERT( var.is_object() && "Asset symbol is expected to be an object." );
 
     auto& o = var.get_object();
 

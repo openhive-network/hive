@@ -46,13 +46,15 @@ pack_type serialization_mode_controller::get_current_pack()
 
 pack_type serialization_mode_controller::get_another_pack()
 {
-  switch( get_current_pack() )
+  const auto cp = get_current_pack();
+  if( cp == pack_type::legacy )
   {
-    case pack_type::legacy: return pack_type::hf26;
-    case pack_type::hf26: return pack_type::legacy;
-    default:
-      FC_ASSERT( false, "an incorrect value of pack mode" );
+    return pack_type::hf26;
   }
+
+  FC_ASSERT( cp == pack_type::hf26, "an incorrect value of pack mode" );
+
+  return pack_type::legacy;
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )

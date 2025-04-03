@@ -15,7 +15,7 @@ void common_symbol_validation( const asset_symbol_type& symbol )
 {
   symbol.validate();
   FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "legacy symbol used instead of NAI" );
-  FC_ASSERT( symbol.is_vesting() == false, "liquid variant of NAI expected");
+  FC_ASSERT( symbol.is_vesting() == false && "liquid variant of NAI expected");
 }
 
 template < class Operation >
@@ -80,14 +80,14 @@ void smt_generation_unit::validate()const
   FC_ASSERT( hive_unit.size() <= SMT_MAX_UNIT_ROUTES );
   for(const std::pair< account_name_type, uint16_t >& e : hive_unit )
   {
-    FC_ASSERT( is_valid_unit_target( e.first ) );
-    FC_ASSERT( e.second > 0 );
+    FC_ASSERT( is_valid_unit_target( e.first ) && "hive_unit must be valid unit target" );
+    FC_ASSERT( e.second > 0 && "hive_unit amount must be positive" );
   }
   FC_ASSERT( token_unit.size() <= SMT_MAX_UNIT_ROUTES );
   for(const std::pair< account_name_type, uint16_t >& e : token_unit )
   {
-    FC_ASSERT( is_valid_unit_target( e.first ) );
-    FC_ASSERT( e.second > 0 );
+    FC_ASSERT( is_valid_unit_target( e.first ) && "token_unit must be valid unit target" );
+    FC_ASSERT( e.second > 0 && "token_unit amount must be positive" );
   }
 }
 
@@ -142,7 +142,7 @@ void smt_setup_emissions_operation::validate()const
   {
     FC_ASSERT( is_valid_smt_emissions_unit_destination( e.first ),
       "Emissions token unit destination ${n} is invalid", ("n", e.first) );
-    FC_ASSERT( e.second > 0, "Emissions token unit must be greater than 0" );
+    FC_ASSERT( e.second > 0 && "Emissions token unit must be greater than 0" );
   }
 
   FC_ASSERT( interval_seconds >= SMT_EMISSION_MIN_INTERVAL_SECONDS,
@@ -168,7 +168,7 @@ void smt_setup_emissions_operation::validate()const
     }
   }
 
-  FC_ASSERT( symbol.is_vesting() == false, "Use liquid variant of SMT symbol to specify emission amounts" );
+  FC_ASSERT( symbol.is_vesting() == false && "Use liquid variant of SMT symbol to specify emission amounts" );
   FC_ASSERT( symbol == lep_abs_amount.symbol, "Left endpoint symbol mismatch" );
   FC_ASSERT( symbol == rep_abs_amount.symbol, "Right endpoint symbol mismatch" );
   FC_ASSERT( lep_abs_amount.amount >= 0, "Left endpoint cannot have negative emission" );
@@ -252,24 +252,14 @@ struct smt_set_runtime_parameters_operation_visitor
       "Percent Curation Rewards must not exceed 10000. Was ${n}",
       ("n", param_rewards.percent_curation_rewards) );
 
-    switch( param_rewards.author_reward_curve )
-    {
-      case linear:
-      case quadratic:
-        break;
-      default:
-        FC_ASSERT( false, "Author Reward Curve must be linear or quadratic" );
-    }
+    FC_ASSERT( param_rewards.author_reward_curve == linear ||
+               param_rewards.author_reward_curve == quadratic,
+               "Author Reward Curve must be linear or quadratic" );
 
-    switch( param_rewards.curation_reward_curve )
-    {
-      case linear:
-      case square_root:
-      case bounded_curation:
-        break;
-      default:
-        FC_ASSERT( false, "Curation Reward Curve must be linear, square_root, or bounded_curation." );
-    }
+    FC_ASSERT( param_rewards.curation_reward_curve == linear ||
+               param_rewards.curation_reward_curve == square_root ||
+               param_rewards.curation_reward_curve == bounded_curation,
+               "Curation Reward Curve must be linear, square_root, or bounded_curation." );
   }
 
   void operator()( const smt_param_allow_downvotes& )const
