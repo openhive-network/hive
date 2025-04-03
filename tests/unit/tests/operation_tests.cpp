@@ -3355,11 +3355,11 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failure sending negative collateral" );
     op.amount = ASSET( "-5.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0 && \"Must convert some HIVE\"" );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending zero collateral" );
     op.amount = ASSET( "0.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0 && \"Must convert some HIVE\"" );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending too small collateral" );
     op.amount = ASSET( "0.009 TESTS" ); //0.004 TESTS for immediate conversion which would give 0.001 TBD if there was no extra 5% fee

@@ -14,9 +14,7 @@ crypto_memo::memo_content crypto_memo::build_from_encrypted_content( const crypt
 crypto_memo::memo_content crypto_memo::build_from_base58_content( const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, const std::string& content )
 {
   auto _c = from_string_impl<crypto_data::content>( content );
-  if( !_c )
-    FC_ASSERT( false, "Build from `base58` content failed");
-
+  FC_ASSERT( _c, "Build from `base58` content failed");
   return build_from_encrypted_content( from, to, std::move( _c.value() ) );
 }
 

@@ -60,25 +60,23 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym )
 {
-  switch( sym.ser )
+  if( sym.ser == OBSOLETE_SYMBOL_LEGACY_SER_1 ||
+      sym.ser == OBSOLETE_SYMBOL_LEGACY_SER_2 ||
+      sym.ser == OBSOLETE_SYMBOL_LEGACY_SER_3 ||
+      sym.ser == OBSOLETE_SYMBOL_LEGACY_SER_4 ||
+      sym.ser == OBSOLETE_SYMBOL_LEGACY_SER_5 )
   {
-    case OBSOLETE_SYMBOL_LEGACY_SER_1:
-    case OBSOLETE_SYMBOL_LEGACY_SER_2:
-    case OBSOLETE_SYMBOL_LEGACY_SER_3:
-    case OBSOLETE_SYMBOL_LEGACY_SER_4:
-    case OBSOLETE_SYMBOL_LEGACY_SER_5:
-      wlog( "pack legacy serialization ${s}", ("s", sym.ser) );
-      pack( s, sym.ser );
-      break;
-    case OBSOLETE_SYMBOL_SER:
-      if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
-        pack( s, sym.ser );
-      else
-        pack( s, HIVE_ASSET_NUM_HIVE );
-      break;
-    default:
-      FC_ASSERT( false, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
+    wlog( "pack legacy serialization ${s}", ("s", sym.ser) );
+    pack( s, sym.ser );
+    return;
   }
+
+  FC_ASSERT( sym.ser == OBSOLETE_SYMBOL_SER, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
+
+  if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
+    pack( s, sym.ser );
+  else
+    pack( s, HIVE_ASSET_NUM_HIVE );
 }
 
 template< typename Stream >
@@ -102,20 +100,18 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
   }
   s.read( ((char*) &ser)+4, 4 );
 
-  switch( ser )
-  {
-    case OBSOLETE_SYMBOL_LEGACY_SER_1:
-    case OBSOLETE_SYMBOL_LEGACY_SER_2:
-    case OBSOLETE_SYMBOL_LEGACY_SER_3:
-    case OBSOLETE_SYMBOL_LEGACY_SER_4:
-    case OBSOLETE_SYMBOL_LEGACY_SER_5:
-      wlog( "unpack legacy serialization ${s}", ("s", ser) );
-    case OBSOLETE_SYMBOL_SER:
-      sym.ser = ser;
-      break;
-    default:
-      FC_ASSERT( false, "Cannot deserialize legacy symbol ${s}", ("s", ser) );
-  }
+  FC_ASSERT( ser == OBSOLETE_SYMBOL_LEGACY_SER_1 ||
+             ser == OBSOLETE_SYMBOL_LEGACY_SER_2 ||
+             ser == OBSOLETE_SYMBOL_LEGACY_SER_3 ||
+             ser == OBSOLETE_SYMBOL_LEGACY_SER_4 ||
+             ser == OBSOLETE_SYMBOL_LEGACY_SER_5 ||
+             ser == OBSOLETE_SYMBOL_SER,
+             "Cannot deserialize legacy symbol ${s}", ("s", ser) );
+
+  if( ser != OBSOLETE_SYMBOL_SER )
+    wlog( "unpack legacy serialization ${s}", ("s", ser) );
+
+  sym.ser = ser;
 }
 
 } // fc::raw

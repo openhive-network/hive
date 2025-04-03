@@ -152,7 +152,7 @@ uint32_t asset_symbol_type::to_nai()const
       nai_data_digits = HIVE_NAI_VESTS;
       break;
     default:
-      FC_ASSERT( space() == smt_nai_space );
+      FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (to_nai)" );
       nai_data_digits = (asset_num >> HIVE_NAI_SHIFT);
   }
 
@@ -162,57 +162,53 @@ uint32_t asset_symbol_type::to_nai()const
 
 bool asset_symbol_type::is_vesting() const
 {
-  switch( space() )
+  if( space() == legacy_space )
   {
-    case legacy_space:
+    if( asset_num == HIVE_ASSET_NUM_VESTS )
     {
-      switch( asset_num )
-      {
-        case HIVE_ASSET_NUM_HIVE:
-          return false;
-        case HIVE_ASSET_NUM_HBD:
-          // HBD is certainly liquid.
-          return false;
-        case HIVE_ASSET_NUM_VESTS:
-          return true;
-        default:
-          FC_ASSERT( false, "Unknown asset symbol" );
-      }
+      return true;
     }
-    case smt_nai_space:
-      // 6th bit of asset_num is used as vesting/liquid variant indicator.
-      return asset_num & SMT_ASSET_NUM_VESTING_MASK;
-    default:
-      FC_ASSERT( false, "Unknown asset symbol" );
+    else
+    {
+      FC_ASSERT( asset_num == HIVE_ASSET_NUM_HIVE || asset_num == HIVE_ASSET_NUM_HBD,
+                 "Unknown asset symbol" );
+      return false;
+    }
+  }
+  else
+  {
+    FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (is_vesting)" );
+
+    // 6th bit of asset_num is used as vesting/liquid variant indicator.
+    return asset_num & SMT_ASSET_NUM_VESTING_MASK;
   }
 }
 
 asset_symbol_type asset_symbol_type::get_paired_symbol() const
 {
-  switch( space() )
+  if( space() == legacy_space )
   {
-    case legacy_space:
+    if( asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      switch( asset_num )
-      {
-        case HIVE_ASSET_NUM_HIVE:
-          return from_asset_num( HIVE_ASSET_NUM_VESTS );
-        case HIVE_ASSET_NUM_HBD:
-          return *this;
-        case HIVE_ASSET_NUM_VESTS:
-          return from_asset_num( HIVE_ASSET_NUM_HIVE );
-        default:
-          FC_ASSERT( false, "Unknown asset symbol" );
-      }
+      return from_asset_num( HIVE_ASSET_NUM_VESTS );
     }
-    case smt_nai_space:
-      {
-      // Toggle 6th bit of this asset_num.
-      auto paired_asset_num = asset_num ^ ( SMT_ASSET_NUM_VESTING_MASK );
-      return from_asset_num( paired_asset_num );
-      }
-    default:
-      FC_ASSERT( false, "Unknown asset symbol" );
+    else if( asset_num == HIVE_ASSET_NUM_HBD )
+    {
+      return *this;
+    }
+    else
+    {
+      FC_ASSERT( asset_num == HIVE_ASSET_NUM_VESTS, "Unknown asset symbol" );
+      return from_asset_num( HIVE_ASSET_NUM_HIVE );
+    }
+  }
+  else
+  {
+    FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (get_paired_symbol)" );
+
+    // Toggle 6th bit of this asset_num.
+    auto paired_asset_num = asset_num ^ ( SMT_ASSET_NUM_VESTING_MASK );
+    return from_asset_num( paired_asset_num );
   }
 }
 
@@ -395,7 +391,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
         case OBD_SYMBOL_U64:
 #endif ///IS_TEST_NET
         case HBD_SYMBOL_U64:
-          FC_ASSERT( decimals == 3, "Incorrect decimal places" );
+          FC_ASSERT( decimals == 3 && "Incorrect decimal places" );
           asset_num = HIVE_ASSET_NUM_HBD;
           break;
         case VESTS_SYMBOL_U64:
@@ -408,7 +404,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
       break;
     }
     default:
-      FC_ASSERT( false, "Cannot parse asset symbol" );
+      FC_ASSERT( !true, "Cannot parse asset symbol" );
   }
 
   // \s*\0
@@ -419,10 +415,9 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
       case ' ':  case '\t':  case '\n':  case '\r':
         ++p;
         continue;
-      case '\0':
-        break;
       default:
-        FC_ASSERT( false, "Cannot parse asset symbol" );
+        FC_ASSERT( *p == '\0', "Cannot parse asset symbol" );
+        break;
     }
     break;
   }
@@ -574,7 +569,7 @@ namespace fc {
       }
       else
       {
-        FC_ASSERT( var.is_object(), "Asset has to be treated as object." );
+        FC_ASSERT( var.is_object() && "Asset has to be treated as object." );
 
         const auto& v_object = var.get_object();
 

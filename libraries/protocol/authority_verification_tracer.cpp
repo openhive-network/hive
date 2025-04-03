@@ -20,13 +20,13 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
 {
-  FC_ASSERT( not _trace.root.empty() );
+  FC_ASSERT( not _trace.root.empty() && "get_root_entry()" );
   return _trace.root.back();
 }
 
 const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
 {
-  FC_ASSERT( not _trace.root.empty() );
+  FC_ASSERT( not _trace.root.empty() && "get_root_entry() const" );
   return _trace.root.back();
 }
 

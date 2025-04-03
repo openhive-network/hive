@@ -23,7 +23,7 @@ namespace hive { namespace protocol {
   struct virtual_operation : public base_operation
   {
     bool is_virtual()const { return true; }
-    void validate()const { FC_ASSERT( false, "This is a virtual operation" ); }
+    void validate()const { FC_ASSERT( false && "This is a virtual operation" ); }
   };
 
   typedef static_variant<

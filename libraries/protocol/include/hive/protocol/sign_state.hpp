@@ -60,7 +60,7 @@ class sign_state
     {
       authority initial_auth;
       if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer);
+        FC_ASSERT(tracer && "check_authority 1");
         try
         {
           initial_auth = get_current_authority( id );
@@ -78,7 +78,7 @@ class sign_state
       if( approved_by.find(id) != approved_by.end() )
       {
         if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer);
+          FC_ASSERT(tracer && "check_authority 2");
           tracer->on_approved_authority( id, initial_auth.weight_threshold );
         }
 
@@ -93,7 +93,7 @@ class sign_state
       bool success = check_authority_impl( initial_auth, 0 );
 
       if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer);
+          FC_ASSERT(tracer && "check_authority 3");
           // TODO: Provide appropriate set of flags.
           tracer->on_root_authority_finish(success, 0);
       }
@@ -108,7 +108,7 @@ class sign_state
     bool check_authority( const authority& auth, const string& id, const string& role )
     {
       if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer);
+          FC_ASSERT(tracer && "check_authority 4");
           tracer->set_role(role);
           tracer->on_root_authority_start(id, auth.weight_threshold, 0);
       }
@@ -119,7 +119,7 @@ class sign_state
       bool success = check_authority_impl( auth, 0 );
 
       if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer);
+          FC_ASSERT(tracer && "check_authority 5");
           // TODO: Provide appropriate set of flags.
           tracer->on_root_authority_finish(success, 0);
       }
@@ -171,7 +171,7 @@ class sign_state
       size_t membership = 0;
 
       if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer);
+        FC_ASSERT(tracer && "check_authority 6");
         if( auth.key_auths.empty() && auth.account_auths.empty() )
           tracer->on_empty_auth();
       }
@@ -191,7 +191,7 @@ class sign_state
           total_weight += k.second;
 
           if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
+            FC_ASSERT(tracer && "check_authority 7");
             tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth, 
                                     total_weight >= auth.weight_threshold);
           }
@@ -205,7 +205,7 @@ class sign_state
       }
 
       if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer);
+        FC_ASSERT(tracer && "check_authority 8");
         tracer->on_missing_matching_key();
       }
 
@@ -216,7 +216,7 @@ class sign_state
           if( depth == limits.recursion )
           {
             if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer);
+              FC_ASSERT(tracer && "check_authority 9");
               tracer->on_recursion_depth_limit_exceeded();
             }
 
@@ -226,7 +226,7 @@ class sign_state
           if( limits.account_auths > 0 && account_auth_count >= limits.account_auths )
           {
             if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer);
+              FC_ASSERT(tracer && "check_authority 10");
               tracer->on_account_processing_limit_exceeded();
             }
 
@@ -237,7 +237,7 @@ class sign_state
 
           authority account_auth;
           if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
+            FC_ASSERT(tracer && "check_authority 11");
             try
             {
               account_auth = get_current_authority( a.first );
@@ -260,21 +260,21 @@ class sign_state
             if( total_weight >= auth.weight_threshold )
             {
               if constexpr (IS_TRACED) {
-                FC_ASSERT(tracer);
+                FC_ASSERT(tracer && "check_authority 12");
                 tracer->on_leaving_account_entry( a.second, true /*parent_threshold_reached*/ );
               }
               return true;
             }
           }
           if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
+            FC_ASSERT(tracer && "check_authority 13");
             tracer->on_leaving_account_entry( success ? a.second : 0, false /*parent_threshold_reached*/ );
           }
         }
         else
         {
           if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer);
+            FC_ASSERT(tracer && "check_authority 14");
             tracer->on_approved_authority( a.first, a.second );
           }
 

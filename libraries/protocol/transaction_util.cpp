@@ -78,7 +78,7 @@ FC_EXPAND_MACRO(                                                \
     {
       if constexpr (IS_TRACED)
       {
-        FC_ASSERT(tracer);
+        FC_ASSERT(tracer, "Can't trace without tracer");
         tracer->set_role("posting");
       }
 
@@ -91,7 +91,7 @@ FC_EXPAND_MACRO(                                                \
         auto check_with_role_upgrade = [&](const authority& auth, const string& role) -> bool {
           if constexpr (IS_TRACED)
           {
-            FC_ASSERT(tracer);
+            FC_ASSERT(tracer != nullptr, "Can't trace without tracer");
             tracer->trim_final_authority_path();
           }
 
@@ -131,7 +131,7 @@ FC_EXPAND_MACRO(                                                \
   {
     if constexpr (IS_TRACED)
     {
-      FC_ASSERT(tracer);
+      FC_ASSERT(tracer && "Can't trace without tracer");
       tracer->set_role("active");
     }
       
@@ -145,7 +145,7 @@ FC_EXPAND_MACRO(                                                \
       auto check_with_role_upgrade = [&]() -> bool {
         if constexpr (IS_TRACED)
         {
-          FC_ASSERT(tracer);
+          FC_ASSERT((tracer != nullptr) && "Can't trace without tracer");
           tracer->trim_final_authority_path();
         }
 

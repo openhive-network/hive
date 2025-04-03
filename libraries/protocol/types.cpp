@@ -75,11 +75,12 @@ namespace hive { namespace protocol {
 
     const size_t prefix_len = prefix.size();
     FC_ASSERT( base58str.size() > prefix_len );
-    FC_ASSERT( base58str.substr( 0, prefix_len ) ==  prefix , "", ("base58str", base58str) );
+    FC_ASSERT( base58str.substr( 0, prefix_len ) == prefix, "", ("base58str", base58str) );
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check );
+    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
+               "extended_public_key_type" );
     key_data = bin_key.data;
   }
 
@@ -129,12 +130,13 @@ namespace hive { namespace protocol {
     std::string prefix( HIVE_ADDRESS_PREFIX );
 
     const size_t prefix_len = prefix.size();
-    FC_ASSERT( base58str.size() > prefix_len );
-    FC_ASSERT( base58str.substr( 0, prefix_len ) ==  prefix , "", ("base58str", base58str) );
+    FC_ASSERT( prefix_len < base58str.size() );
+    FC_ASSERT( prefix == base58str.substr( 0, prefix_len ), "", ("base58str", base58str) );
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check );
+    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
+               "extended_private_key_type" );
     key_data = bin_key.data;
   }
 

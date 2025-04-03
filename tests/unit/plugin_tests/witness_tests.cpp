@@ -297,7 +297,7 @@ public:
         schedule_vest( "carol", ASSET( "1000.000 TESTS" ) );
         schedule_fund( "carol", ASSET( "1.000 TBD" ) );
 
-        HIVE_REQUIRE_ASSERT( schedule_account_create( "no one" ), "false" ); // invalid name
+        HIVE_REQUIRE_ASSERT( schedule_account_create( "no one" ), "validity_check_result != account_name_validity::invalid_sequence" ); // invalid name
 
         ilog( "waiting for the block to consume all account preparation transactions" );
         fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );

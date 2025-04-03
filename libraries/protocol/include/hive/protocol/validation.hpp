@@ -19,25 +19,16 @@ inline void validate_account_name( const string& name )
 {
   account_name_validity validity_check_result = detail::check_account_name( name );
 
-  switch( validity_check_result )
-  {
-    case account_name_validity::valid:
-      break;
+  FC_ASSERT( validity_check_result != account_name_validity::too_short,
+    "Account name '${name}' is too short. Use at least ${min} characters.",
+    ("name", name)("min", HIVE_MIN_ACCOUNT_NAME_LENGTH) );
 
-    case account_name_validity::too_short:
-      FC_ASSERT( false, "Account name '${name}' is too short. Use at least ${min} characters.",
-        ("name", name)("min", HIVE_MIN_ACCOUNT_NAME_LENGTH) );
-      break;
-
-    case account_name_validity::too_long:
-      FC_ASSERT( false, "Account name '${name}' is too long. Use maximum of ${max} characters.",
-        ("name", name)("max", HIVE_MAX_ACCOUNT_NAME_LENGTH) );
-      break;
-
-    case account_name_validity::invalid_sequence:
-      FC_ASSERT( false, "Account name '${name}' is not valid. Please follow the RFC 1035 rules.", ("name", name) );
-      break;
-  };
+  FC_ASSERT( validity_check_result != account_name_validity::too_long,
+    "Account name '${name}' is too long. Use maximum of ${max} characters.",
+    ("name", name)("max", HIVE_MAX_ACCOUNT_NAME_LENGTH) );
+  
+  FC_ASSERT( validity_check_result != account_name_validity::invalid_sequence,
+    "Account name '${name}' is not valid. Please follow the RFC 1035 rules.", ("name", name) );
 }
 
 inline void validate_permlink( const string& permlink )
