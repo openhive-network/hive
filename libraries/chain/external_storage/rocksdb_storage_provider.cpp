@@ -3,66 +3,14 @@
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 namespace hive { namespace chain {
 
-enum Columns
-{
-  COMMENT = 0
-};
-
-namespace
-{
-class AComparator : public Comparator
-  {
-  public:
-    virtual const char* Name() const override final
-    {
-    static const std::string name = boost::core::demangle(typeid(this).name());
-    return name.c_str();
-    }
-
-    virtual void FindShortestSeparator(std::string* start, const Slice& limit) const override final
-    {
-      /// Nothing to do.
-    }
-
-    virtual void FindShortSuccessor(std::string* key) const override final
-    {
-      /// Nothing to do.
-    }
-
-  protected:
-    AComparator() = default;
-  };
-
-class HashComparator final : public AComparator
-  {
-  public:
-    virtual int Compare(const Slice& a, const Slice& b) const override
-    {
-    return a.compare(b);
-    }
-
-    virtual bool Equal(const Slice& a, const Slice& b) const override
-    {
-    return a == b;
-    }
-  };
-
-const Comparator* by_Hash_Comparator()
-  {
-  static HashComparator c;
-  return &c;
-  }
-
-#define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
-
-} /// anonymous
-
-rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& storage_path )
+rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path )
 {
   _storagePath = storage_path;
+  _blockchainStoragePath = blockchain_storage_path;
   openDb( false/*cleanDatabase*/ );
 }
 
@@ -73,13 +21,11 @@ rocksdb_storage_provider::~rocksdb_storage_provider()
 
 void rocksdb_storage_provider::openDb( bool cleanDatabase )
 {
-  bfs::create_directories( _storagePath );
+  //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
+  bfs::create_directories( _blockchainStoragePath );
 
   if( cleanDatabase )
-  {
-    ilog("Clean a database at location ${path}", ("path", _storagePath.string()));
     ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-  }
 
   auto _result = createDbSchema(_storagePath);
   if(  !std::get<1>( _result ) )
@@ -93,7 +39,7 @@ void rocksdb_storage_provider::openDb( bool cleanDatabase )
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
-  options.max_open_files = 1000;
+  options.max_open_files = OPEN_FILE_LIMIT;
 
   DBOptions dbOptions(options);
 
@@ -101,7 +47,11 @@ void rocksdb_storage_provider::openDb( bool cleanDatabase )
 
   if(status.ok())
   {
+    ilog("RocksDB opened successfully storage at location: `${p}'.", ("p", strPath));
+    verifyStoreVersion(storageDb);
     _storage.reset(storageDb);
+
+    loadAdditionalData();
   }
   else
   {
@@ -114,13 +64,9 @@ void rocksdb_storage_provider::shutdownDb( bool removeDB )
 {
   if(_storage)
   {
-    ilog("Shutdown RocksDB: flush storage");
     flushStorage();
-    ilog("Shutdown RocksDB: cleanup column handles");
     cleanupColumnHandles();
-    ilog("Shutdown RocksDB: close storage");
     _storage->Close();
-    ilog("Shutdown RocksDB: clear storage");
     _storage.reset();
 
     if( removeDB )
@@ -139,7 +85,7 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareCol
   if(addDefaultColumn)
     columnDefs.emplace_back("default", ColumnFamilyOptions());
 
-  columnDefs.emplace_back("my_hashes", ColumnFamilyOptions());
+  columnDefs.emplace_back("account_permlink_hash", ColumnFamilyOptions());
   auto& byTxIdColumn = columnDefs.back();
   byTxIdColumn.options.comparator = by_Hash_Comparator();
 
@@ -150,21 +96,18 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
 {
   DB* db = nullptr;
 
-  ilog("Prepare column definitions");
   auto columnDefs = prepareColumnDefinitions(true);
   auto strPath = path.string();
   Options options;
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
-  options.max_open_files = 1000;
+  options.max_open_files = OPEN_FILE_LIMIT;
 
-  ilog("Open RocksDB for read only");
   auto s = DB::OpenForReadOnly(options, strPath, columnDefs, &_columnHandles, &db);
 
   if(s.ok())
   {
-    ilog("Cleanup column handles in read only database");
     cleanupColumnHandles(db);
     delete db;
     return { false, true }; /// { DB does not need data import, an application is not closed }
@@ -172,20 +115,17 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
 
   options.create_if_missing = true;
 
-  ilog("Open RocksDB");
   s = DB::Open(options, strPath, &db);
   if(s.ok())
   {
-    ilog("Prepare column definitions");
     columnDefs = prepareColumnDefinitions(false);
-    ilog("Create column families");
     s = db->CreateColumnFamilies(columnDefs, &_columnHandles);
     if(s.ok())
     {
-      ilog("Flush write buffer");
+      ilog("RocksDB column definitions created successfully.");
+      saveStoreVersion();
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
-      ilog("Cleanup column handles");
       cleanupColumnHandles(db);
     }
     else
@@ -194,7 +134,6 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
         ("p", strPath)("e", s.ToString()));
     }
 
-    ilog("Destroy a temporary database");
     delete db;
 
     return { true, true }; /// { DB needs data import, an application is not closed }
@@ -203,6 +142,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
   {
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
+
+    theApp.generate_interrupt_request();
 
     return { false, false };/// { DB does not need data import, an application is closed }
   }
@@ -244,17 +185,43 @@ void rocksdb_storage_provider::flushStorage()
     return;
 
   // lib (last irreversible block) has not been saved so far
-  ilog("Flush storage: flush write buffer");
   flushWriteBuffer();
 
   ::rocksdb::FlushOptions fOptions;
-  ilog("Flush storage: flush column handles");
   for(const auto& cf : _columnHandles)
   {
-    ilog("Flush storage: flush column handle");
     auto s = _storage->Flush(fOptions, cf);
     checkStatus(s);
   }
+}
+
+void rocksdb_storage_provider::saveStoreVersion()
+{
+  PrimitiveTypeSlice<uint32_t> majorVSlice(STORE_MAJOR_VERSION);
+  PrimitiveTypeSlice<uint32_t> minorVSlice(STORE_MINOR_VERSION);
+
+  auto s = _writeBuffer.Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
+  checkStatus(s);
+  s = _writeBuffer.Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
+  checkStatus(s);
+}
+
+void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
+{
+  ReadOptions rOptions;
+
+  std::string buffer;
+  auto s = storageDb->Get(rOptions, "STORE_MAJOR_VERSION", &buffer);
+  checkStatus(s);
+  const auto major = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
+
+  FC_ASSERT(major == STORE_MAJOR_VERSION, "Store major version mismatch");
+
+  s = storageDb->Get(rOptions, "STORE_MINOR_VERSION", &buffer);
+  checkStatus(s);
+  const auto minor = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
+
+  FC_ASSERT(minor == STORE_MINOR_VERSION, "Store minor version mismatch");
 }
 
 std::unique_ptr<DB>& rocksdb_storage_provider::get_storage()
@@ -264,7 +231,7 @@ std::unique_ptr<DB>& rocksdb_storage_provider::get_storage()
 
 void rocksdb_storage_provider::save( const Slice& key, const Slice& value )
 {
-  auto s = _writeBuffer.Put( _columnHandles[Columns::COMMENT], key, value );
+  auto s = _writeBuffer.Put( _columnHandles[CommentsColumns::COMMENT], key, value );
   checkStatus(s);
 }
 
@@ -272,13 +239,149 @@ bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
 {
   ReadOptions rOptions;
 
-  ::rocksdb::Status s = _storage->Get( rOptions, _columnHandles[Columns::COMMENT], key, &value );
+  ::rocksdb::Status s = _storage->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
   return s.ok();
 }
 
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();
+}
+
+void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
+{
+  Slice ahSeqIdName("AH_SEQ_ID");
+
+  ReadOptions rOptions;
+
+  std::string buffer;
+  /// OP-seq-id is local to block num
+  _operationSeqId = 0; /// id_slice_t::unpackSlice(buffer);
+
+  auto s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
+  checkStatus(s);
+  _accountHistorySeqId = id_slice_t::unpackSlice(buffer);
+
+  ilog("Loaded AccountHistoryObject seqId: ${ah}.", ("ah", _accountHistorySeqId));
+}
+
+void rocksdb_ah_storage_provider::load_lib()
+{
+  std::string data;
+  auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
+
+  if(s.code() == ::rocksdb::Status::kNotFound)
+  {
+    ilog( "RocksDB LIB not present in DB." );
+    update_lib( 0 ); ilog( "RocksDB LIB set to 0." );
+    return;
+  }
+
+  FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
+
+  uint32_t lib = lib_slice_t::unpackSlice(data);
+
+  FC_ASSERT( lib >= _cached_irreversible_block,
+    "Inconsistency in last irreversible block - cached ${c}, stored ${s}",
+    ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
+  _cached_irreversible_block.store( lib );
+  ilog( "RocksDB LIB loaded with value ${l}.", ( "l", lib ) );
+}
+
+void rocksdb_ah_storage_provider::update_lib( uint32_t lib )
+{
+  //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
+  _cached_irreversible_block.store(lib);
+  auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
+  checkStatus( s );
+}
+
+void rocksdb_ah_storage_provider::load_reindex_point()
+{
+  std::string data;
+  auto s = _storage->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
+
+  if( s.code() == ::rocksdb::Status::kNotFound )
+  {
+    ilog( "RocksDB reindex point not present in DB." );
+    update_reindex_point( 0 );
+    return;
+  }
+
+  FC_ASSERT( s.ok(), "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
+
+  uint32_t rp = lib_slice_t::unpackSlice(data);
+
+  FC_ASSERT( rp >= _cached_reindex_point,
+    "Inconsistency in reindex point - cached ${c}, stored ${s}",
+    ( "c", _cached_reindex_point )( "s", rp ) );
+  _cached_reindex_point = rp;
+  ilog( "RocksDB reindex point loaded with value ${p}.", ( "p", rp ) );
+}
+
+void rocksdb_ah_storage_provider::update_reindex_point( uint32_t rp )
+{
+  ilog( "RocksDB reindex point set to ${p}.", ( "p", rp ) );
+  _cached_reindex_point = rp;
+  auto s = _writeBuffer.Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
+  checkStatus( s );
+}
+
+void rocksdb_ah_storage_provider::loadAdditionalData()
+{
+  loadSeqIdentifiers(_storage.get());
+  // I do not like using exceptions for control paths, but column definitions are set multiple times
+  // opening the db, so that is not a good place to write the initial lib.
+  try
+  {
+    load_lib();
+    try
+    {
+      load_reindex_point();
+    }
+    catch( fc::assert_exception& )
+    {
+      update_reindex_point( 0 );
+    }
+  }
+  catch( fc::assert_exception& )
+  {
+    update_lib( 0 );
+    update_reindex_point( 0 );
+  }
+}
+
+rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepareColumnDefinitions(bool addDefaultColumn)
+{
+  ColumnDefinitions columnDefs;
+  if(addDefaultColumn)
+    columnDefs.emplace_back(::rocksdb::kDefaultColumnFamilyName, ColumnFamilyOptions());
+
+  //see definition of Columns enum
+  columnDefs.emplace_back("current_lib", ColumnFamilyOptions());
+  //columnDefs.emplace_back("last_reindex_point", ColumnFamilyOptions() ); reused above as another record
+
+  columnDefs.emplace_back("operation_by_id", ColumnFamilyOptions());
+  auto& byIdColumn = columnDefs.back();
+  byIdColumn.options.comparator = by_id_Comparator();
+
+  columnDefs.emplace_back("operation_by_block", ColumnFamilyOptions());
+  auto& byLocationColumn = columnDefs.back();
+  byLocationColumn.options.comparator = op_by_block_num_Comparator();
+
+  columnDefs.emplace_back("account_history_info_by_name", ColumnFamilyOptions());
+  auto& byAccountNameColumn = columnDefs.back();
+  byAccountNameColumn.options.comparator = by_account_name_Comparator();
+
+  columnDefs.emplace_back("ah_operation_by_id", ColumnFamilyOptions());
+  auto& byAHInfoColumn = columnDefs.back();
+  byAHInfoColumn.options.comparator = ah_op_by_id_Comparator();
+
+  columnDefs.emplace_back("by_tx_id", ColumnFamilyOptions());
+  auto& byTxIdColumn = columnDefs.back();
+  byTxIdColumn.options.comparator = by_txId_Comparator();
+
+  return columnDefs;
 }
 
 }}

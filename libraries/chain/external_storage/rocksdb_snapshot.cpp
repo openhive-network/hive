@@ -84,7 +84,7 @@ void rocksdb_snapshot::load_additional_data_from_snapshot( const hive::chain::lo
 
   ilog("Attempting to restore an ${_name} backup from the backup location: `${p}'", (_name)("p", pathString));
 
-  //shutdownDb( true );
+  shutdownDb( true );
 
   ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
 
@@ -95,7 +95,7 @@ void rocksdb_snapshot::load_additional_data_from_snapshot( const hive::chain::lo
 
   ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
 
-  //openDb( false );
+  openDb( false );
 }
 
 }}
