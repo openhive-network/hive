@@ -260,7 +260,7 @@ public:
     chain::util::disconnect_signal(_on_irreversible_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
-    shutdownDb();
+    _provider->shutdownDb();
   }
 
   void printReport(uint32_t blockNo, const char* detailText) const;
@@ -284,23 +284,7 @@ public:
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
-  void shutdownDb( bool removeDB = false )
-  {
-    if(_storage)
-    {
-      flushStorage();
-      cleanupColumnHandles();
-      _storage->Close();
-      _storage.reset();
-
-      if( removeDB )
-      {
-        ilog( "Attempting to destroy current AHR storage..." );
-        ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-        ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
-      }
-    }
-  }
+  void shutdownDb( bool destroyOnShutdown );
 
 private:
 
@@ -1076,6 +1060,11 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   return false;
 }
 
+void account_history_rocksdb_plugin::impl::shutdownDb( bool destroyOnShutdown )
+{
+  _provider->shutdownDb( destroyOnShutdown );
+}
+
 void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const account_name_type& name, const rocksdb_operation_object& obj )
 {
   std::string strName = name;
@@ -1205,7 +1194,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
 
 void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::reindex_notification& note)
 {
-  shutdownDb();
+  _provider->shutdownDb();
   std::string strPath = _storagePath.string();
 
   if( note.force_replay )
