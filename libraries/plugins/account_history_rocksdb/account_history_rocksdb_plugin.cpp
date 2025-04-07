@@ -323,7 +323,6 @@ private:
   chain::database&                 _mainDb;
   bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
-  std::unique_ptr<DB>              _storage;
   std::vector<ColumnFamilyHandle*> _columnHandles;
   const hive::chain::block_read_i& _block_reader;
 
@@ -569,7 +568,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
 
   ah_info_by_name_slice_t nameSlice(name.data);
   PinnableSlice buffer;
-  auto s = _storage->Get(rOptions, _provider->getColumnHandles()[Columns::AH_INFO_BY_NAME], nameSlice, &buffer);
+  auto s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandles()[Columns::AH_INFO_BY_NAME], nameSlice, &buffer);
 
   if(s.IsNotFound())
   {
@@ -592,7 +591,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   ah_op_by_id_slice_t key(std::make_pair(ahInfo.id, start));
   id_slice_t ahIdSlice(ahInfo.id);
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID]));
 
   it->SeekForPrev(key);
 
@@ -692,7 +691,7 @@ bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, ro
 {
   std::string data;
   id_slice_t idSlice(opId);
-  ::rocksdb::Status s = _storage->Get(ReadOptions(), _provider->getColumnHandles()[Columns::OPERATION_BY_ID], idSlice, &data);
+  ::rocksdb::Status s = _provider->getStorage()->Get(ReadOptions(), _provider->getColumnHandles()[Columns::OPERATION_BY_ID], idSlice, &data);
 
   if(s.ok())
   {
@@ -723,7 +722,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
       return; /// If requested block was reversible, there is no more data in the persistent storage to process.
   }
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(ReadOptions(), _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
   by_block_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
 
@@ -822,7 +821,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   ReadOptions rOptions;
   rOptions.iterate_upper_bound = &upperBoundSlice;
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
 
   dlog("Looking RocksDB storage for blocks from range: <${b}, ${e})", ("b", blockRangeBegin)("e", lookupUpperBound));
 
@@ -870,7 +869,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
     rOptions = ReadOptions();
     rOptions.iterate_lower_bound = &lowerBoundSlice;
-    it.reset(_storage->NewIterator(rOptions, _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
+    it.reset(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK]));
 
     op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock, 0));
     for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
@@ -892,7 +891,7 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   ReadOptions rOptions;
   TransactionIdSlice idSlice(trxId);
   std::string dataBuffer;
-  ::rocksdb::Status s = _storage->Get(rOptions, _provider->getColumnHandles()[Columns::BY_TRANSACTION_ID], idSlice, &dataBuffer);
+  ::rocksdb::Status s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandles()[Columns::BY_TRANSACTION_ID], idSlice, &dataBuffer);
 
   if(s.ok())
     {
@@ -1013,7 +1012,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
   auto s = _provider->getCachableWriteBuffer().SingleDelete(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], oldestEntrySlice);
   checkStatus(s);
 
-  std::unique_ptr<::rocksdb::Iterator> dataItr(_storage->NewIterator(rOptions, _provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> dataItr(_provider->getStorage()->NewIterator(rOptions, _provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID]));
 
   /** To clean outdated records we have to iterate over all AH records having subsequent number greater than limit
     *  and additionally verify date of operation, to clean up only these exceeding a date limit.
