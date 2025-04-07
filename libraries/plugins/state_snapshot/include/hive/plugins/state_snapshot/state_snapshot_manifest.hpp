@@ -100,6 +100,7 @@ namespace hive
 
       class index_dump_writer;
       void store_snapshot_manifest(const bfs::path &actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>> &builtWriters, const snapshot_dump_supplement_helper &dumpHelper, const hive::chain::database &db);
+      fc::variant snapshot_manifest_to_variant(const manifest_data& manifest);
 
     }
   }

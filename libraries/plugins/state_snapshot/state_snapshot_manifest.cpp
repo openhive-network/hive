@@ -534,6 +534,39 @@ namespace hive
         return true;
       }
 
+      fc::variant snapshot_manifest_to_variant(const manifest_data &manifest)
+      {
+        fc::variant_object_builder builder;
+        {
+          std::vector<std::string> index_manifest_jsons;
+          const auto &index_manifest = std::get<0>(manifest);
+          index_manifest_jsons.reserve(index_manifest.size());
+          for (const auto &el : std::get<0>(manifest))
+            index_manifest_jsons.push_back(fc::json::to_pretty_string(el));
+
+          builder("index_manifests", index_manifest_jsons);
+        }
+        {
+          const auto external_data_index = std::get<1>(manifest);
+          if (external_data_index.empty())
+            builder("external_data", "null");
+          else
+          {
+            std::vector<std::pair<std::string, std::string>> external_data;
+            external_data.reserve(external_data_index.size());
+            for (const auto &el : external_data_index)
+              external_data.push_back(std::make_pair(el.first, el.second.path.generic_string()));
+
+            builder("external_data", external_data);
+          }
+        }
+        builder("state_definitions", fc::json::from_string(std::get<2>(manifest), fc::json::format_validation_mode::full));
+        builder("blockchain_configuration", fc::json::from_string(std::get<3>(manifest), fc::json::format_validation_mode::full));
+        builder("plugins", std::get<4>(manifest));
+        builder("irreversible_state_number", std::get<5>(manifest));
+        return builder.get();
+      }
+
     }
   }
 } // hive::plugins::state_snapshot
