@@ -12,6 +12,7 @@ namespace hive { namespace chain {
 using ::rocksdb::DB;
 using ::rocksdb::Slice;
 using ::rocksdb::PinnableSlice;
+using ::rocksdb::ColumnFamilyHandle;
 
 class external_comment_storage_provider
 {
@@ -52,6 +53,8 @@ class external_ah_storage_provider
 
     virtual void flushStorage() = 0;
     virtual void flushWriteBuffer(DB* storage = nullptr) = 0;
+
+    virtual std::vector<ColumnFamilyHandle*>& getColumnHandles() = 0;
 };
 
 }}

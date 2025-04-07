@@ -345,6 +345,11 @@ void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
   rocksdb_storage_provider::flushWriteBuffer( storage );
 }
 
+std::vector<ColumnFamilyHandle*>& rocksdb_ah_storage_provider::getColumnHandles()
+{
+  return _columnHandles;
+}
+
 void rocksdb_ah_storage_provider::loadAdditionalData()
 {
   loadSeqIdentifiers(getStorage().get());

@@ -160,6 +160,8 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void flushStorage() override;
 
     void flushWriteBuffer(DB* storage = nullptr) override;
+
+    std::vector<ColumnFamilyHandle*>& getColumnHandles() override;
 };
 
 class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider
