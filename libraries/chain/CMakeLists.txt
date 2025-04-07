@@ -88,6 +88,7 @@ add_library( hive_chain
              external_storage/rocksdb_storage_connector.cpp
              external_storage/comment.cpp
              external_storage/rocksdb_snapshot.cpp
+             external_storage/types.cpp
 
              ${HEADERS}
            )
