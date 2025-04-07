@@ -38,4 +38,52 @@ const Comparator* by_txId_Comparator()
   return &c;
 }
 
+uint32_t account_history_info::getAssociatedOpCount() const
+{
+  return newestEntryId - oldestEntryId + 1;
+}
+
+CachableWriteBatch::CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles) :
+  _storage(storage), _columnHandles(columnHandles)
+{
+
+}
+
+bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
+{
+  auto fi = _ahInfoCache.find(name);
+  if(fi != _ahInfoCache.end())
+  {
+    *ahInfo = fi->second;
+    return true;
+  }
+
+  ah_info_by_name_slice_t key(name.data);
+  PinnableSlice buffer;
+  auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
+  if(s.ok())
+  {
+    load(*ahInfo, buffer.data(), buffer.size());
+    return true;
+  }
+
+  FC_ASSERT(s.IsNotFound());
+  return false;
+}
+
+void CachableWriteBatch::putAHInfo(const account_name_type& name, const account_history_info& ahInfo)
+{
+  _ahInfoCache[name] = ahInfo;
+  auto serializeBuf = dump(ahInfo);
+  ah_info_by_name_slice_t nameSlice(name.data);
+  auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
+  checkStatus(s);
+}
+
+void CachableWriteBatch::Clear()
+{
+  _ahInfoCache.clear();
+  WriteBatch::Clear();
+}
+
 } } // hive::chain

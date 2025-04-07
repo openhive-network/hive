@@ -4,8 +4,11 @@
 
 #include <rocksdb/slice.h>
 #include <rocksdb/options.h>
+#include <rocksdb/db.h>
 
 #include <boost/core/demangle.hpp>
+
+#include <hive/chain/external_storage/utilities.hpp>
 
 namespace hive { namespace chain {
 
@@ -246,4 +249,46 @@ const Comparator* by_account_name_Comparator();
 const Comparator* ah_op_by_id_Comparator();
 const Comparator* by_txId_Comparator();
 
+/** Represents an AH entry in mapped to account name.
+  *  Holds additional informations, which are needed to simplify pruning process.
+  *  All operations specific to given account, are next mapped to ID of given object.
+  */
+class account_history_info
+{
+public:
+  int64_t        id = 0;
+  uint32_t       oldestEntryId = 0;
+  uint32_t       newestEntryId = 0;
+  /// Timestamp of oldest operation, just to quickly decide if start detail prune checking at all.
+  time_point_sec oldestEntryTimestamp;
+
+  uint32_t getAssociatedOpCount() const;
+};
+
+using ::rocksdb::DB;
+using ::rocksdb::ColumnFamilyHandle;
+using ::rocksdb::WriteBatch;
+using ::rocksdb::PinnableSlice;
+using ::rocksdb::ReadOptions;
+
+class CachableWriteBatch : public WriteBatch
+{
+public:
+  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles);
+
+  bool getAHInfo(const account_name_type& name, account_history_info* ahInfo) const;
+  void putAHInfo(const account_name_type& name, const account_history_info& ahInfo);
+
+  void Clear();
+
+private:
+  const std::unique_ptr<DB>&                        _storage;
+  const std::vector<ColumnFamilyHandle*>&           _columnHandles;
+  std::map<account_name_type, account_history_info> _ahInfoCache;
+};
+
 } } // hive::chain
+
+
+FC_REFLECT( hive::chain::account_history_info,
+  (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )

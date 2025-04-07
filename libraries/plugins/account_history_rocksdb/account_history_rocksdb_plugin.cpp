@@ -57,46 +57,18 @@ namespace hive { namespace plugins { namespace account_history_rocksdb {
 using hive::protocol::account_name_type;
 using hive::protocol::block_id_type;
 using hive::protocol::operation;
-using hive::protocol::signed_block;
-using hive::protocol::signed_block_header;
-using hive::protocol::signed_transaction;
 
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
 using hive::protocol::legacy_asset;
-using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
-using ::rocksdb::DBOptions;
-using ::rocksdb::Options;
 using ::rocksdb::PinnableSlice;
 using ::rocksdb::ReadOptions;
 using ::rocksdb::Slice;
-using ::rocksdb::Comparator;
 using ::rocksdb::ColumnFamilyDescriptor;
-using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
-using ::rocksdb::WriteBatch;
-
-/** Represents an AH entry in mapped to account name.
-  *  Holds additional informations, which are needed to simplify pruning process.
-  *  All operations specific to given account, are next mapped to ID of given object.
-  */
-class account_history_info
-{
-public:
-  int64_t        id = 0;
-  uint32_t       oldestEntryId = 0;
-  uint32_t       newestEntryId = 0;
-  /// Timestamp of oldest operation, just to quickly decide if start detail prune checking at all.
-  time_point_sec oldestEntryTimestamp;
-
-  uint32_t getAssociatedOpCount() const
-  {
-    return newestEntryId - oldestEntryId + 1;
-  }
-};
 
 namespace
 {
@@ -124,55 +96,6 @@ private:
 /// Class attributes:
 private:
   mutable std::string _name;
-};
-
-class CachableWriteBatch : public WriteBatch
-{
-public:
-  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles) :
-    _storage(storage), _columnHandles(columnHandles) {}
-
-  bool getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
-  {
-    auto fi = _ahInfoCache.find(name);
-    if(fi != _ahInfoCache.end())
-    {
-      *ahInfo = fi->second;
-      return true;
-    }
-
-    ah_info_by_name_slice_t key(name.data);
-    PinnableSlice buffer;
-    auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
-    if(s.ok())
-    {
-      load(*ahInfo, buffer.data(), buffer.size());
-      return true;
-    }
-
-    FC_ASSERT(s.IsNotFound());
-    return false;
-  }
-
-  void putAHInfo(const account_name_type& name, const account_history_info& ahInfo)
-  {
-    _ahInfoCache[name] = ahInfo;
-    auto serializeBuf = dump(ahInfo);
-    ah_info_by_name_slice_t nameSlice(name.data);
-    auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
-    checkStatus(s);
-  }
-
-  void Clear()
-  {
-    _ahInfoCache.clear();
-    WriteBatch::Clear();
-  }
-
-private:
-  const std::unique_ptr<DB>&                        _storage;
-  const std::vector<ColumnFamilyHandle*>&           _columnHandles;
-  std::map<account_name_type, account_history_info> _ahInfoCache;
 };
 
 } /// anonymous
@@ -1564,8 +1487,5 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
 }
 
 } } }
-
-FC_REFLECT( hive::plugins::account_history_rocksdb::account_history_info,
-  (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_history_rocksdb::volatile_operation_index)
