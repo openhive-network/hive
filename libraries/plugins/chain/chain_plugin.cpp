@@ -124,27 +124,12 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl( appbase::application& app, const bfs::path& comment_data_dir ):
+    chain_plugin_impl( appbase::application& app ):
       thread_pool( app ),
       db( app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
-    {
-      snapshot = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( 
-          theApp.get_plugin< chain::chain_plugin >(), db, app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir(),
-          comment_data_dir, theApp ) );
-
-      db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
-        {
-          snapshot->supplement_snapshot( note );
-        }, app.get_plugin<hive::plugins::chain::chain_plugin>(), 0);
-
-      db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
-        {
-          snapshot->load_additional_data_from_snapshot( note );
-        }, app.get_plugin<hive::plugins::chain::chain_plugin>(), 0);
-
-    }
+    {}
 
     ~chain_plugin_impl()
     {
@@ -152,6 +137,24 @@ class chain_plugin_impl
 
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
+    }
+
+    void init_rocksdb_storage( const bfs::path& comment_data_dir )
+    {
+      auto& _plugin = theApp.get_plugin< chain::chain_plugin >();
+
+      snapshot = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( 
+          _plugin, db, _plugin.state_storage_dir(), comment_data_dir, theApp ) );
+
+      db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
+        {
+          snapshot->supplement_snapshot( note );
+        }, _plugin, 0);
+
+      db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
+        {
+          snapshot->load_additional_data_from_snapshot( note );
+        }, _plugin, 0);
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
@@ -1545,14 +1548,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 
 void chain_plugin::plugin_initialize(const variables_map& options)
 { try {
-  auto _comments_path = options.at("comments-rocksdb-path").as<bfs::path>();
-  if( !_comments_path.is_absolute() )
-  {
-    auto basePath = get_app().data_dir();
-    _comments_path = basePath / _comments_path;
-  }
-
-  my.reset( new detail::chain_plugin_impl( get_app(), _comments_path ) );
+  my.reset( new detail::chain_plugin_impl( get_app() ) );
 
   my->block_log_split = options.at( "block-log-split" ).as< int >();
   std::string block_storage_description( "single block in memory" );
@@ -1577,6 +1573,14 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     else
       my->shared_memory_dir = sfd;
   }
+
+  auto _comments_path = options.at("comments-rocksdb-path").as<bfs::path>();
+  if( !_comments_path.is_absolute() )
+  {
+    auto basePath = get_app().data_dir();
+    _comments_path = basePath / _comments_path;
+  }
+  my->init_rocksdb_storage( _comments_path );
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
