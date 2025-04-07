@@ -108,7 +108,6 @@ public:
     _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
-    _writeBuffer(_storage, _columnHandles),
     _block_reader( app.get_plugin< hive::plugins::chain::chain_plugin >().block_reader() ),
     _filter("ah-rb"),
     theApp( app )
@@ -252,12 +251,12 @@ private:
     }
 
     id_slice_t idSlice(obj.id);
-    auto s = _writeBuffer.Put(_provider->getColumnHandles()[Columns::OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandles()[Columns::OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
     checkStatus(s);
 
     op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, operation_id_vop_pair(obj.id, obj.is_virtual)));
 
-    s = _writeBuffer.Put(_provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK], blockLocSlice, idSlice);
+    s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandles()[Columns::OPERATION_BY_BLOCK], blockLocSlice, idSlice);
     checkStatus(s);
 
     for(const auto& name : impacted)
@@ -282,7 +281,7 @@ private:
 
     hive::chain::id_slice_t ahId( _provider->get_accountHistorySeqId() );
 
-    auto s = _writeBuffer.Put(ahSeqIdName, ahId);
+    auto s = _provider->getCachableWriteBuffer().Put(ahSeqIdName, ahId);
     checkStatus(s);
   }
 
@@ -326,7 +325,6 @@ private:
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;
   std::vector<ColumnFamilyHandle*> _columnHandles;
-  CachableWriteBatch               _writeBuffer;
   const hive::chain::block_read_i& _block_reader;
 
   boost::signals2::connection      _on_pre_apply_operation_con;
@@ -946,7 +944,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
   ah_info_by_name_slice_t nameSlice(name.data);
 
   account_history_info ahInfo;
-  bool found = _writeBuffer.getAHInfo(name, &ahInfo);
+  bool found = _provider->getCachableWriteBuffer().getAHInfo(name, &ahInfo);
 
   if(found)
   {
@@ -959,11 +957,11 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
       }
 
     auto nextEntryId = ++ahInfo.newestEntryId;
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _provider->getCachableWriteBuffer().putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, nextEntryId));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
   else
@@ -974,11 +972,11 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
     ahInfo.newestEntryId = ahInfo.oldestEntryId = 0;
     ahInfo.oldestEntryTimestamp = obj.timestamp;
 
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _provider->getCachableWriteBuffer().putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, 0));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
 }
@@ -989,7 +987,7 @@ void account_history_rocksdb_plugin::impl::storeTransactionInfo(const chain::tra
   block_no_tx_in_block_pair block_no_tx_no(blockNo, trx_in_block);
   block_no_tx_in_block_slice_t valueSlice(block_no_tx_no);
 
-  auto s = _writeBuffer.Put(_provider->getColumnHandles()[Columns::BY_TRANSACTION_ID], txSlice, valueSlice);
+  auto s = _provider->getCachableWriteBuffer().Put(_provider->getColumnHandles()[Columns::BY_TRANSACTION_ID], txSlice, valueSlice);
   checkStatus(s);
   }
 
@@ -1012,7 +1010,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
   rOptions.iterate_lower_bound = &oldestEntrySlice;
   rOptions.iterate_upper_bound = &newestEntrySlice;
 
-  auto s = _writeBuffer.SingleDelete(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], oldestEntrySlice);
+  auto s = _provider->getCachableWriteBuffer().SingleDelete(_provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID], oldestEntrySlice);
   checkStatus(s);
 
   std::unique_ptr<::rocksdb::Iterator> dataItr(_storage->NewIterator(rOptions, _provider->getColumnHandles()[Columns::AH_OPERATION_BY_ID]));
@@ -1049,7 +1047,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
       rightBoundary = foundEntry.second;
       ah_op_by_id_slice_t rightBoundarySlice(
         std::make_pair(ahInfo->id, rightBoundary));
-      s = _writeBuffer.SingleDelete(_provider->getColumnHandles()[4], rightBoundarySlice);
+      s = _provider->getCachableWriteBuffer().SingleDelete(_provider->getColumnHandles()[4], rightBoundarySlice);
       checkStatus(s);
     }
     else
