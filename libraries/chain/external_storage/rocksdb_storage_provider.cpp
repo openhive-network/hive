@@ -162,6 +162,8 @@ void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
 
 void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 {
+  beforeFlushWriteBuffer();
+
   if(storage == nullptr)
     storage = getStorage().get();
 
@@ -169,6 +171,8 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
   auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
   checkStatus(s);
   _writeBuffer.Clear();
+
+  afterFlushWriteBuffer();
 }
 
 void rocksdb_storage_provider::flushStorage()
@@ -240,6 +244,16 @@ rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& block
 {
   _cached_irreversible_block.store(0);
   _cached_reindex_point = 0;
+}
+
+void rocksdb_ah_storage_provider::storeSequenceIds()
+{
+  Slice ahSeqIdName("AH_SEQ_ID");
+
+  hive::chain::id_slice_t ahId( get_accountHistorySeqId() );
+
+  auto s = _writeBuffer.Put(ahSeqIdName, ahId);
+  checkStatus(s);
 }
 
 void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
@@ -326,6 +340,11 @@ void rocksdb_ah_storage_provider::flushStorage()
   rocksdb_storage_provider::flushStorage();
 }
 
+void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
+{
+  rocksdb_storage_provider::flushWriteBuffer( storage );
+}
+
 void rocksdb_ah_storage_provider::loadAdditionalData()
 {
   loadSeqIdentifiers(getStorage().get());
@@ -383,6 +402,16 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
   return columnDefs;
 }
 
+void rocksdb_ah_storage_provider::beforeFlushWriteBuffer()
+{
+  storeSequenceIds();
+}
+
+void rocksdb_ah_storage_provider::afterFlushWriteBuffer()
+{
+  _collectedOps = 0;
+}
+
 std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()
 {
   return rocksdb_storage_provider::getStorage();
@@ -426,6 +455,16 @@ uint64_t rocksdb_ah_storage_provider::get_accountHistorySeqId() const
 void rocksdb_ah_storage_provider::set_accountHistorySeqId( uint64_t value )
 {
   _accountHistorySeqId = value;
+}
+
+unsigned int rocksdb_ah_storage_provider::get_collectedOps() const
+{
+  return _collectedOps;
+}
+
+void rocksdb_ah_storage_provider::set_collectedOps( unsigned int value )
+{
+  _collectedOps = value;
 }
 
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )

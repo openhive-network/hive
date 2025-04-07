@@ -54,8 +54,6 @@ class rocksdb_storage_provider
     void saveStoreVersion();
     void verifyStoreVersion(DB* storageDb);
 
-    void flushWriteBuffer(DB* storage = nullptr);
-
     template<typename Object>
     const Object& unpackSlice( const Slice& s )
     {
@@ -76,6 +74,10 @@ class rocksdb_storage_provider
 
     void flushStorage();
 
+    virtual void beforeFlushWriteBuffer(){}
+    void flushWriteBuffer(DB* storage = nullptr);
+    virtual void afterFlushWriteBuffer(){}
+
   public:
 
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
@@ -93,6 +95,10 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     /// IDs to be assigned to object.id field.
     uint64_t                         _operationSeqId = 0;
     uint64_t                         _accountHistorySeqId = 0;
+  
+    unsigned int                     _collectedOps = 0;
+
+    void storeSequenceIds();
 
     void loadSeqIdentifiers(DB* storageDb);
 
@@ -119,6 +125,9 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void loadAdditionalData() override;
     ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
 
+    void beforeFlushWriteBuffer() override;
+    void afterFlushWriteBuffer() override;
+
   public:
 
     rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
@@ -138,12 +147,19 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     uint64_t get_accountHistorySeqId() const override;
     void set_accountHistorySeqId( uint64_t value ) override;
 
+    /// Number of data-chunks for ops being stored inside _writeBuffer. To decide when to flush.
+    unsigned int get_collectedOps() const override;
+    void set_collectedOps( unsigned int value ) override;
+
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t ) override;
+
     //stores new value of reindex point in DB and _cached_reindex_point
     void update_reindex_point( uint32_t ) override;
 
     void flushStorage() override;
+
+    void flushWriteBuffer(DB* storage = nullptr) override;
 };
 
 class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider

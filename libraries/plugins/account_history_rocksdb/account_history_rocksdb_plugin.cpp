@@ -361,8 +361,9 @@ private:
     for(const auto& name : impacted)
       buildAccountHistoryRecord( name, obj );
 
-    if(++_collectedOps >= _collectedOpsWriteLimit)
-      flushWriteBuffer();
+    _provider->set_collectedOps( _provider->get_collectedOps() + 1 );
+    if(_provider->get_collectedOps() >= _collectedOpsWriteLimit)
+      _provider->flushWriteBuffer();
 
     ++_totalOps;
   }
@@ -381,20 +382,6 @@ private:
 
     auto s = _writeBuffer.Put(ahSeqIdName, ahId);
     checkStatus(s);
-  }
-
-  void flushWriteBuffer(DB* storage = nullptr)
-  {
-    storeSequenceIds();
-
-    if(storage == nullptr)
-      storage = _storage.get();
-
-    ::rocksdb::WriteOptions wOptions;
-    auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
-    checkStatus(s);
-    _writeBuffer.Clear();
-    _collectedOps = 0;
   }
 
   void on_pre_apply_operation(const operation_notification& opNote);
@@ -455,8 +442,6 @@ private:
   /// Total number of accounts (impacted by ops) excluded from processing because of filtering.
   mutable size_t                   _excludedAccountCount = 0;
 
-  /// Number of data-chunks for ops being stored inside _writeBuffer. To decide when to flush.
-  unsigned int                     _collectedOps = 0;
   /** Limit which value depends on block data source:
     *    - if blocks come from network, there is no need for delaying write, becasue they appear quite rare (limit == 1)
     *    - if reindex process or direct import has been spawned, this massive operation can need reduction of direct
