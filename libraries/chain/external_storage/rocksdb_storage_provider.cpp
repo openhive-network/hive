@@ -168,9 +168,9 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
     storage = getStorage().get();
 
   ::rocksdb::WriteOptions wOptions;
-  auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
+  auto s = storage->Write(wOptions, getWriteBuffer().GetWriteBatch());
   checkStatus(s);
-  _writeBuffer.Clear();
+  getWriteBuffer().Clear();
 
   afterFlushWriteBuffer();
 }
@@ -196,9 +196,9 @@ void rocksdb_storage_provider::saveStoreVersion()
   PrimitiveTypeSlice<uint32_t> majorVSlice(STORE_MAJOR_VERSION);
   PrimitiveTypeSlice<uint32_t> minorVSlice(STORE_MINOR_VERSION);
 
-  auto s = _writeBuffer.Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
+  auto s = getWriteBuffer().Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
   checkStatus(s);
-  s = _writeBuffer.Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
+  s = getWriteBuffer().Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
   checkStatus(s);
 }
 
@@ -222,7 +222,7 @@ void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
 
 void rocksdb_storage_provider::save( const Slice& key, const Slice& value )
 {
-  auto s = _writeBuffer.Put( _columnHandles[CommentsColumns::COMMENT], key, value );
+  auto s = getWriteBuffer().Put( _columnHandles[CommentsColumns::COMMENT], key, value );
   checkStatus(s);
 }
 
@@ -240,7 +240,7 @@ void rocksdb_storage_provider::flush()
 }
 
 rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-                : rocksdb_storage_provider( blockchain_storage_path, storage_path, app )
+                : rocksdb_storage_provider( blockchain_storage_path, storage_path, app ), _writeBuffer( getStorage(), _columnHandles )
 {
   _cached_irreversible_block.store(0);
   _cached_reindex_point = 0;
@@ -252,7 +252,7 @@ void rocksdb_ah_storage_provider::storeSequenceIds()
 
   hive::chain::id_slice_t ahId( get_accountHistorySeqId() );
 
-  auto s = _writeBuffer.Put(ahSeqIdName, ahId);
+  auto s = getWriteBuffer().Put(ahSeqIdName, ahId);
   checkStatus(s);
 }
 
@@ -300,7 +300,7 @@ void rocksdb_ah_storage_provider::update_lib( uint32_t lib )
 {
   //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
   _cached_irreversible_block.store(lib);
-  auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
+  auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
   checkStatus( s );
 }
 
@@ -327,11 +327,16 @@ void rocksdb_ah_storage_provider::load_reindex_point()
   ilog( "RocksDB reindex point loaded with value ${p}.", ( "p", rp ) );
 }
 
+WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
+{
+  return _writeBuffer;
+}
+
 void rocksdb_ah_storage_provider::update_reindex_point( uint32_t rp )
 {
   ilog( "RocksDB reindex point set to ${p}.", ( "p", rp ) );
   _cached_reindex_point = rp;
-  auto s = _writeBuffer.Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
+  auto s = getWriteBuffer().Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
   checkStatus( s );
 }
 
@@ -348,6 +353,11 @@ void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
 std::vector<ColumnFamilyHandle*>& rocksdb_ah_storage_provider::getColumnHandles()
 {
   return _columnHandles;
+}
+
+CachableWriteBatch& rocksdb_ah_storage_provider::getCachableWriteBuffer()
+{
+  return _writeBuffer;
 }
 
 void rocksdb_ah_storage_provider::loadAdditionalData()
@@ -490,6 +500,11 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
   byTxIdColumn.options.comparator = by_Hash_Comparator();
 
   return columnDefs;
+}
+
+WriteBatch& rocksdb_comment_storage_provider::getWriteBuffer()
+{
+  return _writeBuffer;
 }
 
 void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hive/chain/external_storage/types.hpp>
+
 #include<hive/chain/database.hpp>
 
 #include<memory>
@@ -55,6 +57,8 @@ class external_ah_storage_provider
     virtual void flushWriteBuffer(DB* storage = nullptr) = 0;
 
     virtual std::vector<ColumnFamilyHandle*>& getColumnHandles() = 0;
+
+    virtual CachableWriteBatch& getCachableWriteBuffer() = 0;
 };
 
 }}
