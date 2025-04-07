@@ -16,6 +16,7 @@
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_snapshot.hpp>
 #include <hive/chain/external_storage/types.hpp>
+#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 
@@ -189,8 +190,9 @@ public:
     _filter("ah-rb"),
     theApp( app )
     {
+    _provider = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
     _snapshot = std::shared_ptr<rocksdb_snapshot>(
-            new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storage, _storagePath ) );
+            new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storagePath, _provider ) );
 
     collectOptions(options);
 
@@ -245,9 +247,6 @@ public:
       },
       _self
     );
-
-    _cached_irreversible_block.store(0);
-    _cached_reindex_point = 0;
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
@@ -528,7 +527,8 @@ private:
 
   appbase::application& theApp;
 
-  external_storage_snapshot::ptr _snapshot;
+  external_ah_storage_provider::ptr _provider;
+  external_storage_snapshot::ptr    _snapshot;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -663,12 +663,12 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 
   return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
-    *collectedIrreversibleBlock = _cached_irreversible_block;
-    if( *collectedIrreversibleBlock < _cached_reindex_point )
+    *collectedIrreversibleBlock = _provider->get_cached_irreversible_block();
+    if( *collectedIrreversibleBlock < _provider->get_cached_reindex_point() )
     {
       wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
-        ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
-      *collectedIrreversibleBlock = _cached_reindex_point;
+        ( "a", *collectedIrreversibleBlock )( "b", _provider->get_cached_reindex_point() ) );
+      *collectedIrreversibleBlock = _provider->get_cached_reindex_point();
     }
 
     if( *blockRangeEnd < *collectedIrreversibleBlock )
@@ -787,7 +787,7 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   if(number_of_irreversible_ops <= start)
   {
     uint32_t collectedIrreversibleBlock = 0;
-    uint32_t rangeBegin = _cached_irreversible_block;
+    uint32_t rangeBegin = _provider->get_cached_irreversible_block();
     if( BOOST_UNLIKELY( rangeBegin == 0) )
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
@@ -1364,18 +1364,18 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  if( block_num <= _cached_reindex_point )
+  if( block_num <= _provider->get_cached_reindex_point() )
   {
     // during reindex all data is pushed directly to storage, however the LIB reflects
     // state in dgpo; this means there is a small window of inconsistency when data is stored
     // in permanent storage but LIB would indicate it should be in volatile index
     wlog( "Incoming LIB value ${l} within reindex range ${r} - that block is already effectively irreversible",
-      ( "l", block_num )( "r", _cached_reindex_point ) );
+      ( "l", block_num )( "r", _provider->get_cached_reindex_point() ) );
   }
   else
   {
-    FC_ASSERT( block_num > _cached_irreversible_block, "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
-      ( "nb", block_num )( "ob", static_cast< uint32_t >(_cached_irreversible_block) ) );
+    FC_ASSERT( block_num > _provider->get_cached_irreversible_block(), "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
+      ( "nb", block_num )( "ob", static_cast< uint32_t >(_provider->get_cached_irreversible_block()) ) );
   }
 
   /// Here is made assumption, that thread processing block/transaction and sending this notification ALREADY holds write lock.
@@ -1386,14 +1386,14 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
 
   /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
-  auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
+  auto moveRangeBeginI = volatile_idx.upper_bound( _provider->get_cached_irreversible_block() );
 
   FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
 
   auto moveRangeEndI = volatile_idx.upper_bound(block_num);
-  FC_ASSERT( block_num > _cached_reindex_point || moveRangeBeginI == moveRangeEndI,
+  FC_ASSERT( block_num > _provider->get_cached_reindex_point() || moveRangeBeginI == moveRangeEndI,
     "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
-    ( "b", block_num )( "r", _cached_reindex_point ) );
+    ( "b", block_num )( "r", _provider->get_cached_reindex_point() ) );
 
   volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> bool
     {

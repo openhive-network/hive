@@ -130,7 +130,9 @@ class chain_plugin_impl
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
-      snapshot = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( theApp.get_plugin< chain::chain_plugin >(), db, comment_data_dir ) );
+      snapshot = std::shared_ptr<rocksdb_storage_connector>( new rocksdb_storage_connector( 
+          theApp.get_plugin< chain::chain_plugin >(), db, app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir(),
+          comment_data_dir, theApp ) );
 
       db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
         {

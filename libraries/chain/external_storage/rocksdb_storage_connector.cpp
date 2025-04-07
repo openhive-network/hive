@@ -5,8 +5,8 @@
 
 namespace hive { namespace chain {
 
-rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plugin, database& db, const bfs::path& path )
-                          : db( db ), processor( std::make_shared<rocksdb_storage_processor>( plugin, db, path ) )
+rocksdb_storage_connector::rocksdb_storage_connector( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+                          : db( db ), processor( std::make_shared<rocksdb_storage_processor>( plugin, db, blockchain_storage_path, storage_path, app ) )
 {
   try
   {

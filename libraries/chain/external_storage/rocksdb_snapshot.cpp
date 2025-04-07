@@ -16,9 +16,10 @@ namespace bfs = boost::filesystem;
 
 #define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
 
-rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin, chain::database& db, std::unique_ptr<DB>& storage, const bfs::path& storage_path )
-                          : _name( name ), _storage_name( storage_name ), _mainDb( db ), _plugin( plugin ), _storage( storage ), _storagePath( storage_path )
+rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin, chain::database& db, const bfs::path& storage_path, const external_ah_storage_provider::ptr& provider )
+                          : _name( name ), _storage_name( storage_name ), _mainDb( db ), _plugin( plugin ), _storagePath( storage_path ), _provider( provider )
 {
+  FC_ASSERT( _provider );
 }
 
 void rocksdb_snapshot::supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
@@ -47,7 +48,7 @@ void rocksdb_snapshot::supplement_snapshot( const hive::chain::prepare_snapshot_
   std::string meta_data = _name + " plugin data. Current head block: ";
   meta_data += std::to_string(_mainDb.head_block_num());
 
-  status = _backupEngine->CreateNewBackupWithMetadata( _storage.get(), meta_data, true);
+  status = _backupEngine->CreateNewBackupWithMetadata( _provider->getStorage().get(), meta_data, true);
   checkStatus(status);
 
   std::vector<::rocksdb::BackupInfo> backupInfos;
@@ -84,7 +85,7 @@ void rocksdb_snapshot::load_additional_data_from_snapshot( const hive::chain::lo
 
   ilog("Attempting to restore an ${_name} backup from the backup location: `${p}'", (_name)("p", pathString));
 
-  shutdownDb( true );
+  _provider->shutdownDb( true );
 
   ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
 
@@ -95,7 +96,7 @@ void rocksdb_snapshot::load_additional_data_from_snapshot( const hive::chain::lo
 
   ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
 
-  openDb( false );
+  _provider->openDb( false );
 }
 
 }}

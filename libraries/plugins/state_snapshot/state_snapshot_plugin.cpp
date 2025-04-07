@@ -10,7 +10,9 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
+
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 
@@ -261,7 +263,7 @@ namespace {
 class dumping_worker;
 class loading_worker;
 
-typedef PrimitiveTypeComparatorImpl<size_t> size_t_comparator;
+typedef hive::chain::PrimitiveTypeComparatorImpl<size_t> size_t_comparator;
 
 size_t_comparator _size_t_comparator;
 

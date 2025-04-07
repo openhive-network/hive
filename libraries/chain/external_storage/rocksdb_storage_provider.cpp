@@ -5,18 +5,24 @@
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
+#include <appbase/application.hpp>
+
 namespace hive { namespace chain {
 
-rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path )
+rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+                        : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
-  _storagePath = storage_path;
-  _blockchainStoragePath = blockchain_storage_path;
   openDb( false/*cleanDatabase*/ );
 }
 
 rocksdb_storage_provider::~rocksdb_storage_provider()
 {
   shutdownDb();
+}
+
+std::unique_ptr<DB>& rocksdb_storage_provider::getStorage()
+{
+  return _storage;
 }
 
 void rocksdb_storage_provider::openDb( bool cleanDatabase )
@@ -49,7 +55,7 @@ void rocksdb_storage_provider::openDb( bool cleanDatabase )
   {
     ilog("RocksDB opened successfully storage at location: `${p}'.", ("p", strPath));
     verifyStoreVersion(storageDb);
-    _storage.reset(storageDb);
+    getStorage().reset(storageDb);
 
     loadAdditionalData();
   }
@@ -62,12 +68,12 @@ void rocksdb_storage_provider::openDb( bool cleanDatabase )
 
 void rocksdb_storage_provider::shutdownDb( bool removeDB )
 {
-  if(_storage)
+  if(getStorage())
   {
     flushStorage();
     cleanupColumnHandles();
-    _storage->Close();
-    _storage.reset();
+    getStorage()->Close();
+    getStorage().reset();
 
     if( removeDB )
     {
@@ -76,20 +82,6 @@ void rocksdb_storage_provider::shutdownDb( bool removeDB )
       ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
     }
   }
-}
-
-rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareColumnDefinitions( bool addDefaultColumn)
-{
-  ColumnDefinitions columnDefs;
-
-  if(addDefaultColumn)
-    columnDefs.emplace_back("default", ColumnFamilyOptions());
-
-  columnDefs.emplace_back("account_permlink_hash", ColumnFamilyOptions());
-  auto& byTxIdColumn = columnDefs.back();
-  byTxIdColumn.options.comparator = by_Hash_Comparator();
-
-  return columnDefs;
 }
 
 std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path& path)
@@ -151,8 +143,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
 
 void rocksdb_storage_provider::cleanupColumnHandles()
 {
-  if(_storage)
-    cleanupColumnHandles(_storage.get());
+  if(getStorage())
+    cleanupColumnHandles(getStorage().get());
 }
 
 void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
@@ -171,7 +163,7 @@ void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
 void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 {
   if(storage == nullptr)
-    storage = _storage.get();
+    storage = getStorage().get();
 
   ::rocksdb::WriteOptions wOptions;
   auto s = storage->Write(wOptions, _writeBuffer.GetWriteBatch());
@@ -181,7 +173,7 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 
 void rocksdb_storage_provider::flushStorage()
 {
-  if(_storage == nullptr)
+  if(getStorage() == nullptr)
     return;
 
   // lib (last irreversible block) has not been saved so far
@@ -190,7 +182,7 @@ void rocksdb_storage_provider::flushStorage()
   ::rocksdb::FlushOptions fOptions;
   for(const auto& cf : _columnHandles)
   {
-    auto s = _storage->Flush(fOptions, cf);
+    auto s = getStorage()->Flush(fOptions, cf);
     checkStatus(s);
   }
 }
@@ -224,11 +216,6 @@ void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
   FC_ASSERT(minor == STORE_MINOR_VERSION, "Store minor version mismatch");
 }
 
-std::unique_ptr<DB>& rocksdb_storage_provider::get_storage()
-{
-  return _storage;
-}
-
 void rocksdb_storage_provider::save( const Slice& key, const Slice& value )
 {
   auto s = _writeBuffer.Put( _columnHandles[CommentsColumns::COMMENT], key, value );
@@ -239,13 +226,20 @@ bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
 {
   ReadOptions rOptions;
 
-  ::rocksdb::Status s = _storage->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
+  ::rocksdb::Status s = getStorage()->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
   return s.ok();
 }
 
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();
+}
+
+rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+                : rocksdb_storage_provider( blockchain_storage_path, storage_path, app )
+{
+  _cached_irreversible_block.store(0);
+  _cached_reindex_point = 0;
 }
 
 void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
@@ -268,7 +262,7 @@ void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
 void rocksdb_ah_storage_provider::load_lib()
 {
   std::string data;
-  auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
+  auto s = getStorage()->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
 
   if(s.code() == ::rocksdb::Status::kNotFound)
   {
@@ -299,7 +293,7 @@ void rocksdb_ah_storage_provider::update_lib( uint32_t lib )
 void rocksdb_ah_storage_provider::load_reindex_point()
 {
   std::string data;
-  auto s = _storage->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
+  auto s = getStorage()->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
 
   if( s.code() == ::rocksdb::Status::kNotFound )
   {
@@ -329,7 +323,7 @@ void rocksdb_ah_storage_provider::update_reindex_point( uint32_t rp )
 
 void rocksdb_ah_storage_provider::loadAdditionalData()
 {
-  loadSeqIdentifiers(_storage.get());
+  loadSeqIdentifiers(getStorage().get());
   // I do not like using exceptions for control paths, but column definitions are set multiple times
   // opening the db, so that is not a good place to write the initial lib.
   try
@@ -382,6 +376,66 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
   byTxIdColumn.options.comparator = by_txId_Comparator();
 
   return columnDefs;
+}
+
+std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()
+{
+  return rocksdb_storage_provider::getStorage();
+}
+
+void rocksdb_ah_storage_provider::openDb( bool cleanDatabase )
+{
+  rocksdb_storage_provider::openDb( cleanDatabase );
+}
+
+void rocksdb_ah_storage_provider::shutdownDb( bool removeDB )
+{
+  rocksdb_storage_provider::shutdownDb( removeDB );
+}
+
+const std::atomic_uint& rocksdb_ah_storage_provider::get_cached_irreversible_block() const
+{
+  return _cached_irreversible_block;
+}
+
+unsigned int rocksdb_ah_storage_provider::get_cached_reindex_point() const
+{
+  return _cached_reindex_point;
+}
+
+rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+                                  : rocksdb_ah_storage_provider( blockchain_storage_path, storage_path, app )
+{
+
+}
+
+rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::prepareColumnDefinitions( bool addDefaultColumn)
+{
+  ColumnDefinitions columnDefs;
+
+  if(addDefaultColumn)
+    columnDefs.emplace_back("default", ColumnFamilyOptions());
+
+  columnDefs.emplace_back("account_permlink_hash", ColumnFamilyOptions());
+  auto& byTxIdColumn = columnDefs.back();
+  byTxIdColumn.options.comparator = by_Hash_Comparator();
+
+  return columnDefs;
+}
+
+void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
+{
+  rocksdb_storage_provider::save( key, value );
+}
+
+bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
+{
+  return rocksdb_storage_provider::read( key, value );
+}
+
+void rocksdb_comment_storage_provider::flush()
+{
+  rocksdb_storage_provider::flush();
 }
 
 }}

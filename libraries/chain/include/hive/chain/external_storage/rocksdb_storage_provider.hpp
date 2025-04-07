@@ -27,7 +27,7 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
-class rocksdb_storage_provider: public external_storage_provider
+class rocksdb_storage_provider
 {
   public:
 
@@ -35,15 +35,26 @@ class rocksdb_storage_provider: public external_storage_provider
 
   private:
 
-    bfs::path _storagePath;
-    bfs::path _blockchainStoragePath;
+    bfs::path             _storagePath;
+    bfs::path             _blockchainStoragePath;
 
-    void openDb( bool cleanDatabase );
+    appbase::application& theApp;
 
     /// std::tuple<A, B>
     /// A - returns true if database will need data import.
     /// B - returns false if problems with opening db appeared.
     std::tuple<bool, bool> createDbSchema(const bfs::path& path);
+
+    virtual void loadAdditionalData() = 0;
+    virtual ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) = 0;
+
+    void cleanupColumnHandles();
+    void cleanupColumnHandles(::rocksdb::DB* db);
+
+    void flushStorage();
+
+    void saveStoreVersion();
+    void verifyStoreVersion(DB* storageDb);
 
     void flushWriteBuffer(DB* storage = nullptr);
 
@@ -60,31 +71,22 @@ class rocksdb_storage_provider: public external_storage_provider
     std::vector<ColumnFamilyHandle*>  _columnHandles;
     WriteBatch                        _writeBuffer;
 
-    virtual void loadAdditionalData(){}
-    virtual ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn);
+    std::unique_ptr<DB>& getStorage();
+
+    void openDb( bool cleanDatabase );
+    void shutdownDb( bool removeDB = false );
 
   public:
 
-    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path );
+    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     virtual ~rocksdb_storage_provider();
 
-    void cleanupColumnHandles();
-    void cleanupColumnHandles(::rocksdb::DB* db);
-
-    void shutdownDb( bool removeDB = false );
-    void flushStorage();
-
-    void saveStoreVersion();
-    void verifyStoreVersion(DB* storageDb);
-
-    std::unique_ptr<DB>& get_storage() override;
-
-    void save( const Slice& key, const Slice& value ) override;
-    bool read( const Slice& key, PinnableSlice& value ) override;
-    void flush() override;
+    void save( const Slice& key, const Slice& value );
+    bool read( const Slice& key, PinnableSlice& value );
+    void flush();
 };
 
-class rocksdb_ah_storage_provider: public rocksdb_storage_provider
+class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public external_ah_storage_provider
 {
   private:
 
@@ -123,7 +125,35 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider
 
   public:
 
+    rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_ah_storage_provider() override{}
+
+    std::unique_ptr<DB>& getStorage() override;
+
+    void openDb( bool cleanDatabase ) override;
+    void shutdownDb( bool removeDB = false ) override;
+
+    const std::atomic_uint& get_cached_irreversible_block() const override;
+    unsigned int get_cached_reindex_point() const override;
+};
+
+class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider
+{
+  private:
+
+    void loadAdditionalData() override{}
+    ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
+
+  public:
+
+    using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
+
+    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    ~rocksdb_comment_storage_provider() override{}
+
+    void save( const Slice& key, const Slice& value ) override;
+    bool read( const Slice& key, PinnableSlice& value ) override;
+    void flush() override;
 };
 
 }}

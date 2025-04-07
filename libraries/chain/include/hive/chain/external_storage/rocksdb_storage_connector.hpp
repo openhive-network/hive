@@ -26,7 +26,7 @@ class rocksdb_storage_connector: public external_storage_snapshot
 
   public:
 
-    rocksdb_storage_connector( const abstract_plugin& plugin, database& db, const bfs::path& path );
+    rocksdb_storage_connector( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_storage_connector();
 
     void supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note ) override;
