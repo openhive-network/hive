@@ -98,12 +98,8 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     //loads last irreversible block from DB to _cached_irreversible_block
     void load_lib();
-    //stores new value of last irreversible block in DB and _cached_irreversible_block
-    void update_lib( uint32_t );
     //loads reindex point from DB to _cached_reindex_point
     void load_reindex_point();
-    //stores new value of reindex point in DB and _cached_reindex_point
-    void update_reindex_point( uint32_t );
 
     /// <summary>
     /// Block being irreversible atm.
@@ -138,6 +134,14 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     uint64_t get_operationSeqId() const override;
     void set_operationSeqId( uint64_t value ) override;
+
+    uint64_t get_accountHistorySeqId() const override;
+    void set_accountHistorySeqId( uint64_t value ) override;
+
+    //stores new value of last irreversible block in DB and _cached_irreversible_block
+    void update_lib( uint32_t ) override;
+    //stores new value of reindex point in DB and _cached_reindex_point
+    void update_reindex_point( uint32_t ) override;
 };
 
 class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider

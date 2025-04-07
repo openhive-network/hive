@@ -40,6 +40,12 @@ class external_ah_storage_provider
 
     virtual uint64_t get_operationSeqId() const = 0;
     virtual void set_operationSeqId( uint64_t value ) = 0;
+
+    virtual uint64_t get_accountHistorySeqId() const = 0;
+    virtual void set_accountHistorySeqId( uint64_t value ) = 0;
+
+    virtual void update_lib( uint32_t ) = 0;
+    virtual void update_reindex_point( uint32_t ) = 0;
 };
 
 }}

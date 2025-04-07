@@ -180,7 +180,7 @@ private:
 class account_history_rocksdb_plugin::impl final
 {
 public:
-  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app) :
+  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app, bool destroyOnStartup) :
     _self(self),
     _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
@@ -247,6 +247,8 @@ public:
       },
       _self
     );
+
+    _provider->openDb( destroyOnStartup );
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
@@ -391,7 +393,7 @@ private:
   {
     Slice ahSeqIdName("AH_SEQ_ID");
 
-    id_slice_t ahId(_accountHistorySeqId);
+    hive::chain::id_slice_t ahId( _provider->get_accountHistorySeqId() );
 
     auto s = _writeBuffer.Put(ahSeqIdName, ahId);
     checkStatus(s);
@@ -1107,7 +1109,8 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
   else
   {
     /// New entry must be created - there is first operation recorded.
-    ahInfo.id = _accountHistorySeqId++;
+    ahInfo.id = _provider->get_accountHistorySeqId();
+    _provider->set_accountHistorySeqId( _provider->get_accountHistorySeqId() + 1 );
     ahInfo.newestEntryId = ahInfo.oldestEntryId = 0;
     ahInfo.oldestEntryTimestamp = obj.timestamp;
 
@@ -1212,7 +1215,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  openDb( false );
+  _provider->openDb( false );
 
   ilog("Setting write limit to massive level");
 
@@ -1236,8 +1239,8 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
   uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
-  update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
-  update_reindex_point( note.last_block_number );
+  _provider->update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
+  _provider->update_reindex_point( note.last_block_number );
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
@@ -1419,7 +1422,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     }
   );
 
-  update_lib(block_num);
+  _provider->update_lib(block_num);
   //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
@@ -1579,9 +1582,7 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
     dbPath = actualPath;
   }
 
-  _my = std::make_unique<impl>( *this, options, dbPath, get_app() );
-
-  _my->openDb(_destroyOnStartup);
+  _my = std::make_unique<impl>( *this, options, dbPath, get_app(), _destroyOnStartup );
 }
 
 void account_history_rocksdb_plugin::plugin_startup()

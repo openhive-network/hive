@@ -413,6 +413,16 @@ void rocksdb_ah_storage_provider::set_operationSeqId( uint64_t value )
   _operationSeqId = value;
 }
 
+uint64_t rocksdb_ah_storage_provider::get_accountHistorySeqId() const
+{
+  return _accountHistorySeqId;
+}
+
+void rocksdb_ah_storage_provider::set_accountHistorySeqId( uint64_t value )
+{
+  _accountHistorySeqId = value;
+}
+
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
                                   : rocksdb_ah_storage_provider( blockchain_storage_path, storage_path, app )
 {
