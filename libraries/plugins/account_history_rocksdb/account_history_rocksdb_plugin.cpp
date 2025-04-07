@@ -397,22 +397,6 @@ private:
     _collectedOps = 0;
   }
 
-  void flushStorage()
-  {
-    if(_storage == nullptr)
-      return;
-
-    // lib (last irreversible block) has not been saved so far
-    flushWriteBuffer();
-
-    ::rocksdb::FlushOptions fOptions;
-    for(const auto& cf : _columnHandles)
-    {
-      auto s = _storage->Flush(fOptions, cf);
-      checkStatus(s);
-    }
-  }
-
   void on_pre_apply_operation(const operation_notification& opNote);
 
   void on_irreversible_block( uint32_t block_num );
@@ -1224,7 +1208,7 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   ilog("Reindex completed up to block: ${b}. Setting back write limit to non-massive level.",
     ("b", note.last_block_number));
 
-  flushStorage();
+  _provider->flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
   uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();

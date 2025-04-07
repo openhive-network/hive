@@ -46,6 +46,8 @@ class external_ah_storage_provider
 
     virtual void update_lib( uint32_t ) = 0;
     virtual void update_reindex_point( uint32_t ) = 0;
+
+    virtual void flushStorage() = 0;
 };
 
 }}

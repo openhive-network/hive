@@ -51,8 +51,6 @@ class rocksdb_storage_provider
     void cleanupColumnHandles();
     void cleanupColumnHandles(::rocksdb::DB* db);
 
-    void flushStorage();
-
     void saveStoreVersion();
     void verifyStoreVersion(DB* storageDb);
 
@@ -75,6 +73,8 @@ class rocksdb_storage_provider
 
     void openDb( bool cleanDatabase );
     void shutdownDb( bool removeDB = false );
+
+    void flushStorage();
 
   public:
 
@@ -142,6 +142,8 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void update_lib( uint32_t ) override;
     //stores new value of reindex point in DB and _cached_reindex_point
     void update_reindex_point( uint32_t ) override;
+
+    void flushStorage() override;
 };
 
 class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider

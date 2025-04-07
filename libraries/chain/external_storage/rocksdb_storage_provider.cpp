@@ -321,6 +321,11 @@ void rocksdb_ah_storage_provider::update_reindex_point( uint32_t rp )
   checkStatus( s );
 }
 
+void rocksdb_ah_storage_provider::flushStorage()
+{
+  rocksdb_storage_provider::flushStorage();
+}
+
 void rocksdb_ah_storage_provider::loadAdditionalData()
 {
   loadSeqIdentifiers(getStorage().get());
