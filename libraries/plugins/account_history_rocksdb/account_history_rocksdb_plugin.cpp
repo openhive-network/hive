@@ -325,7 +325,8 @@ private:
 
   uint64_t build_next_operation_id(const rocksdb_operation_object& obj, const hive::protocol::operation& processed_op)
   {
-    auto number_in_block = _operationSeqId++;
+    auto number_in_block = _provider->get_operationSeqId();
+    _provider->set_operationSeqId( _provider->get_operationSeqId() + 1 );
 
     //msb.....................lsb
     // || block | seq | type ||
@@ -1531,7 +1532,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
     }
   }
 
-  _operationSeqId = 0;
+  _provider->set_operationSeqId(0);
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()

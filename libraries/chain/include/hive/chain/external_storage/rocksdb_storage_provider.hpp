@@ -135,6 +135,9 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     const std::atomic_uint& get_cached_irreversible_block() const override;
     unsigned int get_cached_reindex_point() const override;
+
+    uint64_t get_operationSeqId() const override;
+    void set_operationSeqId( uint64_t value ) override;
 };
 
 class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider

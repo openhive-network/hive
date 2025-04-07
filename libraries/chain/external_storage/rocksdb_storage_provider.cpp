@@ -403,6 +403,16 @@ unsigned int rocksdb_ah_storage_provider::get_cached_reindex_point() const
   return _cached_reindex_point;
 }
 
+uint64_t rocksdb_ah_storage_provider::get_operationSeqId() const
+{
+  return _operationSeqId;
+}
+
+void rocksdb_ah_storage_provider::set_operationSeqId( uint64_t value )
+{
+  _operationSeqId = value;
+}
+
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
                                   : rocksdb_ah_storage_provider( blockchain_storage_path, storage_path, app )
 {

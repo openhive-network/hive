@@ -37,6 +37,9 @@ class external_ah_storage_provider
 
     virtual const std::atomic_uint& get_cached_irreversible_block() const = 0;
     virtual unsigned int get_cached_reindex_point() const = 0;
+
+    virtual uint64_t get_operationSeqId() const = 0;
+    virtual void set_operationSeqId( uint64_t value ) = 0;
 };
 
 }}
