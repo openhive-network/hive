@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 
 #include <chainbase/state_snapshot_support.hpp>
+#include <chainbase/chainbase.hpp>
 
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
@@ -14,6 +15,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 
 namespace hive
 {
@@ -96,7 +98,8 @@ namespace hive
         const plugin_external_data_index &ext_data_idx;
       };
 
-      manifest_data load_snapshot_manifest(const bfs::path &actualStoragePath, std::shared_ptr<hive::chain::full_block_type> &lib, hive::chain::database &db);
+      using segment_manager_t = decltype(std::declval<chainbase::database>().get_segment_manager());
+      manifest_data load_snapshot_manifest(const bfs::path &actualStoragePath, std::shared_ptr<hive::chain::full_block_type> &lib, segment_manager_t segment_manager);
 
       class index_dump_writer;
       void store_snapshot_manifest(const bfs::path &actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>> &builtWriters, const snapshot_dump_supplement_helper &dumpHelper, const hive::chain::database &db);

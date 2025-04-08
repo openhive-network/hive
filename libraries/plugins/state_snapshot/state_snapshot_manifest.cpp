@@ -21,7 +21,7 @@ namespace hive
     namespace state_snapshot
     {
 
-      manifest_data load_snapshot_manifest(const bfs::path &actualStoragePath, std::shared_ptr<hive::chain::full_block_type> &lib, hive::chain::database &db)
+      manifest_data load_snapshot_manifest(const bfs::path &actualStoragePath, std::shared_ptr<hive::chain::full_block_type> &lib, segment_manager_t segment_manager)
       {
         bfs::path manifestDbPath(actualStoragePath);
         manifestDbPath /= "snapshot-manifest";
@@ -160,7 +160,7 @@ namespace hive
           FC_ASSERT(keyName == "LAST_IRREVERSIBLE_BLOCK", "Broken snapshot - no entry for LAST_IRREVERSIBLE_BLOCK");
 
           buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
-          hive::chain::irreversible_block_data_type ibd{chainbase::allocator<hive::chain::irreversible_block_data_type>(db.get_segment_manager())};
+          hive::chain::irreversible_block_data_type ibd{chainbase::allocator<hive::chain::irreversible_block_data_type>(segment_manager)};
           chainbase::serialization::unpack_from_buffer(ibd, buffer);
           buffer.clear();
           // Store block num for further use.
@@ -538,13 +538,13 @@ namespace hive
       {
         fc::variant_object_builder builder;
         {
-          std::vector<std::string> index_manifest_jsons;
+          std::vector<fc::variant> index_manifest_variants;
           const auto &index_manifest = std::get<0>(manifest);
-          index_manifest_jsons.reserve(index_manifest.size());
+          index_manifest_variants.reserve(index_manifest.size());
           for (const auto &el : std::get<0>(manifest))
-            index_manifest_jsons.push_back(fc::json::to_pretty_string(el));
+            index_manifest_variants.push_back(fc::variant(el));
 
-          builder("index_manifests", index_manifest_jsons);
+          builder("index_manifests", index_manifest_variants);
         }
         {
           const auto external_data_index = std::get<1>(manifest);

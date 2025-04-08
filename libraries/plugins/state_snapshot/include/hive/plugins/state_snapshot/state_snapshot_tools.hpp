@@ -15,6 +15,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_manifest.hpp>
 
+#include <fstream>
+
 namespace bfs = boost::filesystem;
 
 namespace hive
@@ -192,7 +194,7 @@ namespace hive
       public:
         index_dump_writer(const hive::chain::database &mainDb, const chainbase::abstract_index &index, const bfs::path &outputRootPath,
                           bool allow_concurrency, std::exception_ptr &exception, std::atomic_bool &is_error) : snapshot_processor_data<chainbase::snapshot_writer>(outputRootPath), _mainDb(mainDb), _index(index), _firstId(0), _lastId(0),
-                                                                                                                  _nextId(0), _allow_concurrency(allow_concurrency), _exception(exception), _is_error(is_error) {}
+                                                                                                               _nextId(0), _allow_concurrency(allow_concurrency), _exception(exception), _is_error(is_error) {}
 
         index_dump_writer(const index_dump_writer &) = delete;
         index_dump_writer &operator=(const index_dump_writer &) = delete;
@@ -206,7 +208,7 @@ namespace hive
         const hive::chain::database &getMainDb() const { return _mainDb; }
 
         void store_index_manifest(index_manifest_info *manifest) const;
-        void safe_spawn_snapshot_dump(const chainbase::abstract_index* idx);
+        void safe_spawn_snapshot_dump(const chainbase::abstract_index *idx);
 
       private:
         const hive::chain::database &_mainDb;
@@ -225,7 +227,7 @@ namespace hive
       public:
         index_dump_reader(const snapshot_manifest &snapshotManifest, const bfs::path &rootPath,
                           std::exception_ptr &exception, std::atomic_bool &is_error) : snapshot_processor_data<chainbase::snapshot_reader>(rootPath),
-                                                                                                _snapshotManifest(snapshotManifest), currentWorker(nullptr), _exception(exception), _is_error(is_error) {}
+                                                                                       _snapshotManifest(snapshotManifest), currentWorker(nullptr), _exception(exception), _is_error(is_error) {}
 
         index_dump_reader(const index_dump_reader &) = delete;
         index_dump_reader &operator=(const index_dump_reader &) = delete;
@@ -236,7 +238,7 @@ namespace hive
         virtual void start(const workers &workers) override;
 
         size_t getCurrentlyProcessedId() const;
-        void safe_spawn_snapshot_load(chainbase::abstract_index* idx);
+        void safe_spawn_snapshot_load(chainbase::abstract_index *idx);
 
       private:
         const snapshot_manifest &_snapshotManifest;
@@ -338,6 +340,53 @@ namespace hive
         std::unique_ptr<::rocksdb::SstFileReader> _reader;
         std::unique_ptr<::rocksdb::Iterator> _entryIt;
         const std::atomic_bool &_is_error;
+      };
+
+      class dumping_to_file_worker;
+
+      class index_dump_to_file_writer : public chainbase::snapshot_writer
+      {
+      public:
+        index_dump_to_file_writer(const index_dump_to_file_writer &) = delete;
+        index_dump_to_file_writer &operator=(const index_dump_to_file_writer &) = delete;
+        virtual ~index_dump_to_file_writer() = default;
+
+        index_dump_to_file_writer(const chainbase::database &_db, const chainbase::abstract_index &_index, const fc::path &_output_dir, bool _allow_concurrency)
+            : database(_db), index(_index), output_dir(_output_dir), allow_concurrency(_allow_concurrency) { conversion_type = chainbase::snapshot_writer::conversion_t::convert_to_json; }
+
+        virtual workers prepare(const std::string &indexDescription, size_t firstId, size_t lastId, size_t indexSize, size_t indexNextId, snapshot_converter_t converter) override;
+        virtual void start(const workers &workers) override;
+
+        snapshot_converter_t get_snapshot_converter() const { return snapshot_converter; }
+
+      private:
+        std::vector<std::unique_ptr<dumping_to_file_worker>> snapshot_writer_workers;
+        const chainbase::database &database;
+        const chainbase::abstract_index &index;
+        const fc::path output_dir;
+        snapshot_converter_t snapshot_converter;
+        std::string index_description;
+        size_t first_id;
+        size_t last_id;
+        size_t next_id;
+        bool allow_concurrency;
+      };
+
+      class dumping_to_file_worker : public chainbase::snapshot_writer::worker
+      {
+      public:
+        dumping_to_file_worker(const fc::path &_output_file, index_dump_to_file_writer &_writer, const size_t _start_id, const size_t _end_id);
+        void perform_dump();
+        bool is_write_finished() const { return write_finished; }
+
+      private:
+        virtual void flush_converted_data(const serialized_object_cache &cache) override;
+        virtual std::string prettifyObject(const fc::variant &object, const std::vector<char> &buffer) const override { return ""; }
+
+        index_dump_to_file_writer &controller;
+        fc::path output_file_path;
+        std::fstream output_file;
+        bool write_finished = false;
       };
 
     }

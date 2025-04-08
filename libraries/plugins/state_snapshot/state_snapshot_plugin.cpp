@@ -22,7 +22,7 @@
 #include <boost/thread/thread.hpp>
 
 #include <string>
-
+#include <thread>
 namespace bpo = boost::program_options;
 
 
@@ -245,7 +245,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
 
   std::shared_ptr<hive::chain::full_block_type> lib;
-  auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib, _mainDb);
+  auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib, _mainDb.get_segment_manager());
 
   {
     const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);

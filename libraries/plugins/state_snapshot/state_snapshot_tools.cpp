@@ -454,6 +454,138 @@ namespace hive
         }
       }
 
+      dumping_to_file_worker::dumping_to_file_worker(const fc::path &_output_file, index_dump_to_file_writer &_writer, const size_t _start_id, const size_t _end_id)
+          : chainbase::snapshot_writer::worker(_writer, _start_id, _end_id), controller(_writer), output_file_path(_output_file)
+      {
+        output_file.open(output_file_path.generic_string(), std::ios::out | std::ios::trunc);
+        FC_ASSERT(output_file.is_open(), "An error occured during creating files for dta from shared memory file.");
+      }
+
+      void dumping_to_file_worker::flush_converted_data(const serialized_object_cache &cache)
+      {
+        FC_ASSERT(output_file.is_open());
+
+        for (const auto &kv : cache)
+        {
+          const auto &v = kv.second;
+          std::string s(v.data(), v.size());
+          output_file << s << "\n";
+        }
+      }
+
+      void dumping_to_file_worker::perform_dump()
+      {
+        dlog("Performing a dump into file ${p}", ("p", output_file_path));
+        auto converter = controller.get_snapshot_converter();
+        converter(this);
+
+        if (output_file.is_open())
+          output_file.close();
+
+        write_finished = true;
+        dlog("Finished dump into file ${p}", ("p", output_file_path));
+        output_file.close();
+      }
+
+      chainbase::snapshot_writer::workers index_dump_to_file_writer::prepare(const std::string &indexDescription, size_t firstId, size_t lastId, size_t indexSize, size_t indexNextId, snapshot_converter_t converter)
+      {
+        dlog("Preparing snapshot writer to store index holding `${d}' items. Index size: ${s}. Index next_id: ${indexNextId}. Index id range: <${f}, ${l}>.",
+             ("d", indexDescription)("s", indexSize)(indexNextId)("f", firstId)("l", lastId));
+
+        snapshot_converter = converter;
+        index_description = indexDescription;
+        first_id = firstId;
+        last_id = lastId;
+        next_id = indexNextId;
+
+        if (indexSize == 0)
+        {
+          dlog("${index_description} has size 0, no workers created.", (index_description));
+          return chainbase::snapshot_writer::workers();
+        }
+
+        chainbase::snapshot_writer::workers workers_for_index;
+        size_t worker_count = indexSize / ITEMS_PER_WORKER + 1;
+        size_t left = first_id;
+        size_t right = 0;
+
+        if (indexSize <= ITEMS_PER_WORKER)
+          right = last_id;
+        else
+          right = std::min(first_id + ITEMS_PER_WORKER, last_id);
+
+        std::string file_name = index_description;
+        boost::replace_all(file_name, " ", "_");
+        boost::replace_all(file_name, ":", "_");
+        boost::replace_all(file_name, "<", "_");
+        boost::replace_all(file_name, ">", "_");
+
+        fc::path file_path(output_dir);
+        file_path /= file_name;
+        dlog("Preparing ${n} workers to store index holding `${d}' items)", ("d", index_description)("n", worker_count));
+        fc::create_directories(file_path);
+
+        for (size_t i = 0; i < worker_count; ++i)
+        {
+          std::string file_name = std::to_string(left) + '_' + std::to_string(right) + ".log";
+          fc::path actual_output_file(file_path);
+          actual_output_file /= file_name;
+          dlog("Creating file ${actual_output_file}", (actual_output_file));
+          snapshot_writer_workers.emplace_back(std::make_unique<dumping_to_file_worker>(actual_output_file, *this, left, right));
+          workers_for_index.emplace_back(snapshot_writer_workers.back().get());
+          left = right + 1;
+          if (i == worker_count - 2)
+            right = last_id + 1;
+          else
+            right += ITEMS_PER_WORKER;
+        }
+
+        return workers_for_index;
+      }
+
+      void index_dump_to_file_writer::start(const chainbase::snapshot_writer::workers &workers)
+      {
+        FC_ASSERT(snapshot_writer_workers.size() == workers.size(),
+                  "snapshot_writer_workers: ${snapshot_writer_workers} - workers: ${workers}",
+                  ("snapshot_writer_workers", snapshot_writer_workers.size())("workers", workers.size()));
+
+        const size_t num_threads = allow_concurrency ? std::min(workers.size(), static_cast<size_t>(16)) : 1;
+        if (num_threads > 1)
+        {
+          boost::asio::io_service io_service;
+          boost::thread_group threadpool;
+          std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(io_service);
+
+          for (unsigned int i = 0; i < num_threads; ++i)
+            threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+
+          for (size_t i = 0; i < snapshot_writer_workers.size(); ++i)
+          {
+            dumping_to_file_worker *w = snapshot_writer_workers[i].get();
+            FC_ASSERT(w == workers[i]);
+
+            io_service.post(boost::bind(&dumping_to_file_worker::perform_dump, w));
+          }
+
+          dlog("Waiting for dumping-workers jobs completion");
+
+          /// Run the horses...
+          work.reset();
+
+          threadpool.join_all();
+        }
+        else
+        {
+          for (size_t i = 0; i < snapshot_writer_workers.size(); ++i)
+          {
+            dumping_to_file_worker *w = snapshot_writer_workers[i].get();
+            FC_ASSERT(w == workers[i]);
+
+            w->perform_dump();
+          }
+        }
+      }
+
     }
   }
 } // hive::plugins::state_snapshot
