@@ -20,7 +20,7 @@ rocksdb_storage_processor::rocksdb_storage_processor( const abstract_plugin& plu
   _rcs_provider->init();
 
   provider = _rcs_provider;
-  snapshot = std::shared_ptr<rocksdb_snapshot>( new rocksdb_snapshot( "Comments RocksDB", "comments_rocksdb_data", plugin, db, storage_path, _rcs_provider ) );
+  snapshot = std::shared_ptr<rocksdb_snapshot>( new rocksdb_snapshot( "Comments RocksDB", "comments_rocksdb_data", plugin, db, storage_path, provider ) );
 }
 
 void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id_type& comment_id, const account_id_type& account_id, const std::string& permlink )

@@ -16,7 +16,19 @@ using ::rocksdb::Slice;
 using ::rocksdb::PinnableSlice;
 using ::rocksdb::ColumnFamilyHandle;
 
-class external_comment_storage_provider
+class external_snapshot_storage_provider
+{
+  public:
+
+    using ptr = std::shared_ptr<external_snapshot_storage_provider>;
+
+    virtual std::unique_ptr<DB>& getStorage() = 0;
+
+    virtual void openDb( bool cleanDatabase ) = 0;
+    virtual void shutdownDb( bool removeDB = false ) = 0;
+};
+
+class external_comment_storage_provider: public external_snapshot_storage_provider
 {
   public:
 
@@ -27,16 +39,11 @@ class external_comment_storage_provider
     virtual void flush() = 0;
 };
 
-class external_ah_storage_provider
+class external_ah_storage_provider: public external_snapshot_storage_provider
 {
   public:
 
     using ptr = std::shared_ptr<external_ah_storage_provider>;
-
-    virtual std::unique_ptr<DB>& getStorage() = 0;
-
-    virtual void openDb( bool cleanDatabase ) = 0;
-    virtual void shutdownDb( bool removeDB = false ) = 0;
 
     virtual const std::atomic_uint& get_cached_irreversible_block() const = 0;
     virtual unsigned int get_cached_reindex_point() const = 0;

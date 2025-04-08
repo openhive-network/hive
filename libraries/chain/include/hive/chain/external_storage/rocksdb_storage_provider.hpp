@@ -173,7 +173,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     CachableWriteBatch& getCachableWriteBuffer() override;
 };
 
-class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, public external_comment_storage_provider
+class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public external_comment_storage_provider
 {
   private:
 
@@ -190,6 +190,11 @@ class rocksdb_comment_storage_provider: public rocksdb_ah_storage_provider, publ
 
     rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_comment_storage_provider() override{}
+
+    std::unique_ptr<DB>& getStorage() override;
+
+    void openDb( bool cleanDatabase ) override;
+    void shutdownDb( bool removeDB = false ) override;
 
     void save( const Slice& key, const Slice& value ) override;
     bool read( const Slice& key, PinnableSlice& value ) override;
