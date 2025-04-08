@@ -112,76 +112,79 @@ public:
     _filter("ah-rb"),
     theApp( app )
     {
-    _provider = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
-    _snapshot = std::shared_ptr<rocksdb_snapshot>(
-            new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storagePath, _provider ) );
+      auto _rasp = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
+      _rasp->init();
 
-    collectOptions(options);
+      _provider = _rasp;
+      _snapshot = std::shared_ptr<rocksdb_snapshot>(
+              new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storagePath, _provider ) );
 
-    _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
-      {
-        on_pre_reindex( note );
-      }, _self, 0);
+      collectOptions(options);
 
-    _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
-      {
-        on_post_reindex( note );
-      }, _self, 0);
+      _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
+        {
+          on_pre_reindex( note );
+        }, _self, 0);
 
-    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
-      {
-        _snapshot->supplement_snapshot(note);
-      }, _self, 0);
+      _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
+        {
+          on_post_reindex( note );
+        }, _self, 0);
 
-    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
-      {
-        _snapshot->load_additional_data_from_snapshot(note);
-      }, _self, 0);
+      _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
+        {
+          _snapshot->supplement_snapshot(note);
+        }, _self, 0);
 
-    _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
-      [&]( const operation_notification& note )
-      {
-        on_pre_apply_operation(note);
-      },
-      _self
-    );
+      _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
+        {
+          _snapshot->load_additional_data_from_snapshot(note);
+        }, _self, 0);
 
-    _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
-      [&]( uint32_t block_num )
-      {
-        on_irreversible_block( block_num );
-      },
-      _self
-    );
+      _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
+        [&]( const operation_notification& note )
+        {
+          on_pre_apply_operation(note);
+        },
+        _self
+      );
 
-    _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_post_apply_block(bn);
-      },
-      _self
-    );
+      _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
+        [&]( uint32_t block_num )
+        {
+          on_irreversible_block( block_num );
+        },
+        _self
+      );
 
-    _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_post_apply_block(bn);
-      },
-      _self
-    );
+      _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_post_apply_block(bn);
+        },
+        _self
+      );
 
-    _provider->openDb( destroyOnStartup );
+      _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_post_apply_block(bn);
+        },
+        _self
+      );
 
-    HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
+      _provider->openDb( destroyOnStartup );
+
+      HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
 
   ~impl()
   {
-
     chain::util::disconnect_signal(_on_pre_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
+
     _provider->shutdownDb();
   }
 

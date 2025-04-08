@@ -12,12 +12,16 @@ namespace hive { namespace chain {
 rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
                         : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
-  openDb( false/*cleanDatabase*/ );
 }
 
 rocksdb_storage_provider::~rocksdb_storage_provider()
 {
   shutdownDb();
+}
+
+void rocksdb_storage_provider::init()
+{
+  openDb( false/*cleanDatabase*/ );
 }
 
 std::unique_ptr<DB>& rocksdb_storage_provider::getStorage()

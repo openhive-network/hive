@@ -84,6 +84,8 @@ class rocksdb_storage_provider
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     virtual ~rocksdb_storage_provider();
 
+    void init();
+
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );
     void flush();
