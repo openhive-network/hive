@@ -325,7 +325,7 @@ collected_keyauth_collection_t lock_account( const std::string& account_name )
 
     for (const auto& key_type : key_types) 
     {
-        collected_keyauth_t default_item {account_name, key_type, 0, key_type == key_t::MEMO, {}, {}, 0, true, key_type != key_t::MEMO/*lock_account_mode*/};
+        collected_keyauth_t default_item {account_name, key_type, 0, key_type == key_t::MEMO, {}, {}, 1, true, key_type != key_t::MEMO/*lock_account_mode*/};
         add_key_authorizations(collector, default_item, {key_type});
     }
 
