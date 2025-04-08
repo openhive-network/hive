@@ -1,8 +1,9 @@
-
+﻿
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/colony/colony_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -17,7 +18,7 @@
 #include <boost/scope_exit.hpp>
 
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
-#define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // number of transactions per thread that can be sent with no wait
+#define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // default number of transactions per thread that can be sent with no wait
 #define COLONY_DEFAULT_THREADS 4 // number of working threads used by default (threads have separate pools of users)
 #define COLONY_DEFAULT_MAX_TRANSACTIONS 1000 // number of max transactions per block used by default when there is
   // no other source of default nor explicit value - the value is split between threads
@@ -91,13 +92,17 @@ struct transaction_builder
   uint32_t                                            _transfer_substitutions = 0;
   uint32_t                                            _failed_transactions = 0;
   uint32_t                                            _failed_rc = 0;
+  uint32_t                                            _locked_concurrency = 0;
+  fc::microseconds                                    _locked_concurrency_time{0};
   uint32_t                                            _tx_num = 0;
   uint32_t                                            _block_num = 0;
   uint32_t                                            _tx_to_produce = 0;
   uint32_t                                            _concurrent_tx_count = 0;
+  uint32_t                                            _max_concurrent_tx_count = COLONY_MAX_CONCURRENT_TRANSACTIONS;
 
   hive::protocol::signed_transaction                  _tx;
   std::atomic_bool                                    _tx_needs_update = { true };
+  std::atomic_bool                                    _tx_building_cooldown = { false };
 
   transaction_builder( const colony_plugin_impl& my, uint8_t id )
     : _common( my ), _id( id ), _current_account( _accounts.end() )
@@ -113,7 +118,6 @@ struct transaction_builder
   void finalize();
 
   void init( int starting_point = 0 ); // first task of worker thread
-  bool accept_transaction( full_transaction_ptr full_tx );
   void push_transaction( kind_of_operation kind );
   void build_transaction();
   void fill_string( std::string& str, size_t size );
@@ -137,6 +141,7 @@ class colony_plugin_impl
 
     void end_of_sync();
     void post_apply_transaction( const transaction_notification& note );
+    void pre_apply_block( const block_notification& note );
     void post_apply_block( const block_notification& note );
 
     chain::chain_plugin&          _chain;
@@ -147,34 +152,44 @@ class colony_plugin_impl
 
     boost::signals2::connection   _end_of_sync_conn;
     boost::signals2::connection   _post_apply_transaction_conn;
+    boost::signals2::connection   _pre_apply_block_conn;
     boost::signals2::connection   _post_apply_block_conn;
 
     std::vector< fc::ecc::private_key >                  _sign_with;
     std::array< operation_params, NUMBER_OF_OPERATIONS > _params;
     std::list< transaction_builder >                     _threads;
+    uint32_t                                             _concurrency = COLONY_MAX_CONCURRENT_TRANSACTIONS;
     uint32_t                                             _total_weight = 0;
     uint32_t                                             _max_tx_per_block = -1;
-    uint32_t                                             _dynamic_tx_per_block = -1;
-    uint32_t                                             _overflowing_tx = 0;
+    uint32_t                                             _dynamic_tx_per_block = -1; // updated under _common_mutex
+    uint32_t                                             _overflowing_tx = 0; // updated under db write lock but not always under _common_mutex
     uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
     bool                                                 _disable_broadcast = false;
     bool                                                 _fill_comment_buffers = false;
     bool                                                 _use_posting = false;
 
+    // locking copied from database::with_read_lock/with_write_lock
+    typedef boost::shared_mutex read_write_mutex;
+    typedef boost::shared_lock<read_write_mutex> read_lock;
+    typedef boost::unique_lock<read_write_mutex> write_lock;
+    mutable read_write_mutex                             _common_mutex; // everything that updates under this one also has db write lock
+    block_id_type                                        _head_block_id; // updated under _common_mutex
+    fc::time_point_sec                                   _head_block_time; // updated under _common_mutex
+
     typedef std::pair< hive::protocol::account_name_type, std::string > comment_data;
     // comments that are target for other comments and votes are shared between threads
-    std::array< comment_data, COLONY_COMMENT_BUFFER >    _comments;
-    uint32_t                                             _last_comment = 0;
+    std::array< comment_data, COLONY_COMMENT_BUFFER >    _comments; // updated under _common_mutex
+    uint32_t                                             _last_comment = 0; // updated under _common_mutex
 };
 
 void transaction_builder::finalize()
 {
-  std::string name = _worker.name(); //ABW: remember name because quit() can release the internal data (TBH it is a bug in fc::thread)
+  std::string name = _worker.name();
 
   /*
     Workaround.
-    There are some unknown problems in `fc::thread`. Better is to wait until all `accept_transaction` calls are finished.
+    There are some unknown problems in `fc::thread`. Better is to wait until all async tasks are finished.
     After changing `fc` library to newer version, maybe below code could be removed.
   */
   while( _concurrent_tx_count )
@@ -186,7 +201,7 @@ void transaction_builder::finalize()
 
   _worker.quit();
 
-  ilog( "Production stats for thread ${t}", ( "t", name ) );
+  ilog( "Production stats for thread ${name}", ( name ) );
   ilog( "Number of transactions: ${t}", ( "t", _tx_num ) );
   if( _tx_num == 0 )
     return;
@@ -220,6 +235,11 @@ void transaction_builder::finalize()
     ilog( "${f} transactions failed with exception (including ${r} due to lack of RC)",
       ( "f", _failed_transactions )( "r", _failed_rc ) );
   }
+  if( _locked_concurrency )
+  {
+    ilog( "${l} times production loop was locked out for ${t}µs (total) due to reaching max number of waiting transactions",
+      ( "l", _locked_concurrency )( "t", _locked_concurrency_time.count() ) );
+  }
 }
 
 void transaction_builder::init( int starting_point )
@@ -235,196 +255,264 @@ void transaction_builder::init( int starting_point )
   } );
 }
 
-bool transaction_builder::accept_transaction( full_transaction_ptr full_tx )
-{
-  BOOST_SCOPE_EXIT( this_ )
-  {
-    --( this_->_concurrent_tx_count );
-  } BOOST_SCOPE_EXIT_END
-
-  ++_concurrent_tx_count;
-
-  if( _common.theApp.is_interrupt_request() )
-    return true;
-
-  bool result = false;
-  try
-  {
-    _common._chain.accept_transaction( full_tx, chain::chain_plugin::lock_type::fc );
-    if( _common._p2p_ptr )
-      _common._p2p_ptr->broadcast_transaction( full_tx );
-    result = true;
-  }
-  catch( const fc::canceled_exception& ex )
-  {
-    // interrupt request - nothing to do
-  }
-  catch( const not_enough_rc_exception& ex )
-  {
-    // elog( "Shortfall of RC during accepting transaction: ${d} transaction: ${t}",
-    //  ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
-    //considering that colony is mostly made to stress test node with large amounts of
-    //transactions in max sized blocks, getting to the point where RC is missing is
-    //actually expected and normal, so logging it would be just spam
-    ++_failed_rc;
-    ++_failed_transactions;
-  }
-  catch( const fc::exception& ex )
-  {
-    //depending on amount of colony workers and transaction frequency parameters,
-    //especially votes which are hard to make unique, one of the way transaction can
-    //fail (but has no specialized exception) is duplicate transaction check; it can
-    //happen in course of normal work, but when RC on workers starts to end, worker
-    //rotation increases making it more likely to run into duplicates;
-    //for similar reasons witness limit on custom ops might be another "typical"
-    //exception that might happen with too few workers and increases in frequency with
-    //lack of RC;
-    //last one that would be nice to catch is boost::interprocess::bad_alloc;
-    //it has separate exception class, but before it could be caught here, it is translated to
-    //generic fc::exception in one of many FC_CAPTURE_AND_RETHROW calls; too bad, because
-    //it would be nice if it triggered app.kill(), because at that point all you get is log spam
-    elog( "Exception during accepting transaction: ${d} transaction: ${t}",
-      ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
-    ++_failed_transactions;
-  }
-  catch( ... )
-  {
-    elog( "Unknown exception during accepting transaction ${t}", ( "t", full_tx->get_transaction() ) );
-    ++_failed_transactions;
-  }
-  return result;
-}
-
 void transaction_builder::push_transaction( kind_of_operation kind )
 {
   full_transaction_ptr full_tx = full_transaction_type::create_from_signed_transaction( _tx, serialization_type::hf26, false );
   _tx.clear();
   full_tx->sign_transaction( _common._sign_with, _common._db.get_chain_id(), serialization_type::hf26, true );
   _stats[ kind ].real_size += full_tx->get_transaction_size();
-  if( _concurrent_tx_count >= COLONY_MAX_CONCURRENT_TRANSACTIONS )
+  if( _common.theApp.is_interrupt_request() )
+    return;
+
+  if( _concurrent_tx_count >= _max_concurrent_tx_count )
   {
-    // when there is too many concurrent transactions next one becomes blocking which should
-    // act as "cool down" and let other threads (like witness) process their requests
-    accept_transaction( full_tx );
-    // since all previously sent transactions are earlier in queue than this one, once it
-    // returns here all transacions should already be processed (taken out of writer queue);
-    // _concurrent_tx_count might still be > 0 because, while transactions were already processed,
-    // there is no guarantee that respective tasks were already activated
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      --( this_->_concurrent_tx_count );
+    } BOOST_SCOPE_EXIT_END
+    ++_concurrent_tx_count;
+
+    try
+    {
+      ++_locked_concurrency;
+      // when there is too many concurrent transactions next one becomes blocking; it allows other
+      // threads to process their requests as well as prevents this worker from producing indefinite
+      // amount of transactions that writer thread can't keep up with processing (plus it allows those
+      // that were already processed to return by allowing for async job loop to iterate, even if
+      // _tx_building_cooldown was not set in the meantime)
+      auto start = fc::time_point::now();
+      _common._chain.accept_transaction( full_tx, chain::chain_plugin::lock_type::fc );
+      auto time = fc::time_point::now() - start;
+      _locked_concurrency_time += time;
+//      ilog( "ABW: ${n} locked out for ${t}µs - ${x} concurrent transactions reached",
+//        ( "n", _worker.name() )( "t", time.count() )( "x", _max_concurrent_tx_count ) );
+      // since all previously sent transactions are earlier in queue than this one, once it
+      // returns here all transacions should already be processed (taken out of writer queue);
+      // _concurrent_tx_count might still be > 0 because, while transactions were already processed,
+      // there is no guarantee that respective tasks were already activated; in practice though it
+      // always exits here when _concurrent_tx_count is zero
+      if( _common._p2p_ptr )
+        _common._p2p_ptr->broadcast_transaction( full_tx );
+    }
+    catch( const fc::canceled_exception& ex )
+    {
+      // interrupt request - nothing to do
+    }
+    catch( const not_enough_rc_exception& ex )
+    {
+      ++_failed_rc;
+      ++_failed_transactions;
+    }
+    catch( const fc::exception& ex )
+    {
+      elog( "Exception during accepting transaction: ${d} transaction: ${t}",
+        ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
+      ++_failed_transactions;
+    }
+    catch( ... )
+    {
+      elog( "Unknown exception during accepting transaction ${t}", ( "t", full_tx->get_transaction() ) );
+      ++_failed_transactions;
+    }
   }
   else
   {
-    _worker.async( [ this, full_tx = std::move(full_tx) ]()
+    ++_concurrent_tx_count;
+    _common._chain.accept_transaction_async( _worker, [this, full_tx]( chain::chain_plugin::t_wrapped_wait wait_for_end_of_tx_processing )
     {
-      accept_transaction( full_tx );
-    } );
+      BOOST_SCOPE_EXIT( this_ )
+      {
+        --( this_->_concurrent_tx_count );
+      } BOOST_SCOPE_EXIT_END
+
+      try
+      {
+        wait_for_end_of_tx_processing();
+        if( _common._p2p_ptr )
+          _common._p2p_ptr->broadcast_transaction( full_tx );
+      }
+      catch( const fc::canceled_exception& ex )
+      {
+        // interrupt request - nothing to do
+      }
+      catch( const not_enough_rc_exception& ex )
+      {
+        // elog( "Shortfall of RC during accepting transaction: ${d} transaction: ${t}",
+        //  ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
+        //considering that colony is mostly made to stress test node with large amounts of
+        //transactions in max sized blocks, getting to the point where RC is missing is
+        //actually expected and normal, so logging it would be just spam
+        ++_failed_rc;
+        ++_failed_transactions;
+      }
+      catch( const fc::exception& ex )
+      {
+        //depending on amount of colony workers and transaction frequency parameters,
+        //especially votes which are hard to make unique, one of the way transaction can
+        //fail (but has no specialized exception) is duplicate transaction check; it can
+        //happen in course of normal work, but when RC on workers starts to end, worker
+        //rotation increases making it more likely to run into duplicates;
+        //for similar reasons witness limit on custom ops might be another "typical"
+        //exception that might happen with too few workers and increases in frequency with
+        //lack of RC;
+        //last one that would be nice to catch is boost::interprocess::bad_alloc;
+        //it has separate exception class, but before it could be caught here, it is translated to
+        //generic fc::exception in one of many FC_CAPTURE_AND_RETHROW calls; too bad, because
+        //it would be nice if it triggered app.kill(), because at that point all you get is log spam
+        elog( "Exception during accepting transaction: ${d} transaction: ${t}",
+          ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
+        ++_failed_transactions;
+      }
+      catch( ... )
+      {
+        elog( "Unknown exception during accepting transaction ${t}", ( "t", full_tx->get_transaction() ) );
+        ++_failed_transactions;
+      }
+    }, full_tx );
   }
 }
 
 void transaction_builder::build_transaction()
 {
-  if( _common.theApp.is_interrupt_request() )
+  while( not _common.theApp.is_interrupt_request() )
   {
-    ilog( "Thread ${t} stopped building new transactions (${p} pending).",
-      ( "t", _worker.name() )( "p", _concurrent_tx_count ) );
-    return;
-  }
-  else if( _tx_needs_update.load( std::memory_order_relaxed ) )
-  {
-    // block was produced since last transaction (or we just started)
-    // ABW: it might seem like a good idea to replace read lock here with local mutex
-    // that is also held in post_apply_block - the mutex is way better when it comes to
-    // wait times, however overall performance is actually worse - no idea why
-    _common._db.with_read_lock( [&]()
+    if( _tx_building_cooldown.load( std::memory_order_relaxed ) )
     {
-      _tx.set_reference_block( _common._db.head_block_id() );
-      _tx.set_expiration( _common._db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      _block_num = _common._db.head_block_num();
-      if( _common._max_tx_per_block == 0 ) // no limit
+      // block production started, so all transactions that were already processed before that block
+      // need to have a chance to complete their cycle (all related async tasks need to finish);
+      // that's why we are temporarily breaking the transaction production loop by rescheduling it
+      // after all not yet finished async tasks
+      // NOTE: there is a high chance (especially in unlimited mode), that there will be more tasks
+      // related to transactions that were already produced and added to queue, but not processed
+      // before the block, so when loop restarts, _concurrent_tx_count will be nonzero
+      _tx_building_cooldown.store( false, std::memory_order_relaxed );
+      if( _concurrent_tx_count > 0 )
       {
-        _tx_to_produce = -1;
+        auto before_cooldown = _concurrent_tx_count;
+        _worker.schedule( [this, before_cooldown]()
+        {
+          if( _concurrent_tx_count >= 0 )
+          {
+//            ilog( "ABW: ${n} has ${x} active concurrent transactions after cooldown (reduced by ${y})",
+//              ( "n", _worker.name() )( "x", _concurrent_tx_count )( "y", before_cooldown - _concurrent_tx_count ) );
+          }
+          build_transaction();
+        }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
+        return;
       }
-      else
-      {
-        uint32_t effective_total;
-        if( _common._overflowing_tx == 0 ) // transactions didn't overflow - go with given max
-          effective_total = _common._max_tx_per_block;
-        else // use adjusted rate
-          effective_total = std::max( 0l, (int64_t)_common._dynamic_tx_per_block - _common._overflowing_tx );
-        _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
-        dlog( "Scheduling production of ${x} transactions in ${t}, previous overflow was ${o}",
-          ( "x", _tx_to_produce )( "t", _worker.name() )( "o", _common._overflowing_tx ) );
-      }
+    }
+    if( _tx_needs_update.load( std::memory_order_relaxed ) )
+    {
       _tx_needs_update.store( false, std::memory_order_relaxed );
-    } );
+      // block was produced since last transaction (or we just started)
+      if( _common._max_tx_per_block == 0 ) // no limit (compatible with queen)
+      {
+        // we can't afford to wait for db read lock, because it would lock new transaction production
+        // until all transactions that are in the queue are already cleared, but we don't really need to
+        colony_plugin_impl::read_lock lock( _common._common_mutex, boost::defer_lock_t() );
+        lock.lock(); // make sure we wait until post_apply_block updates all common data
+        _tx.set_reference_block( _common._head_block_id );
+        _tx.set_expiration( _common._head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        _block_num = block_header::num_from_id( _common._head_block_id );
+        _tx_to_produce = -1;
+        // randomize for 10% of max to make it less likely for all workers to wait in the same time
+        auto ten_percent = std::max( _common._concurrency / 10, 1u );
+        _max_concurrent_tx_count = _common._concurrency + ( std::rand() % ten_percent );
+      }
+      else // normal limited production
+      {
+        // we need to wait not just for post_apply_block to finish updating data, but also for postponed
+        // transactions to be reapplied (to have proper value of _overflowing_tx); we can also afford to
+        // wait for clearing writer queue because there should not be any leftover transactions (and if
+        // there are, f.e. from API threads, there should be enough time to finally get the lock)
+        _common._db.with_read_lock( [&]()
+        {
+          _tx.set_reference_block( _common._head_block_id );
+          _tx.set_expiration( _common._head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+          _block_num = block_header::num_from_id( _common._head_block_id );
+          uint32_t effective_total;
+          if( _common._overflowing_tx == 0 ) // transactions didn't overflow - go with given max
+            effective_total = _common._max_tx_per_block;
+          else // use adjusted rate
+            effective_total = std::max( 0l, ( int64_t ) _common._dynamic_tx_per_block - _common._overflowing_tx );
+          _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
+          dlog( "${n} scheduling production of ${x} transactions, previous overflow was ${o}",
+            ( "n", _worker.name() )( "x", _tx_to_produce )( "o", _common._overflowing_tx ) );
+          _max_concurrent_tx_count = _common._concurrency;
+        } );
+      }
+    }
+
+    if( _tx_to_produce == 0 )
+    {
+      // TODO: add use of conditional variable in case all sent transactions already returned (_concurrent_tx_count == 0)
+      dlog( "${n} has nothing to do. Waiting...", ( "n", _worker.name() ) );
+      _worker.schedule( [this]() { build_transaction(); }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
+      return;
+    }
+
+    uint32_t randomTx = std::rand() % _common._total_weight;
+    const auto& account = *(*_current_account);
+    ++_current_account;
+    if( _current_account == _accounts.end() )
+      _current_account = _accounts.begin();
+    uint64_t nonce = ( (uint64_t)_block_num << 40 ) | ( (uint64_t)_tx_num << 8 ) | (uint64_t)_id;
+      // nonce is composed of _id for uniqueness between threads, _tx_num for uniqueness between
+      // transactions of the same thread within production session and _block_num for uniqueness
+      // between different production sessions
+    ++_tx_num;
+    --_tx_to_produce;
+    if( ( _tx_num % 1000000 ) == 0 )
+      ilog( "${n} building its ${x}th transaction", ( "n", _worker.name() )( "x", _tx_num ) );
+
+    do try
+    {
+      uint32_t max = _common._params[ ARTICLE ].weight;
+      if( randomTx < max )
+      {
+        build_article( account, nonce );
+        break;
+      }
+      max += _common._params[ REPLY ].weight;
+      if( randomTx < max )
+      {
+        build_reply( account, nonce );
+        break;
+      }
+      max += _common._params[ VOTE ].weight;
+      if( randomTx < max )
+      {
+        build_vote( account, nonce );
+        break;
+      }
+      max += _common._params[ TRANSFER ].weight;
+      if( randomTx < max )
+      {
+        build_transfer( account, nonce );
+        break;
+      }
+      // custom_json is default
+      {
+        build_custom( account, nonce );
+        break;
+      }
+    }
+    catch( const fc::exception& ex )
+    {
+      elog( "Exception during building transaction: ${d} transaction: ${t}",
+        ( "d", ex.to_string() )( "t", _tx ) );
+      _common.theApp.kill();
+    }
+    catch( ... )
+    {
+      elog( "Unknown exception during building transaction ${t}", ( "t", _tx ) );
+      _common.theApp.kill();
+    }
+    while( false );
   }
 
-  if( _tx_to_produce == 0 )
-  {
-    dlog( "Thread ${t} has nothing to do. Waiting...", ( "t", _worker.name() ) );
-    _worker.schedule( [this]() { build_transaction(); }, fc::time_point::now() + COLONY_WAIT_FOR_WORK );
-    return;
-  }
-
-  uint32_t randomTx = std::rand() % _common._total_weight;
-  const auto& account = *(*_current_account);
-  ++_current_account;
-  if( _current_account == _accounts.end() )
-    _current_account = _accounts.begin();
-  uint64_t nonce = ( (uint64_t)_block_num << 40 ) | ( (uint64_t)_tx_num << 8 ) | (uint64_t)_id;
-    // nonce is composed of _id for uniqueness between threads, _tx_num for uniqueness between
-    // transactions of the same thread within production session and _block_num for uniqueness
-    // between different production sessions
-  ++_tx_num;
-  --_tx_to_produce;
-  if( ( _tx_num % 1000000 ) == 0 )
-    ilog( "Thread ${t} building its ${n}th transaction", ( "t", _worker.name() )( "n", _tx_num ) );
-
-  do
-  try {
-    uint32_t max = _common._params[ ARTICLE ].weight;
-    if( randomTx < max )
-    {
-      build_article( account, nonce );
-      break;
-    }
-    max += _common._params[ REPLY ].weight;
-    if( randomTx < max )
-    {
-      build_reply( account, nonce );
-      break;
-    }
-    max += _common._params[ VOTE ].weight;
-    if( randomTx < max )
-    {
-      build_vote( account, nonce );
-      break;
-    }
-    max += _common._params[ TRANSFER ].weight;
-    if( randomTx < max )
-    {
-      build_transfer( account, nonce );
-      break;
-    }
-    // custom_json is default
-    {
-      build_custom( account, nonce );
-      break;
-    }
-  }
-  catch( const fc::exception& ex )
-  {
-    elog( "Exception during building transaction: ${d} transaction: ${t}",
-      ( "d", ex.to_string() )( "t", _tx ) );
-    _common.theApp.kill();
-  }
-  catch( ... )
-  {
-    elog( "Unknown exception during building transaction ${t}", ( "t", _tx ) );
-    _common.theApp.kill();
-  }
-  while( false );
-
-  _worker.async( [this]() { build_transaction(); } );
+  ilog( "${n} stopped building new transactions (${p} pending).",
+    ( "n", _worker.name() )( "p", _concurrent_tx_count ) );
 }
 
 void transaction_builder::fill_string( std::string& str, size_t size )
@@ -476,7 +564,15 @@ void transaction_builder::build_article( const account_object& actor, uint64_t n
 void transaction_builder::build_reply( const account_object& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
-  if( _common._comments[ random_comment ].first == account_name_type() )
+  account_name_type existing_author;
+  std::string existing_permlink;
+  {
+    colony_plugin_impl::read_lock lock( _common._common_mutex, boost::defer_lock_t() );
+    lock.lock(); // make sure we wait until post_apply_block updates comments
+    existing_author = _common._comments[ random_comment ].first;
+    existing_permlink = _common._comments[ random_comment ].second;
+  }
+  if( existing_author == account_name_type() )
   {
     ++_reply_substitutions;
     build_article( actor, nonce );
@@ -487,8 +583,8 @@ void transaction_builder::build_reply( const account_object& actor, uint64_t non
 
   comment_operation reply;
   reply.title = std::to_string( nonce );
-  reply.parent_author = _common._comments[ random_comment ].first;
-  reply.parent_permlink = _common._comments[ random_comment ].second;
+  reply.parent_author = std::move( existing_author );
+  reply.parent_permlink = std::move( existing_permlink );
   reply.author = actor.get_name();
   reply.permlink = "r" + reply.title;
   auto extra_size = _common._params[ REPLY ].randomize();
@@ -501,7 +597,15 @@ void transaction_builder::build_reply( const account_object& actor, uint64_t non
 void transaction_builder::build_vote( const account_object& actor, uint64_t nonce )
 {
   uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
-  if( _common._comments[ random_comment ].first == account_name_type() )
+  account_name_type existing_author;
+  std::string existing_permlink;
+  {
+    colony_plugin_impl::read_lock lock( _common._common_mutex, boost::defer_lock_t() );
+    lock.lock(); // make sure we wait until post_apply_block updates comments
+    existing_author = _common._comments[ random_comment ].first;
+    existing_permlink = _common._comments[ random_comment ].second;
+  }
+  if( existing_author == account_name_type() )
   {
     ++_vote_substitutions;
     build_article( actor, nonce );
@@ -512,8 +616,8 @@ void transaction_builder::build_vote( const account_object& actor, uint64_t nonc
 
   vote_operation vote;
   vote.voter = actor.get_name();
-  vote.author = _common._comments[ random_comment ].first;
-  vote.permlink = _common._comments[ random_comment ].second;
+  vote.author = std::move( existing_author );
+  vote.permlink = std::move( existing_permlink );
   // there is no other place to use nonce - place it in weight
   nonce >>= 8; // but remove id part for better uniqueness
   vote.weight = ( std::rand() > 0 ? 1 : -1 ) * ( ( nonce % HIVE_100_PERCENT ) + 1 );
@@ -584,6 +688,8 @@ void colony_plugin_impl::start( uint32_t block_num )
   // make sure the initialization code won't be run for the second time)
   _start_at_block = -1;
   ilog( "Colony plugin starting at block #${block_num}", ( block_num ) );
+  _head_block_id = _db.head_block_id();
+  _head_block_time = _db.head_block_time();
 
   // scan existing accounts to extract those for which you can effectively use _sign_with keys
   flat_set<public_key_type> common_keys;
@@ -730,6 +836,8 @@ void colony_plugin_impl::end_of_sync()
     // only now attach to main signals
     _post_apply_transaction_conn = _db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
       { post_apply_transaction( note ); }, _self, 0 );
+    _pre_apply_block_conn = _db.add_pre_apply_block_handler( [&]( const block_notification& note )
+      { pre_apply_block( note ); }, _self, 0 );
     _post_apply_block_conn = _db.add_post_apply_block_handler( [&]( const block_notification& note )
       { post_apply_block( note ); }, _self, 0 );
   }
@@ -744,6 +852,12 @@ void colony_plugin_impl::post_apply_transaction( const transaction_notification&
     ++_overflowing_tx; // the counter will not cover postponed transactions, but it is better than nothing
 }
 
+void colony_plugin_impl::pre_apply_block( const block_notification& note )
+{
+  for( auto& thread : _threads )
+    thread._tx_building_cooldown.store( true, std::memory_order_relaxed );
+}
+
 void colony_plugin_impl::post_apply_block( const block_notification& note )
 {
   if( _start_at_block <= note.block_num )
@@ -752,14 +866,13 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
     return;
   }
 
-  // it used to be done once every couple hundred blocks for the purpose of updating
-  // expiration/TaPoS, but it turned out colony tends to build too many transactions
-  // which leads to overflow of postponed transactions and related problems (f.e.
-  // comments that were already sent could turn out not to be visible as targets for
-  // replies/votes); now it happens every block, which also allows for limiting how
-  // much work is done for each block
+  write_lock lock( _common_mutex, boost::defer_lock_t() );
+  lock.lock(); // block all reads until we finish updating common data below
   for( auto& thread : _threads )
     thread._tx_needs_update.store( true, std::memory_order_relaxed );
+
+  _head_block_id = _db.head_block_id();
+  _head_block_time = _db.head_block_time();
   uint32_t fit_in_block = note.full_block->get_full_transactions().size();
   uint32_t margin = ( (uint64_t)fit_in_block * COLONY_OVERFLOW_TOLERANCE_RATE ) / HIVE_100_PERCENT;
   if( margin < COLONY_OVERFLOW_TOLERANCE_MIN )
@@ -773,9 +886,6 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
 
   if( _fill_comment_buffers )
   {
-    // ABW: it is not fully thread safe, because despite _tx_needs_update being set
-    // for each thread, they could still be producing previous transaction and accessing
-    // data that we are updating below
     for( const auto& tx : note.full_block->get_full_transactions() )
     {
       const operation& op = tx->get_transaction().operations.front();
@@ -808,6 +918,8 @@ void colony_plugin::set_program_options(
   cfg.add_options()
     ( "colony-sign-with", bpo::value<vector<std::string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used to sign each transaction." )
     ( "colony-threads", bpo::value<std::uint32_t>()->default_value( COLONY_DEFAULT_THREADS ), ( "Number of worker threads. Default is " + std::to_string( COLONY_DEFAULT_THREADS ) ).c_str() )
+    ( "colony-max-concurrency", bpo::value<std::uint32_t>()->default_value( COLONY_MAX_CONCURRENT_TRANSACTIONS ),
+      ( "Number of transactions per thread that can be sent to queue with no wait. Default is " + std::to_string( COLONY_MAX_CONCURRENT_TRANSACTIONS ) ).c_str() )
     ( "colony-transactions-per-block", bpo::value<std::uint32_t>(), "Max number of transactions produced per block. When not set it will be sum of weights of individual types." )
     ( "colony-start-at-block", bpo::value<std::uint32_t>()->default_value( 0 ), "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed)." )
     ( "colony-no-broadcast", bpo::value<bool>()->default_value( false ), "Disables broadcasting of produced transactions - only local witness will include them in block." )
@@ -846,6 +958,12 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
       uint32_t threads = options.at( "colony-threads" ).as<std::uint32_t>();
       FC_ASSERT( threads > 0 && threads <= 128, "At least one worker thread is needed, but no more than 128" );
       my->_max_threads = threads;
+    }
+
+    {
+      uint32_t concurrency = options.at( "colony-max-concurrency" ).as<std::uint32_t>();
+      FC_ASSERT( concurrency <= 1000000, "Value for colony-max-concurrency is way too large (${concurrency}, max: 1000000)", (concurrency) );
+      my->_concurrency = concurrency;
     }
 
     uint64_t total_weight = 0;
@@ -922,6 +1040,7 @@ void colony_plugin::plugin_pre_shutdown()
 
   chain::util::disconnect_signal( my->_end_of_sync_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
+  chain::util::disconnect_signal( my->_pre_apply_block_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
 
   for( auto& thread : my->_threads )

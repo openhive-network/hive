@@ -8,6 +8,7 @@
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 
 #include <boost/signals2.hpp>
+#include <functional>
 
 #define HIVE_CHAIN_PLUGIN_NAME "chain"
 
@@ -63,6 +64,9 @@ public:
   enum class lock_type { boost, fc };
   bool accept_block( const std::shared_ptr< p2p_block_flow_control >& p2p_block_ctrl, bool currently_syncing );
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
+  typedef std::function< void() > t_wrapped_wait;
+  typedef std::function< void( t_wrapped_wait&& ) > t_wait_wrapper;
+  void accept_transaction_async( fc::thread& thread, t_wait_wrapper&& callback, const full_transaction_ptr& trx ); // with lock_type::fc
   void determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
     std::function< void( bool hf26_auth_fail )> on_full_trx = []( bool ){}, const lock_type lock = lock_type::boost );
   void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = database::skip_nothing );
