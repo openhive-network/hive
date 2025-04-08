@@ -30,6 +30,7 @@ class rocksdb_storage_processor: public external_storage_processor
   public:
 
     rocksdb_storage_processor( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    virtual ~rocksdb_storage_processor();
 
     void allow_move_to_external_storage( const comment_id_type& comment_id, const account_id_type& account_id, const std::string& permlink ) override;
     void move_to_external_storage( uint32_t block_num ) override;

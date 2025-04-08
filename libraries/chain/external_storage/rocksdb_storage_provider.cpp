@@ -14,11 +14,6 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
 {
 }
 
-rocksdb_storage_provider::~rocksdb_storage_provider()
-{
-  shutdownDb();
-}
-
 void rocksdb_storage_provider::init()
 {
   openDb( false/*cleanDatabase*/ );

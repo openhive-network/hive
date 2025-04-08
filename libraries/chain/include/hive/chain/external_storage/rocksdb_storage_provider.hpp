@@ -82,7 +82,7 @@ class rocksdb_storage_provider
   public:
 
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
-    virtual ~rocksdb_storage_provider();
+    virtual ~rocksdb_storage_provider(){}
 
     void init();
 
