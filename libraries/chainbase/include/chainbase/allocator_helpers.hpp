@@ -57,17 +57,17 @@ namespace helpers {
   template <typename T>
   struct get_allocator_helper_t
     {
-    template <template <typename, uint32_t, typename, bool> class Allocator,
-              typename T2, uint32_t BLOCK_SIZE, typename TSegmentManager, bool USE_MANAGED_MAPPED_FILE>
-    static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, TSegmentManager, USE_MANAGED_MAPPED_FILE>& a)
+    template <template <typename, uint32_t, bool> class Allocator,
+              typename T2, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
+    static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>& a)
       {
       return a.template get_generic_allocator<T>();
       }
 
-    template <template <typename, typename> class Allocator, typename T2, typename SegmentManager>
-    static auto get_generic_allocator(const Allocator<T2, SegmentManager>& a)
+    template <template <typename, typename> class Allocator, typename T2, typename TSegmentManager>
+    static auto get_generic_allocator(const Allocator<T2, TSegmentManager>& a)
       {
-      return Allocator<T, SegmentManager>(a.get_segment_manager());
+      return Allocator<T, TSegmentManager>(a.get_segment_manager());
       }
 
     template <template <typename> class Allocator, typename T2>
@@ -120,10 +120,5 @@ namespace chainbase {
   using t_deque = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     std::deque< T, allocator< T > >,
     bip::deque< T, allocator< T > > >;
-
-  template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE> >
-  using t_set = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
-    bip::set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > > >;
 
 } // namespace chainbase

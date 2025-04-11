@@ -11,6 +11,8 @@
 
 namespace chainbase {
 
+  using namespace boost::multi_index;
+
   typedef boost::shared_mutex read_write_mutex;
   typedef boost::shared_lock<read_write_mutex> read_lock;
   typedef boost::unique_lock<read_write_mutex> write_lock;
