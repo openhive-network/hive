@@ -38,7 +38,7 @@ class rocksdb_storage_provider
     bfs::path             _storagePath;
     bfs::path             _blockchainStoragePath;
 
-    appbase::application& theApp;
+    appbase::application* theApp = nullptr;
 
     /// std::tuple<A, B>
     /// A - returns true if database will need data import.
@@ -74,7 +74,7 @@ class rocksdb_storage_provider
 
   public:
 
-    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application* app );
     virtual ~rocksdb_storage_provider(){}
 
     void init( bool destroy_on_startup );
@@ -99,7 +99,7 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
 
-    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application* app );
     ~rocksdb_comment_storage_provider() override{}
 
     std::unique_ptr<DB>& getStorage() override;

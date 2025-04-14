@@ -4,7 +4,7 @@
 namespace hive { namespace chain {
 
 rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-                : rocksdb_storage_provider( blockchain_storage_path, storage_path, app ), _writeBuffer( getStorage(), _columnHandles )
+                : rocksdb_storage_provider( blockchain_storage_path, storage_path, &app ), _writeBuffer( getStorage(), _columnHandles )
 {
   _cached_irreversible_block.store(0);
   _cached_reindex_point = 0;

@@ -16,7 +16,7 @@ namespace hive { namespace chain {
 rocksdb_storage_processor::rocksdb_storage_processor( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup )
                           : db( db )
 {
-  auto _rcs_provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app );
+  auto _rcs_provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, &app );
   _rcs_provider->init( destroy_on_startup );
 
   provider = _rcs_provider;

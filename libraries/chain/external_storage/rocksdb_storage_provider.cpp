@@ -9,7 +9,7 @@
 
 namespace hive { namespace chain {
 
-rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application* app )
                         : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
 }
@@ -30,7 +30,8 @@ std::unique_ptr<DB>& rocksdb_storage_provider::getStorage()
 void rocksdb_storage_provider::openDb( bool cleanDatabase )
 {
   //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
-  bfs::create_directories( _blockchainStoragePath );
+  if( !_blockchainStoragePath.string().empty() )
+    bfs::create_directories( _blockchainStoragePath );
 
   if( cleanDatabase )
     ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
@@ -137,7 +138,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
 
-    theApp.generate_interrupt_request();
+    if( theApp )
+      theApp->generate_interrupt_request();
 
     return { false, false };/// { DB does not need data import, an application is closed }
   }
@@ -241,7 +243,7 @@ void rocksdb_storage_provider::flush()
   flushWriteBuffer();
 }
 
-rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application* app )
                                   : rocksdb_storage_provider( blockchain_storage_path, storage_path, app )
 {
 
