@@ -3,6 +3,8 @@
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/block_flow_control.hpp>
+#include <hive/chain/transaction_flow_control.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
@@ -23,7 +25,7 @@ class state_snapshot_provider;
 
 namespace detail
 { 
-  class chain_plugin_impl;   
+  class chain_plugin_impl;
   class chain_plugin_impl_deleter
   {
     public:
@@ -64,6 +66,8 @@ public:
   enum class lock_type { boost, fc };
   bool accept_block( const std::shared_ptr< p2p_block_flow_control >& p2p_block_ctrl, bool currently_syncing );
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
+  // nonblocking version of accept_transaction used by colony_plugin
+  void queue_transaction( const std::shared_ptr< transaction_flow_control >& trx_ctrl, const lock_type lock = lock_type::boost );
   typedef std::function< void() > t_wrapped_wait;
   typedef std::function< void( t_wrapped_wait&& ) > t_wait_wrapper;
   void accept_transaction_async( fc::thread& thread, t_wait_wrapper&& callback, const full_transaction_ptr& trx ); // with lock_type::fc
