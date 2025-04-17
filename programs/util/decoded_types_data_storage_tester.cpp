@@ -8,7 +8,6 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
-#include <hive/plugins/witness/witness_plugin_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
@@ -81,7 +80,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::market_history::order_history_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();
     dtds.register_new_type<hive::plugins::transaction_status::transaction_status_object>();
-    dtds.register_new_type<hive::plugins::witness::witness_custom_op_object>();
 
     #ifdef HIVE_ENABLE_SMT
     dtds.register_new_type<hive::chain::smt_token_object>();

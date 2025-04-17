@@ -2944,7 +2944,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
     tx.clear();
     tx.operations.push_back( op );
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), plugin_exception );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_post_key ), "insert_info.first->second <= CUSTOM_OP_BLOCK_LIMIT" );
 
 
     BOOST_TEST_MESSAGE( "--- Testing 5 custom json ops in one transaction" );
@@ -2967,7 +2967,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
     tx.clear();
     tx.operations.push_back( op );
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_post_key ), plugin_exception );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, bob_post_key ), "insert_info.first->second <= CUSTOM_OP_BLOCK_LIMIT" );
 
 
     BOOST_TEST_MESSAGE( "--- Testing failure of 6 custom json ops in one transaction" );
@@ -2980,7 +2980,7 @@ BOOST_AUTO_TEST_CASE( custom_json_rate_limit )
       tx.operations.push_back( op );
     }
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, sam_post_key ), plugin_exception );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, sam_post_key ), "insert_info.first->second <= CUSTOM_OP_BLOCK_LIMIT" );
   }
   FC_LOG_AND_RETHROW()
 }

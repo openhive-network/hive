@@ -134,8 +134,8 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
     return my->_current_debug_update_txs.back().first; // reuse last existing transaction
   }
 
-  FC_ASSERT( my->_current_debug_update_txs.size() < WITNESS_CUSTOM_OP_BLOCK_LIMIT, "Too many internal transactions." );
-    // witness plugin has limit on number of custom ops per user per block; you can increase it in testnet configuration
+  FC_ASSERT( my->_current_debug_update_txs.size() < CUSTOM_OP_BLOCK_LIMIT, "Too many internal transactions." );
+    // there is a nonconsensus limit on number of custom ops per user per block; you can increase it in testnet configuration
 
   ++idx;
   std::string idx_str( std::to_string( idx ) );
