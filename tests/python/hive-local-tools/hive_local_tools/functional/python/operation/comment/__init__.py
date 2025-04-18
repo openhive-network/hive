@@ -346,7 +346,7 @@ class Comment:
             block_num=self.comment_trx.block_num, include_reversible=True
         )
         for operation in ops_in_block.ops:
-            if operation.op.type == "comment_operation" and operation.op.value == comment_operation.value:
+            if operation.op.type_ == "comment_operation" and operation.op.value == comment_operation.value:
                 return
         raise AssertionError
 
