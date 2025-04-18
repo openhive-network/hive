@@ -23,7 +23,7 @@ def check_sell_price(
 
 def check_recurrent_transfer_data(node: tt.InitNode) -> None:
     _op = node["operations"][0]
-    assert _op[0] == "recurrent_transfer"
+    assert _op[0] == "recurrent_transfer_operation"
     return _op[1]
 
 

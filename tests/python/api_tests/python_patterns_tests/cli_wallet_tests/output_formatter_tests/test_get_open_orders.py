@@ -14,7 +14,7 @@ from hive_local_tools.api.message_format.cli_wallet.output_formater import (
 __PATTERNS_DIRECTORY = Path(__file__).with_name("response_patterns")
 
 
-def test_get_open_orders_json_format(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.Wallet):
+def test_get_open_orders_json_format(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.OldWallet):
     initial_orders = prepare_orders(wallet_with_json_formatter)
 
     open_orders = wallet_with_json_formatter.api.get_open_orders("initminer")
@@ -23,10 +23,10 @@ def test_get_open_orders_json_format(node: tt.InitNode | tt.FullApiNode, wallet_
         assert order["id"] == initial_order["id"]
         assert order["type"] == initial_order["type"]
         assert are_close(float(order["price"]), initial_order["price"])
-        assert order["quantity"] == (initial_order["amount_to_sell"]).as_nai()
+        assert order["quantity"] == (initial_order["amount_to_sell"]).as_serialized_nai()
 
 
-def test_get_open_orders_text_format(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.Wallet):
+def test_get_open_orders_text_format(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.OldWallet):
     initial_orders = prepare_orders(wallet_with_text_formatter)
 
     open_orders = parse_text_response(wallet_with_text_formatter.api.get_open_orders("initminer"))
@@ -38,7 +38,7 @@ def test_get_open_orders_text_format(node: tt.InitNode | tt.FullApiNode, wallet_
         assert initial_order["amount_to_sell"] == tt.Asset.from_legacy(order["quantity"])
 
 
-def test_json_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.Wallet):
+def test_json_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.OldWallet):
     prepare_orders(wallet_with_json_formatter)
 
     open_orders = wallet_with_json_formatter.api.get_open_orders("initminer")
@@ -46,7 +46,7 @@ def test_json_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_jso
     verify_json_patterns(__PATTERNS_DIRECTORY, "get_open_orders", open_orders)
 
 
-def test_text_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.Wallet):
+def test_text_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.OldWallet):
     prepare_orders(wallet_with_text_formatter)
 
     open_orders = wallet_with_text_formatter.api.get_open_orders("initminer")

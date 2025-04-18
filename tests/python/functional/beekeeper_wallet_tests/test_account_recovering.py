@@ -22,7 +22,7 @@ def test_recovery(wallet: tt.Wallet) -> None:
 
     _ops = response.operations
     assert len(_ops) == 1
-    assert _ops[0].type == "change_recovery_account_operation"
+    assert _ops[0].type_ == "change_recovery_account_operation"
     assert _ops[0].value.account_to_recover == "alice"
     assert _ops[0].value.new_recovery_account == "bob"
 

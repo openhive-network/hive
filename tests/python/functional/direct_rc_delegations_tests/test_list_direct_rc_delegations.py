@@ -11,28 +11,28 @@ import test_tools as tt
         (
             "alice",
             "bob",
-            [{"from": "alice", "to": "bob", "delegated_rc": 5}, {"from": "alice", "to": "carol", "delegated_rc": 10}],
+            [{"from_": "alice", "to": "bob", "delegated_rc": 5}, {"from_": "alice", "to": "carol", "delegated_rc": 10}],
         ),
-        ("alice", "carol", [{"from": "alice", "to": "carol", "delegated_rc": 10}]),
+        ("alice", "carol", [{"from_": "alice", "to": "carol", "delegated_rc": 10}]),
         # Empty 'to' parameter allow list all delegations from specific account.
         (
             "alice",
             "",
-            [{"from": "alice", "to": "bob", "delegated_rc": 5}, {"from": "alice", "to": "carol", "delegated_rc": 10}],
+            [{"from_": "alice", "to": "bob", "delegated_rc": 5}, {"from_": "alice", "to": "carol", "delegated_rc": 10}],
         ),
         # Alice as 'to' parameter allow list delegations to bob and carol, because id of alice is less then id
         # bob's and carol's.
         (
             "alice",
             "alice",
-            [{"from": "alice", "to": "bob", "delegated_rc": 5}, {"from": "alice", "to": "carol", "delegated_rc": 10}],
+            [{"from_": "alice", "to": "bob", "delegated_rc": 5}, {"from_": "alice", "to": "carol", "delegated_rc": 10}],
         ),
         # Initminer as 'to' parameter allow list delegations to bob and carol, because id of initminer is less then id
         # bob's and carol's (initminer was created first).
         (
             "alice",
             "initminer",
-            [{"from": "alice", "to": "bob", "delegated_rc": 5}, {"from": "alice", "to": "carol", "delegated_rc": 10}],
+            [{"from_": "alice", "to": "bob", "delegated_rc": 5}, {"from_": "alice", "to": "carol", "delegated_rc": 10}],
         ),
         # This case isn't return any delegations, because id of dan is bigger then id bob's and carol's.
         ("alice", "dan", []),
@@ -67,4 +67,4 @@ def test_list_rc_direct_delegations(
     assert len(delegations) == len(expected_delegations)
 
     for delegation, expected_delegation in zip(delegations, expected_delegations):
-        assert delegation == expected_delegation
+        assert delegation.dict() == expected_delegation

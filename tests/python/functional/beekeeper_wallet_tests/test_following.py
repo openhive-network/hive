@@ -13,7 +13,7 @@ def test_following(wallet: tt.Wallet) -> None:
     response = wallet.api.follow("alice", "bob", ["blog"])
     operation = response["operations"][0]
 
-    assert operation.type == "custom_json_operation"
+    assert operation.type_ == "custom_json_operation"
     assert operation.value.id_ == "follow"
     assert operation.value.json_.value == {
         "type": "follow_operation",

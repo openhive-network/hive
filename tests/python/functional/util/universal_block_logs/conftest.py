@@ -12,6 +12,8 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
     WITNESSES,
 )
 
+from schemas.decoders import get_hf26_decoder
+
 SHARED_MEMORY_FILE_SIZE: Final[int] = 24
 WEBSERVER_THREAD_POOL_SIZE: Final[int] = 16
 
@@ -54,7 +56,7 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
         time_control=tt.StartTimeControl(start_time="head_block_time"),
         timeout=240,
         wait_for_live=True,
-        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(alternate_chain_spec_path),
+        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(alternate_chain_spec_path, get_hf26_decoder),
         arguments=[f"--chain-id={CHAIN_ID}"],
     )
 
