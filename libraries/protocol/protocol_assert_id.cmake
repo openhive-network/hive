@@ -2,8 +2,6 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
 
   message("Beginning verification of assertion's given id in protocol namespace")
 
-  set(assertion_hashes_struct_name "protocol_assertion_hashes")
-  
   set(protocol_assert_expressions)
   list(APPEND protocol_assert_expressions "#include <fc/exception/exception.hpp>\n")
   list(APPEND protocol_assert_expressions "#include <fstream>\n\n")
@@ -13,7 +11,6 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
   list(APPEND protocol_assert_expressions "  std::fstream fs\;\n")
   list(APPEND protocol_assert_expressions "  fs.open(\"${assertion_id_header_path}\", std::ios::out | std::ios::trunc)\;\n")
   list(APPEND protocol_assert_expressions "  fs << \"#include <cstdint>\" << std::endl\;\n")
-  list(APPEND protocol_assert_expressions "  fs << \"struct ${assertion_hashes_struct_name} {\" << std::endl\;\n")
 
   foreach(file ${sources})
     #message("file: ${file}")
@@ -101,7 +98,6 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
     endif()
   endforeach()
 
-  list(APPEND protocol_assert_expressions "  fs << \"}\;//struct ${assertion_hashes_struct_name}\" << std::endl\;\n")
   list(APPEND protocol_assert_expressions "  fs.close()\;\n")
   list(APPEND protocol_assert_expressions "  return 0\;\n")
   list(APPEND protocol_assert_expressions "}\n")
@@ -113,7 +109,6 @@ file(COPY_FILE ${temp_generator} ${assertion_id_generator_output_path} ONLY_IF_D
 set(protocol_assert_id_verifier)
 list(APPEND protocol_assert_id_verifier "#include \"${assertion_id_header_path}\"\n")
 list(APPEND protocol_assert_id_verifier "int main( int argc, char** argv ){\n")
-list(APPEND protocol_assert_id_verifier "  ${assertion_hashes_struct_name} test\;\n")
 list(APPEND protocol_assert_id_verifier "  return 0\;\n")
 list(APPEND protocol_assert_id_verifier "}\n")
 set(temp_verifier "${assertion_id_verifier_output_path}_tmp")

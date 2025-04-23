@@ -58,9 +58,9 @@ SET( STATIC_SOURCES authority_verification_tracer.cpp
 )
 
 ## Section dedicated to generation & verification of unique ids of assertions in protocol sources.
-set(ASSERTION_ID_GENERATOR_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/protocol_assert_expressions.cpp)
-set(ASSERTION_ID_HEADER_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/protocol_assertion_hashes.hpp)
-set(ASSERTION_ID_VERIFIER_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/protocol_assert_id_verifier.cpp)
+set(ASSERTION_ID_GENERATOR_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assert_id_generator.cpp)
+set(ASSERTION_ID_HEADER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_hashes.hpp)
+set(ASSERTION_ID_VERIFIER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assert_id_verifier.cpp)
 # 1. Use separate cmake script to parse all assertions and dump their info into generated cpp file.
 include("${CMAKE_CURRENT_SOURCE_DIR}/protocol_assert_id.cmake")
 protocol_assert_id(

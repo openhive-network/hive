@@ -161,12 +161,16 @@ LIST( APPEND  BOOST_COMPONENTS
       program_options
       unit_test_framework )
 
+set( GENERATED_ASSERT_ID_DIR ${CMAKE_BINARY_DIR}/generated_assert_id )
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
 add_subdirectory( libraries )
 add_subdirectory( programs )
 
 add_subdirectory( tests )
+
+# Keep assertion id verifier below subdirectories containing code it verifies
+add_subdirectory( assertion_id_verifier )
 
 if (ENABLE_INSTALLER)
 
