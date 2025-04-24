@@ -8,7 +8,7 @@ list(APPEND VERIFIER_LINES "int main( int argc, char** argv ){\n")
 list(APPEND VERIFIER_LINES "  return 0\;\n")
 list(APPEND VERIFIER_LINES "}\n")
 # Dumps source only when different than previous version.
-set(VERIFIER_SOURCE_FILE ${GENERATED_ASSERT_ID_DIR}/assert_id_verifier.cpp)
+set(VERIFIER_SOURCE_FILE ${GENERATED_ASSERT_ID_DIR}/assertion_id_verifier.cpp)
 set(TEMP_FILE "${VERIFIER_SOURCE_FILE}_tmp")
 file(WRITE ${TEMP_FILE} ${VERIFIER_LINES} )
 file(COPY_FILE ${TEMP_FILE} ${VERIFIER_SOURCE_FILE} ONLY_IF_DIFFERENT)
@@ -18,5 +18,6 @@ set( ASSERTION_ID_VERIFIER_SOURCES
   ${ASSERT_ID_HEADERS}
 )
 add_executable( assertion_id_verifier ${ASSERTION_ID_VERIFIER_SOURCES} )
+target_include_directories( assertion_id_verifier PUBLIC "${GENERATED_ASSERT_ID_DIR}" )
 # Add below other submodule's needing assertion id verification.
 add_dependencies( assertion_id_verifier protocol_assertion_id_generator )
