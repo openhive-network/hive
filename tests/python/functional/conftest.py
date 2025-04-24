@@ -18,7 +18,6 @@ def pytest_sessionstart() -> None:
 @pytest.fixture()
 def block_logs_for_testing_location() -> Path:
     destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
-    destination_variable= "/workspace/block_logs/empty_block_logs" # fixme: delete after local testing
     assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
     return Path(destination_variable)
 
