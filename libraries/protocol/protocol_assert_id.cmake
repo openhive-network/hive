@@ -1,4 +1,9 @@
-macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id_header_path assertion_id_verifier_output_path)
+macro(protocol_assert_id
+  sources
+  assertion_id_generator_output_path
+  assertion_id_verifier_header_path
+  assertion_id_wax_inline_path
+  assertion_id_verifier_output_path)
 
   message("Beginning verification of assertion's given id in protocol namespace")
 
@@ -8,10 +13,11 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
   list(APPEND protocol_assert_expressions "#define HASH_EXPR( EXPR ) fc::exception::hash_expr( #EXPR )\n\n")
   list(APPEND protocol_assert_expressions "int main( int argc, char** argv ){\n")
   list(APPEND protocol_assert_expressions "  uint64_t h = 0\;\n")
-  list(APPEND protocol_assert_expressions "  std::fstream fs\;\n")
-  list(APPEND protocol_assert_expressions "  fs.open(\"${assertion_id_header_path}\", std::ios::out | std::ios::trunc)\;\n")
-  list(APPEND protocol_assert_expressions "  fs << \"#include <cstdint>\" << std::endl\;\n")
-
+  list(APPEND protocol_assert_expressions "  std::fstream fsv, fsw\;\n")
+  list(APPEND protocol_assert_expressions "  fsv.open(\"${assertion_id_verifier_header_path}\", std::ios::out | std::ios::trunc)\;\n")
+  list(APPEND protocol_assert_expressions "  fsv << \"#include <cstdint>\" << std::endl\;\n")
+  list(APPEND protocol_assert_expressions "  fsw.open(\"${assertion_id_wax_inline_path}\", std::ios::out | std::ios::trunc)\;\n")
+  
   foreach(file ${sources})
     #message("file: ${file}")
     file(REAL_PATH ${file} real_path)
@@ -20,7 +26,7 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
     list(FILTER file_contents INCLUDE REGEX "FC_ASSERT[ \r\n]*\\(" )
     if(NOT "${file_contents}" STREQUAL "")
       get_filename_component(file "${file}" NAME)
-      list(APPEND protocol_assert_expressions "  fs << \"//${file}\" << std::endl\;\n")
+      list(APPEND protocol_assert_expressions "  fsv << \"//${file}\" << std::endl\;\n")
       foreach(line ${file_contents})
         string(FIND ${line} "FC_ASSERT" start)
         string(FIND ${line} ")" stop REVERSE)
@@ -92,22 +98,25 @@ macro(protocol_assert_id sources assertion_id_generator_output_path assertion_id
         string(REGEX REPLACE "\\\\0" "" trimmed_for_string ${trimmed_for_string})
         #message(">>${trimmed_expr}<<")
         list(APPEND protocol_assert_expressions "  h = HASH_EXPR( ${trimmed_expr} )\;\n")
-        list(APPEND protocol_assert_expressions "  fs << \"uint64_t assertion_\" << h << \" = \" << h << \"ull\; /*${file}*/ /*${trimmed_for_string}*/ \" << std::endl\;\n")
+        list(APPEND protocol_assert_expressions "  fsv << \"uint64_t assertion_\" << h << \" = \" << h << \"ull\; /*${file}*/ /*${trimmed_for_string}*/ \" << std::endl\;\n")
+        list(APPEND protocol_assert_expressions "  fsw << \"container.insert( std::make_pair( \" << h << \"ull, \\\"protocol\\\") )\;\" << std::endl\;\n")
       endforeach()
     #message(">> ${file_contents} <<")
     endif()
   endforeach()
 
-  list(APPEND protocol_assert_expressions "  fs.close()\;\n")
+  list(APPEND protocol_assert_expressions "  fsv.close()\;\n")
+  list(APPEND protocol_assert_expressions "  fsw.close()\;\n")
   list(APPEND protocol_assert_expressions "  return 0\;\n")
   list(APPEND protocol_assert_expressions "}\n")
 
+message("Creating file ${assertion_id_generator_output_path}_tmp")
 set(temp_generator "${assertion_id_generator_output_path}_tmp")
 file(WRITE ${temp_generator} ${protocol_assert_expressions} )
 file(COPY_FILE ${temp_generator} ${assertion_id_generator_output_path} ONLY_IF_DIFFERENT)
 
 set(protocol_assert_id_verifier)
-list(APPEND protocol_assert_id_verifier "#include \"${assertion_id_header_path}\"\n")
+list(APPEND protocol_assert_id_verifier "#include \"${assertion_id_verifier_header_path}\"\n")
 list(APPEND protocol_assert_id_verifier "int main( int argc, char** argv ){\n")
 list(APPEND protocol_assert_id_verifier "  return 0\;\n")
 list(APPEND protocol_assert_id_verifier "}\n")

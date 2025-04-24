@@ -58,30 +58,32 @@ SET( STATIC_SOURCES authority_verification_tracer.cpp
 )
 
 ## Section dedicated to generation & verification of unique ids of assertions in protocol sources.
-set(ASSERTION_ID_GENERATOR_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assert_id_generator.cpp)
-set(ASSERTION_ID_HEADER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_hashes.hpp)
-set(ASSERTION_ID_VERIFIER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assert_id_verifier.cpp)
+set(ASSERTION_ID_GENERATOR_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_id_generator.cpp)
+set(ASSERTION_ID_VERIFICATION_HEADER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_hashes_verifier.hpp)
+set(ASSERTION_ID_WAX_INLINE_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_hashes_wax.inl)
+set(ASSERTION_ID_VERIFIER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_id_verifier.cpp)
 # 1. Use separate cmake script to parse all assertions and dump their info into generated cpp file.
 include("${CMAKE_CURRENT_SOURCE_DIR}/protocol_assert_id.cmake")
 protocol_assert_id(
   "${STATIC_SOURCES}"
   "${ASSERTION_ID_GENERATOR_SOURCE}"
-  "${ASSERTION_ID_HEADER_SOURCE}"
+  "${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}"
+  "${ASSERTION_ID_WAX_INLINE_SOURCE}"
   "${ASSERTION_ID_VERIFIER_SOURCE}"
 )
 # 2. Build executable, linking it with fc to enable unique id generation for assertions.
 #    Run the generator post build to dump a header file with ids.
 add_executable( protocol_assertion_id_generator ${ASSERTION_ID_GENERATOR_SOURCE})
-target_link_libraries( protocol_assertion_id_generator fc )
+target_link_libraries( protocol_assertion_id_generator PUBLIC fc )
 add_custom_command(
-  OUTPUT ${ASSERTION_ID_HEADER_SOURCE}
+  OUTPUT ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE} ${ASSERTION_ID_WAX_INLINE_SOURCE}
   COMMAND protocol_assertion_id_generator
   DEPENDS protocol_assertion_id_generator
 )
 # 3. Build the verifier to verify uniqueness of the hashes dumped in previous step.
 SET( ASSERTION_ID_VERIFIER_SOURCES
   ${ASSERTION_ID_VERIFIER_SOURCE}
-  ${ASSERTION_ID_HEADER_SOURCE}
+  ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}
 )
 add_executable( protocol_assertion_id_verifier ${ASSERTION_ID_VERIFIER_SOURCES} )
 add_dependencies( protocol_assertion_id_verifier protocol_assertion_id_generator )
