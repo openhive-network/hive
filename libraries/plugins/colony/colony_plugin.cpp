@@ -671,22 +671,47 @@ void colony_plugin_impl::start( uint32_t block_num )
     if( posting_needed && ( hf28 || !active_needed ) )
       required_authorities.required_posting.insert( account.get_name() );
 
-    if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
-        required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
+    try
     {
-      if( i < _max_threads )
-        threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
-      threadI->_accounts.emplace_back( &account );
-      ++i;
-      ++threadI;
-      if( threadI == _threads.end() )
-        threadI = _threads.begin();
+      if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
+          required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
+      {
+        if( i < _max_threads )
+          threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
+        threadI->_accounts.emplace_back( &account );
+        ++i;
+        ++threadI;
+        if( threadI == _threads.end() )
+          threadI = _threads.begin();
+      }
+      else
+      {
+        dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
+        ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+      }
     }
-    else
+    catch( protocol::tx_missing_active_auth& e )
     {
-      dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
-      ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+      ilog("0) Checking an authorization for `${acc}` account failed with an error ${err}", ("acc", account.get_name() )("err", e.what()));
     }
+    catch( fc::assert_exception& e )
+    {
+      ilog("1) Checking an authorization for `${acc}` account failed with an error ${err}", ("acc", account.get_name() )("err", e.what()));
+    }
+    catch(...)
+    {
+      ilog("2) Checking an authorization for `${acc}` account failed", ("acc", account.get_name() ));
+
+      try
+      {
+        std::rethrow_exception( std::current_exception() );
+      }
+      catch( const std::exception& e )
+      {
+        elog("3) exception: ${what}", ("what", e.what()));
+      }
+    }
+
   }
 
   if( not_matching_accounts > 0 )
