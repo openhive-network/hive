@@ -16,6 +16,10 @@
 
 #include <boost/scope_exit.hpp>
 
+#include <boost/algorithm/string.hpp>
+
+#include <string>
+
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
 #define COLONY_MAX_CONCURRENT_TRANSACTIONS 100 // number of transactions per thread that can be sent with no wait
 #define COLONY_DEFAULT_THREADS 4 // number of working threads used by default (threads have separate pools of users)
@@ -162,7 +166,9 @@ class colony_plugin_impl
     bool                                                 _disable_broadcast = false;
     bool                                                 _fill_comment_buffers = false;
     bool                                                 _use_posting = false;
-
+    bool                                                 _is_data_from_file = false;
+    bfs::path                                            _data_from_file;
+    uint32_t                                             _old_comments_new_comments_ratio = 100;
     typedef std::pair< hive::protocol::account_name_type, std::string > comment_data;
     // comments that are target for other comments and votes are shared between threads
     std::array< comment_data, COLONY_COMMENT_BUFFER >    _comments;
@@ -437,10 +443,7 @@ void transaction_builder::fill_string( std::string& str, size_t size )
   str.resize( size, ' ' );
   for( size_t i = 0; i < str.size(); ++i )
   {
-    if( i % 13 == 0 )
-      continue;
-    else
-      str.at( i ) = 'a' + ( i % 25 );
+    str.at( i ) = 'a' + ( i % 25 );
   }
 }
 
@@ -595,6 +598,9 @@ void colony_plugin_impl::start( uint32_t block_num )
   for( const auto& key : _sign_with )
     common_keys.insert( key.get_public_key() );
 
+  _params[ ARTICLE ].min = 2;
+  _params[ ARTICLE ].max = 10;
+
   bool active_needed = _params[ TRANSFER ].weight > 0;
   bool posting_needed = _params[ ARTICLE ].weight > 0 || _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
   _use_posting = !active_needed;
@@ -605,31 +611,62 @@ void colony_plugin_impl::start( uint32_t block_num )
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
   if( _fill_comment_buffers )
   {
-    // get some initial comments to be used as targets for replies/votes
-    bool shortfall = comments.size() < COLONY_COMMENT_BUFFER;
-    if( shortfall )
-    {
-      wlog( "Not enough initial comments to act as targets for replies/votes (${s} short). "
-        "When nonexistent comment is selected as target, the reply/vote will be replaced with article.",
-        ( "s", COLONY_COMMENT_BUFFER - comments.size() ) );
-      auto paid_comment_count = _db.get_index< comment_index, by_id >().size() - comments.size();
-      if( paid_comment_count > 0 )
-      {
-        wlog( "Note: there are ${c} additional comments in the state, but they were paid out, so "
-          "node has no data on their permlinks.", ( "c", paid_comment_count ) );
-      }
-    }
-    _last_comment = 0;
-    for( const auto& comment : comments )
+
+    auto _add_comment = [&]( const std::string& author, const std::string& permlink )
     {
       auto& comment_data = _comments[ _last_comment ];
-      comment_data.first = _db.get_account( comment.get_author_id() ).get_name();
-      comment_data.second = comment.get_permlink();
+      comment_data.first = author;
+      comment_data.second = permlink;
       ++_last_comment;
-      if( _last_comment >= COLONY_COMMENT_BUFFER )
+      if( _last_comment >= ( COLONY_COMMENT_BUFFER* ( _old_comments_new_comments_ratio / 100.0 ) ) )
       {
-        _last_comment = 0;
-        break;
+        return true;
+      }
+      return false;
+    };
+
+    if( _is_data_from_file )
+    {
+      _last_comment = 0;
+
+      std::ifstream _file;
+      _file.open( _data_from_file, std::ios::in );
+
+      std::string _line;
+      size_t _cnt = 0;
+      while( std::getline( _file, _line ) )
+      {
+        vector<std::string> _elements;
+        boost::split( _elements, _line, boost::is_any_of(";") );
+        FC_ASSERT( _elements.size() == 2 );
+        ilog("Add a comment ${_cnt}: ${author}/${permlink}",("author", _elements[0])("permlink", _elements[1])(_cnt));
+        ++_cnt;
+        if( _add_comment( _elements[0], _elements[1] ) )
+          break;
+      }
+      _file.close();
+    }
+    else
+    {
+      // get some initial comments to be used as targets for replies/votes
+      bool shortfall = comments.size() < COLONY_COMMENT_BUFFER;
+      if( shortfall )
+      {
+        wlog( "Not enough initial comments to act as targets for replies/votes (${s} short). "
+          "When nonexistent comment is selected as target, the reply/vote will be replaced with article.",
+          ( "s", COLONY_COMMENT_BUFFER - comments.size() ) );
+        auto paid_comment_count = _db.get_index< comment_index, by_id >().size() - comments.size();
+        if( paid_comment_count > 0 )
+        {
+          wlog( "Note: there are ${c} additional comments in the state, but they were paid out, so "
+            "node has no data on their permlinks.", ( "c", paid_comment_count ) );
+        }
+      }
+      _last_comment = 0;
+      for( const auto& comment : comments )
+      {
+        if( _add_comment( _db.get_account( comment.get_author_id() ).get_name(), comment.get_permlink() ) )
+          break;
       }
     }
     std::string initial_comments = std::to_string( _last_comment );
@@ -671,21 +708,45 @@ void colony_plugin_impl::start( uint32_t block_num )
     if( posting_needed && ( hf28 || !active_needed ) )
       required_authorities.required_posting.insert( account.get_name() );
 
-    if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
-        required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
+    try
     {
-      if( i < _max_threads )
-        threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
-      threadI->_accounts.emplace_back( &account );
-      ++i;
-      ++threadI;
-      if( threadI == _threads.end() )
-        threadI = _threads.begin();
+      if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
+          required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
+      {
+        if( i < _max_threads )
+          threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
+        threadI->_accounts.emplace_back( &account );
+        ++i;
+        ++threadI;
+        if( threadI == _threads.end() )
+          threadI = _threads.begin();
+      }
+      else
+      {
+        dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
+        ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+      }
     }
-    else
+    catch( protocol::tx_missing_active_auth& e )
     {
-      dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
-      ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+      ilog("0) Checking an authorization for `${acc}` account failed with an error ${err}", ("acc", account.get_name() )("err", e.what()));
+    }
+    catch( fc::assert_exception& e )
+    {
+      ilog("1) Checking an authorization for `${acc}` account failed with an error ${err}", ("acc", account.get_name() )("err", e.what()));
+    }
+    catch(...)
+    {
+      ilog("2) Checking an authorization for `${acc}` account failed", ("acc", account.get_name() ));
+
+      try
+      {
+        std::rethrow_exception( std::current_exception() );
+      }
+      catch( const std::exception& e )
+      {
+        elog("3) exception: ${what}", ("what", e.what()));
+      }
     }
   }
 
@@ -781,8 +842,16 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
     // ABW: it is not fully thread safe, because despite _tx_needs_update being set
     // for each thread, they could still be producing previous transaction and accessing
     // data that we are updating below
+    size_t _votes_cnt = 0;
     for( const auto& tx : note.full_block->get_full_transactions() )
     {
+      for( auto& op : tx->get_transaction().operations )
+      {
+        if( op.which() == operation::tag<vote_operation>::value )
+        {
+          ++_votes_cnt;
+        }
+      }
       const operation& op = tx->get_transaction().operations.front();
       if( op.which() == operation::tag<comment_operation>::value )
       {
@@ -793,6 +862,7 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
         _last_comment = ( _last_comment + 1 ) % COLONY_COMMENT_BUFFER;
       }
     }
+    ilog("votes: ${_votes_cnt}", (_votes_cnt));
   }
 }
 
@@ -822,6 +892,9 @@ void colony_plugin::set_program_options(
     ( "colony-transfer", bpo::value<std::string>(), "Size and frequency parameters of transfer transactions." )
     ( "colony-custom", bpo::value<std::string>(), "Size and frequency parameters of custom_json transactions. "
       "If no other transaction type is requested, minimal custom jsons will be produced." )
+    ( "is-data-from-file", bpo::bool_switch()->default_value(false), "Is data from file." )
+    ( "data-from-file", bpo::value<bfs::path>()->default_value( "data.txt" ), "Data from file." )
+    ( "old-comments-new-comments-ratio", bpo::value<std::uint32_t>()->default_value(100), "old comments / new comments ratio. Ratio = 0 (0%: only new comments). Ratio = 100 (100%: only old comments)" )
     ;
 }
 
@@ -835,6 +908,12 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
 #endif
 
     my = std::make_unique< detail::colony_plugin_impl >( *this, get_app() );
+
+    my->_is_data_from_file = options[ "is-data-from-file" ].as<bool>();
+    my->_data_from_file = options[ "data-from-file" ].as<bfs::path>();
+    my->_old_comments_new_comments_ratio = options[ "old-comments-new-comments-ratio" ].as<std::uint32_t>();
+    if( my->_old_comments_new_comments_ratio > 100 )
+      my->_old_comments_new_comments_ratio = 100;
 
     if( options.count( "colony-sign-with" ) )
     {
