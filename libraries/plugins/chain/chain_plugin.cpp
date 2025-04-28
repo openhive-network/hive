@@ -161,34 +161,29 @@ class chain_plugin_impl
 
     // `priority_write_queue`, `write_queue` and `running` are guarded by the queue_mutex
     std::mutex                       queue_mutex;
-    std::condition_variable          queue_read_condition_variable;
-    //std::condition_variable          queue_write_condition_variable;
+    std::condition_variable          queue_condition_variable;
 
     typedef std::shared_ptr<write_context> t_write_context_ptr;
     typedef std::queue<t_write_context_ptr> t_write_queue;
     t_write_queue                    priority_write_queue;
-    const size_t                     priority_write_queue_max_size = 2000;
     t_write_queue                    write_queue;
-    const size_t                     write_queue_max_size = 20000;
 
-    void push_to_any_queue( t_write_queue& any_queue, size_t max_size, const t_write_context_ptr& ctx )
+    void add_to_any_queue( t_write_queue& any_queue, const t_write_context_ptr& ctx )
     {
       std::lock_guard<std::mutex> lock( queue_mutex );
       FC_ASSERT( ctx );
-      //std::unique_lock<std::mutex> lock( queue_mutex );
-      //queue_write_condition_variable.wait( lock, [&any_queue, max_size]() { return any_queue.size() < max_size; } );
       any_queue.push( ctx );
-      queue_read_condition_variable.notify_one();
+      queue_condition_variable.notify_one();
     }
 
-    void push_to_priority_write_queue( const t_write_context_ptr& ctx )
+    void add_to_priority_write_queue( const t_write_context_ptr& ctx )
     {
-      push_to_any_queue( priority_write_queue, priority_write_queue_max_size, ctx );
+      add_to_any_queue( priority_write_queue, ctx );
     }
 
-    void push_to_write_queue( const t_write_context_ptr& ctx )
+    void add_to_write_queue( const t_write_context_ptr& ctx )
     {
-      push_to_any_queue( write_queue, write_queue_max_size, ctx );
+      add_to_any_queue( write_queue, ctx );
     }
 
     bool                             running = true;
@@ -521,7 +516,7 @@ void chain_plugin_impl::start_write_processing()
             size_t wait_timed_out_cnt = 0;
             while( cnt < time_fragments && is_running() && priority_write_queue.empty() && write_queue.empty() && !wait_timed_out )
             {
-              if( queue_read_condition_variable.wait_for(lock, std::chrono::microseconds(chunk_time)) == std::cv_status::timeout )
+              if( queue_condition_variable.wait_for(lock, std::chrono::microseconds(chunk_time)) == std::cv_status::timeout )
               {
                 ++wait_timed_out_cnt;
               }
@@ -549,7 +544,6 @@ void chain_plugin_impl::start_write_processing()
             cxt = write_queue.front();
             write_queue.pop();
           }
-          //queue_write_condition_variable.notify_one();
         }
 
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
@@ -652,7 +646,6 @@ void chain_plugin_impl::start_write_processing()
                 cxt = write_queue.front();
                 write_queue.pop();
               }
-              //queue_write_condition_variable.notify_one();
             }
 
             last_popped_item_time = fc::time_point::now();
@@ -725,8 +718,7 @@ void chain_plugin_impl::stop_write_processing()
     std::unique_lock<std::mutex> lock(queue_mutex);
     running = false;
   }
-  queue_read_condition_variable.notify_one();
-  //queue_write_condition_variable.notify_one();
+  queue_condition_variable.notify_one();
 
   if( write_processor_thread )
   {
@@ -1922,7 +1914,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   fc::promise<void>::ptr accept_block_promise = fc::promise<void>::create("accept_block");
   fc::future<void> accept_block_future(accept_block_promise);
   block_ctrl->attach_promise( accept_block_promise );
-  my->push_to_priority_write_queue( cxt );
+  my->add_to_priority_write_queue( cxt );
   if( my->theApp.is_interrupt_request() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block accepting");
   else
@@ -1951,7 +1943,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     tx_ctrl->attach_promise( accept_transaction_promise );
-    my->push_to_write_queue( cxt );
+    my->add_to_write_queue( cxt );
     if( my->theApp.is_interrupt_request() )
       FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured a transaction accepting");
     else
@@ -1963,7 +1955,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc::promise<void>::ptr accept_transaction_promise = fc::promise<void>::create("accept_transaction");
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl->attach_promise( accept_transaction_promise );
-    my->push_to_write_queue( cxt );
+    my->add_to_write_queue( cxt );
     if( my->theApp.is_interrupt_request() )
       FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured a transaction accepting");
     else
@@ -1982,43 +1974,14 @@ void chain_plugin::queue_transaction( const std::shared_ptr<transaction_flow_con
   {
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     trx_ctrl->attach_promise( accept_transaction_promise );
-    my->push_to_write_queue( cxt );
+    my->add_to_write_queue( cxt );
   }
   else
   {
     fc::promise<void>::ptr accept_transaction_promise = fc::promise<void>::create( "accept_transaction" );
     trx_ctrl->attach_promise( accept_transaction_promise );
-    my->push_to_write_queue( cxt );
+    my->add_to_write_queue( cxt );
   }
-}
-
-void chain_plugin::accept_transaction_async( fc::thread& thread, t_wait_wrapper&& callback, const std::shared_ptr<full_transaction_type>& full_transaction )
-{
-  auto tx_ctrl = std::make_shared<transaction_flow_control>( full_transaction );
-  auto cxt = std::make_shared< write_context >();
-  cxt->req_ptr = tx_ctrl;
-  static std::atomic_int call_count = 0;
-  call_count++;
-
-  fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count.load()));
-  fc::promise<void>::ptr accept_transaction_promise = fc::promise<void>::create("accept_transaction");
-  tx_ctrl->attach_promise( accept_transaction_promise );
-  my->push_to_write_queue( cxt );
-
-  thread.async( [accept_transaction_promise, tx_ctrl, callback = std::move( callback )]()
-  {
-    callback( [accept_transaction_promise, tx_ctrl]()
-    {
-      BOOST_SCOPE_EXIT( &call_count )
-      {
-        --call_count;
-        fc_dlog( fc::logger::get( "chainlock" ), "<-- accept_transaction_calls_in_progress: ${call_count}", ( call_count.load() ) );
-      } BOOST_SCOPE_EXIT_END
-      fc::future<void> accept_transaction_future( accept_transaction_promise );
-      accept_transaction_future.wait();
-      tx_ctrl->rethrow_if_exception();
-    } );
-  } );
 }
 
 void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
@@ -2073,7 +2036,7 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
   generate_block_ctrl->attach_promise( generate_block_promise );
-  my->push_to_priority_write_queue( cxt );
+  my->add_to_priority_write_queue( cxt );
   if( my->theApp.is_interrupt_request() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block generation");
   else
@@ -2089,7 +2052,7 @@ void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   generate_block_ctrl->attach_promise( generate_block_promise );
-  my->push_to_priority_write_queue( cxt );
+  my->add_to_priority_write_queue( cxt );
   if( my->theApp.is_interrupt_request() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block generation");
 }
