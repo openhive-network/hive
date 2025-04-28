@@ -663,7 +663,7 @@ void chain_plugin_impl::start_write_processing()
               }
             }
 
-            if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
+            if (!is_syncing && is_p2p_enabled) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
             {
               fc::time_point now = fc::time_point::now();
               fc::microseconds write_lock_held_duration = now - write_lock_acquired_time;
