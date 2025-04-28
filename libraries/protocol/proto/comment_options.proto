@@ -14,7 +14,7 @@ message comment_payout_beneficiaries {
 }
 
 message comment_options_extension {
-  oneof extension {
+  oneof value {
     comment_payout_beneficiaries comment_payout_beneficiaries = 1 [json_name = "comment_payout_beneficiaries"];
   }
 }
