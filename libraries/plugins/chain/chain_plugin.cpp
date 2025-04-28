@@ -60,58 +60,6 @@ using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t
 
 #define NUM_THREADS 1
 
-typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
-
-class transaction_flow_control
-{
-public:
-  explicit transaction_flow_control( const std::shared_ptr<full_transaction_type>& _tx ) : tx( _tx ) {}
-
-  void attach_promise( promise_ptr _p ) { prom_ptr = _p; }
-
-  void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
-  void on_worker_done( appbase::application& app );
-
-  const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
-  const fc::exception_ptr& get_exception() const { return except; }
-  void rethrow_if_exception() const { if( except ) except->dynamic_rethrow_exception(); }
-
-private:
-  std::shared_ptr<full_transaction_type> tx;
-  promise_ptr                            prom_ptr;
-  fc::exception_ptr                      except;
-
-  struct request_promise_visitor;
-};
-
-struct transaction_flow_control::request_promise_visitor
-{
-  request_promise_visitor() {}
-
-  typedef void result_type;
-
-  // n.b. our visitor functions take a shared pointer to the promise by value
-  // so the promise can't be garbage collected until the set_value() function
-  // has finished exiting.  There's a race where the calling thread wakes up
-  // during the set_value() call and can delete the promise out from under us
-  // unless we hold a reference here.
-  void operator()( fc::promise<void>::ptr t )
-  {
-    t->set_value();
-  }
-
-  void operator()( std::shared_ptr<boost::promise<void>> t )
-  {
-    t->set_value();
-  }
-};
-
-void transaction_flow_control::on_worker_done( appbase::application& app )
-{
-  request_promise_visitor prom_visitor;
-  prom_ptr.visit( prom_visitor );
-}
-
 typedef fc::static_variant<
   std::shared_ptr< p2p_block_flow_control >,
   std::shared_ptr< transaction_flow_control >,
