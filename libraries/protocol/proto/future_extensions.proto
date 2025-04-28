@@ -5,7 +5,7 @@ package hive.protocol.buffers;
 message void_t {}
 
 message future_extensions {
-  oneof extension {
+  oneof value {
     void_t void_t = 1 [json_name = "void_t"];
   }
 }
