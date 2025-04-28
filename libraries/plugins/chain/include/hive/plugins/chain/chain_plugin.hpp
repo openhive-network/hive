@@ -3,6 +3,8 @@
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/block_flow_control.hpp>
+#include <hive/chain/transaction_flow_control.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
