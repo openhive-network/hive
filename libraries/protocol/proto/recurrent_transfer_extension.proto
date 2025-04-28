@@ -9,7 +9,7 @@ message recurrent_transfer_pair_id {
 }
 
 message recurrent_transfer_extension {
-  oneof extension {
+  oneof value {
     void_t void_t = 1 [json_name = "void_t"];
     recurrent_transfer_pair_id recurrent_transfer_pair_id = 2 [json_name = "recurrent_transfer_pair_id"];
   }

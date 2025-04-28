@@ -11,7 +11,7 @@ message hardfork_version_vote {
 }
 
 message block_header_extensions {
-  oneof extension {
+  oneof value {
     void_t void_t = 1 [json_name = "void_t"];
     string version = 2;
     hardfork_version_vote hardfork_version_vote = 3 [json_name = "hardfork_version_vote"];
