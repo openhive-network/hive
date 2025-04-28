@@ -47,6 +47,7 @@ add_library( hive_chain
              shared_authority.cpp
              block_compression_dictionaries.cpp
              block_flow_control.cpp
+             transaction_flow_control.cpp
              block_log.cpp
              block_log_artifacts.cpp
              block_log_compression.cpp
