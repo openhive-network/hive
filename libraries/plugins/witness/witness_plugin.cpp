@@ -280,7 +280,7 @@ class witness_plugin_impl
     // only generate this transaction if our head block number has increased
     if( _db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) &&
         note.block_num > _last_fast_confirmation_block_number &&
-        _production_enabled && ( _is_p2p_enabled || _queen_mode ) &&
+        _production_enabled && _is_p2p_enabled &&
         fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM )
     {
       //collect future schedule witnesses that are represented locally by witness plugin
