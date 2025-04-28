@@ -232,8 +232,7 @@ class chain_plugin_impl
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
 
-    template<typename Promise>
-    void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx, Promise& promise )
+    void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx )
     {
       std::lock_guard<std::mutex> lock( queue_mutex );
       FC_ASSERT( ctx );
@@ -241,16 +240,14 @@ class chain_plugin_impl
       queue_condition_variable.notify_one();
     }
 
-    template<typename Promise>
-    void add_to_priority_write_queue( write_context* ctx, Promise& promise )
+    void add_to_priority_write_queue( write_context* ctx )
     {
-      add_to_any_queue( priority_write_queue, ctx, promise );
+      add_to_any_queue( priority_write_queue, ctx );
     }
 
-    template<typename Promise>
-    void add_to_write_queue( write_context* ctx, Promise& promise )
+    void add_to_write_queue( write_context* ctx )
     {
-      add_to_any_queue( write_queue, ctx, promise );
+      add_to_any_queue( write_queue, ctx );
     }
 
     bool                             running = true;
@@ -2019,7 +2016,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
   fc::promise<void>::ptr accept_block_promise = fc::promise<void>::create("accept_block");
   fc::future<void> accept_block_future(accept_block_promise);
   block_ctrl->attach_promise( accept_block_promise );
-  my->add_to_priority_write_queue( &cxt, accept_block_promise );
+  my->add_to_priority_write_queue( &cxt );
   if( is_finished_write_processing() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block accepting");
   else
@@ -2048,7 +2045,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     tx_ctrl.attach_promise( accept_transaction_promise );
-    my->add_to_write_queue( &cxt, accept_transaction_promise );
+    my->add_to_write_queue( &cxt );
     if( is_finished_write_processing() )
       FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured a transaction accepting");
     else
@@ -2060,7 +2057,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc::promise<void>::ptr accept_transaction_promise = fc::promise<void>::create("accept_transaction");
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     tx_ctrl.attach_promise( accept_transaction_promise );
-    my->add_to_write_queue( &cxt, accept_transaction_promise );
+    my->add_to_write_queue( &cxt );
     if( is_finished_write_processing() )
       FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured a transaction accepting");
     else
@@ -2122,7 +2119,7 @@ void chain_plugin::push_generate_block_request( const std::shared_ptr< generate_
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
   generate_block_ctrl->attach_promise( generate_block_promise );
-  my->add_to_priority_write_queue( &cxt, generate_block_promise );
+  my->add_to_priority_write_queue( &cxt );
   if( is_finished_write_processing() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block generation");
   else
@@ -2138,7 +2135,7 @@ void chain_plugin::queue_generate_block_request( const std::shared_ptr< generate
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   generate_block_ctrl->attach_promise( generate_block_promise );
-  my->add_to_priority_write_queue( &cxt, generate_block_promise );
+  my->add_to_priority_write_queue( &cxt );
   if( is_finished_write_processing() )
     FC_THROW_EXCEPTION( fc::canceled_exception, "Interrupt request occured during a block generation");
 }
