@@ -241,7 +241,7 @@ cat << EOT > data/alternate-chain-spec.json
   "min_root_comment_interval": 0,
   "min_reply_interval": 0,
   "min_comment_edit_interval": 0,
-  "witness_custom_op_block_limit": 10000000,
+  "custom_op_block_limit": 10000000,
   "init_witnesses": [
     "uknwn.wit01", "uknwn.wit02", "uknwn.wit03", "uknwn.wit04", "uknwn.wit05", "uknwn.wit06"
     "uknwn.wit07", "uknwn.wit08", "uknwn.wit09", "uknwn.wit10", "uknwn.wit11", "uknwn.wit12",

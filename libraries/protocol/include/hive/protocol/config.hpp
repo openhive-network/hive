@@ -502,6 +502,14 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #endif /// HIVE_ENABLE_SMT
 
+/// (former) witness related constants
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_CUSTOM_OP_BLOCK_LIMIT (configuration_data.custom_op_block_limit)
+#else
+#define HIVE_CUSTOM_OP_BLOCK_LIMIT 5
+#endif
+
 /// HIVE RC related constants
 
 #define HIVE_RC_REGEN_TIME                             (HIVE_VOTING_MANA_REGENERATION_SECONDS) //5 days

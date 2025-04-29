@@ -12,5 +12,5 @@
     "hive_amount": 10000000000,
     "vests_per_hive": 1800
   },
-  "witness_custom_op_block_limit": 100
+  "custom_op_block_limit": 100
 }
