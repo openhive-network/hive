@@ -1273,53 +1273,63 @@ namespace graphene { namespace net {
           if (peer->idle())
             items_by_peer.insert(peer_and_items_to_fetch(peer));
 
-        // now loop over all items we want to fetch
-        size_t expired_items = 0;
-        for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
+        if (!items_by_peer.empty() && !_items_to_fetch.empty())
         {
-          if (item_iter->timestamp < oldest_timestamp_to_fetch)
+          // now loop over all items we want to fetch
+          size_t items_to_fetch_count = 0;
+          size_t max_amount_of_items_to_fetch = items_by_peer.size() * GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION;
+          size_t expired_items = 0;
+          for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
           {
-            // this item has probably already fallen out of our peers' caches, we'll just ignore it.
-            // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
-            // with a bunch of items that we'll never be able to request from any peer
-            dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
-            item_iter = _items_to_fetch.erase(item_iter);
-            ++expired_items;
-          }
-          else
-          {
-            // find a peer that has it, we'll use the one who has the least requests going to it to load balance
-            bool item_fetched = false;
-            for (auto peer_iter = items_by_peer.get<requested_item_count_index>().begin(); peer_iter != items_by_peer.get<requested_item_count_index>().end(); ++peer_iter)
+            if (item_iter->timestamp < oldest_timestamp_to_fetch)
             {
-              const peer_connection_ptr& peer = peer_iter->peer;
-              // if they have the item and we haven't already decided to ask them for too many other items
-              if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
-                  peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end())
+              // this item has probably already fallen out of our peers' caches, we'll just ignore it.
+              // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
+              // with a bunch of items that we'll never be able to request from any peer
+              dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
+              item_iter = _items_to_fetch.erase(item_iter);
+              ++expired_items;
+            }
+            else
+            {
+              // find a peer that has it, we'll use the one who has the least requests going to it to load balance
+              bool item_fetched = false;
+              for (auto peer_iter = items_by_peer.get<requested_item_count_index>().begin(); peer_iter != items_by_peer.get<requested_item_count_index>().end(); ++peer_iter)
               {
-                if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
-                  next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-                else
+                const peer_connection_ptr& peer = peer_iter->peer;
+                // if they have the item and we haven't already decided to ask them for too many other items
+                if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
+                    peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end())
                 {
-                  //dlog("requesting item ${hash} from peer ${endpoint}",
-                  //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
-                  item_id item_id_to_fetch = item_iter->item;
-                  peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
-                  item_iter = _items_to_fetch.erase(item_iter);
-                  item_fetched = true;
-                  items_by_peer.get<requested_item_count_index>().modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
-                    peer_and_items.item_ids.push_back(item_id_to_fetch);
-                  });
-                  break;
+                  if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
+                    next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+                  else
+                  {
+                    //dlog("requesting item ${hash} from peer ${endpoint}",
+                    //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
+                    item_id item_id_to_fetch = item_iter->item;
+                    peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
+                    item_iter = _items_to_fetch.erase(item_iter);
+                    item_fetched = true;
+                    items_by_peer.get<requested_item_count_index>().modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
+                      peer_and_items.item_ids.push_back(item_id_to_fetch);
+                    });
+                    break;
+                  }
                 }
               }
+              if (!item_fetched)
+                ++item_iter;
+              else
+                ++items_to_fetch_count;
+
+              if (items_to_fetch_count >= max_amount_of_items_to_fetch)
+                break;
             }
-            if (!item_fetched)
-              ++item_iter;
           }
+          if (expired_items > 0)
+            wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         }
-        if (expired_items > 0)
-          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
 
         // we've figured out which peer will be providing each item, now send the messages.
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
