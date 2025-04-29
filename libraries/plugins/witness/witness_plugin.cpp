@@ -191,9 +191,9 @@ class witness_plugin_impl
         }
         else
         {
-          HIVE_ASSERT( coo->count < WITNESS_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
+          HIVE_ASSERT( coo->count < HIVE_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
             "Account ${a} already submitted ${n} custom json operation(s) this block.",
-            ( "a", account )( "n", WITNESS_CUSTOM_OP_BLOCK_LIMIT ) );
+            ( "a", account )( "n", HIVE_CUSTOM_OP_BLOCK_LIMIT ) );
 
           _db.modify( *coo, [&]( witness_custom_op_object& o )
           {
