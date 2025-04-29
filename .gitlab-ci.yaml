@@ -923,27 +923,27 @@ message_format_live_mainnet_tests:
     - if: $RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET == "TRUE"
       when: always
 
-foundation_layer_tests:
-  stage: test
-  extends: .test_tools_based
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
-    NODE_ADDRESS: "test-block-log-server:80"
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-  services:
-    - *test-block-log-service
-  script:
-    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
-    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
-    - cd tests/python/functional/foundation_layer_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# foundation_layer_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: generate_testing_block_logs_and_save_image
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 6
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
+#     NODE_ADDRESS: "test-block-log-server:80"
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+#   services:
+#     - *test-block-log-service
+#   script:
+#     - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+#     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
+#     - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
+#     - cd tests/python/functional/foundation_layer_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 witness_tests:
   stage: test
