@@ -221,6 +221,17 @@ using fixed_string = typename fixed_string_impl_for_size<N>::t;
 
 } } // hive::protocol
 
+namespace std {
+template<>
+struct hash< hive::protocol::fixed_string<16> >
+{
+  size_t operator()( const hive::protocol::fixed_string<16>& s )const
+  {
+    return s.data.first ^ s.data.second;
+  }
+};
+}
+
 namespace fc { namespace raw {
 
 template< typename Stream, typename Storage >
