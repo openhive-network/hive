@@ -10,12 +10,6 @@
 
 #define HIVE_WITNESS_PLUGIN_NAME "witness"
 
-#ifdef USE_ALTERNATE_CHAIN_ID
-#define WITNESS_CUSTOM_OP_BLOCK_LIMIT (configuration_data.witness_custom_op_block_limit)
-#else
-#define WITNESS_CUSTOM_OP_BLOCK_LIMIT 5
-#endif
-
 namespace hive { namespace plugins { namespace witness {
 
 namespace detail { class witness_plugin_impl; }

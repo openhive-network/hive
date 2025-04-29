@@ -272,7 +272,7 @@ class configuration
     fc::microseconds min_reply_interval = fc::seconds(20);
     fc::microseconds min_reply_interval_hf20 = fc::seconds(3);
     fc::microseconds min_comment_edit_interval = fc::seconds(3);
-    uint64_t         witness_custom_op_block_limit = 5;
+    uint64_t         custom_op_block_limit = 5;
 
     bool allow_not_enough_rc = false;
     uint32_t rc_stats_report_frequency = // in blocks
