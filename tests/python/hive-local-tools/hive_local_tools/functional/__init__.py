@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from functools import partial
+from typing import Callable
 
 import test_tools as tt
+from test_tools.__private.wallet.constants import SimpleTransaction
+from schemas.fields.hive_int import HiveInt
+from wax import get_tapos_data
+from wax._private.result_tools import to_cpp_string
 
 
 def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -> None:
@@ -52,3 +58,35 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
     """
     second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
+
+
+def __generate_and_broadcast_transaction(
+    wallet: tt.Wallet, node: tt.InitNode, func: Callable, comment_number: int | None, account_names: list[str]
+) -> None:
+    gdpo = node.api.database.get_dynamic_global_properties()
+    block_id = gdpo.head_block_id
+    tapos_data = get_tapos_data(to_cpp_string(block_id))
+    ref_block_num = tapos_data.ref_block_num
+    ref_block_prefix = tapos_data.ref_block_prefix
+
+    assert ref_block_num >= 0, f"ref_block_num value `{ref_block_num}` is invalid`"
+    assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
+
+    transaction = SimpleTransaction(
+        ref_block_num=HiveInt(ref_block_num),
+        ref_block_prefix=HiveInt(ref_block_prefix),
+        expiration=gdpo.time + timedelta(seconds=1800),
+        extensions=[],
+        signatures=[],
+        operations=[],
+    )
+
+    for name in account_names:
+        if comment_number is not None:
+            transaction.add_operation(func(name, creator_number=comment_number))  # vote for comment
+        else:
+            transaction.add_operation(func(name))
+    sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
+    node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
+
+    tt.logger.info(f"Finished: {account_names[-1]}")

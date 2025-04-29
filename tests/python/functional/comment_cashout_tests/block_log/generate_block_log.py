@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import argparse
 import os
-from datetime import timedelta
 from pathlib import Path
-from typing import Callable, Final
+from typing import Final
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
+from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHiveHF26
@@ -18,7 +18,6 @@ from schemas.operations.account_create_operation import AccountCreateOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.operations.vote_operation import VoteOperation
 from shared_tools.complex_networks import generate_networks
-from test_tools.__private.wallet.constants import SimpleTransaction
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
 
@@ -205,38 +204,6 @@ def __vote_for_comment(voter: str, creator_number: str) -> VoteOperation:
         permlink=f"post-creator-{creator_number}",
         weight=int(50 * 10000 / AMOUNT_OF_ALL_COMMENTS),
     )
-
-
-def __generate_and_broadcast_transaction(
-    wallet: tt.Wallet, node: tt.InitNode, func: Callable, comment_number: int | None, account_names: list[str]
-) -> None:
-    gdpo = node.api.database.get_dynamic_global_properties()
-    block_id = gdpo.head_block_id
-    tapos_data = get_tapos_data(to_cpp_string(block_id))
-    ref_block_num = tapos_data.ref_block_num
-    ref_block_prefix = tapos_data.ref_block_prefix
-
-    assert ref_block_num >= 0, f"ref_block_num value `{ref_block_num}` is invalid`"
-    assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
-
-    transaction = SimpleTransaction(
-        ref_block_num=HiveInt(ref_block_num),
-        ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=gdpo.time + timedelta(seconds=1800),
-        extensions=[],
-        signatures=[],
-        operations=[],
-    )
-
-    for name in account_names:
-        if comment_number is not None:
-            transaction.add_operation(func(name, creator_number=comment_number))  # vote for comment
-        else:
-            transaction.add_operation(func(name))
-    sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
-    node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
-
-    tt.logger.info(f"Finished: {account_names[-1]}")
 
 
 def __create_voter(voter: str) -> AccountCreateOperation:
