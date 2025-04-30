@@ -33,7 +33,7 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
-
+#include <hive/chain/util/impacted.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/resource_count.hpp>
@@ -721,6 +721,46 @@ void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_
   FC_CAPTURE_AND_RETHROW((trx))
 }
 
+struct custom_op_visitor
+{
+  typedef void result_type;
+
+  typedef decltype( database::_pending_tx_custom_op_count ) counter_map;
+  counter_map& _pending_tx_custom_op_count;
+  counter_map& _current_tx_custom_op_count;
+
+  custom_op_visitor( counter_map& multi_tx_counter, counter_map& current_tx_counter )
+    : _pending_tx_custom_op_count( multi_tx_counter ), _current_tx_custom_op_count( current_tx_counter ) {}
+
+  template< typename T >
+  void operator()( const T& )const {}
+
+  void limit_custom_op_count( const operation& op )const
+  {
+    flat_set< account_name_type > impacted;
+    app::operation_get_impacted_accounts( op, impacted );
+
+    for( const account_name_type& account : impacted )
+    {
+      auto insert_info = _current_tx_custom_op_count.emplace( account, 0 );
+      ++( insert_info.first->second );
+      if( insert_info.second ) // just added - copy potentially existing counter from pending
+      {
+        auto it = _pending_tx_custom_op_count.find( account );
+        if( it != _pending_tx_custom_op_count.end() )
+          insert_info.first->second += it->second;
+      }
+      FC_ASSERT( insert_info.first->second <= HIVE_CUSTOM_OP_BLOCK_LIMIT,
+        "Account ${a} already submitted ${n} custom json operation(s) this block.",
+        ( "a", account )( "n", HIVE_CUSTOM_OP_BLOCK_LIMIT ) );
+    }
+  }
+
+  void operator()( const custom_operation& o )const { limit_custom_op_count( o ); }
+  void operator()( const custom_json_operation& o )const { limit_custom_op_count( o ); }
+  void operator()( const custom_binary_operation& o )const { limit_custom_op_count( o ); }
+};
+
 void database::_push_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
   const auto& trx_id = full_transaction->get_transaction_id();
@@ -733,7 +773,18 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
 
   try
   {
+    // check if there is not too many custom operations added with current transaction
+    decltype( _pending_tx_custom_op_count ) _current_tx_custom_op_count;
+    custom_op_visitor visitor( _pending_tx_custom_op_count, _current_tx_custom_op_count );
+    for( const auto& op : full_transaction->get_transaction().operations )
+      op.visit( visitor );
+
     _apply_transaction(full_transaction);
+
+    // since transaction was accepted, consolidate custom op counters for that transaction with all pending counters
+    for( const auto& counter : _current_tx_custom_op_count )
+      _pending_tx_custom_op_count[ counter.first ] = counter.second;
+
     if( full_transaction->check_privilege() && is_validating_one_tx() )
     {
       // reuse mechanism used for forks to make sure privileged transaction gets rewritten to the start
@@ -745,6 +796,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
       _pending_tx.push_back( full_transaction );
       _pending_tx_size += full_transaction->get_transaction_size();
     }
+
     _pending_tx_index.emplace( trx_id );
     // The transaction applied successfully. Merge its changes into the pending block session.
     _pending_tx_session->second.squash( true );
@@ -828,6 +880,7 @@ void database::clear_pending()
     _pending_tx_size = 0;
     _pending_tx_session.reset();
     _pending_tx_index.clear();
+    _pending_tx_custom_op_count.clear();
   }
   FC_CAPTURE_AND_RETHROW()
 }
