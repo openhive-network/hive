@@ -141,7 +141,7 @@ def test_update_proposal_xxx(wallet: tt.OldWallet, funded_account: FundedAccount
 
     proposal = wallet.api.find_proposals([proposal_id])[0]
 
-    assert proposal["daily_pay"] == .as_legacy()
+    assert proposal["daily_pay"] == current_daily_pay.as_legacy()
     assert proposal["subject"] == update_args["subject"]
     assert proposal["permlink"] == prepared_proposal.permlink
     assert proposal["end_date"] == update_args["end_date"]
