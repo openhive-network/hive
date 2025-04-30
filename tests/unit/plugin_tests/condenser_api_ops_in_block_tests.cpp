@@ -925,7 +925,7 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_recurrent_transfer )
       } };
     // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
     test_get_ops_in_block( *this, expected_operations, expected_operations, 1204 );
-  };²
+  };
 
   recurrent_transfer_scenario( check_point_tester );
 
