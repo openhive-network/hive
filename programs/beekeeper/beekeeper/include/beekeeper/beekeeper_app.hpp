@@ -4,6 +4,7 @@
 
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/beekeeper_wallet_api.hpp>
+#include <beekeeper/mutex_handler.hpp>
 
 #include <core/beekeeper_app_base.hpp>
 
@@ -26,6 +27,8 @@ class beekeeper_app: public beekeeper_app_base
     std::unique_ptr<beekeeper::beekeeper_wallet_api> api_ptr;
 
     appbase::application app;
+
+    std::shared_ptr<mutex_handler> mtx_handler;
 
     std::string check_version();
     bool save_keys( const std::optional<std::string>& notification, const std::string& wallet_name, const std::string& wallet_password );

@@ -10,6 +10,7 @@
 #include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/beekeeper_wallet_api.hpp>
+#include <beekeeper/mutex_handler.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -62,7 +63,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_unlock_blocking)
 
     uint64_t _interval = 500;
 
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     auto _list_created_wallets_checker = [&_api]( const std::string& token, const set_type& unlock_statuses )
     {
@@ -189,7 +191,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
     b_mgr.remove_wallets();
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     std::string _wallet_name                = "w0";
     std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
@@ -331,6 +334,134 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
+{
+  try
+  {
+    auto _run = [this]( bool set_timeout_enabled )
+    {
+      test_utils::beekeeper_mgr b_mgr;
+      b_mgr.remove_wallets();
+
+      uint64_t _interval = 500;
+      auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+      beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
+
+      std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+
+      struct wallet
+      {
+        std::string name;
+        std::string password;
+      };
+      std::vector<wallet> _wallets{
+                                { "0" }, { "1" }, { "2" }, { "3" }, { "4" },
+                                { "5" }, { "6" }, { "7" }, { "8" }, { "9" }
+                                };
+
+      for( auto& wallet : _wallets )
+      {
+        wallet.password = _api.create( beekeeper::create_args{ _token, wallet.name } ).password;
+        _api.close( beekeeper::close_args{ _token, wallet.name } );
+      }
+
+      {
+        for( auto& wallet : _wallets )
+        {
+          _api.unlock( beekeeper::unlock_args{ _token, wallet.name, wallet.password } );
+        }
+      }
+
+      const uint32_t _nr_threads = 2;
+
+      std::vector<std::shared_ptr<std::thread>> threads;
+
+      std::mutex _mtx;
+
+      BOOST_SCOPE_EXIT(&threads)
+      {
+        for( auto& thread : threads )
+          if( thread )
+            thread->join();
+      } BOOST_SCOPE_EXIT_END
+
+      auto _call = [&]( int nr_thread )
+      {
+        uint32_t _max = 10;
+        for( uint32_t _cnt = 0; _cnt < _max; ++_cnt )
+        {
+          switch( nr_thread )
+          {
+            case 0:
+            {
+              if( set_timeout_enabled )
+              {
+                std::lock_guard<std::mutex> _guard( _mtx );
+                _api.set_timeout( beekeeper::set_timeout_args{ _token, 1 } );
+              }
+              else
+              {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+                {
+                  std::lock_guard<std::mutex> _guard( _mtx );
+                  _api.lock_all( beekeeper::lock_all_args{ _token } );
+                }
+              }
+            }break;
+            case 1:
+            {
+              size_t _cnt_locked;
+              size_t _cnt_unlocked;
+
+              do
+              {
+                _cnt_locked = 0;
+                _cnt_unlocked = 0;
+
+                flat_set<beekeeper::wallet_details> _w = _api.list_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
+                for( auto& wallet : _w )
+                {
+                  if( wallet.unlocked )
+                    ++_cnt_unlocked;
+                  else
+                    ++_cnt_locked;
+                }
+
+                //BOOST_TEST_MESSAGE("unlocked: " + std::to_string( _cnt_unlocked ) + " locked: " + std::to_string( _cnt_locked ) );
+
+                BOOST_REQUIRE( _cnt_unlocked + _cnt_locked  == _wallets.size() );
+                BOOST_REQUIRE( _cnt_unlocked  == 0  || _cnt_unlocked  == _wallets.size() );
+                BOOST_REQUIRE( _cnt_locked    == 0  || _cnt_locked    == _wallets.size() );
+
+              } while( _cnt_locked < _wallets.size() );
+
+              {
+                std::lock_guard<std::mutex> _guard( _mtx );
+                for( auto& wallet : _wallets )
+                {
+                  _api.unlock( beekeeper::unlock_args{ _token, wallet.name, wallet.password } );
+                }
+              }
+
+            }break;
+          }
+          BOOST_TEST_MESSAGE("====================iteration " + std::to_string( _cnt ) + " finished====================" );
+        }
+      };
+
+      for( size_t i = 0; i < _nr_threads; ++i )
+        threads.emplace_back( std::make_shared<std::thread>( _call, i ) );
+    };
+
+    BOOST_TEST_MESSAGE("====================set_timeout====================" );
+    _run( true/*set_timeout_enabled*/ );
+
+    BOOST_TEST_MESSAGE("====================lock_all====================" );
+    _run( false/*set_timeout_enabled*/ );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 struct password
 {
   std::mutex mtx;
@@ -365,7 +496,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions_create_close)
     b_mgr.remove_wallets();
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){} ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     std::srand( time(0) );
 
@@ -462,7 +594,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
     b_mgr.remove_wallets();
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){} ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     password _password;
 
@@ -586,7 +719,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_threads_wallets)
       _delete_wallet_file( wallet_name );
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
 
@@ -643,7 +777,8 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_performance_sign_transaction)
     b_mgr.remove_wallets();
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3 ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     std::string _wallet_name                = "w0";
     std::string _private_key                = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
@@ -719,7 +854,8 @@ BOOST_AUTO_TEST_CASE(wallets_synchronization_threads)
     std::string _wallet_name = "www";
 
     uint64_t _interval = 500;
-    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64 ), theApp, _interval );
+    auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
+    beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 64, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
     std::vector<std::string> _tokens;
 
