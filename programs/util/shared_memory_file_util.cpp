@@ -32,7 +32,6 @@
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
-#include <hive/plugins/witness/witness_plugin_objects.hpp>
 
 #include <chrono>
 #include <fstream>
@@ -402,7 +401,6 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::plugins::reputation::reputation_index>());
     save_index_name(add_index_to_db<hive::plugins::transaction_status::transaction_status_index>());
     save_index_name(add_index_to_db<hive::plugins::transaction_status::transaction_status_block_index>());
-    save_index_name(add_index_to_db<hive::plugins::witness::witness_custom_op_index>());
 
     log_result("Detected " + std::to_string(index_counter) + " indices:\n" + detected_indices_stream.str(), std::to_string(index_counter) + " detected indices", "detected_indices.log");
   }

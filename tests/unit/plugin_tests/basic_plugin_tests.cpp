@@ -7,7 +7,6 @@
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
-#include <hive/plugins/witness/witness_plugin_objects.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -48,9 +47,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
 
   BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_object ), 40u ); //temporary, depends on tracking flag, cuts out data from too old blocks
   BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_index::MULTIINDEX_NODE_TYPE ), 136u );
-
-  BOOST_CHECK_EQUAL( sizeof( witness::witness_custom_op_object ), 32u ); //temporary, at most as many as account_object affected by custom ops in single block
-  BOOST_CHECK_EQUAL( sizeof( witness::witness_custom_op_index::MULTIINDEX_NODE_TYPE ), 96u );
 }
 
 template <typename T>
@@ -71,7 +67,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::witness::witness_custom_op_object>(dtds), "685bb79eb173fc063846cf12f938c26125f7099c" );
 
   #ifdef HIVE_ENABLE_SMT
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "0ed6488aad10a231f02e7e58a5f7733362821c72" );
