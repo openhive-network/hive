@@ -26,4 +26,8 @@ message fill_recurrent_transfer {
 
   // @param {number} remaining_executions - number of remaining pending transferss
   required uint32 remaining_executions = 5 [json_name = "remaining_executions"];
+
+  //  @param {number} pair_id -  pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
+  required number   pair_id = 6;
 }
+ p
