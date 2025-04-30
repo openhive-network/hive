@@ -1970,7 +1970,7 @@ void database::process_recurrent_transfers()
         });
       }
 
-      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions));
+      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions, current_recurrent_transfer.pair_id));
     }
     else
     {
@@ -1993,14 +1993,14 @@ void database::process_recurrent_transfers()
           });
         }
         // false means the recurrent transfer was not deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false, current_recurrent_transfer.pair_id));
       }
       else
       {
         // if we had too many consecutive failures, remove the recurrent payment object
         remove_recurrent_transfer = true;
         // true means the recurrent transfer was deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true, current_recurrent_transfer.pair_id));
       }
     }
 

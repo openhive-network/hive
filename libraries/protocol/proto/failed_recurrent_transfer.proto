@@ -31,4 +31,7 @@ message failed_recurrent_transfer {
 
   //  @param {bool} deleted - true if whole recurrent transfer was discontinued due to too many consecutive failures
   required bool   deleted = 7;
+
+  //  @param {number} pair_id -  pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
+  required number   pair_id = 8;
 }
