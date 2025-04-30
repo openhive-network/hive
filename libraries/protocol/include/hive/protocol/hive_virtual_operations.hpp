@@ -636,7 +636,7 @@ struct fill_recurrent_transfer_operation : public virtual_operation
   asset             amount; //(HIVE of HBD) amount transferred in current iteration
   string            memo; //memo attached to the transfer
   uint16_t          remaining_executions = 0; //number of remaining pending transfers
-  uint8_t           pair_id; // pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
+  uint8_t           pair_id = 0; // pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
 };
 
 /**
@@ -660,7 +660,7 @@ struct failed_recurrent_transfer_operation : public virtual_operation
   uint8_t           consecutive_failures = 0; //number of failed iterations
   uint16_t          remaining_executions = 0; //number of remaining pending transfers
   bool              deleted = false; //true if whole recurrent transfer was discontinued due to too many consecutive failures
-  uint8_t           pair_id; // pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
+  uint8_t           pair_id = 0; // pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
 };
 
 /**
