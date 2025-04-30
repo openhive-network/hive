@@ -1533,7 +1533,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     block_storage_description = "legacy monolithic file";
   else if( my->block_log_split > 0 )
     block_storage_description = "split into multiple files";
-  ilog("Block storage is configured to be ${bs}.", ("bs", block_storage_description));
+  ilog("Block storage is configured to be ${bsd} (${bls}).",
+    ("bsd", block_storage_description)("bls", my->block_log_split));
   my->block_storage = block_storage_i::create_storage( my->block_log_split, get_app(), my->thread_pool );
   my->default_block_writer = 
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
