@@ -29,6 +29,8 @@ class wallet_content_handler
 
       bool is_checksum_valid( const fc::sha512& old_checksum, const std::vector<char>& content );
 
+      std::vector<char> get_decrypted_password( const std::string& password );
+
    public:
       wallet_content_handler( bool is_temporary = false );
 
@@ -75,7 +77,7 @@ class wallet_content_handler
        * @param password the password previously set with \c set_password()
        * @ingroup Wallet Management
        */
-      void    unlock(std::string password);
+      void    unlock( const std::string& password );
 
       /** Checks the password of the wallet
        *
