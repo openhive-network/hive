@@ -2018,6 +2018,25 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   tx_ctrl->rethrow_if_exception();
 }
 
+void chain_plugin::queue_transaction( const std::shared_ptr<transaction_flow_control>& trx_ctrl, const lock_type lock /* = lock_type::boost */ )
+{
+  auto cxt = std::make_shared< write_context >();
+  cxt->req_ptr = trx_ctrl;
+
+  if( lock == lock_type::boost )
+  {
+    std::shared_ptr<boost::promise<void>> queue_transaction_promise = std::make_shared<boost::promise<void>>();
+    trx_ctrl->attach_promise( queue_transaction_promise );
+    my->add_to_write_queue( cxt );
+  }
+  else
+  {
+    fc::promise<void>::ptr queue_transaction_promise = fc::promise<void>::create( "queue_transaction" );
+    trx_ctrl->attach_promise( queue_transaction_promise );
+    my->add_to_write_queue( cxt );
+  }
+}
+
 void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
   std::function< void( bool hf26_auth_fail )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {
