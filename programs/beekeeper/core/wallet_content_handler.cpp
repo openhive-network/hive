@@ -293,9 +293,8 @@ bool wallet_content_handler::is_checksum_valid( const fc::sha512& old_checksum, 
   return old_checksum == _new_checksum;
 }
 
-void wallet_content_handler::unlock(std::string password)
+std::vector<char> wallet_content_handler::get_decrypted_password( const std::string& password )
 {
-  FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
 
   std::vector<char> _decrypted;
@@ -312,8 +311,15 @@ void wallet_content_handler::unlock(std::string password)
   }
   catch(...)
   {
-    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_name()) );
+    FC_ASSERT( false, "Invalid password for wallet: '${wallet_name}' ", ("wallet_name", get_wallet_name()) );
   }
+
+  return _decrypted;
+}
+
+void wallet_content_handler::unlock( const std::string& password )
+{
+  auto _decrypted = get_decrypted_password( password );
 
   plain_keys _pk;
   fc::raw::unpack_from_vector<plain_keys>( _decrypted, _pk, 0/*depth*/, true/*limit_is_disabled*/ );
@@ -324,25 +330,7 @@ void wallet_content_handler::unlock(std::string password)
 
 void wallet_content_handler::check_password( const std::string& password )
 {
-  FC_ASSERT(password.size() > 0);
-  auto pw = fc::sha512::hash(password.c_str(), password.size());
-
-  std::vector<char> _decrypted;
-  try
-  {
-    //Notice that `fc::aes_decrypt` sometimes doesn't throw an exception when a password is invalid.
-    _decrypted = fc::aes_decrypt(pw, my->_wallet.cipher_keys);
-
-    /*
-      Details why a checksum should be calculated are in:
-        PROJECT_DIR/programs/beekeeper/beekeeper/documentation/wallet-example
-    */
-    FC_ASSERT( is_checksum_valid( pw, _decrypted ) );
-  }
-  catch(...)
-  {
-    FC_ASSERT( false, "Invalid password for wallet: ${wallet_name}", ("wallet_name", get_wallet_name()) );
-  }
+  get_decrypted_password( password );
 }
 
 void wallet_content_handler::set_password( const std::string& password )

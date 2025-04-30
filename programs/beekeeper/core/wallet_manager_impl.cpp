@@ -44,6 +44,7 @@ std::string wallet_manager_impl::create( const std::string& wallet_name, const s
 
   auto _wallet_file_name = create_wallet_filename( wallet_name );
   std::string _password = password ? ( *password ) : gen_password();
+  FC_ASSERT( _password.size() > 0 );
 
   content_deliverer.create( token, wallet_name, _wallet_file_name.string(), _password, is_temporary );
 
