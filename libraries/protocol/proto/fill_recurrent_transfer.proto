@@ -30,4 +30,3 @@ message fill_recurrent_transfer {
   //  @param {number} pair_id -  pair_id used to differenciate between multiple recurrent transfers to the same from/to pair
   required number   pair_id = 6;
 }
- p
