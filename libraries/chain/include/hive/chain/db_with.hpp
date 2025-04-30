@@ -83,6 +83,7 @@ struct pending_transactions_restorer
       _db._pending_tx.clear();
       _db._pending_tx_size = 0;
       _db._pending_tx_index.clear();
+      _db._pending_tx_custom_op_count.clear();
     }
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 

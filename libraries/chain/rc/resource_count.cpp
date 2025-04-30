@@ -439,13 +439,11 @@ struct count_operation_visitor
 
   void operator()( const custom_operation& )const
   {
-    //no point in adding state cost of witness_custom_op_object because in only lives up to end of block
     execution_time_count += _e.custom_time;
   }
 
   void operator()( const custom_json_operation& op )const
   {
-    //no point in adding state cost of witness_custom_op_object because in only lives up to end of block
     execution_time_count += _e.custom_json_time;
     //note: extra cost for delegate_rc_operation and (future) similar ops was already collected during
     //on_post_apply_custom_operation signal handling
@@ -453,8 +451,7 @@ struct count_operation_visitor
 
   void operator()( const custom_binary_operation& o )const
   {
-    //no point in adding state cost of witness_custom_op_object because in only lives up to end of block
-    //this operation is (soft-fork) obsolete
+    //this operation is (temporarily) obsolete
     execution_time_count += _e.custom_binary_time;
   }
 

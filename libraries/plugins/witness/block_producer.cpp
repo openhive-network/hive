@@ -149,6 +149,9 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   _db._pending_tx_index.clear();
   auto skip = _db.get_node_skip_flags();
   skip |= chain::database::skip_transaction_dupe_check;
+  // the chance that we'll get more than limit of custom operations per user in the block, while
+  // nonzero, is pretty low, and the check is nonconsensus, so even if it fails, it is still ok-ish,
+  // so ignore _pending_tx_custom_op_count
 
   uint32_t unused_tx_count = 0;
   uint32_t failed_tx_count = 0;

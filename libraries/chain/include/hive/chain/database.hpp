@@ -589,6 +589,8 @@ namespace chain {
       size_t                                                   _max_mempool_size = 0;
       // alternative for transaction_index holding ids of pending and popped transactions
       std::unordered_set<transaction_id_type>                  _pending_tx_index;
+      // collection of custom operation impacted accounts (related to limit of 5 per user per block)
+      std::unordered_map<account_name_type, uint8_t>           _pending_tx_custom_op_count;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
