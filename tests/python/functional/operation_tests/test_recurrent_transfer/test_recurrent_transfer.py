@@ -45,7 +45,7 @@ def test_recurrent_transfer_cases_1_and_2(
             sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
         else:
             node.wait_for_irreversible_block()
-            recurrent_transfer.exec.ute_future_transfer()
+            recurrent_transfer.execute_future_transfer()
             sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
