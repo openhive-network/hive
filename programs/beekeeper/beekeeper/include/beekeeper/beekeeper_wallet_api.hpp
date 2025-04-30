@@ -3,6 +3,8 @@
 #include <core/beekeeper_wallet_manager.hpp>
 #include <core/utilities.hpp>
 
+#include <beekeeper/mutex_handler.hpp>
+
 #include <hive/plugins/json_rpc/utility.hpp>
 
 #include <fc/optional.hpp>
@@ -24,7 +26,8 @@ namespace detail
 class beekeeper_wallet_api
 {
   public:
-    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app, uint64_t unlock_interval );
+    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, std::shared_ptr<mutex_handler> mtx_handler,
+                          appbase::application& app, uint64_t unlock_interval );
     ~beekeeper_wallet_api();
 
     DECLARE_API(

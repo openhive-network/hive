@@ -171,7 +171,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
       return _initialization;
     }
 
-    api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
+    api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, mtx_handler, app, unlock_interval );
 
     app.notify_status( "beekeeper is starting" );
 
@@ -251,7 +251,8 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
 {
   instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, notifications_endpoint );
-  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
+  mtx_handler = std::make_shared<mutex_handler>();
+  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint, mtx_handler ), instance,
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
                                                                        [this]() { app.kill(); } );
 }

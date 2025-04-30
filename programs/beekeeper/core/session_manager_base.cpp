@@ -25,6 +25,14 @@ std::shared_ptr<session_base> session_manager_base::create_session( const std::o
   return std::make_shared<session_base>( content_deliverer, token, time, wallet_directory );
 }
 
+void session_manager_base::lock( const std::string& token )
+{
+  auto _wallet_mgr = get_session( token )->get_wallet_manager();
+  FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
+
+  _wallet_mgr->lock_all();
+}
+
 std::string session_manager_base::create_session( const std::optional<std::string>& salt, const std::optional<std::string>& notifications_endpoint, const boost::filesystem::path& wallet_directory )
 {
   auto _token = token_generator::generate_token( salt, token_length );
@@ -36,10 +44,7 @@ std::string session_manager_base::create_session( const std::optional<std::strin
   time->add(  _token,
               [this]( const std::string& token )
               {
-                auto _wallet_mgr = get_session( token )->get_wallet_manager();
-                FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
-
-                _wallet_mgr->lock_all();
+                lock( token );
               },
               [this]( const std::string& token )
               {
