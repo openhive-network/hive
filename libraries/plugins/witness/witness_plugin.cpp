@@ -497,7 +497,7 @@ class witness_plugin_impl
         break;
     }
 
-    if( theApp.is_interrupt_request() )
+    if( _chain_plugin.is_finished_write_processing() )
       ilog( "ending block_production_loop" );
     else
       schedule_production_loop();
