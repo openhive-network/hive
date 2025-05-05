@@ -64,7 +64,7 @@ install_all_dev_packages() {
   && \
   (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  pip3 install --break-system-packages -U secp256k1prp
+  pip3 install --user secp256k1prp
 }
 
 preconfigure_faketime() {
