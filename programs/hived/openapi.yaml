@@ -1,0 +1,598 @@
+openapi: 3.1.0
+info:
+  title: Hive OpenAPI
+  version: 1.27.11
+  description: |
+    **Introduction to Hive**
+
+    Hive is an advanced decentralized blockchain offering fast, fee-less transactions completed in just 3 seconds. It's highlighted by features like human-readable account names, a decentralized community fund, and an algorithmic stablecoin, HBD, backed by HIVE.
+
+    Powered by the Delegated Proof of Stake (DPoS) consensus mechanism, Hive achieves an optimal blend of scalability, decentralization, and speed. 
+
+    **Innovative Features:**
+    
+    - **Resource Credits System:** Users can stake HIVE tokens to gain resources, enabling virtually free transactions directly on the blockchain, avoiding high fees common with Bitcoin or Ethereum.
+    
+    - **Human Readable Usernames:** Simplifies interactions by allowing easy recollection of account names for both businesses and individuals, enhancing social and financial interactions.
+    
+    - **Algorithmic Stablecoin:** The HBD stablecoin, backed by HIVE, boasts nearly a decade of stable performance, being among the pioneers of algorithmic stablecoins.
+
+    - **Social Networking:** Hive's flagship applications are decentralized, community-driven social networks, establishing it as the first blockchain to truly support free speech and decentralized information sharing within the Web3 space.
+
+    - **Decentralized Hive Fund:** Managed and owned by the community, this fund allocates resources to global developers and teams fostering innovation on the blockchain.
+
+    - **Applications in Gaming, NFT, DeFi, and More:** Hive offers an attractive development environment with seamless integration capabilities for building engaging Web3 applications.
+
+    **Web2 vs Web3**
+
+    While today's Internet (Web2) is dominated by services that exchange personal data for functionality, Web3, powered by blockchains like Hive, enables decentralized applications (dApps) that respect data ownership and empower users.
+
+    **Differences:**
+
+    | Aspect          | Web2                                        | Web3                                           |
+    |-----------------|---------------------------------------------|------------------------------------------------|
+    | Data Ownership  | Centralized entities control data           | Decentralized, user-owned data                 |
+    | Trust           | Requires trust in central authorities       | Trustless with blockchain technology           |
+    | Censorship      | Susceptible to centralized censorship       | Decentralization provides resistance           |
+    | Scalability     | Limited by central infrastructure           | Potentially expansive through decentralization |
+    | Transparency    | Opaque data handling processes              | Blockchain offers transparent records          |
+    | Governance      | Centralized power structures                | DAO-based, community governance                |
+    | Monetization    | Relies on advertising, central monetization | Tokens and smart contracts decentralize it     |
+    | Intermediaries  | Heavily depends on middlemen                | Reduced need for intermediaries                |
+    | Innovation      | Driven by major corporations                | Community and protocol-driven                  |
+
+    Invest your time in building innovative Web3 products with Hive's empowering platform.
+
+    **Developer Workflow**
+
+    This overview provides a simplified understanding of how services interact with the blockchain. It serves as a foundation for learning and developing within the Hive network.
+
+servers:
+  - url: http://192.168.6.150:7777
+tags:
+  - name: account_by_key_api
+    description: >-
+      Used to lookup account information based on a key.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: account_history_api
+    description: >-
+      Used to lookup account history information.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: block_api
+    description: >-
+      Used to query values related to the block plugin.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: bridge
+    description: Presents data interpreted by the hivemind database as JSON-RPC.
+  - name: condenser_api
+    description: Contains all of the API methods that currently exist and uses the existing argument formatting. 
+  - name: database_api
+    description: Used to query information about accounts, transactions, and blockchain data.
+  - name: debug_node_api
+    description: This plugin allows all sorts of creative “what-if” experiments with the chain.
+  - name: follow_api
+    description: >-
+      Used to lookup information related to reputation and account follow operations.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: market_history_api
+    description: >-
+      Used to lookup market history information.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: rc_api
+    description: Allows querying of various Resource Credit metrics.
+  - name: reputation_api
+    description: Needed by condenser_api to optionally use follow_api or reputation_api for account reputations
+  - name: rewards_api
+    description: Returns the simulated curve for payouts
+  - name: tags_api
+    description: >-
+      Used to lookup information about tags, posts, and discussions.
+
+      These AppBase API methods are still under development and subject to change.
+  - name: transaction_status_api
+    description: This API is intended to evaluate a transaction status after calling condenser_api.broadcast_transaction.
+  - name: wallet_bridge_api
+    description: Required for cli_wallet interactions.
+  - name: witness_api
+    description: Returns the available bandwidth of an account.
+paths:
+  database_api.list_accounts:
+    post:
+      tags:
+        - database_api
+      summary: List accounts ordered by specified key.
+      description: |
+        Parameters:
+        
+        - `start`: An object indicating the starting point for listing accounts (optional).
+        
+        - `limit`: An integer specifying the maximum number of accounts to return; default is 1000.
+        
+        - `order`: A string defining the sorting order. Possible values:
+          - `by_name` — order by account name
+          - `by_proxy` — order by proxy
+          - `by_next_vesting_withdrawal` — order by next vesting withdrawal
+        
+        - `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes. Defaults to true (optional).
+      operationId: list_accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_accounts'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_accounts_response'
+              example: {
+                "accounts": [
+                  {
+                    "active": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM8dczRoMv35FZ9MHDHSDj75wQKT5P7B15o6CmgjmGvF7pHRFnm3",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "can_vote": true,
+                    "comment_count": 0,
+                    "created": "2025-03-14T17:49:21",
+                    "curation_rewards": 0,
+                    "delayed_votes": [],
+                    "delegated_vesting_shares": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "downvote_manabar": {
+                      "current_mana": 2523502754,
+                      "last_update_time": 1742298630
+                    },
+                    "governance_vote_expiration_ts": "1969-12-31T23:59:59",
+                    "hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "hbd_last_interest_payment": "1970-01-01T00:00:00",
+                    "hbd_seconds": "0",
+                    "hbd_seconds_last_update": "1970-01-01T00:00:00",
+                    "id": 2561639,
+                    "is_smt": false,
+                    "json_metadata": "[]",
+                    "last_account_recovery": "1970-01-01T00:00:00",
+                    "last_account_update": "1970-01-01T00:00:00",
+                    "last_owner_update": "1970-01-01T00:00:00",
+                    "last_post": "1970-01-01T00:00:00",
+                    "last_post_edit": "1970-01-01T00:00:00",
+                    "last_root_post": "1970-01-01T00:00:00",
+                    "last_vote_time": "1970-01-01T00:00:00",
+                    "lifetime_vote_count": 0,
+                    "memo_key": "STM6MpgnBRjJv4pB2wGGSKVFeqNdLnAX1TSW2vn3ah4Pbqxtktq6j",
+                    "mined": false,
+                    "name": "a--------------0",
+                    "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                    "open_recurrent_transfers": 0,
+                    "owner": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM7kSqdruvZrWgPxHaNSX1YEZzUr7xBLuALSeonk8NUp2eAV8FWB",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "pending_claimed_accounts": 0,
+                    "pending_transfers": 0,
+                    "post_bandwidth": 0,
+                    "post_count": 0,
+                    "post_voting_power": {
+                      "amount": "10094011016",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "posting": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "posting_json_metadata": "",
+                    "posting_rewards": 0,
+                    "previous_owner_update": "1970-01-01T00:00:00",
+                    "proxied_vsf_votes": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    "proxy": "",
+                    "received_vesting_shares": {
+                      "amount": "10094011016",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "recovery_account": "leo.voter",
+                    "reset_account": "null",
+                    "reward_hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "reward_hive_balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "reward_vesting_balance": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "reward_vesting_hive": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "savings_balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "savings_hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                    "savings_hbd_seconds": "0",
+                    "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                    "savings_withdraw_requests": 0,
+                    "to_withdraw": 0,
+                    "vesting_shares": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "vesting_withdraw_rate": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "voting_manabar": {
+                      "current_mana": 10094011016,
+                      "last_update_time": 1742298630
+                    },
+                    "withdraw_routes": 0,
+                    "withdrawn": 0,
+                    "witnesses_voted_for": 0
+                  }
+                ]
+              }
+components:
+  schemas:
+    list_accounts:
+      type: object
+      properties:
+        start:
+          type: object
+          example: ""
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: by_name
+          description:
+        delayed_votes_active:
+          type: boolean
+          example: true
+          description: Optional.
+    list_accounts_response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/account'
+    auths:
+      type: object
+      properties:
+        weight_threshold:
+          type: integer
+        account_auths:
+          type: array
+          items:
+            type: string
+        key_auths:
+          type: array
+          items:
+            type: string
+    voting_manabar:
+      type: object
+      properties:
+        current_mana:
+          type: integer
+        last_update_time:
+          type: integer
+    balance:
+      type: object
+      properties:
+        amount:
+          type: string
+        nai:
+          type: string
+        precision:
+          type: integer
+    account:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Account's identification number.
+        name:
+          type: string
+          description: Account's name.
+        owner:
+          $ref: '#/components/schemas/auths'
+          description: Owner authority of the account. 
+        active:
+          $ref: '#/components/schemas/auths'
+          description: Active authority of the account. 
+        posting:
+          $ref: '#/components/schemas/auths'
+          description: Posting authority of the account.
+        memo_key:
+          type: string
+          description: The public key used to encrypt the memo. 
+        json_metadata:
+          type: string
+          description: >-
+            Parameter encompasses personalized profile information. 
+            It is a JSON object that can contain any data.
+        posting_json_metadata:
+          type: string
+          description: >-
+            Parameter encompasses personalized profile information. 
+            It is a JSON object that can contain any data.
+        proxy:
+          type: string
+          description: >-
+            An account to which the account has designated as its proxy. 
+            The proxy can vote on behalf of the account.
+        last_owner_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last owner update was performed. 
+        last_account_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last account update was performed. 
+        created:
+          type: string
+          format: date-time
+          description: >-
+            The date of account creation. 
+        mined:
+          type: boolean
+          description: >-
+            Information whether made a prove of work. 
+            It is true if the account was created by mining.
+        recovery_account:
+          type: string
+          description: >-
+            An account to which the account has designated as its recovery account. 
+            The recovery account can help recover the account if it is lost.
+        reset_account:
+          type: string
+          description: deprecated parameter
+        comment_count:
+          type: integer
+          description: >-
+            The number of comments made by the account.
+        lifetime_vote_count:
+          type: integer
+          description: >-
+            The number of votes made by the account.
+        can_vote:
+          type: boolean
+          description: >-
+            Information whether the account can vote or not. 
+            It is true if the account can vote.
+        voting_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+          description: >-
+            The voting mana bar of the account. 
+            It indicates the amount of voting power available to the account.
+        downvote_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+          description: >-
+            The downvote mana bar of the account. 
+            It indicates the amount of downvoting power available to the account.
+        balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        savings_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The savings balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        hbd_seconds:
+          type: string
+          description: >-
+            The number of seconds the HIVE backed dollar balance has been held.
+        hbd_seconds_last_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the HIVE backed dollar seconds were last updated.
+        hbd_last_interest_payment:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last interest payment was made on the HIVE backed dollar balance.
+        savings_hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The savings HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        savings_hbd_seconds:
+          type: string
+          description: >-
+            The number of seconds the savings HIVE backed dollar balance has been held.
+        savings_hbd_seconds_last_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the savings HIVE backed dollar seconds were last updated.
+        savings_hbd_last_interest_payment:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last interest payment was made on the savings HIVE backed dollar balance
+        savings_withdraw_requests:
+          type: integer
+          description: >-
+            The number of savings withdraw requests made by the account.
+        reward_hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_hive_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward HIVE balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_vesting_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward vesting balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_vesting_hive:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward vesting HIVE balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        delegated_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The delegated vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        received_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The received vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        vesting_withdraw_rate:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The vesting withdraw rate of the account. 
+            It is represented as an object with amount, nai, and precision.
+        post_voting_power:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The post voting power of the account. 
+            It is represented as an object with amount, nai, and precision.
+        next_vesting_withdrawal:
+          type: string
+          format: date-time
+          description: >-
+            The time of the next vesting withdrawal.
+        withdrawn:
+          type: string
+          description: >-
+            The total vesting shares already withdrawn from active withdrawals.
+        to_withdraw:
+          type: string
+          description: >-
+            The remaining total vesting shares needed to complete withdrawals.
+        withdraw_routes:
+          type: integer
+          description: >-
+            The number of withdraw routes for the account.
+        pending_transfers:
+          type: integer
+          description: >-
+            The number of pending transfers for the account.
+        pending_claimed_accounts:
+          type: integer
+          description: >-
+            The number of pending claimed accounts for the account.
+        post_bandwidth:
+          type: integer
+          description: >-
+            The post bandwidth of the account.
+        post_count:
+          type: integer
+          description: >-
+            The number of posts made by the account.
+        last_post:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last post made by the account.
+        last_root_post:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last root post made by the account.
+        last_post_edit:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last post edit made by the account.
+        last_vote_time:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last vote made by the account.
+        last_account_recovery:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last account recovery made by the account.
+        previous_owner_update:
+          type: string
+          format: date-time
+          description: >-
+            The time of the previous owner update made by the account.
+x-envelope: jsonrpc-2.0
