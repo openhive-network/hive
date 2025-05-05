@@ -19,11 +19,10 @@ namespace chainbase {
     static_assert((BLOCK_SIZE & (BLOCK_SIZE-1)) == 0, "BLOCK_SIZE should be power of 2!");
 
     private:
-      using segment_manager_t = std::conditional_t<
-        USE_MANAGED_MAPPED_FILE,
-        bip::managed_mapped_file::segment_manager,
-        void>;
-      using base_class_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::allocator<T, segment_manager_t>, std::allocator<T>>;
+      using segment_manager_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::managed_mapped_file::segment_manager, void>;
+      template <typename T2>
+      using allocator_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::allocator<T2, segment_manager_t>, std::allocator<T2>>;
+      using base_class_t = allocator_t<T>;
 
     public:
       typedef typename base_class_t::value_type value_type;
@@ -98,9 +97,9 @@ namespace chainbase {
       auto get_generic_allocator() const
         {
         if constexpr (USE_MANAGED_MAPPED_FILE)
-          return allocator<T2>(get_segment_manager());
+          return allocator_t<T2>(get_segment_manager());
         else
-          return allocator<T2>();
+          return allocator_t<T2>();
         }
 
       template <typename T2, uint32_t BLOCK_SIZE2 = BLOCK_SIZE>
@@ -172,7 +171,7 @@ namespace chainbase {
 
           bool check_address_in_block(T* object) const noexcept
             {
-            chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
+            const chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
             return chunk >= chunks && chunk < (chunks + BLOCK_SIZE);
             }
 
@@ -263,7 +262,11 @@ namespace chainbase {
 
         if (current_block != nullptr && current_block->check_address_in_block(object))
           {
-          current_block->return_object_memory(object);
+          block = &(*current_block);
+          }
+        else if (last_found_block != nullptr && last_found_block->check_address_in_block(object))
+          {
+          block = &(*last_found_block);
           }
         else
           {
@@ -271,9 +274,12 @@ namespace chainbase {
           const auto found = block_index.lower_bound(*block);
           assert(found != block_index.cend());
           block = const_cast<block_t*>(&(*found));
-          block->return_object_memory(object);
+          last_found_block = block;
+          }
 
-          if (block->full())
+        if (block->return_object_memory(object))
+          {
+          if (block != current_block)
             {
             const auto index = block->get_on_list_index();
 
@@ -281,14 +287,21 @@ namespace chainbase {
               block_list.pop_back();
             else
               block_list[index] = nullptr;
-
-            block_index.erase(found);
-            ++blocks_released_count;
             }
           else
             {
-            push_to_block_list(block);
+            current_block = nullptr;
             }
+
+          if (block == last_found_block)
+            last_found_block = nullptr;
+
+          block_index.erase(*block);
+          ++blocks_released_count;
+          }
+        else if (block != current_block)
+          {
+          push_to_block_list(block);
           }
         }
 
@@ -337,6 +350,7 @@ namespace chainbase {
       block_index_t             block_index;
       block_list_t              block_list;
       block_ptr_t               current_block = nullptr;
+      block_ptr_t               last_found_block = nullptr;
       uint32_t                  allocated_count = 0;
 
     public:
