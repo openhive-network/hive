@@ -99,8 +99,8 @@ install_user_packages() {
   popd
 
   curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
-  poetry self update 1.7.1
-  poetry self add "poetry-dynamic-versioning[plugin]@>=1.0.0,<2.0.0"
+  poetry self update 2.1.3
+  poetry self add "poetry-dynamic-versioning[plugin]@>=1.0.0,<2.2.0"
 }
 
 install_docker_cli() {
