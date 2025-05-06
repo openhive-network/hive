@@ -6200,15 +6200,17 @@ void database::apply_hardfork( uint32_t hardfork )
     {
       clear_accounts( hardforkprotect::get_steemit_accounts() );
 
-      // Reset TAPOS buffer to avoid replay attack
-      auto empty_block_id = block_id_type();
-      const auto& bs_idx = get_index< block_summary_index, by_id >();
-      for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )
-      {
-        modify( *itr, [&](block_summary_object& p) {
-          p.block_id = empty_block_id;
-        });
-      }
+      /** Reset TAPOS buffer to avoid replay attack - do it only for mainnet, since is far away from such blocks.
+          Skip it now since it is ineffective, but i.e. breaks live 5M mirrornet instance having applied all HFs.
+      */
+      //auto empty_block_id = block_id_type();
+      //const auto& bs_idx = get_index< block_summary_index, by_id >();
+      //for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )
+      //{
+      //  modify( *itr, [&](block_summary_object& p) {
+      //    p.block_id = empty_block_id;
+      //  });
+      //}
       break;
     }
     case HIVE_HARDFORK_1_24:
