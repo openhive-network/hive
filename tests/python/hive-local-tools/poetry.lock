@@ -1680,7 +1680,7 @@ loguru = "0.7.2"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
 typing-extensions = "4.12.2"
-wax = "0.3.10.dev606+7d17dff"
+wax = "0.3.10.dev647+6aa5003"
 
 [package.source]
 type = "directory"
@@ -1804,12 +1804,12 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev606+7d17dff"
+version = "0.3.10.dev647+6aa5003"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 files = [
-    {file = "wax-0.3.10.dev606+7d17dff-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:ca96b9be15785e6814dd2dfbb15dc4593bdbaf15b80d67419cdfb47b7776bd76"},
+    {file = "wax-0.3.10.dev647+6aa5003-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:d5e724d7ea06ec062b68556b298a599659e9fb3f73b079b1c6733e3c6b176b2e"},
 ]
 
 [package.dependencies]
