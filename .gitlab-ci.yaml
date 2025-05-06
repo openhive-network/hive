@@ -14,8 +14,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-1
-  TEST_IMAGE_TAG: "@sha256:813f18c42929193036fc4e0017981c16913766442ef8d146313c64785df29c2e"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-2
+  TEST_IMAGE_TAG: "@sha256:81f56a1820497ff3cb1342327b7242dc50270db04cbfdd8d6198af1bb0e910b3"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
