@@ -148,8 +148,9 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     tt.logger.info(f"Final block_log head block number: {init_node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 
-    acs.export_to_file(output_block_log_directory)
-    init_node.block_log.copy_to(output_block_log_directory)
+    block_log_directory_comments_and_votes = output_block_log_directory / "comments_and_votes"
+    acs.export_to_file(block_log_directory_comments_and_votes)
+    init_node.block_log.copy_to(block_log_directory_comments_and_votes)
     init_wallet.close()
     init_node.close()
 
