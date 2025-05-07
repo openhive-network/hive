@@ -175,7 +175,11 @@ init_data beekeeper_app::initialize( int argc, char** argv )
     if( instance->is_instance_started() )
     {
       api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app, unlock_interval );
-      instance->get_app().save_status( "beekeeper is starting", "beekeeper_status" );
+      instance->get_app().status.save_status( "beekeeper is starting" );
+    }
+    else
+    {
+      instance->get_app().status.save_status( "opening beekeeper failed");
     }
 
     return _initialization;
@@ -192,7 +196,7 @@ void beekeeper_app::start()
   if( !app.is_interrupt_request() )
   {
     _webserver_plugin.start_webserver();
-    instance->get_app().save_status( "beekeeper is ready", "beekeeper_status" );
+    instance->get_app().status.save_status( "beekeeper is ready" );
   }
 
   ilog("beekeeper is waiting");

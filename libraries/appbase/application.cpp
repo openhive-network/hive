@@ -72,12 +72,12 @@ application::~application() { }
 void application::init_signals_handler()
 {
   handler_wrapper.init();
-  save_status("signals attached");
+  status.save_status("signals attached");
 }
 
 void application::generate_interrupt_request()
 {
-  save_status("interrupted");
+  status.save_status("interrupted");
   _is_interrupt_request = true;
 }
 
@@ -583,7 +583,7 @@ abstract_plugin& application::get_plugin(const string& name)const
   auto ptr = find_plugin(name);
   if(!ptr)
   {
-    save_status( "Unable to find plugin: " + name, "error" );
+    status.save_status( "Unable to find plugin: " + name );
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
   }
   return *ptr;
@@ -622,17 +622,6 @@ std::set< std::string > application::get_plugins_names() const
     res.insert( plugin->get_name() );
 
   return res;
-}
-
-boost::signals2::connection application::add_notify_status_handler( const notify_status_handler_t& func )
-{
-  return notify_status_signal.connect( func );
-}
-
-void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
-{
-  hive::utilities::data_collector _items( status, "current_status", status_description );
-  notify_status_signal( _items );
 }
 
 void application::kill()

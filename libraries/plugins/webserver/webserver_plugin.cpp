@@ -304,7 +304,7 @@ class webserver_plugin_impl : public webserver_base
     void update_http_endpoint();
     void update_ws_endpoint();
 
-    void save_information( const std::string& type, const optional< tcp::endpoint >& endpoint );
+    void save_webserver_info( const std::string& type, const optional< tcp::endpoint >& endpoint );
 };
 
 template<typename websocket_server_type>
@@ -326,12 +326,12 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
 }
 
 template<typename websocket_server_type>
-void webserver_plugin_impl<websocket_server_type>::save_information( const std::string& type, const optional< tcp::endpoint >& endpoint )
+void webserver_plugin_impl<websocket_server_type>::save_webserver_info( const std::string& type, const optional< tcp::endpoint >& endpoint )
 {
-  theApp.save_information( "webserver listening",
-    "type",     type,
-    "address",  endpoint->address().to_string(),
-    "port",     endpoint->port()
+  theApp.status.save_webserver(
+    type,
+    endpoint->address().to_string(),
+    endpoint->port()
   );
 };
 
@@ -369,7 +369,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         ws_server.listen( *ws_endpoint );
         update_ws_endpoint();
 
-        save_information( "WS", ws_endpoint );
+        save_webserver_info( "WS", ws_endpoint );
 
         ilog( "start accepting ws requests" );
         ws_server.start_accept();
@@ -423,7 +423,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         http_server.start_accept();
         update_http_endpoint();
 
-        save_information( "HTTP", http_endpoint );
+        save_webserver_info( "HTTP", http_endpoint );
 
         http_ios.run();
         ilog( "http io service exit" );
