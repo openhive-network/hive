@@ -680,7 +680,7 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
     {
     case report_output::BOTH:
     case report_output::NOTIFY:
-      db.get_app().save_information( "RC stats", "rc_stats", report );
+      db.get_app().status.save_information( "rc_stats", "rc_stats", report );
       if( auto_report_output != report_output::BOTH )
         break;
       //else

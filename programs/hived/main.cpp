@@ -163,7 +163,7 @@ int main( int argc, char** argv )
     if( theApp.is_interrupt_request() ) return 0;
 
     theApp.startup();
-    theApp.save_status("chain API ready");
+    theApp.status.save_status("chain API ready");
 
     if( theApp.is_interrupt_request() ) return 0;
 
