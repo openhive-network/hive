@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+import test_tools as tt
 from schemas.fields.compound import Authority
 
 if TYPE_CHECKING:
-    import test_tools as tt
     from schemas.fields.basic import AccountName, PublicKey
 
 
@@ -19,9 +19,12 @@ def basic_authority(key: PublicKey) -> Authority:
     return Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]])
 
 
-def generate_block(node: tt.InitNode, number: int, miss_blocks: int = 0) -> None:
+def generate_block(node: tt.InitNode, number: int, miss_blocks: int = 0, key: tt.PrivateKey | None = None) -> None:
+    if key is None:
+        key = tt.Account("initminer").private_key
+
     node.api.debug_node.debug_generate_blocks(
-        debug_key="",
+        debug_key=key,
         count=number,
         skip=0,
         miss_blocks=miss_blocks,
