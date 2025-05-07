@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
-
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from hive_local_tools.functional.python.transaction_serialization.cli_wallet.transaction_pattern import (
     VerifyPatternFunctionT,
     verify_generated_transaction_with_binary_pattern,
@@ -264,7 +264,7 @@ def test_remove_proposal(
     transaction = wallet.api.remove_proposal("initminer", [account_id], broadcast=False)
     try:
         replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
-    except Exception as e:
+    except ErrorInResponseError as e:
         message = str(e)
         assert message.find(f"Can\\'t remove nonexistent proposal with id: {account_id}") != -1
 

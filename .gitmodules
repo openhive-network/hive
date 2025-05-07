@@ -29,3 +29,6 @@
 [submodule "npm-common-config"]
 	path = programs/beekeeper/beekeeper_wasm/npm-common-config
 	url = ../common-ci-configuration.git
+[submodule "tests/python/hive-local-tools/test-tools"]
+	path = tests/python/hive-local-tools/test-tools
+	url = ../test-tools.git

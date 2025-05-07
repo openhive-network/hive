@@ -4,7 +4,7 @@
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/full_transaction.hpp>
 
-#include <hive/chain/util/signal.hpp>
+#include <hive/utilities/signal.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/transaction_util.hpp>
@@ -1708,7 +1708,7 @@ BOOST_AUTO_TEST_CASE( slow_obi_test )
       BOOST_SCOPE_EXIT( this_, _finish_push_block_conn, catcher )
       {
         fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher );
-        hive::chain::util::disconnect_signal( _finish_push_block_conn );
+        hive::utilities::disconnect_signal( _finish_push_block_conn );
         this_->theApp.generate_interrupt_request();
       } BOOST_SCOPE_EXIT_END
 
