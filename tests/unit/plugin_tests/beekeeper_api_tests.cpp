@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
       auto _mtx_handler = std::make_shared<beekeeper::mutex_handler>();
       beekeeper::beekeeper_wallet_api _api( b_mgr.create_wallet_ptr( theApp, 900, 3, [](){}, _mtx_handler ), _mtx_handler, theApp, _interval );
 
-      std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token;
+      std::string _token = _api.create_session( beekeeper::create_session_args{ "this is salt" } ).token;
 
       struct wallet
       {

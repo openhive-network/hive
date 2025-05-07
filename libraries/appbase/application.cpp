@@ -1,7 +1,7 @@
 #include <appbase/application.hpp>
 
 #include <hive/utilities/logging_config.hpp>
-#include <hive/utilities/data_collector.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <hive/utilities/options_description_ex.hpp>
 
 #include <fc/thread/thread.hpp>
@@ -72,12 +72,12 @@ application::~application() { }
 void application::init_signals_handler()
 {
   handler_wrapper.init();
-  save_status("signals attached");
+  notify_status("signals attached");
 }
 
 void application::generate_interrupt_request()
 {
-  save_status("interrupted");
+  notify_status("interrupted");
   _is_interrupt_request = true;
 }
 
@@ -127,6 +127,7 @@ void application::startup() {
         break;
     }
   }
+  notify_status("chain API ready");
 }
 
 void application::set_program_options()
@@ -583,7 +584,7 @@ abstract_plugin& application::get_plugin(const string& name)const
   auto ptr = find_plugin(name);
   if(!ptr)
   {
-    save_status( "Unable to find plugin: " + name, "error" );
+    notify_error("Unable to find plugin: " + name);
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
   }
   return *ptr;
@@ -605,6 +606,7 @@ void application::add_logging_program_options()
 {
   hive::utilities::options_description_ex options;
   hive::utilities::set_logging_program_options( options );
+  hive::utilities::notifications::add_program_options(options);
 
   add_program_options( hive::utilities::options_description_ex(), options );
 }
@@ -624,15 +626,19 @@ std::set< std::string > application::get_plugins_names() const
   return res;
 }
 
-boost::signals2::connection application::add_notify_status_handler( const notify_status_handler_t& func )
+void application::notify_status(const fc::string& current_status) const noexcept
 {
-  return notify_status_signal.connect( func );
+  notify("hived_status", "current_status", current_status);
 }
 
-void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
+void application::notify_error(const fc::string& error_message) const noexcept
 {
-  hive::utilities::data_collector _items( status, "current_status", status_description );
-  notify_status_signal( _items );
+  notify("error", "message", error_message);
+}
+
+void application::setup_notifications(const boost::program_options::variables_map &args) const
+{
+  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
 void application::kill()
