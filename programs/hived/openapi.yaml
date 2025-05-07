@@ -563,6 +563,30 @@ paths:
                   }
                 ]
               }
+  database_api.verify_authority:
+    post:
+      tags:
+        - database_api
+      summary: Verify transaction signatures.
+      description: |
+        Returns true if the transaction has all of the required signatures, otherwise throws an exception.
+      operationId: verify_authority
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/verify_authority'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verify_authority_response'
+              example: {
+                "valid": false
+              }
   database_api.get_dynamic_global_properties:
     post:
       tags:
@@ -710,6 +734,59 @@ components:
           type: boolean
           example: true
           description: Optional.
+    operation_body:
+      type: object
+      x-sql-datatype: JSON
+      properties:
+        type:
+          type: string
+        value:
+          type: object
+    array_of_operations:
+      type: array
+      items:
+        $ref: '#/components/schemas/operation_body'
+    extensions:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+          value:
+            type: string
+    transaction:
+      type: object
+      properties:
+        ref_block_num:
+          type: integer
+          example: 0
+        ref_block_prefix:
+          type: integer
+          example: 0
+        expiration:
+          type: string
+          format: date-time
+          example: "1970-01-01T00:00:00"
+        operations:
+          $ref: '#/components/schemas/array_of_operations'
+          example: []
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+        signatures:
+          type: array
+          items:
+            type: string
+          example: []
+    verify_authority:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+        pack:
+          type: string
+          example: "legacy"
     list_accounts_response:
       type: object
       properties:
@@ -724,6 +801,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/witness'
+    verify_authority_response:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+          description: >-
+            Indicates whether the transaction has all of the required signatures.
     auths:
       type: object
       properties:
