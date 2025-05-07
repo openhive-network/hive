@@ -8,6 +8,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
+from beekeepy.exceptions import FailedToStartExecutableError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -56,7 +57,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
 
     node.dump_snapshot(close=True)
     node.close()
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         assert error_message in file.read(999999)
         """
     for line in file:
@@ -101,7 +102,7 @@ def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> N
     assert os.path.isfile(node.directory / "loaded_from_shm_decoded_types_details.log")
 
     warning_msg = "Snaphot has more plugins than current hived configuration"
-    assert warning_msg in (node.directory / "stderr.txt").read_text()
+    assert warning_msg in (node.directory / "stderr.log").read_text()
 
 
 def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> None:
@@ -122,7 +123,7 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     node.config.plugin.append("block_log_info")
     node.run(exit_before_synchronization=True, replay_from=block_log, arguments=["--force-replay"])
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(FailedToStartExecutableError):
         node.run(load_snapshot_from=snap_0, exit_before_synchronization=True)
 
     # two files should be created which will show difference between state definitions in shm and current hived
@@ -132,6 +133,6 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     error_msg_1 = "Snapshot misses plugins"
     error_msg_2 = "State objects definitions from shared memory file mismatch current version of app"
 
-    log = (node.directory / "stderr.txt").read_text()
+    log = (node.directory / "stderr.log").read_text()
     assert error_msg_1 in log
     assert error_msg_2 in log
