@@ -1126,12 +1126,20 @@ operation_tests:
 
 comment_cashout_tests:
   stage: test
-  extends: .test_tools_based
+  extends:
+    - .test_tools_based
+    - .test-block-log-service
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: generate_testing_block_logs_and_save_image
   variables:
     PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comments_and_votes/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/block_log
   script:
+    - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/comment_cashout_tests
     - !reference [.run-pytest, script]
   tags:
@@ -1213,7 +1221,7 @@ authority_tests:
 generate_testing_block_logs_and_save_image:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
-  timeout: 1h
+  timeout: 3h
   variables:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
