@@ -716,6 +716,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/broadcast_transaction_response'
               example: {}
+  block_api.get_block:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a full, signed block of the referenced block, or null if no matching block was found.
+      description: |
+        Parameters:
+        
+        - `block_num`: An integer representing the block number to query.
+      operationId: get_block
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_response'
+              example: {
+                "block": {
+                  "previous": "0000000000000000000000000000000000000000",
+                  "timestamp": "2016-03-24T16:05:00",
+                  "witness": "",
+                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                  "extensions": [],
+                  "witness_signature": "",
+                  "transactions": [],
+                  "block_id": "",
+                  "signing_key": "",
+                  "transaction_ids": []
+                }
+              }
 components:
   schemas:
     list_accounts:
@@ -761,6 +798,75 @@ components:
           type: boolean
           example: true
           description: Optional.
+    get_block:
+      type: object
+      properties:
+        block_num:
+          type: integer
+          example: 0
+          description: >-
+            An integer representing the block number to query.
+    block:
+      type: object
+      properties:
+        previous:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            The previous block ID.
+        timestamp:
+          type: string
+          format: date-time
+          example: "2016-03-24T16:05:00"
+          description: >-
+            The timestamp of the block.
+        witness:
+          type: string
+          example: ""
+          description: >-
+            The witness who produced the block.
+        transaction_merkle_root:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            Single hash representing the combined hashes of all transactions in a block.
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+        witness_signature:
+          type: string
+          example: ""
+          description: >-
+            The signature of the witness who produced the block.
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/operation_body'
+          example: []
+          description: >-
+            An array of transactions included in the block.
+        block_id:
+          type: string
+          example: ""
+          description: >-
+            The ID of the block.
+        signing_key:
+          type: string
+          example: ""
+          description: >-
+            The key used to sign the block.
+        transaction_ids:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of transaction IDs included in the block.
+    get_block_response:
+      type: object
+      properties:
+        block:
+          $ref: '#/components/schemas/block'
     operation_body:
       type: object
       x-sql-datatype: JSON
