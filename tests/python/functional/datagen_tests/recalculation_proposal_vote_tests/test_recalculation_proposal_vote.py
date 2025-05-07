@@ -13,15 +13,14 @@ from schemas.operations.virtual import ProposalPayOperation
 
 def test_recalculation_proposal_votes() -> None:
     node = tt.InitNode()
+    block_log_directory = Path(__file__).parent.joinpath("block_log")
+    block_log = tt.BlockLog(block_log_directory, "auto")
 
     # load block_log to node
     node.config.shared_file_size = "2G"
     node.config.plugin.append("account_history_api")
-    node.config.block_log_split = -1
-    node.run(
-        replay_from=Path(__file__).parent.joinpath("block_log"),
-        exit_before_synchronization=True,
-    )
+    node.config.block_log_split = 9999
+    node.run(replay_from=block_log, exit_before_synchronization=True)
 
     # run node with specific timestamp ( end of block_log )
     node.run(time_control=tt.StartTimeControl(start_time="head_block_time"))
