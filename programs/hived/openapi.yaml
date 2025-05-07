@@ -83,6 +83,11 @@ tags:
       Used to lookup market history information.
 
       These AppBase API methods are still under development and subject to change.
+  - name: network_broadcast_api
+    description: >-
+      Used to broadcast transactions and blocks.
+
+      These AppBase API methods are still under development and subject to change.
   - name: rc_api
     description: Allows querying of various Resource Credit metrics.
   - name: reputation_api
@@ -689,6 +694,28 @@ paths:
                 },
                 "vote_power_reserve_rate": 10
               }
+  network_broadcast_api.broadcast_transaction:
+    post:
+      tags:
+        - network_broadcast_api
+      summary: Used to broadcast a transaction.
+      description: |
+        
+      operationId: broadcast_transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/broadcast_transaction'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/broadcast_transaction_response'
+              example: {}
 components:
   schemas:
     list_accounts:
@@ -787,6 +814,14 @@ components:
         pack:
           type: string
           example: "legacy"
+    broadcast_transaction:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+        max_block_age:
+          type: integer
+          example: -1
     list_accounts_response:
       type: object
       properties:
@@ -794,6 +829,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/account'
+    broadcast_transaction_response:
+      type: object
     find_witnesses_response:
       type: object
       properties:
