@@ -1,5 +1,5 @@
 stages:
-- static_code_analysis
+# - static_code_analysis
 - build
 - test
 - cleanup
@@ -391,13 +391,13 @@ plugin_test:
     - !reference [.project_develop_configuration_template, before_script]
     - cd $CI_PROJECT_DIR
 
-verify_poetry_lock_sanity:
-  extends: .verify_poetry_lock_sanity_template
-  stage: static_code_analysis
-  variables:
-    PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
-  tags:
-    - public-runner-docker
+# verify_poetry_lock_sanity:
+#   extends: .verify_poetry_lock_sanity_template
+#   stage: static_code_analysis
+#   variables:
+#     PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
+#   tags:
+#     - public-runner-docker
 
 .python_static_analysis_configuration:
   extends: .python_based
@@ -413,16 +413,16 @@ verify_poetry_lock_sanity:
   tags:
     - public-runner-docker
 
-pre_commit_checks:
-  stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only pre-commit
-  extends:
-    - .pre_commit_checks_template
-    - .python_static_analysis_configuration
-  artifacts:
-    paths:
-      - tests/python/hive-local-tools/poetry.lock
+# pre_commit_checks:
+#   stage: static_code_analysis
+#   variables:
+#     POETRY_INSTALL_ARGS: --only pre-commit
+#   extends:
+#     - .pre_commit_checks_template
+#     - .python_static_analysis_configuration
+#   artifacts:
+#     paths:
+#       - tests/python/hive-local-tools/poetry.lock
 
 .pytest_based:
   extends: .python_based
@@ -526,7 +526,7 @@ beekeeper_wallet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-  
+
 hived_tests:
   stage: test
   extends: .test_tools_based

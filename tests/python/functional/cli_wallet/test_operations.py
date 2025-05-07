@@ -68,7 +68,9 @@ def test_get_open_orders(wallet: tt.OldWallet, funded_account: FundedAccountInfo
     assert tt.Asset.from_legacy(result_buy[1]["sell_price"]["quote"]) == min_to_receive_2
 
 
-def test_create_recurent_transfer(wallet: tt.OldWallet, funded_account: FundedAccountInfo, creator: tt.Account) -> None:
+def test_create_recurent_transfer(
+    wallet: tt.OldWallet, funded_account: FundedAccountInfo, creator: tt.Account
+) -> None:
     receiver = funded_account.account
     memo = "This is a memo"
     amount = tt.Asset.Tbd(10)
