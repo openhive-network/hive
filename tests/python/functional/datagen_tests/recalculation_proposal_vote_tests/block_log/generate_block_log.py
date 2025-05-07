@@ -107,7 +107,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
         max_workers=MAX_WORKERS,
     )
     generate_block(node, 1)
-    tt.logger.info(f"Finish fund accounts successfully!")
+    tt.logger.info("Finish fund accounts successfully!")
 
     # transfer HBD to accounts
     tt.logger.info(f"Start transfer accounts: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
@@ -120,7 +120,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
         max_workers=MAX_WORKERS,
     )
     generate_block(node, 1)
-    tt.logger.info(f"Finish transfer accounts successfully!")
+    tt.logger.info("Finish transfer accounts successfully!")
 
     # wait for new vests to be unlocked ( delayed voting mechanism )
     tt.logger.info(f"Unlock delayed votes! @Block: {node.get_last_block_number()}")
