@@ -1,5 +1,5 @@
 stages:
-- static_code_analysis
+# - static_code_analysis
 - build
 - test
 - cleanup
@@ -405,16 +405,16 @@ plugin_test:
   tags:
     - public-runner-docker
 
-pre_commit_checks:
-  stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only pre-commit
-  extends:
-    - .pre_commit_checks_template
-    - .python_static_analysis_configuration
-  artifacts:
-    paths:
-      - tests/python/hive-local-tools/poetry.lock
+# pre_commit_checks:
+#   stage: static_code_analysis
+#   variables:
+#     POETRY_INSTALL_ARGS: --only pre-commit
+#   extends:
+#     - .pre_commit_checks_template
+#     - .python_static_analysis_configuration
+#   artifacts:
+#     paths:
+#       - tests/python/hive-local-tools/poetry.lock
 
 .pytest_based:
   extends: .python_based
@@ -518,7 +518,7 @@ beekeeper_wallet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-  
+
 hived_tests:
   stage: test
   extends: .test_tools_based

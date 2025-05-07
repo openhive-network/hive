@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import FailedToStartExecutableError
 
 
 def test_simply_hardfork_schedule() -> None:
@@ -98,7 +99,7 @@ def test_simply_hardfork_schedule() -> None:
 )
 def test_incorrect_hardfork_schedules(hardfork_schedule: list[tt.HardforkSchedule]) -> None:
     init_node = tt.InitNode()
-    with pytest.raises(TimeoutError):
+    with pytest.raises(FailedToStartExecutableError):
         init_node.run(
             alternate_chain_specs=tt.AlternateChainSpecs(
                 genesis_time=int(tt.Time.now(serialize=False).timestamp()),
@@ -123,7 +124,7 @@ def test_alternate_chain_spec_necessary_keys(keys_to_drop: list[str]) -> None:
     drop_keys_from(alternate_chain_spec, *keys_to_drop)
 
     init_node = tt.InitNode()
-    with pytest.raises(TimeoutError):
+    with pytest.raises(FailedToStartExecutableError):
         init_node.run(alternate_chain_specs=alternate_chain_spec)
 
 
@@ -165,7 +166,7 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop: list[str]) -> None:
 )
 def test_invalid_witness_names(witnesses: list[int | str]) -> None:
     init_node = tt.InitNode()
-    with pytest.raises(TimeoutError):
+    with pytest.raises(FailedToStartExecutableError):
         init_node.run(
             alternate_chain_specs=tt.AlternateChainSpecs(
                 genesis_time=int(tt.Time.now(serialize=False).timestamp()),

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import test_tools as tt
+import shared_tools.networks_architecture as networks
 
 
 def test_block_race_and_producer_missed_operation(
-    prepare_4_4_4_4_4_with_time_offset_and_full_api_node,
+    prepare_4_4_4_4_4_with_time_offset_and_full_api_node: networks.NetworksBuilder,
 ):
     """
     The test involves a network with 21 witnesses, out of which 4 have their time set to the current time plus 4 seconds.

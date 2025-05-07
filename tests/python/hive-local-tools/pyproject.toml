@@ -24,12 +24,16 @@ source = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
+
 pytest = "7.2.2"
 pytest-rerunfailures = "10.2"
 pytest-timeout = "2.1.0"
+pytest-asyncio = "0.23.8"
 pytest-repeat = "0.9.1"
 pytest-xdist = "3.2.0"
 tavern = "2.2.0"
+
+
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
 test-tools = { path = "test-tools", develop = true }
@@ -64,6 +68,7 @@ exclude = [
     "/**/helpy/**",
     "/**/schemas/**"
 ]
+[tool.ruff.lint]
 select = [  # https://docs.astral.sh/ruff/rules/
     "F",
     "E",
@@ -109,7 +114,7 @@ ignore = [
     "PERF401", # too restrictive
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "/**/tests/python/functional/fork_tests/**" = [
     "N803", # TODO: Make these names more descriptive
     "N806", # TODO: Make these names more descriptive
@@ -121,7 +126,7 @@ ignore = [
 
 
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = [
     "hive_local_tools",
     "hive_utils",

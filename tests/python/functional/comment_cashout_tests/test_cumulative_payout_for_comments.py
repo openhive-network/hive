@@ -5,30 +5,35 @@ import pytest
 import test_tools as tt
 
 from .block_log.generate_block_log import AMOUNT_OF_ALL_COMMENTS
-
+from beekeepy.interfaces import Stopwatch
+import shared_tools.networks_architecture as networks
 
 @pytest.mark.parametrize("network_type", ["bastion", "complete_graph"])
-def test_cumulative_payout_for_comments(prepare_environment, network_type) -> None:
-    networks_builder = prepare_environment
-    api_node = networks_builder.networks[0].node("FullApiNode0")
-    cashout_time = tt.Time.parse(
-        api_node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"]
-    )
-    tt.logger.info(f"Cashout time: {cashout_time}")
+def test_cumulative_payout_for_comments(prepare_environment: networks.NetworksBuilder, network_type: str) -> None:
+    with Stopwatch() as sw:
+        networks_builder = prepare_environment
+        api_node = networks_builder.networks[0].node("FullApiNode0")
+        cashout_time = tt.Time.parse(
+            api_node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"]
+        )
+        tt.logger.info(f"AFTER CASHOUT TIME: {sw.lap}")
+        tt.logger.info(f"Cashout time: {cashout_time}")
 
-    if network_type == "bastion":
-        build_fortress(networks_builder)
+        if network_type == "bastion":
+            build_fortress(networks_builder)
 
-    ht = api_node.get_head_block_time()
-    tt.logger.info(f"Head block time: {ht}")
-    last_block_number = api_node.get_last_block_number()
-    tt.logger.info(f"Head block number: {last_block_number}")
+        ht = api_node.get_head_block_time()
+        tt.logger.info(f"Head block time: {ht}")
+        last_block_number = api_node.get_last_block_number()
+        tt.logger.info(f"AFTER GET LAST BLOCK NUMBER: {sw.lap}")
+        tt.logger.info(f"Head block number: {last_block_number}")
 
-    error_message = (
-        f"Cashout_time: {cashout_time} is already in the past. Actual head_block time: {ht} should be before"
-        " cashout_time."
-    )
-    assert api_node.get_head_block_time() < cashout_time, error_message
+        error_message = (
+            f"Cashout_time: {cashout_time} is already in the past. Actual head_block time: {ht} should be before"
+            " cashout_time."
+        )
+        tt.logger.info(f"FINAL LAP: {sw.lap}")
+        assert api_node.get_head_block_time() < cashout_time, error_message
 
     wait_for_comment_payout(api_node, cashout_time)
 

@@ -1631,9 +1631,12 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
-      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
-      BOOST_REQUIRE_EQUAL( _wallets.begin()->unlocked, false );
+      auto _wallets = _beekeeper.list_created_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 3 );
+      for ( const auto& wallet : _wallets )
+      {
+        BOOST_REQUIRE_EQUAL( wallet.unlocked, false );
+      }
     }
     {
       auto _iter = _wallets.begin();
@@ -1649,9 +1652,12 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
-      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
-      BOOST_REQUIRE_EQUAL( _wallets.begin()->unlocked, false );
+      auto _wallets = _beekeeper.list_created_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 3 );
+      for ( const auto& wallet : _wallets )
+      {
+        BOOST_REQUIRE_EQUAL( wallet.unlocked, false );
+      }
     }
   } FC_LOG_AND_RETHROW()
 }
@@ -1721,7 +1727,7 @@ BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
 
     flat_set<public_key_type> _b;
     boost::copy( b | boost::adaptors::map_keys, std::inserter( _b, _b.end() ) );
-    
+
     if( _a.size() != _b.size() )
       return false;
 
@@ -2393,7 +2399,7 @@ BOOST_AUTO_TEST_CASE(is_wallet_unlocked)
     beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
     BOOST_REQUIRE( _beekeeper.start() );
 
-    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name = "wallet_name";
     const std::string _password = "avocado";

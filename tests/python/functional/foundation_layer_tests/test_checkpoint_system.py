@@ -5,10 +5,10 @@ from subprocess import CalledProcessError
 from typing import Final
 
 import pytest
-
 import test_tools as tt
 from hive_local_tools.functional import simultaneous_node_startup
 from shared_tools.complex_networks import generate_free_addresses
+from beekeepy.exceptions import FailedToStartExecutableError
 
 
 def set_checkpoint(node: tt.InitNode | tt.ApiNode, block_log: tt.BlockLog, block_num: int) -> None:
@@ -16,7 +16,7 @@ def set_checkpoint(node: tt.InitNode | tt.ApiNode, block_log: tt.BlockLog, block
 
 
 def verify_error_in_stderr(node: tt.InitNode | tt.ApiNode, error_message: str) -> AssertionError | None:
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         stderr = file.read()
         assert error_message in stderr
 
@@ -95,7 +95,7 @@ def test_checkpoint_id_mismatch_with_replay_block_id(block_log_empty_430_split: 
 
     node.config.checkpoint.append((checkpoint_block, id_unmatched_to_block))
 
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(FailedToStartExecutableError):
         node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
 
     assert not node.is_running()
@@ -114,7 +114,7 @@ def test_checkpoint_invalid_block_id_mismatch(block_log_empty_430_split: tt.Bloc
     checkpoint_block: Final[int] = 10
     node.config.checkpoint.append((checkpoint_block, block_log_empty_430_split.get_block_ids(checkpoint_block + 1)))
 
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(FailedToStartExecutableError):
         node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
 
     assert not node.is_running()

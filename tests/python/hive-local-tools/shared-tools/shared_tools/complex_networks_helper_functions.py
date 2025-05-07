@@ -39,7 +39,7 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
-def connect_sub_networks(sub_networks: list):
+def connect_sub_networks(sub_networks: list[tt.Network]):
     if len(sub_networks) == 1:
         return
     assert len(sub_networks) > 1

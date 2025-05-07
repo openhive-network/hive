@@ -165,7 +165,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
                    │
     ColonyNode-3 ──●
     """
-    nodes = []
+    nodes: list[tt.InitNode] = []
 
     witness_node = tt.WitnessNode(witnesses=WITNESSES)
 

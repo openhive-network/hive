@@ -22,10 +22,9 @@ def test_exceed_block_range(node: tt.InitNode) -> None:
 
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_filter_only_hardfork_operations(node: tt.InitNode) -> None:
-    block_to_start = node.get_last_block_number()
     node.wait_number_of_blocks(1)
     response = node.api.account_history.enum_virtual_ops(
-        block_range_begin=block_to_start, block_range_end=block_to_start + 1, include_reversible=True, filter=0x000400
+        block_range_begin=0, block_range_end=2, include_reversible=True, filter=0x000400
     )
     number_of_hardforks = int(node.api.database.get_config()["HIVE_BLOCKCHAIN_HARDFORK_VERSION"].split(".")[1])
     assert len(response.ops) == number_of_hardforks
