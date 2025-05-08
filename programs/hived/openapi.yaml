@@ -753,6 +753,38 @@ paths:
                   "transaction_ids": []
                 }
               }
+  block_api.get_block_header:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a block header of the referenced block, or null if no matching block was found.
+      description: |
+        Parameters:
+        
+        - `block_num`: An integer representing the block number to query.
+      operationId: get_block_header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_header_response'
+              example: {
+                "header": {
+                  "previous": "0000000000000000000000000000000000000000",
+                  "timestamp": "2016-03-24T16:05:00",
+                  "witness": "",
+                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                  "extensions": []
+                }
+              }
 components:
   schemas:
     list_accounts:
@@ -865,8 +897,40 @@ components:
     get_block_response:
       type: object
       properties:
-        block:
+        header:
           $ref: '#/components/schemas/block'
+    block_header:
+      type: object
+      properties:
+        previous:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            The previous block ID.
+        timestamp:
+          type: string
+          format: date-time
+          example: "2016-03-24T16:05:00"
+          description: >-
+            The timestamp of the block.
+        witness:
+          type: string
+          example: ""
+          description: >-
+            The witness who produced the block.
+        transaction_merkle_root:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >- 
+            Single hash representing the combined hashes of all transactions in a block.
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+    get_block_header_response:
+      type: object
+      properties:
+        block:
+          $ref: '#/components/schemas/block_header'
     operation_body:
       type: object
       x-sql-datatype: JSON
