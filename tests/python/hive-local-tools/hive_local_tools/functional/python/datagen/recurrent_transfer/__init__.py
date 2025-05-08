@@ -28,6 +28,7 @@ def execute_function_in_threads(
     *,
     amount: int,
     args: Iterable | None = None,
+    kwargs: dict | None = None,
     args_sequences: Iterable[Sequence] | None = None,
     chunk_size: int | None = None,
     max_workers: int | None = None,
@@ -52,6 +53,8 @@ def execute_function_in_threads(
     :param function: Function to be called.
     :param args: Arguments for the function. If given, the function will be called with the same arguments for
         each thread.
+    :param kwargs: Keyword arguments for the function. If given, these will be passed as named arguments to every
+        function call. Useful for setting parameters that should stay constant across all thread executions.
     :param args_sequences: Sequenced arguments for the function (like tuple or list). If given, the function will be
         called with sequenced arguments, automatically dividing their length by chunk size, evenly distributing the work
         among workers. See the example above.
@@ -61,6 +64,7 @@ def execute_function_in_threads(
     :param max_workers: Maximum amount of workers used in ThreadPoolExecutor. Defaults ThreadPoolExecutor's default.
     """
     args = args or []
+    kwargs = kwargs or {}
     args_sequences = args_sequences or []
     chunk_size = chunk_size or 1
     max_workers = math.inf if chunk_size and not max_workers else max_workers
@@ -71,7 +75,7 @@ def execute_function_in_threads(
             upper = min(amount + 1, lower + chunk_size)
 
             sequences = [sequence[lower:upper] for sequence in args_sequences]
-            futures.append(executor.submit(function, *args, *sequences))
+            futures.append(executor.submit(function, *args, *sequences, **kwargs))
 
             detail = f" with elements of index: <{lower}:{upper - 1}>" if chunk_size > 1 else f": {lower + 1}/{amount}"
             tt.logger.info(f"Pack submitted{detail}")

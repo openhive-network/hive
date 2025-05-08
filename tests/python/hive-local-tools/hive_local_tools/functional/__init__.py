@@ -6,8 +6,8 @@ from functools import partial
 from typing import Callable
 
 import test_tools as tt
-from test_tools.__private.wallet.constants import SimpleTransaction
 from schemas.fields.hive_int import HiveInt
+from test_tools.__private.wallet.constants import SimpleTransaction
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
 
@@ -61,7 +61,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
 
 
 def __generate_and_broadcast_transaction(
-    wallet: tt.Wallet, node: tt.InitNode, func: Callable, comment_number: int | None, account_names: list[str]
+    wallet: tt.Wallet, node: tt.InitNode, func: Callable, account_names: list[str], **kwargs
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
@@ -82,10 +82,8 @@ def __generate_and_broadcast_transaction(
     )
 
     for name in account_names:
-        if comment_number is not None:
-            transaction.add_operation(func(name, creator_number=comment_number))  # vote for comment
-        else:
-            transaction.add_operation(func(name))
+        transaction.add_operation(func(name, **kwargs))
+
     sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
     node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
 
