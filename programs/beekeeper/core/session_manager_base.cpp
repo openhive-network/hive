@@ -6,8 +6,9 @@
 
 namespace beekeeper {
 
-session_manager_base::session_manager_base( const time_manager_base::ptr_time_manager_base& time ): time( time )
+session_manager_base::session_manager_base()
 {
+  time = std::make_shared<time_manager_base>();
 }
 
 std::shared_ptr<session_base> session_manager_base::get_session( const std::string& token )
@@ -42,10 +43,7 @@ std::string session_manager_base::create_session( const std::optional<std::strin
   time->add(  _token,
               [this]( const std::string& token )
               {
-                auto _wallet_mgr = get_session( token )->get_wallet_manager();
-                FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
-
-                _wallet_mgr->lock_all();
+                lock( token );
               }
               );
 
@@ -69,9 +67,14 @@ void session_manager_base::set_timeout( const std::string& token, const std::chr
   get_session( token )->set_timeout( t );
 }
 
-void session_manager_base::check_timeout( const std::string& token, bool move_time_forward )
+void session_manager_base::check_timeout( const std::string& token )
 {
-  get_session( token )->check_timeout( move_time_forward );
+  get_session( token )->check_timeout();
+}
+
+void session_manager_base::refresh_timeout( const std::string& token )
+{
+  get_session( token )->refresh_timeout();
 }
 
 info session_manager_base::get_info( const std::string& token )
