@@ -19,7 +19,6 @@
 using namespace hive::chain;
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
-using session_manager           = beekeeper::session_manager_base;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 using beekeeper_wallet_api      = beekeeper::beekeeper_wallet_api;
 
@@ -389,21 +388,23 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
         uint32_t _max = 10;
         for( uint32_t _cnt = 0; _cnt < _max; ++_cnt )
         {
-          BOOST_TEST_MESSAGE("cnt: " + std::to_string((_cnt)) + " | set_timeout_enabled: " + std::to_string(set_timeout_enabled) + " | thread: " + std::to_string(nr_thread) );
           switch( nr_thread )
           {
             case 0:
             {
-              BOOST_TEST_MESSAGE("CASE 0");
               if( set_timeout_enabled )
               {
-                BOOST_TEST_MESSAGE("TIMEOUT SET TO 1 SECOND!!!");
-                std::lock_guard<std::mutex> _guard( _mtx );
-                _api.set_timeout( beekeeper::set_timeout_args{ _token, 1 } );
+                if( _cnt )
+                  std::this_thread::sleep_for( std::chrono::milliseconds( 1300 ) );
+                {
+                  std::lock_guard<std::mutex> _guard( _mtx );
+                  _api.set_timeout( beekeeper::set_timeout_args{ _token, 1 } );
+                }
               }
               else
               {
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+                if( _cnt )
+                  std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
                 {
                   std::lock_guard<std::mutex> _guard( _mtx );
                   _api.lock_all( beekeeper::lock_all_args{ _token } );
@@ -429,7 +430,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
                     ++_cnt_locked;
                 }
 
-                BOOST_TEST_MESSAGE("unlocked: " + std::to_string( _cnt_unlocked ) + " locked: " + std::to_string( _cnt_locked ) + (set_timeout_enabled ? " | set_timeout_enabled" : "") );
+                // BOOST_TEST_MESSAGE("unlocked: " + std::to_string( _cnt_unlocked ) + " locked: " + std::to_string( _cnt_locked ) + (set_timeout_enabled ? " | set_timeout_enabled" : "") );
 
                 BOOST_REQUIRE( _cnt_unlocked + _cnt_locked  == _wallets.size() );
                 BOOST_REQUIRE( _cnt_unlocked  == 0  || _cnt_unlocked  == _wallets.size() );
@@ -444,10 +445,10 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
                   _api.unlock( beekeeper::unlock_args{ _token, wallet.name, wallet.password } );
                 }
               }
+              BOOST_TEST_MESSAGE("====================iteration " + std::to_string( _cnt ) + " finished====================" );
 
             }break;
           }
-          BOOST_TEST_MESSAGE("====================iteration " + std::to_string( _cnt ) + " finished====================" );
         }
       };
 

@@ -1,5 +1,7 @@
 #include <beekeeper/session_manager.hpp>
-#include <beekeeper/session.hpp>
+
+#include <core/session_base.hpp>
+
 #include <beekeeper/time_manager.hpp>
 
 namespace beekeeper {
@@ -10,9 +12,9 @@ session_manager::session_manager( std::shared_ptr<mutex_handler> mtx_handler )
   time = std::make_shared<time_manager>();
 }
 
-std::shared_ptr<session_base> session_manager::create_session( const std::string& token, std::shared_ptr<time_manager_base> not_used_time, const boost::filesystem::path& wallet_directory )
+std::shared_ptr<session_base> session_manager::create_session( const std::string& token, const boost::filesystem::path& wallet_directory )
 {
-  return std::make_shared<session>( content_deliverer, token, time, wallet_directory );
+  return std::make_shared<session_base>( content_deliverer, token, time, wallet_directory );
 }
 
 void session_manager::lock( const std::string& token )
