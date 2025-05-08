@@ -89,7 +89,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     wallet.api.import_key(tt.PrivateKey("voter"))
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(wallet, node, __create_voter, None),
+        args=(wallet, node, __create_voter),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -102,7 +102,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Start fund accounts: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(wallet, node, __vest_account, None),
+        args=(wallet, node, __vest_account),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -115,7 +115,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Start transfer accounts: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(wallet, node, __transfer_account, None),
+        args=(wallet, node, __transfer_account),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -134,7 +134,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Start create comments: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(wallet, node, __comment_operation, None),
+        args=(wallet, node, __comment_operation),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -147,7 +147,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Start create proposals: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(wallet, node, __proposal_operation, None),
+        args=(wallet, node, __proposal_operation),
         args_sequences=(voters,),
         amount=NUMBER_OF_VOTING_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,

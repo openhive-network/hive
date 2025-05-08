@@ -102,7 +102,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     voters = [f"voter-{i}" for i in range(AMOUNT_OF_ALL_VOTERS)]
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(init_wallet, init_node, __create_voter, None),
+        args=(init_wallet, init_node, __create_voter),
         args_sequences=(voters,),
         amount=AMOUNT_OF_ALL_VOTERS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -114,7 +114,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     tt.logger.info("Started funding voters...")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
-        args=(init_wallet, init_node, __fund_voter, None),
+        args=(init_wallet, init_node, __fund_voter),
         args_sequences=(voters,),
         amount=AMOUNT_OF_ALL_VOTERS,
         chunk_size=ACCOUNTS_PER_CHUNK,
@@ -136,8 +136,9 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
         tt.logger.info(f"Started voting for comment: {comment_number}")
         execute_function_in_threads(
             __generate_and_broadcast_transaction,
-            args=(init_wallet, init_node, __vote_for_comment, comment_number),
+            args=(init_wallet, init_node, __vote_for_comment),
             args_sequences=(voters,),
+            kwargs={"creator_number": comment_number},
             amount=AMOUNT_OF_ALL_VOTERS,
             chunk_size=ACCOUNTS_PER_CHUNK,
             max_workers=MAX_WORKERS,
