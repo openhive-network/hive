@@ -8,6 +8,8 @@
 
 namespace beekeeper {
 
+class beekeeper_instance_base;
+
 class session_base
 {
   private:
@@ -23,6 +25,8 @@ class session_base
 
     void check_timeout_impl( bool allow_update_timeout_time );
 
+    void refresh_timeout( bool refresh_only_active );
+
   protected:
 
     const std::string& get_token() const { return token; };
@@ -33,11 +37,14 @@ class session_base
     virtual ~session_base(){}
 
     void set_timeout( const std::chrono::seconds& t );
-    void check_timeout( bool move_time_forward = false, bool allow_lock = true );
+    void check_timeout();
+    void refresh_timeout();
 
     info get_info();
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
+
+    virtual void prepare_notifications(){};
 };
 
 } //beekeeper
