@@ -2,7 +2,7 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/utilities/data_collector.hpp>
+#include <hive/utilities/notifications.hpp>
 
 namespace hive { namespace chain {
 
@@ -104,7 +104,7 @@ void block_flow_control::on_worker_done( appbase::application& app ) const
   {
   case report_output::BOTH:
   case report_output::NOTIFY:
-    app.status.save_information( "block_stats", "block_stats", report );
+    app.notify( "Block stats", "block_stats", report );
     if( auto_report_output != report_output::BOTH )
       break;
     //else

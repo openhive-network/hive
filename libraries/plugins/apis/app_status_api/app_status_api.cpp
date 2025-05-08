@@ -17,9 +17,6 @@ namespace detail
       using connection_t = hive::utilities::statuses_signal_manager::connection_t;
 
       connection_t _on_new_status_connection;
-      connection_t _on_new_webserver_connection;
-      connection_t _on_new_information_connection;
-      connection_t _on_new_fork_connection;
 
       hive::utilities::threadsafe_statuses app_status;
 
@@ -29,17 +26,11 @@ namespace detail
       {
         auto update_app_status = [&](auto item) { app_status.update(item); };
         _on_new_status_connection = app.status.add_new_status_handler(update_app_status);
-        _on_new_webserver_connection = app.status.add_new_webserver_handler(update_app_status);
-        _on_new_information_connection = app.status.add_new_information_handler(update_app_status);
-        _on_new_fork_connection = app.status.add_new_fork_handler(update_app_status);
       }
 
       ~app_status_api_impl()
       {
         hive::utilities::disconnect_signal( _on_new_status_connection );
-        hive::utilities::disconnect_signal( _on_new_webserver_connection );
-        hive::utilities::disconnect_signal( _on_new_information_connection );
-        hive::utilities::disconnect_signal( _on_new_fork_connection );
       }
 
       DECLARE_API_IMPL((get_app_status))

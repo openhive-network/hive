@@ -119,7 +119,8 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       switch_forks( new_head->get_block_id(), new_head->get_block_num(),
                     skip, &block_ctrl, state_head_block_id, state_head_block_num,
                     apply_block_extended, pop_block_extended );
-      _app.status.save_fork( new_head->get_block_num(), new_head->get_block_id().str());
+      _app.notify( "switching forks", "id", 
+                   new_head->get_block_id().str(), "num", new_head->get_block_num() );
       return true;
     }
   }
