@@ -141,7 +141,7 @@ def prepare_block_log(
                 __create_signer,
                 node,
                 wallet,
-                None,
+                None
             ),
             args_sequences=(SIGNERS,),
             amount=40,
