@@ -785,6 +785,42 @@ paths:
                   "extensions": []
                 }
               }
+  block_api.get_block_range:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a block header of the referenced block, or null if no matching block was found.
+      description: |
+        Parameters:
+        
+        - `starting_block_num`: An integer indicating the height of the first block to be returned.
+        
+        - `count`: An integer specifying the maximum number of blocks to return.
+        
+        Examples:
+        
+        - `starting_block_num = 1`, `count = 10` — Queries the block headers for the very first block through the tenth block.
+        
+        - `starting_block_num = 8675309`, `count = 50` — Queries block headers for block numbers 8,675,309 through 8,675,359.
+        
+        - `starting_block_num = 62396745`, `count = 1000` — Queries block headers for block numbers 62,396,745 through 62,397,745.
+      operationId: get_block_range
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block_range'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_range_response'
+              example: {
+                "blocks": []
+              }
 components:
   schemas:
     list_accounts:
@@ -838,6 +874,19 @@ components:
           example: 0
           description: >-
             An integer representing the block number to query.
+    get_block_range:
+      type: object
+      properties:
+        starting_block_num:
+          type: integer
+          example: 0
+          description: >-
+            Height of the first block to be returned.
+        count:
+          type: integer
+          example: 0
+          description: >-
+            The maximum number of blocks to return.
     block:
       type: object
       properties:
@@ -899,6 +948,13 @@ components:
       properties:
         header:
           $ref: '#/components/schemas/block'
+    get_block_range_response:
+      type: object
+      properties:
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/block'
     block_header:
       type: object
       properties:
