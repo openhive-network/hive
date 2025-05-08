@@ -827,6 +827,11 @@ paths:
         - account_by_key_api
       summary: Returns all accounts that have the key associated with their owner or active authorities.
       description: |
+        Parameters:
+        
+        - `keys`: An array of strings representing keys to query. Example:
+          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]` — queries for the key "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9".
+          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9", "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q"]` — queries for the keys "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9" and "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q".
       operationId: get_key_references
       requestBody:
         content:
@@ -844,6 +849,45 @@ paths:
               example: {
                 "accounts": [
                   "hiveio"
+                ]
+              }
+  rc_api.find_rc_accounts:
+    post:
+      tags:
+        - rc_api
+      summary: Returns the available resource credits of accounts.
+      description: |
+        Parameters:
+        
+        - `accounts`: An array of strings representing account names to query. Examples:
+          - `["hiveio"]` — queries the available resource credits for the account named "hiveio".
+          - `["alice","bob"]` — queries the resource credits for the account named "alice" and "bob".
+      operationId: find_rc_accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_rc_accounts'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_rc_accounts_response'
+              example: {
+                "rc_accounts": [
+                  {
+                    "account": "",
+                    "rc_manabar": {"current_mana": "0", "last_update_time": 0},
+                    "max_rc_creation_adjustment": {
+                      "amount": "0",
+                      "precision": 6,
+                      "nai": "@@000000037"
+                    },
+                    "max_rc": "0"
+                  }
                 ]
               }
 components:
@@ -887,6 +931,16 @@ components:
           example: ["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]
           description: >-
             An array of strings representing keys to query. 
+    find_rc_accounts:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+          description: >-
+            An array of strings representing accounts to query. 
     find_accounts:
       type: object
       properties:
@@ -997,6 +1051,30 @@ components:
           type: array
           items:
             type: string
+    rc_account_object:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account.
+        rc_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+        max_rc_creation_adjustment:
+          $ref: '#/components/schemas/balance'
+        max_rc:
+          type: string
+          example: "0"
+          description: >-
+            The maximum resource credits available for the account.
+    find_rc_accounts_response:
+      type: object
+      properties:
+        rc_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/rc_account_object'
     block_header:
       type: object
       properties:
