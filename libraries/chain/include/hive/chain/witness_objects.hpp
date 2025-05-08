@@ -274,7 +274,7 @@ namespace hive { namespace chain {
         >
       >
     >,
-    allocator< witness_object >
+    multi_index_allocator< witness_object >
   > witness_index;
 
   struct by_account_witness;
@@ -299,7 +299,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::less< account_name_type >, std::less< account_name_type > >
       >
     >, // indexed_by
-    allocator< witness_vote_object >
+    multi_index_allocator< witness_vote_object >
   > witness_vote_index;
 
   typedef multi_index_container<
@@ -308,7 +308,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< witness_schedule_object, witness_schedule_object::id_type, &witness_schedule_object::get_id > >
     >,
-    allocator< witness_schedule_object >
+    multi_index_allocator< witness_schedule_object >
   > witness_schedule_index;
 
 } }
