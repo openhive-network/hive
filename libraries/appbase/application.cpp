@@ -1,6 +1,7 @@
 #include <appbase/application.hpp>
 
 #include <hive/utilities/logging_config.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <hive/utilities/data_collector.hpp>
 #include <hive/utilities/options_description_ex.hpp>
 
@@ -605,6 +606,7 @@ void application::add_logging_program_options()
 {
   hive::utilities::options_description_ex options;
   hive::utilities::set_logging_program_options( options );
+  hive::utilities::notifications::add_program_options(options);
 
   add_program_options( hive::utilities::options_description_ex(), options );
 }
@@ -622,6 +624,21 @@ std::set< std::string > application::get_plugins_names() const
     res.insert( plugin->get_name() );
 
   return res;
+}
+
+void application::notify_status(const fc::string& current_status) const noexcept
+{
+  notify("hived_status", "current_status", current_status);
+}
+
+void application::notify_error(const fc::string& error_message) const noexcept
+{
+  notify("error", "message", error_message);
+}
+
+void application::setup_notifications(const boost::program_options::variables_map &args) const
+{
+  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
 void application::kill()
