@@ -29,7 +29,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< block_summary_object, block_summary_object::id_type, &block_summary_object::get_id > >
     >,
-    allocator< block_summary_object >
+    multi_index_allocator< block_summary_object >
   > block_summary_index;
 
 } } // hive::chain

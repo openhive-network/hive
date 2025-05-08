@@ -52,7 +52,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< hardfork_property_object, hardfork_property_object::id_type, &hardfork_property_object::get_id > >
     >,
-    allocator< hardfork_property_object >
+    multi_index_allocator< hardfork_property_object >
   > hardfork_property_index;
 
 } } // hive::chain

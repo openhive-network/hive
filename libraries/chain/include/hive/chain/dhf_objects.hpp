@@ -121,7 +121,7 @@ typedef multi_index_container<
       composite_key_compare< std::less< uint64_t >, std::less< uint32_t > >
     >
   >,
-  allocator< proposal_object >
+  multi_index_allocator< proposal_object >
 > proposal_index;
 
 struct by_voter_proposal;
@@ -145,7 +145,7 @@ typedef multi_index_container<
       >
     >
   >,
-  allocator< proposal_vote_object >
+  multi_index_allocator< proposal_vote_object >
 > proposal_vote_index;
 
 } } // hive::chain
