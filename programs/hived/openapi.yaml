@@ -789,7 +789,7 @@ paths:
     post:
       tags:
         - block_api
-      summary: Retrieve a block header of the referenced block, or null if no matching block was found.
+      summary: Retrieve a range of full, signed blocks. The list may be shorter than requested if count blocks would take you past the current head block.
       description: |
         Parameters:
         
@@ -821,6 +821,31 @@ paths:
               example: {
                 "blocks": []
               }
+  account_by_key_api.get_key_references:
+    post:
+      tags:
+        - account_by_key_api
+      summary: Returns all accounts that have the key associated with their owner or active authorities.
+      description: |
+      operationId: get_key_references
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_key_references'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_key_references_response'
+              example: {
+                "accounts": [
+                  "hiveio"
+                ]
+              }
 components:
   schemas:
     list_accounts:
@@ -851,7 +876,17 @@ components:
             type: string
           example: ["initminer"]
           description: >-
-            An array of strings representing account names to query. 
+            An array of strings representing account names to query.
+    get_key_references:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          example: ["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]
+          description: >-
+            An array of strings representing keys to query. 
     find_accounts:
       type: object
       properties:
@@ -955,6 +990,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/block'
+    get_key_references_response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
     block_header:
       type: object
       properties:
