@@ -1,4 +1,4 @@
-macro(protocol_assert_id
+macro(assert_id_generation
   sources
   assertion_id_generator_output_path
   assertion_id_verifier_header_path
