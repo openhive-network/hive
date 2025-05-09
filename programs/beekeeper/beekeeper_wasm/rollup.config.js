@@ -91,7 +91,7 @@ export default [
       file: 'dist/bundle/vite.js'
     },
     external: [
-      './build/beekeeper_wasm.node.js',
+      './build/beekeeper_wasm.web.js',
       './detailed/index.js',
       './build/beekeeper_wasm.common.wasm?url'
     ],
@@ -99,7 +99,7 @@ export default [
       replace({
         delimiters: ['[\'"]', '[\'"]'],
         values: {
-          './build/beekeeper_wasm.common.js': '"./build/beekeeper_wasm.node.js"',
+          './build/beekeeper_wasm.common.js': '"./build/beekeeper_wasm.web.js"',
           // Replace calculated value which ignores non-existing file with '?url' suffix with static import to support vite import mechanism
           "./build/beekeeper_wasm.common.wasm' + '?url": "'./build/beekeeper_wasm.common.wasm?url'"
         },
