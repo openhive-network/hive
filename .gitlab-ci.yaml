@@ -262,6 +262,26 @@ test_beekeeper_wasm:
   tags:
     - public-runner-docker
 
+run_examples_beekeeper_wasm:
+  extends: .npm_process_built_package_tarball
+
+  script:
+    - echo -e "\e[0Ksection_start:$(date +%s):testing[collapsed=false]\r\e[0KAttempting to start examples..."
+    - cd "${SOURCE_DIR}"
+    - pnpm examples
+    - echo -e "\e[0Ksection_end:$(date +%s):testing\r\e[0K"
+
+  needs:
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  tags:
+    - public-runner-docker
+
 mirrornet_replay_test:
   extends: .job-defaults
   stage: test
@@ -1124,6 +1144,7 @@ deploy_beekeeper_wasm_dev_package:
 
   needs:
     - job: test_beekeeper_wasm
+    - job: run_examples_beekeeper_wasm
     - job: beekeeper_tsc_build
     - job: push_to_wiki
       artifacts: true
@@ -1142,6 +1163,7 @@ deploy_beekeeper_wasm_production_public_npm:
 
   needs:
     - job: test_beekeeper_wasm
+    - job: run_examples_beekeeper_wasm
     - job: beekeeper_tsc_build
     - job: push_to_wiki
       artifacts: true
