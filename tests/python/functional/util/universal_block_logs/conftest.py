@@ -59,6 +59,7 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
     )
 
     wallet = tt.OldWallet(attach_to=node, additional_arguments=[f"--chain-id={CHAIN_ID}"])
+    wallet.api.set_transaction_expiration(seconds=60)
     import_keys(wallet, request.param[0])
 
     return node, wallet, request.param[1]
