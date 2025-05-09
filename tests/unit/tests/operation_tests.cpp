@@ -9985,6 +9985,109 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_basic )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_failed )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Recurrent_transfer with two pair_ids which fail" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    issue_funds( "alice", ASSET("30.000 TBD") );
+
+    // First recurrent transfer operation
+    recurrent_transfer_operation op1;
+    op1.from = "alice";
+    op1.to = "bob";
+    op1.memo = "test1";
+    op1.amount = ASSET( "10.000 TBD" );
+    op1.recurrence = 24;
+    op1.executions = 10;
+    recurrent_transfer_pair_id rtpi1;
+    rtpi1.pair_id = 144;
+    op1.extensions.insert(rtpi1);
+    push_transaction(op1, alice_private_key);
+
+    // Second recurrent transfer operation
+    recurrent_transfer_operation op2;
+    op2.from = "alice";
+    op2.to = "bob";
+    op2.memo = "test2";
+    op2.amount = ASSET( "20.000 TBD" );
+    op2.recurrence = 24;
+    op2.executions = 10;
+    recurrent_transfer_pair_id rtpi2;
+    rtpi2.pair_id = 1;
+    op2.extensions.insert(rtpi2);
+    push_transaction(op2, alice_private_key);
+    // Check initial balances
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "30.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    // Check the number of open recurrent transfers
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 2 );
+
+    // execute both initial recurrent transfers
+    generate_block();
+
+    auto vops = get_last_operations( 2 );
+    // Out of order array on purpose, the pair id 144 will appear before pair id 1
+    auto fill_recurrent_transfer_1 = vops[1].get< fill_recurrent_transfer_operation >();
+    auto fill_recurrent_transfer_2 = vops[0].get< fill_recurrent_transfer_operation >();
+
+    BOOST_REQUIRE( fill_recurrent_transfer_1.from == op1.from );
+    BOOST_REQUIRE( fill_recurrent_transfer_1.to == op1.to );
+    BOOST_REQUIRE( fill_recurrent_transfer_1.amount == op1.amount );
+    BOOST_REQUIRE( fill_recurrent_transfer_1.memo == op1.memo );
+    BOOST_REQUIRE( fill_recurrent_transfer_1.remaining_executions == op1.executions - 1 );
+    BOOST_REQUIRE( fill_recurrent_transfer_1.pair_id == rtpi1.pair_id );
+
+    BOOST_REQUIRE( fill_recurrent_transfer_2.from == op2.from );
+    BOOST_REQUIRE( fill_recurrent_transfer_2.to == op2.to );
+    BOOST_REQUIRE( fill_recurrent_transfer_2.amount == op2.amount );
+    BOOST_REQUIRE( fill_recurrent_transfer_2.memo == op2.memo );
+    BOOST_REQUIRE( fill_recurrent_transfer_2.remaining_executions == op2.executions - 1 );
+    BOOST_REQUIRE( fill_recurrent_transfer_2.pair_id == rtpi2.pair_id );
+
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "30.000 TBD" ).amount.value );
+
+    // wait an hour trigger recurrent transfers again
+    generate_blocks( db->head_block_time() + fc::hours( 24 ) );
+
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "30.000 TBD" ).amount.value );
+
+    // Out of order array on purpose, the pair id 144 will appear before pair id 1
+    auto vops_2 = get_last_operations( 2 );
+    auto failed_recurrent_transfer_1 = vops_2[1].get< failed_recurrent_transfer_operation >();
+    auto failed_recurrent_transfer_2 = vops_2[0].get< failed_recurrent_transfer_operation >();
+
+    BOOST_REQUIRE( failed_recurrent_transfer_1.from == op1.from );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.to == op1.to );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.amount == op1.amount );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.memo == op1.memo );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.consecutive_failures == 1 );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.remaining_executions == op1.executions - 2 );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.deleted == false );
+    BOOST_REQUIRE( failed_recurrent_transfer_1.pair_id == rtpi1.pair_id );
+
+    BOOST_REQUIRE( failed_recurrent_transfer_2.from == op2.from );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.to == op2.to );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.amount == op2.amount );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.memo == op2.memo );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.consecutive_failures == 1 );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.remaining_executions == op2.executions - 2 );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.deleted == false );
+    BOOST_REQUIRE( failed_recurrent_transfer_2.pair_id == rtpi2.pair_id );
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_crud )
 {
   try
