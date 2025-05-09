@@ -11,16 +11,10 @@ export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as 
 
 export * from "./detailed/index.js";
 
-// Polyfill for web workers in WASM
-declare global {
-  var WorkerGlobalScope: /* object extends */ EventTarget | undefined;
-}
-const ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope != 'undefined';
-
 const getModuleExt = () => {
   // Warning: important change is moving conditional ternary expression outside of URL constructor call, what confused parcel analyzer.
   // Seems it must have simple variables & literals present to correctly translate code.
-  const wasmFilePath = (ENVIRONMENT_IS_WORKER ? new URL("./build/beekeeper_wasm.common.wasm", self.location.href) : new URL("./build/beekeeper_wasm.common.wasm", import.meta.url)).href;
+  const wasmFilePath = new URL("./build/beekeeper_wasm.common.wasm", import.meta.url).href;
   // Fallback for client-bundled inlined WASM, e.g. when using webpack
   let wasmBinary: Buffer | undefined;
   if (wasmFilePath.startsWith("data:application/wasm;base64,"))
