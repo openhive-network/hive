@@ -13,6 +13,7 @@
     "postbuild": "rollup -c &&  tsx ./npm-common-config/ts-common/terser.ts && size-limit",
     "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
+    "examples": "cd ../examples/nuxt-ssr && pnpm install && pnpm test && cd ../shared-worker && pnpm install && pnpm build && pnpm test",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
