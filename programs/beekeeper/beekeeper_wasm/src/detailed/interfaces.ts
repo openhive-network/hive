@@ -315,7 +315,7 @@ export interface IBeekeeperInstance {
    *
    * @returns {string} the version of the Beekeeper API
    */
-  get version(): string;
+  getVersion(): string;
 
   /**
    * Locks all of the unlocked wallets, closes them, closes opened sessions and deletes the current Beekeeper API instance making it unusable

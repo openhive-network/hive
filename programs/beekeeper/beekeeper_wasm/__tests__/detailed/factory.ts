@@ -12,7 +12,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
 
   test('Should be able to retrieve package version', async ({ beekeeperTest }) => {
     const version = await beekeeperTest(({ beekeeper }) => {
-      return beekeeper.version;
+      return beekeeper.getVersion();
     });
 
     expect(typeof version).toBe('string');
