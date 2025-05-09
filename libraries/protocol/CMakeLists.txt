@@ -63,8 +63,7 @@ set(ASSERTION_ID_VERIFICATION_HEADER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_
 set(ASSERTION_ID_WAX_INLINE_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_hashes_wax.inl)
 set(ASSERTION_ID_VERIFIER_SOURCE ${GENERATED_ASSERT_ID_DIR}/protocol_assertion_id_verifier.cpp)
 # 1. Use separate cmake script to parse all assertions and dump their info into generated cpp file.
-include("${CMAKE_CURRENT_SOURCE_DIR}/protocol_assert_id.cmake")
-protocol_assert_id(
+assert_id_generation(
   "${STATIC_SOURCES}"
   "${ASSERTION_ID_GENERATOR_SOURCE}"
   "${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}"
