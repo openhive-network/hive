@@ -69,6 +69,7 @@ assert_id_generation(
   "${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}"
   "${ASSERTION_ID_WAX_INLINE_SOURCE}"
   "${ASSERTION_ID_VERIFIER_SOURCE}"
+  "protocol"
 )
 # 2. Build executable, linking it with fc to enable unique id generation for assertions.
 #    Run the generator post build to dump a header file with ids.
