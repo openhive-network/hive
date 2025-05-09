@@ -161,7 +161,6 @@ LIST( APPEND  BOOST_COMPONENTS
       program_options
       unit_test_framework )
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/assert_id_generation.cmake")
 set( GENERATED_ASSERT_ID_DIR ${CMAKE_BINARY_DIR}/generated_assert_id )
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
