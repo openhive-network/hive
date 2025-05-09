@@ -11,14 +11,21 @@ export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as 
 
 export * from "./detailed/index.js";
 
-const getModuleExt = () => {
+const getModuleExt = (fileLocation?: string) => {
   // Warning: important change is moving conditional ternary expression outside of URL constructor call, what confused parcel analyzer.
   // Seems it must have simple variables & literals present to correctly translate code.
-  const wasmFilePath = new URL("./build/beekeeper_wasm.common.wasm", import.meta.url).href;
+  const wasmFilePath = fileLocation ?? new URL("./build/beekeeper_wasm.common.wasm", import.meta.url).href;
   // Fallback for client-bundled inlined WASM, e.g. when using webpack
-  let wasmBinary: Buffer | undefined;
-  if (wasmFilePath.startsWith("data:application/wasm;base64,"))
-      wasmBinary = Buffer.from(wasmFilePath.slice(29), "base64");
+  let wasmBinary: Uint8Array | undefined;
+  if (wasmFilePath.startsWith("data:application/wasm;base64,")) {
+    const base64 = wasmFilePath.slice(29);
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; ++i)
+      bytes[i] = binaryString.charCodeAt(i);
+    wasmBinary = bytes;
+  }
 
   return {
     locateFile(path: string, scriptDirectory: string): string {
@@ -41,7 +48,9 @@ const getModuleExt = () => {
  * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
  */
 const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Promise<IBeekeeperInstance> => {
-  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, getModuleExt(), process.env.ROLLUP_TARGET_ENV === "web", options);
+  const { wasmLocation, ...otherOptions } = options || {};
+
+  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, getModuleExt(wasmLocation), process.env.ROLLUP_TARGET_ENV === "web", otherOptions);
 };
 
 export default createBeekeeper;

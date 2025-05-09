@@ -4,14 +4,14 @@ import { BeekeeperApi } from "./api.js";
 import { IBeekeeperInstance, IBeekeeperOptions } from "./interfaces.js";
 import { safeAsyncWasmCall } from "./util/wasm_error.js";
 
-const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot'> = {
+const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot' | 'wasmLocation'> = {
   enableLogs: true,
   unlockTimeout: 900,
   inMemory: false
 };
 
 interface IOptionalModuleArgs {
-  wasmBinary?: Buffer;
+  wasmBinary?: Uint8Array;
   locateFile?: (path: string, scriptDirectory: string) => string;
 }
 

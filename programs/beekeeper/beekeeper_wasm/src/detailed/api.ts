@@ -15,7 +15,7 @@ export class BeekeeperApi implements IBeekeeperInstance {
 
   public constructor(
     private readonly provider: MainModule,
-    private readonly options: IBeekeeperOptions,
+    private readonly options: Omit<IBeekeeperOptions, 'wasmLocation'>,
     isWebEnvironment: boolean
   ) {
     if (!this.options.inMemory)
