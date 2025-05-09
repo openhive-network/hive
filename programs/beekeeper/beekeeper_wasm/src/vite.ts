@@ -39,7 +39,7 @@ const getModuleExt = async(fileLocation?: string) => {
   };
 };
 
-export const DEFAULT_STORAGE_ROOT: string = process.env.DEFAULT_STORAGE_ROOT as string;
+export const DEFAULT_STORAGE_ROOT: string = "/storage_root";
 
 /**
  * Creates a Beekeeper instance able to own sessions and wallets
@@ -55,5 +55,5 @@ export const createBeekeeper = async(options?: Partial<IBeekeeperOptions>): Prom
 
   // Remember to keep Object.assign to always create new ModuleArg object passed to the WASM Emscripten wrapper on which new objects will be initialized and stored
   // Otherwise you will get strange errors, such as: "Cannot register type XXX twice"
-  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, await getModuleExt(wasmLocation), process.env.ROLLUP_TARGET_ENV === "web", otherOptions);
+  return createBeekeeperBase(Beekeeper, DEFAULT_STORAGE_ROOT, await getModuleExt(wasmLocation), true, otherOptions);
 };
