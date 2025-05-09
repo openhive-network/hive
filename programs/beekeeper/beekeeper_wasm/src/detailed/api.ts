@@ -22,7 +22,7 @@ export class BeekeeperApi implements IBeekeeperInstance {
       this.fs = new BeekeeperFileSystem(this.provider.FS, isWebEnvironment);
   }
 
-  public get version(): string {
+  public getVersion(): string {
     return process.env.npm_package_version as string;
   }
 
