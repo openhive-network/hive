@@ -1,0 +1,24 @@
+{
+  "name": "shared-worker",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "postbuild": "rollup -c",
+    "start": "http-server -a 0.0.0.0 --port 5173 .",
+    "test": "unset CI && DEBUG=pw:webserver playwright test --workers 1 --max-failures 1 --project=beekeeper_shared_worker_testsuite"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.50.1",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-replace": "^6.0.2",
+    "@types/sharedworker": "^0.0.159",
+    "@web/rollup-plugin-import-meta-assets": "^2.2.1",
+    "http-server": "^14.1.1",
+    "playwright": "1.50.1",
+    "rollup": "^4.40.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@hiveio/beekeeper": "file:../../beekeeper_wasm"
+  }
+}

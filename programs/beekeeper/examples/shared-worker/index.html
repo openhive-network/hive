@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    window.worker = new SharedWorker('/dist/bundle/worker.js');
+    window.worker.port.start();
+  </script>
+</head>
+<body></body>
+</html>
