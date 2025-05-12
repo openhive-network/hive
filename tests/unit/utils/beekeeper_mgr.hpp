@@ -8,6 +8,7 @@
 
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/time_manager.hpp>
+#include <beekeeper/mutex_handler.hpp>
 
 using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
 using wallet_content_handler    = beekeeper::wallet_content_handler;
