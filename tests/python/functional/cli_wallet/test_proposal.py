@@ -88,7 +88,7 @@ def test_create_proposal_fail_negative_payment(
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_update_proposal_xxx(wallet: tt.OldWallet, funded_account: FundedAccountInfo) -> None:
+def test_update_proposal(wallet: tt.OldWallet, funded_account: FundedAccountInfo) -> None:
     from datetime import datetime as date_type
 
     def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:
