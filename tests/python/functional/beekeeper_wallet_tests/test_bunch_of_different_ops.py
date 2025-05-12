@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 from test_tools.__private.exceptions import AccountNotExistError, WeightOutOfRangeError
-
+from beekeepy.exceptions import ErrorInResponseError
 from .utilities import check_keys, create_accounts
 
 key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
@@ -29,7 +29,7 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
 
     try:
         wallet.api.create_account("initminer")
-    except Exception as e:
+    except TypeError as e:
         message = str(e)
         assert (
             message.find("create_account() missing 2 required positional arguments: 'new_account_name' and 'json_meta'")
@@ -48,13 +48,13 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
             "this is proposal",
             "hello-world",
         )
-    except Exception as e:
+    except ErrorInResponseError as e:
         message = str(e)
         assert message.find("Proposal permlink must point to the article posted by creator or receiver") != -1
 
     try:
         wallet.api.post_comment("bob", "hello-world", "", "xyz", "something bout world", "just nothing", "{}")
-    except Exception as e:
+    except ErrorInResponseError as e:
         message = str(e)
         assert message.find("Account: bob has 0 RC") != -1
 
@@ -72,7 +72,7 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
             "this is proposal",
             "hello-world",
         )
-    except Exception as e:
+    except ErrorInResponseError as e:
         message = str(e)
         assert message.find("Account bob does not have sufficient funds for balance adjustment") != -1
 
@@ -81,7 +81,7 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
 
     try:
         wallet.api.vote("alice", "bob", "hello-world", 99)
-    except Exception as e:
+    except ErrorInResponseError as e:
         message = str(e)
         assert message.find("Account: alice has 0 RC, needs 1 RC") != -1
 
@@ -91,7 +91,7 @@ def test_different_false_cases(wallet: tt.Wallet) -> None:
             wallet.api.post_comment(
                 "alice", "hello-world2", "", "xyz2", "something about world2", "just nothing2", "{}"
             )
-    except Exception as e:
+    except RuntimeError as e:
         message = str(e)
         assert message.find("required_active.size()") != -1
 
