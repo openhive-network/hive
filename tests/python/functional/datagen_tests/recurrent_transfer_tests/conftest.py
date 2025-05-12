@@ -25,13 +25,10 @@ def replayed_node() -> ReplayedNodeMaker:
         block_log = tt.BlockLog(block_log_directory, "auto")
 
         if absolute_start_time is None:
-            time_offset = tt.StartTimeControl(start_time="head_block_time")
+            time_offset = tt.StartTimeControl(start_time="head_block_time", speed_up_rate=time_multiplier)
 
         else:
-            time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.FAKETIME_FORMAT)
-
-        if time_multiplier is not None:
-            time_offset += f" x{time_multiplier}"
+            time_offset = tt.StartTimeControl(start_time=absolute_start_time, speed_up_rate=time_multiplier)
 
         node = tt.InitNode()
         node.config.shared_file_size = "16G"
