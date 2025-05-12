@@ -8,6 +8,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
+from beekeepy.exceptions import FailedToStartExecutableError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -122,7 +123,7 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     node.config.plugin.append("block_log_info")
     node.run(exit_before_synchronization=True, replay_from=block_log, arguments=["--force-replay"])
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(FailedToStartExecutableError):
         node.run(load_snapshot_from=snap_0, exit_before_synchronization=True)
 
     # two files should be created which will show difference between state definitions in shm and current hived

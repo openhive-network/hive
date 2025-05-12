@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import test_tools as tt
-
+from beekeepy.exceptions import CommunicationError
 from .utilities import check_keys
 
 
@@ -36,7 +36,7 @@ def test_account_creation_in_different_ways(node: tt.InitNode, wallet: tt.OldWal
 def test_account_creation_with_exception(wallet: tt.OldWallet) -> None:
     try:
         wallet.api.create_account_delegated("initminer", tt.Asset.Test(3), tt.Asset.Vest(6.123456), "alicex", "{}")
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         found = message.find("Account creation with delegation is deprecated as of Hardfork 20")
         assert found != -1
@@ -46,7 +46,7 @@ def test_account_creation_with_exception(wallet: tt.OldWallet) -> None:
         wallet.api.create_account_with_keys_delegated(
             "initminer", tt.Asset.Test(4), tt.Asset.Vest(6.123456), "alicey", "{}", key, key, key, key
         )
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         found = message.find("Account creation with delegation is deprecated as of Hardfork 20")
         assert found != -1
