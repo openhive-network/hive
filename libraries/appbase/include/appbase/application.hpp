@@ -239,8 +239,8 @@ namespace appbase {
     public:
 
       finish_request_type finish_request;
+      hive::utilities::statuses_signal_manager status;
 
-      void save_status( const fc::string& status, const fc::string& status_description = "hived_status" ) const noexcept;
 
       template <typename... KeyValuesTypes>
       inline void save_information(
