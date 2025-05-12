@@ -389,12 +389,15 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
         uint32_t _max = 10;
         for( uint32_t _cnt = 0; _cnt < _max; ++_cnt )
         {
+          BOOST_TEST_MESSAGE("cnt: " + std::to_string((_cnt)) + " | set_timeout_enabled: " + std::to_string(set_timeout_enabled) + " | thread: " + std::to_string(nr_thread) );
           switch( nr_thread )
           {
             case 0:
             {
+              BOOST_TEST_MESSAGE("CASE 0");
               if( set_timeout_enabled )
               {
+                BOOST_TEST_MESSAGE("TIMEOUT SET TO 1 SECOND!!!");
                 std::lock_guard<std::mutex> _guard( _mtx );
                 _api.set_timeout( beekeeper::set_timeout_args{ _token, 1 } );
               }
@@ -417,7 +420,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
                 _cnt_locked = 0;
                 _cnt_unlocked = 0;
 
-                flat_set<beekeeper::wallet_details> _w = _api.list_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
+                flat_set<beekeeper::wallet_details> _w = _api.list_created_wallets( beekeeper::list_wallets_args{ _token } ).wallets;
                 for( auto& wallet : _w )
                 {
                   if( wallet.unlocked )
@@ -426,7 +429,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets_stability)
                     ++_cnt_locked;
                 }
 
-                //BOOST_TEST_MESSAGE("unlocked: " + std::to_string( _cnt_unlocked ) + " locked: " + std::to_string( _cnt_locked ) );
+                BOOST_TEST_MESSAGE("unlocked: " + std::to_string( _cnt_unlocked ) + " locked: " + std::to_string( _cnt_locked ) + (set_timeout_enabled ? " | set_timeout_enabled" : "") );
 
                 BOOST_REQUIRE( _cnt_unlocked + _cnt_locked  == _wallets.size() );
                 BOOST_REQUIRE( _cnt_unlocked  == 0  || _cnt_unlocked  == _wallets.size() );

@@ -1631,9 +1631,12 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
-      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
-      BOOST_REQUIRE_EQUAL( _wallets.begin()->unlocked, false );
+      auto _wallets = _beekeeper.list_created_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 3 );
+      for ( const auto& wallet : _wallets )
+      {
+        BOOST_REQUIRE_EQUAL( wallet.unlocked, false );
+      }
     }
     {
       auto _iter = _wallets.begin();
@@ -1649,9 +1652,12 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
     }
     {
-      auto _wallets = _beekeeper.list_wallets( _token );
-      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
-      BOOST_REQUIRE_EQUAL( _wallets.begin()->unlocked, false );
+      auto _wallets = _beekeeper.list_created_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 3 );
+      for ( const auto& wallet : _wallets )
+      {
+        BOOST_REQUIRE_EQUAL( wallet.unlocked, false );
+      }
     }
   } FC_LOG_AND_RETHROW()
 }
