@@ -10,7 +10,7 @@ namespace hive { namespace chain {
   {
     private:
 
-      comment_object*                 shm = nullptr;
+      const comment_object*           shm = nullptr;
       std::shared_ptr<comment_object> external;
 
     public:

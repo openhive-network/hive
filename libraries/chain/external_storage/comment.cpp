@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-  comment::comment( const comment_object* shm ): shm( const_cast<comment_object*>( shm ) )
+  comment::comment( const comment_object* shm ): shm( shm )
   {
   }
 
