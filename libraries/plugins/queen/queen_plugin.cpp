@@ -1,6 +1,8 @@
 ﻿
 #include <hive/chain/hive_fwd.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <hive/plugins/queen/queen_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
@@ -314,9 +316,9 @@ void queen_plugin::plugin_shutdown()
 {
   my->print_stats();
 
-  chain::util::disconnect_signal( my->_post_apply_transaction_conn );
-  chain::util::disconnect_signal( my->_finish_push_block_conn );
-  chain::util::disconnect_signal( my->_fail_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_transaction_conn );
+  hive::utilities::disconnect_signal( my->_finish_push_block_conn );
+  hive::utilities::disconnect_signal( my->_fail_apply_block_conn );
 }
 
 } } } // hive::plugins::queen
