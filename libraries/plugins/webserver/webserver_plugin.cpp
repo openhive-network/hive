@@ -251,6 +251,8 @@ class webserver_base
     virtual void stop_webserver() = 0;
     virtual ~webserver_base() {};
 
+    virtual boost::signals2::connection add_connection( std::function<void(const collector_t&)> ) = 0;
+
     optional<tls_server>                                      tls;
 
     optional< tcp::endpoint >                                 http_endpoint;
@@ -296,6 +298,10 @@ class webserver_plugin_impl : public webserver_base
     std::unique_ptr< asio::io_service::work > thread_pool_work;
 
     plugins::json_rpc::json_rpc_plugin* api = nullptr;
+
+    using signal_t = boost::signals2::signal<void(const collector_t &)>;
+    signal_t listen;
+    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func ) override;
 
   private:
 
@@ -690,6 +696,12 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket
   });
 }
 
+template<typename websocket_server_type>
+boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_connection( std::function<void(const collector_t&)> func )
+{
+  return listen.connect( func );
+}
+
 } // detail
 
 webserver_plugin::webserver_plugin()
@@ -803,6 +815,11 @@ void webserver_plugin::plugin_shutdown()
 void webserver_plugin::start_webserver()
 {
   my->start_webserver();
+}
+
+boost::signals2::connection webserver_plugin::add_connection( std::function<void(const collector_t &)> func )
+{
+  return my->add_connection( func );
 }
 
 } } } // hive::plugins::webserver
