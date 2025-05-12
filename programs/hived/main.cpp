@@ -133,6 +133,7 @@ int main( int argc, char** argv )
 
     if( !initializationResult.should_start_loop() ) 
       return initializationResult.get_result_code();
+    else theApp.notify_status("starting");
 
     _started_loop = true;
 
@@ -163,7 +164,7 @@ int main( int argc, char** argv )
     if( theApp.is_interrupt_request() ) return 0;
 
     theApp.startup();
-    theApp.save_status("chain API ready");
+    theApp.notify_status("chain API ready");
 
     if( theApp.is_interrupt_request() ) return 0;
 
