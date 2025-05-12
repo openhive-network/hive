@@ -19,7 +19,7 @@ def node(chain_id, skeleton_key):
     block_log = tt.BlockLog(block_log_directory, "auto")
 
     init_node = tt.InitNode()
-    init_node.config.private_key = skeleton_key
+    init_node.config.private_key = [skeleton_key]
     init_node.config.plugin.append("account_history_api")
     init_node.config.plugin.append("condenser_api")
     init_node.config.block_log_split = -1
