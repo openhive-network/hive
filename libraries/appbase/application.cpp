@@ -625,15 +625,39 @@ std::set< std::string > application::get_plugins_names() const
   return res;
 }
 
-boost::signals2::connection application::add_notify_status_handler( const notify_status_handler_t& func )
+void application::notify_status(const fc::string& current_status) const noexcept
 {
-  return notify_status_signal.connect( func );
+  this->status.save_status(current_status);
+  notify("hived_status", "current_status", current_status);
 }
 
-void application::save_status(const fc::string& status, const fc::string& status_description) const noexcept
+void application::notify_fork(const uint32_t& block_num, const fc::string& block_id) const noexcept
 {
-  hive::utilities::data_collector _items( status, "current_status", status_description );
-  notify_status_signal( _items );
+  this->status.save_fork(block_num, block_id);
+  notify("switching forks", "num", block_num, "id", block_id);
+}
+
+void application::notify_webserver(const fc::string& webserver_type, const fc::string& address, const uint16_t port) const noexcept
+{
+  this->status.save_webserver(webserver_type, address, port);
+  this->notify( "webserver listening",
+    // {
+        "type", webserver_type,
+        "address", address,
+        "port", port
+    // }
+    );
+}
+
+void application::notify_error(const fc::string& error_message) const noexcept
+{
+  this->status.save_status(error_message);
+  notify("error", "message", error_message);
+}
+
+void application::setup_notifications(const boost::program_options::variables_map &args) const
+{
+  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
 void application::kill()
