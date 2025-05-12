@@ -2393,7 +2393,7 @@ BOOST_AUTO_TEST_CASE(is_wallet_unlocked)
     beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
     BOOST_REQUIRE( _beekeeper.start() );
 
-    auto _token = _beekeeper.create_session( "salt", std::optional<std::string>() );
+    auto _token = _beekeeper.create_session( "salt" );
 
     const std::string _wallet_name = "wallet_name";
     const std::string _password = "avocado";
