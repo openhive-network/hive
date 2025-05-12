@@ -4,6 +4,8 @@
 #include <hive/utilities/signal.hpp>
 
 #include <appbase/application.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 namespace hive { namespace plugins { namespace app_status_api {
 
@@ -12,31 +14,32 @@ namespace detail
   class app_status_api_impl
   {
     private:
-  
-      boost::signals2::connection      _on_notify_status_conn;
+      using connection_t = hive::utilities::statuses_signal_manager::connection_t;
 
-      hive::utilities::data_collector app_status;
+      connection_t _on_new_status_connection;
+      connection_t _on_new_webserver_connection;
+      connection_t _on_new_information_connection;
+      connection_t _on_new_fork_connection;
 
-      void on_notify_status( const hive::utilities::data_collector& current_app_status )
-      {
-        app_status = current_app_status;
-      }
+      hive::utilities::threadsafe_statuses app_status;
 
     public:
 
       app_status_api_impl( appbase::application& app )
       {
-        _on_notify_status_conn = app.add_notify_status_handler(
-          [&]( const hive::utilities::data_collector& current_app_status )
-          {
-            on_notify_status( current_app_status );
-          }
-        );
+        auto update_app_status = [&](auto item) { app_status.update(item); };
+        _on_new_status_connection = app.status.add_new_status_handler(update_app_status);
+        _on_new_webserver_connection = app.status.add_new_webserver_handler(update_app_status);
+        _on_new_information_connection = app.status.add_new_information_handler(update_app_status);
+        _on_new_fork_connection = app.status.add_new_fork_handler(update_app_status);
       }
 
       ~app_status_api_impl()
       {
-        hive::utilities::disconnect_signal( _on_notify_status_conn );
+        hive::utilities::disconnect_signal( _on_new_status_connection );
+        hive::utilities::disconnect_signal( _on_new_webserver_connection );
+        hive::utilities::disconnect_signal( _on_new_information_connection );
+        hive::utilities::disconnect_signal( _on_new_fork_connection );
       }
 
       DECLARE_API_IMPL((get_app_status))
@@ -44,7 +47,8 @@ namespace detail
 
   DEFINE_API_IMPL(app_status_api_impl, get_app_status)
   {
-    return app_status;
+    std::unique_lock<std::shared_mutex> guard{app_status.read_mtx};
+    return app_status.data;
   }
 } // detail
 
