@@ -926,9 +926,9 @@ void colony_plugin::plugin_pre_shutdown()
 {
   ilog( "Shutting down colony plugin" );
 
-  chain::utilities::disconnect_signal( my->_end_of_sync_conn );
-  chain::utilities::disconnect_signal( my->_post_apply_transaction_conn );
-  chain::utilities::disconnect_signal( my->_post_apply_block_conn );
+  hive::utilities::disconnect_signal( my->_end_of_sync_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_transaction_conn );
+  hive::utilities::disconnect_signal( my->_post_apply_block_conn );
 
   for( auto& thread : my->_threads )
     thread.finalize();
