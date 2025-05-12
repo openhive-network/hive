@@ -9,12 +9,8 @@
 #include <boost/filesystem/path.hpp>
 
 
-#include <string>
-
 namespace beekeeper
 {
-  using data_collector = hive::utilities::data_collector;
-
   class beekeeper_instance: public beekeeper_instance_base
   {
     private:

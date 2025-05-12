@@ -1,7 +1,7 @@
 #include <appbase/application.hpp>
 
 #include <hive/utilities/logging_config.hpp>
-#include <hive/utilities/data_collector.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <hive/utilities/options_description_ex.hpp>
 
 #include <fc/thread/thread.hpp>
@@ -72,12 +72,12 @@ application::~application() { }
 void application::init_signals_handler()
 {
   handler_wrapper.init();
-  save_status("signals attached");
+  notify_status("signals attached");
 }
 
 void application::generate_interrupt_request()
 {
-  save_status("interrupted");
+  notify_status("interrupted");
   _is_interrupt_request = true;
 }
 
@@ -127,6 +127,7 @@ void application::startup() {
         break;
     }
   }
+  notify_status("chain API ready");
 }
 
 void application::set_program_options()
@@ -583,7 +584,7 @@ abstract_plugin& application::get_plugin(const string& name)const
   auto ptr = find_plugin(name);
   if(!ptr)
   {
-    save_status( "Unable to find plugin: " + name, "error" );
+    notify_error("Unable to find plugin: " + name);
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
   }
   return *ptr;
