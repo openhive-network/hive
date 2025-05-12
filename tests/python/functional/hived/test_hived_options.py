@@ -77,7 +77,7 @@ def test_exit_replay_at_given_block(block_log: Path, block_log_length: int) -> N
     node = tt.ApiNode()
     node.run(replay_from=block_log, exit_at_block=final_block)
     assert not node.is_running()
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         stderr = file.read()
         warning = f"Stopped blockchain replaying on user request. Last applied block number: {final_block}."
         assert warning in stderr
@@ -125,7 +125,7 @@ def test_exit_sync_mode_at_given_block() -> None:
     connect_nodes(init_node, api_node)
     api_node.run(exit_at_block=5)
     assert not api_node.is_running()
-    with open(api_node.directory / "stderr.txt") as file:
+    with open(api_node.directory / "stderr.log") as file:
         stderr = file.read()
         warning = "Stopped syncing on user request. Last applied block number: 5."
         assert warning in stderr
@@ -152,7 +152,7 @@ def test_exit_live_mode_at_given_block() -> None:
     api_node.run(exit_at_block=15)
     init_node.wait_number_of_blocks(30)
     assert not api_node.is_running()
-    with open(api_node.directory / "stderr.txt") as file:
+    with open(api_node.directory / "stderr.log") as file:
         stderr = file.read()
         warning = "Stopped live mode on user request. Last applied block number: 15."
         assert warning in stderr

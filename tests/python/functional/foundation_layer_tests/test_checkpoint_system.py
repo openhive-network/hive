@@ -16,7 +16,7 @@ def set_checkpoint(node: tt.InitNode | tt.ApiNode, block_log: tt.BlockLog, block
 
 
 def verify_error_in_stderr(node: tt.InitNode | tt.ApiNode, error_message: str) -> AssertionError | None:
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         stderr = file.read()
         assert error_message in stderr
 

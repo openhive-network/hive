@@ -57,7 +57,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
 
     node.dump_snapshot(close=True)
     node.close()
-    with open(node.directory / "stderr.txt") as file:
+    with open(node.directory / "stderr.log") as file:
         assert error_message in file.read(999999)
         """
     for line in file:
@@ -102,7 +102,7 @@ def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> N
     assert os.path.isfile(node.directory / "loaded_from_shm_decoded_types_details.log")
 
     warning_msg = "Snaphot has more plugins than current hived configuration"
-    assert warning_msg in (node.directory / "stderr.txt").read_text()
+    assert warning_msg in (node.directory / "stderr.log").read_text()
 
 
 def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> None:
@@ -133,6 +133,6 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     error_msg_1 = "Snapshot misses plugins"
     error_msg_2 = "State objects definitions from shared memory file mismatch current version of app"
 
-    log = (node.directory / "stderr.txt").read_text()
+    log = (node.directory / "stderr.log").read_text()
     assert error_msg_1 in log
     assert error_msg_2 in log
