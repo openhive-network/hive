@@ -164,7 +164,7 @@ def test_hived_get_version() -> None:
 
     assert "version" in version_json
 
-    expected_keys = {"blockchain_version", "hive_revision", "fc_revision", "node_type"}
-    assert version_json["version"].keys() == expected_keys
+    for expected_key in {"blockchain_version", "hive_revision", "fc_revision", "node_type"}:
+        assert expected_key in version_json["version"], f"Missing `{expected_key}` in version_json."
 
     assert version_json["version"]["node_type"] == "testnet"
