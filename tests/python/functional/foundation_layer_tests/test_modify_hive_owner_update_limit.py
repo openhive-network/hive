@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import FailedToStartExecutableError
 
 
 @pytest.mark.testnet()
@@ -36,7 +37,7 @@ def test_invalid_hive_owner_update_limit_modification(limit: int) -> None:
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(FailedToStartExecutableError):
         node.run(
             alternate_chain_specs=tt.AlternateChainSpecs(
                 genesis_time=int(tt.Time.now(serialize=False).timestamp()),
