@@ -254,17 +254,59 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   });
 }
 
+std::list<account_name_type> verify_authority_accounts_exist_impl(
+  const database& db,
+  const authority& auth,
+  const account_name_type& auth_account,
+  authority::classification auth_class,
+  bool is_required)
+{
+  std::list<account_name_type> _incorrect_accounts;
+  for( const std::pair< account_name_type, weight_type >& aw : auth.account_auths )
+  {
+    const account_object* a = db.find_account( aw.first );
+    if( is_required )
+    {
+      FC_ASSERT( a != nullptr, "New ${ac} authority on account ${aa} references non-existing account ${aref}",
+        ("aref", aw.first)("ac", auth_class)("aa", auth_account) );
+    }
+    else
+    {
+      if( a == nullptr )
+      {
+        _incorrect_accounts.push_back( aw.first );
+        ilog( "New ${ac} authority on account ${aa} references non-existing account ${aref}",
+          ("aref", aw.first)("ac", auth_class)("aa", auth_account) );
+      }
+    }
+  }
+  return _incorrect_accounts;
+}
+
 void verify_authority_accounts_exist(
   const database& db,
   const authority& auth,
   const account_name_type& auth_account,
   authority::classification auth_class)
 {
-  for( const std::pair< account_name_type, weight_type >& aw : auth.account_auths )
+  verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, true/*is_required*/ );
+}
+
+void check_authority_accounts_exist(
+  const database& db,
+  const authority& auth,
+  const account_name_type& auth_account,
+  authority::classification auth_class)
+{
+  std::list<account_name_type> _incorrect_accounts = verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, false/*is_required*/ );
+  if( !_incorrect_accounts.empty() )
   {
-    const account_object* a = db.find_account( aw.first );
-    FC_ASSERT( a != nullptr, "New ${ac} authority on account ${aa} references non-existing account ${aref}",
-      ("aref", aw.first)("ac", auth_class)("aa", auth_account) );
+    authority& _auth = const_cast<authority&>( auth );
+
+    for( const auto& account: _incorrect_accounts )
+    {
+      _auth.account_auths.erase( account );
+    }
   }
 }
 
@@ -351,6 +393,13 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator );
+
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
+  {
+    check_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
+    check_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
+    check_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
+  }
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -541,13 +590,25 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
+    else
+      check_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
     _db.update_owner_authority( account, *o.owner );
   }
-  if( o.active && ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
-    verify_authority_accounts_exist( _db, *o.active, o.account, authority::active );
-  if( o.posting && ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
-    verify_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
+  if( o.active )
+  {
+    if( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
+      verify_authority_accounts_exist( _db, *o.active, o.account, authority::active );
+    else
+      check_authority_accounts_exist( _db, *o.active, o.account, authority::active );
+  }
+  if( o.posting )
+  {
+    if( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
+      verify_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
+    else
+      check_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
+  }
 
   _db.modify( account, [&]( account_object& acc )
   {
