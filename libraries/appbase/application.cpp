@@ -605,6 +605,7 @@ void application::add_logging_program_options()
 {
   hive::utilities::options_description_ex options;
   hive::utilities::set_logging_program_options( options );
+  hive::utilities::notifications::add_program_options(options);
 
   add_program_options( hive::utilities::options_description_ex(), options );
 }
