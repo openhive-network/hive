@@ -172,7 +172,7 @@ void database::pre_open( const open_args& args )
                                                 theApp.get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay /* wipe_shared_file */ );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay | args.load_snapshot /* wipe_shared_file */ );
     initialize_irreversible_storage();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
