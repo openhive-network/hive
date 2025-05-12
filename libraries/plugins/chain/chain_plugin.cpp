@@ -1603,6 +1603,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->default_block_writer = 
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
 
+  get_app().setup_notifications(options);
   my->shared_memory_dir = get_app().data_dir() / "blockchain";
 
   if( options.count("shared-file-dir") )
