@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
+from wax.helpy import OffsetTimeControl, StartTimeControl
 
 from .complex_networks_helper_functions import connect_sub_networks
 
@@ -25,10 +26,10 @@ class NodesPreparer:
         pass
 
 
-def get_relative_time_offset_from_timestamp(timestamp: datetime.datatime) -> str:
+def get_relative_time_offset_from_timestamp(timestamp: datetime.datatime) -> OffsetTimeControl:
     delta = tt.Time.now(serialize=False) - timestamp
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
-    return f"-{delta.total_seconds():.3f}s"
+    return OffsetTimeControl(offset=f"-{delta.total_seconds():.3f}s")
 
 
 def init_network(  # noqa: C901
@@ -118,7 +119,7 @@ def init_network(  # noqa: C901
         init_node.block_log.copy_to(block_log_directory_name)
 
 
-def modify_time_offset(old_iso_date: datetime, offset_in_seconds: int) -> str:
+def modify_time_offset(old_iso_date: datetime, offset_in_seconds: int) -> OffsetTimeControl:
     new_iso_date = old_iso_date - tt.Time.seconds(offset_in_seconds)
     tt.logger.info(f"old date: {old_iso_date} new date(after time offset): {new_iso_date}")
 
@@ -189,7 +190,7 @@ def run_networks(
                                 time_control=(
                                     modify_time_offset(timestamp, time_offsets[_node_num])
                                     if allow_external_time_offsets
-                                    else tt.Time.serialize(timestamp, format_="@%Y-%m-%d %H:%M:%S")
+                                    else StartTimeControl(start_time=timestamp)
                                 ),
                                 arguments=arguments,
                             ),
