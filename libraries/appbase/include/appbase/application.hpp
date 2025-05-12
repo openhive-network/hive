@@ -7,10 +7,10 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <hive/utilities/data_collector.hpp>
 #include <boost/throw_exception.hpp>
 
-#include <iostream>
 #include <atomic>
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
@@ -217,6 +217,8 @@ namespace appbase {
 
       std::atomic_bool _is_interrupt_request{false};
 
+      mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
+
       bool is_finished = false;
 
       /*
@@ -226,30 +228,64 @@ namespace appbase {
       */
       std::mutex app_mtx;
 
-    private:
+      template <typename... KeyValuesTypes>
+      inline void notify(
+          const fc::string &name,
+          KeyValuesTypes &&...key_value_pairs) const noexcept
+      {
+        hive::utilities::notifications::error_handler([&]{
+          notification_handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+          );
+        });
+      }
 
-      using notify_status_handler_t = std::function<void(const hive::utilities::data_collector&)>;
-      using notify_status_t = boost::signals2::signal<void(const hive::utilities::data_collector&)>;
-      notify_status_t notify_status_signal;
+      inline void notify(
+          const fc::string &name,
+          hive::utilities::notifications::collector_t&& collector) const noexcept
+      {
 
-    public:
+        hive::utilities::notifications::error_handler([&]{
+          notification_handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
+          );
+        });
+      }
 
-      boost::signals2::connection add_notify_status_handler( const notify_status_handler_t& func );
 
     public:
 
       finish_request_type finish_request;
       hive::utilities::statuses_signal_manager status;
 
+      void notify_status(const fc::string& current_status) const noexcept;
+      void notify_fork(const uint32_t& block_num, const fc::string& block_id) const noexcept;
+      void notify_error(const fc::string& error_message) const noexcept;
+      void notify_webserver(const fc::string& webserver_type, const fc::string& address, const uint16_t port) const noexcept;
+      void setup_notifications(const boost::program_options::variables_map &args) const;
 
       template <typename... KeyValuesTypes>
-      inline void save_information(
+      inline void notify_information(
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
-        hive::utilities::data_collector _items( name, std::forward<KeyValuesTypes>( key_value_pairs )... );
-        notify_status_signal( _items );
+        this->notify(name, std::forward<KeyValuesTypes>(key_value_pairs)...);
+        this->status.save_information(name, std::forward<KeyValuesTypes>(key_value_pairs)...);
       }
+
+      template <typename... KeyValuesTypes>
+      static inline void dynamic_notify(
+          hive::utilities::notifications::notification_handler_wrapper& handler,
+          const fc::string &name,
+          KeyValuesTypes &&...key_value_pairs)
+      {
+        hive::utilities::notifications::error_handler([&]{
+          handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+          );
+        });
+      }
+
   };
 
   template< typename Impl >
