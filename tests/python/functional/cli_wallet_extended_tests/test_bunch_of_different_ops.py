@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import test_tools as tt
-
+from beekeepy.exceptions import CommunicationError
 from .utilities import check_keys, create_accounts
 
 key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
@@ -23,13 +23,13 @@ key2 = "STM7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
 def test_different_false_cases(wallet: tt.OldWallet) -> None:
     try:
         wallet.api.get_account("not-exists")
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Account does not exist") != -1
 
     try:
         wallet.api.create_account("initminer")
-    except Exception as e:
+    except TypeError as e:
         message = str(e)
         assert (
             message.find("create_account() missing 2 required positional arguments: 'new_account_name' and 'json_meta'")
@@ -48,13 +48,13 @@ def test_different_false_cases(wallet: tt.OldWallet) -> None:
             "this is proposal",
             "hello-world",
         )
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Proposal permlink must point to the article posted by creator or receiver") != -1
 
     try:
         wallet.api.post_comment("bob", "hello-world", "", "xyz", "something bout world", "just nothing", "{}")
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Account: bob has 0 RC") != -1
 
@@ -72,19 +72,19 @@ def test_different_false_cases(wallet: tt.OldWallet) -> None:
             "this is proposal",
             "hello-world",
         )
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Account bob does not have sufficient funds for balance adjustment") != -1
 
     try:
         wallet.api.vote("bob", "bob", "hello-world", 101)
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Weight must be between -100 and 100 and not 0") != -1
 
     try:
         wallet.api.vote("alice", "bob", "hello-world", 99)
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("Account: alice has 0 RC, needs 1 RC") != -1
 
@@ -94,7 +94,7 @@ def test_different_false_cases(wallet: tt.OldWallet) -> None:
             wallet.api.post_comment(
                 "alice", "hello-world2", "", "xyz2", "something about world2", "just nothing2", "{}"
             )
-    except Exception as e:
+    except CommunicationError as e:
         message = str(e)
         assert message.find("required_active.size()") != -1
 
