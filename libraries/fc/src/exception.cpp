@@ -153,6 +153,24 @@ namespace fc
                                 ( "extension", variant( e.get_extensions() ) );
 
    }
+   void to_variant( const assert_exception& e, variant& v )
+   {
+    const auto& extensions = e.get_extensions();
+    auto it = extensions.find( FC_ASSERT_EXPRESSION_KEY );
+    uint64_t assert_hash = 0ull;
+    if( it != extensions.end() )
+    {
+      const auto& expr = it->value();
+      assert_hash = exception::hash_expr( expr );
+    }
+
+    v = mutable_variant_object( "code", e.code() )
+                              ( "name", e.name() )
+                              ( "message", e.what() )
+                              ( "stack", e.get_log() )
+                              ( "extension", variant( e.get_extensions() ) )
+                              ( "assert_hash", assert_hash );
+   }
    void          from_variant( const variant& v, exception& ll )
    {
       auto obj = v.get_object();
