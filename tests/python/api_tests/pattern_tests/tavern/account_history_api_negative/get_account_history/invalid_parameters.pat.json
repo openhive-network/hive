@@ -1,4 +1,4 @@
 {
   "code": -32003,
-  "message": "Assert Exception:15599059534279751802: in_len <= sizeof(data): Input too large: `twenty_letters_wordd` (20) for fixed size string: (16)"
+  "message": "Assert Exception:in_len <= sizeof(data): Input too large: `twenty_letters_wordd` (20) for fixed size string: (16)"
 }
