@@ -1993,7 +1993,7 @@ void database::process_recurrent_transfers()
           });
         }
         // false means the recurrent transfer was not deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, remove_recurrent_transfer));
       }
       else
       {
