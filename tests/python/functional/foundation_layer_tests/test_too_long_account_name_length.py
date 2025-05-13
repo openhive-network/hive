@@ -222,7 +222,7 @@ def test_too_long_account_name_length(node, api, method, arguments, keyword_argu
 
     response = exception.value.error
     assert (
-        f"Assert Exception:15599059534279751802: in_len <= sizeof(data): Input too large: `{TOO_LONG_ACCOUNT_NAME}`"
+        f"Assert Exception:in_len <= sizeof(data): Input too large: `{TOO_LONG_ACCOUNT_NAME}`"
         f" ({len(TOO_LONG_ACCOUNT_NAME)}) for fixed size string: (16)"
         == response
     )

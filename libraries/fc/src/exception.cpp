@@ -204,11 +204,7 @@ namespace fc
 
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-      {
-        const auto& expr = it->value();
-        ss << hash_expr( expr ) << ": ";
-        ss << expr.as_string() << "\n";
-      }
+        ss << it->value().as_string() << "\n";
 
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
@@ -230,11 +226,7 @@ namespace fc
       ss << what() << ":";
       auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
       if( it != my->_extension.end() )
-      {
-        const auto& expr = it->value();
-        ss << hash_expr( expr ) << ": ";
-        ss << expr.as_string() << ": ";
-      }
+        ss << it->value().as_string() << ": ";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
          if( itr->get_format().size() )
