@@ -1,6 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -10165,6 +10166,62 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_exact_max )
     op.executions = 8;
     // 8 transfers, one immediately and the rest after 2503 hours each, with last at 17521 hours after start, which is 1 hour above limit
     HIVE_REQUIRE_ASSERT( push_transaction( op, bob_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( failed_recurrent_transfer )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "recurrent_transfer always fails" );
+
+    BOOST_SCOPE_EXIT( &configuration_data )
+    {
+      configuration_data.reset_recurrent_transfers_values();
+    } BOOST_SCOPE_EXIT_END
+
+    configuration_data.set_min_recurrent_transfers_recurrence( 1 );
+
+    ACTORS( (alice)(bob)(carol)(dan) )
+    generate_block();
+
+    issue_funds( "alice", ASSET( "7.000 TBD" ) );
+    issue_funds( "carol", ASSET( "7.000 TBD" ) );
+
+    auto _run = [this]( const std::string& from, const std::string& to, const fc::ecc::private_key& private_key, uint16_t executions, bool deleted )
+    {
+      recurrent_transfer_operation op;
+      op.from = from;
+      op.to = to;
+      op.memo = "test ok";
+      op.amount = ASSET( "6.000 TBD" );
+      op.recurrence = 1;
+      op.executions = executions;
+      push_transaction( op, private_key );
+
+      generate_block();
+
+      BOOST_REQUIRE( get_hbd_balance( from ).amount.value == ASSET( "1.000 TBD" ).amount.value );
+      BOOST_REQUIRE( get_hbd_balance( to ).amount.value == ASSET( "6.000 TBD" ).amount.value );
+
+      const auto& _rt = *( db->get_index< recurrent_transfer_index, by_id >().begin() );
+      BOOST_REQUIRE_EQUAL( _rt.consecutive_failures, 0 );
+      BOOST_REQUIRE_EQUAL( _rt.remaining_executions, executions - 1 );
+
+      generate_blocks( db->head_block_time() + fc::hours( op.recurrence ) );
+      auto _size = db->get_index< recurrent_transfer_index, by_id >().size();
+      BOOST_REQUIRE_EQUAL( _size, executions - 2 );
+
+      auto _recent_ops = get_last_operations( 1 );
+      auto _last_op = _recent_ops.back().get< failed_recurrent_transfer_operation >();
+      BOOST_REQUIRE_EQUAL( _last_op.deleted, deleted );
+    };
+
+    _run( "alice", "bob", alice_private_key, 2/*executions*/, true/*deleted*/ );
+    _run( "carol", "dan", carol_private_key, 3/*executions*/, false/*deleted*/ );
 
     validate_database();
   }
