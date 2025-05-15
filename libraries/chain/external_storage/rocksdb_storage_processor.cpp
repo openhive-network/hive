@@ -32,7 +32,7 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id
   auto& _account = db.get_account( account_id );
   auto _found = db.find_comment( comment_id );
 
-  FC_ASSERT( _found, "Comment ${permlink}/${author} has to exist", ("permlink", permlink)("author", _account.get_name()) );
+  FC_ASSERT( _found, "Comment ${author}/${permlink} has to exist", ("permlink", permlink)("author", _account.get_name()) );
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
   auto _vfound = _volatile_idx.find( _found->get_author_and_permlink_hash() );
@@ -41,7 +41,7 @@ void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id
     return;
 
 #ifdef DBG_INFO
-  ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with permlink/author: ${permlink}/${author}",
+  ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with author/permlink: ${author}/${permlink}",
   ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
   ("permlink", permlink)("author", _account.get_name())("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
 #endif
