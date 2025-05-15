@@ -139,7 +139,6 @@ class chain_plugin_impl
         chain_sync_con.disconnect();
 
       chain::util::disconnect_signal(_on_irreversible_block_conn);
-      chain::util::disconnect_signal(_on_remove_comment_cashout_conn);
       chain::util::disconnect_signal(_on_prepare_snapshot_supplement_conn);
       chain::util::disconnect_signal(_on_load_snapshot_supplement_conn);
 
@@ -235,7 +234,6 @@ class chain_plugin_impl
 
     boost::signals2::connection     _post_apply_operation_conn;
     boost::signals2::connection     _on_irreversible_block_conn;
-    boost::signals2::connection     _on_remove_comment_cashout_conn;
     boost::signals2::connection     _on_prepare_snapshot_supplement_conn;
     boost::signals2::connection     _on_load_snapshot_supplement_conn;
 
@@ -487,21 +485,15 @@ void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_
     }, _plugin
   );
 
-  _on_remove_comment_cashout_conn = db.add_remove_comment_cashout_handler(
-    [&]( const remove_comment_cashout_notification& note )
-    {
-      FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->allow_move_to_external_storage( note.comment_id, note.account_id, note.permlink );
-    }, _plugin
-  );
-
   _on_prepare_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
     {
+      FC_ASSERT( rocksdb_processor );
       rocksdb_processor->supplement_snapshot( note );
     }, _plugin, 0);
 
   _on_load_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
     {
+      FC_ASSERT( rocksdb_processor );
       rocksdb_processor->load_additional_data_from_snapshot( note );
     }, _plugin, 0);
 }

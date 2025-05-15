@@ -652,7 +652,7 @@ void database::remove_old_cashouts()
   {
     const auto& current = *itr;
     ++itr;
-    notify_remove_comment_cashout( { current.get_comment_id(), current.get_author_id(), current.get_permlink() } );
+    get_comments_handler()->allow_move_to_external_storage( current.get_comment_id(), current.get_author_id(), current.get_permlink() );
     remove( current );
   }
 }
@@ -892,11 +892,6 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
 void database::notify_comment_reward(const comment_reward_notification& note)
 {
   HIVE_TRY_NOTIFY(_comment_reward_signal, note)
-}
-
-void database::notify_remove_comment_cashout(const remove_comment_cashout_notification& note)
-{
-  HIVE_TRY_NOTIFY(_remove_comment_cashout_signal, note) 
 }
 
 void database::notify_end_of_syncing()
@@ -2680,7 +2675,7 @@ void database::process_comment_cashout()
 
     if( has_hardfork( HIVE_HARDFORK_0_19 ) )
     {
-      notify_remove_comment_cashout( { _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() } );
+      get_comments_handler()->allow_move_to_external_storage( _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() );
       remove( *_current );
     }
     _current = cidx.begin();
@@ -4662,11 +4657,6 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const load
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl<true>(_comment_reward_signal, func, plugin, group, "comment_reward");
-}
-
-boost::signals2::connection database::add_remove_comment_cashout_handler(const remove_comment_cashout_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
-{
-  return connect_impl<true>(_remove_comment_cashout_signal, func, plugin, group, "remove_comment_cashout");
 }
 
 boost::signals2::connection database::add_end_of_syncing_handler(const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
