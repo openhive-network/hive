@@ -369,13 +369,11 @@ namespace chain {
       using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
       using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
-      using remove_comment_cashout_notification_handler_t = std::function < void(const remove_comment_cashout_notification&) >;
       using end_of_syncing_notification_handler_t = std::function < void(void) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
       void notify_comment_reward(const comment_reward_notification& note);
-      void notify_remove_comment_cashout(const remove_comment_cashout_notification& note);
       void notify_end_of_syncing();
 
     private:
@@ -426,8 +424,6 @@ namespace chain {
       boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       boost::signals2::connection add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
-
-      boost::signals2::connection add_remove_comment_cashout_handler    (const remove_comment_cashout_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       boost::signals2::connection add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
@@ -941,11 +937,6 @@ namespace chain {
       ///  Emitted when rewards for author and curators are paid out.
       /// </summary>
       fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
-
-      /// <summary>
-      ///  Emitted when rewards for a comment are paid out and a cashout object is removed.
-      /// </summary>
-      fc::signal<void(const remove_comment_cashout_notification&)>          _remove_comment_cashout_signal;
 
       fc::signal<void()> _end_of_syncing_signal;
       /**

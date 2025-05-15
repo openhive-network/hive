@@ -60,14 +60,4 @@ struct comment_reward_notification
   share_type curation_tokens;
 };
 
-struct remove_comment_cashout_notification
-{
-  remove_comment_cashout_notification( const comment_id_type& _comment_id, const account_id_type& _account_id, const std::string& _permlink )
-  : comment_id( _comment_id ), account_id( _account_id ), permlink( _permlink ) {}
-
-  comment_id_type comment_id;
-  account_id_type account_id;
-  std::string     permlink;
-};
-
 } }
