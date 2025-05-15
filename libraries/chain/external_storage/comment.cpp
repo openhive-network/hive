@@ -15,31 +15,26 @@ namespace hive { namespace chain {
 
   const comment_object::id_type comment::get_id() const
   {
-    FC_ASSERT( shm || external );
     return shm ? shm->get_id() : external->get_id();
   }
 
   const comment_object::author_and_permlink_hash_type& comment::get_author_and_permlink_hash() const
   {
-    FC_ASSERT( shm || external );
     return shm ? shm->get_author_and_permlink_hash() : external->get_author_and_permlink_hash();
   }
 
   const comment_id_type comment::get_parent_id() const
   {
-    FC_ASSERT( shm || external );
     return shm ? shm->get_parent_id() : external->get_parent_id();
   }
 
   const bool comment::is_root() const
   {
-    FC_ASSERT( shm || external );
     return shm ? shm->is_root() : external->is_root();
   }
 
   const uint16_t comment::get_depth() const
   {
-    FC_ASSERT( shm || external );
     return shm ? shm->get_depth() : external->get_depth();
   }
 
