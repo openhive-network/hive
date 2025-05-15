@@ -1057,8 +1057,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       //ABW: see creation tx 11ad62ee8f8e892cd5bd75fc2d3098427f7e47ac and edit tx dca209592c7129be36b069d033dfdb0f1f143b4e
       //both happened prior to HF21 when check was slightly more relaxed
-      auto parent_comment = _db.get_comment( o.parent_author, o.parent_permlink );
-      FC_ASSERT( _comment.get_parent_id() == parent_comment.get_id(), "The parent of a comment cannot change." );
+      FC_ASSERT( _comment.get_parent_id() == parent.get_id(), "The parent of a comment cannot change." );
     }
 
     _db.modify( auth, [&]( account_object& a )
