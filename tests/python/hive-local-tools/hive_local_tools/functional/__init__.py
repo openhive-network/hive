@@ -7,7 +7,8 @@ from typing import Callable
 
 import test_tools as tt
 from schemas.fields.hive_int import HiveInt
-from test_tools.__private.wallet.constants import SimpleTransaction
+from schemas.operation import Operation
+from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
 
@@ -61,7 +62,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
 
 
 def __generate_and_broadcast_transaction(
-    wallet: tt.Wallet, node: tt.InitNode, func: Callable, account_names: list[str], **kwargs
+    wallet: tt.Wallet | tt.OldWallet, node: tt.InitNode, func: Callable, account_names: list[str], **kwargs
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
@@ -72,7 +73,7 @@ def __generate_and_broadcast_transaction(
     assert ref_block_num >= 0, f"ref_block_num value `{ref_block_num}` is invalid`"
     assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
 
-    transaction = SimpleTransaction(
+    transaction = (SimpleTransactionLegacy if isinstance(wallet, tt.OldWallet) else SimpleTransaction)(
         ref_block_num=HiveInt(ref_block_num),
         ref_block_prefix=HiveInt(ref_block_prefix),
         expiration=gdpo.time + timedelta(seconds=1800),
@@ -81,10 +82,27 @@ def __generate_and_broadcast_transaction(
         operations=[],
     )
 
-    for name in account_names:
-        transaction.add_operation(func(name, **kwargs))
+    is_batch_mode = "executions" in kwargs and "recurrence" in kwargs
 
-    sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
-    node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
+    for num, name in enumerate(account_names):
+        if is_batch_mode:
+            receivers = account_names.copy()
+            receivers.remove(name)
+            for receiver in receivers:
+                transaction.add_operation(func(name, receiver, **kwargs))
+            sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
+            node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
+            tt.logger.info(f"Finished account: {name}, {num}/{len(account_names)}")
+            transaction.operations.clear()
+        else:
+            ret = func(name, **kwargs)
+            if isinstance(ret, Operation):
+                transaction.add_operation(ret)
+            else:
+                [transaction.add_operation(op) for op in ret]
 
-    tt.logger.info(f"Finished: {account_names[-1]}")
+    if not is_batch_mode and transaction.operations:
+        sign_transaction = wallet.api.sign_transaction(transaction, broadcast=False)
+        node.api.network_broadcast.broadcast_transaction(trx=sign_transaction)
+
+    tt.logger.info(f"Finished: {account_names[0]} to {account_names[-1]}")
