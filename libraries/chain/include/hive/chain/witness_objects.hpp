@@ -308,7 +308,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< witness_schedule_object, witness_schedule_object::id_type, &witness_schedule_object::get_id > >
     >,
-    multi_index_allocator< witness_schedule_object >
+    multi_index_allocator< witness_schedule_object, 4 > // dubleton (plus one internal)
   > witness_schedule_index;
 
 } }

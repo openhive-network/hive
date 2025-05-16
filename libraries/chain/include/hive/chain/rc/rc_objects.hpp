@@ -261,7 +261,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_resource_param_object, rc_resource_param_object::id_type, &rc_resource_param_object::get_id > >
   >,
-  multi_index_allocator< rc_resource_param_object >
+  multi_index_allocator< rc_resource_param_object, 2 > // singleton (plus one internal)
 > rc_resource_param_index;
 
 typedef multi_index_container<
@@ -270,7 +270,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_pool_object, rc_pool_object::id_type, &rc_pool_object::get_id > >
   >,
-  multi_index_allocator< rc_pool_object >
+  multi_index_allocator< rc_pool_object, 2 > // singleton (plus one internal)
 > rc_pool_index;
 
 typedef multi_index_container<
@@ -279,7 +279,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_id >,
       const_mem_fun< rc_stats_object, rc_stats_object::id_type, &rc_stats_object::get_id > >
   >,
-  multi_index_allocator< rc_stats_object >
+  multi_index_allocator< rc_stats_object, 4 > // dubleton (plus one internal)
 > rc_stats_index;
 
 struct by_from_to;
@@ -320,7 +320,7 @@ typedef multi_index_container<
     ordered_unique< tag< by_timestamp >,
       const_mem_fun< rc_usage_bucket_object, time_point_sec, &rc_usage_bucket_object::get_timestamp > >
   >,
-  multi_index_allocator< rc_usage_bucket_object >
+  multi_index_allocator< rc_usage_bucket_object, 32 > // multiton (always 24 plus one internal)
 > rc_usage_bucket_index;
 
 } } // hive::chain
