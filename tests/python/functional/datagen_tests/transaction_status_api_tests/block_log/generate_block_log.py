@@ -9,7 +9,7 @@ import test_tools as tt
 
 def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
     node = tt.InitNode()
-    node.run()
+    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=15))
     wallet = tt.Wallet(attach_to=node)
 
     transaction_ids = []
@@ -23,6 +23,7 @@ def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
     with open("transactions_ids.json", "w", encoding="utf-8") as json_file:
         json.dump(transaction_ids, json_file)
 
+    wallet.close()
     node.close()
     node.block_log.copy_to(output_block_log_directory / "witness_setup")
 
