@@ -49,7 +49,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define TEST_SHARED_MEM_SIZE (1024 * 1024 * 64)
+#define TEST_SHARED_MEM_SIZE (1024 * 1024 * database_fixture::shared_file_size_small)
 
 namespace fc
 {
@@ -441,7 +441,7 @@ namespace
 
 #define SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( SUFFIX ) \
   clean_database_fixture fixture ## SUFFIX( \
-    database_fixture::shared_file_size_in_mb_512, \
+    database_fixture::shared_file_size_big, \
     fc::optional<uint32_t>(), \
     false /*init_ah_plugin*/ ); \
   database& db ## SUFFIX = *(fixture ## SUFFIX.db);
@@ -1171,7 +1171,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     postponed_init(
       {
         config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
-        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } } )
+        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_small ) } } )
       },
       &ah_plugin
     );
@@ -1879,7 +1879,7 @@ struct init_supply_database_fixture : public hived_fixture
     try
     {
       postponed_init( {
-        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } } )
+        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_small ) } } )
       } );
       init_account_pub_key = init_account_priv_key.get_public_key();
       validate_database();

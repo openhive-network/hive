@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       postponed_init(
         {
           hived_fixture::config_line_t({ "shared-file-size",
-            { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_in_mb_64) } }
+            { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_small) } }
           )
         }
       );

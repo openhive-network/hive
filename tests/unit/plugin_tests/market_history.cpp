@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
           { HIVE_MARKET_HISTORY_PLUGIN_NAME, HIVE_MARKET_HISTORY_API_PLUGIN_NAME } }
         ),
         config_line_t( { "shared-file-size",
-          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+          { std::to_string( 1024 * 1024 * shared_file_size_small ) } }
         )
       },
       &mh_plug );

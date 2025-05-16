@@ -81,7 +81,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
       {
         /// By default limit shm size to 64MB for unit tests.
         config_arg_overrides.emplace_back(config_arg_override_t::value_type(
-          { "shared-file-size", { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_in_mb_64) } }));
+          { "shared-file-size", { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_small) } }));
       }
 
       if( not config_arg_overrides.empty() )
@@ -210,7 +210,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
           HIVE_CONDENSER_API_PLUGIN_NAME } }
       ),
       config_line_t( { "shared-file-size",
-        { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        { std::to_string( 1024 * 1024 * shared_file_size_small ) } }
       )
     },
     &ah_plugin,

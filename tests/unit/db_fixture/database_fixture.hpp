@@ -268,8 +268,8 @@ struct database_fixture {
 #endif
 
   static const fc::ecc::private_key committee;
-  static const uint16_t shared_file_size_in_mb_64 = 64;
-  static const uint16_t shared_file_size_in_mb_512 = 512;
+  static const uint16_t shared_file_size_small = 64;
+  static const uint16_t shared_file_size_big = 512;
 
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = committee,

@@ -36,7 +36,7 @@ condenser_api_fixture::condenser_api_fixture()
           HIVE_CONDENSER_API_PLUGIN_NAME } }
       ),
       config_line_t( { "shared-file-size",
-        { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        { std::to_string( 1024 * 1024 * shared_file_size_small ) } }
       )
     },
     &ah_plugin,

@@ -10514,7 +10514,7 @@ struct timeshare_test_fixture : clean_database_fixture
   std::set<std::string> timeshare_witness_names;
 
   timeshare_test_fixture() :
-    clean_database_fixture(shared_file_size_in_mb_512, hardfork_number)
+    clean_database_fixture(shared_file_size_big, hardfork_number)
   {
     // declare 20 witnesses that we'll vote in.  these will remain constant throughout the test
     ACTORS((voted1)(voted2)(voted3)(voted4)(voted5)(voted6)(voted7)(voted8)(voted9)(voted10)
