@@ -12,6 +12,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/config.hpp>
@@ -35,13 +36,15 @@ namespace hive {namespace converter { namespace plugins { namespace block_log_co
 namespace detail {
 
   using hive::chain::block_log;
+  using hive::chain::block_log_wrapper;
 
   class block_log_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
-    block_log log_in, log_out;
+    std::shared_ptr< block_log_wrapper > log_reader;
+    block_log log_out;
 
     block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), log_in( app ), log_out( app ), theApp( app ),
+      : conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), log_out( app ), theApp( app ),
         thread_pool( hive::chain::blockchain_worker_thread_pool( app ) ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
@@ -56,7 +59,7 @@ namespace detail {
   {
     try
     {
-      log_in.open( input, thread_pool, true );
+      log_reader = hive::chain::block_log_wrapper::create_opened_wrapper( input, theApp, thread_pool, true /*read_only*/ );
     } FC_CAPTURE_AND_RETHROW( (input) )
 
     try
@@ -67,9 +70,9 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
+    FC_ASSERT( log_reader, "Input block log should be opened before the conversion" );
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
-    FC_ASSERT( log_in.head(), "Your input block log is empty" );
+    FC_ASSERT( log_reader->head_block(), "Your input block log is empty" );
 
     fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
 
@@ -94,8 +97,8 @@ namespace detail {
 
     if( start_block_num > 1 && log_out.head() ) // continuing conversion
     {
-      FC_ASSERT( start_block_num <= log_in.head()->get_block_num(), "cannot resume conversion from a block that is not in the block_log",
-        ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->get_block_num()) );
+      FC_ASSERT( start_block_num <= log_reader->head_block()->get_block_num(), "cannot resume conversion from a block that is not in the block_log",
+        ("start_block_num", start_block_num)("log_in_head_block_num", log_reader->head_block()->get_block_num()) );
 
       ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
       ilog("Validating the chain id...");
@@ -148,12 +151,12 @@ namespace detail {
       dlog("Chain id match");
     }
 
-    if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
-      stop_block_num = log_in.head()->get_block_num();
+    if( !stop_block_num || stop_block_num > log_reader->head_block()->get_block_num() )
+      stop_block_num = log_reader->head_block()->get_block_num();
 
     for( ; start_block_num <= stop_block_num && !theApp.is_interrupt_request(); ++start_block_num )
     {
-      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+      std::shared_ptr<hive::chain::full_block_type> _full_block = log_reader->read_block_by_num( start_block_num );
       FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
       hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
@@ -177,8 +180,8 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::close()
   {
-    if( log_in.is_open() )
-      log_in.close();
+    if( log_reader )
+      log_reader->close_storage();
 
     if( log_out.is_open() )
       log_out.close();
