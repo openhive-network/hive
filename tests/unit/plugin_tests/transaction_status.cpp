@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
             { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } }
           ),
           hived_fixture::config_line_t( { "shared-file-size",
-            { std::to_string( 1024 * 1024 * fixture.shared_file_size_in_mb_64 ) } }
+            { std::to_string( 1024 * 1024 * fixture.shared_file_size_small ) } }
           )
         },
         &tx_status_api,

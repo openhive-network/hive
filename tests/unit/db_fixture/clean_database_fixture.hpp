@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 struct clean_database_fixture : public hived_fixture
 {
   clean_database_fixture( 
-    uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512,
+    uint16_t shared_file_size_in_mb = shared_file_size_big,
     fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
     bool init_ah_plugin = true, int block_log_split = 9999 );
   virtual ~clean_database_fixture();
@@ -21,7 +21,7 @@ struct clean_database_fixture : public hived_fixture
 struct pruned_database_fixture : public clean_database_fixture
 {
   pruned_database_fixture(
-    uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512,
+    uint16_t shared_file_size_in_mb = shared_file_size_big,
     fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
     bool init_ah_plugin = true );
   virtual ~pruned_database_fixture();
@@ -29,7 +29,7 @@ struct pruned_database_fixture : public clean_database_fixture
 
 struct hardfork_database_fixture : public clean_database_fixture
 {
-  hardfork_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512, uint32_t hardfork = HIVE_BLOCKCHAIN_VERSION.minor_v() );
+  hardfork_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_big, uint32_t hardfork = HIVE_BLOCKCHAIN_VERSION.minor_v() );
   virtual ~hardfork_database_fixture();
 };
 
@@ -41,7 +41,7 @@ struct cluster_database_fixture
 
   using content_method = std::function<void( ptr_hardfork_database_fixture& )>;
 
-  cluster_database_fixture( uint16_t _shared_file_size_in_mb = database_fixture::shared_file_size_in_mb_512 );
+  cluster_database_fixture( uint16_t _shared_file_size_in_mb = database_fixture::shared_file_size_big );
   virtual ~cluster_database_fixture();
 
   template<uint8_t hardfork>
@@ -55,19 +55,19 @@ struct cluster_database_fixture
 
 struct config_database_fixture : public clean_database_fixture
 {
-  config_database_fixture( std::function< void() > action, uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  config_database_fixture( std::function< void() > action, uint16_t shared_file_size_in_mb = shared_file_size_big );
   virtual ~config_database_fixture();
 };
 
 struct genesis_database_fixture : public clean_database_fixture
 {
-  genesis_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  genesis_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_big );
   virtual ~genesis_database_fixture();
 };
 
 struct curation_database_fixture : public config_database_fixture
 {
-  curation_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  curation_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_big );
   virtual ~curation_database_fixture();
 };
 
@@ -129,14 +129,14 @@ struct dhf_database_fixture_performance : public clean_database_fixture
 
 struct hf23_database_fixture : public clean_database_fixture
 {
-    hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
+    hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_small )
                     : clean_database_fixture( shared_file_size_in_mb ){}
     virtual ~hf23_database_fixture(){}
 };
 
 struct hf24_database_fixture : public clean_database_fixture
 {
-  hf24_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
+  hf24_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_small )
     : clean_database_fixture( shared_file_size_in_mb )
   {}
   virtual ~hf24_database_fixture() {}
@@ -146,7 +146,7 @@ struct delayed_vote_database_fixture : public config_database_fixture
 {
   public:
 
-    delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+    delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_small );
     virtual ~delayed_vote_database_fixture();
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );

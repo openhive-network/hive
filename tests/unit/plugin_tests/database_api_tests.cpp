@@ -20,7 +20,7 @@ struct database_api_fixture_basic : hived_fixture
       {
         config_line_t( { "plugin", { HIVE_DATABASE_API_PLUGIN_NAME } } ),
         config_line_t( { "shared-file-size",
-          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+          { std::to_string( 1024 * 1024 * shared_file_size_small ) } }
         )
       },
       &db_api_plugin
