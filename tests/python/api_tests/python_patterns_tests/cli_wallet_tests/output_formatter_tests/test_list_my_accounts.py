@@ -27,11 +27,11 @@ def test_list_my_accounts_json_format(wallet_with_json_formatter: tt.Wallet):
         block_log.CREATED_ACCOUNTS, block_log.ACCOUNTS_BALANCES, accounts_summary["accounts"]
     ):
         assert returned_account["name"] == name
-        assert returned_account["balance"] == balances["hives"].as_nai()
-        assert returned_account["hbd_balance"] == balances["hbds"].as_nai()
+        assert returned_account["balance"] == balances["hives"].as_serialized_nai()
+        assert returned_account["hbd_balance"] == balances["hbds"].as_serialized_nai()
 
-    assert accounts_summary["total_hive"] == TOTAL_BALANCES["hives"].as_nai()
-    assert accounts_summary["total_hbd"] == TOTAL_BALANCES["hbds"].as_nai()
+    assert accounts_summary["total_hive"] == TOTAL_BALANCES["hives"].as_serialized_nai()
+    assert accounts_summary["total_hbd"] == TOTAL_BALANCES["hbds"].as_serialized_nai()
 
 
 @pytest.mark.replayed_node()

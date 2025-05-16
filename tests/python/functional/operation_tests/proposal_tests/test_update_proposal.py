@@ -6,6 +6,7 @@ import pytest
 from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from schemas.fields.hive_datetime import HiveDateTime
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
@@ -31,9 +32,9 @@ if TYPE_CHECKING:
         ({"daily_pay": tt.Asset.Tbd(4)}, "positive"),
         ({"permlink": "new-permlink"}, "positive"),
         ({"subject": "new-subject"}, "positive"),
-        ({"end_date": tt.Time.from_now(days=15)}, "positive"),
+        ({"end_date": HiveDateTime(tt.Time.from_now(days=15))}, "positive"),
         ({"daily_pay": tt.Asset.Tbd(6)}, "negative"),
-        ({"end_date": tt.Time.from_now(days=80)}, "negative"),
+        ({"end_date": HiveDateTime(tt.Time.from_now(days=80))}, "negative"),
     ],
     ids=[
         "reduce the amount of daily_pay",
@@ -47,8 +48,8 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "end_date",
     [
-        tt.Time.from_now(days=30),  # proposal duration is shorter than HIVE_PROPOSAL_FEE_INCREASE_DAYS
-        tt.Time.from_now(days=65),  # proposal duration is longer than HIVE_PROPOSAL_FEE_INCREASE_DAYS
+        HiveDateTime(tt.Time.from_now(days=30)),  # proposal duration is shorter than HIVE_PROPOSAL_FEE_INCREASE_DAYS
+        HiveDateTime(tt.Time.from_now(days=65)),  # proposal duration is longer than HIVE_PROPOSAL_FEE_INCREASE_DAYS
     ],
     ids=["end_date_before_60_days", "end_date_after_60_days"],
 )
@@ -110,15 +111,15 @@ def test_update_one_parameter_in_proposal(
         {"daily_pay": tt.Asset.Tbd(4)},
         {"permlink": "new-permlink"},
         {"subject": "new-subject"},
-        {"end_date": tt.Time.from_now(days=15)},
+        {"end_date": HiveDateTime(tt.Time.from_now(days=15))},
     ],
     ids=["reduce_the_amount_of_daily_pay", "change_the_permlink", "change_the_subject", "short_the_end_date"],
 )
 @pytest.mark.parametrize(
     "end_date",
     [
-        tt.Time.from_now(days=30),  # proposal duration is shorter than HIVE_PROPOSAL_FEE_INCREASE_DAYS
-        tt.Time.from_now(days=65),  # proposal duration is longer than HIVE_PROPOSAL_FEE_INCREASE_DAYS
+        HiveDateTime(tt.Time.from_now(days=30)),  # proposal duration is shorter than HIVE_PROPOSAL_FEE_INCREASE_DAYS
+        HiveDateTime(tt.Time.from_now(days=65)),  # proposal duration is longer than HIVE_PROPOSAL_FEE_INCREASE_DAYS
     ],
     ids=["end_date_before_60_days", "end_date_after_60_days"],
 )

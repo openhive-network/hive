@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import test_tools as tt
 
 
-# @run_for("mainnet_5m")
+@run_for("mainnet_5m")
 def test_if_witness_creation_dates_are_not_set_to_epoch(
     node: tt.InitNode | tt.RemoteNode,
 ) -> None:

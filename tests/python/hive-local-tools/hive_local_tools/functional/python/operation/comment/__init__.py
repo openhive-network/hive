@@ -16,6 +16,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
+from schemas.fields.assets import AssetBase as AssetBase
 from schemas.fields.assets import AssetHive
 from schemas.operations import (
     CommentOptionsOperation,
@@ -728,7 +729,7 @@ class CommentAccount(Account):
 
         sum_of_all_rewards = (
             (tt.Asset.Tbd(sum_of_all_rewards) if mode == "hbd" else tt.Asset.Vest(sum_of_all_rewards))
-            if sum_of_all_rewards == 0
+            if isinstance(sum_of_all_rewards, int) and sum_of_all_rewards == 0
             else sum_of_all_rewards
         )
 

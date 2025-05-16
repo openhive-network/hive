@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING
 
 import test_tools as tt
@@ -200,7 +201,9 @@ class RecurrentTransfer:
             self._executions = new_executions_number
             self._recurrence = new_recurrence_time
         elif not new_executions_number and not new_recurrence_time and amount:
-            if amount == amount.clone(amount=0):
+            amount_clone = copy.deepcopy(amount)
+            amount_clone.amount = 0
+            if amount == amount_clone:
                 self._current_schedule = []
             else:
                 self._current_schedule = self.__get_transfer_schedule(self.get_next_execution_date())
