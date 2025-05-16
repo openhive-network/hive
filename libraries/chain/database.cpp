@@ -5943,6 +5943,9 @@ void database::apply_hardfork( uint32_t hardfork )
           }
         }
 
+        // liquidity reward mechanism no longer active after HF12
+        auto& liquidity_reward_balance_idx = get_mutable_index< liquidity_reward_balance_index >();
+        liquidity_reward_balance_idx.clear();
       }
       break;
     case HIVE_HARDFORK_0_13:
