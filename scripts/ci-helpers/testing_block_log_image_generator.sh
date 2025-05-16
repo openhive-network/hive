@@ -15,7 +15,8 @@ IMGNAME=testing-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
 
-CHANGES=(tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py)
+CHANGES=("tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py")
+final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
 commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
 echo "commit with last source code changes is $commit"
 
@@ -24,11 +25,11 @@ short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
 prefix_tag="testing-block-log"
-tag=$prefix_tag-$short_commit
+tag=$prefix_tag-$final_checksum
 
 img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
 _img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
-_img_tag="$tag"
+_img_tag=$IMGNAME
 
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
