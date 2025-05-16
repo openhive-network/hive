@@ -101,6 +101,9 @@ namespace helpers
     size_t pureNodeSize = sizeof(typename IndexType::MULTIINDEX_NODE_TYPE) -
       sizeof(typename IndexType::value_type);
     info->_additional_container_allocation = info->_item_count*pureNodeSize;
+//  chainbase::multi_index_allocator< typename IndexType::MULTIINDEX_NODE_TYPE,
+//    decltype( index.get_allocator() )::block_size > a( index.get_allocator() );
+// ABW: above allows access to static blocks_??_count data inside allocator type associated with 'index'
   }
 
   class index_statistic_provider

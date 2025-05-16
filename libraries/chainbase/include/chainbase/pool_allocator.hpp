@@ -283,6 +283,7 @@ namespace chainbase {
               block_list[index] = nullptr;
 
             block_index.erase(found);
+            ++blocks_released_count;
             }
           else
             {
@@ -294,6 +295,7 @@ namespace chainbase {
       block_ptr_t allocate_block()
         {
         auto insert_result = block_index.emplace();
+        ++blocks_allocated_count;
         block_ptr_t block = const_cast<block_t*>(&(*insert_result.first));
         return block;
         }
@@ -304,6 +306,7 @@ namespace chainbase {
           {
           block->set_on_list_index(static_cast<uint32_t>(block_list.size()));
           block_list.emplace_back(block);
+          ++blocks_pushed_count;
           }
         }
 
@@ -312,6 +315,8 @@ namespace chainbase {
         assert(!block_list.empty());
         block_ptr_t block = block_list.back();
         block_list.pop_back();
+        if( block )
+          ++blocks_popped_count;
         return block;
         }
 
@@ -333,7 +338,25 @@ namespace chainbase {
       block_list_t              block_list;
       block_ptr_t               current_block = nullptr;
       uint32_t                  allocated_count = 0;
+
+    public:
+      static constexpr uint32_t block_size = BLOCK_SIZE;
+      static size_t             blocks_allocated_count; /// ABW: note that multi_index allocates extra node inside constructor (in some index configurations)
+      static size_t             blocks_released_count; /// ABW: for above reason not all blocks are going to be released, unless multi_index is destroyed
+      /// number of times first object was released from block that was not current_block
+      static size_t             blocks_pushed_count;
+      /// number of times first object was acquired from partially filled block that was not current_block (== how many times current_block switched to different partially allocated block)
+      static size_t             blocks_popped_count;
     };
+
+  template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
+  size_t pool_allocator_t<T, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>::blocks_allocated_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
+  size_t pool_allocator_t<T, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>::blocks_released_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
+  size_t pool_allocator_t<T, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>::blocks_pushed_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
+  size_t pool_allocator_t<T, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>::blocks_popped_count = 0;
 
   template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
     constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>::block_t::invalid_list_index;
@@ -342,9 +365,9 @@ namespace chainbase {
 
   constexpr uint32_t DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 5; // 32
 
-  template <typename T>
+  template <typename T, uint32_t BLOCK_SIZE = DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE>
   using multi_index_allocator = std::conditional_t<_ENABLE_MULTI_INDEX_POOL_ALLOCATOR,
-    pool_allocator_t<T, DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE>,
+    pool_allocator_t<T, BLOCK_SIZE>,
     allocator<T> >;
 
   template <typename T>
