@@ -506,7 +506,7 @@ namespace hive { namespace chain {
         composite_key_compare< std::greater< fc::uint128 >, std::less< account_id_type > >
       >
     >,
-    multi_index_allocator< liquidity_reward_balance_object >
+    multi_index_allocator< liquidity_reward_balance_object, 1024 > // not used after HF12
   > liquidity_reward_balance_index;
 
   typedef multi_index_container<
@@ -515,7 +515,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< feed_history_object, feed_history_object::id_type, &feed_history_object::get_id > >
     >,
-    multi_index_allocator< feed_history_object >
+    multi_index_allocator< feed_history_object, 2 > // singleton (plus one internal)
   > feed_history_index;
 
   struct by_withdraw_route;
@@ -628,7 +628,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_name >,
         member< reward_fund_object, reward_fund_name_type, &reward_fund_object::name > >
     >,
-    multi_index_allocator< reward_fund_object >
+    multi_index_allocator< reward_fund_object, 2 > // singleton (plus one internal)
   > reward_fund_index;
 
   struct by_from_to_id;
