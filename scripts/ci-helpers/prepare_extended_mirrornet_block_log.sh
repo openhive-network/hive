@@ -3,8 +3,9 @@
 set -e
 
 # Paths
-SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
-SRC_DIR="$(realpath "${SCRIPT_DIR}/../..")"
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source "$SCRIPTPATH/docker_image_utils.sh"
+SRC_DIR="$(realpath "${SCRIPTPATH}/../..")"
 BINARY_PATH="${BINARY_PATH:?}"
 MIRRORNET_SOURCE_5M_DATA_DIR=${MIRRORNET_SOURCE_5M_DATA_DIR:?}
 MAINNET_TRUNCATED_DIR=${MAINNET_TRUNCATED_DIR:?}
@@ -34,26 +35,61 @@ MIRRORNET_SKELETON_KEY=${MIRRORNET_SKELETON_KEY:-"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43
 # Other settings
 NUMBER_OF_BLOCKS=${NUMBER_OF_BLOCKS:-"5000000"}
 NUMBER_OF_PROCESSES=${NUMBER_OF_PROCESSES:-"8"}
-REGISTRY=${REGISTRY:-"registry.gitlab.syncad.com/hive/hive"}
+# REGISTRY=${REGISTRY:-"registry.gitlab.syncad.com/hive/hive"}
 IMAGE_TAG=${IMAGE_TAG:-"latest"}
 TAG="${REGISTRY}/extended-block-log:${IMAGE_TAG}"
 
-function image-exists() {
-    local image=$1
-    docker manifest inspect "$image" > /dev/null
-    return $?
-}
+
+submodule_path=$CI_PROJECT_DIR
+REGISTRY=$CI_REGISTRY_IMAGE
+REGISTRY_USER=$REGISTRY_USER
+REGISTRY_PASSWORD=$REGISTRY_PASS
+IMGNAME=extended-block-log
+
+echo "Attempting to get commit for: $submodule_path"
+
+CHANGES=(
+  "scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml"
+  "scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh"
+  "scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh"
+  "tests/python/functional/util/block_logs_for_denser/generate_block_log_for_denser.py"
+)
+
+final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
+commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
+echo "commit with last source code changes is $commit"
+
+pushd "${submodule_path}"
+short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
+popd
+
+prefix_tag="extended-block-logs"
+tag=$prefix_tag-$final_checksum
+
+
+img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
+_img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
+_img_tag=$IMGNAME
+
+
+echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
+
+image_exists=0
+docker_image_exists "$img" image_exists
+
 
 function generate-env() {
     echo "EXTENDED_BLOCK_LOG_IMAGE=${TAG}" > "${SRC_DIR}/block_log.env" 
 }
 
-if image-exists "$TAG"
+if [ "$image_exists" -eq 1 ];
 then
-    echo "Image $TAG already exists. Skipping build..."
+    echo "Image $img already exists. Skipping build..."
     generate-env
     exit 0
 fi
+
+echo "${img} image is missing. Start extended mirrornet block logs..."
 
 pushd "${SRC_DIR}"
 
@@ -108,11 +144,11 @@ COPY block_log* /blockchain/
 EOF
 
 time docker build \
-    --tag "${TAG}" \
+    --tag "${img}" \
     --file "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}/Dockerfile" \
     "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}"
 
-time docker push "${TAG}"
+time docker push "${img}"
 
 generate-env
 
