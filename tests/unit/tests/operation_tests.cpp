@@ -13,6 +13,7 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/recurrent_transfer_extension_visitor.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
 
@@ -20,6 +21,8 @@
 #include <fc/crypto/digest.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
+
+#include <boost/scope_exit.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -10248,6 +10251,66 @@ BOOST_AUTO_TEST_CASE( failed_recurrent_transfer )
     _run( "carol", "dan", carol_private_key, 3/*executions*/, false/*deleted*/ );
 
     validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( extensions_in_virtual_operations_generated_after_recurrent_transfer )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "check if an extension exists in virtual operations" );
+
+    BOOST_SCOPE_EXIT( &configuration_data )
+    {
+      configuration_data.reset_recurrent_transfers_values();
+    } BOOST_SCOPE_EXIT_END
+
+    configuration_data.set_min_recurrent_transfers_recurrence( 1 );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    issue_funds( "alice", ASSET( "7.000 TBD" ) );
+
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test ok";
+    op.amount = ASSET( "6.000 TBD" );
+    op.recurrence = 1;
+    op.executions = 2;
+
+    const uint8_t _pair_id_value = 78;
+
+    recurrent_transfer_pair_id _pair_id{ _pair_id_value };
+    op.extensions.insert( _pair_id );
+
+    push_transaction( op, alice_private_key );
+
+    generate_block();
+
+    {
+      auto _recent_ops = get_last_operations( 1 );
+      auto _last_op = _recent_ops.back().get< fill_recurrent_transfer_operation >();
+
+      hive::chain::recurrent_transfer_extension_visitor _vtor( *db );
+      for( const auto& e : _last_op.extensions )
+        e.visit( _vtor );
+      BOOST_REQUIRE( _vtor.pair_id == _pair_id_value );
+    }
+
+    generate_blocks( db->head_block_time() + fc::hours( op.recurrence ) );
+
+    {
+      auto _recent_ops = get_last_operations( 1 );
+      auto _last_op = _recent_ops.back().get< failed_recurrent_transfer_operation >();
+
+      hive::chain::recurrent_transfer_extension_visitor _vtor( *db );
+      for( const auto& e : _last_op.extensions )
+        e.visit( _vtor );
+      BOOST_REQUIRE( _vtor.pair_id == _pair_id_value );
+    }
   }
   FC_LOG_AND_RETHROW()
 }
