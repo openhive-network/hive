@@ -56,7 +56,7 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
         time_control=tt.StartTimeControl(start_time="head_block_time"),
         timeout=240,
         wait_for_live=True,
-        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(alternate_chain_spec_path, get_hf26_decoder),
+        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(alternate_chain_spec_path),
         arguments=[f"--chain-id={CHAIN_ID}"],
     )
 

@@ -10,7 +10,7 @@ from schemas.decoders import get_hf26_decoder
 @pytest.fixture()
 def alternate_chain_spec(block_log_single_sign) -> tt.AlternateChainSpecs:
     return tt.AlternateChainSpecs.parse_file(
-        block_log_single_sign.path / tt.AlternateChainSpecs.FILENAME, get_hf26_decoder
+        block_log_single_sign.path / tt.AlternateChainSpecs.FILENAME
     )
 
 

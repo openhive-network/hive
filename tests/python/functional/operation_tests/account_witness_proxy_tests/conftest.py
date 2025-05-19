@@ -26,7 +26,7 @@ def node() -> tt.InitNode:
     node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time"),
         replay_from=block_log,
-        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(block_log_directory, get_hf26_decoder),
+        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(block_log_directory),
     )
     return node
 
