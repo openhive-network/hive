@@ -18,8 +18,8 @@ echo "Attempting to get commit for: $submodule_path"
 CHANGES=(
   tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py
   # tests/python/functional/comment_cashout_tests/block_log/generate_block_log.py
-  # tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py
-  # tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py
+  tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py
+  tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py
   tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py
   tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py
 )
@@ -56,12 +56,12 @@ else
   # pushd tests/python/functional/comment_cashout_tests/block_log
   # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
   # popd
-  # pushd tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
+  pushd tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log
+  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  popd
+  pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers
+  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  popd
   pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone
   python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
   popd
