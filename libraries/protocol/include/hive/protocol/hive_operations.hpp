@@ -1066,18 +1066,6 @@ namespace hive { namespace protocol {
     void validate() const;
   };
 
-  struct recurrent_transfer_pair_id
-  {
-    uint8_t pair_id = 0;
-  };
-
-  typedef static_variant<
-  void_t,
-  recurrent_transfer_pair_id
-  > recurrent_transfer_extension;
-
-  typedef flat_set< recurrent_transfer_extension > recurrent_transfer_extensions_type;
-
   /**
     * @ingroup operations
     *
@@ -1297,5 +1285,4 @@ FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(deleg
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
 FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
-FC_REFLECT( hive::protocol::recurrent_transfer_pair_id, (pair_id) );
 

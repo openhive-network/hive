@@ -148,6 +148,18 @@ namespace hive {
 
     chain_id_type generate_chain_id( const std::string& chain_id_name );
 
+    struct recurrent_transfer_pair_id
+    {
+      uint8_t pair_id = 0;
+    };
+
+    typedef static_variant<
+    void_t,
+    recurrent_transfer_pair_id
+    > recurrent_transfer_extension;
+
+    typedef flat_set< recurrent_transfer_extension > recurrent_transfer_extensions_type;
+
 } }  // hive::protocol
 
 namespace fc
@@ -171,3 +183,5 @@ FC_REFLECT_TYPENAME( hive::protocol::share_type )
 FC_REFLECT_TYPENAME( hive::protocol::ushare_type )
 
 FC_REFLECT( hive::void_t, )
+
+FC_REFLECT( hive::protocol::recurrent_transfer_pair_id, (pair_id) );
