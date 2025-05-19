@@ -1950,6 +1950,12 @@ void database::process_recurrent_transfers()
     const auto remaining_executions = current_recurrent_transfer.remaining_executions -1;
     bool remove_recurrent_transfer = false;
 
+    recurrent_transfer_extensions_type _extensions;
+
+    //if `current_recurrent_transfer.pair_id` equals to 0, then it's not necessary to create an item in extensions. It's a default value.
+    if( current_recurrent_transfer.pair_id )
+      _extensions.emplace( recurrent_transfer_pair_id{ current_recurrent_transfer.pair_id } );
+
     // If we have enough money, we proceed with the transfer
     if (available >= current_recurrent_transfer.amount)
     {
@@ -1971,7 +1977,7 @@ void database::process_recurrent_transfers()
         });
       }
 
-      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions));
+      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions, _extensions));
     }
     else
     {
@@ -1994,14 +2000,14 @@ void database::process_recurrent_transfers()
           });
         }
         // false means the recurrent transfer was not deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, remove_recurrent_transfer));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, remove_recurrent_transfer, _extensions));
       }
       else
       {
         // if we had too many consecutive failures, remove the recurrent payment object
         remove_recurrent_transfer = true;
         // true means the recurrent transfer was deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true, _extensions));
       }
     }
 
