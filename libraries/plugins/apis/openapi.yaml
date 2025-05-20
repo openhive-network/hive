@@ -234,6 +234,50 @@ paths:
                   }
                 ]
               }
+  database_api.find_owner_histories:
+    post:
+      tags:
+        - database_api
+      summary: Returns owner authority history.
+      description: |
+        Parameters:
+        
+        - `owner`: A string representing the account name to query for owner history. Examples:
+          - `"hiveio"` — queries the owner history for the account named "hiveio".
+          - `"alice"` — queries the owner history for the account named "alice".
+      operationId: find_owner_histories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_owner_histories'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_owner_histories_response'
+              example: {
+                "owner_auths": [
+                  {
+                    "account": "noorkh",
+                    "id": 765309,
+                    "last_valid_time": "2024-05-16T11:40:09",
+                    "previous_owner_authority": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM6c31ppwyJH4MJycYw5UxdSG6zeLjykgp58GtKV5uf6twZVB5GL",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    }
+                  }
+                ]
+              }
   database_api.find_escrows:
     post:
       tags:
@@ -1366,6 +1410,12 @@ components:
           items:
             type: string
           example: ["hiveio"]
+    find_owner_histories:
+      type: object
+      properties:
+        owner:
+          type: string
+          example: ""
     find_hbd_conversion_requests:
       type: object
       properties:
@@ -1562,6 +1612,34 @@ components:
       properties:
         header:
           $ref: '#/components/schemas/block'
+    owner_auth_history:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "noorkh"
+          description: >-
+            The name of the account.
+        id:
+          type: integer
+          example: 765309
+          description: >-
+            The ID of the owner authority history.
+        last_valid_time:
+          type: string
+          format: date-time
+          example: "2024-05-16T11:40:09"
+          description: >-
+            The last valid time of the owner authority.
+        previous_owner_authority:
+          $ref: '#/components/schemas/auths'
+          description: >-
+            The previous owner authority of the account.
+    find_owner_histories_response:
+      type: object
+      properties:
+        owner_auths:
+          $ref: '#/components/schemas/owner_auth_history'
     get_block_range_response:
       type: object
       properties:
