@@ -114,7 +114,7 @@ paths:
       description: |
         Parameters:
         
-        - `account`: A string representing the account name to query. Example:
+        - `accounts`: A string representing the account name to query. Example:
           - `"hiveio"` — queries the recovery requests for the account named "hiveio".
       operationId: find_account_recovery_requests
       requestBody:
@@ -141,7 +141,7 @@ paths:
       description: |
         Parameters:
         
-        - `account`: An array of strings representing account names to query. Example:
+        - `accounts`: An array of strings representing account names to query. Example:
           - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
       operationId: find_change_recovery_account_requests
       requestBody:
@@ -157,6 +157,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/find_change_recovery_account_requests_response'
+              example: {
+                "requests": []
+              }
+  database_api.find_collateralized_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns objects corresponding with collateralized_convert operations.
+      description: |
+        Parameters:
+        
+        - `account`: Anaccount name to query. Example:
+          - `"hiveio"` — queries the recovery requests for the account named "hiveio".
+      operationId: find_collateralized_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_collateralized_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_collateralized_conversion_requests_response'
               example: {
                 "requests": []
               }
@@ -358,7 +385,7 @@ paths:
       description: |
         Parameters:
         
-        - `account`: An array of strings representing account names to query. Example:
+        - `accounts`: An array of strings representing account names to query. Example:
           - `["hiveio"]` — queries for the account named "hiveio".
           - `["hiveio", "alice"]` — queries for accounts "hiveio" and "alice".
         
@@ -946,6 +973,47 @@ paths:
               }
 components:
   schemas:
+    find_collateralized_conversion_requests:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "dylanhobalart"
+          description: >-
+            The name of the account to query.
+    find_collateralized_conversion:
+      type: object
+      properties:
+        collateral_amount:
+          $ref: '#/components/schemas/balance'
+        conversion_date:
+          type: string
+          format: date-time
+          example: "2025-05-22T03:29:51"
+          description: >-
+            The date when the conversion will take place.
+        converted_amount:
+          $ref: '#/components/schemas/balance'
+        id:
+          type: integer
+          example: 40790
+        owner:
+          type: string
+          example: "dylanhobalart"
+          description: >-
+            The name of the account that owns the request.
+        requestid:
+          type: integer
+          example: 1
+          description: >-
+            The ID of the request.
+    find_collateralized_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_collateralized_conversion'
     find_account_recovery:
       type: object
       properties:
