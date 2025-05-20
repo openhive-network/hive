@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+GENERATOR_PATH=$1
+
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # shellcheck source=./docker_image_utils.sh
@@ -15,14 +17,7 @@ IMGNAME=testing-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
 
-CHANGES=(
-  tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py
-  tests/python/functional/comment_cashout_tests/block_log/generate_block_log.py
-  tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py
-  tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py
-  tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py
-  tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py
-)
+CHANGES=("$GENERATOR_PATH")
 commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
 echo "commit with last source code changes is $commit"
 
@@ -50,25 +45,26 @@ else
   echo "Save block logs to directory: $TESTING_BLOCK_LOGS_DIR"
   export LOGURU_LEVEL=INFO
   OUTPUT_DIR_PARAMETER=--output-block-log-directory="$TESTING_BLOCK_LOGS_DIR/block_logs_for_testing"
-  pushd tests/python/functional/util/testing_block_logs
-  python3 generate_testing_block_logs.py $OUTPUT_DIR_PARAMETER
-  popd
-  pushd tests/python/functional/comment_cashout_tests/block_log
-  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  popd
-  pushd tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log
-  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  popd
-  pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers
-  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  popd
-  pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone
-  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  popd
-  pushd tests/python/functional/datagen_tests/transaction_status_api_tests/block_log
-  python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  popd
-  echo "Block logs saved in: $TESTING_BLOCK_LOGS_DIR"
+  python3 "$GENERATOR_PATH" "$OUTPUT_DIR_PARAMETER"
+  # pushd tests/python/functional/util/testing_block_logs
+  # python3 generate_testing_block_logs.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # pushd tests/python/functional/comment_cashout_tests/block_log
+  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # pushd tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log
+  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers
+  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone
+  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # pushd tests/python/functional/datagen_tests/transaction_status_api_tests/block_log
+  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
+  # popd
+  # echo "Block logs saved in: $TESTING_BLOCK_LOGS_DIR"
   #tree $TESTING_BLOCK_LOGS_DIR
   ls -R $TESTING_BLOCK_LOGS_DIR
 

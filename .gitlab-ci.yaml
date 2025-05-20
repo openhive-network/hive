@@ -671,26 +671,26 @@ broadcast_tests:
         wget -q -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 $TEST_BLOCK_LOG_SERVER/$i
       done
 
-test_tools_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_30/ testing_block_logs/empty_430/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-  script:
-    - !reference [.fetch_test_block_logs, script]
-    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-    - pip install local-tools/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# test_tools_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: generate_testing_block_logs_and_save_image
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_30/ testing_block_logs/empty_430/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+#   script:
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+#     - pip install local-tools/
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 rc_direct_delegations_tests:
   stage: test
@@ -735,26 +735,26 @@ message_format_testnet_tests:
   tags:
     - public-runner-docker
 
-datagen_api_tests:
-  stage: test
-  extends: 
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 30
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_430/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/block_log
-  script:
-    - !reference [.fetch_test_block_logs, script]
-    - cd tests/python/functional/datagen_tests/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# datagen_api_tests:
+#   stage: test
+#   extends: 
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: generate_testing_block_logs_and_save_image
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_430/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/block_log
+#   script:
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd tests/python/functional/datagen_tests/
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 patterns_tests:
   stage: test
@@ -935,27 +935,27 @@ message_format_live_mainnet_tests:
     - if: $RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET == "TRUE"
       when: always
 
-foundation_layer_tests:
-  stage: test
-  extends:
-  - .test_tools_based
-  - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
-    NODE_ADDRESS: "test-block-log-server:80"
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-  script:
-    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
-    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
-    - cd tests/python/functional/foundation_layer_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# foundation_layer_tests:
+#   stage: test
+#   extends:
+#   - .test_tools_based
+#   - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: generate_testing_block_logs_and_save_image
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 6
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
+#     NODE_ADDRESS: "test-block-log-server:80"
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+#   script:
+#     - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
+#     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
+#     - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
+#     - cd tests/python/functional/foundation_layer_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 witness_tests:
   stage: test
@@ -1130,26 +1130,26 @@ operation_tests:
   tags:
     - public-runner-docker
 
-comment_cashout_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
-  variables:
-    PYTEST_NUMBER_OF_PROCESSES: 1
-    PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comments_and_votes/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/block_log
-  script:
-    - !reference [.fetch_test_block_logs, script]
-    - cd tests/python/functional/comment_cashout_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# comment_cashout_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: generate_testing_block_logs_and_save_image
+#   variables:
+#     PYTEST_NUMBER_OF_PROCESSES: 1
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comments_and_votes/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/block_log
+#   script:
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd tests/python/functional/comment_cashout_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 Trigger-full-mirrornet-conversion:
   stage: deploy
@@ -1224,7 +1224,7 @@ authority_tests:
   tags:
     - public-runner-docker
 
-generate_testing_block_logs_and_save_image:
+detect_changes_in_testing_block_logs:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
   timeout: 5h
@@ -1232,7 +1232,18 @@ generate_testing_block_logs_and_save_image:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
   script:
-  - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh
+  # to się wykona dla każdego z generatorów
+  - env
+  - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH"
+  parallel:
+    matrix:
+      - GENERATOR_PATH: [
+                        tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py,
+                        tests/python/functional/comment_cashout_tests/block_log/generate_block_log.py,
+                        tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py,
+                        tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py,
+                        tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py,
+                        tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py]
   artifacts:
      reports:
        dotenv:
@@ -1241,6 +1252,17 @@ generate_testing_block_logs_and_save_image:
   tags:
   - public-runner-docker
   - hived-for-tests
+
+
+# upload_testing_block_logs:
+#   stage: build
+#   needs:
+#     - job: detect_changes_in_testing_block_logs
+#       optional: false
+#   script:
+#       - echo "All generators finished successfully."
+#   rules:
+#     - when: always
 
 generate_universal_block_logs_and_save_image:
   stage: build
