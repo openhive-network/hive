@@ -292,22 +292,44 @@ void verify_authority_accounts_exist(
   verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, true/*is_required*/ );
 }
 
-void check_authority_accounts_exist(
+authority check_authority_accounts_exist(
   const database& db,
   const authority& auth,
   const account_name_type& auth_account,
   authority::classification auth_class)
 {
+  auto _new_auth = auth;
+
   std::list<account_name_type> _incorrect_accounts = verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, false/*is_required*/ );
+
   if( !_incorrect_accounts.empty() )
   {
-    authority& _auth = const_cast<authority&>( auth );
+    /*
+      In whole blockchain there are only a few transactions, where an account is incorrect.
 
+      For account `jesus2`:
+        block;trx_id
+
+        3705111;45c95c0ee2225a98622fc2cf38cdda7de0958098
+        3705120;6af2fce04650be03c0fca721fa815404fed64f48
+        3713940;3ddfebf47900a9347e885e6cdeeee3dd8a0904b6
+        3714132;26aee948ac28e4b93ce703469ef07d29dcef60a6
+        3714567;229aadb42374ff068ef8982045ae55328fcca7db
+        3714588;b808b95c61a5d734b863a53e99d25170fe416772
+
+      For account `testing001`:
+      block;trx_id
+
+      4138790;7c96d0c6f17359ff671e40155095fb72fea9a0cc
+
+    */
     for( const auto& account: _incorrect_accounts )
     {
-      _auth.account_auths.erase( account );
+      _new_auth.account_auths.erase( account );
     }
   }
+
+  return _new_auth;
 }
 
 const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
@@ -394,11 +416,21 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator );
 
+  authority _auth_owner;
+  authority _auth_active;
+  authority _auth_posting;
+
   if( !_db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
   {
-    check_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
-    check_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
-    check_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
+    _auth_owner = check_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
+    _auth_active = check_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
+    _auth_posting = check_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
+  }
+  else
+  {
+    _auth_owner = o.owner;
+    _auth_active = o.active;
+    _auth_posting = o.posting;
   }
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -414,9 +446,9 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
     auth.account = o.new_account_name;
-    auth.owner = o.owner;
-    auth.active = o.active;
-    auth.posting = o.posting;
+    auth.owner = _auth_owner;
+    auth.active = _auth_active;
+    auth.posting = _auth_posting;
     auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
@@ -574,6 +606,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       validate_auth_size( *o.posting );
   }
 
+  optional< authority > _auth_owner;
+  optional< authority > _auth_active;
+  optional< authority > _auth_posting;
+
   if( o.owner )
   {
 // Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
@@ -589,25 +625,34 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 # endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
+    {
+      _auth_owner = o.owner;
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
+    }
     else
-      check_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
+      _auth_owner = check_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
     _db.update_owner_authority( account, *o.owner );
   }
   if( o.active )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
+    {
+      _auth_active = o.active;
       verify_authority_accounts_exist( _db, *o.active, o.account, authority::active );
+    }
     else
-      check_authority_accounts_exist( _db, *o.active, o.account, authority::active );
+      _auth_active = check_authority_accounts_exist( _db, *o.active, o.account, authority::active );
   }
   if( o.posting )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) )
+    {
+      _auth_posting = o.posting;
       verify_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
+    }
     else
-      check_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
+      _auth_posting = check_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
   }
 
   _db.modify( account, [&]( account_object& acc )
@@ -632,12 +677,12 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   }
   #endif
 
-  if( o.active || o.posting )
+  if( _auth_active || _auth_posting )
   {
     _db.modify( account_auth, [&]( account_authority_object& auth)
     {
-      if( o.active )  auth.active  = *o.active;
-      if( o.posting ) auth.posting = *o.posting;
+      if( _auth_active )  auth.active  = *_auth_active;
+      if( _auth_posting ) auth.posting = *_auth_posting;
     });
   }
 
