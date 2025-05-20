@@ -174,7 +174,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/find_account_recovery_requests'
+              $ref: '#/components/schemas/find_change_recovery_account_requests'
         required: true
       responses:
         '200':
@@ -183,6 +183,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/find_change_recovery_account_requests_response'
+              example: {
+                "requests": []
+              }
+  database_api.find_decline_voting_rights_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of requests to decline voting rights.
+      description: |
+        Parameters:
+        
+        - `accounts`: An array of strings representing account names to query. Example:
+          - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
+      operationId: find_decline_voting_rights_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_decline_voting_rights_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_decline_voting_rights_requests_response'
               example: {
                 "requests": []
               }
@@ -952,7 +979,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/get_key_references_response'
+                $ref: '#/components/schemas/account_array'
               example: {
                 "accounts": [
                   "hiveio"
@@ -1180,6 +1207,22 @@ components:
           items:
             type: string
           example: ["hiveio"]
+    find_change_recovery_account_requests:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+    find_decline_voting_rights_requests:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
     account_recovery:
       type: object
       properties:
@@ -1361,7 +1404,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/block'
-    get_key_references_response:
+    account_array:
       type: object
       properties:
         accounts:
@@ -1424,6 +1467,32 @@ components:
       properties:
         block:
           $ref: '#/components/schemas/block_header'
+    decline_voting_rights:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account to decline voting rights.
+        effective_date:
+          type: string
+          format: date-time
+          example: "2020-12-04T13:34:45"
+          description: >-
+            The date when the voting rights will be declined.
+        id:
+          type: integer
+          example: 11
+          description: >-
+            The ID of the request.
+    find_decline_voting_rights_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/decline_voting_rights'
     operation_body:
       type: object
       x-sql-datatype: JSON
