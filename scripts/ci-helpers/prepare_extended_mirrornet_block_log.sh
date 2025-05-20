@@ -17,6 +17,10 @@ GET_DEV_KEY_PATH=${GET_DEV_KEY_PATH:-"${BINARY_PATH}/get_dev_key"}
 COMPRESS_BLOCK_LOG_PATH=${COMPRESS_BLOCK_LOG_PATH:-"${BINARY_PATH}/compress_block_log"}
 BLOCKCHAIN_CONVERTER_PATH=${BLOCKCHAIN_CONVERTER_PATH:-"${BINARY_PATH}/blockchain_converter"}
 BLOCK_LOG_UTIL_PATH=${BLOCK_LOG_UTIL_PATH:-"${BINARY_PATH}/block_log_util"}
+submodule_path=$CI_PROJECT_DIR
+REGISTRY=$CI_REGISTRY_IMAGE
+REGISTRY_USER=$REGISTRY_USER
+IMGNAME=extended-block-log
 
 # Python settings
 export PYPROJECT_DIR="${SRC_DIR}/tests/python/hive-local-tools"
@@ -35,10 +39,8 @@ MIRRORNET_SKELETON_KEY=${MIRRORNET_SKELETON_KEY:-"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43
 # Other settings
 NUMBER_OF_BLOCKS=${NUMBER_OF_BLOCKS:-"5000000"}
 NUMBER_OF_PROCESSES=${NUMBER_OF_PROCESSES:-"8"}
-# REGISTRY=${REGISTRY:-"registry.gitlab.syncad.com/hive/hive"}
 IMAGE_TAG=${IMAGE_TAG:-"latest"}
 TAG="${REGISTRY}/extended-block-log:${IMAGE_TAG}"
-
 
 submodule_path=$CI_PROJECT_DIR
 REGISTRY=$CI_REGISTRY_IMAGE
@@ -65,11 +67,7 @@ popd
 
 prefix_tag="extended-block-logs"
 tag=$prefix_tag-$final_checksum
-
-
 img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
-_img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
-_img_tag=$IMGNAME
 
 
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
