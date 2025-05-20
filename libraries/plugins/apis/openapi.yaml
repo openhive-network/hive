@@ -106,6 +106,33 @@ tags:
   - name: witness_api
     description: Returns the available bandwidth of an account.
 paths:
+  database_api.find_account_recovery_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of account recovery requests.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query. Example:
+          - `"hiveio"` — queries the recovery requests for the account named "hiveio".
+      operationId: find_account_recovery_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_account_recovery_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_account_recovery_requests_response'
+              example: {
+                "requests": []
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -892,6 +919,43 @@ paths:
               }
 components:
   schemas:
+    find_account_recovery_requests:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+    account_recovery:
+      type: object
+      properties:
+        account_to_recover:
+          type: string
+          example: "tulpa"
+          description: >-
+            The name of the account to recover.
+        expires:
+          type: string
+          format: date-time
+          example: "2020-11-05T13:48:39"
+          description: >-
+            The expiration time of the recovery request.
+        id:
+          type: integer
+          example: 9
+          description: >-
+            The ID of the recovery request.
+        new_owner_authority:
+          $ref: '#/components/schemas/auths'
+          description: New owner authority of the account. 
+    find_account_recovery_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/account_recovery'
     list_accounts:
       type: object
       properties:
