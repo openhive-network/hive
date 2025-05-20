@@ -186,6 +186,54 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.find_limit_orders:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of limit orders.
+      description: |
+        Parameters:
+        
+        - `account`: string representing account name to query. Example:
+          - `"hiveio"` — queries the limit orders for the account named "hiveio".
+      operationId: find_limit_orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_limit_orders'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_limit_orders_response'
+              example: {
+                "orders": [
+                  {
+                    "id": 0,
+                    "created": "2019-12-14T04:05:39",
+                    "expiration": "2019-12-15T05:05:21",
+                    "seller": "",
+                    "orderid": 0,
+                    "for_sale": 0,
+                    "sell_price": {
+                      "base": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      },
+                      "quote": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000021"
+                      }
+                    }
+                  }
+                ]
+              }
   database_api.find_escrows:
     post:
       tags:
@@ -250,7 +298,7 @@ paths:
         Parameters:
         
         - `accounts`: An array of strings representing account names to query. Example:
-          - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
+          - `["hiveio"]` — queries the decline votings rights for the account named "hiveio".
       operationId: find_decline_voting_rights_requests
       requestBody:
         content:
@@ -1390,6 +1438,14 @@ components:
           example: ["initminer"]
           description: >-
             An array of strings representing account names to query.
+    find_limit_orders:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
     get_key_references:
       type: object
       properties:
@@ -1513,6 +1569,57 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/block'
+    orders:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        created:
+          type: string
+          format: date-time
+          example: "2019-12-14T04:05:39"
+          description: >-
+            The date when the order was created.
+        expiration:
+          type: string
+          format: date-time
+          example: "2019-12-15T05:05:21"
+          description: >-
+            The expiration time of the order.
+        seller:
+          type: string
+          example: ""
+          description: >-
+            The account that created the order.
+        orderid:
+          type: integer
+          example: 0
+          description: >-
+            The ID of the order.
+        for_sale:
+          type: integer
+          example: 0
+          description: >-
+            The amount of the asset for sale.
+        sell_price:
+          type: object
+          properties:
+            base:
+              $ref: '#/components/schemas/balance'
+              description: >-
+                The base asset of the order.
+            quote:
+              $ref: '#/components/schemas/balance'
+              description: >-
+                The quote asset of the order.
+    find_limit_orders_response:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/orders'
     escrow:
       type: object
       properties:
