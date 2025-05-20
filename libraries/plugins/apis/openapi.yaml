@@ -133,6 +133,33 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.find_change_recovery_account_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of requests to change the recovery account.
+      description: |
+        Parameters:
+        
+        - `account`: An array of strings representing account names to query. Example:
+          - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
+      operationId: find_change_recovery_account_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_account_recovery_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_change_recovery_account_requests_response'
+              example: {
+                "requests": []
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -919,6 +946,37 @@ paths:
               }
 components:
   schemas:
+    find_account_recovery:
+      type: object
+      properties:
+        account_to_recover:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to recover.
+        effective_on:
+          type: string
+          format: date-time
+          example: "2020-11-05T13:48:39"
+          description: >-
+            Date when the recovery will be effective.
+        id:
+          type: integer
+          example: 9
+          description: >-
+            The ID of the recovery request.
+        recovery_account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account that will be used to recover the account.
+    find_change_recovery_account_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_account_recovery'
     find_account_recovery_requests:
       type: object
       properties:
