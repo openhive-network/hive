@@ -268,6 +268,46 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.find_hbd_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of HBD conversion requests for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query for conversion requests. Examples:
+          - `"hiveio"` — queries a conversion request for the account named "hiveio".
+          - `"alice"` — queries a conversion request for the account named "alice".
+      operationId: find_hbd_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_hbd_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_hbd_conversion_requests_response'
+              example: {
+                "requests": [
+                  {
+                    "amount": {
+                      "amount": "20",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "conversion_date": "2024-05-31T23:53:51",
+                    "id": 433539,
+                    "owner": "demo.com",
+                    "requestid": 3205281453
+                  }
+                ]
+              }
   database_api.find_collateralized_conversion_requests:
     post:
       tags:
@@ -1278,6 +1318,14 @@ components:
           items:
             type: string
           example: ["hiveio"]
+    find_hbd_conversion_requests:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
     find_escrows:
       type: object
       properties:
@@ -1703,6 +1751,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/witness'
+    hbd_conversion:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/balance'
+        conversion_date:
+          type: string
+          format: date-time
+          example: "2024-05-31T23:53:51"
+          description: >-
+            The date when the conversion will take place.
+        id:
+          type: integer
+          example: 433539
+        owner:
+          type: string
+          example: "demo.com"
+        requestid:
+          type: integer
+          example: 3205281453
+    find_hbd_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/hbd_conversion'
     verify_authority_response:
       type: object
       properties:
