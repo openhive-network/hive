@@ -186,6 +186,61 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.find_escrows:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of escrows.
+      description: |
+        Parameters:
+        
+        - `from`: string representing account name to query. Example:
+          - `"hiveio"` — queries the escrows for the account named "hiveio".
+      operationId: find_escrows
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_escrows'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_escrows_response'
+              example: {
+                "escrows": [
+                  {
+                    "id": 143,
+                    "escrow_id": 12345,
+                    "from": "temp",
+                    "to": "guest123",
+                    "agent": "smitop",
+                    "ratification_deadline": "2038-01-19T03:14:06",
+                    "escrow_expiration": "2038-01-19T03:14:07",
+                    "hbd_balance": {
+                      "amount": "0",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "hive_balance": {
+                      "amount": "1",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "pending_fee": {
+                      "amount": "1",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "to_approved": false,
+                    "agent_approved": false,
+                    "disputed": false
+                  }
+                ]
+              }
   database_api.find_decline_voting_rights_requests:
     post:
       tags:
@@ -1223,6 +1278,12 @@ components:
           items:
             type: string
           example: ["hiveio"]
+    find_escrows:
+      type: object
+      properties:
+        from:
+          type: string
+          example: ""
     account_recovery:
       type: object
       properties:
@@ -1404,6 +1465,78 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/block'
+    escrow:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 143
+          description: >-
+            The ID of the escrow.
+        escrow_id:
+          type: integer
+          example: 12345
+        from:
+          type: string
+          example: "temp"
+          description: >-
+            The account that created the escrow.
+        to:
+          type: string
+          example: "guest123"
+          description: >-
+            The account that will receive the escrow.
+        agent:
+          type: string
+          example: "smitop"
+          description: >-
+            The account that will act as the agent for the escrow.
+        ratification_deadline:
+          type: string
+          format: date-time
+          example: "2038-01-19T03:14:06"
+          description: >-
+            The deadline for the ratification of the escrow.
+        escrow_expiration:
+          type: string
+          format: date-time
+          example: "2038-01-19T03:14:07"
+          description: >-
+            The expiration time of the escrow.
+        hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The HBD balance of the escrow.
+        hive_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The HIVE balance of the escrow.
+        pending_fee:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The pending fee of the escrow.
+        to_approved:
+          type: boolean
+          example: false
+          description: >-
+            Indicates if the recipient has approved the escrow.
+        agent_approved:
+          type: boolean
+          example: false
+          description: >-
+            Indicates if the agent has approved the escrow.
+        disputed:
+          type: boolean
+          example: false
+          description: >-
+            Indicates if the escrow is disputed.
+    find_escrows_response:
+      type: object
+      properties:
+        escrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/escrow'
     account_array:
       type: object
       properties:
