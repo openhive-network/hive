@@ -106,6 +106,32 @@ tags:
   - name: witness_api
     description: Returns the available bandwidth of an account.
 paths:
+  database_api.find_comments:
+    post:
+      tags:
+        - database_api
+      summary: Search for comments by author/permlink.
+      description: |
+        Parameters:
+        
+        - `comments`: A string array of pairs author/permlink
+      operationId: find_comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_comments'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_comments_response'
+              example: {
+                "comments": []
+              }
   database_api.find_account_recovery_requests:
     post:
       tags:
@@ -973,12 +999,113 @@ paths:
               }
 components:
   schemas:
+    find_comments:
+      type: array
+      items:
+        type: array
+        items:
+          type: string
+        example: ["author", "permlink"]
+        description: >-
+          An array of strings representing the author and permlink of the comment to query.
+    beneficiaries:
+      type: array
+      items:
+        type: object
+        properties:
+          account:
+            type: string
+          weight:
+            type: integer
+    comment:
+      type: object
+      properties:
+        abs_rshares:
+          type: integer
+        allow_curation_rewards:
+          type: boolean
+        allow_replies:
+          type: boolean
+        allow_votes:
+          type: boolean
+        author:
+          type: string
+        author_rewards:
+          type: integer
+        beneficiaries:
+          $ref: '#/components/schemas/beneficiaries'
+        body:
+          type: string
+        cashout_time:
+          type: string
+          format: date-time
+        category:
+          type: string
+        children:
+          type: integer
+        children_abs_rshares:
+          type: integer
+        created:
+          type: string
+          format: date-time
+        curator_payout_value:
+          $ref: '#/components/schemas/balance'
+        depth:
+          type: integer
+        id:
+          type: integer
+        json_metadata:
+          type: string
+        last_payout:
+          type: string
+          format: date-time
+        last_update: 
+          type: string
+          format: date-time
+        max_accepted_payout:
+          $ref: '#/components/schemas/balance'
+        max_cashout_time:
+          type: string
+          format: date-time
+        net_rshares:
+          type: integer
+        net_votes:
+          type: integer
+        parent_author:
+          type: string
+        parent_permlink:
+          type: string
+        percent_hbd:
+          type: integer
+        permlink:
+          type: string
+        reward_weight:
+          type: integer
+        root_author:
+          type: string
+        root_permlink:
+          type: string
+        title:
+          type: string
+        total_payout_value:
+          $ref: '#/components/schemas/balance'
+        total_vote_weight:
+          type: integer
+        vote_rshares: 
+          type: integer
+    find_comments_response:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/comment'
     find_collateralized_conversion_requests:
       type: object
       properties:
         account:
           type: string
-          example: "dylanhobalart"
+          example: "hiveio"
           description: >-
             The name of the account to query.
     find_collateralized_conversion:
@@ -999,7 +1126,7 @@ components:
           example: 40790
         owner:
           type: string
-          example: "dylanhobalart"
+          example: "hiveio"
           description: >-
             The name of the account that owns the request.
         requestid:
