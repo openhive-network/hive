@@ -3,6 +3,7 @@
 set -euo pipefail
 
 GENERATOR_PATH=$1
+GENERATOR_NAME=$(basename "$GENERATOR_PATH" .py)
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
@@ -18,6 +19,7 @@ IMGNAME=testing-block-logs
 echo "Attempting to get commit for: $submodule_path"
 
 CHANGES=("$GENERATOR_PATH")
+final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
 commit=$("$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" "${CHANGES[@]}")
 echo "commit with last source code changes is $commit"
 
@@ -25,8 +27,7 @@ pushd "${submodule_path}"
 short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
 popd
 
-prefix_tag="testing-block-log"
-tag=$prefix_tag-$short_commit
+tag=$GENERATOR_NAME-$final_checksum
 
 img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
 _img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
@@ -46,27 +47,8 @@ else
   export LOGURU_LEVEL=INFO
   OUTPUT_DIR_PARAMETER=--output-block-log-directory="$TESTING_BLOCK_LOGS_DIR/block_logs_for_testing"
   python3 "$GENERATOR_PATH" "$OUTPUT_DIR_PARAMETER"
-  # pushd tests/python/functional/util/testing_block_logs
-  # python3 generate_testing_block_logs.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/comment_cashout_tests/block_log
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # pushd tests/python/functional/datagen_tests/transaction_status_api_tests/block_log
-  # python3 generate_block_log.py $OUTPUT_DIR_PARAMETER
-  # popd
-  # echo "Block logs saved in: $TESTING_BLOCK_LOGS_DIR"
-  #tree $TESTING_BLOCK_LOGS_DIR
-  ls -R $TESTING_BLOCK_LOGS_DIR
+  # tree "$TESTING_BLOCK_LOGS_DIR"
+  ls -R "$TESTING_BLOCK_LOGS_DIR"
 
   echo "Build a Dockerfile"
 
@@ -87,5 +69,6 @@ EOF
   echo "Created and push docker image with testing block logs: $img"
 fi
 
-echo "TEST_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > $CI_PROJECT_DIR/testing_block_log_latest_version.env
-echo "TEST_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > $CI_PROJECT_DIR/testing_block_log_latest_commit_short_sha.env
+echo "TEST_BLOCK_LOG_LATEST_VERSION_IMAGE=$img" > "$CI_PROJECT_DIR"/testing_block_log_latest_version.env
+echo "TEST_BLOCK_LOG_LATEST_COMMIT_SHORT_SHA=$short_commit" > "$CI_PROJECT_DIR"/testing_block_log_latest_commit_short_sha.env
+echo "$(echo "$GENERATOR_NAME" | tr '[:lower:]' '[:upper:]')=$final_checksum" > "$CI_PROJECT_DIR"/"$GENERATOR_NAME".env

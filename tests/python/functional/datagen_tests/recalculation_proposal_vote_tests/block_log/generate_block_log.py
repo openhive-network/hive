@@ -48,6 +48,8 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
          - account-2 vote for proposals from proposal-10998 to proposal-11997 etc.
       9) Save block_log  30s before maintenance block.
     """
+    output_block_log_directory.mkdir(parents=True, exist_ok=True)
+
     node = tt.InitNode()
     node.config.shared_file_size = "16G"
     node.config.plugin.append("queen")

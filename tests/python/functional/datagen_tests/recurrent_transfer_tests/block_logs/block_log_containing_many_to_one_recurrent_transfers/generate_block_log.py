@@ -33,6 +33,8 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
       3) fund accounts - each account is credited with HIVE
       4) order recurring transfers - each of the created accounts order one recurring transfer to receiver account
     """
+    output_block_log_directory.mkdir(parents=True, exist_ok=True)
+
     init_node = tt.InitNode()
     init_node.config.shared_file_size = "16G"
     init_node.config.plugin.append("queen")

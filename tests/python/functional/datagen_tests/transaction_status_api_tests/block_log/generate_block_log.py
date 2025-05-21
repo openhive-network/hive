@@ -8,6 +8,8 @@ import test_tools as tt
 
 
 def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
+    output_block_log_directory.mkdir(parents=True, exist_ok=True)
+
     node = tt.InitNode()
     node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=15))
     wallet = tt.Wallet(attach_to=node)

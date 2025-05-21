@@ -1224,45 +1224,49 @@ authority_tests:
   tags:
     - public-runner-docker
 
-detect_changes_in_testing_block_logs:
+generate_testing_block_logs:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
   timeout: 5h
   variables:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
+    PYTHON_PATH: "$CI_PROJECT_DIR/tests/python"
   script:
-  # to się wykona dla każdego z generatorów
   - env
-  - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH"
+  - export GENERATOR_NAME=$(basename "$GENERATOR_PATH" .py)
+  - echo "GENERATOR_NAME=$GENERATOR_NAME"
+  - echo "${GENERATOR_NAME^^}_BLOCK_LOG_HASH=$final_checksum" > env_output.env
+  # - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH"
   parallel:
     matrix:
       - GENERATOR_PATH: [
-                        tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py,
-                        tests/python/functional/comment_cashout_tests/block_log/generate_block_log.py,
-                        tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py,
-                        tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py,
-                        tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py,
-                        tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py]
+                        $PYTHON_PATH/functional/util/testing_block_logs/generate_testing_block_logs.py,
+                        $PYTHON_PATH/functional/comment_cashout_tests/block_log/generate_block_log.py,
+                        $PYTHON_PATH/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py,
+                        $PYTHON_PATH/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py,
+                        $PYTHON_PATH/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py,
+                        $PYTHON_PATH/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py]
   artifacts:
      reports:
        dotenv:
          - testing_block_log_latest_version.env
          - testing_block_log_latest_commit_short_sha.env
+         - env_output.env
   tags:
   - public-runner-docker
   - hived-for-tests
 
-
-# upload_testing_block_logs:
-#   stage: build
-#   needs:
-#     - job: detect_changes_in_testing_block_logs
-#       optional: false
-#   script:
-#       - echo "All generators finished successfully."
-#   rules:
-#     - when: always
+upload_testing_block_logs:
+  stage: build
+  needs:
+    - job: generate_testing_block_logs
+      optional: false
+  script:
+      - env
+      - echo "All generators finished successfully."
+  rules:
+    - when: always
 
 generate_universal_block_logs_and_save_image:
   stage: build

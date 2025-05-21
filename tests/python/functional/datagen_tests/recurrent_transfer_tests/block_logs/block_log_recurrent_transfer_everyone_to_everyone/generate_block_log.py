@@ -37,6 +37,8 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
       3) order recurring transfers - each of the created accounts orders the maximum number of recurring transfers (255)
       4) waiting to be processed recurrent transfers.
     """
+    output_block_log_directory.mkdir(parents=True, exist_ok=True)
+
     node = tt.InitNode()
     node.config.shared_file_size = "16G"
     node.config.plugin.append("queen")
