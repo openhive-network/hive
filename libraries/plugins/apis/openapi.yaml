@@ -324,6 +324,47 @@ paths:
                   }
                 ]
               }
+  database_api.find_savings_withdrawals:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of savings withdrawls for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query for savings withdrawals. Example:
+          - `"hiveio"` — queries the savings withdrawals for the account named "hiveio".
+      operationId: find_savings_withdrawals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_savings_withdrawals'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_savings_withdrawals_response'
+              example: {
+                "withdrawals": [
+                  {
+                    "amount": {
+                      "amount": "1",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "complete": "2024-05-31T11:51:39",
+                    "from": "demo.com",
+                    "id": 213646,
+                    "memo": "",
+                    "request_id": 3205148605,
+                    "to": "demo.com"
+                  }
+                ]
+              }
   database_api.find_recurrent_transfers:
     post:
       tags:
@@ -1302,6 +1343,14 @@ paths:
               }
 components:
   schemas:
+    find_savings_withdrawals:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
     find_recurrent_transfers:
       type: object
       properties:
@@ -1867,6 +1916,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/recurrent_transfer'
+    savings_withdrawal:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of the withdrawal.
+        complete:
+          type: string
+          format: date-time
+          example: "2024-05-31T11:51:39"
+          description: >-
+            The date when the withdrawal will be completed.
+        from:
+          type: string
+          example: "demo.com"
+          description: >-
+            The name of the account that created the withdrawal.
+        id:
+          type: integer
+          example: 213646
+          description: >-
+            The ID of the withdrawal.
+        memo:
+          type: string
+          example: ""
+          description: >-
+            The memo message.
+        request_id:
+          type: integer
+          example: 3205148605
+          description: >-
+            The ID of the request.
+        to:
+          type: string
+          example: "demo.com"
+          description: >-
+            The name of the account that will receive the withdrawal.
+    find_savings_withdrawals_response:
+      type: object
+      properties:
+        withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/savings_withdrawal'
     orders:
       type: object
       properties:
