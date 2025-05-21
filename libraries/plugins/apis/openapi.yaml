@@ -106,21 +106,23 @@ tags:
   - name: witness_api
     description: Returns the available bandwidth of an account.
 paths:
-  database_api.find_comments:
+  account_by_key_api.get_key_references:
     post:
       tags:
-        - database_api
-      summary: Search for comments by author/permlink.
+        - account_by_key_api
+      summary: Returns all accounts that have the key associated with their owner or active authorities.
       description: |
         Parameters:
         
-        - `comments`: A string array of pairs author/permlink
-      operationId: find_comments
+        - `keys`: An array of strings representing keys to query. Example:
+          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]` — queries for the key "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9".
+          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9", "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q"]` — queries for the keys "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9" and "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q".
+      operationId: get_key_references
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/find_comments'
+              $ref: '#/components/schemas/get_key_references'
         required: true
       responses:
         '200':
@@ -128,9 +130,116 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/find_comments_response'
+                $ref: '#/components/schemas/get_key_references_response'
               example: {
-                "comments": []
+                "accounts": [
+                  "hiveio"
+                ]
+              }
+  block_api.get_block:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a full, signed block of the referenced block, or null if no matching block was found.
+      description: |
+        Parameters:
+        
+        - `block_num`: An integer representing the block number to query.
+      operationId: get_block
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_response'
+              example: {
+                "block": {
+                  "previous": "0000000000000000000000000000000000000000",
+                  "timestamp": "2016-03-24T16:05:00",
+                  "witness": "",
+                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                  "extensions": [],
+                  "witness_signature": "",
+                  "transactions": [],
+                  "block_id": "",
+                  "signing_key": "",
+                  "transaction_ids": []
+                }
+              }
+  block_api.get_block_header:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a block header of the referenced block, or null if no matching block was found.
+      description: |
+        Parameters:
+        
+        - `block_num`: An integer representing the block number to query.
+      operationId: get_block_header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_header_response'
+              example: {
+                "header": {
+                  "previous": "0000000000000000000000000000000000000000",
+                  "timestamp": "2016-03-24T16:05:00",
+                  "witness": "",
+                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                  "extensions": []
+                }
+              }
+  block_api.get_block_range:
+    post:
+      tags:
+        - block_api
+      summary: Retrieve a range of full, signed blocks. The list may be shorter than requested if count blocks would take you past the current head block.
+      description: |
+        Parameters:
+        
+        - `starting_block_num`: An integer indicating the height of the first block to be returned.
+        
+        - `count`: An integer specifying the maximum number of blocks to return.
+        
+        Examples:
+        
+        - `starting_block_num = 1`, `count = 10` — Queries the block headers for the very first block through the tenth block.
+        
+        - `starting_block_num = 8675309`, `count = 50` — Queries block headers for block numbers 8,675,309 through 8,675,359.
+        
+        - `starting_block_num = 62396745`, `count = 1000` — Queries block headers for block numbers 62,396,745 through 62,397,745.
+      operationId: get_block_range
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_block_range'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_block_range_response'
+              example: {
+                "blocks": []
               }
   database_api.find_account_recovery_requests:
     post:
@@ -158,717 +267,6 @@ paths:
                 $ref: '#/components/schemas/find_account_recovery_requests_response'
               example: {
                 "requests": []
-              }
-  database_api.find_change_recovery_account_requests:
-    post:
-      tags:
-        - database_api
-      summary: Returns a list of requests to change the recovery account.
-      description: |
-        Parameters:
-        
-        - `accounts`: An array of strings representing account names to query. Example:
-          - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
-      operationId: find_change_recovery_account_requests
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_change_recovery_account_requests'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_change_recovery_account_requests_response'
-              example: {
-                "requests": []
-              }
-  database_api.find_limit_orders:
-    post:
-      tags:
-        - database_api
-      summary: Returns a list of limit orders.
-      description: |
-        Parameters:
-        
-        - `account`: string representing account name to query. Example:
-          - `"hiveio"` — queries the limit orders for the account named "hiveio".
-      operationId: find_limit_orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_limit_orders'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_limit_orders_response'
-              example: {
-                "orders": [
-                  {
-                    "id": 0,
-                    "created": "2019-12-14T04:05:39",
-                    "expiration": "2019-12-15T05:05:21",
-                    "seller": "",
-                    "orderid": 0,
-                    "for_sale": 0,
-                    "sell_price": {
-                      "base": {
-                        "amount": "0",
-                        "precision": 3,
-                        "nai": "@@000000013"
-                      },
-                      "quote": {
-                        "amount": "0",
-                        "precision": 3,
-                        "nai": "@@000000021"
-                      }
-                    }
-                  }
-                ]
-              }
-  database_api.find_owner_histories:
-    post:
-      tags:
-        - database_api
-      summary: Returns owner authority history.
-      description: |
-        Parameters:
-        
-        - `owner`: A string representing the account name to query for owner history. Examples:
-          - `"hiveio"` — queries the owner history for the account named "hiveio".
-          - `"alice"` — queries the owner history for the account named "alice".
-      operationId: find_owner_histories
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_owner_histories'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_owner_histories_response'
-              example: {
-                "owner_auths": [
-                  {
-                    "account": "noorkh",
-                    "id": 765309,
-                    "last_valid_time": "2024-05-16T11:40:09",
-                    "previous_owner_authority": {
-                      "account_auths": [],
-                      "key_auths": [
-                        [
-                          "STM6c31ppwyJH4MJycYw5UxdSG6zeLjykgp58GtKV5uf6twZVB5GL",
-                          1
-                        ]
-                      ],
-                      "weight_threshold": 1
-                    }
-                  }
-                ]
-              }
-  database_api.find_proposals:
-    post:
-      tags:
-        - database_api
-      summary: Finds proposals by proposal.id.
-      description: |
-        Parameters:
-        
-        - `proposal_ids`: An array of int representing ids of proposals. Examples:
-          - `[0]` — queries the id `0` proposal.
-          - `[0,1,2]` — queries proposals with id `0,1,2`.
-      operationId: find_proposals
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_proposals'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_proposals_response'
-              example: {
-                "proposals": [
-                  {
-                    "id": 0,
-                    "proposal_id": "139925218365120",
-                    "creator": "alice",
-                    "receiver": "bob",
-                    "start_date": "2019-07-01T00:00:00",
-                    "end_date": "2019-08-01T23:59:59",
-                    "daily_pay": {
-                      "amount": "4800000",
-                      "precision": 3,
-                      "nai": "@@000000013"
-                    },
-                    "subject": "My Proposal",
-                    "permlink": "creator-proposal-permlink",
-                    "total_votes": "77351826710",
-                    "status": "active"
-                  }
-                ]
-              }
-  database_api.find_vesting_delegation_expirations:
-    post:
-      tags:
-        - database_api
-      summary: Returns the expiring vesting delegations for an account.
-      description: |
-        Returns the expiring vesting delegations for an account. Parameters:
-        
-        - `account`: A string representing the account name to query. Examples:
-          - `"hiveio"` — queries for expiring vesting delegations for "hiveio".
-          - `"alice"` — queries for expiring vesting delegations for "alice".
-      operationId: find_vesting_delegation_expirations
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_vesting_delegation_expirations'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_vesting_delegation_expirations_response'
-              example: {
-                "delegations": [
-                  {
-                    "delegator": "ecency",
-                    "expiration": "2024-05-28T12:25:03",
-                    "id": 5926131,
-                    "vesting_shares": {
-                      "amount": "350000000000",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    }
-                  }
-                ]
-              }
-  database_api.find_savings_withdrawals:
-    post:
-      tags:
-        - database_api
-      summary: Returns the list of savings withdrawls for an account.
-      description: |
-        Parameters:
-        
-        - `account`: A string representing the account name to query for savings withdrawals. Example:
-          - `"hiveio"` — queries the savings withdrawals for the account named "hiveio".
-      operationId: find_savings_withdrawals
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_savings_withdrawals'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_savings_withdrawals_response'
-              example: {
-                "withdrawals": [
-                  {
-                    "amount": {
-                      "amount": "1",
-                      "nai": "@@000000021",
-                      "precision": 3
-                    },
-                    "complete": "2024-05-31T11:51:39",
-                    "from": "demo.com",
-                    "id": 213646,
-                    "memo": "",
-                    "request_id": 3205148605,
-                    "to": "demo.com"
-                  }
-                ]
-              }
-  database_api.find_recurrent_transfers:
-    post:
-      tags:
-        - database_api
-      summary: Finds transfers of any liquid asset every fixed amount of time from one account to another.
-      description: |
-        Parameters:
-        
-        - `from`: string representing account name to query. Example:
-          - `"hiveio"` — queries the recurrent transfers for the account named "hiveio".
-      operationId: find_recurrent_transfers
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_recurrent_transfers'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_recurrent_transfers_response'
-              example: {
-                "recurrent_transfers": [
-                  {
-                    "id": 3,
-                    "trigger_date": "2021-07-02T18:11:51",
-                    "from": "alice",
-                    "to": "bob",
-                    "amount": {
-                      "amount": "1000",
-                      "precision": 3,
-                      "nai": "@@000000021"
-                    },
-                    "memo": "Payroll",
-                    "recurrence": 26,
-                    "consecutive_failures": 0,
-                    "remaining_executions": 3
-                  }
-                ]
-              }
-  database_api.find_escrows:
-    post:
-      tags:
-        - database_api
-      summary: Returns a list of escrows.
-      description: |
-        Parameters:
-        
-        - `from`: string representing account name to query. Example:
-          - `"hiveio"` — queries the escrows for the account named "hiveio".
-      operationId: find_escrows
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_escrows'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_escrows_response'
-              example: {
-                "escrows": [
-                  {
-                    "id": 143,
-                    "escrow_id": 12345,
-                    "from": "temp",
-                    "to": "guest123",
-                    "agent": "smitop",
-                    "ratification_deadline": "2038-01-19T03:14:06",
-                    "escrow_expiration": "2038-01-19T03:14:07",
-                    "hbd_balance": {
-                      "amount": "0",
-                      "precision": 3,
-                      "nai": "@@000000013"
-                    },
-                    "hive_balance": {
-                      "amount": "1",
-                      "precision": 3,
-                      "nai": "@@000000021"
-                    },
-                    "pending_fee": {
-                      "amount": "1",
-                      "precision": 3,
-                      "nai": "@@000000021"
-                    },
-                    "to_approved": false,
-                    "agent_approved": false,
-                    "disputed": false
-                  }
-                ]
-              }
-  database_api.find_decline_voting_rights_requests:
-    post:
-      tags:
-        - database_api
-      summary: Returns a list of requests to decline voting rights.
-      description: |
-        Parameters:
-        
-        - `accounts`: An array of strings representing account names to query. Example:
-          - `["hiveio"]` — queries the decline votings rights for the account named "hiveio".
-      operationId: find_decline_voting_rights_requests
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_decline_voting_rights_requests'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_decline_voting_rights_requests_response'
-              example: {
-                "requests": []
-              }
-  database_api.find_vesting_delegations:
-    post:
-      tags:
-        - database_api
-      summary: Returns the list of vesting delegations for an account.
-      description: |
-        Parameters:
-        
-        - `account`: A string representing the account name to query. Examples:
-          - `"hiveio"` — queries for vesting details for "hiveio".
-          - `"alice"` — queries for vesting details for "alice".
-      operationId: find_vesting_delegations
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_vesting_delegations'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_vesting_delegations_response'
-              example: {
-                "delegations": [
-                  {
-                    "delegatee": "sharker",
-                    "delegator": "ecency",
-                    "id": 2454889,
-                    "min_delegation_time": "2024-03-07T15:35:00",
-                    "vesting_shares": {
-                      "amount": "350000000000",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    }
-                  }
-                ]
-              }
-  database_api.find_votes:
-    post:
-      tags:
-        - database_api
-      summary: Returns all votes for the given post.
-      description: |
-        Required (non-empty) parameters: author, permlink.
-
-        - `author`: A string representing the author of the content. Examples:
-          - `"hiveio"` — queries votes for content authored by "hiveio".
-          - `"alice"` — queries votes for content authored by "alice".
-
-        - `permlink`: A string representing the permalink of the content. Examples:
-          - `"announcing-the-launch-of-hive-blockchain"` — for the post @hiveio/announcing-the-launch-of-hive-blockchain.
-          - `"a-post-by-alice"` — for the post @alice/a-post-by-alice.
-      operationId: find_votes
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_votes'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_votes_response'
-              example: {
-                "votes": [
-                  {
-                    "id": 0,
-                    "voter": "",
-                    "author": "",
-                    "permlink": "",
-                    "weight": "0",
-                    "rshares": 0,
-                    "vote_percent": 0,
-                    "last_update": "2016-04-07T19:15:36",
-                    "num_changes": -1
-                  }
-                ]
-              }
-  database_api.find_hbd_conversion_requests:
-    post:
-      tags:
-        - database_api
-      summary: Returns the list of HBD conversion requests for an account.
-      description: |
-        Parameters:
-        
-        - `account`: A string representing the account name to query for conversion requests. Examples:
-          - `"hiveio"` — queries a conversion request for the account named "hiveio".
-          - `"alice"` — queries a conversion request for the account named "alice".
-      operationId: find_hbd_conversion_requests
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_hbd_conversion_requests'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_hbd_conversion_requests_response'
-              example: {
-                "requests": [
-                  {
-                    "amount": {
-                      "amount": "20",
-                      "nai": "@@000000013",
-                      "precision": 3
-                    },
-                    "conversion_date": "2024-05-31T23:53:51",
-                    "id": 433539,
-                    "owner": "demo.com",
-                    "requestid": 3205281453
-                  }
-                ]
-              }
-  database_api.find_collateralized_conversion_requests:
-    post:
-      tags:
-        - database_api
-      summary: Returns objects corresponding with collateralized_convert operations.
-      description: |
-        Parameters:
-        
-        - `account`: Anaccount name to query. Example:
-          - `"hiveio"` — queries the recovery requests for the account named "hiveio".
-      operationId: find_collateralized_conversion_requests
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/find_collateralized_conversion_requests'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/find_collateralized_conversion_requests_response'
-              example: {
-                "requests": []
-              }
-  database_api.list_accounts:
-    post:
-      tags:
-        - database_api
-      summary: List accounts ordered by specified key.
-      description: |
-        Parameters:
-        
-        - `start`: An object indicating the starting point for listing accounts.
-        
-        - `limit`: An integer specifying the maximum number of accounts to return; default is 1000.
-        
-        - `order`: A string defining the sorting order. Possible values:
-          - `by_name` — order by account name
-          - `by_proxy` — order by proxy
-          - `by_next_vesting_withdrawal` — order by next vesting withdrawal
-        
-        - `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes. Defaults to true (optional).
-      operationId: list_accounts
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/list_accounts'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/list_accounts_response'
-              example: {
-                "accounts": [
-                  {
-                    "active": {
-                      "account_auths": [],
-                      "key_auths": [
-                        [
-                          "STM8dczRoMv35FZ9MHDHSDj75wQKT5P7B15o6CmgjmGvF7pHRFnm3",
-                          1
-                        ]
-                      ],
-                      "weight_threshold": 1
-                    },
-                    "balance": {
-                      "amount": "0",
-                      "nai": "@@000000021",
-                      "precision": 3
-                    },
-                    "can_vote": true,
-                    "comment_count": 0,
-                    "created": "2025-03-14T17:49:21",
-                    "curation_rewards": 0,
-                    "delayed_votes": [],
-                    "delegated_vesting_shares": {
-                      "amount": "0",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "downvote_manabar": {
-                      "current_mana": 2523502754,
-                      "last_update_time": 1742298630
-                    },
-                    "governance_vote_expiration_ts": "1969-12-31T23:59:59",
-                    "hbd_balance": {
-                      "amount": "0",
-                      "nai": "@@000000013",
-                      "precision": 3
-                    },
-                    "hbd_last_interest_payment": "1970-01-01T00:00:00",
-                    "hbd_seconds": "0",
-                    "hbd_seconds_last_update": "1970-01-01T00:00:00",
-                    "id": 2561639,
-                    "is_smt": false,
-                    "json_metadata": "[]",
-                    "last_account_recovery": "1970-01-01T00:00:00",
-                    "last_account_update": "1970-01-01T00:00:00",
-                    "last_owner_update": "1970-01-01T00:00:00",
-                    "last_post": "1970-01-01T00:00:00",
-                    "last_post_edit": "1970-01-01T00:00:00",
-                    "last_root_post": "1970-01-01T00:00:00",
-                    "last_vote_time": "1970-01-01T00:00:00",
-                    "lifetime_vote_count": 0,
-                    "memo_key": "STM6MpgnBRjJv4pB2wGGSKVFeqNdLnAX1TSW2vn3ah4Pbqxtktq6j",
-                    "mined": false,
-                    "name": "a--------------0",
-                    "next_vesting_withdrawal": "1969-12-31T23:59:59",
-                    "open_recurrent_transfers": 0,
-                    "owner": {
-                      "account_auths": [],
-                      "key_auths": [
-                        [
-                          "STM7kSqdruvZrWgPxHaNSX1YEZzUr7xBLuALSeonk8NUp2eAV8FWB",
-                          1
-                        ]
-                      ],
-                      "weight_threshold": 1
-                    },
-                    "pending_claimed_accounts": 0,
-                    "pending_transfers": 0,
-                    "post_bandwidth": 0,
-                    "post_count": 0,
-                    "post_voting_power": {
-                      "amount": "10094011016",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "posting": {
-                      "account_auths": [],
-                      "key_auths": [
-                        [
-                          "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q",
-                          1
-                        ]
-                      ],
-                      "weight_threshold": 1
-                    },
-                    "posting_json_metadata": "",
-                    "posting_rewards": 0,
-                    "previous_owner_update": "1970-01-01T00:00:00",
-                    "proxied_vsf_votes": [
-                      0,
-                      0,
-                      0,
-                      0
-                    ],
-                    "proxy": "",
-                    "received_vesting_shares": {
-                      "amount": "10094011016",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "recovery_account": "leo.voter",
-                    "reset_account": "null",
-                    "reward_hbd_balance": {
-                      "amount": "0",
-                      "nai": "@@000000013",
-                      "precision": 3
-                    },
-                    "reward_hive_balance": {
-                      "amount": "0",
-                      "nai": "@@000000021",
-                      "precision": 3
-                    },
-                    "reward_vesting_balance": {
-                      "amount": "0",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "reward_vesting_hive": {
-                      "amount": "0",
-                      "nai": "@@000000021",
-                      "precision": 3
-                    },
-                    "savings_balance": {
-                      "amount": "0",
-                      "nai": "@@000000021",
-                      "precision": 3
-                    },
-                    "savings_hbd_balance": {
-                      "amount": "0",
-                      "nai": "@@000000013",
-                      "precision": 3
-                    },
-                    "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
-                    "savings_hbd_seconds": "0",
-                    "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
-                    "savings_withdraw_requests": 0,
-                    "to_withdraw": 0,
-                    "vesting_shares": {
-                      "amount": "0",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "vesting_withdraw_rate": {
-                      "amount": "0",
-                      "nai": "@@000000037",
-                      "precision": 6
-                    },
-                    "voting_manabar": {
-                      "current_mana": 10094011016,
-                      "last_update_time": 1742298630
-                    },
-                    "withdraw_routes": 0,
-                    "withdrawn": 0,
-                    "witnesses_voted_for": 0
-                  }
-                ]
               }
   database_api.find_accounts:
     post:
@@ -1069,6 +467,553 @@ paths:
                   }
                 ]
               }
+  database_api.find_change_recovery_account_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of requests to change the recovery account.
+      description: |
+        Parameters:
+        
+        - `accounts`: An array of strings representing account names to query. Example:
+          - `["hiveio"]` — queries the recovery requests for the account named "hiveio".
+      operationId: find_change_recovery_account_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_change_recovery_account_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_change_recovery_account_requests_response'
+              example: {
+                "requests": []
+              }
+  database_api.find_collateralized_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns objects corresponding with collateralized_convert operations.
+      description: |
+        Parameters:
+        
+        - `account`: Anaccount name to query. Example:
+          - `"hiveio"` — queries the recovery requests for the account named "hiveio".
+      operationId: find_collateralized_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_collateralized_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_collateralized_conversion_requests_response'
+              example: {
+                "requests": []
+              }
+  database_api.find_comments:
+    post:
+      tags:
+        - database_api
+      summary: Search for comments by author/permlink.
+      description: |
+        Parameters:
+        
+        - `comments`: A string array of pairs author/permlink
+      operationId: find_comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_comments'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_comments_response'
+              example: {
+                "comments": []
+              }
+  database_api.find_decline_voting_rights_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of requests to decline voting rights.
+      description: |
+        Parameters:
+        
+        - `accounts`: An array of strings representing account names to query. Example:
+          - `["hiveio"]` — queries the decline votings rights for the account named "hiveio".
+      operationId: find_decline_voting_rights_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_decline_voting_rights_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_decline_voting_rights_requests_response'
+              example: {
+                "requests": []
+              }
+  database_api.find_escrows:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of escrows.
+      description: |
+        Parameters:
+        
+        - `from`: string representing account name to query. Example:
+          - `"hiveio"` — queries the escrows for the account named "hiveio".
+      operationId: find_escrows
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_escrows'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_escrows_response'
+              example: {
+                "escrows": [
+                  {
+                    "id": 143,
+                    "escrow_id": 12345,
+                    "from": "temp",
+                    "to": "guest123",
+                    "agent": "smitop",
+                    "ratification_deadline": "2038-01-19T03:14:06",
+                    "escrow_expiration": "2038-01-19T03:14:07",
+                    "hbd_balance": {
+                      "amount": "0",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "hive_balance": {
+                      "amount": "1",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "pending_fee": {
+                      "amount": "1",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "to_approved": false,
+                    "agent_approved": false,
+                    "disputed": false
+                  }
+                ]
+              }
+  database_api.find_hbd_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of HBD conversion requests for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query for conversion requests. Examples:
+          - `"hiveio"` — queries a conversion request for the account named "hiveio".
+          - `"alice"` — queries a conversion request for the account named "alice".
+      operationId: find_hbd_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_hbd_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_hbd_conversion_requests_response'
+              example: {
+                "requests": [
+                  {
+                    "amount": {
+                      "amount": "20",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "conversion_date": "2024-05-31T23:53:51",
+                    "id": 433539,
+                    "owner": "demo.com",
+                    "requestid": 3205281453
+                  }
+                ]
+              }
+  database_api.find_limit_orders:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of limit orders.
+      description: |
+        Parameters:
+        
+        - `account`: string representing account name to query. Example:
+          - `"hiveio"` — queries the limit orders for the account named "hiveio".
+      operationId: find_limit_orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_limit_orders'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_limit_orders_response'
+              example: {
+                "orders": [
+                  {
+                    "id": 0,
+                    "created": "2019-12-14T04:05:39",
+                    "expiration": "2019-12-15T05:05:21",
+                    "seller": "",
+                    "orderid": 0,
+                    "for_sale": 0,
+                    "sell_price": {
+                      "base": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      },
+                      "quote": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000021"
+                      }
+                    }
+                  }
+                ]
+              }
+  database_api.find_owner_histories:
+    post:
+      tags:
+        - database_api
+      summary: Returns owner authority history.
+      description: |
+        Parameters:
+        
+        - `owner`: A string representing the account name to query for owner history. Examples:
+          - `"hiveio"` — queries the owner history for the account named "hiveio".
+          - `"alice"` — queries the owner history for the account named "alice".
+      operationId: find_owner_histories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_owner_histories'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_owner_histories_response'
+              example: {
+                "owner_auths": [
+                  {
+                    "account": "noorkh",
+                    "id": 765309,
+                    "last_valid_time": "2024-05-16T11:40:09",
+                    "previous_owner_authority": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM6c31ppwyJH4MJycYw5UxdSG6zeLjykgp58GtKV5uf6twZVB5GL",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    }
+                  }
+                ]
+              }
+  database_api.find_proposals:
+    post:
+      tags:
+        - database_api
+      summary: Finds proposals by proposal.id.
+      description: |
+        Parameters:
+        
+        - `proposal_ids`: An array of int representing ids of proposals. Examples:
+          - `[0]` — queries the id `0` proposal.
+          - `[0,1,2]` — queries proposals with id `0,1,2`.
+      operationId: find_proposals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_proposals'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_proposals_response'
+              example: {
+                "proposals": [
+                  {
+                    "id": 0,
+                    "proposal_id": "139925218365120",
+                    "creator": "alice",
+                    "receiver": "bob",
+                    "start_date": "2019-07-01T00:00:00",
+                    "end_date": "2019-08-01T23:59:59",
+                    "daily_pay": {
+                      "amount": "4800000",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "subject": "My Proposal",
+                    "permlink": "creator-proposal-permlink",
+                    "total_votes": "77351826710",
+                    "status": "active"
+                  }
+                ]
+              }
+  database_api.find_recurrent_transfers:
+    post:
+      tags:
+        - database_api
+      summary: Finds transfers of any liquid asset every fixed amount of time from one account to another.
+      description: |
+        Parameters:
+        
+        - `from`: string representing account name to query. Example:
+          - `"hiveio"` — queries the recurrent transfers for the account named "hiveio".
+      operationId: find_recurrent_transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_recurrent_transfers'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_recurrent_transfers_response'
+              example: {
+                "recurrent_transfers": [
+                  {
+                    "id": 3,
+                    "trigger_date": "2021-07-02T18:11:51",
+                    "from": "alice",
+                    "to": "bob",
+                    "amount": {
+                      "amount": "1000",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "memo": "Payroll",
+                    "recurrence": 26,
+                    "consecutive_failures": 0,
+                    "remaining_executions": 3
+                  }
+                ]
+              }
+  database_api.find_savings_withdrawals:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of savings withdrawls for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query for savings withdrawals. Example:
+          - `"hiveio"` — queries the savings withdrawals for the account named "hiveio".
+      operationId: find_savings_withdrawals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_savings_withdrawals'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_savings_withdrawals_response'
+              example: {
+                "withdrawals": [
+                  {
+                    "amount": {
+                      "amount": "1",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "complete": "2024-05-31T11:51:39",
+                    "from": "demo.com",
+                    "id": 213646,
+                    "memo": "",
+                    "request_id": 3205148605,
+                    "to": "demo.com"
+                  }
+                ]
+              }
+  database_api.find_vesting_delegation_expirations:
+    post:
+      tags:
+        - database_api
+      summary: Returns the expiring vesting delegations for an account.
+      description: |
+        Returns the expiring vesting delegations for an account. Parameters:
+        
+        - `account`: A string representing the account name to query. Examples:
+          - `"hiveio"` — queries for expiring vesting delegations for "hiveio".
+          - `"alice"` — queries for expiring vesting delegations for "alice".
+      operationId: find_vesting_delegation_expirations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_vesting_delegation_expirations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_vesting_delegation_expirations_response'
+              example: {
+                "delegations": [
+                  {
+                    "delegator": "ecency",
+                    "expiration": "2024-05-28T12:25:03",
+                    "id": 5926131,
+                    "vesting_shares": {
+                      "amount": "350000000000",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    }
+                  }
+                ]
+              }
+  database_api.find_vesting_delegations:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of vesting delegations for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query. Examples:
+          - `"hiveio"` — queries for vesting details for "hiveio".
+          - `"alice"` — queries for vesting details for "alice".
+      operationId: find_vesting_delegations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_vesting_delegations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_vesting_delegations_response'
+              example: {
+                "delegations": [
+                  {
+                    "delegatee": "sharker",
+                    "delegator": "ecency",
+                    "id": 2454889,
+                    "min_delegation_time": "2024-03-07T15:35:00",
+                    "vesting_shares": {
+                      "amount": "350000000000",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    }
+                  }
+                ]
+              }
+  database_api.find_votes:
+    post:
+      tags:
+        - database_api
+      summary: Returns all votes for the given post.
+      description: |
+        Required (non-empty) parameters: author, permlink.
+
+        - `author`: A string representing the author of the content. Examples:
+          - `"hiveio"` — queries votes for content authored by "hiveio".
+          - `"alice"` — queries votes for content authored by "alice".
+
+        - `permlink`: A string representing the permalink of the content. Examples:
+          - `"announcing-the-launch-of-hive-blockchain"` — for the post @hiveio/announcing-the-launch-of-hive-blockchain.
+          - `"a-post-by-alice"` — for the post @alice/a-post-by-alice.
+      operationId: find_votes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_votes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_votes_response'
+              example: {
+                "votes": [
+                  {
+                    "id": 0,
+                    "voter": "",
+                    "author": "",
+                    "permlink": "",
+                    "weight": "0",
+                    "rshares": 0,
+                    "vote_percent": 0,
+                    "last_update": "2016-04-07T19:15:36",
+                    "num_changes": -1
+                  }
+                ]
+              }
   database_api.find_witnesses:
     post:
       tags:
@@ -1141,30 +1086,6 @@ paths:
                     "votes": 0
                   }
                 ]
-              }
-  database_api.verify_authority:
-    post:
-      tags:
-        - database_api
-      summary: Verify transaction signatures.
-      description: |
-        Returns true if the transaction has all of the required signatures, otherwise throws an exception.
-      operationId: verify_authority
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/verify_authority'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/verify_authority_response'
-              example: {
-                "valid": false
               }
   database_api.get_dynamic_global_properties:
     post:
@@ -1268,6 +1189,194 @@ paths:
                 },
                 "vote_power_reserve_rate": 10
               }
+  database_api.list_accounts:
+    post:
+      tags:
+        - database_api
+      summary: List accounts ordered by specified key.
+      description: |
+        Parameters:
+        
+        - `start`: An object indicating the starting point for listing accounts.
+        
+        - `limit`: An integer specifying the maximum number of accounts to return; default is 1000.
+        
+        - `order`: A string defining the sorting order. Possible values:
+          - `by_name` — order by account name
+          - `by_proxy` — order by proxy
+          - `by_next_vesting_withdrawal` — order by next vesting withdrawal
+        
+        - `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes. Defaults to true (optional).
+      operationId: list_accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_accounts'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_accounts_response'
+              example: {
+                "accounts": [
+                  {
+                    "active": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM8dczRoMv35FZ9MHDHSDj75wQKT5P7B15o6CmgjmGvF7pHRFnm3",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "can_vote": true,
+                    "comment_count": 0,
+                    "created": "2025-03-14T17:49:21",
+                    "curation_rewards": 0,
+                    "delayed_votes": [],
+                    "delegated_vesting_shares": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "downvote_manabar": {
+                      "current_mana": 2523502754,
+                      "last_update_time": 1742298630
+                    },
+                    "governance_vote_expiration_ts": "1969-12-31T23:59:59",
+                    "hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "hbd_last_interest_payment": "1970-01-01T00:00:00",
+                    "hbd_seconds": "0",
+                    "hbd_seconds_last_update": "1970-01-01T00:00:00",
+                    "id": 2561639,
+                    "is_smt": false,
+                    "json_metadata": "[]",
+                    "last_account_recovery": "1970-01-01T00:00:00",
+                    "last_account_update": "1970-01-01T00:00:00",
+                    "last_owner_update": "1970-01-01T00:00:00",
+                    "last_post": "1970-01-01T00:00:00",
+                    "last_post_edit": "1970-01-01T00:00:00",
+                    "last_root_post": "1970-01-01T00:00:00",
+                    "last_vote_time": "1970-01-01T00:00:00",
+                    "lifetime_vote_count": 0,
+                    "memo_key": "STM6MpgnBRjJv4pB2wGGSKVFeqNdLnAX1TSW2vn3ah4Pbqxtktq6j",
+                    "mined": false,
+                    "name": "a--------------0",
+                    "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                    "open_recurrent_transfers": 0,
+                    "owner": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM7kSqdruvZrWgPxHaNSX1YEZzUr7xBLuALSeonk8NUp2eAV8FWB",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "pending_claimed_accounts": 0,
+                    "pending_transfers": 0,
+                    "post_bandwidth": 0,
+                    "post_count": 0,
+                    "post_voting_power": {
+                      "amount": "10094011016",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "posting": {
+                      "account_auths": [],
+                      "key_auths": [
+                        [
+                          "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q",
+                          1
+                        ]
+                      ],
+                      "weight_threshold": 1
+                    },
+                    "posting_json_metadata": "",
+                    "posting_rewards": 0,
+                    "previous_owner_update": "1970-01-01T00:00:00",
+                    "proxied_vsf_votes": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    "proxy": "",
+                    "received_vesting_shares": {
+                      "amount": "10094011016",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "recovery_account": "leo.voter",
+                    "reset_account": "null",
+                    "reward_hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "reward_hive_balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "reward_vesting_balance": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "reward_vesting_hive": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "savings_balance": {
+                      "amount": "0",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    },
+                    "witnesses_voted_for": 0
+                  }
+                ]
+              }
+  database_api.verify_authority:
+    post:
+      tags:
+        - database_api
+      summary: Verify transaction signatures.
+      description: |
+        Returns true if the transaction has all of the required signatures, otherwise throws an exception.
+      operationId: verify_authority
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/verify_authority'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verify_authority_response'
+              example: {
+                "valid": false
+              }
   network_broadcast_api.broadcast_transaction:
     post:
       tags:
@@ -1290,141 +1399,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/broadcast_transaction_response'
               example: {}
-  block_api.get_block:
-    post:
-      tags:
-        - block_api
-      summary: Retrieve a full, signed block of the referenced block, or null if no matching block was found.
-      description: |
-        Parameters:
-        
-        - `block_num`: An integer representing the block number to query.
-      operationId: get_block
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/get_block'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/get_block_response'
-              example: {
-                "block": {
-                  "previous": "0000000000000000000000000000000000000000",
-                  "timestamp": "2016-03-24T16:05:00",
-                  "witness": "",
-                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
-                  "extensions": [],
-                  "witness_signature": "",
-                  "transactions": [],
-                  "block_id": "",
-                  "signing_key": "",
-                  "transaction_ids": []
-                }
-              }
-  block_api.get_block_header:
-    post:
-      tags:
-        - block_api
-      summary: Retrieve a block header of the referenced block, or null if no matching block was found.
-      description: |
-        Parameters:
-        
-        - `block_num`: An integer representing the block number to query.
-      operationId: get_block_header
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/get_block'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/get_block_header_response'
-              example: {
-                "header": {
-                  "previous": "0000000000000000000000000000000000000000",
-                  "timestamp": "2016-03-24T16:05:00",
-                  "witness": "",
-                  "transaction_merkle_root": "0000000000000000000000000000000000000000",
-                  "extensions": []
-                }
-              }
-  block_api.get_block_range:
-    post:
-      tags:
-        - block_api
-      summary: Retrieve a range of full, signed blocks. The list may be shorter than requested if count blocks would take you past the current head block.
-      description: |
-        Parameters:
-        
-        - `starting_block_num`: An integer indicating the height of the first block to be returned.
-        
-        - `count`: An integer specifying the maximum number of blocks to return.
-        
-        Examples:
-        
-        - `starting_block_num = 1`, `count = 10` — Queries the block headers for the very first block through the tenth block.
-        
-        - `starting_block_num = 8675309`, `count = 50` — Queries block headers for block numbers 8,675,309 through 8,675,359.
-        
-        - `starting_block_num = 62396745`, `count = 1000` — Queries block headers for block numbers 62,396,745 through 62,397,745.
-      operationId: get_block_range
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/get_block_range'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/get_block_range_response'
-              example: {
-                "blocks": []
-              }
-  account_by_key_api.get_key_references:
-    post:
-      tags:
-        - account_by_key_api
-      summary: Returns all accounts that have the key associated with their owner or active authorities.
-      description: |
-        Parameters:
-        
-        - `keys`: An array of strings representing keys to query. Example:
-          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]` — queries for the key "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9".
-          - `["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9", "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q"]` — queries for the keys "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9" and "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q".
-      operationId: get_key_references
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/get_key_references'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/account_array'
-              example: {
-                "accounts": [
-                  "hiveio"
-                ]
-              }
   rc_api.find_rc_accounts:
     post:
       tags:
@@ -2297,7 +2271,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/escrow'
-    account_array:
+    get_key_references_response:
       type: object
       properties:
         accounts:
