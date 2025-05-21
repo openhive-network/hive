@@ -324,6 +324,49 @@ paths:
                   }
                 ]
               }
+  database_api.find_recurrent_transfers:
+    post:
+      tags:
+        - database_api
+      summary: Finds transfers of any liquid asset every fixed amount of time from one account to another.
+      description: |
+        Parameters:
+        
+        - `from`: string representing account name to query. Example:
+          - `"hiveio"` — queries the recurrent transfers for the account named "hiveio".
+      operationId: find_recurrent_transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_recurrent_transfers'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_recurrent_transfers_response'
+              example: {
+                "recurrent_transfers": [
+                  {
+                    "id": 3,
+                    "trigger_date": "2021-07-02T18:11:51",
+                    "from": "alice",
+                    "to": "bob",
+                    "amount": {
+                      "amount": "1000",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "memo": "Payroll",
+                    "recurrence": 26,
+                    "consecutive_failures": 0,
+                    "remaining_executions": 3
+                  }
+                ]
+              }
   database_api.find_escrows:
     post:
       tags:
@@ -1259,6 +1302,12 @@ paths:
               }
 components:
   schemas:
+    find_recurrent_transfers:
+      type: object
+      properties:
+        from:
+          type: string
+          example: ""
     find_proposals:
       type: object
       properties:
@@ -1765,6 +1814,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/block'
+    recurrent_transfer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        trigger_date:
+          type: string
+          format: date-time
+          example: "2025-05-06T13:36:45"
+          description: >-
+            The date when the transfer will be triggered.
+        from:
+          type: string
+          example: "alice"
+          description: >-
+            The name of the account that created the transfer.
+        to:
+          type: string
+          example: "bob"
+          description: >-
+            The name of the account that will receive the transfer.
+        amount:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of the transfer.
+        memo:
+          type: string
+          example: "Payroll"
+          description: >-
+            The memo message.
+        recurrence:
+          type: integer
+          example: 26
+          description: >-
+            The recurrence period of the transfer in hours.
+        consecutive_failures:
+          type: integer
+          example: 0
+          description: >-
+            The number of consecutive failures of the transfer.
+        remaining_executions:
+          type: integer
+          example: 3
+          description: >-
+            The number of remaining executions of the transfer.
+    find_recurrent_transfers_response:
+      type: object
+      properties:
+        recurrent_transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/recurrent_transfer'
     orders:
       type: object
       properties:
