@@ -324,6 +324,45 @@ paths:
                   }
                 ]
               }
+  database_api.find_vesting_delegation_expirations:
+    post:
+      tags:
+        - database_api
+      summary: Returns the expiring vesting delegations for an account.
+      description: |
+        Returns the expiring vesting delegations for an account. Parameters:
+        
+        - `account`: A string representing the account name to query. Examples:
+          - `"hiveio"` — queries for expiring vesting delegations for "hiveio".
+          - `"alice"` — queries for expiring vesting delegations for "alice".
+      operationId: find_vesting_delegation_expirations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_vesting_delegation_expirations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_vesting_delegation_expirations_response'
+              example: {
+                "delegations": [
+                  {
+                    "delegator": "ecency",
+                    "expiration": "2024-05-28T12:25:03",
+                    "id": 5926131,
+                    "vesting_shares": {
+                      "amount": "350000000000",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    }
+                  }
+                ]
+              }
   database_api.find_savings_withdrawals:
     post:
       tags:
@@ -1343,6 +1382,14 @@ paths:
               }
 components:
   schemas:
+    find_vesting_delegation_expirations:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
     find_savings_withdrawals:
       type: object
       properties:
@@ -2012,6 +2059,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/orders'
+    vesting_delegation_expirations:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        delegator:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that delegated the shares.
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of vesting shares delegated.
+        expiration:
+          type: string
+          format: date-time
+          example: "2018-12-05T21:46:48"
+          description: >-
+            The expiration time of the delegation.
+    find_vesting_delegation_expirations_response:
+      type: object
+      properties:
+        expirations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation_expirations'
     escrow:
       type: object
       properties:
