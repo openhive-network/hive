@@ -529,6 +529,46 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.find_vesting_delegations:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of vesting delegations for an account.
+      description: |
+        Parameters:
+        
+        - `account`: A string representing the account name to query. Examples:
+          - `"hiveio"` — queries for vesting details for "hiveio".
+          - `"alice"` — queries for vesting details for "alice".
+      operationId: find_vesting_delegations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_vesting_delegations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_vesting_delegations_response'
+              example: {
+                "delegations": [
+                  {
+                    "delegatee": "sharker",
+                    "delegator": "ecency",
+                    "id": 2454889,
+                    "min_delegation_time": "2024-03-07T15:35:00",
+                    "vesting_shares": {
+                      "amount": "350000000000",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    }
+                  }
+                ]
+              }
   database_api.find_hbd_conversion_requests:
     post:
       tags:
@@ -1382,6 +1422,14 @@ paths:
               }
 components:
   schemas:
+    find_vesting_delegations:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
     find_vesting_delegation_expirations:
       type: object
       properties:
@@ -2008,6 +2056,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/savings_withdrawal'
+    vesting_delegation:
+      type: object
+      properties:
+        delegator:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that delegated the shares.
+        delegatee:
+          type: string
+          example: "sharker"
+          description: >-
+            The name of the account that received the delegation.
+        id:
+          type: integer
+          example: 2454889
+          description: >-
+            The ID of the delegation.
+        min_delegation_time:
+          type: string
+          format: date-time
+          example: "2024-03-07T15:35:00"
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of vesting shares delegated.
+    find_vesting_delegations_response:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation'
     orders:
       type: object
       properties:
