@@ -1014,6 +1014,76 @@ paths:
                   }
                 ]
               }
+  database_api.find_withdraw_vesting_routes:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of vesting withdraw routes for an account.
+      description: |
+        Required (non-empty) parameters: author, permlink.
+
+        - `account`: Anaccount name to query.
+        - `order`: A string defining the sorting order.
+      operationId: find_withdraw_vesting_routes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_withdraw_vesting_routes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_withdraw_vesting_routes_response'
+              example: {
+                "routes": [
+                  {
+                    "auto_vest": true,
+                    "from_account": "feruz",
+                    "id": 49677,
+                    "percent": 100,
+                    "to_account": "ecency"
+                  },
+                  {
+                    "auto_vest": true,
+                    "from_account": "esteemapp",
+                    "id": 49784,
+                    "percent": 10000,
+                    "to_account": "ecency"
+                  },
+                  {
+                    "auto_vest": false,
+                    "from_account": "parker97",
+                    "id": 49828,
+                    "percent": 25,
+                    "to_account": "ecency"
+                  },
+                  {
+                    "auto_vest": false,
+                    "from_account": "gotinazsum2",
+                    "id": 50504,
+                    "percent": 25,
+                    "to_account": "ecency"
+                  },
+                  {
+                    "auto_vest": true,
+                    "from_account": "prettiblk1",
+                    "id": 50524,
+                    "percent": 1000,
+                    "to_account": "ecency"
+                  },
+                  {
+                    "auto_vest": false,
+                    "from_account": "good-karma",
+                    "id": 52240,
+                    "percent": 10000,
+                    "to_account": "ecency"
+                  }
+                ]
+              }
   database_api.find_witnesses:
     post:
       tags:
@@ -1440,6 +1510,19 @@ paths:
               }
 components:
   schemas:
+    find_withdraw_vesting_routes:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "ecency"
+          description: >-
+            The name of the account to query.
+        order:
+          type: string
+          example: "by_destination"
+          description: >-
+            The order in which to return the results.
     find_votes:
       type: object
       properties:
@@ -2278,6 +2361,37 @@ components:
           type: array
           items:
             type: string
+    withdraw_vesting_routes:
+      type: object
+      properties:
+        from_account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that is withdrawing vesting shares.
+        to_account:
+          type: string
+          example: "ecency"
+          description: >-
+            The name of the receiver of the withdrawal
+        percent:
+          type: integer
+          example: 10000
+        auto_vest:
+          type: boolean
+          example: false
+        id:
+          type: integer
+          example: 12345
+          description: >-
+            The ID of the withdrawal route.
+    find_withdraw_vesting_routes_response:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/withdraw_vesting_routes'
     rc_account_object:
       type: object
       properties:
