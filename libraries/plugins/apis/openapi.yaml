@@ -569,6 +569,50 @@ paths:
                   }
                 ]
               }
+  database_api.find_votes:
+    post:
+      tags:
+        - database_api
+      summary: Returns all votes for the given post.
+      description: |
+        Required (non-empty) parameters: author, permlink.
+
+        - `author`: A string representing the author of the content. Examples:
+          - `"hiveio"` — queries votes for content authored by "hiveio".
+          - `"alice"` — queries votes for content authored by "alice".
+
+        - `permlink`: A string representing the permalink of the content. Examples:
+          - `"announcing-the-launch-of-hive-blockchain"` — for the post @hiveio/announcing-the-launch-of-hive-blockchain.
+          - `"a-post-by-alice"` — for the post @alice/a-post-by-alice.
+      operationId: find_votes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_votes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_votes_response'
+              example: {
+                "votes": [
+                  {
+                    "id": 0,
+                    "voter": "",
+                    "author": "",
+                    "permlink": "",
+                    "weight": "0",
+                    "rshares": 0,
+                    "vote_percent": 0,
+                    "last_update": "2016-04-07T19:15:36",
+                    "num_changes": -1
+                  }
+                ]
+              }
   database_api.find_hbd_conversion_requests:
     post:
       tags:
@@ -1422,6 +1466,19 @@ paths:
               }
 components:
   schemas:
+    find_votes:
+      type: object
+      properties:
+        author:
+          type: string
+          example: "hiveio"
+          description: >-
+            The author of the post to query.
+        permlink:
+          type: string
+          example: "announcing-the-launch-of-hive-blockchain"
+          description: >-
+            The permlink of the post to query.
     find_vesting_delegations:
       type: object
       properties:
@@ -2271,6 +2328,62 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/rc_account_object'
+    vote:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+          description: >-
+            The ID of the vote.
+        voter:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that cast the vote.
+        author:
+          type: string
+          example: "hiveio"
+          description: >-
+            The author of the post that was voted on.
+        permlink:
+          type: string
+          example: "announcing-the-launch-of-hive-blockchain"
+          description: >-
+            The permlink of the post that was voted on.
+        weight:
+          type: string
+          example: "0"
+          description: >-
+            The weight of the vote.
+        rshares:
+          type: integer
+          example: 0
+          description: >-
+            The number of rshares voted.
+        vote_percent:
+          type: integer
+          example: 0
+          description: >-
+            The percentage of the vote.
+        last_update:
+          type: string
+          format: date-time
+          example: "2016-04-07T19:15:36"
+          description: >-
+            The last update time of the vote.
+        num_changes:
+          type: integer
+          example: -1
+          description: >-
+            The number of changes made to the vote.
+    find_votes_response:
+      type: object
+      properties:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/vote'
     block_header:
       type: object
       properties:
