@@ -147,15 +147,6 @@ comment rocksdb_storage_processor::get_comment( const account_id_type& author, c
   }
 }
 
-comment rocksdb_storage_processor::get_comment( const account_name_type& author, const std::string& permlink, bool comment_is_required ) const
-{
-  const account_object* _account = db.find_account( author );
-  if( !_account )
-    return nullptr;
-
-  return get_comment( _account->get_id(), permlink, comment_is_required );
-}
-
 void rocksdb_storage_processor::supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   snapshot->supplement_snapshot( note );

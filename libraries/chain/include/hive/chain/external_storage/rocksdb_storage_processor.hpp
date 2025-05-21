@@ -36,7 +36,6 @@ class rocksdb_storage_processor: public external_storage_processor
     void move_to_external_storage( uint32_t block_num ) override;
 
     comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const override;
-    comment get_comment( const account_name_type& author, const std::string& permlink, bool comment_is_required ) const override;
 
     void supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note ) override;
     void load_additional_data_from_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) override;

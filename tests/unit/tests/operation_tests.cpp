@@ -8299,6 +8299,32 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test if correct message is generate if an account doesn't exist" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    comment_operation comment;
+
+    comment.author = "alice";
+    comment.permlink = "test";
+    comment.parent_permlink = "test";
+    comment.title = "test";
+    comment.body = "foobar";
+    push_transaction( comment, alice_post_key );
+    generate_block();
+
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr", fc::exception );
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required || _external_comment", fc::exception );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
 {
   try

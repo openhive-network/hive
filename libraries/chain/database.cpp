@@ -427,7 +427,10 @@ comment database::get_comment( const account_id_type& author, const shared_strin
 
 comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
+  const account_object* _account = find_account( author );
+  FC_ASSERT( _account, "Comment with `name`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
+
+  return get_comments_handler()->get_comment( _account->get_id(), to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
@@ -437,7 +440,12 @@ comment database::find_comment( const account_id_type& author, const shared_stri
 
 comment database::find_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
+  const account_object* _account = find_account( author );
+
+  if( !_account )
+    return comment();
+
+  return get_comments_handler()->get_comment( _account->get_id(), to_string( permlink ), false /*comment_is_required*/ );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
@@ -449,7 +457,10 @@ comment database::get_comment( const account_id_type& author, const string& perm
 
 comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, permlink, true /*comment_is_required*/ );
+  const account_object* _account = find_account( author );
+  FC_ASSERT( _account != nullptr, "Comment with `name`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
+
+  return get_comments_handler()->get_comment( _account->get_id(), permlink, true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const string& permlink )const
@@ -459,7 +470,12 @@ comment database::find_comment( const account_id_type& author, const string& per
 
 comment database::find_comment( const account_name_type& author, const string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, permlink, false /*comment_is_required*/ );
+  const account_object* _account = find_account( author );
+
+  if( !_account )
+    return comment();
+
+  return get_comments_handler()->get_comment( _account->get_id(), permlink, false /*comment_is_required*/ );
 }
 
 #endif
