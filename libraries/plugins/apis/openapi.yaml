@@ -278,6 +278,52 @@ paths:
                   }
                 ]
               }
+  database_api.find_proposals:
+    post:
+      tags:
+        - database_api
+      summary: Finds proposals by proposal.id.
+      description: |
+        Parameters:
+        
+        - `proposal_ids`: An array of int representing ids of proposals. Examples:
+          - `[0]` — queries the id `0` proposal.
+          - `[0,1,2]` — queries proposals with id `0,1,2`.
+      operationId: find_proposals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/find_proposals'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/find_proposals_response'
+              example: {
+                "proposals": [
+                  {
+                    "id": 0,
+                    "proposal_id": "139925218365120",
+                    "creator": "alice",
+                    "receiver": "bob",
+                    "start_date": "2019-07-01T00:00:00",
+                    "end_date": "2019-08-01T23:59:59",
+                    "daily_pay": {
+                      "amount": "4800000",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "subject": "My Proposal",
+                    "permlink": "creator-proposal-permlink",
+                    "total_votes": "77351826710",
+                    "status": "active"
+                  }
+                ]
+              }
   database_api.find_escrows:
     post:
       tags:
@@ -1213,6 +1259,16 @@ paths:
               }
 components:
   schemas:
+    find_proposals:
+      type: object
+      properties:
+        proposal_ids:
+          type: array
+          items:
+            type: integer
+          example: [0]
+          description: >-
+            An array of int representing id of proposals.
     find_comments:
       type: array
       items:
@@ -1612,6 +1668,68 @@ components:
       properties:
         header:
           $ref: '#/components/schemas/block'
+    proposals:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        proposal_id:
+          type: string
+          example: "139925218365120"
+        creator:
+          type: string
+          example: "alice"
+          description: >-
+            The name of the account that created the proposal.
+        receiver:
+          type: string
+          example: "bob"
+          description: >-
+            The name of the account that will benefit from the proposal.
+        start_date:
+          type: string
+          format: date-time
+          example: "2019-07-01T00:00:00"
+          description: >-
+            The start date of the proposal.
+        end_date:
+          type: string
+          format: date-time
+          example: "2019-08-01T23:59:59"
+          description: >-
+            The end date of the proposal.
+        daily_pay:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The daily pay amount of the proposal.
+        subject:
+          type: string
+          example: "My Proposal"
+          description: >-
+            The subject of the proposal.
+        permlink:
+          type: string
+          example: "creator-proposal-permlink"
+          description: >-
+            The permlink of the proposal.
+        total_votes:
+          type: string
+          example: "77351826710"
+          description: >-
+            The total vests voted on the proposal.
+        status:
+          type: string
+          example: "active"
+          description: >-
+            The status of the proposal.
+    find_proposals_response:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposals'
     owner_auth_history:
       type: object
       properties:
