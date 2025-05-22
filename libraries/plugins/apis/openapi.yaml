@@ -2088,6 +2088,44 @@ paths:
               example: {
                 "is_known": false
               }
+  database_api.list_account_recovery_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of account recovery requests.
+      description: |
+        Parameters:
+        
+        - `start`: A string indicating the starting point for the query (optional).
+        
+        - `limit`: An integer specifying the maximum number of recovery requests to return; up to 1000.
+        
+        - `order`: A string determining how results are ordered. Possible values:
+          - `by_account` — order by account name
+          - `by_expiration` — order by expiration date
+        
+        Examples:
+        
+        - `start = "hiveio"`, `limit = 10`, `order = "by_account"` — queries recovery requests for account "hiveio", ordered by account name.
+        
+        - `start = ["1960-01-01T00:00:00"]`, `limit = 10`, `order = "by_expiration"` — queries recovery requests from the specified date, ordered by expiration.
+      operationId: list_account_recovery_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_account_recovery_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_account_recovery_requests_response'
+              example: {
+                "requests": []
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -2689,6 +2727,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/account_recovery'
+    list_account_recovery_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/account_recovery'
     list_accounts:
       type: object
       properties:
@@ -2708,6 +2753,21 @@ components:
           type: boolean
           example: true
           description: Optional.
+    list_account_recovery_requests:
+      type: object
+      properties:
+        start:
+          type: object
+          example: ""
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: by_account
+          description:
     find_witnesses:
       type: object
       properties:
