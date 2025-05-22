@@ -41,6 +41,9 @@ class rocksdb_storage_processor: public external_storage_processor
     void load_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) override;
 
     void shutdown( bool remove_db = false ) override;
+
+    void update_lib( uint32_t ) override;
+    void update_reindex_point( uint32_t ) override;
 };
 
 }}
