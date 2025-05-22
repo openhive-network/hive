@@ -1889,7 +1889,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/get_potential_signatures'
+              $ref: '#/components/schemas/get_required_signatures'
         required: true
       responses:
         '200':
@@ -1933,6 +1933,28 @@ paths:
                     }
                   }
                 ]
+              }
+  database_api.get_transaction_hex:
+    post:
+      tags:
+        - database_api
+      summary: Returns a hexdump of the serialized binary form of a transaction.
+      operationId: get_transaction_hex
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_transaction_hex'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_transaction_hex_response'
+              example: {
+                "hex": "00000000000000000000000000"
               }
   database_api.list_accounts:
     post:
@@ -3386,6 +3408,16 @@ components:
       properties:
         trx:
           $ref: '#/components/schemas/transaction'
+    get_required_signatures:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+    get_transaction_hex:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
     broadcast_transaction:
       type: object
       properties:
@@ -3401,6 +3433,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/account'
+    get_transaction_hex_response:
+      type: object
+      properties:
+        hex:
+          type: string
+          example: "00000000000000000000000000"
     cashout_info:
       type: object
       properties:
