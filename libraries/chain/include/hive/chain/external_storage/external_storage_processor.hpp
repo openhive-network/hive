@@ -14,6 +14,9 @@ class external_storage_processor: public comments_handler, public external_stora
     using ptr = std::shared_ptr<external_storage_processor>;
 
     virtual void shutdown( bool remove_db = false ) = 0;
+
+    virtual void update_lib( uint32_t ) = 0;
+    virtual void update_reindex_point( uint32_t ) = 0;
 };
 
 } } // hive::chain

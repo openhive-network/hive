@@ -58,4 +58,14 @@ void rocksdb_comment_storage_provider::flush()
   rocksdb_storage_provider::flush();
 }
 
+void rocksdb_comment_storage_provider::update_lib( uint32_t lib )
+{
+  rocksdb_storage_provider::update_lib( lib );
+}
+
+void rocksdb_comment_storage_provider::update_reindex_point( uint32_t rp )
+{
+  rocksdb_storage_provider::update_reindex_point( rp );
+}
+
 }}

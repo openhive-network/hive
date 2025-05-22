@@ -1182,6 +1182,11 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 
   BOOST_SCOPE_EXIT(this_,&note) {
     HIVE_TRY_NOTIFY(this_->db._post_reindex_signal, note);
+
+    uint32_t last_irreversible_block_num =this_->db.get_last_irreversible_block_num();
+    this_->rocksdb_processor->update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
+    this_->rocksdb_processor->update_reindex_point( note.last_block_number );
+
   } BOOST_SCOPE_EXIT_END
 
   try
