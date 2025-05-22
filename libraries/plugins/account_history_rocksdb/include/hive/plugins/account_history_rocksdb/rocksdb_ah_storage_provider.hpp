@@ -20,35 +20,16 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     unsigned int                     _collectedOps = 0;
 
-    /// <summary>
-    /// Last block of most recent reindex - all such blocks are in inreversible storage already, since
-    /// the data is put there directly during reindex (it also means there is no volatile data for such
-    /// blocks), but _cached_irreversible_block might point to earlier block because it reflects
-    /// the state of dgpo. Once node starts syncing normally, the _cached_irreversible_block will catch up.
-    /// </summary>
-    unsigned int                     _cached_reindex_point = 0;
-
-    /// <summary>
-    /// Block being irreversible atm.
-    /// </summary>
-    std::atomic_uint                 _cached_irreversible_block;
-
     CachableWriteBatch _writeBuffer;
 
     void storeSequenceIds();
 
-    void loadSeqIdentifiers(DB* storageDb);
-
-    //loads last irreversible block from DB to _cached_irreversible_block
-    void load_lib();
-    //loads reindex point from DB to _cached_reindex_point
-    void load_reindex_point();
+    void loadSeqIdentifiers(DB* storageDb) override;
 
     WriteBatch& getWriteBuffer() override;
 
   protected:
 
-    void loadAdditionalData() override;
     ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
 
     void beforeFlushWriteBuffer() override;
