@@ -1157,6 +1157,45 @@ paths:
                   }
                 ]
               }
+  database_api.get_active_witnesses:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of active witnesses.
+      description: 
+      operationId: get_active_witnesses
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_active_witnesses_response'
+              example: {
+                "witnesses": [
+                  "lukestokes.mhth",
+                  "gtg",
+                  "ausbitbank",
+                  "clayop",
+                  "yabapmatt",
+                  "curie",
+                  "thecryptodrive",
+                  "roelandp",
+                  "followbtcnews",
+                  "timcliff",
+                  "smooth.witness",
+                  "bhuz",
+                  "aggroed",
+                  "blocktrades",
+                  "cervantes",
+                  "utopian-io",
+                  "anyx",
+                  "jesta",
+                  "drakos",
+                  "someguy123",
+                  "good-karma"
+                ]
+              }
   database_api.get_dynamic_global_properties:
     post:
       tags:
@@ -2037,6 +2076,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/proposals'
+    get_active_witnesses_response:
+      type: object
+      properties:
+        witnesses:
+          type: array
+          items:
+            type: string
+          example: ["witness1", "witness2"]
+          description: >-
+            An array of strings representing the active witnesses.
     owner_auth_history:
       type: object
       properties:
