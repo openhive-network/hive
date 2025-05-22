@@ -1792,6 +1792,67 @@ paths:
                   "2022-10-24T12:00:00"
                 ]
               }
+  database_api.get_order_book:
+    post:
+      tags:
+        - database_api
+      summary: Returns the order book.
+      operationId: get_order_book
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_order_book'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_order_book_response'
+              example: {
+                "asks": [
+                  {
+                    "created": "2025-05-22T11:17:24",
+                    "hbd": 26344,
+                    "hive": 97538,
+                    "order_price": {
+                      "base": {
+                        "amount": "100000",
+                        "nai": "@@000000021",
+                        "precision": 3
+                      },
+                      "quote": {
+                        "amount": "27009",
+                        "nai": "@@000000013",
+                        "precision": 3
+                      }
+                    },
+                    "real_price": "0.00000000000000000"
+                  }
+                ],
+                "bids": [
+                  {
+                    "created": "2025-05-22T11:14:18",
+                    "hbd": 245,
+                    "hive": 907,
+                    "order_price": {
+                      "base": {
+                        "amount": "2000",
+                        "nai": "@@000000013",
+                        "precision": 3
+                      },
+                      "quote": {
+                        "amount": "7410",
+                        "nai": "@@000000021",
+                        "precision": 3
+                      }
+                    },
+                    "real_price": "0.00000000000000000"
+                  }
+                ]
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -2043,6 +2104,26 @@ paths:
               }
 components:
   schemas:
+    get_order_book:
+      type: object
+      properties:
+        base:
+          $ref: '#/components/schemas/balance'
+          example: {
+            "amount": "1000",
+            "precision": 3,
+            "nai": "@@000000021"
+          }
+        quote:
+          $ref: '#/components/schemas/balance'
+          example: {
+            "amount": "1000",
+            "precision": 3,
+            "nai": "@@000000013"
+          }
+        limit:
+          type: integer
+          example: 0
     comment_pending_payout:
       type: array
       items:
@@ -2947,6 +3028,41 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/withdraw_vesting_routes'
+    bids_and_asks:
+      type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          example: "2025-05-22T11:17:24"
+          description: >-
+            The date when the order was created.
+        hbd:
+          type: integer
+          example: 26344
+          description: >-
+            The amount of HBD in the order.
+        hive:
+          type: integer
+          example: 97538
+          description: >-
+            The amount of HIVE in the order.
+        order_price:
+          $ref: '#/components/schemas/base_and_quote'
+        real_price:
+          type: string
+          example: "0.00000000000000000"
+    get_order_book_response:
+      type: object
+      properties:
+        asks:
+          type: array
+          items:
+            $ref: '#/components/schemas/bids_and_asks'
+        bids:
+          type: array
+          items:
+            $ref: '#/components/schemas/bids_and_asks'
     rc_account_object:
       type: object
       properties:
