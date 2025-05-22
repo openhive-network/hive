@@ -366,13 +366,13 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       FC_THROW("Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}", (_artifact_file_name)("error", strerror(errno)));
     }
 
-    struct stat file_stats;
-    if (fstat(_storage_fd, &file_stats) == -1)
-      FC_THROW("Error getting info on file: ${error}", ("error", strerror(errno)));
-
-    if( (file_stats.st_mode & 0200) == 0 )
+    if( faccessat( _storage_fd, "", W_OK, AT_EACCESS|AT_EMPTY_PATH) == -1 )
     {
-      wlog( "Block log artifacts file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+      auto e = errno;
+      if( e == EACCES )
+        wlog( "Block log artifacts file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+      else
+        elog( "Error determining possibility to write to block log artifacts file ${file_cstr} (errno = ${e}) - treating as read-only. Skipping advisory file lock initiation.", ( "file_cstr", file_str.c_str() )( e ) );
     }
     else
     {
