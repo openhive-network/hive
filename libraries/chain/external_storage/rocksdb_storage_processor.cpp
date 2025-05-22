@@ -27,7 +27,7 @@ rocksdb_storage_processor::~rocksdb_storage_processor()
 {
 }
 
-void rocksdb_storage_processor::allow_move_to_external_storage( const comment_id_type& comment_id, const account_id_type& account_id, const std::string& permlink )
+void rocksdb_storage_processor::on_cashout( const comment_id_type& comment_id, const account_id_type& account_id, const std::string& permlink )
 {
   auto& _account = db.get_account( account_id );
   auto _found = db.find_comment( comment_id );
@@ -92,7 +92,7 @@ std::shared_ptr<comment_object> rocksdb_storage_processor::get_comment_impl( con
   return std::shared_ptr<comment_object>( new comment_object ( _obj.comment_id, _obj.parent_comment, hash, _obj.depth ) );
 }
 
-void rocksdb_storage_processor::move_to_external_storage( uint32_t block_num )
+void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
 {
   if( !db.has_hardfork( HIVE_HARDFORK_0_19 ) )
     return;
@@ -147,14 +147,14 @@ comment rocksdb_storage_processor::get_comment( const account_id_type& author, c
   }
 }
 
-void rocksdb_storage_processor::supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_storage_processor::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
-  snapshot->supplement_snapshot( note );
+  snapshot->save_snaphot( note );
 }
 
-void rocksdb_storage_processor::load_additional_data_from_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
+void rocksdb_storage_processor::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
 {
-  snapshot->load_additional_data_from_snapshot( note );
+  snapshot->load_snapshot( note );
 }
 
 void rocksdb_storage_processor::shutdown( bool remove_db )

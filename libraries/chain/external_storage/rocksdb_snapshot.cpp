@@ -22,7 +22,7 @@ rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, 
   FC_ASSERT( _provider );
 }
 
-void rocksdb_snapshot::supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_snapshot::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   fc::path actual_path(note.external_data_storage_base_path);
   actual_path /= _storage_name;
@@ -59,7 +59,7 @@ void rocksdb_snapshot::supplement_snapshot( const hive::chain::prepare_snapshot_
   note.dump_helper.store_external_data_info(_plugin, actual_path);
 }
 
-void rocksdb_snapshot::load_additional_data_from_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
+void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
 {
   fc::path extdata_path;
   if(note.load_helper.load_external_data_info(_plugin, &extdata_path) == false)

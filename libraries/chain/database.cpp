@@ -668,7 +668,7 @@ void database::remove_old_cashouts()
   {
     const auto& current = *itr;
     ++itr;
-    get_comments_handler()->allow_move_to_external_storage( current.get_comment_id(), current.get_author_id(), current.get_permlink() );
+    get_comments_handler()->on_cashout( current.get_comment_id(), current.get_author_id(), current.get_permlink() );
     remove( current );
   }
 }
@@ -2691,7 +2691,7 @@ void database::process_comment_cashout()
 
     if( has_hardfork( HIVE_HARDFORK_0_19 ) )
     {
-      get_comments_handler()->allow_move_to_external_storage( _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() );
+      get_comments_handler()->on_cashout( _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() );
       remove( *_current );
     }
     _current = cidx.begin();

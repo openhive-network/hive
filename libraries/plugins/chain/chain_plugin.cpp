@@ -481,20 +481,20 @@ void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_
     [&]( uint32_t block_num )
     {
       FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->move_to_external_storage( block_num );
+      rocksdb_processor->on_irreversible_block( block_num );
     }, _plugin
   );
 
   _on_prepare_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
     {
       FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->supplement_snapshot( note );
+      rocksdb_processor->save_snaphot( note );
     }, _plugin, 0);
 
   _on_load_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
     {
       FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->load_additional_data_from_snapshot( note );
+      rocksdb_processor->load_snapshot( note );
     }, _plugin, 0);
 }
 

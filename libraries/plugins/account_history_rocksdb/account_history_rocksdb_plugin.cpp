@@ -133,12 +133,12 @@ public:
 
       _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
         {
-          _snapshot->supplement_snapshot(note);
+          _snapshot->save_snaphot(note);
         }, _self, 0);
 
       _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
         {
-          _snapshot->load_additional_data_from_snapshot(note);
+          _snapshot->load_snapshot(note);
         }, _self, 0);
 
       _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
