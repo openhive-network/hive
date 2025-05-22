@@ -10,8 +10,8 @@ class external_storage_snapshot
 
     using ptr = std::shared_ptr<external_storage_snapshot>;
 
-    virtual void supplement_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note ) = 0;
-    virtual void load_additional_data_from_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) = 0;
+    virtual void save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note ) = 0;
+    virtual void load_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) = 0;
 
 };
 
