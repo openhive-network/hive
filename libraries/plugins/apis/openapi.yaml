@@ -1956,6 +1956,29 @@ paths:
               example: {
                 "hex": "00000000000000000000000000"
               }
+  database_api.get_version:
+    post:
+      tags:
+        - database_api
+      summary: Returns the compile time versions of blockchain, hived, FC.
+      description: |
+        Also returns the boot time version of the chain id (may be different from compile time value only when looking at a testnet)
+      operationId: get_version
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_version_response'
+              example:   {
+                "blockchain_version": "1.27.11",
+                "chain_id": "beeab0de00000000000000000000000000000000000000000000000000000000",
+                "fc_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                "haf_revision": "0e2bd7c69cc26928665281435165fd3288940db9",
+                "hive_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                "node_type": "mainnet"
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -3292,6 +3315,27 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/vote'
+    get_version_response:
+      type: object
+      properties:
+        blockchain_version:
+          type: string
+          example: "0.23.0"
+          description: >-
+            The version of the blockchain.
+        hive_revision:
+          type: string
+          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
+          description: >-
+            The revision of the Hive codebase.
+        fc_revision:
+          type: string
+          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
+          description: >-
+            The revision of the fc codebase.
+        chain_id:
+          type: string
+          example: "beeab0de00000000000000000000000000000000000000000000000000000000"
     block_header:
       type: object
       properties:
