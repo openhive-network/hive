@@ -1877,6 +1877,30 @@ paths:
               example: {
                 "keys": []
               }
+  database_api.get_required_signatures:
+    post:
+      tags:
+        - database_api
+      summary: Return the minimal subset of public keys that should add signatures to the transaction.
+      description: |
+        This API will take a partially signed transaction and a set of public keys that the owner has the ability to sign for and return the minimal subset of public keys that should add signatures to the transaction.
+      operationId: get_required_signatures
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_potential_signatures'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_potential_signatures_response'
+              example: {
+                "keys": []
+              }
   database_api.list_accounts:
     post:
       tags:
