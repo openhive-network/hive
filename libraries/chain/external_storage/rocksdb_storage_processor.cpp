@@ -94,6 +94,8 @@ std::shared_ptr<comment_object> rocksdb_storage_processor::get_comment_impl( con
 
 void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
 {
+  provider->update_lib( block_num );
+
   if( !db.has_hardfork( HIVE_HARDFORK_0_19 ) )
     return;
 
@@ -160,6 +162,16 @@ void rocksdb_storage_processor::load_snapshot( const hive::chain::load_snapshot_
 void rocksdb_storage_processor::shutdown( bool remove_db )
 {
   provider->shutdownDb( remove_db );
+}
+
+void rocksdb_storage_processor::update_lib( uint32_t lib )
+{
+  provider->update_lib( lib );
+}
+
+void rocksdb_storage_processor::update_reindex_point( uint32_t rp )
+{
+  provider->update_reindex_point( rp );
 }
 
 }}
