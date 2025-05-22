@@ -1537,6 +1537,31 @@ paths:
                 "HIVE_NETWORK_TYPE": "testnet",
                 "HIVE_DB_FORMAT_VERSION": "1"
               }
+  database_api.get_current_price_feed:
+    post:
+      tags:
+        - database_api
+      summary: Returns the current price feed.
+      operationId: get_current_price_feed
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_current_price_feed_response'
+              example: {
+                "base": {
+                  "amount": "1",
+                  "precision": 3,
+                  "nai": "@@000000013"
+                },
+                "quote": {
+                  "amount": "1",
+                  "precision": 3,
+                  "nai": "@@000000021"
+                }
+              }
   database_api.get_dynamic_global_properties:
     post:
       tags:
@@ -3762,6 +3787,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/witness'
+    get_current_price_feed_response:
+      type: object
+      properties:
+        base:
+          $ref: '#/components/schemas/balance'
+        quote:
+          $ref: '#/components/schemas/balance'
     hbd_conversion:
       type: object
       properties:
