@@ -1196,6 +1196,77 @@ paths:
                   "good-karma"
                 ]
               }
+  database_api.get_comment_pending_payouts:
+    post:
+      tags:
+        - database_api
+      summary: Get comment pending payout data.
+      description: |
+        Required (non-empty) parameters: author, permlink.
+
+        - `author`: A string representing the author of the content. Examples:
+          - `"hiveio"` — queries votes for content authored by "hiveio".
+          - `"alice"` — queries votes for content authored by "alice".
+
+        - `permlink`: A string representing the permalink of the content. Examples:
+          - `"announcing-the-launch-of-hive-blockchain"` — for the post @hiveio/announcing-the-launch-of-hive-blockchain.
+          - `"a-post-by-alice"` — for the post @alice/a-post-by-alice.
+      operationId: get_comment_pending_payouts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_comment_pending_payouts'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_comment_pending_payouts_response'
+              example: {
+                "cashout_infos": [
+                  {
+                    "author": "hbd.funder",
+                    "permlink": "upvote-this-post-to-fund-hbdstabilizer-qr2j7n",
+                    "cashout_info": {
+                      "total_vote_weight": 22841196,
+                      "total_payout_value": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      },
+                      "curator_payout_value": {
+                        "amount": "0",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      },
+                      "max_accepted_payout": {
+                        "amount": "1000000000",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      },
+                      "author_rewards": 0,
+                      "children_abs_rshares": "606511906476641",
+                      "net_rshares": "571577939879762",
+                      "abs_rshares": "594467432989642",
+                      "vote_rshares": "583007369825359",
+                      "net_votes": 378,
+                      "active": "2021-04-06T15:29:03",
+                      "last_payout": "1970-01-01T00:00:00",
+                      "cashout_time": "2021-04-12T02:07:00",
+                      "max_cashout_time": "1969-12-31T23:59:59",
+                      "percent_hbd": 10000,
+                      "reward_weight": 10000,
+                      "allow_replies": false,
+                      "allow_votes": true,
+                      "allow_curation_rewards": true
+                    }
+                  }
+                ]
+              }
+
   database_api.get_dynamic_global_properties:
     post:
       tags:
@@ -1549,6 +1620,18 @@ paths:
               }
 components:
   schemas:
+    comment_pending_payout:
+      type: array
+      items:
+        type: string
+    get_comment_pending_payouts:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/comment_pending_payout'
+          example: [["hbd.funder", "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"]]
     find_withdraw_vesting_routes:
       type: object
       properties:
@@ -2647,6 +2730,96 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/account'
+    cashout_info:
+      type: object
+      properties:
+        total_vote_weight:
+          type: integer
+          example: 22841196
+        total_payout_value:
+          $ref: '#/components/schemas/balance'
+        curator_payout_value:
+          $ref: '#/components/schemas/balance'
+        max_accepted_payout:
+          $ref: '#/components/schemas/balance'
+        author_rewards:
+          type: integer
+          example: 0
+        children_abs_rshares:
+          type: string
+          example: "606511906476641"
+        net_rshares:
+          type: string
+          example: "571577939879762"
+        abs_rshares:
+          type: string
+          example: "594467432989642"
+        vote_rshares:
+          type: string
+          example: "583007369825359"
+        net_votes:
+          type: integer
+          example: 378
+        active:
+          type: string
+          format: date-time
+          example: "2021-04-06T15:29:03"
+        last_payout:
+          type: string
+          format: date-time
+          example: "1970-01-01T00:00:00"
+        cashout_time:
+          type: string
+          format: date-time
+          example: "2021-04-12T02:07:00"
+        max_cashout_time:
+          type: string
+          format: date-time
+          example: "1969-12-31T23:59:59"
+        percent_hbd:
+          type: integer
+          example: 10000
+        reward_weight:
+          type: integer
+          example: 10000
+        allow_replies:
+          type: boolean
+          example: false
+        allow_votes:
+          type: boolean
+          example: true
+        allow_curation_rewards:
+          type: boolean
+          example: true
+    comment_pending_payout_type:
+      type: object
+      properties:
+        author:
+          type: string
+          example: "hbd.funder"
+        permlink:
+          type: string
+          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
+        cashout_info:
+          $ref: '#/components/schemas/cashout_info'
+    comment_pending_empty_payout_type:
+      type: object
+      properties:
+        author:
+          type: string
+          example: "hbd.funder"
+        permlink:
+          type: string
+          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
+    get_comment_pending_payouts_response:
+      type: object
+      properties:
+        cashout_infos:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/comment_pending_payout_type'
+              - $ref: '#/components/schemas/comment_pending_empty_payout_type'
     broadcast_transaction_response:
       type: object
     find_witnesses_response:
