@@ -3,7 +3,7 @@
 
 #include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_snapshot.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 

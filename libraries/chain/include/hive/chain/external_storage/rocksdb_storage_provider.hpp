@@ -1,11 +1,10 @@
 #pragma once
 
-#include <hive/chain/external_storage/external_storage_provider.hpp>
-
 #include <hive/chain/database.hpp>
 
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/db.h>
 
 #include <boost/core/demangle.hpp>
 #include <boost/filesystem/path.hpp>
@@ -17,10 +16,12 @@ namespace hive { namespace chain {
 
 namespace bfs = boost::filesystem;
 
+using ::rocksdb::DB;
 using ::rocksdb::DBOptions;
 using ::rocksdb::Options;
 using ::rocksdb::ReadOptions;
 using ::rocksdb::Slice;
+using ::rocksdb::PinnableSlice;
 using ::rocksdb::Comparator;
 using ::rocksdb::ColumnFamilyDescriptor;
 using ::rocksdb::ColumnFamilyOptions;
@@ -82,34 +83,6 @@ class rocksdb_storage_provider
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );
     void flush();
-};
-
-class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public external_comment_storage_provider
-{
-  private:
-
-    WriteBatch _writeBuffer;
-
-    void loadAdditionalData() override{}
-    ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
-
-    WriteBatch& getWriteBuffer() override;
-
-  public:
-
-    using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
-
-    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
-    ~rocksdb_comment_storage_provider() override{}
-
-    std::unique_ptr<DB>& getStorage() override;
-
-    void openDb( bool cleanDatabase ) override;
-    void shutdownDb( bool removeDB = false ) override;
-
-    void save( const Slice& key, const Slice& value ) override;
-    bool read( const Slice& key, PinnableSlice& value ) override;
-    void flush() override;
 };
 
 }}
