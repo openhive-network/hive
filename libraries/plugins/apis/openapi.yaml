@@ -1853,6 +1853,30 @@ paths:
                   }
                 ]
               }
+  database_api.get_potential_signatures:
+    post:
+      tags:
+        - database_api
+      summary: This method will return the set of all public keys that could possibly sign for a given transaction.
+      description: |
+        This call can be used by wallets to filter their set of public keys to just the relevant subset prior to calling get_required_signatures to get the minimum subset.
+      operationId: get_potential_signatures
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_potential_signatures'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_potential_signatures_response'
+              example: {
+                "keys": []
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -3254,6 +3278,11 @@ components:
         pack:
           type: string
           example: "legacy"
+    get_potential_signatures:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
     broadcast_transaction:
       type: object
       properties:
@@ -4521,6 +4550,13 @@ components:
           format: date-time
           description: >-
             The time of the previous owner update made by the account.
+    get_potential_signatures_response:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/auths'
     get_dynamic_global_properties_response:
       type: object
       properties:
