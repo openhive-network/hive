@@ -2064,6 +2064,30 @@ paths:
                 "timeshare_weight": 5,
                 "witness_pay_normalization_factor": 25
               }
+  database_api.is_known_transaction:
+    post:
+      tags:
+        - database_api
+      summary: Only return true if the transaction has not expired or been invalidated.
+      description: |
+        If this method is called with a VERY old transaction we will return false, use account_history_api.get_transaction.
+      operationId: is_known_transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/is_known_transaction'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/is_known_transaction_response'
+              example: {
+                "is_known": false
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -2315,6 +2339,12 @@ paths:
               }
 components:
   schemas:
+    is_known_transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "0000000000000000000000000000000000000000"
     get_order_book:
       type: object
       properties:
@@ -3782,6 +3812,13 @@ components:
             $ref: '#/components/schemas/base_and_quote'
           description: >-
             An array of price history objects.
+    is_known_transaction_response:
+      type: object
+      properties:
+        is_known:
+          type: boolean
+          description: >-
+            Indicates if the transaction is known.
     get_hardfork_properties_response:
       type: object
       properties:
