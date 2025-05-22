@@ -1901,6 +1901,39 @@ paths:
               example: {
                 "keys": []
               }
+  database_api.get_reward_funds:
+    post:
+      tags:
+        - database_api
+      summary: Returns information about the current reward funds.
+      operationId: get_reward_funds
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_reward_funds_response'
+              example: {
+                "funds": [
+                  {
+                    "author_reward_curve": "linear",
+                    "content_constant": "2000000000000",
+                    "curation_reward_curve": "linear",
+                    "id": 0,
+                    "last_update": "2025-05-22T12:59:21",
+                    "name": "post",
+                    "percent_content_rewards": 10000,
+                    "percent_curation_rewards": 5000,
+                    "recent_claims": "711345102753889024",
+                    "reward_balance": {
+                      "amount": "969716237",
+                      "nai": "@@000000021",
+                      "precision": 3
+                    }
+                  }
+                ]
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -3135,6 +3168,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/rc_account_object'
+    reward_funds:
+      type: object
+      properties:
+        author_reward_curve:
+          type: string
+          example: "linear"
+          description: >-
+            The author reward curve.
+        content_constant:
+          type: string
+          example: "2000000000000"
+          description: >-
+            The content constant.
+        curation_reward_curve:
+          type: string
+          example: "linear"
+          description: >-
+            The curation reward curve.
+        id:
+          type: integer
+          example: 0
+        last_update:
+          type: string
+          format: date-time
+          example: "2025-05-22T12:59:21"
+        name:
+          type: string
+          example: "post"
+        percent_content_rewards:
+          type: integer
+          example: 10000
+        percent_curation_rewards:
+          type: integer
+          example: 5000
+        recent_claims:
+          type: string
+          example: "711345102753889024"
+        reward_balance:
+          $ref: '#/components/schemas/balance'
+    get_reward_funds_response:
+      type: object
+      properties:
+        funds:
+          type: array
+          items:
+            $ref: '#/components/schemas/reward_funds'
     vote:
       type: object
       properties:
