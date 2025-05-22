@@ -235,10 +235,13 @@ namespace hive { namespace chain {
         FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
           ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
 
-      struct stat block_log_stats = get_file_stats(my->block_log_fd);
-      if( (block_log_stats.st_mode & 0200) == 0 )
+      if( faccessat( my->block_log_fd, "", W_OK, AT_EACCESS|AT_EMPTY_PATH) == -1 )
       {
-        wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+        auto e = errno;
+        if( e == EACCES )
+          wlog( "Block log file ${file_cstr} is read-only. Skipping advisory file lock initiation.", ("file_cstr", file_str.c_str()) );
+        else
+          elog( "Error determining possibility to write to block log file ${file_cstr} (errno = ${e}) - treating as read-only. Skipping advisory file lock initiation.", ( "file_cstr", file_str.c_str() )( e ) );
       }
       else
       {
@@ -256,7 +259,7 @@ namespace hive { namespace chain {
         }
       }
 
-      my->block_log_size = block_log_stats.st_size;
+      my->block_log_size = get_file_stats( my->block_log_fd ).st_size;
 
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
