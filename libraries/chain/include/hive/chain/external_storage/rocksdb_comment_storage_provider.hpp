@@ -22,10 +22,13 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     WriteBatch _writeBuffer;
 
-    void loadAdditionalData() override{}
     ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
 
     WriteBatch& getWriteBuffer() override;
+
+  protected:
+
+    void loadSeqIdentifiers(DB* storageDb) override{};
 
   public:
 
