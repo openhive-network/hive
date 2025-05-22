@@ -2290,6 +2290,53 @@ paths:
                   }
                 ]
               }
+  database_api.list_change_recovery_account_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of recovery account change requests.
+      description: |
+        Parameters:
+        
+        - `start`: An object whose structure depends on the `order` parameter.
+          - If `order` is `by_account`, `start` is a string representing the account name.
+          - If `order` is `by_effective_date`, `start` is an array with two values: a timestamp and an account string.
+        
+        - `limit`: An integer specifying the maximum number of requests to return; up to 1000.
+        
+        - `order`: A string indicating the sorting method. Possible values:
+          - `by_account` — sort by account; `start` is a string of account name.
+          - `by_effective_date` — sort by effective date; `start` is an array: [timestamp, account].
+
+        Examples:
+        
+        - `start = ""`, `limit = 10`, `order = "by_account"` — queries the first 10 requests sorted by account.
+        
+        - `start = ["1960-01-01T00:00:00", ""]`, `limit = 10`, `order = "by_effective_date"` — queries the first 10 requests sorted by effective date.
+      operationId: list_change_recovery_account_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_change_recovery_account_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_change_recovery_account_requests_response'
+              example: {
+                "requests": [
+                  {
+                    "id": 99,
+                    "account_to_recover": "alice",
+                    "recovery_account": "bob",
+                    "effective_on": "1960-01-01T00:00:00"
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -2654,6 +2701,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/find_account_recovery'
+    list_change_recovery_account_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_account_recovery'
     find_account_recovery_requests:
       type: object
       properties:
@@ -2753,7 +2807,7 @@ components:
           type: boolean
           example: true
           description: Optional.
-    list_account_recovery_requests:
+    start_limit_order:
       type: object
       properties:
         start:
@@ -2768,6 +2822,10 @@ components:
           type: string
           example: by_account
           description:
+    list_account_recovery_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_change_recovery_account_requests:
+      $ref: '#/components/schemas/start_limit_order'
     find_witnesses:
       type: object
       properties:
