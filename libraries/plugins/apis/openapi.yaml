@@ -1664,6 +1664,84 @@ paths:
                 },
                 "vote_power_reserve_rate": 10
               }
+  database_api.get_feed_history:
+    post:
+      tags:
+        - database_api
+      summary: Returns the history of price feed values.
+      operationId: get_feed_history
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_feed_history_response'
+              example: {
+                "current_max_history":{
+                    "base":{
+                        "amount":"269",
+                        "nai":"@@000000013",
+                        "precision":3
+                    },
+                    "quote":{
+                        "amount":"1000",
+                        "nai":"@@000000021",
+                        "precision":3
+                    }
+                },
+                "current_median_history":{
+                    "base":{
+                        "amount":"258",
+                        "nai":"@@000000013",
+                        "precision":3
+                    },
+                    "quote":{
+                        "amount":"1000",
+                        "nai":"@@000000021",
+                        "precision":3
+                    }
+                },
+                "current_min_history":{
+                    "base":{
+                        "amount":"248",
+                        "nai":"@@000000013",
+                        "precision":3
+                    },
+                    "quote":{
+                        "amount":"1000",
+                        "nai":"@@000000021",
+                        "precision":3
+                    }
+                },
+                "id":0,
+                "market_median_history":{
+                    "base":{
+                        "amount":"258",
+                        "nai":"@@000000013",
+                        "precision":3
+                    },
+                    "quote":{
+                        "amount":"1000",
+                        "nai":"@@000000021",
+                        "precision":3
+                    }
+                },
+                "price_history":[
+                    {
+                        "base":{
+                            "amount":"263",
+                            "nai":"@@000000013",
+                            "precision":3
+                        },
+                        "quote":{
+                            "amount":"1000",
+                            "nai":"@@000000021",
+                            "precision":3
+                        }
+                    }
+                ]
+              }
   database_api.list_accounts:
     post:
       tags:
@@ -3115,6 +3193,47 @@ components:
             oneOf:
               - $ref: '#/components/schemas/comment_pending_payout_type'
               - $ref: '#/components/schemas/comment_pending_empty_payout_type'
+    base_and_quote:
+      type: object
+      properties:
+        base:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The base asset of the price.
+        quote:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The quote asset of the price.
+    get_feed_history_response:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+          description: >-
+            The ID of the feed history.
+        current_max_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current maximum history of the feed.
+        current_median_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current median history of the feed.
+        current_min_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current minimum history of the feed.
+        market_median_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The market median history of the feed.
+        price_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/base_and_quote'
+          description: >-
+            An array of price history objects.
     get_config_response:
       type: object
       properties:
