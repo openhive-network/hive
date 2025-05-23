@@ -13,6 +13,8 @@
 #include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
+#include <chainbase/memory_ops.hpp>
+
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 
 #include <hive/plugins/statsd/utility.hpp>
@@ -221,6 +223,7 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
+    bool                             lock_shared_memory = false;
 
 
     uint32_t allow_future_time = 5;
@@ -1565,6 +1568,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
       ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
+      ("lock-shared-memory-during-replay", bpo::bool_switch()->default_value(false), "On Linux systems, lock the shared memory file in RAM during blockchain replay to prevent it from being swapped to disk")
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1641,6 +1645,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->enable_block_log_compression = options.at( "enable-block-log-compression" ).as<bool>();
   my->enable_block_log_auto_fixing = options.at( "enable-block-log-auto-fixing" ).as<bool>();
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
+  my->lock_shared_memory = options.at( "lock-shared-memory-during-replay" ).as<bool>();
 
   FC_ASSERT(!(my->exit_at_block && my->stop_at_block), "--exit-at-block and --stop-at-block cannot be used together" );
 
@@ -1923,7 +1928,37 @@ void chain_plugin::plugin_startup()
     std::shared_ptr< block_write_i > reindex_block_writer =
       std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
     ilog( "Replaying..." );
+    
+    // If memory locking is enabled, lock the shared memory segment before replay
+    bool memory_locked = false;
+    if (my->lock_shared_memory) {
+#ifdef __linux__
+      ilog("Attempting to lock shared memory in RAM during replay...");
+      // Access segment directly through the chainbase database
+      if (chainbase::memory_lock::lock_memory(my->db._segment.get())) {
+        memory_locked = true;
+        ilog("Successfully locked shared memory in RAM");
+      } else {
+        wlog("Failed to lock shared memory in RAM. Continuing with replay without memory locking.");
+      }
+#else
+      wlog("Shared memory locking is only supported on Linux systems. Continuing with replay without memory locking.");
+#endif
+    }
+    
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
+    
+    // If memory was locked, unlock it after replay
+    if (memory_locked) {
+#ifdef __linux__
+      ilog("Unlocking shared memory after replay...");
+      if (chainbase::memory_lock::unlock_memory(my->db._segment.get())) {
+        ilog("Successfully unlocked shared memory");
+      } else {
+        wlog("Failed to unlock shared memory. This may affect system performance.");
+      }
+#endif
+    }
   }
   if( start )
   {

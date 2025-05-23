@@ -22,6 +22,7 @@
 #include <chainbase/allocators.hpp>
 #include <chainbase/state_snapshot_support.hpp>
 #include <chainbase/util/object_id.hpp>
+#include <chainbase/memory_ops.hpp>
 
 #include <fc/exception/exception.hpp>
 
@@ -36,6 +37,9 @@
 #ifndef CHAINBASE_NUM_RW_LOCKS
   #define CHAINBASE_NUM_RW_LOCKS 10
 #endif
+
+// Forward declaration of Hive's chain_plugin_impl class
+namespace hive { namespace plugins { namespace chain { class chain_plugin_impl; } } }
 
 #ifdef CHAINBASE_CHECK_LOCKING
   #define CHAINBASE_REQUIRE_READ_LOCK(m, t) require_read_lock(m, typeid(t).name())
@@ -1027,6 +1031,9 @@ namespace chainbase {
     */
   class database
   {
+    // Forward declaration and friend class to allow access to _segment for memory locking
+    friend class hive::plugins::chain::chain_plugin_impl;
+    
     private:
       class abstract_index_type
       {
