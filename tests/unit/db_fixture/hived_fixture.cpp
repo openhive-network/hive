@@ -14,8 +14,8 @@ namespace bpo = boost::program_options;
 
 namespace hive { namespace chain {
 
-hived_fixture::hived_fixture( bool remove_db_files /*= true*/, bool disable_p2p /*= true*/)
-  : _disable_p2p( disable_p2p ), _remove_db_files( remove_db_files )
+hived_fixture::hived_fixture( bool remove_db_files /*= true*/, bool disable_p2p /*= true*/, fc::path data_dir /*= fc::path()*/)
+  : _remove_db_files( remove_db_files ), _disable_p2p( disable_p2p ), _data_dir( data_dir )
 {}
 
 hived_fixture::~hived_fixture() 

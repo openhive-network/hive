@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE( undo_block )
 }
 
 #define SET_UP_FIXTURE_SUFFIX( DATA_DIR_PATH_STR, SUFFIX, COMMON_LOGGING_CONFIG ) \
-  hived_fixture fixture ## SUFFIX; \
+  hived_fixture fixture ## SUFFIX( true /*remove_db_files*/, true/*disable_p2p*/, DATA_DIR_PATH_STR ); \
   fixture ## SUFFIX.set_logging_config( COMMON_LOGGING_CONFIG ); \
   fixture ## SUFFIX.postponed_init( \
     { \
