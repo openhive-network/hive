@@ -237,8 +237,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         _file_size = shared_file_size;
       }
 
-      _segment.reset( new bip::managed_mapped_file( bip::open_only,
-                                      abs_path.generic_string().c_str()
+      _segment.reset( new bip::managed_mapped_file( bip::open_read_write,
+                                      abs_path.generic_string().c_str(),
+                                      0, // Mapped size (0 means use existing file size)
+                                      nullptr, // Extra map region
+                                      boost::interprocess::default_map_options | boost::interprocess::map_private // Use private mapping
                                       ) );
 
       auto env = _segment->find< environment_check >( "environment" );
