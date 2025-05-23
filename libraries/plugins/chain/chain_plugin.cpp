@@ -986,7 +986,7 @@ void chain_plugin_impl::open()
       thread_pool.shutdown();
 
       wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-      theApp.notify_status("exitting with open database error");
+      theApp.notify_status("exiting with open database error");
     }
   } BOOST_SCOPE_EXIT_END
 
