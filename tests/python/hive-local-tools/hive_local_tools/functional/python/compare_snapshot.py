@@ -88,11 +88,23 @@ def compare_snapshots_contents(snapshot_1: Snapshot, snapshot_2: Snapshot) -> No
     snap1 = _create_comparable_snapshot(snapshot_1.get_path())
     snap2 = _create_comparable_snapshot(snapshot_2.get_path())
 
-    assert len(snap1) == len(snap2), "Amount of files does not match between snapshots."
-    assert set(snap1.keys()) == set(snap2.keys()), "Files in both snapshots does not match"
+    # Number of *.SST files can be different if original data is held in RocksDB.
+    # It applies to AH data and comments in RocksDB.
 
-    for file_name, file_content_1 in snap1.items():
-        file_content_2 = snap2[file_name]
+    # assert len(snap1) == len(snap2), "Amount of files does not match between snapshots."
+    # assert set(snap1.keys()) == set(snap2.keys()), "Files in both snapshots does not match"
+
+    smaller_snap = None
+    bigger_snap = None
+    if len(snap1) > len(snap2):
+        smaller_snap = snap2
+        bigger_snap = snap1
+    else:
+        smaller_snap = snap1
+        bigger_snap = snap2
+
+    for file_name, file_content_1 in smaller_snap.items():
+        file_content_2 = bigger_snap[file_name]
         assert len(file_content_1) == len(file_content_2), f"Amount of entities does not match in `{file_name}`"
         assert set(file_content_1.keys()) == set(file_content_2.keys()), f"Keys in `{file_name}` does not match"
 
