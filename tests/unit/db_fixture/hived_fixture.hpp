@@ -25,14 +25,18 @@ struct hived_fixture : public database_fixture
   
   /// @brief Allows verification that logging-related configuration is correctly processed.
   fc::optional< fc::logging_config > _logging_config;
-  /// @brief Where tested "hived" data go. Valid after a call to postponed_init (or set_data_dir).
-  fc::path _data_dir;
+
+  bool _remove_db_files = true;
+
   /// @brief Disables p2p in standard initialization
   bool _disable_p2p = true;
 
+  /// @brief Where tested "hived" data go. Valid after a call to postponed_init (or set_data_dir).
+  fc::path _data_dir;
+
   public:
 
-  hived_fixture( bool remove_db_files = true, bool disable_p2p = true );
+  hived_fixture( bool remove_db_files = true, bool disable_p2p = true, fc::path data_dir = fc::path() );
   virtual ~hived_fixture();
 
   typedef std::vector< std::pair< std::string, std::vector< std::string > > > config_arg_override_t;
@@ -75,7 +79,6 @@ struct hived_fixture : public database_fixture
   private:
     hive::plugins::chain::chain_plugin* _chain = nullptr;
     const hive::chain::block_read_i* _block_reader = nullptr;
-    bool _remove_db_files = true;
 };
 
 namespace test
