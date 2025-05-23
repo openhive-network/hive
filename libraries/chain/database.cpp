@@ -663,8 +663,9 @@ void database::remove_old_cashouts()
   while( itr != idx.end() )
   {
     const auto& current = *itr;
+    const auto& comment = get_comment( current );
     ++itr;
-    get_comments_handler()->on_cashout( current.get_comment_id(), current.get_author_id(), current.get_permlink() );
+    get_comments_handler()->on_cashout( comment, current );
     remove( current );
   }
 }
@@ -2657,6 +2658,12 @@ void database::process_comment_cashout()
       funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *_current,
         find_comment_cashout_ex( _comment ), forward_curation_remainder );
       ++count;
+
+      if( has_hardfork( HIVE_HARDFORK_0_19 ) )
+      {
+        get_comments_handler()->on_cashout( _comment, *_current );
+        remove( *_current );
+      }
     }
     else
     {
@@ -2685,11 +2692,6 @@ void database::process_comment_cashout()
       }
     }
 
-    if( has_hardfork( HIVE_HARDFORK_0_19 ) )
-    {
-      get_comments_handler()->on_cashout( _current->get_comment_id(), _current->get_author_id(), _current->get_permlink() );
-      remove( *_current );
-    }
     _current = cidx.begin();
   }
   if( _benchmark_dumper.is_enabled() && count )
