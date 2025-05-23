@@ -2626,6 +2626,80 @@ paths:
                   }
                 ]
               }
+  database_api.list_proposal_votes:
+    post:
+      tags:
+        - database_api
+      summary: Returns all proposal votes, starting with the specified voter or proposal.id.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose content depends on the `order` parameter.
+          - If `order` is `by_voter_proposal`: `start` is an array with one element: voter account name string (e.g., `["alice"]`).
+          - If `order` is `by_proposal_voter`: `start` is an array with one element: proposal id (integer) (e.g., `[10]`).
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of results to return.
+        
+        - `order`: A string indicating the sorting order. Possible values:
+          - `by_voter_proposal` — order by voter for each proposal.
+          - `by_proposal_voter` — order by proposal id.
+        
+        - `order_direction`: A string determining the sort direction:
+          - `ascending`
+          - `descending`
+        
+        - `status`: A string filter for proposal status:
+          - `all`
+          - `inactive`
+          - `active`
+          - `expired`
+          - `votable`
+        
+        Examples:
+        
+        - `start = ["alice"]`, `limit = 10`, `order = "by_voter_proposal"`, `order_direction = "ascending"`, `status = "active"` — list 10 proposals with active status, ordered by voter ascending.
+        
+        - `start = [10]`, `limit = 1000`, `order = "by_proposal_voter"`, `order_direction = "ascending"`, `status = "votable"` — list 1000 votes on proposal 10, ordered by proposal id ascending.
+      operationId: list_proposal_votes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_proposal_votes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_proposal_votes_response'
+              example: {
+                "proposal_votes": [
+                  {
+                    "id": 186432,
+                    "proposal": {
+                      "creator": "leofinance",
+                      "daily_pay": {
+                        "amount": "695000",
+                        "nai": "@@000000013",
+                        "precision": 3
+                      },
+                      "end_date": "2025-12-31T00:00:00",
+                      "id": 332,
+                      "permlink": "proposal-to-grow-hive-through-strategic-partnerships-with-the-largest-crypto-ecosystems-g9v",
+                      "proposal_id": 332,
+                      "receiver": "leofinance",
+                      "start_date": "2025-01-15T00:00:00",
+                      "status": "active",
+                      "subject": "Open Source INLEO Technology and Grow Hive Through Strategic Partnerships",
+                      "total_votes": "49974944128860204"
+                    },
+                    "voter": "a-frobenius"
+                  }
+                ]
+              }
+
   database_api.verify_authority:
     post:
       tags:
@@ -3144,7 +3218,30 @@ components:
     list_limit_orders:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
-      $ref: '#/components/schemas/start_limit'    
+      $ref: '#/components/schemas/start_limit'   
+    list_proposal_votes:
+      type: object
+      properties:
+        start:
+          type: object
+          example: [10]
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: by_voter_proposal
+          description:
+        order_direction:
+          type: string
+          example: ascending
+          description:
+        status:
+          type: string
+          example: all
+          description:
     find_witnesses:
       type: object
       properties:
@@ -3341,6 +3438,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/proposals'
+    proposal_vote:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        voter:
+          type: string
+          example: "charlie"
+          description: >-
+            The name of the account that voted on the proposal.
+        proposal:
+          $ref: '#/components/schemas/proposals'
+    list_proposal_votes_response:
+      type: object
+      properties:
+        proposal_votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposal_vote'
     get_active_witnesses_response:
       type: object
       properties:
