@@ -2999,24 +2999,20 @@ paths:
         Parameters:
         
         - `start`: An array whose structure depends on the `order` parameter.
-          - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.
-          - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.
+          - For `by_withdraw_route`: `start` is an array of two values: `[from_account, to_account]`.
+          - For `by_destination`: `start` is an array of two values: `[to_account, route_id]`.
         
         - `limit`: An integer up to 1000, specifying the maximum number of results to return.
         
-        - `order`: A string indicating the sorting method. Possible values:
-          - `by_comment_voter` — order by comment voter.
-          - `by_voter_comment` — order by voter comment.
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_withdraw_route` — order by withdraw route.
+          - `by_destination` — order by destination.
         
         Examples:
         
-        - `start = ["", "", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries the first 10 votes, sorted by comment voter.
+        - `start = ["temp", ""]`, `limit = 10`, `order = "by_withdraw_route"` — queries the first 10 withdraw routes, sorted by withdraw route.
         
-        - `start = ["", "", ""]`, `limit = 10`, `order = "by_voter_comment"` — queries the first 10 votes, sorted by voter comment.
-        
-        - `start = ["xeroc", "vanteem-config", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.
-        
-        - `start = ["alice", "xeroc", "vanteem-config"]`, `limit = 10`, `order = "by_voter_comment"` — queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.
+        - `start = ["", 0]`, `limit = 10`, `order = "by_destination"` — queries the first 10 routes, sorted by destination.
       operationId: list_withdraw_vesting_routes
       requestBody:
         content:
@@ -3039,6 +3035,52 @@ paths:
                     "to_account": "luckdiver",
                     "percent": 10000,
                     "auto_vest": false
+                  }
+                ]
+              }
+  database_api.list_witness_votes:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of witness votes.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_account_witness`: `start` is an array of two values: `[account, witness]`.
+          - For `by_witness_account`: `start` is an array of two values: `[witness, account]`.
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of results to return.
+        
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_account_witness` — order by account witness.
+          - `by_witness_account` — order by witness account.
+        
+        Examples:
+        
+        - `start = ["", ""]`, `limit = 10`, `order = "by_account_witness"` — queries first 10 votes, sorted by account witness.
+        
+        - `start = ["", ""]`, `limit = 10`, `order = "by_witness_account"` — queries first 10 votes, sorted by witness account.
+      operationId: list_witness_votes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_witness_votes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_witness_votes_response'
+              example: {
+                "votes": [
+                  {
+                    "id": 428961,
+                    "witness": "aggroed",
+                    "account": "a-0magic"
                   }
                 ]
               }
@@ -3569,6 +3611,8 @@ components:
       $ref: '#/components/schemas/start_limit_order'
     list_withdraw_vesting_routes:
       $ref: '#/components/schemas/start_limit_order'
+    list_witness_votes:
+      $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
     start_limit_proposals:
@@ -3801,6 +3845,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/proposals'
+    witness_vote:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        witness:
+          type: string
+          example: "witness1"
+          description: >-
+            The name of the witness that was voted for.
+        account:
+          type: string
+          example: "alice"
+          description: >-
+            The name of the account that voted for the witness.
+    list_witness_votes_response:
+      type: object
+      properties:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/witness_vote'
     proposal_vote:
       type: object
       properties:
