@@ -2990,6 +2990,58 @@ paths:
                   }
                 ]
               }
+  database_api.list_withdraw_vesting_routes:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of vesting withdraw routes.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.
+          - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of results to return.
+        
+        - `order`: A string indicating the sorting method. Possible values:
+          - `by_comment_voter` — order by comment voter.
+          - `by_voter_comment` — order by voter comment.
+        
+        Examples:
+        
+        - `start = ["", "", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries the first 10 votes, sorted by comment voter.
+        
+        - `start = ["", "", ""]`, `limit = 10`, `order = "by_voter_comment"` — queries the first 10 votes, sorted by voter comment.
+        
+        - `start = ["xeroc", "vanteem-config", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.
+        
+        - `start = ["alice", "xeroc", "vanteem-config"]`, `limit = 10`, `order = "by_voter_comment"` — queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.
+      operationId: list_withdraw_vesting_routes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_withdraw_vesting_routes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_withdraw_vesting_routes_response'
+              example: {
+                "routes": [
+                  {
+                    "id": 39503,
+                    "from_account": "temperature",
+                    "to_account": "luckdiver",
+                    "percent": 10000,
+                    "auto_vest": false
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3514,6 +3566,8 @@ components:
     list_vesting_delegations:
       $ref: '#/components/schemas/start_limit_order'
     list_votes:
+      $ref: '#/components/schemas/start_limit_order'
+    list_withdraw_vesting_routes:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
@@ -4170,6 +4224,13 @@ components:
           description: >-
             The ID of the withdrawal route.
     find_withdraw_vesting_routes_response:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/withdraw_vesting_routes'
+    list_withdraw_vesting_routes_response:
       type: object
       properties:
         routes:
