@@ -2934,6 +2934,62 @@ paths:
                   }
                 ]
               }
+  database_api.list_votes:
+    post:
+      tags:
+        - database_api
+      summary: Returns all votes, starting with the specified voter and/or author and permlink.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.
+          - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of results to return.
+        
+        - `order`: A string indicating the sorting method. Possible values:
+          - `by_comment_voter` — order by comment voter.
+          - `by_voter_comment` — order by voter comment.
+        
+        Examples:
+        
+        - `start = ["", "", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries the first 10 votes, sorted by comment voter.
+        
+        - `start = ["", "", ""]`, `limit = 10`, `order = "by_voter_comment"` — queries the first 10 votes, sorted by voter comment.
+        
+        - `start = ["xeroc", "vanteem-config", ""]`, `limit = 10`, `order = "by_comment_voter"` — queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.
+        
+        - `start = ["alice", "xeroc", "vanteem-config"]`, `limit = 10`, `order = "by_voter_comment"` — queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.
+      operationId: list_votes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_votes'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_votes_response'
+              example: {
+                "votes": [
+                  {
+                    "id": 9,
+                    "voter": "dantheman",
+                    "author": "hiveio",
+                    "permlink": "firstpost",
+                    "weight": "32866333630",
+                    "rshares": 375241,
+                    "vote_percent": 100,
+                    "last_update": "2016-04-07T19:15:36",
+                    "num_changes": -1
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3456,6 +3512,8 @@ components:
     list_vesting_delegation_expirations:
       $ref: '#/components/schemas/start_limit_order'
     list_vesting_delegations:
+      $ref: '#/components/schemas/start_limit_order'
+    list_votes:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
@@ -4273,6 +4331,13 @@ components:
           description: >-
             The number of changes made to the vote.
     find_votes_response:
+      type: object
+      properties:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/vote'
+    list_votes_response:
       type: object
       properties:
         votes:
