@@ -2519,6 +2519,67 @@ paths:
                   }
                 ]
               }
+  database_api.list_limit_orders:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of limit orders. 
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_price`: `start` is an array of two values: `[price, order_type]`.
+          - For `by_account`: `start` is an array of two values: `[account, order_id]`.
+        
+        - `limit`: An integer specifying the maximum number of results to return; up to 1000.
+        
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_price` — order by price.
+          - `by_account` — order by account.
+        
+        Examples:
+        
+        - `start = [{"base": {"amount": "85405", "precision": 3, "nai": "@@000000021"}, "quote": {"amount": "17192", "precision": 3, "nai": "@@000000013"}}, 0]`, `limit = 10`, `order = "by_price"` — queries the first 10 requests, sorted by price.
+        
+        - `start = ["alice", 0]`, `limit = 10`, `order = "by_account"` — queries the first 10 requests, sorted by account.
+      operationId: list_limit_orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_limit_orders'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_limit_orders_response'
+              example: {
+                "orders": [
+                  {
+                    "id": 3155591,
+                    "created": "2018-12-05T06:34:21",
+                    "expiration": "2018-12-15T06:34:20",
+                    "seller": "teamsmooth-mm",
+                    "orderid": 2000,
+                    "for_sale": 197714,
+                    "sell_price": {
+                      "base": {
+                        "amount": "198513",
+                        "precision": 3,
+                        "nai": "@@000000021"
+                      },
+                      "quote": {
+                        "amount": "80000",
+                        "precision": 3,
+                        "nai": "@@000000013"
+                      }
+                    }
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3022,6 +3083,8 @@ components:
     list_escrows:
       $ref: '#/components/schemas/start_limit_order'
     list_hbd_conversion_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_limit_orders:
       $ref: '#/components/schemas/start_limit_order'    
     find_witnesses:
       type: object
@@ -3440,6 +3503,13 @@ components:
               description: >-
                 The quote asset of the order.
     find_limit_orders_response:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/orders'
+    list_limit_orders_response:
       type: object
       properties:
         orders:
