@@ -3173,6 +3173,28 @@ paths:
                   }
                 ]
               }
+  database_api.verify_account_authority:
+    post:
+      tags:
+        - database_api
+      summary: Returns true if the keys are valid for the specified account.
+      operationId: verify_account_authority
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/verify_account_authority'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verify_account_authority_response'
+              example: {
+                "valid": false
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3382,6 +3404,21 @@ components:
             type: string
           weight:
             type: integer
+    verify_account_authority:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account to verify.
+        signers:
+          type: array
+          items:
+            type: string
+          example: ["STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN"]
+          description: >-
+            An array of strings representing the keys to verify.
     comment:
       type: object
       properties:
@@ -5713,6 +5750,12 @@ components:
           example: true
           description: >-
             Indicates whether the transaction has all of the required signatures.
+    verify_account_authority_response:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
     auths:
       type: object
       properties:
