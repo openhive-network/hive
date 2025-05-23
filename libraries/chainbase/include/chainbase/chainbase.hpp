@@ -1046,7 +1046,7 @@ namespace chainbase {
       void wipe_indexes();
 
     public:
-      void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr, const bool wipe_shared_file = false );
+      void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr, const bool wipe_shared_file = false, const bool use_private_map = false );
       void close();
       void flush();
       void wipe( const bfs::path& dir );

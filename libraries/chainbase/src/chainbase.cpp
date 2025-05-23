@@ -205,7 +205,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
+  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const bool use_private_map )
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
@@ -241,7 +241,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str(),
                                       0, // Mapped size (0 means use existing file size)
                                       nullptr, // Extra map region
-                                      boost::interprocess::default_map_options | boost::interprocess::map_private // Use private mapping
+                                      use_private_map ? 
+                                        (boost::interprocess::default_map_options | boost::interprocess::map_private) : // Use private mapping
+                                        boost::interprocess::default_map_options // Use default mapping
                                       ) );
 
       auto env = _segment->find< environment_check >( "environment" );
@@ -263,10 +265,17 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _size_checker( shared_file_size );
       _file_size = shared_file_size;
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
-                                      abs_path.generic_string().c_str(), shared_file_size
+                                      abs_path.generic_string().c_str(), shared_file_size,
+                                      nullptr, // Extra map region
+                                      use_private_map ? 
+                                        (boost::interprocess::default_map_options | boost::interprocess::map_private) : // Use private mapping
+                                        boost::interprocess::default_map_options // Use default mapping
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
-      ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
+      ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}${private_mapping}", 
+           ( "abs_path", abs_path.generic_string() )
+           (shared_file_size)
+           ("private_mapping", use_private_map ? ", using private mapping" : "") );
     }
 
     auto env = _segment->find< environment_check >( "environment" );

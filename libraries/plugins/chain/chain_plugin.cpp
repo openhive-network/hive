@@ -994,12 +994,24 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
+    // Determine if we're running in CI by checking for CI environment variables
+    bool is_ci_environment = (std::getenv("CI") != nullptr) || (std::getenv("GITLAB_CI") != nullptr) || (std::getenv("GITHUB_ACTIONS") != nullptr);
+    
+    // Use private mapping in CI environments to avoid issues with shared memory
+    bool use_private_map = is_ci_environment;
+    
+    if (use_private_map) {
+      ilog("CI environment detected. Using private mapping for shared memory.");
+    }
+
     db.pre_open( db_open_args );
     db.with_write_lock([&]()
     {
       block_storage->open_and_init( bl_open_args, true/*read_only*/, &db );
     });
-    db.open( db_open_args );
+    
+    // Open database with private mapping if in CI environment
+    db.open( db_open_args, nullptr, nullptr, false, use_private_map );
 
     if( dump_memory_details )
     {
@@ -1654,7 +1666,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   }
 
   if (options.count("load-snapshot"))
-    my->load_snapshot = true;
+       my->load_snapshot = true;
 
   if( options.count( "flush-state-interval" ) )
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
