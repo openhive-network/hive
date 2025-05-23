@@ -25,12 +25,14 @@ set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
 DEFINE_WASM_TARGET_FOR( beekeeper_wasm
       TARGET_ENVIRONMENT "web"
+      COMPILE_OPTIONS -fwasm-exceptions
       LINK_LIBRARIES beekeeper_core idbfs.js
-      LINK_OPTIONS -sEXPORTED_RUNTIME_METHODS=["FS"]
+      LINK_OPTIONS -sEXPORTED_RUNTIME_METHODS=["FS"] -fwasm-exceptions
 )
 
 DEFINE_WASM_TARGET_FOR( beekeeper_wasm
       TARGET_ENVIRONMENT "node"
+      COMPILE_OPTIONS -fwasm-exceptions
       LINK_LIBRARIES beekeeper_core nodefs.js
-      LINK_OPTIONS -sEXPORTED_RUNTIME_METHODS=["FS"] -sNODERAWFS=1
+      LINK_OPTIONS -sEXPORTED_RUNTIME_METHODS=["FS"] -sNODERAWFS=1 -fwasm-exceptions
 )

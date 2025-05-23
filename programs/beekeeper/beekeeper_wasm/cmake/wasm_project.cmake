@@ -14,7 +14,7 @@ set(WASM_RUNTIME_COMPONENT_NAME "wasm_runtime_components")
 function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   set(options WASM_USE_FS)
   set(oneValueArgs TARGET_ENVIRONMENT)
-  set(multiValueArgs LINK_LIBRARIES LINK_OPTIONS)
+  set(multiValueArgs COMPILE_OPTIONS LINK_LIBRARIES LINK_OPTIONS)
   cmake_parse_arguments(PARSE_ARGV 0 arg
     "${options}" "${oneValueArgs}" "${multiValueArgs}"
   )
@@ -22,11 +22,13 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   # Override common options specific to exception handling for **WHOLE SET OF HIVE SPECIFIC MODULES**
   TARGET_COMPILE_OPTIONS( CommonBuildOptions INTERFACE
     -Oz
-    -fwasm-exceptions
+    -g
+    -v
   )
   TARGET_LINK_OPTIONS( CommonBuildOptions INTERFACE
     -Oz
-    -fwasm-exceptions
+    -g
+    -v
     -sEXPORT_EXCEPTION_HANDLING_HELPERS=1
     -sEXCEPTION_STACK_TRACES=1
     -sELIMINATE_DUPLICATE_FUNCTIONS=1
@@ -60,6 +62,10 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
     --minify=0 --emit-symbol-map -sENVIRONMENT="${WASM_ENV}"
     --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_common_name}.d.ts"
   )
+
+  if (arg_COMPILE_OPTIONS)
+    target_compile_options( ${exec_wasm_name} PUBLIC ${arg_COMPILE_OPTIONS})
+  endif()
 
   if (arg_LINK_OPTIONS)
     target_link_options( ${exec_wasm_name} PUBLIC ${arg_LINK_OPTIONS})
