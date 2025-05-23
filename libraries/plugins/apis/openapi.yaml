@@ -3219,6 +3219,31 @@ paths:
               example: {
                 "valid": false
               }
+  database_api.verify_signatures:
+    post:
+      tags:
+        - database_api
+      summary: This method validates if transaction was signed by person listed in required_owner, required_active or required_posting parameter.
+      description: |
+        This method validates if transaction was signed by person listed in required_owner, required_active or required_posting parameter. 
+        Hash is a mix of chain_id and transaction data.
+      operationId: verify_signatures
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/verify_signatures'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verify_signatures_response'
+              example: {
+                "valid": false
+              }
   network_broadcast_api.broadcast_transaction:
     post:
       tags:
@@ -3770,6 +3795,47 @@ components:
       $ref: '#/components/schemas/start_limit_proposals'
     list_proposal_votes:
       $ref: '#/components/schemas/start_limit_proposals'
+    verify_signatures: 
+      type: object
+      properties:
+        hash:
+          type: string
+          example: "0000000000000000000000000000000000000000000000000000000000000000"
+        signatures:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the signatures to verify.
+        required_owner:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required owner keys.
+        required_active:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required active keys.
+        required_posting:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required posting keys.
+        required_other:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required other keys.
     find_witnesses:
       type: object
       properties:
@@ -5751,6 +5817,12 @@ components:
           description: >-
             Indicates whether the transaction has all of the required signatures.
     verify_account_authority_response:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+    verify_signatures_response:
       type: object
       properties:
         valid:
