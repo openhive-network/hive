@@ -3084,6 +3084,95 @@ paths:
                   }
                 ]
               }
+  database_api.list_witnesses:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of witnesses.
+      description: |
+        Parameters:
+        
+        - `start`: An object whose structure depends on the `order` parameter.
+          - For `by_name`: `start` is an empty string or omitted.
+          - For `by_vote_name`: `start` is an array of two values: `[votes, account]`.
+          - For `by_schedule_time`: `start` is an array of two values: `[virtual_scheduled_time, account]`.
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of witnesses to return.
+        
+        - `order`: A string indicating the sorting criterion. Possible values:
+          - `by_name` — order by account name.
+          - `by_vote_name` — order by vote count and name.
+          - `by_schedule_time` — order by schedule time.
+        
+        Examples:
+        
+        - `start = ""`, `limit = 10`, `order = "by_name"` — queries first 10 witnesses, sorted by account name.
+        
+        - `start = [0, ""]`, `limit = 10`, `order = "by_vote_name"` — queries first 10 witnesses, sorted by votes.
+        
+        - `start = ["473718186844702107410533306", "alice"]`, `limit = 10`, `order = "by_schedule_time"` — queries first 10 witnesses, sorted by schedule.
+      operationId: list_witnesses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_witnesses'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_witnesses_response'
+              example: {
+                "witnesses": [
+                  {
+                    "available_witness_account_subsidies": 0,
+                    "created": "2016-04-30T12:27:12",
+                    "hardfork_time_vote": "2016-03-24T16:00:00",
+                    "hardfork_version_vote": "0.0.0",
+                    "hbd_exchange_rate": {
+                      "base": {
+                        "amount": "0",
+                        "nai": "@@000000021",
+                        "precision": 3
+                      },
+                      "quote": {
+                        "amount": "0",
+                        "nai": "@@000000021",
+                        "precision": 3
+                      }
+                    },
+                    "id": 6950,
+                    "last_aslot": 1063323,
+                    "last_confirmed_block_num": 1040423,
+                    "last_hbd_exchange_update": "1970-01-01T00:00:00",
+                    "last_work": "000000127cb0e335667f30100bc1a061175c2d789f808e0e9ac82ee70fa8e604",
+                    "owner": "a-0",
+                    "pow_worker": 0,
+                    "props": {
+                      "account_creation_fee": {
+                        "amount": "1",
+                        "nai": "@@000000021",
+                        "precision": 3
+                      },
+                      "account_subsidy_budget": 797,
+                      "account_subsidy_decay": 347321,
+                      "hbd_interest_rate": 1000,
+                      "maximum_block_size": 131072
+                    },
+                    "running_version": "0.0.0",
+                    "signing_key": "STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN",
+                    "total_missed": 0,
+                    "url": "",
+                    "virtual_last_update": "0",
+                    "virtual_position": "0",
+                    "virtual_scheduled_time": "340282366920938463463374607431768211455",
+                    "votes": 0
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3612,6 +3701,8 @@ components:
     list_withdraw_vesting_routes:
       $ref: '#/components/schemas/start_limit_order'
     list_witness_votes:
+      $ref: '#/components/schemas/start_limit_order'
+    list_witnesses:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
@@ -5562,7 +5653,14 @@ components:
     find_witnesses_response:
       type: object
       properties:
-        accounts:
+        witnesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/witness'
+    list_witnesses_response:
+      type: object
+      properties:
+        witnesses:
           type: array
           items:
             $ref: '#/components/schemas/witness'
