@@ -2467,6 +2467,58 @@ paths:
                   }
                 ]
               }   
+  database_api.list_hbd_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns the list of HBD conversion requests for an account.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_account`: `start` is an array of two values: `[account, request_id]`.
+          - For `by_conversion_date`: `start` is an array of two values: `[timestamp, request_id]`.
+        
+        - `limit`: An integer specifying the maximum number of results to return; up to 1000.
+        
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_account` — order by account name.
+          - `by_conversion_date` — order by conversion date.
+        
+        Examples:
+        
+        - `start = ["hiveio", 0]`, `limit = 10`, `order = "by_account"` — queries a conversion request for "hiveio", limited to 10 results, ordered by account name.
+        
+        - `start = ["2018-12-07T16:54:03", 0]`, `limit = 10`, `order = "by_conversion_date"` — queries a conversion request from the specified date, limited to 10 results, ordered by conversion date.
+      operationId: list_hbd_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_hbd_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_hbd_conversion_requests_response'
+              example: {
+                "requests": [
+                  {
+                    "id": 75677,
+                    "owner": "adenijiadeshina",
+                    "requestid": 3,
+                    "amount": {
+                      "amount": "311",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "conversion_date": "2018-12-06T20:42:42"
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -2969,6 +3021,8 @@ components:
       $ref: '#/components/schemas/start_limit_order'
     list_escrows:
       $ref: '#/components/schemas/start_limit_order'
+    list_hbd_conversion_requests:
+      $ref: '#/components/schemas/start_limit_order'    
     find_witnesses:
       type: object
       properties:
@@ -4820,6 +4874,13 @@ components:
           type: integer
           example: 3205281453
     find_hbd_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/hbd_conversion'
+    list_hbd_conversion_requests_response:
       type: object
       properties:
         requests:
