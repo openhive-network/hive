@@ -2836,6 +2836,57 @@ paths:
                   }
                 ]
               }
+  database_api.list_vesting_delegation_expirations:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of vesting delegation expirations.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_expiration`: `start` is an array with two values: `[timestamp, expiration_id]`.
+          - For `by_account_expiration`: `start` is an array with three values: `[account, timestamp, expiration_id]`.
+        
+        - `limit`: An integer up to 1000; specifies the maximum number of results to return.
+        
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_expiration` — order by expiration.
+          - `by_account_expiration` — order by account expiration.
+        
+        Examples:
+        
+        - `start = ["1970-01-01T00:00:00", 0]`, `limit = 10`, `order = "by_expiration"` — queries delegations, limited to 10, ordered by expiration.
+        
+        - `start = ["alice", "1970-01-01T00:00:00", 0]`, `limit = 10`, `order = "by_account_expiration"` — queries delegations from this date, limited to 10, ordered by account expiration.
+      operationId: list_vesting_delegation_expirations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_vesting_delegation_expirations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_vesting_delegation_expirations_response'
+              example: {
+                "delegations": [
+                  {
+                    "delegator": "jacobtothe",
+                    "expiration": "2025-05-23T10:39:24",
+                    "id": 5952098,
+                    "vesting_shares": {
+                      "amount": "336289000182",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    }
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3326,7 +3377,7 @@ components:
           description:
         order:
           type: string
-          example: by_account
+          example: order_name
           description:
     start_limit:
       type: object
@@ -3354,6 +3405,8 @@ components:
     list_limit_orders:
       $ref: '#/components/schemas/start_limit_order'
     list_savings_withdrawals:
+      $ref: '#/components/schemas/start_limit_order'
+    list_vesting_delegation_expirations:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
@@ -3882,6 +3935,13 @@ components:
       type: object
       properties:
         expirations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation_expirations'
+    list_vesting_delegation_expirations_response:
+      type: object
+      properties:
+        delegations:
           type: array
           items:
             $ref: '#/components/schemas/vesting_delegation_expirations'
