@@ -816,7 +816,7 @@ namespace chain {
 
       std::optional<time_point_sec> _current_timestamp;
 
-      hive::chain::comments_handler::ptr _comments_handler;
+      comments_handler::ptr         _comments_handler;
 
     public:
 
@@ -828,12 +828,12 @@ namespace chain {
           return get_dynamic_global_properties().time;
       }
 
-      void set_comments_handler( hive::chain::comments_handler::ptr obj )
+      void set_comments_handler( comments_handler::ptr obj )
       {
         _comments_handler = obj;
       }
 
-      hive::chain::comments_handler::ptr get_comments_handler() const
+      comments_handler::ptr get_comments_handler() const
       {
         FC_ASSERT( _comments_handler );
         return _comments_handler;
