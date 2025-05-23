@@ -1034,7 +1034,15 @@ namespace chainbase {
     // Forward declaration and friend class to allow access to _segment for memory locking
     friend class hive::plugins::chain::chain_plugin_impl;
     
-    private:
+  public:
+    /**
+     * Get the underlying shared memory segment for memory locking operations
+     */
+    const bip::managed_mapped_file* get_segment() const {
+      return _segment.get();
+    }
+    
+  private:
       class abstract_index_type
       {
         public:

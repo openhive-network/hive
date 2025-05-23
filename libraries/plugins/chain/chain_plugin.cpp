@@ -1934,8 +1934,8 @@ void chain_plugin::plugin_startup()
     if (my->lock_shared_memory) {
 #ifdef __linux__
       ilog("Attempting to lock shared memory in RAM during replay...");
-      // Access segment directly through the chainbase database
-      if (chainbase::memory_lock::lock_memory(my->db._segment.get())) {
+      // Use the getter method to access the segment
+      if (chainbase::memory_lock::lock_memory(my->db.get_segment())) {
         memory_locked = true;
         ilog("Successfully locked shared memory in RAM");
       } else {
@@ -1952,7 +1952,7 @@ void chain_plugin::plugin_startup()
     if (memory_locked) {
 #ifdef __linux__
       ilog("Unlocking shared memory after replay...");
-      if (chainbase::memory_lock::unlock_memory(my->db._segment.get())) {
+      if (chainbase::memory_lock::unlock_memory(my->db.get_segment())) {
         ilog("Successfully unlocked shared memory");
       } else {
         wlog("Failed to unlock shared memory. This may affect system performance.");
