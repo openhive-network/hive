@@ -2699,7 +2699,85 @@ paths:
                   }
                 ]
               }
+  database_api.list_proposals:
+    post:
+      tags:
+        - database_api
+      summary: Returns all proposals, starting with the specified creator or start date.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose content depends on the `order` parameter.
+          - For `by_creator`: `start` is an array with one element: creator account name string (e.g., `[""]`).
+          - For `by_start_date`: `start` is an array with one element: start date string (e.g., `["2019-08-07T16:54:03"]`).
+          - For `by_end_date`: `start` is an array with one element: end date string.
+          - For `by_total_votes`: `start` is an array with one element: total votes (integer).
 
+        - `limit`: An integer up to 1000, specifying the maximum number of proposals to return.
+
+        - `order`: A string indicating the ordering criterion. Possible values:
+          - `by_creator` — order by proposal creator.
+          - `by_start_date` — order by proposal start date.
+          - `by_end_date` — order by proposal end date.
+          - `by_total_votes` — order by total votes.
+
+        - `order_direction`: A string, either `ascending` or `descending`.
+
+        - `status`: A string filter for proposal status:
+          - `all`
+          - `inactive`
+          - `active`
+          - `expired`
+          - `votable`
+
+        - `last_id` (optional): The ID of the last object from the previous page, used to paginate the next set of results.
+
+        Examples:
+        
+        - `start = [""]`, `limit = 10`, `order = "by_creator"`, `order_direction = "ascending"`, `status = "active"` — list 10 active proposals ordered by creator.
+        
+        - `start = ["2019-08-07T16:54:03"]`, `limit = 1000`, `order = "by_start_date"`, `order_direction = "ascending"`, `status = "inactive"` — list 1000 proposals starting from the specified date, ordered by start date.
+        
+        - `start = ["a"]`, `limit = 1`, `order = "by_creator"`, `order_direction = "ascending"`, `status = "expired"` — list 1 expired proposal with creator starting with "a".
+        
+        - `start = ["alice"]`, `limit = 10`, `order = "by_creator"`, `order_direction = "ascending"`, `status = "all"` — list 10 proposals with any status, ordered by creator.
+        
+        - `start = [10]`, `limit = 1000`, `order = "by_total_votes"`, `order_direction = "ascending"`, `status = "votable"` — list 1000 votable proposals with at least 10 votes, ordered by total votes.
+      operationId: list_proposals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_proposals'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_proposals_response'
+              example: {
+                "proposals": [
+                  {
+                    "id": 0,
+                    "proposal_id": "1103806595072",
+                    "creator": "alice",
+                    "receiver": "bob",
+                    "start_date": "2019-07-01T00:00:00",
+                    "end_date": "2019-08-01T23:59:59",
+                    "daily_pay": {
+                      "amount": "4800000",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "subject": "My Proposal",
+                    "permlink": "creator-proposal-permlink",
+                    "total_votes": "77351826710",
+                    "status": "active"
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3219,7 +3297,7 @@ components:
       $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
-    list_proposal_votes:
+    start_limit_proposals:
       type: object
       properties:
         start:
@@ -3242,6 +3320,10 @@ components:
           type: string
           example: all
           description:
+    list_proposals:
+      $ref: '#/components/schemas/start_limit_proposals'
+    list_proposal_votes:
+      $ref: '#/components/schemas/start_limit_proposals'
     find_witnesses:
       type: object
       properties:
@@ -3432,6 +3514,13 @@ components:
           description: >-
             The status of the proposal.
     find_proposals_response:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposals'
+    list_proposals_response:
       type: object
       properties:
         proposals:
