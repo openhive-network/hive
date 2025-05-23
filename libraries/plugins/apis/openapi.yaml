@@ -2399,6 +2399,74 @@ paths:
               example: {
                 "requests": []
               }
+  database_api.list_escrows:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of escrows.
+      description: |
+        Parameters:
+        
+        - `start`: An array whose structure depends on the `order` parameter.
+          - For `by_from_id`: `start` is an array of two values: `[account, escrow_id]`.
+          - For `by_ratification_deadline`: `start` is an array of three values: `[is_approved, timestamp, escrow_id]`.
+        
+        - `limit`: An integer specifying the maximum number of requests to return; up to 1000.
+        
+        - `order`: A string indicating the sorting criteria. Possible values:
+          - `by_from_id` — sort by ID.
+          - `by_ratification_deadline` — sort by ratification deadline.
+        
+        Examples:
+        
+        - `start = ["alice", 99]`, `limit = 10`, `order = "by_from_id"` — queries the first 10 requests, sorted by ID.
+        
+        - `start = [true, "1960-01-01T00:00:00", 99]`, `limit = 10`, `order = "by_ratification_deadline"` — queries the first 10 requests, sorted by ratification deadline.
+      operationId: list_escrows
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_escrows'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_escrows_response'
+              example: {
+                "escrows": [
+                  {
+                    "id": 158,
+                    "escrow_id": 1,
+                    "from": "addicttolife",
+                    "to": "fundition.help",
+                    "agent": "ongame",
+                    "ratification_deadline": "2018-11-23T17:31:26",
+                    "escrow_expiration": "2018-11-24T17:31:26",
+                    "hbd_balance": {
+                      "amount": "0",
+                      "precision": 3,
+                      "nai": "@@000000013"
+                    },
+                    "hive_balance": {
+                      "amount": "4832",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "pending_fee": {
+                      "amount": "0",
+                      "precision": 3,
+                      "nai": "@@000000021"
+                    },
+                    "to_approved": true,
+                    "agent_approved": true,
+                    "disputed": false
+                  }
+                ]
+              }   
   database_api.verify_authority:
     post:
       tags:
@@ -2898,6 +2966,8 @@ components:
     list_collateralized_conversion_requests:
       $ref: '#/components/schemas/start_limit_order'
     list_decline_voting_rights_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_escrows:
       $ref: '#/components/schemas/start_limit_order'
     find_witnesses:
       type: object
@@ -3416,6 +3486,13 @@ components:
           description: >-
             Indicates if the escrow is disputed.
     find_escrows_response:
+      type: object
+      properties:
+        escrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/escrow'
+    list_escrows_response:
       type: object
       properties:
         escrows:
