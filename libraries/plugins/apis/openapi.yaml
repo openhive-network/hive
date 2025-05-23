@@ -2337,6 +2337,28 @@ paths:
                   }
                 ]
               }
+  database_api.list_collateralized_conversion_requests:
+    post:
+      tags:
+        - database_api
+      summary: Returns objects corresponding with collateralized_convert operations.
+      operationId: list_collateralized_conversion_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_collateralized_conversion_requests'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_collateralized_conversion_requests_response'
+              example: {
+                "requests": []
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -2670,6 +2692,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/find_collateralized_conversion'
+    list_collateralized_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_collateralized_conversion'
     find_account_recovery:
       type: object
       properties:
@@ -2825,6 +2854,8 @@ components:
     list_account_recovery_requests:
       $ref: '#/components/schemas/start_limit_order'
     list_change_recovery_account_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_collateralized_conversion_requests:
       $ref: '#/components/schemas/start_limit_order'
     find_witnesses:
       type: object
