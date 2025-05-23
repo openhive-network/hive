@@ -6,34 +6,35 @@
 
 namespace hive { namespace chain {
 
-  class comment
+class comment
+{
+  const comment_object*           ptr = nullptr;
+  std::shared_ptr<comment_object> external;
+
+public:
+  comment(){}
+  comment( const comment_object* from_shm ) : ptr( from_shm ) {}
+  comment( const std::shared_ptr<comment_object>& from_archive )
+    : ptr( from_archive.get() ), external( from_archive ) {}
+
+  const comment_object::id_type get_id() const { return ptr->get_id(); }
+
+  const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const
   {
-    private:
+    return ptr->get_author_and_permlink_hash();
+  }
 
-      const comment_object*           shm = nullptr;
-      std::shared_ptr<comment_object> external;
+  const comment_id_type get_parent_id() const { return ptr->get_parent_id(); }
 
-    public:
+  const bool is_root() const { return ptr->is_root(); }
 
-      comment(){}
-      comment( const comment_object* shm );
-      comment( const std::shared_ptr<comment_object>& external );
+  const uint16_t get_depth() const { return ptr->get_depth(); }
 
-      const comment_object::id_type get_id() const;
+  operator bool() const { return ptr != nullptr; }
 
-      const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const;
-
-      const comment_id_type get_parent_id() const;
-
-      const bool is_root() const;
-
-      const uint16_t get_depth() const;
-
-      operator bool() const;
-
-      const comment_object& operator*() const;
-
-  };
+  const comment_object& operator*() const { return *ptr; }
+  const comment_object* get() const { return ptr; }
+};
 
 
 } } // hive::chain
