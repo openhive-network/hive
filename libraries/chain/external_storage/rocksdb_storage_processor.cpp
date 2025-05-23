@@ -27,31 +27,27 @@ rocksdb_storage_processor::~rocksdb_storage_processor()
 {
 }
 
-void rocksdb_storage_processor::on_cashout( const comment_id_type& comment_id, const account_id_type& account_id, const std::string& permlink )
+void rocksdb_storage_processor::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
-  auto& _account = db.get_account( account_id );
-  auto _found = db.find_comment( comment_id );
-
-  FC_ASSERT( _found, "Comment ${author}/${permlink} has to exist", ("permlink", permlink)("author", _account.get_name()) );
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
-  auto _vfound = _volatile_idx.find( _found->get_author_and_permlink_hash() );
-
-  if( _vfound != _volatile_idx.end() )
-    return;
+  FC_ASSERT( _volatile_idx.find( _comment.get_author_and_permlink_hash() ) == _volatile_idx.end(),
+    "Incorrect duplicate archiving of the same comment" ); //ABW: because volatile_comment_index is under undo, this should never happen
 
 #ifdef DBG_INFO
+  auto& _account = db.get_account( _comment_cashout.get_author_id() );
   ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with author/permlink: ${author}/${permlink}",
-  ("hash", comment_object::compute_author_and_permlink_hash( _account.get_id(), permlink ))
-  ("permlink", permlink)("author", _account.get_name())("head", db.head_block_num())("lib", db.get_last_irreversible_block_num()) );
+    ( "head", db.head_block_num() )( "lib", db.get_last_irreversible_block_num() )
+    ( "hash", _comment.get_author_and_permlink_hash() )
+    ( "author", _account.get_name() )( "permlink", _comment_cashout.get_permlink() ) );
 #endif
 
   db.create< volatile_comment_object >( [&]( volatile_comment_object& o )
   {
-    o.comment_id      = _found->get_id();
-    o.parent_comment  = _found->get_parent_id();
-    o.depth           = _found->get_depth();
-    o.set_author_and_permlink_hash( _found->get_author_and_permlink_hash() );
+    o.comment_id      = _comment.get_id();
+    o.parent_comment  = _comment.get_parent_id();
+    o.depth           = _comment.get_depth();
+    o.set_author_and_permlink_hash( _comment.get_author_and_permlink_hash() );
 
     o.block_number    = db.head_block_num();
   });
