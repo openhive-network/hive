@@ -994,11 +994,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       validate_permlink_0_1( o.permlink );
     }
 
-    const auto& new_comment = _db.create< comment_object >(
-                                                        auth, o.permlink,
-                                                        parent ? parent.get_id() : comment_id_type::null_id(),
-                                                        parent ? parent.get_depth() + 1 : 0
-                                                      );
+    const auto& new_comment = _db.create< comment_object >( auth, o.permlink, parent.get() );
 
     fc::time_point_sec cashout_time;
     if( _db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )

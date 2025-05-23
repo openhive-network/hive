@@ -30,10 +30,10 @@ namespace hive { namespace chain {
       template< typename Allocator >
       comment_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _author, const std::string& _permlink,
-        const comment_id_type& _parent_comment, uint16_t _depth );
+        const comment_object* _parent_comment );
 
       comment_object( uint64_t _id, const comment_id_type& parent_comment,
-                      const author_and_permlink_hash_type&  author_and_permlink_hash, uint16_t depth );
+        const author_and_permlink_hash_type& author_and_permlink_hash, uint16_t depth );
 
       //returns comment identification hash
       const author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
@@ -64,16 +64,26 @@ namespace hive { namespace chain {
   template< typename Allocator >
   inline comment_object::comment_object( allocator< Allocator > a, uint64_t _id,
     const account_object& _author, const std::string& _permlink,
-    const comment_id_type& _parent_comment, uint16_t _depth
+    const comment_object* _parent_comment
   )
-    : id ( _id ), parent_comment( _parent_comment ), depth( _depth )
+    : id ( _id )
   {
     author_and_permlink_hash = compute_author_and_permlink_hash( _author.get_id(), _permlink );
+
+    if( _parent_comment != nullptr )
+    {
+      parent_comment = _parent_comment->get_id();
+      depth = _parent_comment->get_depth() + 1;
+    }
+    else
+    {
+      parent_comment = comment_id_type::null_id();
+    }
   }
 
   inline comment_object::comment_object( uint64_t _id, const comment_id_type& _parent_comment,
-                  const author_and_permlink_hash_type&  _author_and_permlink_hash, uint16_t _depth )
-                  : id ( _id ), parent_comment( _parent_comment ), author_and_permlink_hash( _author_and_permlink_hash ), depth( _depth )
+    const author_and_permlink_hash_type& _author_and_permlink_hash, uint16_t _depth )
+  : id ( _id ), parent_comment( _parent_comment ), author_and_permlink_hash( _author_and_permlink_hash ), depth( _depth )
   {
   }
 
