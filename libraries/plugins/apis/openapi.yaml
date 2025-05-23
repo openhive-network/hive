@@ -2887,6 +2887,53 @@ paths:
                   }
                 ]
               }
+  database_api.list_vesting_delegations:
+    post:
+      tags:
+        - database_api
+      summary: Returns a list of vesting delegations. 
+      description: |
+        Parameters:
+        
+        - `start`: An array with two values: `[delegator, delegatee]`.
+          - Example: `["", ""]` — starts from the beginning for delegations between any delegator and delegatee.
+        
+        - `limit`: An integer up to 1000, specifying the maximum number of results to return.
+        
+        - `order`: A string with value `"by_delegation"`, indicating results are ordered by delegation.
+        
+        Example:
+        
+        - `start = ["", ""]`, `limit = 10`, `order = "by_delegation"` — queries delegations, limited to 10 results, ordered by delegation.
+      operationId: list_vesting_delegations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_vesting_delegations'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_vesting_delegations_response'
+              example: {
+                "delegations": [
+                  {
+                    "id": 554317,
+                    "delegator": "a-0-0-0",
+                    "delegatee": "a-0-0",
+                    "vesting_shares": {
+                      "amount": "6141067173",
+                      "precision": 6,
+                      "nai": "@@000000037"
+                    },
+                    "min_delegation_time": "2018-01-24T22:23:54"
+                  }
+                ]
+              }
   database_api.verify_authority:
     post:
       tags:
@@ -3408,6 +3455,8 @@ components:
       $ref: '#/components/schemas/start_limit_order'
     list_vesting_delegation_expirations:
       $ref: '#/components/schemas/start_limit_order'
+    list_vesting_delegations:
+      $ref: '#/components/schemas/start_limit_order'
     list_owner_histories:
       $ref: '#/components/schemas/start_limit'   
     start_limit_proposals:
@@ -3846,6 +3895,13 @@ components:
           description: >-
             The amount of vesting shares delegated.
     find_vesting_delegations_response:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation'
+    list_vesting_delegations_response:
       type: object
       properties:
         delegations:
