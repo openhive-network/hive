@@ -427,10 +427,8 @@ comment database::get_comment( const account_id_type& author, const shared_strin
 
 comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  const account_object* _account = find_account( author );
-  FC_ASSERT( _account, "Comment with `name`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
-
-  return get_comments_handler()->get_comment( _account->get_id(), to_string( permlink ), true /*comment_is_required*/ );
+  const account_object& _account = get_account( author );
+  return get_comments_handler()->get_comment( _account.get_id(), to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
@@ -457,10 +455,8 @@ comment database::get_comment( const account_id_type& author, const string& perm
 
 comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
-  const account_object* _account = find_account( author );
-  FC_ASSERT( _account != nullptr, "Comment with `name`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
-
-  return get_comments_handler()->get_comment( _account->get_id(), permlink, true /*comment_is_required*/ );
+  const account_object& _account = get_account( author );
+  return get_comments_handler()->get_comment( _account.get_id(), permlink, true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const string& permlink )const
