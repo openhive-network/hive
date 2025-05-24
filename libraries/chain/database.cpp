@@ -3739,6 +3739,7 @@ void database::init_genesis()
 
 void database::set_flush_interval( uint32_t flush_blocks )
 {
+  ilog( "Setting database flush interval to ${b} blocks", ("b", flush_blocks) );
   _flush_blocks = flush_blocks;
   _next_flush_block = 0;
 }
@@ -3788,7 +3789,7 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
     if( _next_flush_block == block_num )
     {
       _next_flush_block = 0;
-      //ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
+      ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
       chainbase::database::flush();
     }
   }
