@@ -25,12 +25,7 @@ struct vm_dirty_params {
     static bool values_saved;
 };
 
-// Initialize static members
-long vm_dirty_params::dirty_bytes = 0;
-long vm_dirty_params::dirty_background_bytes = 0;
-long vm_dirty_params::dirty_expire_centisecs = 0;
-long vm_dirty_params::swappiness = 0;
-bool vm_dirty_params::values_saved = false;
+// Static member declarations (definitions moved to .cpp file)
 
 /**
  * Utility class to lock a memory-mapped file in RAM to prevent swapping
@@ -74,8 +69,7 @@ public:
         // Set VM dirty page parameters to match the locked memory size
         // This reduces writebacks when memory is locked
         try {
-            // Check for container environment paths
-            const char* proc_path = "/proc/sys/vm/dirty_bytes";
+            // Check for container environment path
             const char* host_proc_path = "/host-proc/sys/vm/dirty_bytes";
             
             // Check if we're in a container with mapped host proc

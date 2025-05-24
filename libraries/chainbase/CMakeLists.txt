@@ -50,7 +50,7 @@ endif()
 
 
 file(GLOB HEADERS "include/chainbase/*.hpp" "include/chainbase/util/*.hpp")
-add_library( chainbase STATIC src/chainbase.cpp ${HEADERS} )
+add_library( chainbase STATIC src/chainbase.cpp src/memory_ops.cpp ${HEADERS} )
 
 target_link_libraries( chainbase PUBLIC hive_protocol fc)
 
