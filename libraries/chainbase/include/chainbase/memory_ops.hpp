@@ -61,7 +61,7 @@ public:
         void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
         // Add the offset to the size to account for alignment
         size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
-        
+        ilog("Setting VM parameters to decrease writebacks");
         // Set VM dirty page parameters to match the locked memory size
         // This reduces writebacks when memory is locked
         try {
@@ -233,6 +233,10 @@ public:
                 int ret4 = std::system(set_swappiness_cmd.c_str());
                 
                 success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                
+                // Add more detailed error reporting for the system calls:
+                wlog("System call '${cmd}' failed with return code ${ret}", 
+                    ("cmd", set_dirty_bg_cmd)("ret", ret1));
             }
             
             if (success) {
