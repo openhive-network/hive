@@ -22,6 +22,8 @@ struct vm_dirty_params {
     static long dirty_background_bytes;
     static long dirty_expire_centisecs;
     static long swappiness;
+    static long dirty_ratio;
+    static long dirty_background_ratio;
     static bool values_saved;
 };
 
@@ -34,15 +36,15 @@ struct vm_dirty_params {
 class memory_lock {
 public:
     /**
-     * Lock the memory region of a mapped file in RAM
+     * Set VM dirty page parameters to optimize for memory locking
      * 
-     * @param segment The boost::interprocess::managed_mapped_file to lock
-     * @return true if locking was successful, false otherwise
+     * @param segment The boost::interprocess::managed_mapped_file to use for size calculation
+     * @return true if setting parameters was successful, false otherwise
      */
-    static bool lock_memory(const boost::interprocess::managed_mapped_file* segment) {
+    static bool set_vm_parameters(const boost::interprocess::managed_mapped_file* segment) {
 #ifdef __linux__
         if (!segment) {
-            ilog("Cannot lock null memory segment");
+            ilog("Cannot set VM parameters for null memory segment");
             return false;
         }
 
@@ -52,19 +54,13 @@ public:
         if (addr == nullptr || size == 0) {
             ilog("Invalid memory segment address or size");
             return false;
-        }          ilog("Locking ${size} bytes of shared memory at address ${addr_str} in RAM",
-            ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
+        }
             
         long page_size = sysconf(_SC_PAGESIZE);
-        // Align address to page boundary (mlock requires page-aligned addresses)
+        // Align address to page boundary
         void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
         // Add the offset to the size to account for alignment
         size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
-        
-        if (mlock(aligned_addr, aligned_size) != 0) {
-            elog("Failed to lock memory: ${error}", ("error", strerror(errno)));
-            return false;
-        }
         
         // Set VM dirty page parameters to match the locked memory size
         // This reduces writebacks when memory is locked
@@ -127,12 +123,32 @@ public:
                         swappiness_file.close();
                     }
                     
+                    // Read dirty_ratio
+                    {
+                        std::ifstream dirty_ratio_file(path_prefix + "dirty_ratio");
+                        if (dirty_ratio_file.good() && std::getline(dirty_ratio_file, line)) {
+                            vm_dirty_params::dirty_ratio = std::stol(line);
+                        }
+                        dirty_ratio_file.close();
+                    }
+                    
+                    // Read dirty_background_ratio
+                    {
+                        std::ifstream dirty_bg_ratio_file(path_prefix + "dirty_background_ratio");
+                        if (dirty_bg_ratio_file.good() && std::getline(dirty_bg_ratio_file, line)) {
+                            vm_dirty_params::dirty_background_ratio = std::stol(line);
+                        }
+                        dirty_bg_ratio_file.close();
+                    }
+                    
                     vm_dirty_params::values_saved = true;
-                    ilog("Saved original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}",
+                    ilog("Saved original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}",
                         ("db", vm_dirty_params::dirty_bytes)
                         ("dbg", vm_dirty_params::dirty_background_bytes)
                         ("dec", vm_dirty_params::dirty_expire_centisecs)
-                        ("swap", vm_dirty_params::swappiness));
+                        ("swap", vm_dirty_params::swappiness)
+                        ("dr", vm_dirty_params::dirty_ratio)
+                        ("dbr", vm_dirty_params::dirty_background_ratio));
                 } catch (const std::exception& e) {
                     wlog("Failed to read original VM dirty page parameters: ${e}", ("e", e.what()));
                 }
@@ -210,8 +226,8 @@ public:
                 // Set vm.swappiness to 10
                 std::string set_swappiness_cmd = cmd_prefix + "10" + 
                                               cmd_suffix + "swappiness";
-                
-                int ret1 = std::system(set_dirty_bg_cmd.c_str());
+
+                                              int ret1 = std::system(set_dirty_bg_cmd.c_str());
                 int ret2 = std::system(set_dirty_cmd.c_str());
                 int ret3 = std::system(set_expire_cmd.c_str());
                 int ret4 = std::system(set_swappiness_cmd.c_str());
@@ -222,55 +238,28 @@ public:
             if (success) {
                 ilog("Set vm.dirty_background_bytes=${bg_size}, vm.dirty_bytes=${size} (10% above), vm.dirty_expire_centisecs=300000, vm.swappiness=10", 
                     ("bg_size", aligned_size)("size", dirty_bytes_value));
+                return true;
             } else {
                 wlog("Failed to set VM dirty page parameters. Container may need --privileged or --cap-add=SYS_ADMIN");
+                return false;
             }
         } catch (const std::exception& e) {
             wlog("Exception while setting VM dirty page parameters: ${e}", ("e", e.what()));
+            return false;
         }
-        
-        ilog("Successfully locked ${size} bytes of shared memory at address ${addr_str} in RAM", 
-            ("size", aligned_size)("addr_str", std::to_string((uintptr_t)aligned_addr)));
-        return true;
 #else
-        ilog("Memory locking is only supported on Linux systems");
+        wlog("VM parameter modification is only supported on Linux systems");
         return false;
 #endif
     }
 
     /**
-     * Unlock previously locked memory region
+     * Restore original VM dirty page parameters
      * 
-     * @param segment The boost::interprocess::managed_mapped_file to unlock
-     * @return true if unlocking was successful, false otherwise
+     * @return true if restoring parameters was successful, false otherwise
      */
-    static bool unlock_memory(const boost::interprocess::managed_mapped_file* segment) {
+    static bool restore_vm_parameters() {
 #ifdef __linux__
-        if (!segment) {
-            ilog("Cannot unlock null memory segment");
-            return false;
-        }
-
-        void* addr = segment->get_address();
-        size_t size = segment->get_size();
-        
-        if (addr == nullptr || size == 0) {
-            ilog("Invalid memory segment address or size");
-            return false;
-        }          ilog("Unlocking ${size} bytes of shared memory at address ${addr_str}",
-            ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
-            
-        long page_size = sysconf(_SC_PAGESIZE);
-        // Align address to page boundary (munlock requires page-aligned addresses)
-        void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
-        // Add the offset to the size to account for alignment
-        size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
-        
-        if (munlock(aligned_addr, aligned_size) != 0) {
-            elog("Failed to unlock memory: ${error}", ("error", strerror(errno)));
-            return false;
-        }
-        
         // Restore original VM dirty page parameters if we previously saved them
         if (vm_dirty_params::values_saved) {
             try {
@@ -337,6 +326,28 @@ public:
                     }
                 }
                 
+                // Restore dirty_ratio
+                {
+                    std::ofstream dirty_ratio_file(path_prefix + "dirty_ratio");
+                    if (dirty_ratio_file.good()) {
+                        dirty_ratio_file << vm_dirty_params::dirty_ratio;
+                        dirty_ratio_file.close();
+                    } else {
+                        success = false;
+                    }
+                }
+                
+                // Restore dirty_background_ratio
+                {
+                    std::ofstream dirty_bg_ratio_file(path_prefix + "dirty_background_ratio");
+                    if (dirty_bg_ratio_file.good()) {
+                        dirty_bg_ratio_file << vm_dirty_params::dirty_background_ratio;
+                        dirty_bg_ratio_file.close();
+                    } else {
+                        success = false;
+                    }
+                }
+                
                 // Fall back to system() calls if direct file writing failed
                 if (!success) {
                     std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
@@ -351,30 +362,134 @@ public:
                                               cmd_suffix + "dirty_bytes";
                     std::string set_swappiness_cmd = cmd_prefix + std::to_string(vm_dirty_params::swappiness) + 
                                                    cmd_suffix + "swappiness";
+                    std::string set_dirty_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_ratio) + 
+                                                      cmd_suffix + "dirty_ratio";
+                    std::string set_dirty_bg_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
+                                                          cmd_suffix + "dirty_background_ratio";
                     
                     int ret1 = std::system(set_expire_cmd.c_str());
                     int ret2 = std::system(set_dirty_bg_cmd.c_str());
                     int ret3 = std::system(set_dirty_cmd.c_str());
                     int ret4 = std::system(set_swappiness_cmd.c_str());
+                    int ret5 = std::system(set_dirty_ratio_cmd.c_str());
+                    int ret6 = std::system(set_dirty_bg_ratio_cmd.c_str());
                     
-                    success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                    success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0 && ret5 == 0 && ret6 == 0);
                 }
                 
                 if (success) {
-                    ilog("Restored original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}",
+                    ilog("Restored original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}",
                         ("db", vm_dirty_params::dirty_bytes)
                         ("dbg", vm_dirty_params::dirty_background_bytes)
                         ("dec", vm_dirty_params::dirty_expire_centisecs)
-                        ("swap", vm_dirty_params::swappiness));
+                        ("swap", vm_dirty_params::swappiness)
+                        ("dr", vm_dirty_params::dirty_ratio)
+                        ("dbr", vm_dirty_params::dirty_background_ratio));
                     
                     // Reset the saved flag
                     vm_dirty_params::values_saved = false;
+                    return true;
                 } else {
                     wlog("Failed to restore original VM dirty page parameters");
+                    return false;
                 }
             } catch (const std::exception& e) {
                 wlog("Exception while restoring VM dirty page parameters: ${e}", ("e", e.what()));
+                return false;
             }
+        }
+        return true; // If we never saved parameters, there's nothing to restore
+#else
+        wlog("VM parameter restoration is only supported on Linux systems");
+        return false;
+#endif
+    }
+
+    /**
+     * Lock the memory region of a mapped file in RAM
+     * 
+     * @param segment The boost::interprocess::managed_mapped_file to lock
+     * @return true if locking was successful, false otherwise
+     */
+    static bool lock_memory(const boost::interprocess::managed_mapped_file* segment) {
+#ifdef __linux__
+        if (!segment) {
+            ilog("Cannot lock null memory segment");
+            return false;
+        }
+
+        void* addr = segment->get_address();
+        size_t size = segment->get_size();
+        
+        if (addr == nullptr || size == 0) {
+            ilog("Invalid memory segment address or size");
+            return false;
+        }          
+        
+        ilog("Locking ${size} bytes of shared memory at address ${addr_str} in RAM",
+            ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
+            
+        long page_size = sysconf(_SC_PAGESIZE);
+        // Align address to page boundary (mlock requires page-aligned addresses)
+        void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
+        // Add the offset to the size to account for alignment
+        size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
+        
+        // First set VM parameters (even if memory locking fails, this can help)
+        set_vm_parameters(segment);
+        
+        // Now attempt to lock the memory
+        if (mlock(aligned_addr, aligned_size) != 0) {
+            elog("Failed to lock memory: ${error}", ("error", strerror(errno)));
+            return false;
+        }
+        
+        ilog("Successfully locked ${size} bytes of shared memory at address ${addr_str} in RAM", 
+            ("size", aligned_size)("addr_str", std::to_string((uintptr_t)aligned_addr)));
+        return true;
+#else
+        ilog("Memory locking is only supported on Linux systems");
+        return false;
+#endif
+    }
+
+    /**
+     * Unlock previously locked memory region
+     * 
+     * @param segment The boost::interprocess::managed_mapped_file to unlock
+     * @return true if unlocking was successful, false otherwise
+     */
+    static bool unlock_memory(const boost::interprocess::managed_mapped_file* segment) {
+#ifdef __linux__
+        if (!segment) {
+            ilog("Cannot unlock null memory segment");
+            return false;
+        }
+
+        void* addr = segment->get_address();
+        size_t size = segment->get_size();
+        
+        if (addr == nullptr || size == 0) {
+            ilog("Invalid memory segment address or size");
+            return false;
+        }          
+        
+        ilog("Unlocking ${size} bytes of shared memory at address ${addr_str}",
+            ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
+            
+        long page_size = sysconf(_SC_PAGESIZE);
+        // Align address to page boundary (munlock requires page-aligned addresses)
+        void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
+        // Add the offset to the size to account for alignment
+        size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
+
+        // Restore VM parameters first (even if memory unlocking fails)
+        restore_vm_parameters();
+        
+        // Attempt to unlock the memory region
+        if (munlock(aligned_addr, aligned_size) != 0) {
+            elog("Failed to unlock memory: ${error}", ("error", strerror(errno)));
+            return false;
         }
         
         ilog("Successfully unlocked ${size} bytes of shared memory at address ${addr_str}", 
