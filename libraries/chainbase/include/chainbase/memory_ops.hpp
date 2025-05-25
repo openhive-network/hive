@@ -209,34 +209,67 @@ public:
             if (!success) {
                 ilog("Direct file writing to proc failed, falling back to system commands");
                 
-                std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
-                std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                // Try sysctl command first (works better in some container environments)
+                std::string sysctl_prefix = "sysctl -w ";
                 
-                // Set dirty_background_bytes to exactly the memory mapped size
-                std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
-                                              cmd_suffix + "dirty_background_bytes";
+                // Set dirty_background_bytes using sysctl
+                std::string sysctl_dirty_bg_cmd = sysctl_prefix + "vm.dirty_background_bytes=" + std::to_string(aligned_size);
                 
-                // Set dirty_bytes to 10% higher than memory mapped size
-                std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                           cmd_suffix + "dirty_bytes";
+                // Set dirty_bytes using sysctl
+                std::string sysctl_dirty_cmd = sysctl_prefix + "vm.dirty_bytes=" + std::to_string(dirty_bytes_value);
                 
-                std::string set_expire_cmd = cmd_prefix + "300000" + 
-                                            cmd_suffix + "dirty_expire_centisecs";
+                // Set dirty_expire_centisecs using sysctl
+                std::string sysctl_expire_cmd = sysctl_prefix + "vm.dirty_expire_centisecs=300000";
                 
-                // Set vm.swappiness to 10
-                std::string set_swappiness_cmd = cmd_prefix + "10" + 
-                                              cmd_suffix + "swappiness";
+                // Set vm.swappiness using sysctl
+                std::string sysctl_swappiness_cmd = sysctl_prefix + "vm.swappiness=10";
+                
+                // Try sysctl commands first
+                int ret1 = std::system(sysctl_dirty_bg_cmd.c_str());
+                int ret2 = std::system(sysctl_dirty_cmd.c_str());
+                int ret3 = std::system(sysctl_expire_cmd.c_str());
+                int ret4 = std::system(sysctl_swappiness_cmd.c_str());
+                
+                bool sysctl_success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                
+                if (sysctl_success) {
+                    ilog("Successfully set VM parameters using sysctl command");
+                    success = true;
+                } else {
+                    // Fall back to echo commands if sysctl also failed
+                    ilog("sysctl command failed, trying echo to proc files");
+                    
+                    std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
+                    std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                    
+                    // Set dirty_background_bytes to exactly the memory mapped size
+                    std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
+                                                cmd_suffix + "dirty_background_bytes";
+                    
+                    // Set dirty_bytes to 10% higher than memory mapped size
+                    std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
+                                            cmd_suffix + "dirty_bytes";
+                    
+                    std::string set_expire_cmd = cmd_prefix + "300000" + 
+                                                cmd_suffix + "dirty_expire_centisecs";
+                    
+                    // Set vm.swappiness to 10
+                    std::string set_swappiness_cmd = cmd_prefix + "10" + 
+                                                cmd_suffix + "swappiness";
 
-                                              int ret1 = std::system(set_dirty_bg_cmd.c_str());
-                int ret2 = std::system(set_dirty_cmd.c_str());
-                int ret3 = std::system(set_expire_cmd.c_str());
-                int ret4 = std::system(set_swappiness_cmd.c_str());
-                
-                success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                    ret1 = std::system(set_dirty_bg_cmd.c_str());
+                    ret2 = std::system(set_dirty_cmd.c_str());
+                    ret3 = std::system(set_expire_cmd.c_str());
+                    ret4 = std::system(set_swappiness_cmd.c_str());
+                    
+                    success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                }
                 
                 // Add more detailed error reporting for the system calls:
-                wlog("System call '${cmd}' failed with return code ${ret}", 
-                    ("cmd", set_dirty_bg_cmd)("ret", ret1));
+                if (!success) {
+                    wlog("System call to set VM parameters failed with return codes: ${ret1}, ${ret2}, ${ret3}, ${ret4}", 
+                        ("ret1", ret1)("ret2", ret2)("ret3", ret3)("ret4", ret4));
+                }
             }
             
             if (success) {
