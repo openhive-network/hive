@@ -236,7 +236,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         if (validate_during_replay)
         {
           // now we have the full_transactions, get started working on them
-          FC_ASSERT( enqueue_work );
+          FC_ASSERT( enqueue_work && "Not set" );
           enqueue_work(full_block->get_full_transactions(),
             blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay,
             full_block->get_block_num());

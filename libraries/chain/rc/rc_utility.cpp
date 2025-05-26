@@ -357,15 +357,20 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
     {
       acc.rc_manabar.regenerate_mana< true >( manabar_params, now );
     }
-    else if( acc.rc_manabar.last_update_time != now.sec_since_epoch() )
+    else
     {
-      //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
-      wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
-        ( "a", acc.get_name() )( "b", db.head_block_num() ) );
+      bool regenerate_condition_rc = (acc.rc_manabar.last_update_time != now.sec_since_epoch());
+      if( regenerate_condition_rc )
+      {
+        //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
+        wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
+          ( "a", acc.get_name() )( "b", db.head_block_num() ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
-      FC_ASSERT( false, "Account ${a} not regenerated prior to RC change, noticed on block ${b}",
-        ( "a", acc.get_name() )( "b", db.head_block_num() ) );
+        FC_ASSERT( not regenerate_condition_rc,
+          "Account ${a} not regenerated prior to RC change, noticed on block ${b}",
+          ( "a", acc.get_name() )( "b", db.head_block_num() ) );
 #endif
+      }
     }
     //rc delegation changes are immediately reflected in current_mana in both directions;
     //if negative delta was not taking away delegated mana it would be easy to pump RC;
@@ -379,13 +384,15 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
 void resource_credits::update_account_after_vest_change( const account_object& account,
   const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
 {
-  if( account.rc_manabar.last_update_time != now.sec_since_epoch() )
+  bool regenerate_condition = (account.rc_manabar.last_update_time != now.sec_since_epoch());
+  if( regenerate_condition )
   {
     //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
     wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
       ( "a", account.get_name() )( "b", db.head_block_num() ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
-    FC_ASSERT( false, "Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
+    FC_ASSERT( not regenerate_condition,
+      "Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
       ( "a", account.get_name() )( "b", db.head_block_num() ) );
 #endif
   }

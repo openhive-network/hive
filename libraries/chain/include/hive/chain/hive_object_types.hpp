@@ -262,7 +262,7 @@ template< typename Stream, typename E, typename A >
 void unpack( Stream& s, boost::interprocess::deque<E, A>& dq, uint32_t depth, bool limit_is_disabled )
 {
   depth++;
-  FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+  FC_ASSERT( depth <= MAX_RECURSION_DEPTH && "Maximum allowed recursion depth reached" );
   // This could be optimized
   std::vector<E> temp;
   unpack( s, temp, depth, limit_is_disabled );
@@ -287,7 +287,7 @@ template< typename Stream, typename K, typename V, typename C, typename A >
 void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint32_t depth, bool limit_is_disabled )
 {
   depth++;
-  FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+  FC_ASSERT( depth <= MAX_RECURSION_DEPTH && "Max allowed recursion depth reached" );
   unsigned_int size;
   unpack( s, size, depth, limit_is_disabled );
   value.clear();

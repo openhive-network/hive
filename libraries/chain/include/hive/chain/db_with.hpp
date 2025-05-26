@@ -72,12 +72,13 @@ struct pending_transactions_restorer
   ~pending_transactions_restorer()
   {
     auto head_block_time = _db.head_block_time();
-    if( _db._pending_tx.size() > 0 || _db._pending_tx_size > 0 )
+    bool pending_condition = _db._pending_tx.size() > 0 || _db._pending_tx_size > 0;
+    if( pending_condition )
     {
       elog( "NOTIFYALERT! ${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
         ( "x", _db._pending_tx.size() )( "s", _db._pending_tx_size )( "tx", _db._pending_tx.front()->get_transaction() ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
-      FC_ASSERT( false, "${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
+      FC_ASSERT( not pending_condition, "${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
         ( "x", _db._pending_tx.size() )( "s", _db._pending_tx_size )( "tx", _db._pending_tx.front()->get_transaction() ) );
 #endif
       _db._pending_tx.clear();

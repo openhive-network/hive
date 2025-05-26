@@ -117,7 +117,8 @@ struct extended_serialization_functor
     else
     {
       auto itr = to_legacy_tag.find(ar[0].as_string());
-      FC_ASSERT( itr != to_legacy_tag.end(), "Invalid operation name: ${n}", ("n", ar[0]) );
+      FC_ASSERT( itr != to_legacy_tag.end() && "Unknown legacy operation",
+        "Invalid operation name: ${n}", ("n", ar[0]) );
       s = static_variant( itr->second, visitor );
     }
 

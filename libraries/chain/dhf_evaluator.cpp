@@ -17,7 +17,8 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
+    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ) && "Premature proposal creation",
+      "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
     /** start date can be earlier than head_block_time - otherwise creating a proposal can be difficult,
         since passed date should be adjusted by potential transaction execution delay (i.e. 3 sec
@@ -52,7 +53,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     if(!commentObject)
     {
       commentObject = _db.find_comment(o.receiver, o.permlink);
-      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or receiver");
+      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or receiver");
     }
 
     uint32_t proposal_id = 0;
@@ -97,7 +98,7 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
     if(!commentObject)
     {
       commentObject = _db.find_comment(proposal.receiver, o.permlink);
-      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or the receiver");
+      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or the receiver");
     }
 
     FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
@@ -133,7 +134,8 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
+    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ) && "Premature proposal votes update",
+      "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
     const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
     const auto& pvidx = _db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
@@ -141,7 +143,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
     const auto& voter = _db.get_account(o.voter);
 
     if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-      FC_ASSERT( voter.can_vote, "Voter declined voting rights, therefore casting votes is forbidden." );
+      FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -152,7 +154,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       if( found_id == pidx.end() || found_id->removed )
       {
         if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) )
-          FC_ASSERT( false && "proposal doesn't exist", "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
+          FC_ASSERT( false && "proposal not found", "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
         continue;
       }
 
@@ -191,7 +193,8 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
+    FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ) && "Premature proposal removal",
+      "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
     // Remove proposals and related votes...
     dhf_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
