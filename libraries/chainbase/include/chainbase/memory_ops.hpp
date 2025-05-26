@@ -304,7 +304,7 @@ public:
                             ilog("su approach failed, trying to use chmod to change file permissions");
                             
                             // Try to make the files writeable with chmod
-                            std::string chmod_cmd_prefix = "chmod 666 " + (use_host_proc ? "/host-proc/sys/vm/" : "/proc/sys/vm/");
+                            std::string chmod_cmd_prefix = std::string("chmod 666 ") + (use_host_proc ? "/host-proc/sys/vm/" : "/proc/sys/vm/");
                             std::string chmod_dirty_bg = chmod_cmd_prefix + "dirty_background_bytes";
                             std::string chmod_dirty = chmod_cmd_prefix + "dirty_bytes";
                             std::string chmod_expire = chmod_cmd_prefix + "dirty_expire_centisecs";
