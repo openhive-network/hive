@@ -280,14 +280,12 @@ public:
                         
                         // First approach: Direct write with root - try other privileged user like 'root'
                         // Approach 1: Try running as root with su
-                        std::string set_dirty_bg_cmd = "su -c \"echo " + std::to_string(aligned_size) + 
+                        std::string set_dirty_bg_cmd = std::string("su -c \"echo ") + std::to_string(aligned_size) + 
                                                      " > /host-proc/sys/vm/dirty_background_bytes\" root";
-                        std::string set_dirty_cmd = "su -c \"echo " + std::to_string(dirty_bytes_value) + 
+                        std::string set_dirty_cmd = std::string("su -c \"echo ") + std::to_string(dirty_bytes_value) + 
                                                   " > /host-proc/sys/vm/dirty_bytes\" root";
-                        std::string set_expire_cmd = "su -c \"echo 300000" + 
-                                                   " > /host-proc/sys/vm/dirty_expire_centisecs\" root";
-                        std::string set_swappiness_cmd = "su -c \"echo 10" + 
-                                                       " > /host-proc/sys/vm/swappiness\" root";
+                        std::string set_expire_cmd = "su -c \"echo 300000 > /host-proc/sys/vm/dirty_expire_centisecs\" root";
+                        std::string set_swappiness_cmd = "su -c \"echo 10 > /host-proc/sys/vm/swappiness\" root";
                         
                         int ret1 = std::system(set_dirty_bg_cmd.c_str());
                         int ret2 = std::system(set_dirty_cmd.c_str());
