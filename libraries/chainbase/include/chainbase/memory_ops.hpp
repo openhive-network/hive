@@ -275,25 +275,25 @@ public:
                         // As a last resort, try using echo with sudo
                         wlog("Direct writes to host-proc failed, trying echo commands");
                         
-                        // Using echo commands to write to host-proc
+                        // Using echo with tee to write to host-proc (properly handles permissions)
                         std::string echo_cmd_prefix = "echo ";
-                        std::string echo_cmd_suffix = " > /host-proc/sys/vm/";
+                        std::string echo_cmd_suffix = " | sudo -n tee /host-proc/sys/vm/";
                         
                         // Set dirty_background_bytes
                         std::string set_dirty_bg_cmd = echo_cmd_prefix + std::to_string(aligned_size) + 
-                                                    echo_cmd_suffix + "dirty_background_bytes";
+                                                    echo_cmd_suffix + "dirty_background_bytes > /dev/null";
                         
                         // Set dirty_bytes
                         std::string set_dirty_cmd = echo_cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                                echo_cmd_suffix + "dirty_bytes";
+                                                echo_cmd_suffix + "dirty_bytes > /dev/null";
                         
                         // Set dirty_expire_centisecs
                         std::string set_expire_cmd = echo_cmd_prefix + "300000" + 
-                                                  echo_cmd_suffix + "dirty_expire_centisecs";
+                                                  echo_cmd_suffix + "dirty_expire_centisecs > /dev/null";
                         
                         // Set vm.swappiness
                         std::string set_swappiness_cmd = echo_cmd_prefix + "10" + 
-                                                      echo_cmd_suffix + "swappiness";
+                                                      echo_cmd_suffix + "swappiness > /dev/null";
                         
                         int ret1 = std::system(set_dirty_bg_cmd.c_str());
                         int ret2 = std::system(set_dirty_cmd.c_str());
@@ -419,23 +419,28 @@ public:
                         // Fall back to echo commands if sysctl also failed
                         ilog("sysctl command failed, trying echo to proc files");
                         
-                        std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
-                        std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                        std::string cmd_prefix = "echo ";
+                        std::string cmd_suffix;
+                        if (use_host_proc) {
+                            cmd_suffix = " | sudo -n tee /host-proc/sys/vm/";
+                        } else {
+                            cmd_suffix = " | sudo -n tee /proc/sys/vm/";
+                        }
                         
                         // Set dirty_background_bytes to exactly the memory mapped size
                         std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
-                                                    cmd_suffix + "dirty_background_bytes";
+                                                    cmd_suffix + "dirty_background_bytes > /dev/null";
                         
                         // Set dirty_bytes to 10% higher than memory mapped size
                         std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                                  cmd_suffix + "dirty_bytes";
+                                                  cmd_suffix + "dirty_bytes > /dev/null";
                         
                         std::string set_expire_cmd = cmd_prefix + "300000" + 
-                                                    cmd_suffix + "dirty_expire_centisecs";
+                                                    cmd_suffix + "dirty_expire_centisecs > /dev/null";
                         
                         // Set vm.swappiness to 10
                         std::string set_swappiness_cmd = cmd_prefix + "10" + 
-                                                      cmd_suffix + "swappiness";
+                                                      cmd_suffix + "swappiness > /dev/null";
 
                         ret1 = std::system(set_dirty_bg_cmd.c_str());
                         ret2 = std::system(set_dirty_cmd.c_str());
@@ -458,27 +463,29 @@ public:
                     ("bg_size", aligned_size)("size", dirty_bytes_value));
                 return true;
             } else {
-                // As a last resort, try using sudo for the echo commands
+                // As a last resort, try using sudo with tee for the echo commands
                 ilog("Previous VM parameter modification attempts failed, trying with sudo as a last resort");
                 
-                // Use sudo -n to prevent password prompting
-                std::string sudo_cmd_prefix = "sudo -n echo ";
-                std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                // Use sudo -n with tee to properly handle redirection
+                std::string cmd_prefix = "echo ";
+                std::string cmd_suffix = use_host_proc ? 
+                    " | sudo -n tee /host-proc/sys/vm/" : 
+                    " | sudo -n tee /proc/sys/vm/";
                 
                 // Set dirty_background_bytes to exactly the memory mapped size
-                std::string set_dirty_bg_cmd = sudo_cmd_prefix + std::to_string(aligned_size) + 
-                                             cmd_suffix + "dirty_background_bytes";
+                std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
+                                             cmd_suffix + "dirty_background_bytes > /dev/null";
                 
                 // Set dirty_bytes to 10% higher than memory mapped size
-                std::string set_dirty_cmd = sudo_cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                          cmd_suffix + "dirty_bytes";
+                std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
+                                          cmd_suffix + "dirty_bytes > /dev/null";
                 
-                std::string set_expire_cmd = sudo_cmd_prefix + "300000" + 
-                                           cmd_suffix + "dirty_expire_centisecs";
+                std::string set_expire_cmd = cmd_prefix + "300000" + 
+                                           cmd_suffix + "dirty_expire_centisecs > /dev/null";
                 
                 // Set vm.swappiness to 10
-                std::string set_swappiness_cmd = sudo_cmd_prefix + "10" + 
-                                               cmd_suffix + "swappiness";
+                std::string set_swappiness_cmd = cmd_prefix + "10" + 
+                                               cmd_suffix + "swappiness > /dev/null";
 
                 int ret1 = std::system(set_dirty_bg_cmd.c_str());
                 int ret2 = std::system(set_dirty_cmd.c_str());
@@ -659,21 +666,24 @@ public:
                     // If echo commands failed, try with sudo as a last resort
                     if (!success) {
                         wlog("Echo commands to restore VM parameters failed, trying sudo as a last resort");
-                        std::string sudo_cmd_prefix = "sudo -n echo ";
+                        std::string cmd_prefix = "echo ";
+                        std::string sudo_suffix = use_host_proc ? 
+                            " | sudo -n tee " + path_prefix : 
+                            " | sudo -n tee " + path_prefix;
                         
                         // Must restore in this order to avoid errors
-                        set_expire_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_expire_centisecs) + 
-                                       cmd_suffix + "dirty_expire_centisecs";
-                        set_dirty_bg_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_background_bytes) + 
-                                         cmd_suffix + "dirty_background_bytes";
-                        set_dirty_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_bytes) + 
-                                      cmd_suffix + "dirty_bytes";
-                        set_swappiness_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::swappiness) + 
-                                           cmd_suffix + "swappiness";
-                        set_dirty_ratio_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_ratio) + 
-                                              cmd_suffix + "dirty_ratio";
-                        set_dirty_bg_ratio_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
-                                                  cmd_suffix + "dirty_background_ratio";
+                        set_expire_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_expire_centisecs) + 
+                                       sudo_suffix + "dirty_expire_centisecs > /dev/null";
+                        set_dirty_bg_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_bytes) + 
+                                         sudo_suffix + "dirty_background_bytes > /dev/null";
+                        set_dirty_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_bytes) + 
+                                      sudo_suffix + "dirty_bytes > /dev/null";
+                        set_swappiness_cmd = cmd_prefix + std::to_string(vm_dirty_params::swappiness) + 
+                                           sudo_suffix + "swappiness > /dev/null";
+                        set_dirty_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_ratio) + 
+                                              sudo_suffix + "dirty_ratio > /dev/null";
+                        set_dirty_bg_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
+                                                  sudo_suffix + "dirty_background_ratio > /dev/null";
                         
                         ret1 = std::system(set_expire_cmd.c_str());
                         ret2 = std::system(set_dirty_bg_cmd.c_str());
