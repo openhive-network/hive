@@ -3,7 +3,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_image.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=ubuntu24.04-2
+ARG CI_IMAGE_TAG=ubuntu24.04-3
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 
@@ -79,6 +79,9 @@ ENV HIVE_LINT=${HIVE_LINT}
 
 ARG HIVE_SUBDIR=.
 ENV HIVE_SUBDIR=${HIVE_SUBDIR}
+
+USER root
+RUN mkdir -p /home/build && chown -R hived_admin:users /home/build
 
 USER hived_admin
 WORKDIR /home/hived_admin
