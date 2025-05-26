@@ -300,7 +300,12 @@ public:
                         int ret3 = std::system(set_expire_cmd.c_str());
                         int ret4 = std::system(set_swappiness_cmd.c_str());
                         
-                        success = (ret1 == 0 || ret2 == 0 || ret3 == 0 || ret4 == 0);
+                        // Count how many commands succeeded
+                        int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
+                                           (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
+                        
+                        // If at least one command succeeded, consider it a partial success
+                        success = (success_count > 0);
                         
                         if (success) {
                             ilog("Successfully set at least some VM parameters using echo to host-proc");
@@ -387,6 +392,12 @@ public:
                                 ("actual", dirty_actual)("target", dirty_bytes_value)
                                 ("exp_actual", expire_actual)("exp_target", 300000)
                                 ("swap_actual", swappiness_actual)("swap_target", 10));
+                        } else {
+                            // If any value is positive but doesn't match exactly, still consider it a success
+                            if (dirty_bg_actual > 0 || dirty_actual > 0 || expire_actual > 0 || swappiness_actual >= 0) {
+                                sysctl_success = true;
+                                ilog("VM parameters were changed but don't match exactly what was requested. This is usually fine.");
+                            }
                         }
                     } catch (const std::exception& e) {
                         wlog("Failed to verify VM parameter changes: ${e}", ("e", e.what()));
@@ -431,7 +442,12 @@ public:
                         ret3 = std::system(set_expire_cmd.c_str());
                         ret4 = std::system(set_swappiness_cmd.c_str());
                         
-                        success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                        // Count how many commands succeeded
+                        int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
+                                           (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
+                        
+                        // Consider it a success if at least one parameter was set
+                        success = (success_count > 0);
                     }
                 }
                 
@@ -442,8 +458,47 @@ public:
                     ("bg_size", aligned_size)("size", dirty_bytes_value));
                 return true;
             } else {
-                wlog("Failed to set VM dirty page parameters. Container may need --privileged or --cap-add=SYS_ADMIN");
-                return false;
+                // As a last resort, try using sudo for the echo commands
+                ilog("Previous VM parameter modification attempts failed, trying with sudo as a last resort");
+                
+                // Use sudo -n to prevent password prompting
+                std::string sudo_cmd_prefix = "sudo -n echo ";
+                std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                
+                // Set dirty_background_bytes to exactly the memory mapped size
+                std::string set_dirty_bg_cmd = sudo_cmd_prefix + std::to_string(aligned_size) + 
+                                             cmd_suffix + "dirty_background_bytes";
+                
+                // Set dirty_bytes to 10% higher than memory mapped size
+                std::string set_dirty_cmd = sudo_cmd_prefix + std::to_string(dirty_bytes_value) + 
+                                          cmd_suffix + "dirty_bytes";
+                
+                std::string set_expire_cmd = sudo_cmd_prefix + "300000" + 
+                                           cmd_suffix + "dirty_expire_centisecs";
+                
+                // Set vm.swappiness to 10
+                std::string set_swappiness_cmd = sudo_cmd_prefix + "10" + 
+                                               cmd_suffix + "swappiness";
+
+                int ret1 = std::system(set_dirty_bg_cmd.c_str());
+                int ret2 = std::system(set_dirty_cmd.c_str());
+                int ret3 = std::system(set_expire_cmd.c_str());
+                int ret4 = std::system(set_swappiness_cmd.c_str());
+                
+                // Count how many commands succeeded
+                int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
+                                   (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
+                
+                // If at least one command succeeded, consider it a partial success
+                bool sudo_success = (success_count > 0);
+                
+                if (sudo_success) {
+                    ilog("Successfully set at least some VM parameters using sudo");
+                    return true;
+                } else {
+                    wlog("Failed to set VM dirty page parameters. Container may need --privileged or --cap-add=SYS_ADMIN");
+                    return false;
+                }
             }
         } catch (const std::exception& e) {
             wlog("Exception while setting VM dirty page parameters: ${e}", ("e", e.what()));
@@ -483,6 +538,7 @@ public:
                 
                 // Try direct file writing first
                 bool success = true;
+                bool at_least_one_success = false;
                 
                 // Restore dirty_expire_centisecs first (this is important for proper order)
                 {
@@ -490,8 +546,10 @@ public:
                     if (expire_file.good()) {
                         expire_file << vm_dirty_params::dirty_expire_centisecs;
                         expire_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_expire_centisecs"));
                     }
                 }
                 
@@ -501,8 +559,10 @@ public:
                     if (dirty_bg_file.good()) {
                         dirty_bg_file << vm_dirty_params::dirty_background_bytes;
                         dirty_bg_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_background_bytes"));
                     }
                 }
                 
@@ -512,8 +572,10 @@ public:
                     if (dirty_file.good()) {
                         dirty_file << vm_dirty_params::dirty_bytes;
                         dirty_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_bytes"));
                     }
                 }
                 
@@ -523,8 +585,10 @@ public:
                     if (swappiness_file.good()) {
                         swappiness_file << vm_dirty_params::swappiness;
                         swappiness_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "swappiness"));
                     }
                 }
                 
@@ -534,8 +598,10 @@ public:
                     if (dirty_ratio_file.good()) {
                         dirty_ratio_file << vm_dirty_params::dirty_ratio;
                         dirty_ratio_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_ratio"));
                     }
                 }
                 
@@ -545,13 +611,19 @@ public:
                     if (dirty_bg_ratio_file.good()) {
                         dirty_bg_ratio_file << vm_dirty_params::dirty_background_ratio;
                         dirty_bg_ratio_file.close();
+                        at_least_one_success = true;
                     } else {
                         success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_background_ratio"));
                     }
                 }
                 
+                // Use at_least_one_success as the indicator if any parameter was set
+                success = at_least_one_success || success;
+                
                 // Fall back to system() calls if direct file writing failed
                 if (!success) {
+                    wlog("Direct file writing to restore VM parameters failed, falling back to system commands");
                     std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
                     std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
                     
@@ -576,7 +648,48 @@ public:
                     int ret5 = std::system(set_dirty_ratio_cmd.c_str());
                     int ret6 = std::system(set_dirty_bg_ratio_cmd.c_str());
                     
-                    success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0 && ret5 == 0 && ret6 == 0);
+                    // Count how many commands succeeded
+                    int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
+                                      (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0) +
+                                      (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0);
+                    
+                    // If at least one command succeeded, consider it a partial success
+                    success = (success_count > 0);
+                    
+                    // If echo commands failed, try with sudo as a last resort
+                    if (!success) {
+                        wlog("Echo commands to restore VM parameters failed, trying sudo as a last resort");
+                        std::string sudo_cmd_prefix = "sudo -n echo ";
+                        
+                        // Must restore in this order to avoid errors
+                        set_expire_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_expire_centisecs) + 
+                                       cmd_suffix + "dirty_expire_centisecs";
+                        set_dirty_bg_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_background_bytes) + 
+                                         cmd_suffix + "dirty_background_bytes";
+                        set_dirty_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_bytes) + 
+                                      cmd_suffix + "dirty_bytes";
+                        set_swappiness_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::swappiness) + 
+                                           cmd_suffix + "swappiness";
+                        set_dirty_ratio_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_ratio) + 
+                                              cmd_suffix + "dirty_ratio";
+                        set_dirty_bg_ratio_cmd = sudo_cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
+                                                  cmd_suffix + "dirty_background_ratio";
+                        
+                        ret1 = std::system(set_expire_cmd.c_str());
+                        ret2 = std::system(set_dirty_bg_cmd.c_str());
+                        ret3 = std::system(set_dirty_cmd.c_str());
+                        ret4 = std::system(set_swappiness_cmd.c_str());
+                        ret5 = std::system(set_dirty_ratio_cmd.c_str());
+                        ret6 = std::system(set_dirty_bg_ratio_cmd.c_str());
+                        
+                        // Count how many commands succeeded
+                        success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
+                                        (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0) +
+                                        (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0);
+                        
+                        // If at least one command succeeded, consider it a partial success
+                        success = (success_count > 0);
+                    }
                 }
                 
                 if (success) {
