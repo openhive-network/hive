@@ -310,7 +310,12 @@ public:
                     }
                 } else {
                     // Standard approach for non-container environments
-                    int ret1 = std::system(sysctl_cmd_prefix.c_str());
+                    std::string sysctl_dirty_bg_cmd = sysctl_cmd_prefix + "vm.dirty_background_bytes=" + std::to_string(aligned_size);
+                    std::string sysctl_dirty_cmd = sysctl_cmd_prefix + "vm.dirty_bytes=" + std::to_string(dirty_bytes_value);
+                    std::string sysctl_expire_cmd = sysctl_cmd_prefix + "vm.dirty_expire_centisecs=300000";
+                    std::string sysctl_swappiness_cmd = sysctl_cmd_prefix + "vm.swappiness=10";
+                    
+                    int ret1 = std::system(sysctl_dirty_bg_cmd.c_str());
                     int ret2 = std::system(sysctl_dirty_cmd.c_str());
                     int ret3 = std::system(sysctl_expire_cmd.c_str());
                     int ret4 = std::system(sysctl_swappiness_cmd.c_str());
