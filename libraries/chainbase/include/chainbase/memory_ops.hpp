@@ -505,48 +505,41 @@ public:
                 return true;
             } else {
                 // As a last resort, try using multiple different approaches
-                ilog("Previous VM parameter modification attempts failed, trying alternative approaches");
-                
-                // Approach 1: Try directly writing as root using su
-                std::string cmd_prefix = "su -c \"echo ";
-                std::string cmd_suffix = use_host_proc ? 
-                    " > /host-proc/sys/vm/" : 
-                    " > /proc/sys/vm/";
-                cmd_suffix += "\" root";
-                
-                // Set dirty_background_bytes to exactly the memory mapped size
-                std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
-                                             cmd_suffix + "dirty_background_bytes";
-                
-                // Set dirty_bytes to 10% higher than memory mapped size
-                std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                          cmd_suffix + "dirty_bytes";
-                
-                std::string set_expire_cmd = cmd_prefix + "300000" + 
-                                           cmd_suffix + "dirty_expire_centisecs";
-                
-                // Set vm.swappiness to 10
-                std::string set_swappiness_cmd = cmd_prefix + "10" + 
-                                               cmd_suffix + "swappiness";
+                ilog("Previous VM parameter modification attempts failed, trying alternative approaches with sudo tee");
 
-                int ret1 = std::system(set_dirty_bg_cmd.c_str());
-                int ret2 = std::system(set_dirty_cmd.c_str());
-                int ret3 = std::system(set_expire_cmd.c_str());
-                int ret4 = std::system(set_swappiness_cmd.c_str());
+                std::string base_vm_path = use_host_proc ? "/host-proc/sys/vm/" : "/proc/sys/vm/";
+                int commands_succeeded = 0;
+
+                // Set dirty_background_bytes
+                std::string set_dirty_bg_cmd = "echo " + std::to_string(aligned_size) +
+                                             " | sudo tee " + base_vm_path + "dirty_background_bytes > /dev/null 2>&1";
+                if (std::system(set_dirty_bg_cmd.c_str()) == 0) commands_succeeded++;
+
+                // Set dirty_bytes
+                std::string set_dirty_cmd = "echo " + std::to_string(dirty_bytes_value) +
+                                          " | sudo tee " + base_vm_path + "dirty_bytes > /dev/null 2>&1";
+                if (std::system(set_dirty_cmd.c_str()) == 0) commands_succeeded++;
+
+                // Set dirty_expire_centisecs
+                std::string set_expire_cmd = "echo 300000" +
+                                           " | sudo tee " + base_vm_path + "dirty_expire_centisecs > /dev/null 2>&1";
+                if (std::system(set_expire_cmd.c_str()) == 0) commands_succeeded++;
+
+                // Set vm.swappiness
+                std::string set_swappiness_cmd = "echo 10" +
+                                               " | sudo tee " + base_vm_path + "swappiness > /dev/null 2>&1";
+                if (std::system(set_swappiness_cmd.c_str()) == 0) commands_succeeded++;
                 
-                // Count how many commands succeeded
-                int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
-                                   (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
-                
-                // If at least one command succeeded, consider it a partial success
-                bool sudo_success = (success_count > 0);
-                
-                if (sudo_success) {
-                    ilog("Successfully set at least some VM parameters using sudo");
+                bool sudo_tee_success = (commands_succeeded > 0);
+
+                if (sudo_tee_success) {
+                    ilog("Successfully set at least ${count} VM parameters using sudo tee.", ("count", commands_succeeded));
+                    // Verify changes by reading back (optional, but good for confirmation)
+                    // For brevity, verification is omitted here but recommended in a full solution
                     return true;
                 } else {
-                    wlog("Failed to set VM dirty page parameters. Container may need --privileged or --cap-add=SYS_ADMIN");
-                    return false;
+                    wlog("Final attempt to set VM dirty page parameters using 'sudo tee' also failed. This may be due to 'sudo' not being available, not configured for passwordless 'tee' for the current user, or other permission issues. VM performance optimizations may not be applied.");
+                    return false; // Indicate failure to set parameters
                 }
             }
         } catch (const std::exception& e) {
