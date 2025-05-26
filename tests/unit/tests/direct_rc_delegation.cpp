@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     //   see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
     //   it also means that even "delegating" to nonexistent account will pass since it is ignored
     // Now interpreter is more strict when node is_in_control()
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "!db.is_in_control()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "!db.is_in_control() && \"Expected pair of values: [ operation_name_or_id, operation ]\"" );
     // Let's put just the correct part into transaction so we don't have to change rest of the test
     json = "[";
     op.delegatees = { "bob" };

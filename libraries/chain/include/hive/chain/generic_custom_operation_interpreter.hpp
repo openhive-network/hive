@@ -90,7 +90,7 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
     auto ar = var.get_array();
     if( ar.size() != 2 )
     {
-      FC_ASSERT( !db.is_in_control(), "Expected pair of values: [ operation_name_or_id, operation ]" );
+      FC_ASSERT( !db.is_in_control() && "Expected pair of values: [ operation_name_or_id, operation ]" );
       if( ar.size() < 2 )
       {
         dlog( "Incomplete custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
@@ -120,7 +120,7 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
     FC_ASSERT( v_object.contains( "value" ), "Value field doesn't exist." );
     if( v_object.size() != 2 )
     {
-      FC_ASSERT( !db.is_in_control(), "Expected pair of values: { \"type\":operation_name_or_id, \"value\":operation }" );
+      FC_ASSERT( !db.is_in_control() && "Expected pair of values: { \"type\":operation_name_or_id, \"value\":operation }" );
       dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
     }
 

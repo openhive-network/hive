@@ -432,7 +432,7 @@ void full_block_type::decode_block() const
       const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
       full_transactions[i] = full_transaction_type::create_from_block(decoded_block_storage, i, serialized_transaction, use_transaction_cache);
     }
-    FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after decoding block");
+    FC_ASSERT(datastream.remaining() == 0 && "Error: data leftover after decoding block");
 
     fc::time_point decode_block_end = fc::time_point::now();
     decode_block_time = decode_block_end - decode_block_begin;

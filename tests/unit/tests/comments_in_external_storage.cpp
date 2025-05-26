@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE( nested_comments )
   FC_LOG_AND_RETHROW()
 }
 
-void fork_reverts_cashout_scanario( const std::string& comment_archive_type, bool migrate, bool undoable_migration )
+void fork_reverts_cashout_scanario( const std::string& comment_archive_type, bool migrate, bool undoable_migration, const char* assertion_message )
 {
   configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
   autoscope( []() { configuration_data.reset_cashout_values(); } );
@@ -326,7 +326,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
   BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< producer_reward_operation >::value );
   test.generate_block();
-  HIVE_REQUIRE_ASSERT( test.vote( "alice", "test2", "alice", -300, alice_post_key ), "!comment_is_required" );
+  HIVE_REQUIRE_ASSERT( test.vote( "alice", "test2", "alice", -300, alice_post_key ), assertion_message );
   test.generate_block();
 
   BOOST_TEST_MESSAGE( "Testing scenario where fork reverts cashout event and comment is deleted before cashout is reapplied but new comment is created in its place" );
@@ -373,9 +373,9 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
 
 BOOST_FIXTURE_TEST_CASE( fork_reverts_cashout, empty_fixture )
 {
-  fork_reverts_cashout_scanario( "NONE", false, false );
-  fork_reverts_cashout_scanario( "MEMORY", true, false );
-  fork_reverts_cashout_scanario( "ROCKSDB", true, true );
+  fork_reverts_cashout_scanario( "NONE", false, false, "not comment_is_required" );
+  fork_reverts_cashout_scanario( "MEMORY", true, false, "! comment_is_required" );
+  fork_reverts_cashout_scanario( "ROCKSDB", true, true, "!comment_is_required" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

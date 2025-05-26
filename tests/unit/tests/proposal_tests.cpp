@@ -2620,7 +2620,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
     generate_block();
 
     std::vector< int64_t > proposals = {-1, -2, -3, -4, -5};
-    HIVE_REQUIRE_ASSERT( vote_proposal("carol", proposals, true, carol_private_key), "false && \"proposal doesn't exist\"" );
+    HIVE_REQUIRE_ASSERT( vote_proposal("carol", proposals, true, carol_private_key), "false && \"proposal not found\"" );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3981,7 +3981,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 30 );
 
       for( auto item : inits )
-        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal not found\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 30 );
@@ -4005,7 +4005,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       BOOST_REQUIRE( found_votes == 0 );
 
       for( auto item : inits )
-        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal not found\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( found_votes == 0 );

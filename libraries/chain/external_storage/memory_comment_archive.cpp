@@ -74,7 +74,7 @@ comment memory_comment_archive::get_comment( const account_id_type& author, cons
   {
     stats.comment_not_found.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++stats.comment_not_found.count;
-    FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
+    FC_ASSERT( ! comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
     return comment();
   }
 }
@@ -82,13 +82,13 @@ comment memory_comment_archive::get_comment( const account_id_type& author, cons
 void memory_comment_archive::save_snapshot( const prepare_snapshot_supplement_notification& note )
 {
   // TODO: supplement
-  FC_ASSERT( false, "Not implemented yet" );
+  FC_ASSERT( false && "save_snapshot not implemented yet" );
 }
 
 void memory_comment_archive::load_snapshot( const load_snapshot_supplement_notification& note )
 {
   // TODO: supplement
-  FC_ASSERT( false, "Not implemented yet" );
+  FC_ASSERT( false && "load_snapshot not implemented yet" );
 }
 
 void memory_comment_archive::open()
