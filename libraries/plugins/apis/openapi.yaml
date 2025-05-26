@@ -3307,119 +3307,339 @@ paths:
               }
 components:
   schemas:
-    is_known_transaction:
+    account:
       type: object
       properties:
         id:
+          type: integer
+          description: Account's identification number.
+        name:
           type: string
-          example: "0000000000000000000000000000000000000000"
-    get_order_book:
+          description: Account's name.
+        owner:
+          $ref: '#/components/schemas/auths'
+          description: Owner authority of the account. 
+        active:
+          $ref: '#/components/schemas/auths'
+          description: Active authority of the account. 
+        posting:
+          $ref: '#/components/schemas/auths'
+          description: Posting authority of the account.
+        memo_key:
+          type: string
+          description: The public key used to encrypt the memo. 
+        json_metadata:
+          type: string
+          description: >-
+            Parameter encompasses personalized profile information. 
+            It is a JSON object that can contain any data.
+        posting_json_metadata:
+          type: string
+          description: >-
+            Parameter encompasses personalized profile information. 
+            It is a JSON object that can contain any data.
+        proxy:
+          type: string
+          description: >-
+            An account to which the account has designated as its proxy. 
+            The proxy can vote on behalf of the account.
+        last_owner_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last owner update was performed. 
+        last_account_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last account update was performed. 
+        created:
+          type: string
+          format: date-time
+          description: >-
+            The date of account creation. 
+        mined:
+          type: boolean
+          description: >-
+            Information whether made a prove of work. 
+            It is true if the account was created by mining.
+        recovery_account:
+          type: string
+          description: >-
+            An account to which the account has designated as its recovery account. 
+            The recovery account can help recover the account if it is lost.
+        reset_account:
+          type: string
+          description: deprecated parameter
+        comment_count:
+          type: integer
+          description: >-
+            The number of comments made by the account.
+        lifetime_vote_count:
+          type: integer
+          description: >-
+            The number of votes made by the account.
+        can_vote:
+          type: boolean
+          description: >-
+            Information whether the account can vote or not. 
+            It is true if the account can vote.
+        voting_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+          description: >-
+            The voting mana bar of the account. 
+            It indicates the amount of voting power available to the account.
+        downvote_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+          description: >-
+            The downvote mana bar of the account. 
+            It indicates the amount of downvoting power available to the account.
+        balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        savings_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The savings balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        hbd_seconds:
+          type: string
+          description: >-
+            The number of seconds the HIVE backed dollar balance has been held.
+        hbd_seconds_last_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the HIVE backed dollar seconds were last updated.
+        hbd_last_interest_payment:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last interest payment was made on the HIVE backed dollar balance.
+        savings_hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The savings HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        savings_hbd_seconds:
+          type: string
+          description: >-
+            The number of seconds the savings HIVE backed dollar balance has been held.
+        savings_hbd_seconds_last_update:
+          type: string
+          format: date-time
+          description: >-
+            The time when the savings HIVE backed dollar seconds were last updated.
+        savings_hbd_last_interest_payment:
+          type: string
+          format: date-time
+          description: >-
+            The time when the last interest payment was made on the savings HIVE backed dollar balance
+        savings_withdraw_requests:
+          type: integer
+          description: >-
+            The number of savings withdraw requests made by the account.
+        reward_hbd_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward HIVE backed dollar balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_hive_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward HIVE balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_vesting_balance:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward vesting balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        reward_vesting_hive:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The reward vesting HIVE balance of the account. 
+            It is represented as an object with amount, nai, and precision.
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        delegated_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The delegated vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        received_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The received vesting shares of the account. 
+            It is represented as an object with amount, nai, and precision.
+        vesting_withdraw_rate:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The vesting withdraw rate of the account. 
+            It is represented as an object with amount, nai, and precision.
+        post_voting_power:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The post voting power of the account. 
+            It is represented as an object with amount, nai, and precision.
+        next_vesting_withdrawal:
+          type: string
+          format: date-time
+          description: >-
+            The time of the next vesting withdrawal.
+        withdrawn:
+          type: string
+          description: >-
+            The total vesting shares already withdrawn from active withdrawals.
+        to_withdraw:
+          type: string
+          description: >-
+            The remaining total vesting shares needed to complete withdrawals.
+        withdraw_routes:
+          type: integer
+          description: >-
+            The number of withdraw routes for the account.
+        pending_transfers:
+          type: integer
+          description: >-
+            The number of pending transfers for the account.
+        pending_claimed_accounts:
+          type: integer
+          description: >-
+            The number of pending claimed accounts for the account.
+        post_bandwidth:
+          type: integer
+          description: >-
+            The post bandwidth of the account.
+        post_count:
+          type: integer
+          description: >-
+            The number of posts made by the account.
+        last_post:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last post made by the account.
+        last_root_post:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last root post made by the account.
+        last_post_edit:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last post edit made by the account.
+        last_vote_time:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last vote made by the account.
+        last_account_recovery:
+          type: string
+          format: date-time
+          description: >-
+            The time of the last account recovery made by the account.
+        previous_owner_update:
+          type: string
+          format: date-time
+          description: >-
+            The time of the previous owner update made by the account.
+    account_recovery:
+      type: object
+      properties:
+        account_to_recover:
+          type: string
+          example: "tulpa"
+          description: >-
+            The name of the account to recover.
+        expires:
+          type: string
+          format: date-time
+          example: "2020-11-05T13:48:39"
+          description: >-
+            The expiration time of the recovery request.
+        id:
+          type: integer
+          example: 9
+          description: >-
+            The ID of the recovery request.
+        new_owner_authority:
+          $ref: '#/components/schemas/auths'
+          description: New owner authority of the account. 
+    account_subsidy_rd:
+      type: object
+      properties:
+        budget_per_time_unit:
+          type: integer
+          example: 797
+        decay_params:
+          type: object
+          properties:
+            decay_per_time_unit:
+              type: integer
+              example: 347321
+            decay_per_time_unit_denom_shift:
+              type: integer
+              example: 36
+        max_pool_size:
+          type: integer
+          example: 157691079
+        min_decay:
+          type: integer
+          example: 0
+        pool_eq:
+          type: integer
+          example: 157691079
+        resource_unit:
+          type: integer
+          example: 10000
+    array_of_operations:
+      type: array
+      items:
+        $ref: '#/components/schemas/operation_body'
+    auths:
+      type: object
+      properties:
+        weight_threshold:
+          type: integer
+        account_auths:
+          type: array
+          items:
+            type: string
+        key_auths:
+          type: array
+          items:
+            type: string
+    balance:
+      type: object
+      properties:
+        amount:
+          type: string
+        nai:
+          type: string
+        precision:
+          type: integer
+    base_and_quote:
       type: object
       properties:
         base:
           $ref: '#/components/schemas/balance'
-          example: {
-            "amount": "1000",
-            "precision": 3,
-            "nai": "@@000000021"
-          }
+          description: >-
+            The base asset of the price.
         quote:
           $ref: '#/components/schemas/balance'
-          example: {
-            "amount": "1000",
-            "precision": 3,
-            "nai": "@@000000013"
-          }
-        limit:
-          type: integer
-          example: 0
-    comment_pending_payout:
-      type: array
-      items:
-        type: string
-    get_comment_pending_payouts:
-      type: object
-      properties:
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/comment_pending_payout'
-          example: [["hbd.funder", "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"]]
-    find_withdraw_vesting_routes:
-      type: object
-      properties:
-        account:
-          type: string
-          example: "ecency"
           description: >-
-            The name of the account to query.
-        order:
-          type: string
-          example: "by_destination"
-          description: >-
-            The order in which to return the results.
-    find_votes:
-      type: object
-      properties:
-        author:
-          type: string
-          example: "hiveio"
-          description: >-
-            The author of the post to query.
-        permlink:
-          type: string
-          example: "announcing-the-launch-of-hive-blockchain"
-          description: >-
-            The permlink of the post to query.
-    find_vesting_delegations:
-      type: object
-      properties:
-        account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to query.
-    find_vesting_delegation_expirations:
-      type: object
-      properties:
-        account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to query.
-    find_savings_withdrawals:
-      type: object
-      properties:
-        account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to query.
-    find_recurrent_transfers:
-      type: object
-      properties:
-        from:
-          type: string
-          example: ""
-    find_proposals:
-      type: object
-      properties:
-        proposal_ids:
-          type: array
-          items:
-            type: integer
-          example: [0]
-          description: >-
-            An array of int representing id of proposals.
-    find_comments:
-      type: array
-      items:
-        type: array
-        items:
-          type: string
-        example: ["author", "permlink"]
-        description: >-
-          An array of strings representing the author and permlink of the comment to query.
+            The quote asset of the price.
     beneficiaries:
       type: array
       items:
@@ -3429,21 +3649,184 @@ components:
             type: string
           weight:
             type: integer
-    verify_account_authority:
+    bids_and_asks:
       type: object
       properties:
-        account:
+        created:
           type: string
-          example: "hiveio"
+          format: date-time
+          example: "2025-05-22T11:17:24"
           description: >-
-            The name of the account to verify.
-        signers:
+            The date when the order was created.
+        hbd:
+          type: integer
+          example: 26344
+          description: >-
+            The amount of HBD in the order.
+        hive:
+          type: integer
+          example: 97538
+          description: >-
+            The amount of HIVE in the order.
+        order_price:
+          $ref: '#/components/schemas/base_and_quote'
+        real_price:
+          type: string
+          example: "0.00000000000000000"
+    block:
+      type: object
+      properties:
+        previous:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            The previous block ID.
+        timestamp:
+          type: string
+          format: date-time
+          example: "2016-03-24T16:05:00"
+          description: >-
+            The timestamp of the block.
+        witness:
+          type: string
+          example: ""
+          description: >-
+            The witness who produced the block.
+        transaction_merkle_root:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            Single hash representing the combined hashes of all transactions in a block.
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+        witness_signature:
+          type: string
+          example: ""
+          description: >-
+            The signature of the witness who produced the block.
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/operation_body'
+          example: []
+          description: >-
+            An array of transactions included in the block.
+        block_id:
+          type: string
+          example: ""
+          description: >-
+            The ID of the block.
+        signing_key:
+          type: string
+          example: ""
+          description: >-
+            The key used to sign the block.
+        transaction_ids:
           type: array
           items:
             type: string
-          example: ["STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN"]
+          example: []
           description: >-
-            An array of strings representing the keys to verify.
+            An array of transaction IDs included in the block.
+    block_header:
+      type: object
+      properties:
+        previous:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >-
+            The previous block ID.
+        timestamp:
+          type: string
+          format: date-time
+          example: "2016-03-24T16:05:00"
+          description: >-
+            The timestamp of the block.
+        witness:
+          type: string
+          example: ""
+          description: >-
+            The witness who produced the block.
+        transaction_merkle_root:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+          description: >- 
+            Single hash representing the combined hashes of all transactions in a block.
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+    broadcast_transaction:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+        max_block_age:
+          type: integer
+          example: -1
+    broadcast_transaction_response:
+      type: object
+    cashout_info:
+      type: object
+      properties:
+        total_vote_weight:
+          type: integer
+          example: 22841196
+        total_payout_value:
+          $ref: '#/components/schemas/balance'
+        curator_payout_value:
+          $ref: '#/components/schemas/balance'
+        max_accepted_payout:
+          $ref: '#/components/schemas/balance'
+        author_rewards:
+          type: integer
+          example: 0
+        children_abs_rshares:
+          type: string
+          example: "606511906476641"
+        net_rshares:
+          type: string
+          example: "571577939879762"
+        abs_rshares:
+          type: string
+          example: "594467432989642"
+        vote_rshares:
+          type: string
+          example: "583007369825359"
+        net_votes:
+          type: integer
+          example: 378
+        active:
+          type: string
+          format: date-time
+          example: "2021-04-06T15:29:03"
+        last_payout:
+          type: string
+          format: date-time
+          example: "1970-01-01T00:00:00"
+        cashout_time:
+          type: string
+          format: date-time
+          example: "2021-04-12T02:07:00"
+        max_cashout_time:
+          type: string
+          format: date-time
+          example: "1969-12-31T23:59:59"
+        percent_hbd:
+          type: integer
+          example: 10000
+        reward_weight:
+          type: integer
+          example: 10000
+        allow_replies:
+          type: boolean
+          example: false
+        allow_votes:
+          type: boolean
+          example: true
+        allow_curation_rewards:
+          type: boolean
+          example: true
     comment:
       type: object
       properties:
@@ -3520,860 +3903,49 @@ components:
           type: integer
         vote_rshares: 
           type: integer
-    find_comments_response:
+    comment_pending_empty_payout_type:
       type: object
       properties:
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/comment'
-    find_collateralized_conversion_requests:
-      type: object
-      properties:
-        account:
+        author:
           type: string
-          example: "hiveio"
-          description: >-
-            The name of the account to query.
-    find_collateralized_conversion:
-      type: object
-      properties:
-        collateral_amount:
-          $ref: '#/components/schemas/balance'
-        conversion_date:
-          type: string
-          format: date-time
-          example: "2025-05-22T03:29:51"
-          description: >-
-            The date when the conversion will take place.
-        converted_amount:
-          $ref: '#/components/schemas/balance'
-        id:
-          type: integer
-          example: 40790
-        owner:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account that owns the request.
-        requestid:
-          type: integer
-          example: 1
-          description: >-
-            The ID of the request.
-    find_collateralized_conversion_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/find_collateralized_conversion'
-    list_collateralized_conversion_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/find_collateralized_conversion'
-    find_account_recovery:
-      type: object
-      properties:
-        account_to_recover:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to recover.
-        effective_on:
-          type: string
-          format: date-time
-          example: "2020-11-05T13:48:39"
-          description: >-
-            Date when the recovery will be effective.
-        id:
-          type: integer
-          example: 9
-          description: >-
-            The ID of the recovery request.
-        recovery_account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account that will be used to recover the account.
-    find_change_recovery_account_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/find_account_recovery'
-    list_change_recovery_account_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/find_account_recovery'
-    find_account_recovery_requests:
-      type: object
-      properties:
-        accounts:
-          type: array
-          items:
-            type: string
-          example: ["hiveio"]
-    find_change_recovery_account_requests:
-      type: object
-      properties:
-        accounts:
-          type: array
-          items:
-            type: string
-          example: ["hiveio"]
-    find_decline_voting_rights_requests:
-      type: object
-      properties:
-        accounts:
-          type: array
-          items:
-            type: string
-          example: ["hiveio"]
-    find_owner_histories:
-      type: object
-      properties:
-        owner:
-          type: string
-          example: ""
-    find_hbd_conversion_requests:
-      type: object
-      properties:
-        account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to query.
-    find_escrows:
-      type: object
-      properties:
-        from:
-          type: string
-          example: ""
-    account_recovery:
-      type: object
-      properties:
-        account_to_recover:
-          type: string
-          example: "tulpa"
-          description: >-
-            The name of the account to recover.
-        expires:
-          type: string
-          format: date-time
-          example: "2020-11-05T13:48:39"
-          description: >-
-            The expiration time of the recovery request.
-        id:
-          type: integer
-          example: 9
-          description: >-
-            The ID of the recovery request.
-        new_owner_authority:
-          $ref: '#/components/schemas/auths'
-          description: New owner authority of the account. 
-    find_account_recovery_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/account_recovery'
-    list_account_recovery_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/account_recovery'
-    list_accounts:
-      type: object
-      properties:
-        start:
-          type: object
-          example: ""
-          description:
-        limit:
-          type: integer
-          example: 10
-          description:
-        order:
-          type: string
-          example: by_name
-          description:
-        delayed_votes_active:
-          type: boolean
-          example: true
-          description: Optional.
-    start_limit_order:
-      type: object
-      properties:
-        start:
-          type: object
-          example: []
-          description:
-        limit:
-          type: integer
-          example: 10
-          description:
-        order:
-          type: string
-          example: order_name
-          description:
-    start_limit:
-      type: object
-      properties:
-        start:
-          type: object
-          example: []
-          description:
-        limit:
-          type: integer
-          example: 10
-          description:
-    list_account_recovery_requests:
-      $ref: '#/components/schemas/start_limit_order'
-    list_change_recovery_account_requests:
-      $ref: '#/components/schemas/start_limit_order'
-    list_collateralized_conversion_requests:
-      $ref: '#/components/schemas/start_limit_order'
-    list_decline_voting_rights_requests:
-      $ref: '#/components/schemas/start_limit_order'
-    list_escrows:
-      $ref: '#/components/schemas/start_limit_order'
-    list_hbd_conversion_requests:
-      $ref: '#/components/schemas/start_limit_order'
-    list_limit_orders:
-      $ref: '#/components/schemas/start_limit_order'
-    list_savings_withdrawals:
-      $ref: '#/components/schemas/start_limit_order'
-    list_vesting_delegation_expirations:
-      $ref: '#/components/schemas/start_limit_order'
-    list_vesting_delegations:
-      $ref: '#/components/schemas/start_limit_order'
-    list_votes:
-      $ref: '#/components/schemas/start_limit_order'
-    list_withdraw_vesting_routes:
-      $ref: '#/components/schemas/start_limit_order'
-    list_witness_votes:
-      $ref: '#/components/schemas/start_limit_order'
-    list_witnesses:
-      $ref: '#/components/schemas/start_limit_order'
-    list_owner_histories:
-      $ref: '#/components/schemas/start_limit'   
-    start_limit_proposals:
-      type: object
-      properties:
-        start:
-          type: object
-          example: [10]
-          description:
-        limit:
-          type: integer
-          example: 10
-          description:
-        order:
-          type: string
-          example: by_voter_proposal
-          description:
-        order_direction:
-          type: string
-          example: ascending
-          description:
-        status:
-          type: string
-          example: all
-          description:
-    list_proposals:
-      $ref: '#/components/schemas/start_limit_proposals'
-    list_proposal_votes:
-      $ref: '#/components/schemas/start_limit_proposals'
-    verify_signatures: 
-      type: object
-      properties:
-        hash:
-          type: string
-          example: "0000000000000000000000000000000000000000000000000000000000000000"
-        signatures:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of strings representing the signatures to verify.
-        required_owner:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of strings representing the required owner keys.
-        required_active:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of strings representing the required active keys.
-        required_posting:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of strings representing the required posting keys.
-        required_other:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of strings representing the required other keys.
-    find_witnesses:
-      type: object
-      properties:
-        owners:
-          type: array
-          items:
-            type: string
-          example: ["initminer"]
-          description: >-
-            An array of strings representing account names to query.
-    find_limit_orders:
-      type: object
-      properties:
-        account:
-          type: string
-          example: ""
-          description: >-
-            The name of the account to query.
-    get_key_references:
-      type: object
-      properties:
-        keys:
-          type: array
-          items:
-            type: string
-          example: ["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]
-          description: >-
-            An array of strings representing keys to query. 
-    find_rc_accounts:
-      type: object
-      properties:
-        keys:
-          type: array
-          items:
-            type: string
-          example: ["hiveio"]
-          description: >-
-            An array of strings representing accounts to query. 
-    find_accounts:
-      type: object
-      properties:
-        accounts:
-          type: array
-          items:
-            type: string
-          example: ["hiveio"]
-          description: >-
-            An array of strings representing account names to query. 
-        delayed_votes_active:
-          type: boolean
-          example: true
-          description: Optional.
-    get_block:
-      type: object
-      properties:
-        block_num:
-          type: integer
-          example: 0
-          description: >-
-            An integer representing the block number to query.
-    get_block_range:
-      type: object
-      properties:
-        starting_block_num:
-          type: integer
-          example: 0
-          description: >-
-            Height of the first block to be returned.
-        count:
-          type: integer
-          example: 0
-          description: >-
-            The maximum number of blocks to return.
-    block:
-      type: object
-      properties:
-        previous:
-          type: string
-          example: "0000000000000000000000000000000000000000"
-          description: >-
-            The previous block ID.
-        timestamp:
-          type: string
-          format: date-time
-          example: "2016-03-24T16:05:00"
-          description: >-
-            The timestamp of the block.
-        witness:
-          type: string
-          example: ""
-          description: >-
-            The witness who produced the block.
-        transaction_merkle_root:
-          type: string
-          example: "0000000000000000000000000000000000000000"
-          description: >-
-            Single hash representing the combined hashes of all transactions in a block.
-        extensions:
-          $ref: '#/components/schemas/extensions'
-          example: []
-        witness_signature:
-          type: string
-          example: ""
-          description: >-
-            The signature of the witness who produced the block.
-        transactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/operation_body'
-          example: []
-          description: >-
-            An array of transactions included in the block.
-        block_id:
-          type: string
-          example: ""
-          description: >-
-            The ID of the block.
-        signing_key:
-          type: string
-          example: ""
-          description: >-
-            The key used to sign the block.
-        transaction_ids:
-          type: array
-          items:
-            type: string
-          example: []
-          description: >-
-            An array of transaction IDs included in the block.
-    get_block_response:
-      type: object
-      properties:
-        header:
-          $ref: '#/components/schemas/block'
-    proposals:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 12345
-        proposal_id:
-          type: string
-          example: "139925218365120"
-        creator:
-          type: string
-          example: "alice"
-          description: >-
-            The name of the account that created the proposal.
-        receiver:
-          type: string
-          example: "bob"
-          description: >-
-            The name of the account that will benefit from the proposal.
-        start_date:
-          type: string
-          format: date-time
-          example: "2019-07-01T00:00:00"
-          description: >-
-            The start date of the proposal.
-        end_date:
-          type: string
-          format: date-time
-          example: "2019-08-01T23:59:59"
-          description: >-
-            The end date of the proposal.
-        daily_pay:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The daily pay amount of the proposal.
-        subject:
-          type: string
-          example: "My Proposal"
-          description: >-
-            The subject of the proposal.
+          example: "hbd.funder"
         permlink:
           type: string
-          example: "creator-proposal-permlink"
-          description: >-
-            The permlink of the proposal.
-        total_votes:
+          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
+    comment_pending_payout:
+      type: array
+      items:
+        type: string
+    comment_pending_payout_type:
+      type: object
+      properties:
+        author:
           type: string
-          example: "77351826710"
-          description: >-
-            The total vests voted on the proposal.
-        status:
+          example: "hbd.funder"
+        permlink:
           type: string
-          example: "active"
-          description: >-
-            The status of the proposal.
-    find_proposals_response:
-      type: object
-      properties:
-        proposals:
-          type: array
-          items:
-            $ref: '#/components/schemas/proposals'
-    list_proposals_response:
-      type: object
-      properties:
-        proposals:
-          type: array
-          items:
-            $ref: '#/components/schemas/proposals'
-    witness_vote:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 0
-        witness:
-          type: string
-          example: "witness1"
-          description: >-
-            The name of the witness that was voted for.
-        account:
-          type: string
-          example: "alice"
-          description: >-
-            The name of the account that voted for the witness.
-    list_witness_votes_response:
-      type: object
-      properties:
-        votes:
-          type: array
-          items:
-            $ref: '#/components/schemas/witness_vote'
-    proposal_vote:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 0
-        voter:
-          type: string
-          example: "charlie"
-          description: >-
-            The name of the account that voted on the proposal.
-        proposal:
-          $ref: '#/components/schemas/proposals'
-    list_proposal_votes_response:
-      type: object
-      properties:
-        proposal_votes:
-          type: array
-          items:
-            $ref: '#/components/schemas/proposal_vote'
-    get_active_witnesses_response:
-      type: object
-      properties:
-        witnesses:
-          type: array
-          items:
-            type: string
-          example: ["witness1", "witness2"]
-          description: >-
-            An array of strings representing the active witnesses.
-    owner_auth_history:
+          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
+        cashout_info:
+          $ref: '#/components/schemas/cashout_info'
+    decline_voting_rights:
       type: object
       properties:
         account:
           type: string
-          example: "noorkh"
+          example: "hiveio"
           description: >-
-            The name of the account.
-        id:
-          type: integer
-          example: 765309
-          description: >-
-            The ID of the owner authority history.
-        last_valid_time:
+            The name of the account to decline voting rights.
+        effective_date:
           type: string
           format: date-time
-          example: "2024-05-16T11:40:09"
+          example: "2020-12-04T13:34:45"
           description: >-
-            The last valid time of the owner authority.
-        previous_owner_authority:
-          $ref: '#/components/schemas/auths'
-          description: >-
-            The previous owner authority of the account.
-    find_owner_histories_response:
-      type: object
-      properties:
-        owner_auths:
-          type: array
-          items:
-            $ref: '#/components/schemas/owner_auth_history'
-    list_owner_histories_response:
-      type: object
-      properties:
-        owner_auths:
-          type: array
-          items:
-            $ref: '#/components/schemas/owner_auth_history'       
-    get_block_range_response:
-      type: object
-      properties:
-        blocks:
-          type: array
-          items:
-            $ref: '#/components/schemas/block'
-    recurrent_transfer:
-      type: object
-      properties:
+            The date when the voting rights will be declined.
         id:
           type: integer
-          example: 12345
-        trigger_date:
-          type: string
-          format: date-time
-          example: "2025-05-06T13:36:45"
-          description: >-
-            The date when the transfer will be triggered.
-        from:
-          type: string
-          example: "alice"
-          description: >-
-            The name of the account that created the transfer.
-        to:
-          type: string
-          example: "bob"
-          description: >-
-            The name of the account that will receive the transfer.
-        amount:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of the transfer.
-        memo:
-          type: string
-          example: "Payroll"
-          description: >-
-            The memo message.
-        recurrence:
-          type: integer
-          example: 26
-          description: >-
-            The recurrence period of the transfer in hours.
-        consecutive_failures:
-          type: integer
-          example: 0
-          description: >-
-            The number of consecutive failures of the transfer.
-        remaining_executions:
-          type: integer
-          example: 3
-          description: >-
-            The number of remaining executions of the transfer.
-    find_recurrent_transfers_response:
-      type: object
-      properties:
-        recurrent_transfers:
-          type: array
-          items:
-            $ref: '#/components/schemas/recurrent_transfer'
-    savings_withdrawal:
-      type: object
-      properties:
-        amount:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of the withdrawal.
-        complete:
-          type: string
-          format: date-time
-          example: "2024-05-31T11:51:39"
-          description: >-
-            The date when the withdrawal will be completed.
-        from:
-          type: string
-          example: "demo.com"
-          description: >-
-            The name of the account that created the withdrawal.
-        id:
-          type: integer
-          example: 213646
-          description: >-
-            The ID of the withdrawal.
-        memo:
-          type: string
-          example: ""
-          description: >-
-            The memo message.
-        request_id:
-          type: integer
-          example: 3205148605
+          example: 11
           description: >-
             The ID of the request.
-        to:
-          type: string
-          example: "demo.com"
-          description: >-
-            The name of the account that will receive the withdrawal.
-    find_savings_withdrawals_response:
-      type: object
-      properties:
-        withdrawals:
-          type: array
-          items:
-            $ref: '#/components/schemas/savings_withdrawal'
-    list_savings_withdrawals_response:
-      type: object
-      properties:
-        withdrawals:
-          type: array
-          items:
-            $ref: '#/components/schemas/savings_withdrawal'
-    vesting_delegation:
-      type: object
-      properties:
-        delegator:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account that delegated the shares.
-        delegatee:
-          type: string
-          example: "sharker"
-          description: >-
-            The name of the account that received the delegation.
-        id:
-          type: integer
-          example: 2454889
-          description: >-
-            The ID of the delegation.
-        min_delegation_time:
-          type: string
-          format: date-time
-          example: "2024-03-07T15:35:00"
-        vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of vesting shares delegated.
-    find_vesting_delegations_response:
-      type: object
-      properties:
-        delegations:
-          type: array
-          items:
-            $ref: '#/components/schemas/vesting_delegation'
-    list_vesting_delegations_response:
-      type: object
-      properties:
-        delegations:
-          type: array
-          items:
-            $ref: '#/components/schemas/vesting_delegation'
-    orders:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 12345
-        created:
-          type: string
-          format: date-time
-          example: "2019-12-14T04:05:39"
-          description: >-
-            The date when the order was created.
-        expiration:
-          type: string
-          format: date-time
-          example: "2019-12-15T05:05:21"
-          description: >-
-            The expiration time of the order.
-        seller:
-          type: string
-          example: ""
-          description: >-
-            The account that created the order.
-        orderid:
-          type: integer
-          example: 0
-          description: >-
-            The ID of the order.
-        for_sale:
-          type: integer
-          example: 0
-          description: >-
-            The amount of the asset for sale.
-        sell_price:
-          type: object
-          properties:
-            base:
-              $ref: '#/components/schemas/balance'
-              description: >-
-                The base asset of the order.
-            quote:
-              $ref: '#/components/schemas/balance'
-              description: >-
-                The quote asset of the order.
-    find_limit_orders_response:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: '#/components/schemas/orders'
-    list_limit_orders_response:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: '#/components/schemas/orders'
-    vesting_delegation_expirations:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 12345
-        delegator:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account that delegated the shares.
-        vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of vesting shares delegated.
-        expiration:
-          type: string
-          format: date-time
-          example: "2018-12-05T21:46:48"
-          description: >-
-            The expiration time of the delegation.
-    find_vesting_delegation_expirations_response:
-      type: object
-      properties:
-        expirations:
-          type: array
-          items:
-            $ref: '#/components/schemas/vesting_delegation_expirations'
-    list_vesting_delegation_expirations_response:
-      type: object
-      properties:
-        delegations:
-          type: array
-          items:
-            $ref: '#/components/schemas/vesting_delegation_expirations'
     escrow:
       type: object
       properties:
@@ -4439,331 +4011,6 @@ components:
           example: false
           description: >-
             Indicates if the escrow is disputed.
-    find_escrows_response:
-      type: object
-      properties:
-        escrows:
-          type: array
-          items:
-            $ref: '#/components/schemas/escrow'
-    list_escrows_response:
-      type: object
-      properties:
-        escrows:
-          type: array
-          items:
-            $ref: '#/components/schemas/escrow'
-    get_key_references_response:
-      type: object
-      properties:
-        accounts:
-          type: array
-          items:
-            type: string
-    withdraw_vesting_routes:
-      type: object
-      properties:
-        from_account:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account that is withdrawing vesting shares.
-        to_account:
-          type: string
-          example: "ecency"
-          description: >-
-            The name of the receiver of the withdrawal
-        percent:
-          type: integer
-          example: 10000
-        auto_vest:
-          type: boolean
-          example: false
-        id:
-          type: integer
-          example: 12345
-          description: >-
-            The ID of the withdrawal route.
-    find_withdraw_vesting_routes_response:
-      type: object
-      properties:
-        routes:
-          type: array
-          items:
-            $ref: '#/components/schemas/withdraw_vesting_routes'
-    list_withdraw_vesting_routes_response:
-      type: object
-      properties:
-        routes:
-          type: array
-          items:
-            $ref: '#/components/schemas/withdraw_vesting_routes'
-    bids_and_asks:
-      type: object
-      properties:
-        created:
-          type: string
-          format: date-time
-          example: "2025-05-22T11:17:24"
-          description: >-
-            The date when the order was created.
-        hbd:
-          type: integer
-          example: 26344
-          description: >-
-            The amount of HBD in the order.
-        hive:
-          type: integer
-          example: 97538
-          description: >-
-            The amount of HIVE in the order.
-        order_price:
-          $ref: '#/components/schemas/base_and_quote'
-        real_price:
-          type: string
-          example: "0.00000000000000000"
-    get_order_book_response:
-      type: object
-      properties:
-        asks:
-          type: array
-          items:
-            $ref: '#/components/schemas/bids_and_asks'
-        bids:
-          type: array
-          items:
-            $ref: '#/components/schemas/bids_and_asks'
-    rc_account_object:
-      type: object
-      properties:
-        account:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account.
-        rc_manabar:
-          $ref: '#/components/schemas/voting_manabar'
-        max_rc_creation_adjustment:
-          $ref: '#/components/schemas/balance'
-        max_rc:
-          type: string
-          example: "0"
-          description: >-
-            The maximum resource credits available for the account.
-    find_rc_accounts_response:
-      type: object
-      properties:
-        rc_accounts:
-          type: array
-          items:
-            $ref: '#/components/schemas/rc_account_object'
-    reward_funds:
-      type: object
-      properties:
-        author_reward_curve:
-          type: string
-          example: "linear"
-          description: >-
-            The author reward curve.
-        content_constant:
-          type: string
-          example: "2000000000000"
-          description: >-
-            The content constant.
-        curation_reward_curve:
-          type: string
-          example: "linear"
-          description: >-
-            The curation reward curve.
-        id:
-          type: integer
-          example: 0
-        last_update:
-          type: string
-          format: date-time
-          example: "2025-05-22T12:59:21"
-        name:
-          type: string
-          example: "post"
-        percent_content_rewards:
-          type: integer
-          example: 10000
-        percent_curation_rewards:
-          type: integer
-          example: 5000
-        recent_claims:
-          type: string
-          example: "711345102753889024"
-        reward_balance:
-          $ref: '#/components/schemas/balance'
-    get_reward_funds_response:
-      type: object
-      properties:
-        funds:
-          type: array
-          items:
-            $ref: '#/components/schemas/reward_funds'
-    vote:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 12345
-          description: >-
-            The ID of the vote.
-        voter:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account that cast the vote.
-        author:
-          type: string
-          example: "hiveio"
-          description: >-
-            The author of the post that was voted on.
-        permlink:
-          type: string
-          example: "announcing-the-launch-of-hive-blockchain"
-          description: >-
-            The permlink of the post that was voted on.
-        weight:
-          type: string
-          example: "0"
-          description: >-
-            The weight of the vote.
-        rshares:
-          type: integer
-          example: 0
-          description: >-
-            The number of rshares voted.
-        vote_percent:
-          type: integer
-          example: 0
-          description: >-
-            The percentage of the vote.
-        last_update:
-          type: string
-          format: date-time
-          example: "2016-04-07T19:15:36"
-          description: >-
-            The last update time of the vote.
-        num_changes:
-          type: integer
-          example: -1
-          description: >-
-            The number of changes made to the vote.
-    find_votes_response:
-      type: object
-      properties:
-        votes:
-          type: array
-          items:
-            $ref: '#/components/schemas/vote'
-    list_votes_response:
-      type: object
-      properties:
-        votes:
-          type: array
-          items:
-            $ref: '#/components/schemas/vote'
-    get_version_response:
-      type: object
-      properties:
-        blockchain_version:
-          type: string
-          example: "0.23.0"
-          description: >-
-            The version of the blockchain.
-        hive_revision:
-          type: string
-          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
-          description: >-
-            The revision of the Hive codebase.
-        fc_revision:
-          type: string
-          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
-          description: >-
-            The revision of the fc codebase.
-        chain_id:
-          type: string
-          example: "beeab0de00000000000000000000000000000000000000000000000000000000"
-    block_header:
-      type: object
-      properties:
-        previous:
-          type: string
-          example: "0000000000000000000000000000000000000000"
-          description: >-
-            The previous block ID.
-        timestamp:
-          type: string
-          format: date-time
-          example: "2016-03-24T16:05:00"
-          description: >-
-            The timestamp of the block.
-        witness:
-          type: string
-          example: ""
-          description: >-
-            The witness who produced the block.
-        transaction_merkle_root:
-          type: string
-          example: "0000000000000000000000000000000000000000"
-          description: >- 
-            Single hash representing the combined hashes of all transactions in a block.
-        extensions:
-          $ref: '#/components/schemas/extensions'
-          example: []
-    get_block_header_response:
-      type: object
-      properties:
-        block:
-          $ref: '#/components/schemas/block_header'
-    decline_voting_rights:
-      type: object
-      properties:
-        account:
-          type: string
-          example: "hiveio"
-          description: >-
-            The name of the account to decline voting rights.
-        effective_date:
-          type: string
-          format: date-time
-          example: "2020-12-04T13:34:45"
-          description: >-
-            The date when the voting rights will be declined.
-        id:
-          type: integer
-          example: 11
-          description: >-
-            The ID of the request.
-    find_decline_voting_rights_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/decline_voting_rights'
-    list_decline_voting_rights_requests_response:
-      type: object
-      properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/decline_voting_rights'
-    operation_body:
-      type: object
-      x-sql-datatype: JSON
-      properties:
-        type:
-          type: string
-        value:
-          type: object
-    array_of_operations:
-      type: array
-      items:
-        $ref: '#/components/schemas/operation_body'
     extensions:
       type: array
       items:
@@ -4773,238 +4020,383 @@ components:
             type: string
           value:
             type: string
-    transaction:
+    find_account_recovery:
       type: object
       properties:
-        ref_block_num:
-          type: integer
-          example: 0
-        ref_block_prefix:
-          type: integer
-          example: 0
-        expiration:
+        account_to_recover:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to recover.
+        effective_on:
           type: string
           format: date-time
-          example: "1970-01-01T00:00:00"
-        operations:
-          $ref: '#/components/schemas/array_of_operations'
-          example: []
-        extensions:
-          $ref: '#/components/schemas/extensions'
-          example: []
-        signatures:
-          type: array
-          items:
-            type: string
-          example: []
-    verify_authority:
-      type: object
-      properties:
-        trx:
-          $ref: '#/components/schemas/transaction'
-        pack:
-          type: string
-          example: "legacy"
-    get_potential_signatures:
-      type: object
-      properties:
-        trx:
-          $ref: '#/components/schemas/transaction'
-    get_required_signatures:
-      type: object
-      properties:
-        trx:
-          $ref: '#/components/schemas/transaction'
-    get_transaction_hex:
-      type: object
-      properties:
-        trx:
-          $ref: '#/components/schemas/transaction'
-    broadcast_transaction:
-      type: object
-      properties:
-        trx:
-          $ref: '#/components/schemas/transaction'
-        max_block_age:
+          example: "2020-11-05T13:48:39"
+          description: >-
+            Date when the recovery will be effective.
+        id:
           type: integer
-          example: -1
-    list_accounts_response:
+          example: 9
+          description: >-
+            The ID of the recovery request.
+        recovery_account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account that will be used to recover the account.
+    find_account_recovery_requests:
       type: object
       properties:
         accounts:
           type: array
           items:
-            $ref: '#/components/schemas/account'
-    get_transaction_hex_response:
+            type: string
+          example: ["hiveio"]
+    find_account_recovery_requests_response:
       type: object
       properties:
-        hex:
-          type: string
-          example: "00000000000000000000000000"
-    account_subsidy_rd:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/account_recovery'
+    find_change_recovery_account_requests:
       type: object
       properties:
-        budget_per_time_unit:
-          type: integer
-          example: 797
-        decay_params:
-          type: object
-          properties:
-            decay_per_time_unit:
-              type: integer
-              example: 347321
-            decay_per_time_unit_denom_shift:
-              type: integer
-              example: 36
-        max_pool_size:
-          type: integer
-          example: 157691079
-        min_decay:
-          type: integer
-          example: 0
-        pool_eq:
-          type: integer
-          example: 157691079
-        resource_unit:
-          type: integer
-          example: 10000
-    get_witness_schedule_response:
-      type: object
-      properties:
-        account_subsidy_rd:
-          $ref: '#/components/schemas/account_subsidy_rd'
-        account_subsidy_witness_rd:
-          $ref: '#/components/schemas/account_subsidy_rd'
-        current_shuffled_witnesses:
+        accounts:
           type: array
           items:
             type: string
-          example: ["witness1", "witness2"]
-        current_virtual_time:
+          example: ["hiveio"]
+    find_change_recovery_account_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_account_recovery'
+    find_collateralized_conversion:
+      type: object
+      properties:
+        collateral_amount:
+          $ref: '#/components/schemas/balance'
+        conversion_date:
           type: string
-          example: "965626696637118176548648739"
-        elected_weight:
-          type: integer
-          example: 1
-        hardfork_required_witnesses:
-          type: integer
-          example: 17
+          format: date-time
+          example: "2025-05-22T03:29:51"
+          description: >-
+            The date when the conversion will take place.
+        converted_amount:
+          $ref: '#/components/schemas/balance'
         id:
           type: integer
-          example: 0
-        majority_version:
+          example: 40790
+        owner:
           type: string
-          example: "1.27.3"
-        max_miner_witnesses:
-          type: integer
-          example: 0
-        max_runner_witnesses:
-          type: integer
-          example: 1
-        max_voted_witnesses:
-          type: integer
-          example: 20
-        median_props:
-          $ref: '#/components/schemas/witness_props'
-        min_witness_account_subsidy_decay:
-          type: integer
-          example: 0
-        miner_weight:
+          example: "hiveio"
+          description: >-
+            The name of the account that owns the request.
+        requestid:
           type: integer
           example: 1
-        next_shuffle_block_num:
-          type: integer
-          example: 96113997
-        num_scheduled_witnesses:
-          type: integer
-          example: 21
-        timeshare_weight:
-          type: integer
-          example: 5
-        witness_pay_normalization_factor:
-          type: integer
-          example: 25
-    cashout_info:
+          description: >-
+            The ID of the request.
+    find_collateralized_conversion_requests:
       type: object
       properties:
-        total_vote_weight:
-          type: integer
-          example: 22841196
-        total_payout_value:
-          $ref: '#/components/schemas/balance'
-        curator_payout_value:
-          $ref: '#/components/schemas/balance'
-        max_accepted_payout:
-          $ref: '#/components/schemas/balance'
-        author_rewards:
-          type: integer
-          example: 0
-        children_abs_rshares:
+        account:
           type: string
-          example: "606511906476641"
-        net_rshares:
+          example: "hiveio"
+          description: >-
+            The name of the account to query.
+    find_collateralized_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_collateralized_conversion'
+    find_comments:
+      type: array
+      items:
+        type: array
+        items:
           type: string
-          example: "571577939879762"
-        abs_rshares:
+        example: ["author", "permlink"]
+        description: >-
+          An array of strings representing the author and permlink of the comment to query.
+    find_comments_response:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/comment'
+    find_decline_voting_rights_requests:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+    find_decline_voting_rights_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/decline_voting_rights'
+    find_escrows:
+      type: object
+      properties:
+        from:
           type: string
-          example: "594467432989642"
-        vote_rshares:
+          example: ""
+    find_escrows_response:
+      type: object
+      properties:
+        escrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/escrow'
+    find_hbd_conversion_requests:
+      type: object
+      properties:
+        account:
           type: string
-          example: "583007369825359"
-        net_votes:
-          type: integer
-          example: 378
-        active:
+          example: ""
+          description: >-
+            The name of the account to query.
+    find_hbd_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/hbd_conversion'
+    find_limit_orders:
+      type: object
+      properties:
+        account:
           type: string
-          format: date-time
-          example: "2021-04-06T15:29:03"
-        last_payout:
+          example: ""
+          description: >-
+            The name of the account to query.
+    find_limit_orders_response:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/orders'
+    find_owner_histories:
+      type: object
+      properties:
+        owner:
           type: string
-          format: date-time
-          example: "1970-01-01T00:00:00"
-        cashout_time:
+          example: ""
+    find_owner_histories_response:
+      type: object
+      properties:
+        owner_auths:
+          type: array
+          items:
+            $ref: '#/components/schemas/owner_auth_history'
+    find_proposals:
+      type: object
+      properties:
+        proposal_ids:
+          type: array
+          items:
+            type: integer
+          example: [0]
+          description: >-
+            An array of int representing id of proposals.
+    find_proposals_response:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposals'
+    find_rc_accounts:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+          description: >-
+            An array of strings representing accounts to query. 
+    find_rc_accounts_response:
+      type: object
+      properties:
+        rc_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/rc_account_object'
+    find_recurrent_transfers:
+      type: object
+      properties:
+        from:
           type: string
-          format: date-time
-          example: "2021-04-12T02:07:00"
-        max_cashout_time:
+          example: ""
+    find_recurrent_transfers_response:
+      type: object
+      properties:
+        recurrent_transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/recurrent_transfer'
+    find_savings_withdrawals:
+      type: object
+      properties:
+        account:
           type: string
-          format: date-time
-          example: "1969-12-31T23:59:59"
-        percent_hbd:
-          type: integer
-          example: 10000
-        reward_weight:
-          type: integer
-          example: 10000
-        allow_replies:
-          type: boolean
-          example: false
-        allow_votes:
-          type: boolean
-          example: true
-        allow_curation_rewards:
-          type: boolean
-          example: true
-    comment_pending_payout_type:
+          example: ""
+          description: >-
+            The name of the account to query.
+    find_savings_withdrawals_response:
+      type: object
+      properties:
+        withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/savings_withdrawal'
+    find_vesting_delegation_expirations:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
+    find_vesting_delegation_expirations_response:
+      type: object
+      properties:
+        expirations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation_expirations'
+    find_vesting_delegations:
+      type: object
+      properties:
+        account:
+          type: string
+          example: ""
+          description: >-
+            The name of the account to query.
+    find_vesting_delegations_response:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation'
+    find_votes:
       type: object
       properties:
         author:
           type: string
-          example: "hbd.funder"
+          example: "hiveio"
+          description: >-
+            The author of the post to query.
         permlink:
           type: string
-          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
-        cashout_info:
-          $ref: '#/components/schemas/cashout_info'
-    comment_pending_empty_payout_type:
+          example: "announcing-the-launch-of-hive-blockchain"
+          description: >-
+            The permlink of the post to query.
+    find_votes_response:
       type: object
       properties:
-        author:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/vote'
+    find_withdraw_vesting_routes:
+      type: object
+      properties:
+        account:
           type: string
-          example: "hbd.funder"
-        permlink:
+          example: "ecency"
+          description: >-
+            The name of the account to query.
+        order:
           type: string
-          example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
+          example: "by_destination"
+          description: >-
+            The order in which to return the results.
+    find_withdraw_vesting_routes_response:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/withdraw_vesting_routes'
+    find_witnesses:
+      type: object
+      properties:
+        owners:
+          type: array
+          items:
+            type: string
+          example: ["initminer"]
+          description: >-
+            An array of strings representing account names to query.
+    find_witnesses_response:
+      type: object
+      properties:
+        witnesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/witness'
+    get_block:
+      type: object
+      properties:
+        block_num:
+          type: integer
+          example: 0
+          description: >-
+            An integer representing the block number to query.
+    get_block_header_response:
+      type: object
+      properties:
+        block:
+          $ref: '#/components/schemas/block_header'
+    get_block_range:
+      type: object
+      properties:
+        starting_block_num:
+          type: integer
+          example: 0
+          description: >-
+            Height of the first block to be returned.
+        count:
+          type: integer
+          example: 0
+          description: >-
+            The maximum number of blocks to return.
+    get_block_range_response:
+      type: object
+      properties:
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/block'
+    get_block_response:
+      type: object
+      properties:
+        header:
+          $ref: '#/components/schemas/block'
+    get_comment_pending_payouts:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/comment_pending_payout'
+          example: [["hbd.funder", "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"]]
     get_comment_pending_payouts_response:
       type: object
       properties:
@@ -5014,80 +4406,6 @@ components:
             oneOf:
               - $ref: '#/components/schemas/comment_pending_payout_type'
               - $ref: '#/components/schemas/comment_pending_empty_payout_type'
-    base_and_quote:
-      type: object
-      properties:
-        base:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The base asset of the price.
-        quote:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The quote asset of the price.
-    get_feed_history_response:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 0
-          description: >-
-            The ID of the feed history.
-        current_max_history:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The current maximum history of the feed.
-        current_median_history:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The current median history of the feed.
-        current_min_history:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The current minimum history of the feed.
-        market_median_history:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The market median history of the feed.
-        price_history:
-          type: array
-          items:
-            $ref: '#/components/schemas/base_and_quote'
-          description: >-
-            An array of price history objects.
-    is_known_transaction_response:
-      type: object
-      properties:
-        is_known:
-          type: boolean
-          description: >-
-            Indicates if the transaction is known.
-    get_hardfork_properties_response:
-      type: object
-      properties:
-        current_hardfork_version:
-          type: string
-          description: The version of the hardfork.
-        id:
-          type: integer
-          description: The ID of the hardfork.
-        last_hardfork:
-          type: integer
-          description: The last hardfork number.
-        next_hardfork:
-          type: string
-          description: The next hardfork version.
-        next_hardfork_time:
-          type: string
-          format: date-time
-          description: The time of the next hardfork.
-        processed_hardforks:
-          type: array
-          items:
-            type: string
-            format: date-time
-          description: >-
-            An array of strings representing the processed hardforks.
     get_config_response:
       type: object
       properties:
@@ -5751,22 +5069,6 @@ components:
         HIVE_DB_FORMAT_VERSION:
           type: string
           description: Database format version.
-    broadcast_transaction_response:
-      type: object
-    find_witnesses_response:
-      type: object
-      properties:
-        witnesses:
-          type: array
-          items:
-            $ref: '#/components/schemas/witness'
-    list_witnesses_response:
-      type: object
-      properties:
-        witnesses:
-          type: array
-          items:
-            $ref: '#/components/schemas/witness'
     get_current_price_feed_response:
       type: object
       properties:
@@ -5774,6 +5076,222 @@ components:
           $ref: '#/components/schemas/balance'
         quote:
           $ref: '#/components/schemas/balance'
+    get_feed_history_response:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+          description: >-
+            The ID of the feed history.
+        current_max_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current maximum history of the feed.
+        current_median_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current median history of the feed.
+        current_min_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current minimum history of the feed.
+        market_median_history:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The market median history of the feed.
+        price_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/base_and_quote'
+          description: >-
+            An array of price history objects.
+    get_hardfork_properties_response:
+      type: object
+      properties:
+        current_hardfork_version:
+          type: string
+          description: The version of the hardfork.
+        id:
+          type: integer
+          description: The ID of the hardfork.
+        last_hardfork:
+          type: integer
+          description: The last hardfork number.
+        next_hardfork:
+          type: string
+          description: The next hardfork version.
+        next_hardfork_time:
+          type: string
+          format: date-time
+          description: The time of the next hardfork.
+        processed_hardforks:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: >-
+            An array of strings representing the processed hardforks.
+    get_key_references:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          example: ["STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"]
+          description: >-
+            An array of strings representing keys to query. 
+    get_key_references_response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+    get_order_book:
+      type: object
+      properties:
+        base:
+          $ref: '#/components/schemas/balance'
+          example: {
+            "amount": "1000",
+            "precision": 3,
+            "nai": "@@000000021"
+          }
+        quote:
+          $ref: '#/components/schemas/balance'
+          example: {
+            "amount": "1000",
+            "precision": 3,
+            "nai": "@@000000013"
+          }
+        limit:
+          type: integer
+          example: 0
+    get_order_book_response:
+      type: object
+      properties:
+        asks:
+          type: array
+          items:
+            $ref: '#/components/schemas/bids_and_asks'
+        bids:
+          type: array
+          items:
+            $ref: '#/components/schemas/bids_and_asks'
+    get_potential_signatures:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+    get_potential_signatures_response:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/auths'
+    get_required_signatures:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+    get_reward_funds_response:
+      type: object
+      properties:
+        funds:
+          type: array
+          items:
+            $ref: '#/components/schemas/reward_funds'
+    get_transaction_hex:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+    get_transaction_hex_response:
+      type: object
+      properties:
+        hex:
+          type: string
+          example: "00000000000000000000000000"
+    get_version_response:
+      type: object
+      properties:
+        blockchain_version:
+          type: string
+          example: "0.23.0"
+          description: >-
+            The version of the blockchain.
+        hive_revision:
+          type: string
+          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
+          description: >-
+            The revision of the Hive codebase.
+        fc_revision:
+          type: string
+          example: "5cda10a488cf77f68549ec6d3a6be9af2ea9351b"
+          description: >-
+            The revision of the fc codebase.
+        chain_id:
+          type: string
+          example: "beeab0de00000000000000000000000000000000000000000000000000000000"
+    get_witness_schedule_response:
+      type: object
+      properties:
+        account_subsidy_rd:
+          $ref: '#/components/schemas/account_subsidy_rd'
+        account_subsidy_witness_rd:
+          $ref: '#/components/schemas/account_subsidy_rd'
+        current_shuffled_witnesses:
+          type: array
+          items:
+            type: string
+          example: ["witness1", "witness2"]
+        current_virtual_time:
+          type: string
+          example: "965626696637118176548648739"
+        elected_weight:
+          type: integer
+          example: 1
+        hardfork_required_witnesses:
+          type: integer
+          example: 17
+        id:
+          type: integer
+          example: 0
+        majority_version:
+          type: string
+          example: "1.27.3"
+        max_miner_witnesses:
+          type: integer
+          example: 0
+        max_runner_witnesses:
+          type: integer
+          example: 1
+        max_voted_witnesses:
+          type: integer
+          example: 20
+        median_props:
+          $ref: '#/components/schemas/witness_props'
+        min_witness_account_subsidy_decay:
+          type: integer
+          example: 0
+        miner_weight:
+          type: integer
+          example: 1
+        next_shuffle_block_num:
+          type: integer
+          example: 96113997
+        num_scheduled_witnesses:
+          type: integer
+          example: 21
+        timeshare_weight:
+          type: integer
+          example: 5
+        witness_pay_normalization_factor:
+          type: integer
+          example: 25
     hbd_conversion:
       type: object
       properties:
@@ -5794,13 +5312,99 @@ components:
         requestid:
           type: integer
           example: 3205281453
-    find_hbd_conversion_requests_response:
+    hbd_exchange_rate:
+      type: object
+      properties:
+        base:
+          $ref: '#/components/schemas/balance'
+        quote:
+          $ref: '#/components/schemas/balance'
+    is_known_transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "0000000000000000000000000000000000000000"
+    is_known_transaction_response:
+      type: object
+      properties:
+        is_known:
+          type: boolean
+          description: >-
+            Indicates if the transaction is known.
+    list_account_recovery_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_account_recovery_requests_response:
       type: object
       properties:
         requests:
           type: array
           items:
-            $ref: '#/components/schemas/hbd_conversion'
+            $ref: '#/components/schemas/account_recovery'
+    list_accounts:
+      type: object
+      properties:
+        start:
+          type: object
+          example: ""
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: by_name
+          description:
+        delayed_votes_active:
+          type: boolean
+          example: true
+          description: Optional.
+    list_accounts_response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/account'
+    list_change_recovery_account_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_change_recovery_account_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_account_recovery'
+    list_collateralized_conversion_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_collateralized_conversion_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/find_collateralized_conversion'
+    list_decline_voting_rights_requests:
+      $ref: '#/components/schemas/start_limit_order'
+    list_decline_voting_rights_requests_response:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/decline_voting_rights'
+    list_escrows:
+      $ref: '#/components/schemas/start_limit_order'
+    list_escrows_response:
+      type: object
+      properties:
+        escrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/escrow'
+    list_hbd_conversion_requests:
+      $ref: '#/components/schemas/start_limit_order'
     list_hbd_conversion_requests_response:
       type: object
       properties:
@@ -5808,6 +5412,492 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/hbd_conversion'
+    list_limit_orders:
+      $ref: '#/components/schemas/start_limit_order'
+    list_limit_orders_response:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/orders'
+    list_owner_histories:
+      $ref: '#/components/schemas/start_limit'
+    list_owner_histories_response:
+      type: object
+      properties:
+        owner_auths:
+          type: array
+          items:
+            $ref: '#/components/schemas/owner_auth_history'
+    list_proposal_votes:
+      $ref: '#/components/schemas/start_limit_proposals'
+    list_proposal_votes_response:
+      type: object
+      properties:
+        proposal_votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposal_vote'
+    list_proposals:
+      $ref: '#/components/schemas/start_limit_proposals'
+    list_proposals_response:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/proposals'
+    list_savings_withdrawals:
+      $ref: '#/components/schemas/start_limit_order'
+    list_savings_withdrawals_response:
+      type: object
+      properties:
+        withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/savings_withdrawal'
+    list_vesting_delegation_expirations:
+      $ref: '#/components/schemas/start_limit_order'
+    list_vesting_delegation_expirations_response:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation_expirations'
+    list_vesting_delegations:
+      $ref: '#/components/schemas/start_limit_order'
+    list_vesting_delegations_response:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/vesting_delegation'
+    list_votes:
+      $ref: '#/components/schemas/start_limit_order'
+    list_votes_response:
+      type: object
+      properties:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/vote'
+    list_withdraw_vesting_routes:
+      $ref: '#/components/schemas/start_limit_order'
+    list_withdraw_vesting_routes_response:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/withdraw_vesting_routes'
+    list_witness_votes:
+      $ref: '#/components/schemas/start_limit_order'
+    list_witness_votes_response:
+      type: object
+      properties:
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/witness_vote'
+    list_witnesses:
+      $ref: '#/components/schemas/start_limit_order'
+    list_witnesses_response:
+      type: object
+      properties:
+        witnesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/witness'
+    operation_body:
+      type: object
+      x-sql-datatype: JSON
+      properties:
+        type:
+          type: string
+        value:
+          type: object
+    orders:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        created:
+          type: string
+          format: date-time
+          example: "2019-12-14T04:05:39"
+          description: >-
+            The date when the order was created.
+        expiration:
+          type: string
+          format: date-time
+          example: "2019-12-15T05:05:21"
+          description: >-
+            The expiration time of the order.
+        seller:
+          type: string
+          example: ""
+          description: >-
+            The account that created the order.
+        orderid:
+          type: integer
+          example: 0
+          description: >-
+            The ID of the order.
+        for_sale:
+          type: integer
+          example: 0
+          description: >-
+            The amount of the asset for sale.
+        sell_price:
+          type: object
+          properties:
+            base:
+              $ref: '#/components/schemas/balance'
+              description: >-
+                The base asset of the order.
+            quote:
+              $ref: '#/components/schemas/balance'
+              description: >-
+                The quote asset of the order.
+    owner_auth_history:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "noorkh"
+          description: >-
+            The name of the account.
+        id:
+          type: integer
+          example: 765309
+          description: >-
+            The ID of the owner authority history.
+        last_valid_time:
+          type: string
+          format: date-time
+          example: "2024-05-16T11:40:09"
+          description: >-
+            The last valid time of the owner authority.
+        previous_owner_authority:
+          $ref: '#/components/schemas/auths'
+          description: >-
+            The previous owner authority of the account.
+    post_voting_power:
+      $ref: '#/components/schemas/balance'
+    proposal_vote:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        voter:
+          type: string
+          example: "charlie"
+          description: >-
+            The name of the account that voted on the proposal.
+        proposal:
+          $ref: '#/components/schemas/proposals'
+    proposals:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        proposal_id:
+          type: string
+          example: "139925218365120"
+        creator:
+          type: string
+          example: "alice"
+          description: >-
+            The name of the account that created the proposal.
+        receiver:
+          type: string
+          example: "bob"
+          description: >-
+            The name of the account that will benefit from the proposal.
+        start_date:
+          type: string
+          format: date-time
+          example: "2019-07-01T00:00:00"
+          description: >-
+            The start date of the proposal.
+        end_date:
+          type: string
+          format: date-time
+          example: "2019-08-01T23:59:59"
+          description: >-
+            The end date of the proposal.
+        daily_pay:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The daily pay amount of the proposal.
+        subject:
+          type: string
+          example: "My Proposal"
+          description: >-
+            The subject of the proposal.
+        permlink:
+          type: string
+          example: "creator-proposal-permlink"
+          description: >-
+            The permlink of the proposal.
+        total_votes:
+          type: string
+          example: "77351826710"
+          description: >-
+            The total vests voted on the proposal.
+        status:
+          type: string
+          example: "active"
+          description: >-
+            The status of the proposal.
+    rc_account_object:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account.
+        rc_manabar:
+          $ref: '#/components/schemas/voting_manabar'
+        max_rc_creation_adjustment:
+          $ref: '#/components/schemas/balance'
+        max_rc:
+          type: string
+          example: "0"
+          description: >-
+            The maximum resource credits available for the account.
+    recurrent_transfer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        trigger_date:
+          type: string
+          format: date-time
+          example: "2025-05-06T13:36:45"
+          description: >-
+            The date when the transfer will be triggered.
+        from:
+          type: string
+          example: "alice"
+          description: >-
+            The name of the account that created the transfer.
+        to:
+          type: string
+          example: "bob"
+          description: >-
+            The name of the account that will receive the transfer.
+        amount:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of the transfer.
+        memo:
+          type: string
+          example: "Payroll"
+          description: >-
+            The memo message.
+        recurrence:
+          type: integer
+          example: 26
+          description: >-
+            The recurrence period of the transfer in hours.
+        consecutive_failures:
+          type: integer
+          example: 0
+          description: >-
+            The number of consecutive failures of the transfer.
+        remaining_executions:
+          type: integer
+          example: 3
+          description: >-
+            The number of remaining executions of the transfer.
+    reward_funds:
+      type: object
+      properties:
+        author_reward_curve:
+          type: string
+          example: "linear"
+          description: >-
+            The author reward curve.
+        content_constant:
+          type: string
+          example: "2000000000000"
+          description: >-
+            The content constant.
+        curation_reward_curve:
+          type: string
+          example: "linear"
+          description: >-
+            The curation reward curve.
+        id:
+          type: integer
+          example: 0
+        last_update:
+          type: string
+          format: date-time
+          example: "2025-05-22T12:59:21"
+        name:
+          type: string
+          example: "post"
+        percent_content_rewards:
+          type: integer
+          example: 10000
+        percent_curation_rewards:
+          type: integer
+          example: 5000
+        recent_claims:
+          type: string
+          example: "711345102753889024"
+        reward_balance:
+          $ref: '#/components/schemas/balance'
+    savings_withdrawal:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of the withdrawal.
+        complete:
+          type: string
+          format: date-time
+          example: "2024-05-31T11:51:39"
+          description: >-
+            The date when the withdrawal will be completed.
+        from:
+          type: string
+          example: "demo.com"
+          description: >-
+            The name of the account that created the withdrawal.
+        id:
+          type: integer
+          example: 213646
+          description: >-
+            The ID of the withdrawal.
+        memo:
+          type: string
+          example: ""
+          description: >-
+            The memo message.
+        request_id:
+          type: integer
+          example: 3205148605
+          description: >-
+            The ID of the request.
+        to:
+          type: string
+          example: "demo.com"
+          description: >-
+            The name of the account that will receive the withdrawal.
+    start_limit:
+      type: object
+      properties:
+        start:
+          type: object
+          example: []
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+    start_limit_order:
+      type: object
+      properties:
+        start:
+          type: object
+          example: []
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: order_name
+          description:
+    start_limit_proposals:
+      type: object
+      properties:
+        start:
+          type: object
+          example: [10]
+          description:
+        limit:
+          type: integer
+          example: 10
+          description:
+        order:
+          type: string
+          example: by_voter_proposal
+          description:
+        order_direction:
+          type: string
+          example: ascending
+          description:
+        status:
+          type: string
+          example: all
+          description:
+    transaction:
+      type: object
+      properties:
+        ref_block_num:
+          type: integer
+          example: 0
+        ref_block_prefix:
+          type: integer
+          example: 0
+        expiration:
+          type: string
+          format: date-time
+          example: "1970-01-01T00:00:00"
+        operations:
+          $ref: '#/components/schemas/array_of_operations'
+          example: []
+        extensions:
+          $ref: '#/components/schemas/extensions'
+          example: []
+        signatures:
+          type: array
+          items:
+            type: string
+          example: []
+    verify_account_authority:
+      type: object
+      properties:
+        account:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account to verify.
+        signers:
+          type: array
+          items:
+            type: string
+          example: ["STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN"]
+          description: >-
+            An array of strings representing the keys to verify.
+    verify_account_authority_response:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+    verify_authority:
+      type: object
+      properties:
+        trx:
+          $ref: '#/components/schemas/transaction'
+        pack:
+          type: string
+          example: "legacy"
     verify_authority_response:
       type: object
       properties:
@@ -5816,31 +5906,149 @@ components:
           example: true
           description: >-
             Indicates whether the transaction has all of the required signatures.
-    verify_account_authority_response:
+    verify_signatures: 
       type: object
       properties:
-        valid:
-          type: boolean
-          example: true
+        hash:
+          type: string
+          example: "0000000000000000000000000000000000000000000000000000000000000000"
+        signatures:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the signatures to verify.
+        required_owner:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required owner keys.
+        required_active:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required active keys.
+        required_posting:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required posting keys.
+        required_other:
+          type: array
+          items:
+            type: string
+          example: []
+          description: >-
+            An array of strings representing the required other keys.
     verify_signatures_response:
       type: object
       properties:
         valid:
           type: boolean
           example: true
-    auths:
+    vesting_delegation:
       type: object
       properties:
-        weight_threshold:
+        delegator:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that delegated the shares.
+        delegatee:
+          type: string
+          example: "sharker"
+          description: >-
+            The name of the account that received the delegation.
+        id:
           type: integer
-        account_auths:
-          type: array
-          items:
-            type: string
-        key_auths:
-          type: array
-          items:
-            type: string
+          example: 2454889
+          description: >-
+            The ID of the delegation.
+        min_delegation_time:
+          type: string
+          format: date-time
+          example: "2024-03-07T15:35:00"
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of vesting shares delegated.
+    vesting_delegation_expirations:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        delegator:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that delegated the shares.
+        vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of vesting shares delegated.
+        expiration:
+          type: string
+          format: date-time
+          example: "2018-12-05T21:46:48"
+          description: >-
+            The expiration time of the delegation.
+    vote:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+          description: >-
+            The ID of the vote.
+        voter:
+          type: string
+          example: "hiveio"
+          description: >-
+            The name of the account that cast the vote.
+        author:
+          type: string
+          example: "hiveio"
+          description: >-
+            The author of the post that was voted on.
+        permlink:
+          type: string
+          example: "announcing-the-launch-of-hive-blockchain"
+          description: >-
+            The permlink of the post that was voted on.
+        weight:
+          type: string
+          example: "0"
+          description: >-
+            The weight of the vote.
+        rshares:
+          type: integer
+          example: 0
+          description: >-
+            The number of rshares voted.
+        vote_percent:
+          type: integer
+          example: 0
+          description: >-
+            The percentage of the vote.
+        last_update:
+          type: string
+          format: date-time
+          example: "2016-04-07T19:15:36"
+          description: >-
+            The last update time of the vote.
+        num_changes:
+          type: integer
+          example: -1
+          description: >-
+            The number of changes made to the vote.
     voting_manabar:
       type: object
       properties:
@@ -5848,45 +6056,30 @@ components:
           type: integer
         last_update_time:
           type: integer
-    balance:
+    withdraw_vesting_routes:
       type: object
       properties:
-        amount:
+        from_account:
           type: string
-        nai:
+          example: "hiveio"
+          description: >-
+            The name of the account that is withdrawing vesting shares.
+        to_account:
           type: string
-        precision:
-          type: integer
-    hbd_exchange_rate:
-      type: object
-      properties:
-        base:
-          $ref: '#/components/schemas/balance'
-        quote:
-          $ref: '#/components/schemas/balance'
-    witness_props:
-      type: object
-      properties:
-        account_creation_fee:
-          $ref: '#/components/schemas/balance'
+          example: "ecency"
           description: >-
-            The fee for creating an account.
-        account_subsidy_budget:
+            The name of the receiver of the withdrawal
+        percent:
           type: integer
-          description: >-
-            The budget for account subsidies.
-        account_subsidy_decay:
+          example: 10000
+        auto_vest:
+          type: boolean
+          example: false
+        id:
           type: integer
+          example: 12345
           description: >-
-            The decay rate for account subsidies.
-        hbd_interest_rate:
-          type: integer
-          description: >-
-            The interest rate for HBD.
-        maximum_block_size:
-          type: integer
-          description: >-
-            The maximum size of a block.
+            The ID of the withdrawal route.
     witness:
       type: object
       properties:
@@ -5962,445 +6155,43 @@ components:
           type: string
         votes:
           type: integer
-    account:
+    witness_props:
       type: object
       properties:
-        id:
-          type: integer
-          description: Account's identification number.
-        name:
-          type: string
-          description: Account's name.
-        owner:
-          $ref: '#/components/schemas/auths'
-          description: Owner authority of the account. 
-        active:
-          $ref: '#/components/schemas/auths'
-          description: Active authority of the account. 
-        posting:
-          $ref: '#/components/schemas/auths'
-          description: Posting authority of the account.
-        memo_key:
-          type: string
-          description: The public key used to encrypt the memo. 
-        json_metadata:
-          type: string
-          description: >-
-            Parameter encompasses personalized profile information. 
-            It is a JSON object that can contain any data.
-        posting_json_metadata:
-          type: string
-          description: >-
-            Parameter encompasses personalized profile information. 
-            It is a JSON object that can contain any data.
-        proxy:
-          type: string
-          description: >-
-            An account to which the account has designated as its proxy. 
-            The proxy can vote on behalf of the account.
-        last_owner_update:
-          type: string
-          format: date-time
-          description: >-
-            The time when the last owner update was performed. 
-        last_account_update:
-          type: string
-          format: date-time
-          description: >-
-            The time when the last account update was performed. 
-        created:
-          type: string
-          format: date-time
-          description: >-
-            The date of account creation. 
-        mined:
-          type: boolean
-          description: >-
-            Information whether made a prove of work. 
-            It is true if the account was created by mining.
-        recovery_account:
-          type: string
-          description: >-
-            An account to which the account has designated as its recovery account. 
-            The recovery account can help recover the account if it is lost.
-        reset_account:
-          type: string
-          description: deprecated parameter
-        comment_count:
-          type: integer
-          description: >-
-            The number of comments made by the account.
-        lifetime_vote_count:
-          type: integer
-          description: >-
-            The number of votes made by the account.
-        can_vote:
-          type: boolean
-          description: >-
-            Information whether the account can vote or not. 
-            It is true if the account can vote.
-        voting_manabar:
-          $ref: '#/components/schemas/voting_manabar'
-          description: >-
-            The voting mana bar of the account. 
-            It indicates the amount of voting power available to the account.
-        downvote_manabar:
-          $ref: '#/components/schemas/voting_manabar'
-          description: >-
-            The downvote mana bar of the account. 
-            It indicates the amount of downvoting power available to the account.
-        balance:
+        account_creation_fee:
           $ref: '#/components/schemas/balance'
           description: >-
-            The balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        savings_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The savings balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        hbd_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The HIVE backed dollar balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        hbd_seconds:
-          type: string
-          description: >-
-            The number of seconds the HIVE backed dollar balance has been held.
-        hbd_seconds_last_update:
-          type: string
-          format: date-time
-          description: >-
-            The time when the HIVE backed dollar seconds were last updated.
-        hbd_last_interest_payment:
-          type: string
-          format: date-time
-          description: >-
-            The time when the last interest payment was made on the HIVE backed dollar balance.
-        savings_hbd_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The savings HIVE backed dollar balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        savings_hbd_seconds:
-          type: string
-          description: >-
-            The number of seconds the savings HIVE backed dollar balance has been held.
-        savings_hbd_seconds_last_update:
-          type: string
-          format: date-time
-          description: >-
-            The time when the savings HIVE backed dollar seconds were last updated.
-        savings_hbd_last_interest_payment:
-          type: string
-          format: date-time
-          description: >-
-            The time when the last interest payment was made on the savings HIVE backed dollar balance
-        savings_withdraw_requests:
+            The fee for creating an account.
+        account_subsidy_budget:
           type: integer
           description: >-
-            The number of savings withdraw requests made by the account.
-        reward_hbd_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The reward HIVE backed dollar balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        reward_hive_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The reward HIVE balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        reward_vesting_balance:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The reward vesting balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        reward_vesting_hive:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The reward vesting HIVE balance of the account. 
-            It is represented as an object with amount, nai, and precision.
-        vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The vesting shares of the account. 
-            It is represented as an object with amount, nai, and precision.
-        delegated_vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The delegated vesting shares of the account. 
-            It is represented as an object with amount, nai, and precision.
-        received_vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The received vesting shares of the account. 
-            It is represented as an object with amount, nai, and precision.
-        vesting_withdraw_rate:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The vesting withdraw rate of the account. 
-            It is represented as an object with amount, nai, and precision.
-        post_voting_power:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The post voting power of the account. 
-            It is represented as an object with amount, nai, and precision.
-        next_vesting_withdrawal:
-          type: string
-          format: date-time
-          description: >-
-            The time of the next vesting withdrawal.
-        withdrawn:
-          type: string
-          description: >-
-            The total vesting shares already withdrawn from active withdrawals.
-        to_withdraw:
-          type: string
-          description: >-
-            The remaining total vesting shares needed to complete withdrawals.
-        withdraw_routes:
+            The budget for account subsidies.
+        account_subsidy_decay:
           type: integer
           description: >-
-            The number of withdraw routes for the account.
-        pending_transfers:
-          type: integer
-          description: >-
-            The number of pending transfers for the account.
-        pending_claimed_accounts:
-          type: integer
-          description: >-
-            The number of pending claimed accounts for the account.
-        post_bandwidth:
-          type: integer
-          description: >-
-            The post bandwidth of the account.
-        post_count:
-          type: integer
-          description: >-
-            The number of posts made by the account.
-        last_post:
-          type: string
-          format: date-time
-          description: >-
-            The time of the last post made by the account.
-        last_root_post:
-          type: string
-          format: date-time
-          description: >-
-            The time of the last root post made by the account.
-        last_post_edit:
-          type: string
-          format: date-time
-          description: >-
-            The time of the last post edit made by the account.
-        last_vote_time:
-          type: string
-          format: date-time
-          description: >-
-            The time of the last vote made by the account.
-        last_account_recovery:
-          type: string
-          format: date-time
-          description: >-
-            The time of the last account recovery made by the account.
-        previous_owner_update:
-          type: string
-          format: date-time
-          description: >-
-            The time of the previous owner update made by the account.
-    get_potential_signatures_response:
-      type: object
-      properties:
-        keys:
-          type: array
-          items:
-            $ref: '#/components/schemas/auths'
-    get_dynamic_global_properties_response:
-      type: object
-      properties:
-        available_account_subsidies:
-          type: integer
-          description: >-
-            Number of available account creation subsidies, representing how many new accounts can be created with existing budget.
-        content_reward_percent:
-          type: integer
-          description: >-
-            Percentage of the total reward pool allocated to content creators based on voting.
-        current_aslot:
-          type: integer
-          description: >-
-            The current "average slot" number, an indicator of the current position in the consensus schedule.
-        current_hbd_supply:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The current total supply of Hive-backed dollars (HBD) in circulation.
-        current_remove_threshold:
-          type: integer
-          description: >-
-            The current threshold (in basis points) for account removal or vesting actions.
-        current_supply:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The total supply of HIVE tokens currently in circulation.
-        current_witness:
-          type: string
-          description: >-
-            Name of the witness currently producing the block.
-        delegation_return_period:
-          type: integer
-          description: >-
-            The period (in seconds) after which delegated vesting shares are returned.
-        dhf_interval_ledger:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The balance-adjusted ledger amount associated with the Dynamic Hosting Fund (DHF) interval.
-        downvote_pool_percent:
-          type: integer
-          description: >-
-            The percentage (basis points) of the total voting power allocated to the downvote pool.
-        early_voting_seconds:
-          type: integer
-          description: >-
-            Duration in seconds during which early votes are accepted before the official voting period.
+            The decay rate for account subsidies.
         hbd_interest_rate:
           type: integer
           description: >-
-            Annual interest rate (in basis points) paid on HBD savings or deposits.
-        hbd_print_rate:
-          type: integer
-          description: >-
-            Rate (basis points) determining how much HBD is printed or issued based on economic conditions.
-        hbd_start_percent:
-          type: integer
-          description: >-
-            The minimum percentage at which HBD creation process begins under peg stability mechanisms.
-        hbd_stop_percent:
-          type: integer
-          description: >-
-            The maximum percentage at which HBD creation halts during the peg stabilization process.
-        head_block_id:
-          type: string
-          description: >-
-            The block ID of the latest block in the chain.
-        head_block_number:
-          type: integer
-          description: >-
-            The number (height) of the latest block.
-        id:
-          type: integer
-          description: >-
-            Unique ID for the global properties object.
-        init_hbd_supply:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The initial amount of HBD supply at network launch or reset.
-        last_budget_time:
-          type: string
-          format: date-time
-          description: >-
-            Timestamp of the last budget allocation cycle.
-        last_irreversible_block_num:
-          type: integer
-          description: >-
-            Block number of the last irreversible block (finalized confirmed block).
-        max_consecutive_recurrent_transfer_failures:
-          type: integer
-          description: >-
-            Maximum allowed consecutive failures for scheduled recurrent transfers before cancellation.
-        max_open_recurrent_transfers:
-          type: integer
-          description: >-
-            Maximum number of concurrently active recurrent transfer schedules.
-        max_recurrent_transfer_end_date:
-          type: integer
-          description: >-
-            The maximum allowed end date (timestamp in days) for recurrent transfer schedules.
+            The interest rate for HBD.
         maximum_block_size:
           type: integer
           description: >-
-            The maximum size (in bytes) allowed for a single block.
-        mid_voting_seconds:
+            The maximum size of a block.
+    witness_vote:
+      type: object
+      properties:
+        id:
           type: integer
-          description: >-
-            Duration (in seconds) of mid-phase voting window for proposals.
-        min_recurrent_transfers_recurrence:
-          type: integer
-          description: >-
-            Minimum recurrence interval (in hours) for scheduled recurrent transfers.
-        next_daily_maintenance_time:
+          example: 0
+        witness:
           type: string
-          format: date-time
+          example: "witness1"
           description: >-
-            Scheduled time for the next daily blockchain maintenance.
-        next_maintenance_time:
+            The name of the witness that was voted for.
+        account:
           type: string
-          format: date-time
+          example: "alice"
           description: >-
-            Scheduled time for the overall next blockchain maintenance.
-        num_pow_witnesses:
-          type: integer
-          description: >-
-            Count of proof-of-work (PoW) witnesses active in the network.
-        participation_count:
-          type: integer
-          description: >-
-            Number of active participants/stakeholders currently participating in governance or voting processes.
-        pending_rewarded_vesting_hive:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of HIVE tokens pending as vested rewards that will be converted into vesting shares.
-        pending_rewarded_vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The amount of vesting shares slated to be awarded as part of pending rewards.
-        proposal_fund_percent:
-          type: integer
-          description: >-
-            Percentage of the total reward fund allocated for governance proposals, incentive programs, or development funding.
-        recent_slots_filled:
-          type: string
-          description: >-
-            String representing the high-water mark of recent slots filled, typically a large number indicating network activity.
-        reverse_auction_seconds:
-          type: integer
-          description: >-
-            Duration in seconds allocated to reverse auction procedures, possibly for resource allocation.
-        time:
-          type: string
-          format: date-time
-          description: >-
-            The current blockchain timestamp.
-        total_pow:
-          type: integer
-          description: >-
-            Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily.
-        total_reward_fund_hive:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The total reward fund HIVE.
-        total_reward_shares2:
-          type: string
-          description: >-
-            String representing reward shares (possibly an internal accounting value).
-        total_vesting_fund_hive:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            Total HIVE allocated to vesting (vesting fund) — funds set aside for vesting.
-        total_vesting_shares:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            Total vesting shares issued.
-        vesting_reward_percent:
-          type: integer
-          description: >-
-            Percentage (basis points) of reward allocated to vesting.
-        virtual_supply:
-          $ref: '#/components/schemas/balance'
-          description: >-
-            The blockchain's "virtual" supply, an internal accounting measure that may slightly differ from actual circulating tokens.
-        vote_power_reserve_rate:
-          type: integer
-          description: >-
-            The rate at which vote power reserves are maintained or replenished.
+            The name of the account that voted for the witness.
 x-envelope: jsonrpc-2.0
