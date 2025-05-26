@@ -417,10 +417,10 @@ public:
                         
                         // Check if at least some values match what we tried to set
                         // Allow for some tolerance in the values, as the system might round them
-                        bool dirty_bg_match = (dirty_bg_actual == aligned_size || 
-                                              (dirty_bg_actual > 0 && std::abs(dirty_bg_actual - (long)aligned_size) < (long)aligned_size * 0.05));
-                        bool dirty_match = (dirty_actual == (long)dirty_bytes_value || 
-                                          (dirty_actual > 0 && std::abs(dirty_actual - (long)dirty_bytes_value) < (long)dirty_bytes_value * 0.05));
+                        bool dirty_bg_match = (dirty_bg_actual >= 0 && (size_t)dirty_bg_actual == aligned_size) ||
+                                              (dirty_bg_actual > 0 && std::abs(dirty_bg_actual - (long)aligned_size) < (long)aligned_size * 0.05);
+                        bool dirty_match = (dirty_actual >= 0 && (size_t)dirty_actual == dirty_bytes_value) ||
+                                          (dirty_actual > 0 && std::abs(dirty_actual - (long)dirty_bytes_value) < (long)dirty_bytes_value * 0.05);
                         bool expire_match = (expire_actual == 300000 || expire_actual > 200000);
                         bool swappiness_match = (swappiness_actual == 10 || swappiness_actual < 20);
                         
@@ -511,22 +511,22 @@ public:
                 int commands_succeeded = 0;
 
                 // Set dirty_background_bytes
-                std::string set_dirty_bg_cmd = "echo " + std::to_string(aligned_size) +
+                std::string set_dirty_bg_cmd = std::string("echo ") + std::to_string(aligned_size) +
                                              " | sudo tee " + base_vm_path + "dirty_background_bytes > /dev/null 2>&1";
                 if (std::system(set_dirty_bg_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set dirty_bytes
-                std::string set_dirty_cmd = "echo " + std::to_string(dirty_bytes_value) +
+                std::string set_dirty_cmd = std::string("echo ") + std::to_string(dirty_bytes_value) +
                                           " | sudo tee " + base_vm_path + "dirty_bytes > /dev/null 2>&1";
                 if (std::system(set_dirty_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set dirty_expire_centisecs
-                std::string set_expire_cmd = "echo 300000" +
+                std::string set_expire_cmd = std::string("echo 300000") +
                                            " | sudo tee " + base_vm_path + "dirty_expire_centisecs > /dev/null 2>&1";
                 if (std::system(set_expire_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set vm.swappiness
-                std::string set_swappiness_cmd = "echo 10" +
+                std::string set_swappiness_cmd = std::string("echo 10") +
                                                " | sudo tee " + base_vm_path + "swappiness > /dev/null 2>&1";
                 if (std::system(set_swappiness_cmd.c_str()) == 0) commands_succeeded++;
                 
