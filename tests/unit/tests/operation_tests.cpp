@@ -310,8 +310,8 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when owner key and active key are present. Now the transaction passes." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 3*HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, { active_key, alice_private_key } ),
-      "util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(), account_auth.previous_owner_update, account_auth.last_owner_update )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, {active_key, alice_private_key}, database::skip_transaction_dupe_check ),
+      "util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(), account_auth.previous_owner_update, account_auth.last_owner_update ) && \"update\"" );
 
     validate_database();
   }
@@ -767,7 +767,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
-    HIVE_REQUIRE_ASSERT( vote( "alice", "foo", "bob", 0, bob_post_key ), "o.weight != 0" );
+    HIVE_REQUIRE_ASSERT( vote( "alice", "foo", "bob", 0, bob_post_key ), "o.weight != 0 && \"Vote weight cannot be 0.\"" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing success" );
@@ -1536,7 +1536,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     signed_transaction tx;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "(o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ))" );
 
     op.to = "";
     tx.clear();
@@ -3332,7 +3332,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!fhistory.current_median_history.is_null()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!fhistory.current_median_history.is_null() && \"Cannot convert HIVE because there is no price feed.\"" );
 
     validate_database();
   }
@@ -8132,7 +8132,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     push_transaction( op, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test voting no longer possible" );
-    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_post_key ), "comment_cashout->allows_votes()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_post_key ), "comment_cashout->allows_votes() && \"Votes are not allowed on the comment.\"" );
 
     BOOST_TEST_MESSAGE( "--- Test enabling voting back not possible" );
     op.allow_votes = true;
@@ -8349,7 +8349,7 @@ BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
     push_transaction( comment, alice_post_key );
     generate_block();
 
-    HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr", fc::exception );
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr && \"By name\"", fc::exception );
     HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required", fc::exception );
   }
   FC_LOG_AND_RETHROW()
@@ -10378,7 +10378,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_edit_overextended )
     // try to extend duration - it should fail since number of executions would reset to two, but first of them
     // would not happen immediately like in case of new r.transfer, but at previous schedule after two years (and
     // second after another two years)
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) && \"too long\"" );
 
     validate_database();
   }
@@ -10414,11 +10414,11 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_full_edit_overextended )
     // happen one full cycle after current head block, which is two years after now (and second transfer will be
     // after next two years - far to overextended);
     // compare to previous test to see why it worked then but does not work here
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) && \"too long\"" );
 
     generate_block();
     // waiting for first execution does not change anything - the r.transfer edit is still overextending time even more
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) && \"too long\"" );
 
     validate_database();
   }

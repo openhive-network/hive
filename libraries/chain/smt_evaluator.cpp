@@ -61,7 +61,8 @@ const smt_token_object& common_pre_setup_evaluation(
 
 void smt_create_evaluator::do_apply( const smt_create_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT creation",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
   const dynamic_global_property_object& dgpo = _db.get_dynamic_global_properties();
 
   auto token_ptr = util::smt::find_token( _db, o.symbol, true );
@@ -80,7 +81,7 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
     else
     {
       const auto& fhistory = _db.get_feed_history();
-      FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot pay the fee using different asset symbol because there is no price feed." );
+      FC_ASSERT( !fhistory.current_median_history.is_null() && "Cannot pay the fee using different asset symbol because there is no price feed." );
 
       if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
         creation_fee = _db.to_hive( o.smt_creation_fee );
@@ -136,7 +137,8 @@ struct smt_setup_evaluator_visitor
 
 void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT setup",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 FC_TODO("Adjust assertion below and add/modify negative tests appropriately.")
   const auto* _token = _db.find< smt_token_object, by_symbol >( o.symbol );
   FC_ASSERT( _token, "SMT ${ac} not elevated yet.",("ac", o.control_account) );
@@ -165,7 +167,8 @@ FC_TODO("Add/modify test to check the token phase correctly set.")
 
 void smt_setup_emissions_evaluator::do_apply( const smt_setup_emissions_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT emission setup",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
   const smt_token_object& smt = common_pre_setup_evaluation( _db, o.symbol, o.control_account );
 
@@ -225,7 +228,8 @@ void smt_setup_emissions_evaluator::do_apply( const smt_setup_emissions_operatio
 
 void smt_set_setup_parameters_evaluator::do_apply( const smt_set_setup_parameters_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT parameters setup",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
   const smt_token_object& smt_token = common_pre_setup_evaluation( _db, o.symbol, o.control_account );
 
@@ -274,7 +278,8 @@ struct smt_set_runtime_parameters_evaluator_visitor
 
 void smt_set_runtime_parameters_evaluator::do_apply( const smt_set_runtime_parameters_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT runtime parameters setup",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
   const smt_token_object& token = common_pre_setup_evaluation(_db, o.symbol, o.control_account);
 
@@ -291,7 +296,8 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+    FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT contribute operation",
+      "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
     const smt_token_object* token = util::smt::find_token( _db, o.symbol );
     FC_ASSERT( token != nullptr, "Cannot contribute to an unknown SMT" );

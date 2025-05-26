@@ -399,8 +399,8 @@ bool database::is_treasury( const account_name_type& name )const
 
 const account_object& database::get_account( const account_id_type id )const
 { try {
-  const auto* _account = find_account( id );
-  FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
+    const auto* _account = find_account( id );
+    FC_ASSERT( _account != nullptr && "By id", "Account with id ${acc} doesn't exist", ("acc", id) );
   return *_account;
 } FC_CAPTURE_AND_RETHROW( (id) ) }
 
@@ -411,9 +411,9 @@ const account_object* database::find_account( const account_id_type& id )const
 
 const account_object& database::get_account( const account_name_type& name )const
 { try {
-  const auto* _account = find_account( name );
-  FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
-  return *_account;
+    const auto* _account = find_account( name );
+    FC_ASSERT( _account != nullptr && "By name", "Account ${acc} doesn't exist", ("acc", name) );
+    return *_account;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
 const account_object* database::find_account( const account_name_type& name )const
@@ -639,7 +639,7 @@ const comment_cashout_ex_object* database::find_comment_cashout_ex( comment_id_t
   comment_cashout_ex_object::id_type ccid( comment_id );
   auto found = idx.find( ccid );
 
-  FC_ASSERT( found != idx.end() );
+  FC_ASSERT( found != idx.end() && "by id" );
   return &( *found );
 }
 
@@ -648,7 +648,7 @@ const comment_object& database::get_comment( const comment_cashout_object& comme
   const auto& idx = get_index< comment_index >().indices().get< by_id >();
   auto found = idx.find( comment_cashout.get_comment_id() );
 
-  FC_ASSERT( found != idx.end() );
+  FC_ASSERT( found != idx.end() && "by cashout object" );
 
   return *found;
 }
@@ -887,7 +887,7 @@ void database::clear_pending()
 
 void database::push_virtual_operation( const operation& op )
 {
-  FC_ASSERT( is_virtual_operation( op ) );
+  FC_ASSERT( is_virtual_operation( op ) && "on push" );
   _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
@@ -896,7 +896,7 @@ void database::push_virtual_operation( const operation& op )
 
 void database::pre_push_virtual_operation( const operation& op )
 {
-  FC_ASSERT( is_virtual_operation( op ) );
+  FC_ASSERT( is_virtual_operation( op ) && "on pre-push" );
   _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
@@ -904,7 +904,7 @@ void database::pre_push_virtual_operation( const operation& op )
 
 void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx )
 {
-  FC_ASSERT( is_virtual_operation( op ) );
+  FC_ASSERT( is_virtual_operation( op ) && "on post-push" );
   operation_notification note = create_operation_notification( op );
   if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
   notify_post_apply_operation( note );
@@ -2206,12 +2206,13 @@ void database::process_vesting_withdrawals()
     // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
     // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
     // occurred
-    if( to_withdraw > from_account.get_vesting().amount )
+    bool invalid_power_down = to_withdraw > from_account.get_vesting().amount;
+    if( invalid_power_down )
     {
       elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
         ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
-      FC_ASSERT( false, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
+      FC_ASSERT( not invalid_power_down, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
         ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
 #endif
       to_withdraw = from_account.get_vesting().amount;
@@ -2315,7 +2316,7 @@ void database::process_vesting_withdrawals()
       rc.regenerate_rc_mana( from_account, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
-      FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+      FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
 
       dv->add_votes( _votes_update_data_items,
                 true/*withdraw_executor*/,
@@ -2354,7 +2355,7 @@ void database::process_vesting_withdrawals()
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
-      FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+      FC_ASSERT( dv.valid() && "Sincd HF24 the object processing `delayed votes` must exist" );
 
       fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, now );
       FC_ASSERT( leftover.valid(), "Something went wrong" );
@@ -2748,7 +2749,7 @@ void database::process_comment_cashout()
         const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment );
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
-        FC_ASSERT( comment_cashout );
+        FC_ASSERT( comment_cashout && "Not found" );
         auto reward = cashout_comment_helper( ctx, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
 
@@ -3394,7 +3395,7 @@ void database::set_last_irreversible_block_data(std::shared_ptr<full_block_type>
 
 std::shared_ptr<full_block_type> database::get_last_irreversible_block_data() const
 {
-  FC_ASSERT(last_irreversible_object, "Premature access to non-initialized irreversible object data.");
+  FC_ASSERT(last_irreversible_object && "Premature access to non-initialized irreversible object data.");
 
   return cached_lib;
 }
@@ -3538,7 +3539,7 @@ void database::verify_match_of_blockchain_configuration()
 
 std::string database::get_current_decoded_types_data_json()
 {
-  FC_ASSERT(_my->_decoded_types_data_storage);
+  FC_ASSERT(_my->_decoded_types_data_storage && "No storage - no types");
   const std::string decoded_types_data_json = _my->_decoded_types_data_storage->generate_decoded_types_data_json_string();
   _my->delete_decoded_types_data_storage();
   return decoded_types_data_json;
@@ -4464,11 +4465,12 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
 void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
-  if( _current_tx_status == TX_STATUS_NONE )
+  bool invalid_status_condition = (_current_tx_status == TX_STATUS_NONE);
+  if( invalid_status_condition )
   {
     wlog( "Missing tx processing indicator" );
 #ifdef USE_ALTERNATE_CHAIN_ID
-    FC_ASSERT( false, "Missing tx processing indicator" );
+    FC_ASSERT( not invalid_status_condition, "Missing tx processing indicator" );
 #endif
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
@@ -5439,71 +5441,67 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
 
   modify( a, [&]( account_object& acnt )
   {
-    switch( delta.symbol.asset_num )
+    if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      case HIVE_ASSET_NUM_HIVE:
-      {
-        auto b = acnt.balance;
-        acnt.balance += delta;
-        if(trace_balance_change)
-          ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
+      auto b = acnt.balance;
+      acnt.balance += delta;
+      if(trace_balance_change)
+        ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
 
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
-        }
-        break;
-      }
-      case HIVE_ASSET_NUM_HBD:
+      if( check_balance )
       {
-        /// Starting from HF 25 HBD interest will be paid only from saving balance.
-        if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
+        FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
+      }
+    }
+    else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
+    {
+      /// Starting from HF 25 HBD interest will be paid only from saving balance.
+      if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
+      {
+        acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
+        acnt.hbd_seconds_last_update = head_block_time();
+        if( acnt.hbd_seconds > 0 &&
+            (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
         {
-          acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
-          acnt.hbd_seconds_last_update = head_block_time();
-          if( acnt.hbd_seconds > 0 &&
-              (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+          auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
+          interest *= get_dynamic_global_properties().get_hbd_interest_rate();
+          interest /= HIVE_100_PERCENT;
+          asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
+          acnt.hbd_balance += interest_paid;
+          acnt.hbd_seconds = 0;
+          acnt.hbd_last_interest_payment = head_block_time();
+
+          if(interest > 0)
+            push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
+
+          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
           {
-            auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
-            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-            interest /= HIVE_100_PERCENT;
-            asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-            acnt.hbd_balance += interest_paid;
-            acnt.hbd_seconds = 0;
-            acnt.hbd_last_interest_payment = head_block_time();
-
-            if(interest > 0)
-              push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
-
-            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
-            {
-              props.current_hbd_supply += interest_paid;
-              props.virtual_supply += interest_paid * get_feed_history().current_median_history;
-            } );
-          }
+            props.current_hbd_supply += interest_paid;
+            props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+          } );
         }
-
-        auto b = acnt.hbd_balance;
-        acnt.hbd_balance += delta;
-
-        if(trace_balance_change)
-          ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
-
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
-        }
-        break;
       }
-      case HIVE_ASSET_NUM_VESTS:
-        acnt.vesting_shares += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
-        }
-        break;
-      default:
-        FC_ASSERT( false, "invalid symbol" );
+
+      auto b = acnt.hbd_balance;
+      acnt.hbd_balance += delta;
+
+      if(trace_balance_change)
+        ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
+
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
+      }
+    }
+    else
+    {
+      FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_VESTS, "invalid symbol" );
+
+      acnt.vesting_shares += delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
+      }
     }
   } );
 }
@@ -5512,37 +5510,35 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
 {
   modify( a, [&]( account_object& acnt )
   {
-    switch( value_delta.symbol.asset_num )
+    if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      case HIVE_ASSET_NUM_HIVE:
-        if( share_delta.amount.value == 0 )
-        {
-          acnt.reward_hive_balance += value_delta;
-          if( check_balance )
-          {
-            FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
-          }
-        }
-        else
-        {
-          acnt.reward_vesting_hive += value_delta;
-          acnt.reward_vesting_balance += share_delta;
-          if( check_balance )
-          {
-            FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
-          }
-        }
-        break;
-      case HIVE_ASSET_NUM_HBD:
-        FC_ASSERT( share_delta.amount.value == 0 );
-        acnt.reward_hbd_balance += value_delta;
+      if( share_delta.amount.value == 0 )
+      {
+        acnt.reward_hive_balance += value_delta;
         if( check_balance )
         {
-          FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
+          FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
         }
-        break;
-      default:
-        FC_ASSERT( false, "invalid symbol" );
+      }
+      else
+      {
+        acnt.reward_vesting_hive += value_delta;
+        acnt.reward_vesting_balance += share_delta;
+        if( check_balance )
+        {
+          FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
+        }
+      }
+    }
+    else
+    {
+      FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
+      FC_ASSERT( share_delta.amount.value == 0 );
+      acnt.reward_hbd_balance += value_delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
+      }
     }
   });
 }
@@ -5593,50 +5589,48 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 
   modify( a, [&]( account_object& acnt )
   {
-    switch( delta.symbol.asset_num )
+    if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      case HIVE_ASSET_NUM_HIVE:
-        acnt.savings_balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
-        }
-        break;
-      case HIVE_ASSET_NUM_HBD:
-        if( a.savings_hbd_seconds_last_update != head_block_time() )
-        {
-          acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
-          acnt.savings_hbd_seconds_last_update = head_block_time();
+      acnt.savings_balance += delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
+      }
+    }
+    else
+    {
+      FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
+      if( a.savings_hbd_seconds_last_update != head_block_time() )
+      {
+        acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
+        acnt.savings_hbd_seconds_last_update = head_block_time();
 
-          if( acnt.savings_hbd_seconds > 0 &&
-              (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        if( acnt.savings_hbd_seconds > 0 &&
+            (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        {
+          auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
+          interest *= get_dynamic_global_properties().get_hbd_interest_rate();
+          interest /= HIVE_100_PERCENT;
+          asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
+          acnt.savings_hbd_balance += interest_paid;
+          acnt.savings_hbd_seconds = 0;
+          acnt.savings_hbd_last_interest_payment = head_block_time();
+
+          if(interest > 0)
+            push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
+
+          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
           {
-            auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
-            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-            interest /= HIVE_100_PERCENT;
-            asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-            acnt.savings_hbd_balance += interest_paid;
-            acnt.savings_hbd_seconds = 0;
-            acnt.savings_hbd_last_interest_payment = head_block_time();
-
-            if(interest > 0)
-              push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
-
-            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
-            {
-              props.current_hbd_supply += interest_paid;
-              props.virtual_supply += interest_paid * get_feed_history().current_median_history;
-            } );
-          }
+            props.current_hbd_supply += interest_paid;
+            props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+          } );
         }
-        acnt.savings_hbd_balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
-        }
-        break;
-      default:
-        FC_ASSERT( !"invalid symbol" );
+      }
+      acnt.savings_hbd_balance += delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
+      }
     }
   } );
 }
@@ -5700,30 +5694,26 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
 
   modify( props, [&]( dynamic_global_property_object& props )
   {
-    switch( delta.symbol.asset_num )
+    if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      case HIVE_ASSET_NUM_HIVE:
+      asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0, HIVE_SYMBOL );
+      props.current_supply += delta + new_vesting;
+      props.virtual_supply += delta + new_vesting;
+      props.total_vesting_fund_hive += new_vesting;
+      if( check_supply )
       {
-        asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0, HIVE_SYMBOL );
-        props.current_supply += delta + new_vesting;
-        props.virtual_supply += delta + new_vesting;
-        props.total_vesting_fund_hive += new_vesting;
-        if( check_supply )
-        {
-          FC_ASSERT( props.current_supply.amount.value >= 0 );
-        }
-        break;
+        FC_ASSERT( props.current_supply.amount.value >= 0 );
       }
-      case HIVE_ASSET_NUM_HBD:
-        props.current_hbd_supply += delta;
-        props.virtual_supply = props.get_current_hbd_supply() * get_feed_history().current_median_history + props.current_supply;
-        if( check_supply )
-        {
-          FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
-        }
-        break;
-      default:
-        FC_ASSERT( false, "invalid symbol" );
+    }
+    else
+    {
+      FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
+      props.current_hbd_supply += delta;
+      props.virtual_supply = props.get_current_hbd_supply() * get_feed_history().current_median_history + props.current_supply;
+      if( check_supply )
+      {
+        FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
+      }
     }
   } );
 }
@@ -5731,15 +5721,20 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
 
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {
-  switch( symbol.asset_num )
+  if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    case HIVE_ASSET_NUM_HIVE:
-      return a.get_balance();
-    case HIVE_ASSET_NUM_HBD:
+    return a.get_balance();
+  }
+  else
+  {
+#ifndef HIVE_ENABLE_SMT
+    FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD, "Invalid symbol: ${s}", ("s", symbol) );
+    return a.get_hbd_balance();
+#else
+    if( symbol.asset_num == HIVE_ASSET_NUM_HBD )
       return a.get_hbd_balance();
-    default:
+    else
     {
-#ifdef HIVE_ENABLE_SMT
       FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "Invalid symbol: ${s}", ("s", symbol) );
       auto key = boost::make_tuple( a.get_id(), symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
       const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
@@ -5751,23 +5746,21 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
       {
         return symbol.is_vesting() ? arbo->vesting : arbo->liquid;
       }
-#else
-      FC_ASSERT( false, "Invalid symbol: ${s}", ("s", symbol) );
-#endif
     }
+#endif
   }
 }
 
 asset database::get_savings_balance( const account_object& a, asset_symbol_type symbol )const
 {
-  switch( symbol.asset_num )
+  if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    case HIVE_ASSET_NUM_HIVE:
-      return a.get_savings();
-    case HIVE_ASSET_NUM_HBD:
-      return a.get_hbd_savings();
-    default: // Note no savings balance for SMT per comments in issue 1682.
-      FC_ASSERT( !"invalid symbol" );
+    return a.get_savings();
+  }
+  else
+  {
+    FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
+    return a.get_hbd_savings();
   }
 }
 
@@ -6493,10 +6486,11 @@ void database::validate_invariants()const
 
       if( itr->get_fee().symbol == HIVE_SYMBOL )
         total_supply += itr->get_fee();
-      else if( itr->get_fee().symbol == HBD_SYMBOL )
-        total_hbd += itr->get_fee();
       else
-        FC_ASSERT( false, "found escrow pending fee that is not HBD or HIVE" );
+      {
+        FC_ASSERT( itr->get_fee().symbol == HBD_SYMBOL, "found escrow pending fee that is not HBD or HIVE" );
+        total_hbd += itr->get_fee();
+      }
       ++escrow_no;
     }
 
@@ -6506,10 +6500,11 @@ void database::validate_invariants()const
     {
       if( itr->amount.symbol == HIVE_SYMBOL )
         total_supply += itr->amount;
-      else if( itr->amount.symbol == HBD_SYMBOL )
-        total_hbd += itr->amount;
       else
-        FC_ASSERT( false, "found savings withdraw that is not HBD or HIVE" );
+      {
+        FC_ASSERT( itr->amount.symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
+        total_hbd += itr->amount;
+      }
       ++withdrawal_no;
     }
 

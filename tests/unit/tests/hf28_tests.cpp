@@ -1420,15 +1420,15 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
 
       //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal not found\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal not found\"" );
 
       //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal not found\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal not found\"" );
 
       BOOST_TEST_MESSAGE( "Create 'remove_proposal_operation'" );
       //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
@@ -1635,7 +1635,7 @@ BOOST_AUTO_TEST_CASE( vote_edit_limit )
     generate_block();
     vote( "alice", "test", "bob", 50 * HIVE_1_PERCENT, bob_post_key ); // edit 5
     generate_block();
-    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ), "itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES"); // edit 6 - fails
+    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ), "itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES && \"Voter has used the maximum number of vote changes on this comment.\""); // edit 6 - fails
 
     BOOST_TEST_MESSAGE( "Activate HF28" );
     inject_hardfork( HIVE_HARDFORK_1_28 );

@@ -14,7 +14,7 @@ namespace hive { namespace protocol {
 void common_symbol_validation( const asset_symbol_type& symbol )
 {
   symbol.validate();
-  FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "legacy symbol used instead of NAI" );
+  FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space && "legacy symbol used instead of NAI" );
   FC_ASSERT( symbol.is_vesting() == false && "liquid variant of NAI expected");
 }
 
