@@ -276,8 +276,9 @@ public:
                         wlog("Direct writes to host-proc failed, trying echo commands");
                         
                         // Using echo with tee to write to host-proc (properly handles permissions)
+                        // Remove the -n flag from sudo to allow password prompting if needed
                         std::string echo_cmd_prefix = "echo ";
-                        std::string echo_cmd_suffix = " | sudo -n tee /host-proc/sys/vm/";
+                        std::string echo_cmd_suffix = " | sudo tee /host-proc/sys/vm/";
                         
                         // Set dirty_background_bytes
                         std::string set_dirty_bg_cmd = echo_cmd_prefix + std::to_string(aligned_size) + 
@@ -422,9 +423,9 @@ public:
                         std::string cmd_prefix = "echo ";
                         std::string cmd_suffix;
                         if (use_host_proc) {
-                            cmd_suffix = " | sudo -n tee /host-proc/sys/vm/";
+                            cmd_suffix = " | sudo tee /host-proc/sys/vm/";
                         } else {
-                            cmd_suffix = " | sudo -n tee /proc/sys/vm/";
+                            cmd_suffix = " | sudo tee /proc/sys/vm/";
                         }
                         
                         // Set dirty_background_bytes to exactly the memory mapped size
@@ -466,11 +467,11 @@ public:
                 // As a last resort, try using sudo with tee for the echo commands
                 ilog("Previous VM parameter modification attempts failed, trying with sudo as a last resort");
                 
-                // Use sudo -n with tee to properly handle redirection
+                // Use sudo with tee to properly handle redirection (without -n flag to allow password prompt)
                 std::string cmd_prefix = "echo ";
                 std::string cmd_suffix = use_host_proc ? 
-                    " | sudo -n tee /host-proc/sys/vm/" : 
-                    " | sudo -n tee /proc/sys/vm/";
+                    " | sudo tee /host-proc/sys/vm/" : 
+                    " | sudo tee /proc/sys/vm/";
                 
                 // Set dirty_background_bytes to exactly the memory mapped size
                 std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
@@ -668,8 +669,8 @@ public:
                         wlog("Echo commands to restore VM parameters failed, trying sudo as a last resort");
                         std::string cmd_prefix = "echo ";
                         std::string sudo_suffix = use_host_proc ? 
-                            " | sudo -n tee " + path_prefix : 
-                            " | sudo -n tee " + path_prefix;
+                            " | sudo tee " + path_prefix : 
+                            " | sudo tee " + path_prefix;
                         
                         // Must restore in this order to avoid errors
                         set_expire_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_expire_centisecs) + 
