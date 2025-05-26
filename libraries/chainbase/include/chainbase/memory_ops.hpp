@@ -435,11 +435,6 @@ public:
                     }
                 }
                 
-                // Add more detailed error reporting for the system calls:
-                if (!success) {
-                    wlog("System call to set VM parameters failed with return codes: ${ret1}, ${ret2}, ${ret3}, ${ret4}", 
-                        ("ret1", ret1)("ret2", ret2)("ret3", ret3)("ret4", ret4));
-                }
             }
             
             if (success) {
