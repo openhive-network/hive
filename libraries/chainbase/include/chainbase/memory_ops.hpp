@@ -275,26 +275,19 @@ public:
                         // As a last resort, try using echo with sudo
                         wlog("Direct writes to host-proc failed, trying echo commands");
                         
-                        // Using echo with tee to write to host-proc (properly handles permissions)
-                        // Remove the -n flag from sudo to allow password prompting if needed
-                        std::string echo_cmd_prefix = "echo ";
-                        std::string echo_cmd_suffix = " | sudo tee /host-proc/sys/vm/";
+                        // Try using the 'cat' command with redirection or 'tee' which might have different permissions
+                        // We'll try multiple approaches, working our way through fallbacks
                         
-                        // Set dirty_background_bytes
-                        std::string set_dirty_bg_cmd = echo_cmd_prefix + std::to_string(aligned_size) + 
-                                                    echo_cmd_suffix + "dirty_background_bytes > /dev/null";
-                        
-                        // Set dirty_bytes
-                        std::string set_dirty_cmd = echo_cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                                echo_cmd_suffix + "dirty_bytes > /dev/null";
-                        
-                        // Set dirty_expire_centisecs
-                        std::string set_expire_cmd = echo_cmd_prefix + "300000" + 
-                                                  echo_cmd_suffix + "dirty_expire_centisecs > /dev/null";
-                        
-                        // Set vm.swappiness
-                        std::string set_swappiness_cmd = echo_cmd_prefix + "10" + 
-                                                      echo_cmd_suffix + "swappiness > /dev/null";
+                        // First approach: Direct write with root - try other privileged user like 'root'
+                        // Approach 1: Try running as root with su
+                        std::string set_dirty_bg_cmd = "su -c \"echo " + std::to_string(aligned_size) + 
+                                                     " > /host-proc/sys/vm/dirty_background_bytes\" root";
+                        std::string set_dirty_cmd = "su -c \"echo " + std::to_string(dirty_bytes_value) + 
+                                                  " > /host-proc/sys/vm/dirty_bytes\" root";
+                        std::string set_expire_cmd = "su -c \"echo 300000" + 
+                                                   " > /host-proc/sys/vm/dirty_expire_centisecs\" root";
+                        std::string set_swappiness_cmd = "su -c \"echo 10" + 
+                                                       " > /host-proc/sys/vm/swappiness\" root";
                         
                         int ret1 = std::system(set_dirty_bg_cmd.c_str());
                         int ret2 = std::system(set_dirty_cmd.c_str());
@@ -308,10 +301,59 @@ public:
                         // If at least one command succeeded, consider it a partial success
                         success = (success_count > 0);
                         
-                        if (success) {
-                            ilog("Successfully set at least some VM parameters using echo to host-proc");
-                        } else {
-                            wlog("All attempts to set VM parameters failed");
+                        // Approach 2: If su didn't work, try changing file permissions with chmod and write directly
+                        if (!success) {
+                            ilog("su approach failed, trying to use chmod to change file permissions");
+                            
+                            // Try to make the files writeable with chmod
+                            std::string chmod_cmd_prefix = "chmod 666 " + (use_host_proc ? "/host-proc/sys/vm/" : "/proc/sys/vm/");
+                            std::string chmod_dirty_bg = chmod_cmd_prefix + "dirty_background_bytes";
+                            std::string chmod_dirty = chmod_cmd_prefix + "dirty_bytes";
+                            std::string chmod_expire = chmod_cmd_prefix + "dirty_expire_centisecs";
+                            std::string chmod_swappiness = chmod_cmd_prefix + "swappiness";
+                            
+                            // Try to chmod the files
+                            std::system(chmod_dirty_bg.c_str());
+                            std::system(chmod_dirty.c_str());
+                            std::system(chmod_expire.c_str());
+                            std::system(chmod_swappiness.c_str());
+                            
+                            // Now try direct writes again
+                            {
+                                std::ofstream dirty_bg_file(use_host_proc ? "/host-proc/sys/vm/dirty_background_bytes" : "/proc/sys/vm/dirty_background_bytes");
+                                if (dirty_bg_file.good()) {
+                                    dirty_bg_file << aligned_size;
+                                    dirty_bg_file.close();
+                                    success = true;
+                                }
+                            }
+                            
+                            {
+                                std::ofstream dirty_file(use_host_proc ? "/host-proc/sys/vm/dirty_bytes" : "/proc/sys/vm/dirty_bytes");
+                                if (dirty_file.good()) {
+                                    dirty_file << dirty_bytes_value;
+                                    dirty_file.close();
+                                    success = true;
+                                }
+                            }
+                            
+                            {
+                                std::ofstream expire_file(use_host_proc ? "/host-proc/sys/vm/dirty_expire_centisecs" : "/proc/sys/vm/dirty_expire_centisecs");
+                                if (expire_file.good()) {
+                                    expire_file << 300000;
+                                    expire_file.close();
+                                    success = true;
+                                }
+                            }
+                            
+                            {
+                                std::ofstream swappiness_file(use_host_proc ? "/host-proc/sys/vm/swappiness" : "/proc/sys/vm/swappiness");
+                                if (swappiness_file.good()) {
+                                    swappiness_file << 10;
+                                    swappiness_file.close();
+                                    success = true;
+                                }
+                            }
                         }
                     }
                 } else {
@@ -464,29 +506,30 @@ public:
                     ("bg_size", aligned_size)("size", dirty_bytes_value));
                 return true;
             } else {
-                // As a last resort, try using sudo with tee for the echo commands
-                ilog("Previous VM parameter modification attempts failed, trying with sudo as a last resort");
+                // As a last resort, try using multiple different approaches
+                ilog("Previous VM parameter modification attempts failed, trying alternative approaches");
                 
-                // Use sudo with tee to properly handle redirection (without -n flag to allow password prompt)
-                std::string cmd_prefix = "echo ";
+                // Approach 1: Try directly writing as root using su
+                std::string cmd_prefix = "su -c \"echo ";
                 std::string cmd_suffix = use_host_proc ? 
-                    " | sudo tee /host-proc/sys/vm/" : 
-                    " | sudo tee /proc/sys/vm/";
+                    " > /host-proc/sys/vm/" : 
+                    " > /proc/sys/vm/";
+                cmd_suffix += "\" root";
                 
                 // Set dirty_background_bytes to exactly the memory mapped size
                 std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
-                                             cmd_suffix + "dirty_background_bytes > /dev/null";
+                                             cmd_suffix + "dirty_background_bytes";
                 
                 // Set dirty_bytes to 10% higher than memory mapped size
                 std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                          cmd_suffix + "dirty_bytes > /dev/null";
+                                          cmd_suffix + "dirty_bytes";
                 
                 std::string set_expire_cmd = cmd_prefix + "300000" + 
-                                           cmd_suffix + "dirty_expire_centisecs > /dev/null";
+                                           cmd_suffix + "dirty_expire_centisecs";
                 
                 // Set vm.swappiness to 10
                 std::string set_swappiness_cmd = cmd_prefix + "10" + 
-                                               cmd_suffix + "swappiness > /dev/null";
+                                               cmd_suffix + "swappiness";
 
                 int ret1 = std::system(set_dirty_bg_cmd.c_str());
                 int ret2 = std::system(set_dirty_cmd.c_str());
@@ -666,25 +709,26 @@ public:
                     
                     // If echo commands failed, try with sudo as a last resort
                     if (!success) {
-                        wlog("Echo commands to restore VM parameters failed, trying sudo as a last resort");
-                        std::string cmd_prefix = "echo ";
-                        std::string sudo_suffix = use_host_proc ? 
-                            " | sudo tee " + path_prefix : 
-                            " | sudo tee " + path_prefix;
+                        wlog("Echo commands to restore VM parameters failed, trying with root access");
+                        std::string cmd_prefix = "su -c \"echo ";
+                        std::string cmd_suffix = use_host_proc ? 
+                            " > " + path_prefix : 
+                            " > " + path_prefix;
+                        cmd_suffix += "\" root";
                         
                         // Must restore in this order to avoid errors
                         set_expire_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_expire_centisecs) + 
-                                       sudo_suffix + "dirty_expire_centisecs > /dev/null";
+                                       cmd_suffix + "dirty_expire_centisecs";
                         set_dirty_bg_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_bytes) + 
-                                         sudo_suffix + "dirty_background_bytes > /dev/null";
+                                         cmd_suffix + "dirty_background_bytes";
                         set_dirty_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_bytes) + 
-                                      sudo_suffix + "dirty_bytes > /dev/null";
+                                      cmd_suffix + "dirty_bytes";
                         set_swappiness_cmd = cmd_prefix + std::to_string(vm_dirty_params::swappiness) + 
-                                           sudo_suffix + "swappiness > /dev/null";
+                                           cmd_suffix + "swappiness";
                         set_dirty_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_ratio) + 
-                                              sudo_suffix + "dirty_ratio > /dev/null";
+                                              cmd_suffix + "dirty_ratio";
                         set_dirty_bg_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
-                                                  sudo_suffix + "dirty_background_ratio > /dev/null";
+                                                  cmd_suffix + "dirty_background_ratio";
                         
                         ret1 = std::system(set_expire_cmd.c_str());
                         ret2 = std::system(set_dirty_bg_cmd.c_str());
