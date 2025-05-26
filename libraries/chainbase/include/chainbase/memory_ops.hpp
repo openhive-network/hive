@@ -210,59 +210,224 @@ public:
                 ilog("Direct file writing to proc failed, falling back to system commands");
                 
                 // Try sysctl command first (works better in some container environments)
-                std::string sysctl_prefix = "sysctl -w ";
+                std::string sysctl_cmd_prefix = "sysctl -w ";
                 
-                // Set dirty_background_bytes using sysctl
-                std::string sysctl_dirty_bg_cmd = sysctl_prefix + "vm.dirty_background_bytes=" + std::to_string(aligned_size);
-                
-                // Set dirty_bytes using sysctl
-                std::string sysctl_dirty_cmd = sysctl_prefix + "vm.dirty_bytes=" + std::to_string(dirty_bytes_value);
-                
-                // Set dirty_expire_centisecs using sysctl
-                std::string sysctl_expire_cmd = sysctl_prefix + "vm.dirty_expire_centisecs=300000";
-                
-                // Set vm.swappiness using sysctl
-                std::string sysctl_swappiness_cmd = sysctl_prefix + "vm.swappiness=10";
-                
-                // Try sysctl commands first
-                int ret1 = std::system(sysctl_dirty_bg_cmd.c_str());
-                int ret2 = std::system(sysctl_dirty_cmd.c_str());
-                int ret3 = std::system(sysctl_expire_cmd.c_str());
-                int ret4 = std::system(sysctl_swappiness_cmd.c_str());
-                
-                bool sysctl_success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
-                
-                if (sysctl_success) {
-                    ilog("Successfully set VM parameters using sysctl command");
-                    success = true;
+                // If we're using host-proc, we need to modify our sysctl approach
+                if (use_host_proc) {
+                    // When in a container with host-proc mounted, we need to directly write to files
+                    // since sysctl will still try to use the container's read-only /proc
+                    
+                    // Try direct writing to host-proc files
+                    bool host_proc_success = true;
+                    
+                    // Set dirty_background_bytes
+                    {
+                        std::ofstream dirty_bg_file("/host-proc/sys/vm/dirty_background_bytes");
+                        if (dirty_bg_file.good()) {
+                            dirty_bg_file << aligned_size;
+                            dirty_bg_file.close();
+                        } else {
+                            host_proc_success = false;
+                            wlog("Failed to write to /host-proc/sys/vm/dirty_background_bytes");
+                        }
+                    }
+                    
+                    // Set dirty_bytes
+                    {
+                        std::ofstream dirty_file("/host-proc/sys/vm/dirty_bytes");
+                        if (dirty_file.good()) {
+                            dirty_file << dirty_bytes_value;
+                            dirty_file.close();
+                        } else {
+                            host_proc_success = false;
+                            wlog("Failed to write to /host-proc/sys/vm/dirty_bytes");
+                        }
+                    }
+                    
+                    // Set dirty_expire_centisecs
+                    {
+                        std::ofstream expire_file("/host-proc/sys/vm/dirty_expire_centisecs");
+                        if (expire_file.good()) {
+                            expire_file << 300000;
+                            expire_file.close();
+                        } else {
+                            host_proc_success = false;
+                            wlog("Failed to write to /host-proc/sys/vm/dirty_expire_centisecs");
+                        }
+                    }
+                    
+                    // Set vm.swappiness
+                    {
+                        std::ofstream swappiness_file("/host-proc/sys/vm/swappiness");
+                        if (swappiness_file.good()) {
+                            swappiness_file << 10;
+                            swappiness_file.close();
+                        } else {
+                            host_proc_success = false;
+                            wlog("Failed to write to /host-proc/sys/vm/swappiness");
+                        }
+                    }
+                    
+                    if (host_proc_success) {
+                        ilog("Successfully set VM parameters using host-proc direct file writes");
+                        success = true;
+                    } else {
+                        // As a last resort, try using echo with sudo
+                        wlog("Direct writes to host-proc failed, trying echo commands");
+                        
+                        // Using echo commands to write to host-proc
+                        std::string echo_cmd_prefix = "echo ";
+                        std::string echo_cmd_suffix = " > /host-proc/sys/vm/";
+                        
+                        // Set dirty_background_bytes
+                        std::string set_dirty_bg_cmd = echo_cmd_prefix + std::to_string(aligned_size) + 
+                                                    echo_cmd_suffix + "dirty_background_bytes";
+                        
+                        // Set dirty_bytes
+                        std::string set_dirty_cmd = echo_cmd_prefix + std::to_string(dirty_bytes_value) + 
+                                                echo_cmd_suffix + "dirty_bytes";
+                        
+                        // Set dirty_expire_centisecs
+                        std::string set_expire_cmd = echo_cmd_prefix + "300000" + 
+                                                  echo_cmd_suffix + "dirty_expire_centisecs";
+                        
+                        // Set vm.swappiness
+                        std::string set_swappiness_cmd = echo_cmd_prefix + "10" + 
+                                                      echo_cmd_suffix + "swappiness";
+                        
+                        int ret1 = std::system(set_dirty_bg_cmd.c_str());
+                        int ret2 = std::system(set_dirty_cmd.c_str());
+                        int ret3 = std::system(set_expire_cmd.c_str());
+                        int ret4 = std::system(set_swappiness_cmd.c_str());
+                        
+                        success = (ret1 == 0 || ret2 == 0 || ret3 == 0 || ret4 == 0);
+                        
+                        if (success) {
+                            ilog("Successfully set at least some VM parameters using echo to host-proc");
+                        } else {
+                            wlog("All attempts to set VM parameters failed");
+                        }
+                    }
                 } else {
-                    // Fall back to echo commands if sysctl also failed
-                    ilog("sysctl command failed, trying echo to proc files");
+                    // Standard approach for non-container environments
+                    int ret1 = std::system(sysctl_cmd_prefix.c_str());
+                    int ret2 = std::system(sysctl_dirty_cmd.c_str());
+                    int ret3 = std::system(sysctl_expire_cmd.c_str());
+                    int ret4 = std::system(sysctl_swappiness_cmd.c_str());
                     
-                    std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
-                    std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                    // Check for actual success by parsing the output or checking return codes
+                    // On some systems, sysctl might return 0 (success) even with "permission denied" 
+                    // errors, so we need a better way to detect if the commands actually worked
                     
-                    // Set dirty_background_bytes to exactly the memory mapped size
-                    std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
-                                                cmd_suffix + "dirty_background_bytes";
+                    // Check if the values were actually changed by reading them back
+                    bool sysctl_success = false;
+                    try {
+                        std::string line;
+                        long dirty_bg_actual = -1;
+                        long dirty_actual = -1;
+                        long expire_actual = -1;
+                        long swappiness_actual = -1;
+                        
+                        // Read dirty_background_bytes to verify change
+                        {
+                            std::ifstream dirty_bg_file(path_prefix + "dirty_background_bytes");
+                            if (dirty_bg_file.good() && std::getline(dirty_bg_file, line)) {
+                                dirty_bg_actual = std::stol(line);
+                            }
+                            dirty_bg_file.close();
+                        }
+                        
+                        // Read dirty_bytes to verify change
+                        {
+                            std::ifstream dirty_file(path_prefix + "dirty_bytes");
+                            if (dirty_file.good() && std::getline(dirty_file, line)) {
+                                dirty_actual = std::stol(line);
+                            }
+                            dirty_file.close();
+                        }
+                        
+                        // Read dirty_expire_centisecs to verify change
+                        {
+                            std::ifstream expire_file(path_prefix + "dirty_expire_centisecs");
+                            if (expire_file.good() && std::getline(expire_file, line)) {
+                                expire_actual = std::stol(line);
+                            }
+                            expire_file.close();
+                        }
+                        
+                        // Read swappiness to verify change
+                        {
+                            std::ifstream swappiness_file(path_prefix + "swappiness");
+                            if (swappiness_file.good() && std::getline(swappiness_file, line)) {
+                                swappiness_actual = std::stol(line);
+                            }
+                            swappiness_file.close();
+                        }
+                        
+                        // Check if at least some values match what we tried to set
+                        // Allow for some tolerance in the values, as the system might round them
+                        bool dirty_bg_match = (dirty_bg_actual == aligned_size || 
+                                              (dirty_bg_actual > 0 && std::abs(dirty_bg_actual - (long)aligned_size) < (long)aligned_size * 0.05));
+                        bool dirty_match = (dirty_actual == (long)dirty_bytes_value || 
+                                          (dirty_actual > 0 && std::abs(dirty_actual - (long)dirty_bytes_value) < (long)dirty_bytes_value * 0.05));
+                        bool expire_match = (expire_actual == 300000 || expire_actual > 200000);
+                        bool swappiness_match = (swappiness_actual == 10 || swappiness_actual < 20);
+                        
+                        // If any of the important values were changed, consider it at least partial success
+                        sysctl_success = (dirty_bg_match || dirty_match || expire_match || swappiness_match);
+                        
+                        if (sysctl_success) {
+                            ilog("VM parameters verification: dirty_background_bytes=${bg_actual}/${bg_target}, dirty_bytes=${actual}/${target}, expire=${exp_actual}/${exp_target}, swappiness=${swap_actual}/${swap_target}",
+                                ("bg_actual", dirty_bg_actual)("bg_target", aligned_size)
+                                ("actual", dirty_actual)("target", dirty_bytes_value)
+                                ("exp_actual", expire_actual)("exp_target", 300000)
+                                ("swap_actual", swappiness_actual)("swap_target", 10));
+                        }
+                    } catch (const std::exception& e) {
+                        wlog("Failed to verify VM parameter changes: ${e}", ("e", e.what()));
+                        sysctl_success = false;
+                    }
                     
-                    // Set dirty_bytes to 10% higher than memory mapped size
-                    std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
-                                            cmd_suffix + "dirty_bytes";
-                    
-                    std::string set_expire_cmd = cmd_prefix + "300000" + 
-                                                cmd_suffix + "dirty_expire_centisecs";
-                    
-                    // Set vm.swappiness to 10
-                    std::string set_swappiness_cmd = cmd_prefix + "10" + 
-                                                cmd_suffix + "swappiness";
+                    if (sysctl_success) {
+                        ilog("Successfully set VM parameters using sysctl command");
+                        success = true;
+                    } else {
+                        // Check if sysctl commands returned success but didn't actually change values
+                        if (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0) {
+                            wlog("sysctl commands returned success but parameters were not actually changed. Check for 'permission denied' messages.");
+                        } else {
+                            wlog("sysctl commands failed with return codes: ${ret1}, ${ret2}, ${ret3}, ${ret4}", 
+                                ("ret1", ret1)("ret2", ret2)("ret3", ret3)("ret4", ret4));
+                        }
+                        
+                        // Fall back to echo commands if sysctl also failed
+                        ilog("sysctl command failed, trying echo to proc files");
+                        
+                        std::string cmd_prefix = use_host_proc ? "echo " : "echo ";
+                        std::string cmd_suffix = use_host_proc ? " > /host-proc/sys/vm/" : " > /proc/sys/vm/";
+                        
+                        // Set dirty_background_bytes to exactly the memory mapped size
+                        std::string set_dirty_bg_cmd = cmd_prefix + std::to_string(aligned_size) + 
+                                                    cmd_suffix + "dirty_background_bytes";
+                        
+                        // Set dirty_bytes to 10% higher than memory mapped size
+                        std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
+                                                  cmd_suffix + "dirty_bytes";
+                        
+                        std::string set_expire_cmd = cmd_prefix + "300000" + 
+                                                    cmd_suffix + "dirty_expire_centisecs";
+                        
+                        // Set vm.swappiness to 10
+                        std::string set_swappiness_cmd = cmd_prefix + "10" + 
+                                                      cmd_suffix + "swappiness";
 
-                    ret1 = std::system(set_dirty_bg_cmd.c_str());
-                    ret2 = std::system(set_dirty_cmd.c_str());
-                    ret3 = std::system(set_expire_cmd.c_str());
-                    ret4 = std::system(set_swappiness_cmd.c_str());
-                    
-                    success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                        ret1 = std::system(set_dirty_bg_cmd.c_str());
+                        ret2 = std::system(set_dirty_cmd.c_str());
+                        ret3 = std::system(set_expire_cmd.c_str());
+                        ret4 = std::system(set_swappiness_cmd.c_str());
+                        
+                        success = (ret1 == 0 && ret2 == 0 && ret3 == 0 && ret4 == 0);
+                    }
                 }
                 
                 // Add more detailed error reporting for the system calls:
@@ -472,8 +637,14 @@ public:
         // Add the offset to the size to account for alignment
         size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
         
-        // First set VM parameters (even if memory locking fails, this can help)
-        set_vm_parameters(segment);
+        // Try to set VM parameters but don't fail the whole operation if it doesn't work
+        bool vm_params_success = set_vm_parameters(segment);
+        if (!vm_params_success) {
+            wlog("Failed to set VM parameters, but continuing with memory locking anyway");
+            wlog("Performance may be affected, but functionality should remain intact");
+            wlog("To fix VM parameter issues, ensure the container has proper privileges");
+            wlog("or run with host network mode (--net=host) and --privileged flag");
+        }
         
         // Now attempt to lock the memory
         if (mlock(aligned_addr, aligned_size) != 0) {
