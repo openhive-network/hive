@@ -21,3 +21,4 @@ add_executable( assertion_id_verifier ${ASSERTION_ID_VERIFIER_SOURCES} )
 target_include_directories( assertion_id_verifier PUBLIC "${GENERATED_ASSERT_ID_DIR}" )
 # Add below other submodule's needing assertion id verification.
 add_dependencies( assertion_id_verifier protocol_assertion_id_generator )
+add_dependencies( assertion_id_verifier chain_assertion_id_generator )
