@@ -10,8 +10,7 @@ else()
 endif()
 
 ## SORT .cpp by most likely to change / break compile
-add_library( hive_chain
-
+set( SOURCES
              # As database takes the longest to compile, start it first
              database.cpp
              index.cpp
@@ -93,6 +92,43 @@ add_library( hive_chain
 
              ${HEADERS}
            )
+
+## Section dedicated to generation & verification of unique ids of assertions in protocol sources.
+set(ASSERTION_ID_GENERATOR_SOURCE ${GENERATED_ASSERT_ID_DIR}/chain_assertion_id_generator.cpp)
+set(ASSERTION_ID_VERIFICATION_HEADER_SOURCE ${GENERATED_ASSERT_ID_DIR}/chain_assertion_hashes_verifier.hpp)
+set(ASSERTION_ID_WAX_INLINE_SOURCE ${GENERATED_ASSERT_ID_DIR}/chain_assertion_hashes_wax.inl)
+set(ASSERTION_ID_VERIFIER_SOURCE ${GENERATED_ASSERT_ID_DIR}/chain_assertion_id_verifier.cpp)
+# 1. Use separate cmake script to parse all assertions and dump their info into generated cpp file.
+include("../../cmake/assert_id_generation.cmake")
+assert_id_generation(
+  sources "${SOURCES}"
+  generator_output_path "${ASSERTION_ID_GENERATOR_SOURCE}"
+  verifier_header_path "${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}"
+  wax_inline_path "${ASSERTION_ID_WAX_INLINE_SOURCE}"
+  verifier_output_path "${ASSERTION_ID_VERIFIER_SOURCE}"
+  namespace "chain"
+)
+# 2. Build executable, linking it with fc to enable unique id generation for assertions.
+#    Run the generator post build to dump a header file with ids.
+add_executable( chain_assertion_id_generator ${ASSERTION_ID_GENERATOR_SOURCE})
+target_link_libraries( chain_assertion_id_generator PUBLIC fc )
+add_custom_command(
+  OUTPUT ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE} ${ASSERTION_ID_WAX_INLINE_SOURCE}
+  COMMAND chain_assertion_id_generator
+  DEPENDS chain_assertion_id_generator
+)
+# 3. Build the verifier to verify uniqueness of the hashes dumped in previous step.
+SET( ASSERTION_ID_VERIFIER_SOURCES
+  ${ASSERTION_ID_VERIFIER_SOURCE}
+  ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE}
+)
+add_executable( chain_assertion_id_verifier ${ASSERTION_ID_VERIFIER_SOURCES} )
+add_dependencies( chain_assertion_id_verifier chain_assertion_id_generator )
+##
+
+add_library( hive_chain
+  ${SOURCES}
+)
 
 target_link_libraries( hive_chain rocksdb hive_jsonball hive_protocol fc chainbase hive_schema appbase libzstd_static ${COMPRESSION_DICTIONARY_LIBRARIES}
                        ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARIES})
