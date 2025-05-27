@@ -14,7 +14,7 @@ then
 fi
 
 # Create sudoers file for hived user to allow setting VM parameters
-echo "hived ALL=(ALL) NOPASSWD: /usr/bin/tee /host-proc/sys/vm/dirty_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_background_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_expire_centisecs, /usr/bin/tee /host-proc/sys/vm/dirty_writeback_centisecs" > /etc/sudoers.d/hived_vm_access
+echo "hived ALL=(ALL) NOPASSWD: /usr/bin/tee /host-proc/sys/vm/dirty_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_background_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_expire_centisecs, /usr/bin/tee /host-proc/sys/vm/swappiness" > /etc/sudoers.d/hived_vm_access
 chmod 0440 /etc/sudoers.d/hived_vm_access
 
 
