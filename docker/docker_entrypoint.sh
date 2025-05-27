@@ -13,12 +13,52 @@ then
   sudo -n usermod -o -u "${HIVED_UID}" hived
 fi
 
-# Add sudoers rule directly to /etc/sudoers for hived user
-# Ensure the file exists and has the correct permissions before modifying
-touch /etc/sudoers
-chmod 0440 /etc/sudoers
-echo "hived ALL=(ALL) NOPASSWD: /usr/bin/tee /host-proc/sys/vm/dirty_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_background_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_expire_centisecs, /usr/bin/tee /host-proc/sys/vm/swappiness" >> /etc/sudoers
+# Configure passwordless sudo for hived user for specific tee commands
+SUDOERS_FILE="/etc/sudoers"
+SUDO_RULE="hived ALL=(ALL) NOPASSWD: /usr/bin/tee /host-proc/sys/vm/dirty_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_background_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_expire_centisecs, /usr/bin/tee /host-proc/sys/vm/swappiness"
 
+echo "Attempting to configure sudoers..."
+if [ ! -f "$SUDOERS_FILE" ]; then
+    echo "Error: $SUDOERS_FILE does not exist. Cannot configure sudo."
+    exit 1
+fi
+
+# Ensure root owns /etc/sudoers and it's temporarily writable by root
+chown root:root "$SUDOERS_FILE"
+chmod u+w "$SUDOERS_FILE"
+
+if grep -qF -- "$SUDO_RULE" "$SUDOERS_FILE"; then
+    echo "Sudo rule already exists in $SUDOERS_FILE."
+else
+    echo "Adding sudo rule to $SUDOERS_FILE..."
+    echo "$SUDO_RULE" >> "$SUDOERS_FILE"
+    echo "Sudo rule added."
+fi
+
+# Set secure permissions for /etc/sudoers
+chmod 0440 "$SUDOERS_FILE"
+echo "Permissions set for $SUDOERS_FILE."
+
+# Diagnostic: Check sudoers file content and hived user privileges
+echo "--- Sudoers File Diagnostics ---"
+ls -l "$SUDOERS_FILE"
+echo "Relevant lines from $SUDOERS_FILE:"
+grep -E "^hived|Defaults targetpw|Defaults !targetpw|root ALL|%wheel ALL|%sudo ALL|#includedir" "$SUDOERS_FILE" || echo "No matching diagnostic lines found."
+echo "Validating sudoers file syntax with visudo -c (if available):"
+if command -v visudo &> /dev/null; then
+    visudo -c || echo "visudo check failed or visudo not found."
+else
+    echo "visudo command not found, skipping syntax check."
+fi
+echo "Checking sudo privileges for user 'hived':"
+sudo -n -u hived -l || echo "Failed to list sudo privileges for hived (this is expected if rule was just added and sudo needs re-init, or if rule is incorrect)."
+echo "Attempting test sudo command for hived:"
+if sudo -n -u hived /usr/bin/tee /dev/null < /dev/null > /dev/null 2>&1; then
+    echo "SUCCESS: Test for passwordless sudo for 'hived' with tee succeeded."
+else
+    echo "FAILURE: Test for passwordless sudo for 'hived' with tee failed. Check sudoers configuration and logs."
+fi
+echo "--- End Sudoers File Diagnostics ---"
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
