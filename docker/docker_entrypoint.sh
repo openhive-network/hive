@@ -13,6 +13,10 @@ then
   sudo -n usermod -o -u "${HIVED_UID}" hived
 fi
 
+# Create sudoers file for hived user to allow setting VM parameters
+echo "hived ALL=(ALL) NOPASSWD: /usr/bin/tee /host-proc/sys/vm/dirty_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_background_bytes, /usr/bin/tee /host-proc/sys/vm/dirty_expire_centisecs, /usr/bin/tee /host-proc/sys/vm/dirty_writeback_centisecs" > /etc/sudoers.d/hived_vm_access
+chmod 0440 /etc/sudoers.d/hived_vm_access
+
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"

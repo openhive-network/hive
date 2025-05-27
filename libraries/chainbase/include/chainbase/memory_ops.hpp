@@ -510,24 +510,27 @@ public:
                 std::string base_vm_path = use_host_proc ? "/host-proc/sys/vm/" : "/proc/sys/vm/";
                 int commands_succeeded = 0;
 
+                std::string pipe_sudo_tee = " | sudo tee "; // Corrected typo std:string to std::string
+                std::string redirect_to_null = " > /dev/null 2>&1";
+
                 // Set dirty_background_bytes
                 std::string set_dirty_bg_cmd = std::string("echo ") + std::to_string(aligned_size) +
-                                             " | sudo tee " + base_vm_path + "dirty_background_bytes > /dev/null 2>&1";
+                                             pipe_sudo_tee + base_vm_path + std::string("dirty_background_bytes") + redirect_to_null;
                 if (std::system(set_dirty_bg_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set dirty_bytes
                 std::string set_dirty_cmd = std::string("echo ") + std::to_string(dirty_bytes_value) +
-                                          " | sudo tee " + base_vm_path + "dirty_bytes > /dev/null 2>&1";
+                                          pipe_sudo_tee + base_vm_path + std::string("dirty_bytes") + redirect_to_null;
                 if (std::system(set_dirty_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set dirty_expire_centisecs
                 std::string set_expire_cmd = std::string("echo 300000") +
-                                           " | sudo tee " + base_vm_path + "dirty_expire_centisecs > /dev/null 2>&1";
+                                           pipe_sudo_tee + base_vm_path + std::string("dirty_expire_centisecs") + redirect_to_null;
                 if (std::system(set_expire_cmd.c_str()) == 0) commands_succeeded++;
 
                 // Set vm.swappiness
                 std::string set_swappiness_cmd = std::string("echo 10") +
-                                               " | sudo tee " + base_vm_path + "swappiness > /dev/null 2>&1";
+                                               pipe_sudo_tee + base_vm_path + std::string("swappiness") + redirect_to_null;
                 if (std::system(set_swappiness_cmd.c_str()) == 0) commands_succeeded++;
                 
                 bool sudo_tee_success = (commands_succeeded > 0);
