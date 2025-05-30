@@ -18,13 +18,13 @@ class config:  # noqa: N801
             "witness database_api account_by_key_api network_broadcast_api condenser_api block_api"
             " transaction_status_api debug_node_api"
         )
-        self.account_history_rocksdb_path = '"blockchain/account-history-rocksdb-storage"'
+        self.account_history_rocksdb_path = '"state/rocksdb/account-history-rocksdb-storage"'
         self.block_data_export_file = "NONE"
         self.block_data_skip_empty = "0"
         self.block_log_info_print_interval_seconds = "86400"
         self.block_log_info_print_irreversible = "1"
         self.block_log_info_print_file = "ILOG"
-        self.shared_file_dir = '"blockchain"'
+        self.shared_file_dir = '"state/mmapfiles"'
         self.shared_file_size = "8G"
         self.shared_file_full_threshold = "0"
         self.shared_file_scale_rate = "0"

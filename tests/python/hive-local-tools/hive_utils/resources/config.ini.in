@@ -31,7 +31,7 @@ block-log-info-print-irreversible = 1
 block-log-info-print-file = ILOG
 
 # the location of the chain shared memory files (absolute path or relative to application data dir)
-shared-file-dir = "blockchain"
+shared-file-dir = "state/mmapfiles"
 
 # Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.
 shared-file-size = 8G
