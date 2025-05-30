@@ -11,7 +11,7 @@ plugin = state_snapshot
 
 block-log-split = -1
 
-account-history-rocksdb-path = "blockchain/account-history-rocksdb-storage"
+account-history-rocksdb-path = "state/rocksdb/account-history-rocksdb-storage"
 
 shared-file-size = $SHARED_FILE_SIZE
 
