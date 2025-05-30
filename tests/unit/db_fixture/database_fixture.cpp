@@ -99,6 +99,7 @@ fc::path common_init( appbase::application& app, bool remove_db_files, const fc:
   if( remove_db_files )
   {
     fc::remove_all( ( _data_dir_str + "/blockchain" ).c_str() );
+    fc::remove_all( ( _data_dir_str + "/state" ).c_str() );
     fc::remove_all( ( _data_dir_str + "/comments_data" ).c_str() );
   }
 
