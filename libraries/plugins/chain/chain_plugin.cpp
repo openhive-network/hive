@@ -1540,13 +1540,14 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
 
   cfg.add_options()
-      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
+      ("shared-file-dir", bpo::value<bfs::path>()->default_value("state/mmapfiles")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("24G"), "Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%)." )
       ("shared-file-scale-rate", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines how quickly to scale the shared memory file. When autoscaling occurs the file's size will be increased by this percent. Setting this to 0 disables autoscaling. Recommended value is between 1000-2000 (10-20%)" )
+      ("rocksdb-path", bpo::value<bfs::path>()->default_value("state/rocksdb"), "the location of the rocksdb data directory (absolute path or relative to application data dir)")
       ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
       ("flush-state-interval", bpo::value<uint32_t>(),
         "flush shared memory changes to disk every N blocks")
@@ -1579,7 +1580,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
-      ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1604,7 +1604,14 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     std::make_unique< sync_block_writer >( *( my->block_storage.get() ), my->db, get_app() );
 
   get_app().setup_notifications(options);
-  my->shared_memory_dir = get_app().data_dir() / "blockchain";
+  
+  // Create state directory for application data
+  bfs::path state_dir = get_app().data_dir() / "state";
+  if (!bfs::exists(state_dir)) {
+    bfs::create_directories(state_dir);
+  }
+  
+  my->shared_memory_dir = state_dir / "blockchain";
 
   if( options.count("shared-file-dir") )
   {
@@ -1614,8 +1621,27 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     else
       my->shared_memory_dir = sfd;
   }
-
-  my->comments_storage_path = my->shared_memory_dir / options.at("comments-rocksdb-path").as<bfs::path>();
+  
+  // Create rocksdb directory
+  bfs::path rocksdb_dir;
+  if( options.count("rocksdb-path") )
+  {
+    auto rp = options.at("rocksdb-path").as<bfs::path>();
+    if(rp.is_relative())
+      rocksdb_dir = get_app().data_dir() / rp;
+    else
+      rocksdb_dir = rp;
+  }
+  else
+  {
+    rocksdb_dir = state_dir / "rocksdb";
+  }
+  
+  if (!bfs::exists(rocksdb_dir)) {
+    bfs::create_directories(rocksdb_dir);
+  }
+  
+  my->comments_storage_path = rocksdb_dir / "comments-rocksdb-storage";
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 

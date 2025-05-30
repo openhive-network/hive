@@ -13,8 +13,8 @@ plugin = witness database_api account_by_key_api network_broadcast_api condenser
 # Disables automatic account history trimming
 history-disable-pruning = 0
 
-# The location of the rocksdb database for account history. By default it is $DATA_DIR/blockchain/account-history-rocksdb-storage
-account-history-rocksdb-path = "blockchain/account-history-rocksdb-storage"
+# The location of the rocksdb database for account history. By default it is $DATA_DIR/state/rocksdb/account-history-rocksdb-storage
+account-history-rocksdb-path = "state/rocksdb/account-history-rocksdb-storage"
 
 # Where to export data (NONE to discard)
 block-data-export-file = NONE
