@@ -57,7 +57,7 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict[str, Any], bl
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
     snap = node.dump_snapshot(close=True)
-    Path(node.directory / "blockchain" / "shared_memory.bin").unlink()
+    node.shared_file_path.unlink()
     node.run(load_snapshot_from=snap, **way_to_stop)
     assert not node.is_running()
 
