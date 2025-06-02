@@ -4020,6 +4020,18 @@ components:
             type: string
           value:
             type: string
+    find_accounts:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: string
+          example: ["hiveio"]
+        delayed_votes_active:
+          type: boolean
+          example: true
+          description: Optional.
     find_account_recovery:
       type: object
       properties:
