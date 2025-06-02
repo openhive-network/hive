@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/external_storage/external_storage_processor.hpp>
+#include <hive/chain/external_storage/comments_handler.hpp>
 #include <hive/chain/external_storage/external_storage_provider.hpp>
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 
 namespace bfs = boost::filesystem;
 
-class rocksdb_storage_processor: public external_storage_processor
+class rocksdb_storage_processor: public comments_handler
 {
   private:
 

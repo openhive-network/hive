@@ -20,6 +20,10 @@ class comments_handler : public external_storage_snapshot
 
     virtual comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const = 0;
 
+    virtual void shutdown( bool remove_db = false ) = 0;
+
+    virtual void update_lib( uint32_t ) = 0;
+    virtual void update_reindex_point( uint32_t ) = 0;
 };
 
 } } // hive::chain
