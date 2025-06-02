@@ -16,8 +16,9 @@ namespace bfs = boost::filesystem;
 
 #define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
 
-rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin, chain::database& db, const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider )
-                          : _name( name ), _storage_name( storage_name ), _mainDb( db ), _plugin( plugin ), _storagePath( storage_path ), _provider( provider )
+rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin,
+  chain::database& db, const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider )
+  : _name( name ), _storage_name( storage_name ), _mainDb( db ), _plugin( plugin ), _storagePath( storage_path ), _provider( provider )
 {
   FC_ASSERT( _provider );
 }
