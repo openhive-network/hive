@@ -253,7 +253,7 @@ void rocksdb_storage_provider::load_lib()
     return;
   }
 
-  FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
+  FC_ASSERT( s.ok() && "Not found irreversible", "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
   uint32_t lib = lib_slice_t::unpackSlice(data);
 
@@ -284,7 +284,7 @@ void rocksdb_storage_provider::load_reindex_point()
     return;
   }
 
-  FC_ASSERT( s.ok(), "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
+  FC_ASSERT( s.ok() && "Not found reindex", "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
 
   uint32_t rp = lib_slice_t::unpackSlice(data);
 
