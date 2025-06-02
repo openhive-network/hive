@@ -4,12 +4,12 @@
 namespace hive { namespace chain {
 
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-                                  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app )
+  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app )
 {
 
 }
 
-rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::prepareColumnDefinitions( bool addDefaultColumn)
+rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::prepareColumnDefinitions( bool addDefaultColumn )
 {
   ColumnDefinitions columnDefs;
 

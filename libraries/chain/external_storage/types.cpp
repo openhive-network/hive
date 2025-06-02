@@ -38,17 +38,6 @@ const Comparator* by_txId_Comparator()
   return &c;
 }
 
-uint32_t account_history_info::getAssociatedOpCount() const
-{
-  return newestEntryId - oldestEntryId + 1;
-}
-
-CachableWriteBatch::CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles) :
-  _storage(storage), _columnHandles(columnHandles)
-{
-
-}
-
 bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
 {
   auto fi = _ahInfoCache.find(name);

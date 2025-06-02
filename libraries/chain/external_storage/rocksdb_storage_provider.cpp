@@ -10,7 +10,7 @@
 namespace hive { namespace chain {
 
 rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-                        : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
+  : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
   _cached_irreversible_block.store(0);
   _cached_reindex_point = 0;
@@ -22,11 +22,6 @@ void rocksdb_storage_provider::init( bool destroy_on_startup )
     bfs::create_directories( _storagePath );
 
   openDb( destroy_on_startup );
-}
-
-std::unique_ptr<DB>& rocksdb_storage_provider::getStorage()
-{
-  return _storage;
 }
 
 void rocksdb_storage_provider::openDb( bool cleanDatabase )

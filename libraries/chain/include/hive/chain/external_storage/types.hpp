@@ -76,24 +76,24 @@ class PrimitiveTypeSlice final : public Slice
 };
 
 class TransactionIdSlice : public Slice
-  {
+{
   public:
     explicit TransactionIdSlice(const transaction_id_type& trxId) : _trxId(&trxId)
     {
-    data_ = _trxId->data();
-    size_ = _trxId->data_size();
+      data_ = _trxId->data();
+      size_ = _trxId->data_size();
     }
 
     static void unpackSlice(const Slice& s, transaction_id_type* storage)
     {
-    assert(storage != nullptr);
-    assert(storage->data_size() == s.size());
-    memcpy(storage->data(), s.data(), s.size());
+      assert(storage != nullptr);
+      assert(storage->data_size() == s.size());
+      memcpy(storage->data(), s.data(), s.size());
     }
 
   private:
     const transaction_id_type* _trxId;
-  };
+};
 
 typedef PrimitiveTypeSlice< int64_t > id_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > lib_id_slice_t;
@@ -106,7 +106,7 @@ typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
   *
   */
 class AComparator : public Comparator
-  {
+{
   public:
     virtual const char* Name() const override final
     {
@@ -126,14 +126,14 @@ class AComparator : public Comparator
 
   protected:
     AComparator() = default;
-  };
+};
 
 template <typename T>
 class PrimitiveTypeComparatorImpl final : public AComparator
-  {
+{
   public:
     virtual int Compare(const Slice& a, const Slice& b) const override
-      {
+    {
       if(a.size() != sizeof(T) || b.size() != sizeof(T))
         return a.compare(b);
 
@@ -147,10 +147,10 @@ class PrimitiveTypeComparatorImpl final : public AComparator
         return 1;
 
       return 0;
-      }
+    }
 
     virtual bool Equal(const Slice& a, const Slice& b) const override
-      {
+    {
       if(a.size() != sizeof(T) || b.size() != sizeof(T))
         return a == b;
 
@@ -158,16 +158,16 @@ class PrimitiveTypeComparatorImpl final : public AComparator
       const auto& id2 = retrieveKey(b);
 
       return id1 == id2;
-      }
+    }
 
   private:
     const T& retrieveKey(const Slice& slice) const
-      {
+    {
       assert(sizeof(T) == slice.size());
       const char* rawData = slice.data();
       return *reinterpret_cast<const T*>(rawData);
-      }
-  };
+    }
+};
 
 class HashComparator final : public AComparator
 {
@@ -231,7 +231,7 @@ typedef PrimitiveTypeComparatorImpl<account_name_type::Storage> by_account_name_
 typedef std::pair< int64_t, uint32_t > ah_op_id_pair;
 typedef PrimitiveTypeComparatorImpl< ah_op_id_pair > ah_op_by_id_ComparatorImpl;
 
-  /// Pairs account_name storage type and the ID to make possible nonunique index definition over names.
+/// Pairs account_name storage type and the ID to make possible nonunique index definition over names.
 typedef std::pair<account_name_type::Storage, size_t> account_name_storage_id_pair;
 
 typedef PrimitiveTypeSlice< block_op_id_pair > op_by_block_num_slice_t;
@@ -262,7 +262,10 @@ public:
   /// Timestamp of oldest operation, just to quickly decide if start detail prune checking at all.
   time_point_sec oldestEntryTimestamp;
 
-  uint32_t getAssociatedOpCount() const;
+  uint32_t getAssociatedOpCount() const
+  {
+    return newestEntryId - oldestEntryId + 1;
+  }
 };
 
 using ::rocksdb::DB;
@@ -274,7 +277,8 @@ using ::rocksdb::ReadOptions;
 class CachableWriteBatch : public WriteBatch
 {
 public:
-  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles);
+  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles)
+    : _storage(storage), _columnHandles(columnHandles) {}
 
   bool getAHInfo(const account_name_type& name, account_history_info* ahInfo) const;
   void putAHInfo(const account_name_type& name, const account_history_info& ahInfo);

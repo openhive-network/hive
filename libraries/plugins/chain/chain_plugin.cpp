@@ -233,7 +233,6 @@ class chain_plugin_impl
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
 
-    boost::signals2::connection     _post_apply_operation_conn;
     boost::signals2::connection     _on_irreversible_block_conn;
     boost::signals2::connection     _on_prepare_snapshot_supplement_conn;
     boost::signals2::connection     _on_load_snapshot_supplement_conn;

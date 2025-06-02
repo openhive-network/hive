@@ -92,7 +92,7 @@ class rocksdb_storage_provider
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;
 
-    std::unique_ptr<DB>& getStorage();
+    std::unique_ptr<DB>& getStorage() { return _storage; }
 
     void openDb( bool cleanDatabase );
     void shutdownDb( bool removeDB = false );
