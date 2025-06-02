@@ -316,7 +316,7 @@ class chain_plugin_impl
 
     appbase::application& theApp;
 
-    external_storage_processor::ptr rocksdb_processor;
+    comments_handler::ptr rocksdb_processor;
 
   private:
     bool _push_block( const block_flow_control& block_ctrl );
