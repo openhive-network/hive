@@ -8350,7 +8350,7 @@ BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
     generate_block();
 
     HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr && \"By name\"", fc::exception );
-    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required", fc::exception );
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required || _external_comment", fc::exception );
   }
   FC_LOG_AND_RETHROW()
 }
