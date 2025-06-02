@@ -31,4 +31,9 @@ message failed_recurrent_transfer {
 
   //  @param {bool} deleted - true if whole recurrent transfer was discontinued due to too many consecutive failures
   required bool   deleted = 7;
+
+  // @param {recurrent_transfer_extension} extensions - Extensions. Since HF 28 it may contain the 'pair_id'.
+  //                                                    It allows to define more than one recurrent transfer from sender to the same receiver 'to'. 
+  //                                                    Default value 'pair_id=0'.
+  repeated recurrent_transfer_extension extensions = 8;
 }

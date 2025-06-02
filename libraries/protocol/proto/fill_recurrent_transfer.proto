@@ -26,4 +26,9 @@ message fill_recurrent_transfer {
 
   // @param {number} remaining_executions - number of remaining pending transferss
   required uint32 remaining_executions = 5 [json_name = "remaining_executions"];
+
+  // @param {recurrent_transfer_extension} extensions - Extensions. Since HF 28 it may contain the 'pair_id'.
+  //                                                    It allows to define more than one recurrent transfer from sender to the same receiver 'to'. 
+  //                                                    Default value 'pair_id=0'.
+  repeated recurrent_transfer_extension extensions = 6;
 }
