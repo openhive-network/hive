@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <hive/chain/external_storage/external_storage_snapshot.hpp>
 #include <hive/chain/external_storage/comment.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
@@ -8,7 +9,7 @@
 
 namespace hive { namespace chain {
 
-class comments_handler
+class comments_handler : public external_storage_snapshot
 {
   public:
 

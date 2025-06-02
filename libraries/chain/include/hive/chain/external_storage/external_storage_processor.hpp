@@ -2,12 +2,11 @@
 #pragma once
 
 #include <hive/chain/external_storage/comments_handler.hpp>
-#include <hive/chain/external_storage/external_storage_snapshot.hpp>
 #include <hive/chain/external_storage/external_storage_provider.hpp>
 
 namespace hive { namespace chain {
 
-class external_storage_processor: public comments_handler, public external_storage_snapshot
+class external_storage_processor: public comments_handler
 {
   public:
 
