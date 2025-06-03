@@ -48,7 +48,7 @@ info:
     This overview provides a simplified understanding of how services interact with the blockchain. It serves as a foundation for learning and developing within the Hive network.
 
 servers:
-  - url: http://192.168.6.150:7777
+  - url: http://proxy_url:7777
 tags:
   - name: account_by_key_api
     description: >-

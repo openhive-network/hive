@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://192.168.6.150:7777"
+            "url": "http://proxy_url:7777"
         }
     ],
     "tags": [
