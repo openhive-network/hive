@@ -335,16 +335,20 @@ template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::notify( const std::string& type, const optional< tcp::endpoint >& endpoint )
 {
   collector_t collector;
+  const fc::string address = endpoint->address().to_string();
+  const uint16_t port = endpoint->port();
+
+  ilog( "Reserved endpoint for ${type} is ${address}:${port}", ( "type", type )( "address", address )( "port", port ) );
 
   collector.assign_values(
     "type",     type,
-    "address",  endpoint->address().to_string(),
-    "port",     endpoint->port()
+    "address",  address,
+    "port",     port
   );
   theApp.notify_webserver(
     type,
-    endpoint->address().to_string(),
-    endpoint->port()
+    address,
+    port
   );
 
 
