@@ -1,0 +1,60 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="description" content="SwaggerUI" />
+      <title>SwaggerUI</title>
+      <link rel="stylesheet" href="./swagger-ui.css" />
+    </head>
+    <body>
+    <div id="swagger-ui"></div>
+    <script src="./swagger-ui-bundle.js" crossorigin></script>
+    <script>
+      window.onload = () => {
+        window.ui = SwaggerUIBundle({
+          url: 'new-openapi.json',
+          dom_id: '#swagger-ui',
+          requestInterceptor: function(request) {
+          if (request.loadSpec) {
+            return request;
+          }
+
+          const url = request.url;
+
+          // Match the port with colon, e.g., ":7777"
+          const portPattern = /:\d+/;
+          const match = url.match(portPattern);
+
+          if (match) {
+            const portEndIndex = match.index + match[0].length; // end of port in URL
+
+            // Split into base URL and method part
+            const baseUrl = url.substring(0, portEndIndex);
+            const method = url.substring(portEndIndex); // method with leading dot or not
+
+            // if param is empty add default empty object
+            const params_body = request.body ? JSON.parse(request.body) : {};
+
+            const jsonBody = {
+              jsonrpc: "2.0",
+              method: method,
+              id: 1,
+              params: params_body
+            };
+
+            request.body = JSON.stringify(jsonBody);
+            // Optionally update request.url to baseUrl
+            request.url = baseUrl;
+
+            return request;
+          } else {
+            // fallback if no port pattern matched
+            return request;
+          }
+        }
+        });
+      };
+    </script>
+    </body>
+    </html>
