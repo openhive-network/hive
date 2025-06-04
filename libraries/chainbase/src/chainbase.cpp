@@ -7,6 +7,12 @@
 
 #include <filesystem>
 
+#ifdef __linux__
+#include <sys/mman.h>
+#include <errno.h>
+#include <string.h>
+#endif
+
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -241,6 +247,22 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str()
                                       ) );
 
+#ifdef __linux__
+      // Advise the kernel to use huge pages for this memory mapping if available
+      // MADV_HUGEPAGE tells the kernel to back the memory mapping with huge pages
+      // which can significantly improve performance for large memory segments by
+      // reducing TLB (Translation Lookaside Buffer) misses
+      void* addr = _segment->get_address();
+      size_t size = _segment->get_size();
+      if (addr != nullptr && size > 0) {
+        if (madvise(addr, size, MADV_HUGEPAGE) != 0) {
+          wlog("madvise for huge pages failed: ${error}", ("error", strerror(errno)));
+        } else {
+          ilog("Successfully advised kernel to use huge pages for shared memory");
+        }
+      }
+#endif
+
       auto env = _segment->find< environment_check >( "environment" );
       environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
       if( !env.first || !( *env.first == eCheck) ) {
@@ -262,6 +284,23 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
+
+#ifdef __linux__
+      // Advise the kernel to use huge pages for this memory mapping if available
+      // MADV_HUGEPAGE tells the kernel to back the memory mapping with huge pages
+      // which can significantly improve performance for large memory segments by
+      // reducing TLB (Translation Lookaside Buffer) misses
+      void* addr = _segment->get_address();
+      size_t size = _segment->get_size();
+      if (addr != nullptr && size > 0) {
+        if (madvise(addr, size, MADV_HUGEPAGE) != 0) {
+          wlog("madvise for huge pages failed: ${error}", ("error", strerror(errno)));
+        } else {
+          ilog("Successfully advised kernel to use huge pages for shared memory");
+        }
+      }
+#endif
+
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
@@ -283,6 +322,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
 
   void database::flush() {
+    ilog( "Flushing database" );
     if( _segment )
       _segment->flush();
     if( _meta )
@@ -329,6 +369,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::resize( size_t new_shared_file_size )
   {
+    ilog( "Resizing shared memory file to ${size}", ( "size", new_shared_file_size ) );
     if( _undo_session_count )
       BOOST_THROW_EXCEPTION( std::runtime_error( "Cannot resize shared memory file while undo session is active" ) );
 
