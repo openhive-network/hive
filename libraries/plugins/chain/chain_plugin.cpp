@@ -221,7 +221,8 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
-
+    bool                             destroyDatabaseOnStartup = false;
+    bool                             destroyDatabaseOnShutdown = false;
 
     uint32_t allow_future_time = 5;
 
@@ -1891,7 +1892,7 @@ void chain_plugin::plugin_startup()
   my->open();
 
   ilog("Preparing rocksDB storage for comments...");
-  my->init_rocksdb_storage( my->comments_storage_path, _destroyOnStartup );
+  my->init_rocksdb_storage( my->comments_storage_path, my->destroyDatabaseOnStartup );
 
   ilog("Looking for snapshot processing requests...");
   my->process_snapshot();
@@ -1958,7 +1959,7 @@ void chain_plugin::plugin_shutdown()
   my->default_block_writer->close();
   my->block_storage->close_storage();
 
-  my->shutdown(_destroyOnShutdown);
+  my->shutdown( my->destroyDatabaseOnShutdown );
 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
@@ -2200,4 +2201,14 @@ bool chain_plugin::is_finished_write_processing() const
   return my->finish.status.load();
 }
 
-} } } // namespace hive::plugis::chain::chain_apis
+void chain_plugin::set_destroy_database_on_startup( bool set )
+{
+  my->destroyDatabaseOnStartup = set;
+}
+
+void chain_plugin::set_destroy_database_on_shutdown( bool set )
+{
+  my->destroyDatabaseOnShutdown = set;
+}
+
+} } } // namespace hive::plugins::chain
