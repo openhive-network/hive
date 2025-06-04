@@ -422,18 +422,18 @@ const comment_object* database::find_comment( comment_id_type comment_id )const
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
   const account_object& _account = get_account( author );
-  return get_comments_handler()->get_comment( _account.get_id(), to_string( permlink ), true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account.get_id(), to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( author, to_string( permlink ), false /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_name_type& author, const shared_string& permlink )const
@@ -443,25 +443,25 @@ comment database::find_comment( const account_name_type& author, const shared_st
   if( !_account )
     return comment();
 
-  return get_comments_handler()->get_comment( _account->get_id(), to_string( permlink ), false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account->get_id(), to_string( permlink ), false /*comment_is_required*/ );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
 
 comment database::get_comment( const account_id_type& author, const string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, permlink, true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( author, permlink, true /*comment_is_required*/ );
 }
 
 comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
   const account_object& _account = get_account( author );
-  return get_comments_handler()->get_comment( _account.get_id(), permlink, true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account.get_id(), permlink, true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const string& permlink )const
 {
-  return get_comments_handler()->get_comment( author, permlink, false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( author, permlink, false /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_name_type& author, const string& permlink )const
@@ -471,7 +471,7 @@ comment database::find_comment( const account_name_type& author, const string& p
   if( !_account )
     return comment();
 
-  return get_comments_handler()->get_comment( _account->get_id(), permlink, false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account->get_id(), permlink, false /*comment_is_required*/ );
 }
 
 #endif
@@ -665,7 +665,7 @@ void database::remove_old_cashouts()
     const auto& current = *itr;
     const auto& comment = get_comment( current );
     ++itr;
-    get_comments_handler()->on_cashout( comment, current );
+    get_comments_handler().on_cashout( comment, current );
     remove( current );
   }
 }
@@ -2667,7 +2667,7 @@ void database::process_comment_cashout()
 
       if( has_hardfork( HIVE_HARDFORK_0_19 ) )
       {
-        get_comments_handler()->on_cashout( _comment, *_current );
+        get_comments_handler().on_cashout( _comment, *_current );
         remove( *_current );
       }
     }
