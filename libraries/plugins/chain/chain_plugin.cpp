@@ -139,10 +139,6 @@ class chain_plugin_impl
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
 
-      hive::utilities::disconnect_signal(_on_irreversible_block_conn);
-      hive::utilities::disconnect_signal(_on_prepare_snapshot_supplement_conn);
-      hive::utilities::disconnect_signal(_on_load_snapshot_supplement_conn);
-
       if( rocksdb_processor )
         rocksdb_processor->shutdown();
     }
@@ -233,10 +229,6 @@ class chain_plugin_impl
     std::condition_variable          queue_condition_variable;
     std::queue<write_context*>       priority_write_queue;
     std::queue<write_context*>       write_queue;
-
-    boost::signals2::connection     _on_irreversible_block_conn;
-    boost::signals2::connection     _on_prepare_snapshot_supplement_conn;
-    boost::signals2::connection     _on_load_snapshot_supplement_conn;
 
     template<typename Promise>
     void add_to_any_queue( std::queue<write_context*>& any_queue, write_context* ctx, Promise& promise )
@@ -477,26 +469,6 @@ void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_
   rocksdb_processor = std::make_shared<rocksdb_storage_processor>( _plugin, db, _plugin.state_storage_dir(), comments_storage_path, theApp, destroy_on_startup );
 
   db.set_comments_handler( rocksdb_processor );
-
-  _on_irreversible_block_conn = db.add_irreversible_block_handler(
-    [&]( uint32_t block_num )
-    {
-      FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->on_irreversible_block( block_num );
-    }, _plugin
-  );
-
-  _on_prepare_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
-    {
-      FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->save_snaphot( note );
-    }, _plugin, 0);
-
-  _on_load_snapshot_supplement_conn = db.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
-    {
-      FC_ASSERT( rocksdb_processor );
-      rocksdb_processor->load_snapshot( note );
-    }, _plugin, 0);
 }
 
 bool chain_plugin_impl::is_interrupt_request() const
