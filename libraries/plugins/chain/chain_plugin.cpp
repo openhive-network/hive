@@ -921,6 +921,7 @@ void chain_plugin_impl::initial_settings()
 
   db_open_args.data_dir = theApp.data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
+  db_open_args.comments_storage_path = comments_storage_path;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
