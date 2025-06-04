@@ -13,12 +13,6 @@ class rocksdb_storage_processor: public external_storage_processor
 {
   private:
 
-#ifdef IS_TEST_NET
-    const size_t volatile_objects_limit = 0;
-#else
-    const size_t volatile_objects_limit = 10'000;
-#endif
-
     database& db;
 
     external_comment_storage_provider::ptr  provider;

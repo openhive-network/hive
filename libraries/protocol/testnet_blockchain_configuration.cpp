@@ -98,6 +98,11 @@ void configuration::set_hive_owner_update_limit( uint16_t limit )
   hive_owner_update_limit = limit;
 }
 
+void configuration::set_volatile_comment_objects_limit( size_t limit )
+{
+  volatile_comment_objects_limit = limit;
+}
+
 void configuration::set_initial_asset_supply( uint64_t hive, uint64_t hbd, uint64_t to_vest, const price& vest_price )
 {
   FC_ASSERT( hive >= to_vest, "Too much HIVE requested for vesting compared to given supply" );

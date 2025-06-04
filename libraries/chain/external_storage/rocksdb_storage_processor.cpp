@@ -97,7 +97,7 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
 
-  if( _volatile_idx.size() < volatile_objects_limit )
+  if( _volatile_idx.size() < HIVE_VOLATILE_COMMENT_OBJECTS_LIMIT )
     return;
 
   auto _itr = _volatile_idx.begin();

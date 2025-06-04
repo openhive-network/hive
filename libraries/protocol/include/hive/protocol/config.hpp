@@ -127,6 +127,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
 #define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE (configuration_data.get_hive_min_recurrent_transfers_recurrence())
 
+#define HIVE_VOLATILE_COMMENT_OBJECTS_LIMIT (configuration_data.get_volatile_comment_objects_limit())
+
 #else // IS LIVE HIVE NETWORK
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,6 +209,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_RECURRENT_TRANSFER_END_DATE   730 /// 2 years in days
 #define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
 #define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE 24
+
+#define HIVE_VOLATILE_COMMENT_OBJECTS_LIMIT 10'000
 
 #endif
 

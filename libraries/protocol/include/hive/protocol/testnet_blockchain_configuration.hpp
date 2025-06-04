@@ -57,6 +57,8 @@ class configuration
   uint32_t hive_proposal_maintenance_period = 60*60; // 1 hour
   // Time in which you can change the owner key twice, originally 60 min (in mainnet)
   uint16_t hive_owner_update_limit = 6;
+  // Informs how many comments are stored in cache before moving into RocksDB storage is allowed. This is a "performance" variable.
+  size_t volatile_comment_objects_limit = 5;
 
 #ifdef IS_TEST_NET
   uint64_t init_hive_supply = int64_t( 243 ) * int64_t( 1000000 ) * int64_t( 1000 ); // in HIVE satoshis
@@ -122,6 +124,7 @@ class configuration
     uint32_t get_hive_delayed_voting_interval_seconds() const { return get_hive_delayed_voting_total_interval_seconds() / 30; }
     int64_t  get_hive_governance_vote_expiration_period() const { return hive_governance_vote_expiration_period; }
     uint16_t get_hive_owner_update_limit() const { return hive_owner_update_limit; }
+    uint16_t get_volatile_comment_objects_limit() const { return volatile_comment_objects_limit; }
 
     uint64_t get_init_hive_supply() const { return init_hive_supply; }
     uint64_t get_init_hbd_supply() const { return init_hbd_supply; }
@@ -255,6 +258,8 @@ class configuration
     }
 
     void set_hive_owner_update_limit( uint16_t limit );
+
+    void set_volatile_comment_objects_limit( size_t limit );
 
     /**
      * Sets initial supply of HIVE and HBD and also allows stabilization of price of VESTS
