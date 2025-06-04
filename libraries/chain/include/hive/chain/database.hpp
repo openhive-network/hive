@@ -835,10 +835,10 @@ namespace chain {
         _comments_handler = obj;
       }
 
-      comments_handler::ptr get_comments_handler() const
+      comments_handler& get_comments_handler() const
       {
         FC_ASSERT( _comments_handler );
-        return _comments_handler;
+        return *_comments_handler.get();
       }
 
     private:
