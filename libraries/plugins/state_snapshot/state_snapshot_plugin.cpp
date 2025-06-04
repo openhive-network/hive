@@ -1399,6 +1399,7 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
 
   hive::chain::load_snapshot_supplement_notification notification(load_helper);
 
+  _mainDb.get_comments_handler().load_snapshot(notification);
   _mainDb.notify_load_snapshot_data_supplement(notification);
   }
 
@@ -1524,6 +1525,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   
   hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
 
+  _mainDb.get_comments_handler().save_snaphot(notification);
   _mainDb.notify_prepare_snapshot_data_supplement(notification);
 
   store_snapshot_manifest(actualStoragePath, builtWriters, dump_helper);

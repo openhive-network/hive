@@ -5029,33 +5029,35 @@ uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t>
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
+  auto new_last_irreversible = get_last_irreversible_block_num();
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
-  // of the call, but all side effects happen at the end to minize the chance that state
+  // of the call, but all side effects happen at the end to minimize the chance that state
   // invariants will be violated.
   try
   {
-    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-
-    _block_writer->store_block( get_last_irreversible_block_num(), 
-                                dpo.head_block_number );
+    _block_writer->store_block( new_last_irreversible, head_block_num() );
 
     // This deletes undo state (when present)
-    commit( get_last_irreversible_block_num() );
+    commit( new_last_irreversible );
 
-    if (old_last_irreversible < get_last_irreversible_block_num())
+    if( old_last_irreversible < new_last_irreversible )
     {
       //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
-      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
+      //  ("b", new_last_irreversible)("ob", old_last_irreversible));
 
-      for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
+      get_comments_handler().on_irreversible_block( new_last_irreversible );
+
+      //ABW: notifying one by one seems like a potential waste - notification receiver can't optimize its work
+      for (uint32_t i = old_last_irreversible + 1; i <= new_last_irreversible; ++i)
         notify_irreversible_block(i);
     }
 
   }
-  FC_CAPTURE_CALL_LOG_AND_RETHROW( [this](){
-                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
-                                          theApp.generate_interrupt_request();
-                                       }, (old_last_irreversible) )
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [this]()
+  {
+    elog( "An error occured during migrating an irreversible state. The node will be closed." );
+    theApp.generate_interrupt_request();
+  }, ( new_last_irreversible )( old_last_irreversible ) )
 }
 
 
