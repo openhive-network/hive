@@ -20,9 +20,7 @@ class rocksdb_snapshot: public external_storage_snapshot
     std::string _name;
     std::string _storage_name;
 
-    chain::database& _mainDb;
-
-    const hive::chain::abstract_plugin& _plugin;
+    database& _mainDb;
 
     const bfs::path _storagePath;
 
@@ -30,11 +28,11 @@ class rocksdb_snapshot: public external_storage_snapshot
 
   public:
 
-    rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin, chain::database& db,
+    rocksdb_snapshot( std::string name, std::string storage_name, database& db,
                       const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider );
 
-    void save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note ) override;
-    void load_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) override;
+    void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
+    void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
 };
 

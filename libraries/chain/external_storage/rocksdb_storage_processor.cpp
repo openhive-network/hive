@@ -13,14 +13,15 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
-rocksdb_storage_processor::rocksdb_storage_processor( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup )
-                          : db( db )
+rocksdb_storage_processor::rocksdb_storage_processor( database& db, const bfs::path& blockchain_storage_path,
+  const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup )
+  : db( db )
 {
   auto _rcs_provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app );
   _rcs_provider->init( destroy_on_startup );
 
   provider = _rcs_provider;
-  snapshot = std::shared_ptr<rocksdb_snapshot>( new rocksdb_snapshot( "Comments RocksDB", "comments_rocksdb_data", plugin, db, storage_path, provider ) );
+  snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
 }
 
 rocksdb_storage_processor::~rocksdb_storage_processor()
