@@ -118,7 +118,7 @@ public:
 
     _provider = _rasp;
     _snapshot = std::shared_ptr<rocksdb_snapshot>(
-      new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _self, _mainDb, _storagePath, _provider ) );
+      new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _mainDb, _storagePath, _provider ) );
 
     collectOptions(options);
 

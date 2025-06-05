@@ -203,12 +203,12 @@ public:
     return external_data_index;
   }
 
-  virtual void store_external_data_info(const hive::chain::abstract_plugin& plugin, const fc::path& storage_path) override
+  virtual void store_external_data_info( const std::string& dataKey, const fc::path& storage_path ) override
   {
     plugin_external_data_info info;
     info.path = storage_path;
-    auto ii = external_data_index.emplace(plugin.get_name(), info);
-    FC_ASSERT(ii.second, "Only one external data path allowed per plugin");
+    auto ii = external_data_index.emplace( dataKey, info );
+    FC_ASSERT( ii.second, "Only one external data path allowed for ${dataKey}", ( dataKey ) );
   }
 
 private:
@@ -220,15 +220,13 @@ class snapshot_load_supplement_helper final : public hive::plugins::chain::snaps
 public:
   explicit snapshot_load_supplement_helper(const plugin_external_data_index& idx) : ext_data_idx(idx) {}
 
-  virtual bool load_external_data_info(const hive::chain::abstract_plugin& plugin, fc::path* storage_path) override
+  virtual bool load_external_data_info( const std::string& dataKey, fc::path* storage_path) override
   {
-    const std::string& name = plugin.get_name();
+    ilog( "Load external data for ${dataKey}", ( dataKey ) );
 
-    ilog("Load an external data info from ${name} a plugin", (name));
+    auto i = ext_data_idx.find( dataKey );
 
-    auto i = ext_data_idx.find(name);
-
-    if(i == ext_data_idx.end())
+    if( i == ext_data_idx.end() )
     {
       *storage_path = fc::path();
       return false;
