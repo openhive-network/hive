@@ -16,9 +16,9 @@ namespace bfs = boost::filesystem;
 
 #define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
 
-rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, const hive::chain::abstract_plugin& plugin,
-  chain::database& db, const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider )
-  : _name( name ), _storage_name( storage_name ), _mainDb( db ), _plugin( plugin ), _storagePath( storage_path ), _provider( provider )
+rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, database& db,
+  const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider )
+  : _name( name ), _storage_name( storage_name ), _mainDb( db ), _storagePath( storage_path ), _provider( provider )
 {
   FC_ASSERT( _provider );
 }
@@ -44,9 +44,9 @@ void rocksdb_snapshot::save_snaphot( const hive::chain::prepare_snapshot_supplem
 
   backupEngine.reset(_backupEngine);
 
-  ilog("Attempting to create an ${_name} backup in the location: `${p}'", (_name)("p", pathString));
+  ilog( "Attempting to create ${_name} backup in the location: `${p}'", ( _name ) ( "p", pathString ) );
 
-  std::string meta_data = _name + " plugin data. Current head block: ";
+  std::string meta_data = _name + " data. Current head block: ";
   meta_data += std::to_string(_mainDb.head_block_num());
 
   status = _backupEngine->CreateNewBackupWithMetadata( _provider->getStorage().get(), meta_data, true);
@@ -57,21 +57,21 @@ void rocksdb_snapshot::save_snaphot( const hive::chain::prepare_snapshot_supplem
 
   FC_ASSERT(backupInfos.size() == 1);
 
-  note.dump_helper.store_external_data_info(_plugin, actual_path);
+  note.dump_helper.store_external_data_info(_name, actual_path);
 }
 
 void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
 {
   fc::path extdata_path;
-  if(note.load_helper.load_external_data_info(_plugin, &extdata_path) == false)
+  if( note.load_helper.load_external_data_info(_name, &extdata_path) == false )
   {
-    wlog("No external data present for ${_name} plugin...", (_name));
+    wlog("No external data present for ${_name}...", (_name));
     return;
   }
 
   auto pathString = extdata_path.to_native_ansi_path();
 
-  ilog("Attempting to load external data for ${_name} plugin from location: `${p}'", (_name)("p", pathString));
+  ilog("Attempting to load external data for ${_name} from location: `${p}'", (_name)("p", pathString));
 
   ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
   ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
@@ -84,7 +84,7 @@ void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplemen
 
   backupEngine.reset(_backupEngine);
 
-  ilog("Attempting to restore an ${_name} backup from the backup location: `${p}'", (_name)("p", pathString));
+  ilog("Attempting to restore ${_name} from backup location: `${p}'", (_name)("p", pathString));
 
   _provider->shutdownDb( true );
 

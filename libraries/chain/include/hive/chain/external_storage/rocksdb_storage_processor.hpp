@@ -29,7 +29,8 @@ class rocksdb_storage_processor: public comments_handler
 
   public:
 
-    rocksdb_storage_processor( const abstract_plugin& plugin, database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup );
+    rocksdb_storage_processor( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
+      appbase::application& app, bool destroy_on_startup );
     virtual ~rocksdb_storage_processor();
 
     void on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
