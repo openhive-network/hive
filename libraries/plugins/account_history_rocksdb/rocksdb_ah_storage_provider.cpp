@@ -129,6 +129,11 @@ void rocksdb_ah_storage_provider::shutdownDb( bool removeDB )
   rocksdb_storage_provider::shutdownDb( removeDB );
 }
 
+void rocksdb_ah_storage_provider::wipeDb()
+{
+  rocksdb_storage_provider::wipeDb();
+}
+
 const std::atomic_uint& rocksdb_ah_storage_provider::get_cached_irreversible_block() const
 {
   return _cached_irreversible_block;
