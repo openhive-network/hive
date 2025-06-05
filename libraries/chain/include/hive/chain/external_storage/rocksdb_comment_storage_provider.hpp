@@ -41,6 +41,7 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     void openDb( bool cleanDatabase ) override;
     void shutdownDb( bool removeDB = false ) override;
+    void wipeDb() override;
 
     void save( const Slice& key, const Slice& value ) override;
     bool read( const Slice& key, PinnableSlice& value ) override;

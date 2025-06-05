@@ -43,6 +43,11 @@ void rocksdb_comment_storage_provider::shutdownDb( bool removeDB )
   rocksdb_storage_provider::shutdownDb( removeDB );
 }
 
+void rocksdb_comment_storage_provider::wipeDb()
+{
+  rocksdb_storage_provider::wipeDb();
+}
+
 void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
 {
   rocksdb_storage_provider::save( key, value );

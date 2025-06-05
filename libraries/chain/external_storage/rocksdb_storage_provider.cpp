@@ -30,7 +30,7 @@ void rocksdb_storage_provider::openDb( bool cleanDatabase )
   bfs::create_directories( _blockchainStoragePath );
 
   if( cleanDatabase )
-    ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+    wipeDb();
 
   auto _result = createDbSchema(_storagePath);
   if(  !std::get<1>( _result ) )
@@ -75,12 +75,15 @@ void rocksdb_storage_provider::shutdownDb( bool removeDB )
     getStorage().reset();
 
     if( removeDB )
-    {
-      ilog( "Attempting to destroy current AHR storage..." );
-      ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-      ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
-    }
+      wipeDb();
   }
+}
+
+void rocksdb_storage_provider::wipeDb()
+{
+  ilog( "Attempting to destroy current storage..." );
+  ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+  ilog( "Storage has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
 }
 
 std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path& path)
