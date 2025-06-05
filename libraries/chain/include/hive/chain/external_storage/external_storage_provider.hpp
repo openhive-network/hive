@@ -26,6 +26,7 @@ class external_snapshot_storage_provider
 
     virtual void openDb( bool cleanDatabase ) = 0;
     virtual void shutdownDb( bool removeDB = false ) = 0;
+    virtual void wipeDb() = 0;
 };
 
 class external_comment_storage_provider: public external_snapshot_storage_provider

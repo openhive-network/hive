@@ -96,6 +96,7 @@ class rocksdb_storage_provider
 
     void openDb( bool cleanDatabase );
     void shutdownDb( bool removeDB = false );
+    void wipeDb();
 
     void flushStorage();
 

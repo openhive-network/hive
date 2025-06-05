@@ -44,6 +44,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     void openDb( bool cleanDatabase ) override;
     void shutdownDb( bool removeDB = false ) override;
+    void wipeDb() override;
 
     const std::atomic_uint& get_cached_irreversible_block() const override;
     unsigned int get_cached_reindex_point() const override;
