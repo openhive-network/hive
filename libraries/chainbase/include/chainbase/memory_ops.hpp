@@ -819,51 +819,53 @@ public:
      */
     static bool lock_memory(const boost::interprocess::managed_mapped_file* segment) {
 #ifdef __linux__
-        if (!segment) {
-            ilog("Cannot lock null memory segment");
-            return false;
-        }
-
-        void* addr = segment->get_address();
-        size_t size = segment->get_size();
-        
-        if (addr == nullptr || size == 0) {
-            ilog("Invalid memory segment address or size");
-            return false;
-        }          
-        
-        ilog("Locking ${size} bytes of shared memory at address ${addr_str} in RAM",
-            ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
-            
-        long page_size = sysconf(_SC_PAGESIZE);
-        // Align address to page boundary (mlock requires page-aligned addresses)
-        void* aligned_addr = (void*)((uintptr_t)addr & ~(page_size - 1));
-        // Add the offset to the size to account for alignment
-        size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
-        
-        // Try to set VM parameters but don't fail the whole operation if it doesn't work
-        bool vm_params_success = set_vm_parameters(segment);
-        if (!vm_params_success) {
-            wlog("Failed to set VM parameters, but continuing with memory locking anyway");
-            wlog("Performance may be affected, but functionality should remain intact");
-            wlog("To fix VM parameter issues, ensure the container has proper privileges");
-            wlog("or run with host network mode (--net=host) and --privileged flag");
-        }
-        
-        // Now attempt to lock the memory
-        if (mlock(aligned_addr, aligned_size) != 0) {
-            elog("Failed to lock memory: ${error}", ("error", strerror(errno)));
-            return false;
-        }
-        
-        ilog("Successfully locked ${size} bytes of shared memory at address ${addr_str} in RAM", 
-            ("size", aligned_size)("addr_str", std::to_string((uintptr_t)aligned_addr)));
-        return true;
-#else
-        ilog("Memory locking is only supported on Linux systems");
+    if (!segment) {
+        ilog("Cannot lock null memory segment");
         return false;
-#endif
     }
+
+    void* addr = segment->get_address();
+    size_t size = segment->get_size();
+    
+    if (addr == nullptr || size == 0) {
+        ilog("Invalid memory segment address or size");
+        return false;
+    }          
+    
+    ilog("Locking ${size} bytes of shared memory at address ${addr_str} in RAM",
+        ("size", size)("addr_str", std::to_string((uintptr_t)addr)));
+        
+    long page_size = sysconf(_SC_PAGESIZE);
+    long huge_page_size = 2 * 1024 * 1024; // 2 MB huge page size
+
+    // Align address to huge page boundary
+    void* aligned_addr = (void*)((uintptr_t)addr & ~(huge_page_size - 1));
+    // Adjust the size to account for alignment
+    size_t aligned_size = size + ((uintptr_t)addr - (uintptr_t)aligned_addr);
+    
+    // Try to set VM parameters but don't fail the whole operation if it doesn't work
+    bool vm_params_success = set_vm_parameters(segment);
+    if (!vm_params_success) {
+        wlog("Failed to set VM parameters, but continuing with memory locking anyway");
+        wlog("Performance may be affected, but functionality should remain intact");
+        wlog("To fix VM parameter issues, ensure the container has proper privileges");
+        wlog("or run with host network mode (--net=host) and --privileged flag");
+    }
+    
+    // Now attempt to lock the memory
+    if (mlock(aligned_addr, aligned_size) != 0) {
+        elog("Failed to lock memory: ${error}", ("error", strerror(errno)));
+        return false;
+    }
+    
+    ilog("Successfully locked ${size} bytes of shared memory at address ${addr_str} in RAM", 
+        ("size", aligned_size)("addr_str", std::to_string((uintptr_t)aligned_addr)));
+    return true;
+#else
+    ilog("Memory locking is only supported on Linux systems");
+    return false;
+#endif
+}
 
     /**
      * Unlock previously locked memory region
