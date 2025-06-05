@@ -27,6 +27,8 @@ struct vm_dirty_params {
     static bool values_saved;
 };
 
+#define DIRTY_EXPIRE_CENTISECS 360000 //one hour in centi-seconds
+#define DIRTY_WRITEBACK_CENTISECS 180000
 // Static member declarations (definitions moved to .cpp file)
 
 /**
@@ -187,7 +189,7 @@ public:
             {
                 std::ofstream expire_file(path_prefix + "dirty_expire_centisecs");
                 if (expire_file.good()) {
-                    expire_file << 300000;
+                    expire_file << DIRTY_EXPIRE_CENTISECS;
                     expire_file.close();
                 } else {
                     success = false;
@@ -248,7 +250,7 @@ public:
                     {
                         std::ofstream expire_file("/host-proc/sys/vm/dirty_expire_centisecs");
                         if (expire_file.good()) {
-                            expire_file << 300000;
+                            expire_file << DIRTY_EXPIRE_CENTISECS;
                             expire_file.close();
                         } else {
                             host_proc_success = false;
@@ -284,7 +286,8 @@ public:
                                                      " > /host-proc/sys/vm/dirty_background_bytes\" root";
                         std::string set_dirty_cmd = std::string("su -c \"echo ") + std::to_string(dirty_bytes_value) + 
                                                   " > /host-proc/sys/vm/dirty_bytes\" root";
-                        std::string set_expire_cmd = "su -c \"echo 300000 > /host-proc/sys/vm/dirty_expire_centisecs\" root";
+                        std::string set_expire_cmd = "su -c \"echo " + std::to_string(DIRTY_EXPIRE_CENTISECS) + 
+                                                      " > /host-proc/sys/vm/dirty_expire_centisecs\" root";
                         std::string set_swappiness_cmd = "su -c \"echo 10 > /host-proc/sys/vm/swappiness\" root";
                         
                         int ret1 = std::system(set_dirty_bg_cmd.c_str());
@@ -358,9 +361,9 @@ public:
                     // Standard approach for non-container environments
                     std::string sysctl_dirty_bg_cmd = sysctl_cmd_prefix + "vm.dirty_background_bytes=" + std::to_string(aligned_size);
                     std::string sysctl_dirty_cmd = sysctl_cmd_prefix + "vm.dirty_bytes=" + std::to_string(dirty_bytes_value);
-                    std::string sysctl_expire_cmd = sysctl_cmd_prefix + "vm.dirty_expire_centisecs=300000";
+                    std::string sysctl_expire_cmd = sysctl_cmd_prefix + "vm.dirty_expire_centisecs=DIRTY_EXPIRE_CENTISECS";
                     std::string sysctl_swappiness_cmd = sysctl_cmd_prefix + "vm.swappiness=10";
-                    
+
                     int ret1 = std::system(sysctl_dirty_bg_cmd.c_str());
                     int ret2 = std::system(sysctl_dirty_cmd.c_str());
                     int ret3 = std::system(sysctl_expire_cmd.c_str());
@@ -476,9 +479,12 @@ public:
                         std::string set_dirty_cmd = cmd_prefix + std::to_string(dirty_bytes_value) + 
                                                   cmd_suffix + "dirty_bytes > /dev/null";
                         
-                        std::string set_expire_cmd = cmd_prefix + "300000" + 
+                        std::string set_expire_cmd = cmd_prefix + std::to_string(DIRTY_EXPIRE_CENTISECS) + 
                                                     cmd_suffix + "dirty_expire_centisecs > /dev/null";
-                        
+
+                        std::string set_dirty_writeback_cmd = cmd_prefix + std::to_string(DIRTY_WRITEBACK_CENTISECS) + 
+                                                    cmd_suffix + "dirty_writeback_centisecs > /dev/null";
+
                         // Set vm.swappiness to 10
                         std::string set_swappiness_cmd = cmd_prefix + "10" + 
                                                       cmd_suffix + "swappiness > /dev/null";
@@ -486,11 +492,12 @@ public:
                         ret1 = std::system(set_dirty_bg_cmd.c_str());
                         ret2 = std::system(set_dirty_cmd.c_str());
                         ret3 = std::system(set_expire_cmd.c_str());
-                        ret4 = std::system(set_swappiness_cmd.c_str());
-                        
+                        ret4 = std::system(set_dirty_writeback_cmd.c_str());
+                        ret5 = std::system(set_swappiness_cmd.c_str());
+
                         // Count how many commands succeeded
                         int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
-                                           (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
+                                           (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0) + (ret5 == 0 ? 1 : 0);
                         
                         // Consider it a success if at least one parameter was set
                         success = (success_count > 0);

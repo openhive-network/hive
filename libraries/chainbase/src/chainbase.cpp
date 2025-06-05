@@ -24,6 +24,46 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     public:
 
+#ifdef __linux__
+    // Helper function to determine the huge page size on the system
+    static size_t get_huge_page_size() {
+      // Default to 2MB if we can't determine
+      size_t huge_page_size = 2 * 1024 * 1024;
+      
+      // Try to read from /proc/meminfo
+      std::ifstream meminfo("/proc/meminfo");
+      if (meminfo.is_open()) {
+        std::string line;
+        while (std::getline(meminfo, line)) {
+          if (line.find("Hugepagesize:") != std::string::npos) {
+            // Format is typically "Hugepagesize:     2048 kB"
+            size_t pos = line.find(":");
+            if (pos != std::string::npos) {
+              std::string size_str = line.substr(pos + 1);
+              // Extract the number
+              size_t kb_size = 0;
+              try {
+                // Remove non-numeric characters
+                size_str.erase(std::remove_if(size_str.begin(), size_str.end(), 
+                                  [](char c) { return !std::isdigit(c); }), 
+                               size_str.end());
+                kb_size = std::stoul(size_str);
+                huge_page_size = kb_size * 1024; // Convert from KB to bytes
+              } catch (const std::exception& e) {
+                // If parsing fails, use default
+                wlog("Failed to parse huge page size: ${e}", ("e", e.what()));
+              }
+            }
+            break;
+          }
+        }
+        meminfo.close();
+      }
+      
+      return huge_page_size;
+    }
+#endif
+
 #ifdef ENABLE_STD_ALLOCATOR
       environment_check()
 #else
@@ -236,6 +276,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
+#ifdef __linux__
+        // Get the system's huge page size
+        const size_t HUGE_PAGE_SIZE = environment_check::get_huge_page_size();
+
+        // Align the file size to huge page boundaries
+        size_t aligned_size = ((shared_file_size + HUGE_PAGE_SIZE - 1) / HUGE_PAGE_SIZE) * HUGE_PAGE_SIZE;
+        if (aligned_size != shared_file_size) {
+          ilog("Adjusting requested shared memory size from ${original} to ${aligned} bytes for huge page alignment",
+               ("original", shared_file_size)("aligned", aligned_size));
+          shared_file_size = aligned_size;
+        }
+#endif
         _size_checker( shared_file_size - _file_size );
         if( !bip::managed_mapped_file::grow( abs_path.generic_string().c_str(), shared_file_size - _file_size ) )
           BOOST_THROW_EXCEPTION( std::runtime_error( "could not grow database file to requested size." ) );
@@ -254,7 +306,34 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       // reducing TLB (Translation Lookaside Buffer) misses
       void* addr = _segment->get_address();
       size_t size = _segment->get_size();
+      
       if (addr != nullptr && size > 0) {
+        // Get the system's huge page size
+        const size_t HUGE_PAGE_SIZE = environment_check::get_huge_page_size();
+        
+        // Check alignment of address
+        uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr);
+        uintptr_t misalignment = addr_value % HUGE_PAGE_SIZE;
+        
+        if (misalignment != 0) {
+          wlog("Memory address ${addr} is not aligned to huge page boundaries (misaligned by ${misalign} bytes)",
+               ("addr", addr_value)("misalign", misalignment));
+        }
+        
+        // Check if transparent hugepage is enabled
+        bool thp_enabled = false;
+        std::ifstream thp_file("/sys/kernel/mm/transparent_hugepage/enabled");
+        if (thp_file.is_open()) {
+          std::string content;
+          std::getline(thp_file, content);
+          thp_enabled = (content.find("[always]") != std::string::npos);
+          thp_file.close();
+          
+          if (!thp_enabled) {
+            ilog("Transparent hugepages not set to 'always'. Current setting: ${setting}", ("setting", content));
+          }
+        }
+        
         if (madvise(addr, size, MADV_HUGEPAGE) != 0) {
           wlog("madvise for huge pages failed: ${error}", ("error", strerror(errno)));
         } else {
@@ -281,6 +360,21 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     } else {
       _size_checker( shared_file_size );
       _file_size = shared_file_size;
+
+#ifdef __linux__
+      // Get the system's huge page size
+      const size_t HUGE_PAGE_SIZE = environment_check::get_huge_page_size();
+
+      // Align the file size to huge page boundaries
+      size_t aligned_size = ((shared_file_size + HUGE_PAGE_SIZE - 1) / HUGE_PAGE_SIZE) * HUGE_PAGE_SIZE;
+      if (aligned_size != shared_file_size) {
+        ilog("Adjusting shared memory size from ${original} to ${aligned} bytes for huge page alignment",
+             ("original", shared_file_size)("aligned", aligned_size));
+        shared_file_size = aligned_size;
+        _file_size = shared_file_size;
+      }
+#endif
+
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
@@ -293,6 +387,20 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       void* addr = _segment->get_address();
       size_t size = _segment->get_size();
       if (addr != nullptr && size > 0) {
+        // Check if transparent hugepage is enabled
+        bool thp_enabled = false;
+        std::ifstream thp_file("/sys/kernel/mm/transparent_hugepage/enabled");
+        if (thp_file.is_open()) {
+          std::string content;
+          std::getline(thp_file, content);
+          thp_enabled = (content.find("[always]") != std::string::npos);
+          thp_file.close();
+          
+          if (!thp_enabled) {
+            ilog("Transparent hugepages not set to 'always'. Current setting: ${setting}", ("setting", content));
+          }
+        }
+        
         if (madvise(addr, size, MADV_HUGEPAGE) != 0) {
           wlog("madvise for huge pages failed: ${error}", ("error", strerror(errno)));
         } else {
