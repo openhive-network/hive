@@ -24,11 +24,12 @@ struct vm_dirty_params {
     static long swappiness;
     static long dirty_ratio;
     static long dirty_background_ratio;
+    static long dirty_writeback_centisecs;
     static bool values_saved;
 };
 
 #define DIRTY_EXPIRE_CENTISECS 360000 //one hour in centi-seconds
-#define DIRTY_WRITEBACK_CENTISECS 180000
+#define DIRTY_WRITEBACK_CENTISECS 50000
 // Static member declarations (definitions moved to .cpp file)
 
 /**
@@ -143,14 +144,24 @@ public:
                         dirty_bg_ratio_file.close();
                     }
                     
+                    // Read dirty_writeback_centisecs
+                    {
+                        std::ifstream dirty_writeback_file(path_prefix + "dirty_writeback_centisecs");
+                        if (dirty_writeback_file.good() && std::getline(dirty_writeback_file, line)) {
+                            vm_dirty_params::dirty_writeback_centisecs = std::stol(line);
+                        }
+                        dirty_writeback_file.close();
+                    }
+                    
                     vm_dirty_params::values_saved = true;
-                    ilog("Saved original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}",
+                    ilog("Saved original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}, dirty_writeback_centisecs=${dwb}",
                         ("db", vm_dirty_params::dirty_bytes)
                         ("dbg", vm_dirty_params::dirty_background_bytes)
                         ("dec", vm_dirty_params::dirty_expire_centisecs)
                         ("swap", vm_dirty_params::swappiness)
                         ("dr", vm_dirty_params::dirty_ratio)
-                        ("dbr", vm_dirty_params::dirty_background_ratio));
+                        ("dbr", vm_dirty_params::dirty_background_ratio)
+                        ("dwb", vm_dirty_params::dirty_writeback_centisecs));
                 } catch (const std::exception& e) {
                     wlog("Failed to read original VM dirty page parameters: ${e}", ("e", e.what()));
                 }
@@ -294,7 +305,7 @@ public:
                         int ret2 = std::system(set_dirty_cmd.c_str());
                         int ret3 = std::system(set_expire_cmd.c_str());
                         int ret4 = std::system(set_swappiness_cmd.c_str());
-                        
+
                         // Count how many commands succeeded
                         int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
                                            (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0);
@@ -361,14 +372,16 @@ public:
                     // Standard approach for non-container environments
                     std::string sysctl_dirty_bg_cmd = sysctl_cmd_prefix + "vm.dirty_background_bytes=" + std::to_string(aligned_size);
                     std::string sysctl_dirty_cmd = sysctl_cmd_prefix + "vm.dirty_bytes=" + std::to_string(dirty_bytes_value);
-                    std::string sysctl_expire_cmd = sysctl_cmd_prefix + "vm.dirty_expire_centisecs=DIRTY_EXPIRE_CENTISECS";
+                    std::string sysctl_expire_cmd = sysctl_cmd_prefix + "vm.dirty_expire_centisecs=" + std::to_string(DIRTY_EXPIRE_CENTISECS);
                     std::string sysctl_swappiness_cmd = sysctl_cmd_prefix + "vm.swappiness=10";
+                    std::string sysctl_dirty_writeback_cmd = sysctl_cmd_prefix + "vm.dirty_writeback_centisecs=" + std::to_string(DIRTY_WRITEBACK_CENTISECS);
 
                     int ret1 = std::system(sysctl_dirty_bg_cmd.c_str());
                     int ret2 = std::system(sysctl_dirty_cmd.c_str());
                     int ret3 = std::system(sysctl_expire_cmd.c_str());
                     int ret4 = std::system(sysctl_swappiness_cmd.c_str());
-                    
+                    int ret5 = std::system(sysctl_dirty_writeback_cmd.c_str());
+
                     // Check for actual success by parsing the output or checking return codes
                     // On some systems, sysctl might return 0 (success) even with "permission denied" 
                     // errors, so we need a better way to detect if the commands actually worked
@@ -670,6 +683,19 @@ public:
                     }
                 }
                 
+                // Restore dirty_writeback_centisecs
+                {
+                    std::ofstream dirty_writeback_file(path_prefix + "dirty_writeback_centisecs");
+                    if (dirty_writeback_file.good()) {
+                        dirty_writeback_file << vm_dirty_params::dirty_writeback_centisecs;
+                        dirty_writeback_file.close();
+                        at_least_one_success = true;
+                    } else {
+                        success = false;
+                        wlog("Failed to write to ${path}", ("path", path_prefix + "dirty_writeback_centisecs"));
+                    }
+                }
+                
                 // Use at_least_one_success as the indicator if any parameter was set
                 success = at_least_one_success || success;
                 
@@ -692,6 +718,8 @@ public:
                                                       cmd_suffix + "dirty_ratio";
                     std::string set_dirty_bg_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
                                                           cmd_suffix + "dirty_background_ratio";
+                    std::string set_dirty_writeback_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_writeback_centisecs) + 
+                                                            cmd_suffix + "dirty_writeback_centisecs";
                     
                     int ret1 = std::system(set_expire_cmd.c_str());
                     int ret2 = std::system(set_dirty_bg_cmd.c_str());
@@ -699,11 +727,13 @@ public:
                     int ret4 = std::system(set_swappiness_cmd.c_str());
                     int ret5 = std::system(set_dirty_ratio_cmd.c_str());
                     int ret6 = std::system(set_dirty_bg_ratio_cmd.c_str());
+                    int ret7 = std::system(set_dirty_writeback_cmd.c_str());
                     
                     // Count how many commands succeeded
                     int success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
                                       (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0) +
-                                      (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0);
+                                      (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0) +
+                                      (ret7 == 0 ? 1 : 0);
                     
                     // If at least one command succeeded, consider it a partial success
                     success = (success_count > 0);
@@ -730,6 +760,8 @@ public:
                                               cmd_suffix + "dirty_ratio";
                         set_dirty_bg_ratio_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_background_ratio) + 
                                                   cmd_suffix + "dirty_background_ratio";
+                        set_dirty_writeback_cmd = cmd_prefix + std::to_string(vm_dirty_params::dirty_writeback_centisecs) + 
+                                                    cmd_suffix + "dirty_writeback_centisecs";
                         
                         ret1 = std::system(set_expire_cmd.c_str());
                         ret2 = std::system(set_dirty_bg_cmd.c_str());
@@ -737,11 +769,13 @@ public:
                         ret4 = std::system(set_swappiness_cmd.c_str());
                         ret5 = std::system(set_dirty_ratio_cmd.c_str());
                         ret6 = std::system(set_dirty_bg_ratio_cmd.c_str());
+                        ret7 = std::system(set_dirty_writeback_cmd.c_str());
                         
                         // Count how many commands succeeded
                         success_count = (ret1 == 0 ? 1 : 0) + (ret2 == 0 ? 1 : 0) + 
                                         (ret3 == 0 ? 1 : 0) + (ret4 == 0 ? 1 : 0) +
-                                        (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0);
+                                        (ret5 == 0 ? 1 : 0) + (ret6 == 0 ? 1 : 0) +
+                                        (ret7 == 0 ? 1 : 0);
                         
                         // If at least one command succeeded, consider it a partial success
                         success = (success_count > 0);
@@ -749,13 +783,14 @@ public:
                 }
                 
                 if (success) {
-                    ilog("Restored original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}",
+                    ilog("Restored original VM dirty page parameters: dirty_bytes=${db}, dirty_background_bytes=${dbg}, dirty_expire_centisecs=${dec}, swappiness=${swap}, dirty_ratio=${dr}, dirty_background_ratio=${dbr}, dirty_writeback_centisecs=${dwb}",
                         ("db", vm_dirty_params::dirty_bytes)
                         ("dbg", vm_dirty_params::dirty_background_bytes)
                         ("dec", vm_dirty_params::dirty_expire_centisecs)
                         ("swap", vm_dirty_params::swappiness)
                         ("dr", vm_dirty_params::dirty_ratio)
-                        ("dbr", vm_dirty_params::dirty_background_ratio));
+                        ("dbr", vm_dirty_params::dirty_background_ratio)
+                        ("dwb", vm_dirty_params::dirty_writeback_centisecs));
                     
                     // Reset the saved flag
                     vm_dirty_params::values_saved = false;
