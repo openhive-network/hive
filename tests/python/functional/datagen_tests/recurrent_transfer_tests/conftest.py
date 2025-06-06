@@ -18,6 +18,7 @@ def replayed_node() -> ReplayedNodeMaker:
     def _replayed_node(
         block_log_directory: Path,
         *,
+        alternate_chain_specs: tt.AlternateChainSpecs | None = None,
         absolute_start_time: datetime | None = None,
         time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
@@ -32,7 +33,7 @@ def replayed_node() -> ReplayedNodeMaker:
 
         node = tt.InitNode()
         node.config.shared_file_size = "16G"
-        node.run(time_control=time_offset, replay_from=block_log, timeout=timeout)
+        node.run(time_control=time_offset, replay_from=block_log, timeout=timeout, alternate_chain_specs=alternate_chain_specs)
 
         return node
 
