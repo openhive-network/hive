@@ -678,13 +678,15 @@ test_tools_tests:
     - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_30/ testing_block_logs/empty_430/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
@@ -737,19 +739,21 @@ message_format_testnet_tests:
 
 datagen_api_tests:
   stage: test
-  extends: 
+  extends:
     - .test_tools_based
     - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_430/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/block_log
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/datagen_tests/
     - !reference [.run-pytest, script]
@@ -938,20 +942,20 @@ message_format_live_mainnet_tests:
 foundation_layer_tests:
   stage: test
   extends:
-  - .test_tools_based
-  - .test-block-log-service
+    - .test_tools_based
+    - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
-    NODE_ADDRESS: "test-block-log-server:80"
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
-    - test -n "$TESTING_BLOCK_LOG_LATEST_VERSION_IMAGE"
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service test-block-log-server" && false)
-    - wget -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 test-block-log-server:80/testing_block_logs/
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+    - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/foundation_layer_tests
     - !reference [.run-pytest, script]
   tags:
@@ -1137,14 +1141,16 @@ comment_cashout_tests:
     - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_testing_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comments_and_votes/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/block_log
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comment_cashout/comments_and_votes/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/comment_cashout_tests
     - !reference [.run-pytest, script]
@@ -1224,23 +1230,61 @@ authority_tests:
   tags:
     - public-runner-docker
 
-generate_testing_block_logs_and_save_image:
+generate_testing_block_logs:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
-  timeout: 5h
+  timeout: 3h
   variables:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
   script:
-  - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh
+    - mkdir -p $TESTING_BLOCK_LOGS_DIR/checksums
+    - echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" "$CI_REGISTRY_IMAGE" --password-stdin
+    - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH" "$GENERATOR_NAME" "$TESTING_BLOCK_LOGS_DIR" "$CI_REGISTRY_IMAGE" --push
+  parallel:
+    matrix:
+      - GENERATOR_NAME: empty_block_logs
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/util/testing_block_logs/generate_testing_block_logs.py
+
+      - GENERATOR_NAME: comment_cashout
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/block_log/generate_block_log.py
+
+      - GENERATOR_NAME: recalculation_proposal_vote
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/generate_block_log.py
+
+      - GENERATOR_NAME: recurrent_many_to_one
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/generate_block_log.py
+
+      - GENERATOR_NAME: recurrent_everyone_to_everyone
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/generate_block_log.py
+
+      - GENERATOR_NAME: transaction_status_api
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py
   artifacts:
-     reports:
-       dotenv:
-         - testing_block_log_latest_version.env
-         - testing_block_log_latest_commit_short_sha.env
+    paths:
+      - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
-  - public-runner-docker
-  - hived-for-tests
+    - hived-for-tests
+
+build_combined_testing_block_logs_image:
+  stage: build
+  extends: .docker_image_builder_job
+  needs:
+    - job: generate_testing_block_logs
+      optional: false
+  script:
+    - echo "Listing all checksum env files:"
+    - ls -la $CI_PROJECT_DIR/testing_block_logs/checksums/
+    - cat $CI_PROJECT_DIR/testing_block_logs/checksums/*.env > $CI_PROJECT_DIR/testing_block_logs/combined_checksums.env
+    - echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" "$CI_REGISTRY_IMAGE" --password-stdin
+    - echo "==== COMIBNED CHECKSUMS ===="
+    - cat $CI_PROJECT_DIR/testing_block_logs/combined_checksums.env
+    - $CI_PROJECT_DIR/scripts/ci-helpers/build_combined_testing_block_logs_image.sh "$CI_PROJECT_DIR/testing_block_logs/combined_checksums.env" "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR" --push
+  artifacts:
+    reports:
+      dotenv: testing_block_log_latest_version.env
+  tags:
+    - public-runner-docker
 
 generate_universal_block_logs_and_save_image:
   stage: build
