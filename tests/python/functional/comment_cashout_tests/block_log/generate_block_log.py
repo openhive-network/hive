@@ -13,13 +13,10 @@ from hive_local_tools.functional.python.datagen.recurrent_transfer import execut
 from schemas.fields.assets import AssetHiveHF26
 from schemas.fields.basic import AccountName, PublicKey
 from schemas.fields.compound import Authority
-from schemas.fields.hive_int import HiveInt
 from schemas.operations.account_create_operation import AccountCreateOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.operations.vote_operation import VoteOperation
 from shared_tools.complex_networks import generate_networks
-from wax import get_tapos_data
-from wax._private.result_tools import to_cpp_string
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
 AMOUNT_OF_ALL_VOTERS: Final[int] = 50_000
@@ -33,7 +30,7 @@ CONFIG = {
 }
 
 
-def prepare_blocklog_network() -> None:
+def prepare_blocklog_network(output_block_log_directory: Path) -> None:
     """
     Creating a block log with a network based on the configuration.
     In one network:
@@ -45,7 +42,9 @@ def prepare_blocklog_network() -> None:
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    generate_networks(architecture, Path("base_network_block_log"), terminate_nodes=True)
+    Path(output_block_log_directory/"base_network_block_log").mkdir(parents=True, exist_ok=True)
+    generate_networks(architecture, output_block_log_directory/"base_network_block_log", terminate_nodes=True)
+    tt.logger.info(f"Save block log file to {output_block_log_directory/'base_network_block_log'}")
 
 
 def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -> None:
@@ -57,6 +56,8 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
        one hour.
     5) To get all the votes at the required cashout time ( 1h ), you need to slow down node "x0.5"
     """
+    output_block_log_directory.mkdir(parents=True, exist_ok=True)
+
     architecture = networks.NetworksArchitecture(False)
     architecture.load(CONFIG)
 
@@ -65,16 +66,24 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     init_node = tt.InitNode()
     init_node.config.shared_file_size = "1G"
     init_node.config.plugin.append("queen")
+
+    # private-keys to witnesses [witness0-alpha, witness1-alpha, witness2-alpha]
     init_node.config.private_key.append("5JcCHFFWPW2DryUFDVd7ZXVj2Zo67rqMcvcq5inygZGBAPR1JoR")
     init_node.config.private_key.append("5JrikNWn1kNyF9fb7ep55Bs9nAqXH15d14G37DSbogyGWoTJyQb")
     init_node.config.private_key.append("5JD9oWa9mzPeGWCXrw7wsbp4v72BWAqHLEdhS3u5AkRLYW7CErL")
 
-    acs = tt.AlternateChainSpecs.parse_file(
-        Path(__file__).parent / "base_network_block_log" / "alternate-chain-spec.json"
+    # slot 0 of block log
+    base_network_block_lo_genesis_time = tt.BlockLog(output_block_log_directory / "base_network_block_log", "auto").get_block(block_number=1).timestamp - tt.Time.seconds(3)
+    acs = tt.AlternateChainSpecs(
+        genesis_time=base_network_block_lo_genesis_time.timestamp(),
+        hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+        hbd_init_supply=100_000, init_supply=200_000_000_000,
+        initial_vesting=tt.InitialVesting(hive_amount=10_000_000_000, vests_per_hive=1800),
+        witness_custom_op_block_limit=100,
     )
 
     init_node.run(
-        replay_from=tt.BlockLog(Path(__file__).parent / "base_network_block_log", "auto"),
+        replay_from=tt.BlockLog(output_block_log_directory / "base_network_block_log", "auto"),
         alternate_chain_specs=acs,
     )
 
@@ -244,7 +253,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Step 1 generate base network with witnesses
     os.environ["GENERATE_NEW_BLOCK_LOG"] = "1"
-    prepare_blocklog_network()
+    prepare_blocklog_network(args.output_block_log_directory)
     # Step 2 generate accounts, comments and votes
     os.environ.pop("GENERATE_NEW_BLOCK_LOG")
     prepare_blocklog_with_comments_and_votes(args.output_block_log_directory)

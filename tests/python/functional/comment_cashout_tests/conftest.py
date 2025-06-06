@@ -16,7 +16,7 @@ from .block_log.generate_block_log import CONFIG
 def prepare_environment() -> networks.NetworksBuilder:
     destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
     assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
-    block_log_directory = Path(destination_variable) / "comments_and_votes"
+    block_log_directory = Path(destination_variable) / "comment_cashout" / "comments_and_votes"
 
     architecture = networks.NetworksArchitecture()
     architecture.load(CONFIG)
