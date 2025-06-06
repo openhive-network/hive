@@ -1,6 +1,10 @@
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/index.hpp>
 
+#include <hive/chain/util/type_registrar_definition.hpp>
+
+#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
@@ -17,6 +21,7 @@ rocksdb_storage_processor::rocksdb_storage_processor( database& db, const bfs::p
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
+  HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
   provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app );
   provider->init( destroy_database_on_startup );
   snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
@@ -170,3 +175,5 @@ void rocksdb_storage_processor::update_reindex_point( uint32_t rp )
 }
 
 }}
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_comment_index )

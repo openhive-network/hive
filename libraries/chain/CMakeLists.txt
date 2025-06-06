@@ -28,7 +28,6 @@ add_library( hive_chain
              index-11.cpp
              index-12.cpp
              index-13.cpp
-             index-14.cpp
 
              full_block.cpp
              full_transaction.cpp
