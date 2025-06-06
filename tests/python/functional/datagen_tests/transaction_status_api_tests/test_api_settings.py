@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,9 @@ from hive_local_tools.functional.python.datagen.api.transaction_status_api impor
 if TYPE_CHECKING:
     import test_tools as tt
 
-__PATTERNS_DIRECTORY = Path(__file__).with_name("block_log")
+destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
+block_logs_location: Path = Path(destination_variable)
+__PATTERNS_DIRECTORY = block_logs_location / "transaction_status_api"
 
 """
 Block log size is 1500 blocks
