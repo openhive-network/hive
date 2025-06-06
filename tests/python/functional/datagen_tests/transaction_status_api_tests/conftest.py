@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -28,11 +29,16 @@ def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
 
     if transaction_status_block_depth:
         api_node.config.transaction_status_block_depth = next(iter(transaction_status_block_depth.args))
-    block_log = tt.BlockLog(Path(__file__).parent.joinpath("block_log"), "monolithic")
-    api_node.config.block_log_split = -1
+
+    destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
+    assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
+    block_logs_location: Path = Path(destination_variable) / "transaction_status_api"
+
+    block_log = tt.BlockLog(block_logs_location, "auto")
+    api_node.config.block_log_split = 9999
     api_node.run(
         replay_from=block_log,
         wait_for_live=False,
-        time_control=tt.StartTimeControl(start_time="head_block_time"),
+        time_control=tt.StartTimeControl(start_time=block_log.get_head_block_time()),
     )
     return api_node
