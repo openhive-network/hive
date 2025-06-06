@@ -4,11 +4,14 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import UNIVERSAL_BLOCK_LOGS_PATH
+from schemas.decoders import get_hf26_decoder
 
 
 @pytest.fixture()
 def alternate_chain_spec(block_log_single_sign) -> tt.AlternateChainSpecs:
-    return tt.AlternateChainSpecs.parse_file(block_log_single_sign.path / tt.AlternateChainSpecs.FILENAME)
+    return tt.AlternateChainSpecs.parse_file(
+        block_log_single_sign.path / tt.AlternateChainSpecs.FILENAME
+    )
 
 
 @pytest.fixture()

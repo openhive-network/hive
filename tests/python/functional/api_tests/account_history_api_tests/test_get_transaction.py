@@ -21,11 +21,11 @@ def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversib
     if not include_reversible:
         node.wait_for_irreversible_block()
     # delete one additional key to compare transactions
-    del transaction.rc_cost
+    transaction = transaction.copy({"rc_cost"})
     response = node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=include_reversible
     )
-    assert transaction == response
+    assert transaction.dict(exclude_none=True) == response.dict(exclude_none=True)
 
 
 @pytest.mark.parametrize(

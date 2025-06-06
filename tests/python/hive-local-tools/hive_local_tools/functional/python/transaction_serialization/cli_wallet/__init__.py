@@ -15,7 +15,7 @@ def __serialize_legacy(assets: Iterable[tt.Asset.AnyT]) -> Iterable[str]:
 
 
 def __serialize_modern(assets: Iterable[tt.Asset.AnyT]) -> Iterable[dict[str, str]]:
-    return (asset.as_nai() for asset in assets)
+    return (asset.as_serialized_nai() for asset in assets)
 
 
 def run_for_all_cases(**assets: tt.Asset.AnyT):

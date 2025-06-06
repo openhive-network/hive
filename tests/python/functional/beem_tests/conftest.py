@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING
 
 import pytest
@@ -30,7 +31,7 @@ def node_client(node: tt.InitNode | tt.RemoteNode, worker_id) -> NodeClientMaker
     def _node_client(accounts: list[dict] | None = None) -> Hive:
         accounts = accounts or []
 
-        keys = node.config.private_key.copy()
+        keys = copy.deepcopy(node.config.private_key)
 
         for account in accounts:
             keys.append(account["private_key"])

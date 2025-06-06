@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from schemas.apis.database_api.fundaments_of_reponses import GetOrderBookFundament, LimitOrdersFundament
+from schemas.operations.recurrent_transfer_operation import RecurrentTransferOperation
 from schemas.fields.compound import Price
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ def check_sell_price(
 
 def check_recurrent_transfer_data(node: tt.InitNode) -> None:
     _op = node["operations"][0]
-    assert _op[0] == "recurrent_transfer"
+    assert _op[0] == "recurrent_transfer_operation"
     return _op[1]
 
 
@@ -47,7 +48,7 @@ def check_recurrent_transfer(
 
     # pair_id check
     extension_pair_id = 0
-    if "extensions" in node:
+    if node is RecurrentTransferOperation:
         for ext in node["extensions"]:
             if ext["type"] == "recurrent_transfer_pair_id":
                 extension_pair_id = ext["value"]["pair_id"]

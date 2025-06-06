@@ -47,7 +47,7 @@ TOO_LONG_ACCOUNT_NAME: Final[str] = "too-long-account-name"
         ("condenser", "lookup_account_names", ([TOO_LONG_ACCOUNT_NAME],), {}),
         ("condenser", "lookup_accounts", (TOO_LONG_ACCOUNT_NAME, 100), {}),
         ("condenser", "lookup_witness_accounts", (TOO_LONG_ACCOUNT_NAME, 100), {}),
-        ("condenser", "verify_account_authority", (TOO_LONG_ACCOUNT_NAME, [tt.PublicKey(TOO_LONG_ACCOUNT_NAME)]), {}),
+        ("condenser", "verify_account_authority", (TOO_LONG_ACCOUNT_NAME, [tt.PublicKey("alice")]), {}),
         ("database", "list_witnesses", [], {"start": TOO_LONG_ACCOUNT_NAME, "limit": 10, "order": "by_name"}),
         ("database", "list_accounts", [], {"start": TOO_LONG_ACCOUNT_NAME, "limit": 100, "order": "by_name"}),
         (
