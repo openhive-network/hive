@@ -640,7 +640,7 @@ class WitnessAccount(Account):
             id=transaction["transaction_id"], include_reversible=True
         ).operations
         for operation in operations:
-            if operation.type == "feed_publish_operation" and operation.value.publisher == self._name:
+            if operation.type_ == "feed_publish_operation" and operation.value.publisher == self._name:
                 return
         raise AssertionError("Feed_publish operation wasn't found.")
 

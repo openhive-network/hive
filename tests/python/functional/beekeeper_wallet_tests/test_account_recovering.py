@@ -22,7 +22,7 @@ def test_recovery(wallet: tt.Wallet) -> None:
 
     _ops = response.operations
     assert len(_ops) == 1
-    assert _ops[0].type == "change_recovery_account_operation"
+    assert _ops[0].type_ == "change_recovery_account_operation"
     assert _ops[0].value.account_to_recover == "alice"
     assert _ops[0].value.new_recovery_account == "bob"
 
@@ -34,7 +34,7 @@ def test_recovery(wallet: tt.Wallet) -> None:
     response = wallet.api.request_account_recovery("alice", "bob", authority)
 
     _ops = response.operations
-    assert _ops[0].type == "request_account_recovery_operation"
+    assert _ops[0].type_ == "request_account_recovery_operation"
     assert _ops[0].value.recovery_account == "alice"
     assert _ops[0].value.account_to_recover == "bob"
 
@@ -46,5 +46,5 @@ def test_recovery(wallet: tt.Wallet) -> None:
     response = wallet.api.recover_account("bob", recent_authority, new_authority)
 
     _ops = response.operations
-    assert _ops[0].type == "recover_account_operation"
+    assert _ops[0].type_ == "recover_account_operation"
     assert _ops[0].value.account_to_recover == "bob"
