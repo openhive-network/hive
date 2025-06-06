@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import math
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -14,7 +15,9 @@ if TYPE_CHECKING:
 
 
 def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker) -> None:
-    block_log_directory = Path(bl.__file__).parent
+    destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
+    assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
+    block_log_directory = Path(destination_variable) / "recurrent_many_to_one"
     block_log = tt.BlockLog(block_log_directory, "auto")
 
     replayed_node: tt.InitNode = replayed_node(
