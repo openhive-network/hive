@@ -194,7 +194,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
     )
 
     # The virtual operation confirms that decline_voting_rights_operation was done.
-    assert vops.ops[2].op.type == "declined_voting_rights_operation"
+    assert vops.ops[2].op.type_ == "declined_voting_rights_operation"
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
