@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/chain/external_storage/comments_handler.hpp>
-#include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
 
@@ -21,8 +21,11 @@ class rocksdb_storage_processor: public comments_handler
 
     database& db;
 
-    external_comment_storage_provider::ptr  provider;
+    rocksdb_comment_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
+
+    bool destroy_database_on_startup = false;
+    bool destroy_database_on_shutdown = false;
 
     void move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object );
     std::shared_ptr<comment_object> get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const;
@@ -30,7 +33,7 @@ class rocksdb_storage_processor: public comments_handler
   public:
 
     rocksdb_storage_processor( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
-      appbase::application& app, bool destroy_on_startup );
+      appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown );
     virtual ~rocksdb_storage_processor();
 
     void on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
@@ -38,8 +41,8 @@ class rocksdb_storage_processor: public comments_handler
 
     comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const override;
 
-    void save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note ) override;
-    void load_snapshot( const hive::chain::load_snapshot_supplement_notification& note ) override;
+    void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
+    void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
     void shutdown( bool remove_db = false ) override;
 

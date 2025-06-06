@@ -464,7 +464,7 @@ void chain_plugin_impl::shutdown( bool destroyOnShutdown )
 
 void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_path, bool destroy_on_startup )
 {
-  rocksdb_processor = std::make_shared<rocksdb_storage_processor>( db, shared_memory_dir, comments_storage_path, theApp, destroy_on_startup );
+  rocksdb_processor = std::make_shared<rocksdb_storage_processor>( db, shared_memory_dir, comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
 
   db.set_comments_handler( rocksdb_processor );
 }
