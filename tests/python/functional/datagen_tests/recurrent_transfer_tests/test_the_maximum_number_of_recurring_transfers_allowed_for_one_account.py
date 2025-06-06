@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import math
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
@@ -13,7 +12,6 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=30)
 def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker) -> None:
     """
     Test scenario: block log that was replayed contains ordered recurrent transfers.
@@ -21,7 +19,10 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
       2) wait for all recurrent transfers to be processed,
       3) assert if there is any overdue recurring transfer.
     """
-    block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
+    destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
+    assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
+    block_log_directory = Path(destination_variable) / "recurrent_everyone_to_everyone"
+    acs = tt.AlternateChainSpecs.parse_file(block_log_directory / "alternate-chain-spec.json")
 
     block_log = tt.BlockLog(block_log_directory, "auto")
 
@@ -29,8 +30,8 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     replayed_node: tt.InitNode = replayed_node(
         block_log_directory,
         absolute_start_time=block_log.get_head_block_time() + tt.Time.days(2),
-        time_multiplier=45,
         timeout=1200,
+        alternate_chain_specs=acs,
     )
     wallet = tt.Wallet(attach_to=replayed_node)
 
@@ -42,7 +43,16 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     tt.logger.info(
         f"start waiting, headblock: {replayed_node.get_last_block_number()}, blocks to wait for: {blocks_to_wait}"
     )
-    replayed_node.wait_number_of_blocks(blocks_to_wait)
+
+    with replayed_node.temporarily_change_timeout(seconds=360):
+        replayed_node.api.debug_node.debug_generate_blocks(
+            debug_key=tt.Account("initminer").private_key,
+            count=blocks_to_wait,
+            skip=0,
+            miss_blocks=True,
+            edit_if_needed=False,
+        )
+
     tt.logger.info(f"finish waiting, headblock: {replayed_node.get_last_block_number()}")
 
     for account_name in all_accounts_names:
