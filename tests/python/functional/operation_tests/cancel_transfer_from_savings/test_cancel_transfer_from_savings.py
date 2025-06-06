@@ -89,7 +89,7 @@ def test_cancel_all_transfers_from_savings(
     check_balance,
 ):
     create_three_savings_withdrawals_from_fresh_account(
-        prepared_node, currency, alice, check_savings_balance, currency.token()
+        prepared_node, currency, alice, check_savings_balance, currency(0).token()  # Now token is available ony from object, not class.
     )
     funds_after_transfer_to_savings = getattr(alice, check_balance)()
     for withdrawal_to_cancel in range(3):
@@ -124,7 +124,7 @@ def test_cancel_all_transfers_from_savings_except_one(
     check_balance: str,
 ):
     create_three_savings_withdrawals_from_fresh_account(
-        prepared_node, currency, alice, check_savings_balance, currency.token()
+        prepared_node, currency, alice, check_savings_balance, currency(0).token()  # Now token is available ony from object, not class.
     )
     funds_after_transfer_to_savings = getattr(alice, check_balance)()
 

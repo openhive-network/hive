@@ -42,7 +42,7 @@ def test_nai_format_comment_options_with_beneficiaries(node):
         "signatures": [],
     }
 
-    transaction = wallet.api.sign_transaction(SimpleTransaction(**trx), broadcast=False)
+    transaction = wallet.api.sign_transaction(SimpleTransaction.parse_builtins(trx), broadcast=False)
     node.api.wallet_bridge.broadcast_transaction(transaction)
 
 

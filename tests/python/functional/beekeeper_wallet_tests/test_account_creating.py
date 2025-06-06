@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from pydantic import ValidationError
+
+from msgspec import ValidationError
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -19,15 +20,15 @@ def test_account_creation(wallet: tt.Wallet) -> None:
     [
         (
             "too-long-account-name",
-            "ensure this value has at most 16 characters",
+            'Expected `str` of length <= 16',
         ),
         (
             "to",
-            "ensure this value has at least 3 characters",
+            "Expected `str` of length >= 3",
         ),
         (
             "...",
-            "string does not match regex",
+            "Expected `str` matching regex",
         ),
     ],
 )
@@ -37,4 +38,4 @@ def test_creation_of_account_with_invalid_name(
     with pytest.raises(ValidationError) as exception:
         wallet.api.create_account("initminer", account_name, "{}")
 
-    assert expected_error_message in exception.value.json()
+    assert expected_error_message in str(exception.value)

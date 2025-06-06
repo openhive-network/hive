@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 from hive_local_tools.constants import filters_enum_virtual_ops
 from hive_local_tools.functional import connect_nodes
 from schemas.fields.basic import AccountName
-from schemas.operations.representations.util import convert_to_representation
+from schemas.operations import convert_to_representation
 from schemas.operations.virtual.producer_reward_operation import ProducerRewardOperation
 
 
@@ -55,6 +55,4 @@ def test_account_history_data_consistency_on_replayed_and_full_pruned_node(
 
     assert api_node.get_last_block_number() == node.get_last_block_number()
     assert len(vops) == node.get_last_block_number()
-    assert vops[check_at_block - 5].op == convert_to_representation(
-        ProducerRewardOperation(producer=AccountName("initminer"), vesting_shares=tt.Asset.Vest(0.140274))
-    )
+    assert vops[check_at_block - 5].op.value == ProducerRewardOperation(producer=AccountName("initminer"), vesting_shares=tt.Asset.Vest(0.140274))

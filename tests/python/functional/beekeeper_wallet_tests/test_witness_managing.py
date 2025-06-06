@@ -50,7 +50,7 @@ def test_witness(wallet: tt.Wallet) -> None:
 
     _ops = response["operations"]
 
-    assert _ops[0][0] == "feed_publish"
+    assert _ops[0][0] == "feed_publish_operation"
 
     _exchange_rate = _ops[0][1]["exchange_rate"]
     assert _exchange_rate["base"] == tt.Asset.Tbd(1.167)
@@ -60,7 +60,7 @@ def test_witness(wallet: tt.Wallet) -> None:
 
     _ops = response["operations"]
 
-    assert _ops[0][0] == "account_witness_vote"
+    assert _ops[0][0] == "account_witness_vote_operation"
 
     assert _ops[0][1]["account"] == "initminer"
     assert _ops[0][1]["witness"] == "alice"
@@ -70,7 +70,7 @@ def test_witness(wallet: tt.Wallet) -> None:
 
     _ops = response["operations"]
 
-    assert _ops[0][0] == "account_witness_proxy"
+    assert _ops[0][0] == "account_witness_proxy_operation"
 
     assert _ops[0][1]["account"] == "alice"
     assert _ops[0][1]["proxy"] == "initminer"

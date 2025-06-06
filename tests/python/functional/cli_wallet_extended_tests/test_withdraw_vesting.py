@@ -1,27 +1,28 @@
 from __future__ import annotations
 
 import test_tools as tt
+from test_tools.__private.wallet.constants import WalletResponse
 
 from .utilities import create_accounts
 
 
 def test_withdraw_vesting(wallet: tt.OldWallet) -> None:
-    def check_withdraw_data(node: tt.InitNode, vesting_withdraw_rate: tt.Asset.Vest, to_withdraw: int) -> None:
-        assert tt.Asset.from_legacy(node["vesting_withdraw_rate"]) == vesting_withdraw_rate
-        assert node["to_withdraw"] == to_withdraw
+    def check_withdraw_data(get_account: tt.Account, vesting_withdraw_rate: tt.Asset.Vest, to_withdraw: int) -> None:
+        assert tt.Asset.from_legacy(get_account["vesting_withdraw_rate"]) == vesting_withdraw_rate
+        assert get_account["to_withdraw"] == to_withdraw
 
-    def check_route_data(node: tt.InitNode) -> dict:
-        _ops = node["operations"]
+    def check_route_data(withdraw_vesting_route: WalletResponse) -> dict:
+        _ops = withdraw_vesting_route["operations"]
 
         assert _ops[0][0] == "set_withdraw_vesting_route"
 
         return _ops[0][1]
 
-    def check_route(node: tt.InitNode, from_account: str, to_account: str, percent: int, auto_vest: bool) -> None:
-        assert node["from_account"] == from_account
-        assert node["to_account"] == to_account
-        assert node["percent"] == percent
-        assert node["auto_vest"] == auto_vest
+    def check_route(check_route_data: dict, from_account: str, to_account: str, percent: int, auto_vest: bool) -> None:
+        assert check_route_data["from_account"] == from_account
+        assert check_route_data["to_account"] == to_account
+        assert check_route_data["percent"] == percent
+        assert check_route_data["auto_vest"] == auto_vest
 
     create_accounts(wallet, "initminer", ["alice", "bob", "carol"])
 

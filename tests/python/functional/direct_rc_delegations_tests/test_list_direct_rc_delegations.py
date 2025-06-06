@@ -67,4 +67,4 @@ def test_list_rc_direct_delegations(
     assert len(delegations) == len(expected_delegations)
 
     for delegation, expected_delegation in zip(delegations, expected_delegations):
-        assert delegation == expected_delegation
+        assert delegation.dict() == expected_delegation

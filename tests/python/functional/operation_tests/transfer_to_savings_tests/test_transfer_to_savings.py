@@ -60,7 +60,7 @@ def test_transfer_to_savings_account(
         group_by_block=False,
     )["ops"]
 
-    if currency.token() == "TBD":
+    if currency(0).token() == "TBD":  # Now token is available ony from object, not class.
         assert len(interests) == 1, "interest_operation wasn't generated."
         assert (
             receiver_savings_balance_before_transfer
@@ -74,7 +74,7 @@ def test_transfer_to_savings_account(
 
     assert (
         sender_balance_before_transfer - currency(amount=10) == sender_balance_after_transfer
-    ), f"{currency.token()} balance of sender wasn't decreased."
+    ), f"{currency(0).token()} balance of sender wasn't decreased."  # Now token is available ony from object, not class.
     assert (
         rc_amount_before_sending_op > rc_amount_after_sending_op
     ), "RC amount after sending transfers wasn't decreased."

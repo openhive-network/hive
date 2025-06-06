@@ -8,7 +8,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import Account, Proposal
 
 from .block_log.generate_block_log import WITNESSES
-
+from schemas.decoders import get_hf26_decoder
 
 @pytest.fixture()
 def node() -> tt.InitNode:

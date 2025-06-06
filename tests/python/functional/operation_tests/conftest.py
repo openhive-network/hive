@@ -64,11 +64,13 @@ class ConvertAccount(Account):
     def assert_collateralized_conversion_requests(self, trx: dict, state: Literal["create", "delete"]) -> None:
         # extract requestid from transaction
         operations_from_transaction = trx["operations"]
+        requestid = None
+
         for operation in operations_from_transaction:
-            if operation[0] == "collateralized_convert":
+            if operation[0] == "collateralized_convert_operation":
                 requestid = operation[1]["requestid"]
 
-        assert "requestid" in locals(), "Provided transaction doesn't contain collateralized convert operation."
+        assert requestid is not None, "Provided transaction doesn't contain collateralized convert operation."
 
         requests = self._node.api.database.list_collateralized_conversion_requests(
             start=[""], limit=100, order="by_account"
@@ -122,7 +124,7 @@ class ConvertAccount(Account):
         self.update_account_info()
         median = get_current_median_history_price(self._node)
         amount_to_convert = self.extract_amount_from_convert_operation(transaction)
-        exchange_rate = int(median["quote"]["amount"]) / int(median["base"]["amount"])
+        exchange_rate = int(median.quote.amount) / int(median.base.amount)
         should_be_added = tt.Asset.Test(int(amount_to_convert.amount) / 1000 * exchange_rate)
         tolerance = tt.Asset.Test(0.001)
         assert (
@@ -145,10 +147,10 @@ class ConvertAccount(Account):
         required_amount = (
             (
                 int(self.added_hbds_by_convert.amount)
-                * int(current_median["quote"]["amount"])
+                * int(current_median.quote.amount)
                 * (HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE)
             )
-            / (int(current_median["base"]["amount"]) * HIVE_100_PERCENT)
+            / (int(current_median.base.amount) * HIVE_100_PERCENT)
         ) * 0.001
 
         old_hive_balance = self.hive
@@ -174,7 +176,7 @@ class ConvertAccount(Account):
         hbds_after_operation = self.get_hbd_balance()
 
         response = self._node.api.wallet_bridge.get_feed_history().current_min_history
-        current_min_history = int(response["base"]["amount"]) / int(response["quote"]["amount"])
+        current_min_history = int(response.base.amount) / int(response.quote.amount)
         hbds_to_add = tt.Asset.Tbd(0.95 * current_min_history * int((to_convert / 2).amount) / 1000)
 
         assert (
@@ -194,12 +196,9 @@ class ConvertAccount(Account):
         ops_in_transaction = transaction["operations"]
         # get amount to convert from transaction
         for operation in ops_in_transaction:
-            if operation[0] == "convert" or operation[0] == "collateralized_convert":
-                to_convert = operation[1]["amount"]
-        assert (
-            "to_convert" in locals()
-        ), "Convert or collateralized_convert operation wasn't found in given transaction."
-        return to_convert
+            if operation[0] == "convert_operation" or operation[0] == "collateralized_convert_operation":
+                return operation[1]["amount"]
+        raise AssertionError("Convert or collateralized_convert operation wasn't found in given transaction.")
 
 
 @dataclass
@@ -209,7 +208,7 @@ class EscrowAccount(Account):
         self.update_account_info()
 
     def check_account_balance(
-        self, trx: dict, mode: Literal["escrow_creation", "escrow_rejection", "escrow_release"]
+        self, trx: dict, mode: Literal["escrow_creation_operation", "escrow_rejection_operation", "escrow_release_operation"]
     ) -> None:
         old_hive_amount = self.hive
         old_hbd_amount = self.hbd
@@ -227,13 +226,13 @@ class EscrowAccount(Account):
         )
         assert (
             old_hive_amount + hive_amount
-            if mode == "escrow_rejection" or mode == "escrow_release"
-            else old_hive_amount == self.hive + hive_amount if mode == "escrow_creation" else self.hive
+            if mode == "escrow_rejection_operation" or mode == "escrow_release_operation"
+            else old_hive_amount == self.hive + hive_amount if mode == "escrow_creation_operation" else self.hive
         ), hive_message
         assert (
             old_hbd_amount + (hbd_amount + fee)
-            if mode == "escrow_rejection" or mode == "escrow_release"
-            else old_hbd_amount == self.hbd + (hbd_amount + fee) if mode == "escrow_creation" else self.hbd
+            if mode == "escrow_rejection_operation" or mode == "escrow_release_operation"
+            else old_hbd_amount == self.hbd + (hbd_amount + fee) if mode == "escrow_creation_operation" else self.hbd
         ), hbd_message
 
     def check_if_escrow_fee_was_added_to_agent_balance_after_approvals(self, trx: dict) -> None:
@@ -246,9 +245,9 @@ class EscrowAccount(Account):
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
         ops = trx["operations"]
         for op in ops:
-            if op[0] == "escrow_transfer" or op[0] == "escrow_release":
+            if op[0] == "escrow_transfer_operation" or op[0] == "escrow_release_operation":
                 trx_value = op[1]
-                fee = trx_value["fee"] if op[0] == "escrow_transfer" else tt.Asset.Tbd(0)
+                fee = trx_value["fee"] if op[0] == "escrow_transfer_operation" else tt.Asset.Tbd(0)
                 hbd_amount = trx_value["hbd_amount"]
                 hive_amount = trx_value["hive_amount"]
                 return fee, hbd_amount, hive_amount
@@ -295,7 +294,7 @@ class LimitOrderAccount(Account):
         query = self._node.api.database.find_limit_orders(account=self._name).orders[0]
         for_sale = query.for_sale
         nai = query.sell_price.base
-        nai = nai.clone(amount=for_sale)
+        nai.amount = for_sale
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
         token = currency(0).get_asset_information().get_symbol()
         assert nai == currency(amount), (
@@ -529,9 +528,9 @@ class UpdateAccount(Account):
             ), f"Json metadata of account {self._name} wasn't changed."
 
         if new_posting_json_meta is not None:
-            to_compare = self._acc_info["posting_json_metadata"]
+            to_compare = self._acc_info.posting_json_metadata
             assert (
-                json.loads(new_posting_json_meta) == to_compare
+                json.loads(new_posting_json_meta) == to_compare.value
             ), f"Posting json metadata of account {self._name} wasn't changed."
 
     def assert_if_rc_current_mana_was_reduced(self, transaction):

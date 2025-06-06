@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import pydantic
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
-
+from beekeepy.exceptions.overseer import ErrorInResponseError
+from msgspec import ValidationError
 
 @run_for("testnet")
 def test_default_recovery_agent(node: tt.InitNode) -> None:
@@ -35,7 +34,7 @@ def test_resign_from_the_current_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
-    with pytest.raises(pydantic.error_wrappers.ValidationError):
+    with pytest.raises(ValidationError):
         wallet.api.change_recovery_account("alice", "")
 
 
@@ -104,7 +103,7 @@ def test_change_recovery_agent_to_the_same_recovery_agent(node: tt.InitNode) -> 
 
     assert get_recovery_agent(node, account_name="alice") == "initminer"
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         wallet.api.change_recovery_account("alice", "initminer")
 
 

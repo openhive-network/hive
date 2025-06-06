@@ -10,7 +10,8 @@ from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHiveHF26
+from schemas.fields.assets import AssetHive
+from schemas.fields.assets._base import AssetNaiAmount
 from schemas.fields.basic import AccountName, PublicKey
 from schemas.fields.compound import Authority
 from schemas.operations.account_create_operation import AccountCreateOperation
@@ -222,7 +223,7 @@ def __create_voter(voter: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(voter),
         json_metadata="{}",
-        fee=AssetHiveHF26(amount=3000),
+        fee=AssetHive(amount=AssetNaiAmount(3000)),
         owner=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
         active=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
         posting=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
@@ -231,7 +232,7 @@ def __create_voter(voter: str) -> AccountCreateOperation:
 
 
 def __fund_voter(voter: str) -> TransferToVestingOperation:
-    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHiveHF26(amount=10))
+    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=AssetNaiAmount(10)))
 
 
 def delegate_rc_to_payers(node: tt.InitNode, wallet: tt.Wallet, voters: list[str], accounts_per_chunks: int) -> None:
