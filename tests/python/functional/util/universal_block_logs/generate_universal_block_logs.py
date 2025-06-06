@@ -18,11 +18,11 @@ from hive_local_tools.functional.python.operation import get_vesting_price
 from schemas.fields.basic import AccountName
 from schemas.fields.compound import Authority
 from schemas.fields.hive_int import HiveInt
-from schemas.operations.account_create_operation import AccountCreateOperationLegacy
+from schemas.operations.account_create_operation import AccountCreateOperation
 from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperationLegacy
-from schemas.operations.transfer_operation import TransferOperationLegacy
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperationLegacy
+from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperation
+from schemas.operations.transfer_operation import TransferOperation
+from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
@@ -248,8 +248,8 @@ def prepare_block_log(
     tt.logger.info(f"Save block log file to {block_log_directory}")
 
 
-def __invest(account: str, _) -> tuple[TransferToVestingOperationLegacy]:
-    return (TransferToVestingOperationLegacy(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
+def __invest(account: str, _) -> tuple[TransferToVestingOperation]:
+    return (TransferToVestingOperation(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
 
 
 def generate_authority(
@@ -334,12 +334,12 @@ def generate_authority(
             return authority
 
 
-def __create_signer(account: str, _: None) -> tuple[AccountCreateOperationLegacy]:
+def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
     keys = [(tt.PublicKey(account, secret=f"secret-{num}"), HiveInt(1)) for num in range(40)]
     signer_authority = Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys)
 
     return (
-        AccountCreateOperationLegacy(
+        AccountCreateOperation(
             fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
             creator=AccountName("initminer"),
             new_account_name=AccountName(account),
@@ -355,13 +355,13 @@ def __create_signer(account: str, _: None) -> tuple[AccountCreateOperationLegacy
 def __create_and_fund_account(
     account: str, authority: dict
 ) -> tuple[
-    AccountCreateOperationLegacy,
-    TransferOperationLegacy,
-    TransferOperationLegacy,
-    DelegateVestingSharesOperationLegacy,
+    AccountCreateOperation,
+    TransferOperation,
+    TransferOperation,
+    DelegateVestingSharesOperation,
 ]:
     return (
-        AccountCreateOperationLegacy(
+        AccountCreateOperation(
             fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
             creator=AccountName("initminer"),
             new_account_name=AccountName(account),
@@ -371,19 +371,19 @@ def __create_and_fund_account(
             memo_key=authority["memo"],
             json_metadata="",
         ),
-        TransferOperationLegacy(
+        TransferOperation(
             from_=AccountName("initminer"),
             to=AccountName(account),
             amount=(HIVE_PER_ACCOUNT - tt.Asset.Test(2)).as_legacy(),
             memo=f"hive_transfer-{account}",
         ),
-        TransferOperationLegacy(
+        TransferOperation(
             from_=AccountName("initminer"),
             to=AccountName(account),
             amount=TBD_PER_ACCOUNT.as_legacy(),
             memo=f"hbd_transfer-{account}",
         ),
-        DelegateVestingSharesOperationLegacy(
+        DelegateVestingSharesOperation(
             delegatee=AccountName(account),
             delegator=AccountName("initminer"),
             vesting_shares=DELEGATION_PER_ACCOUNT.as_legacy(),
