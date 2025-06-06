@@ -1581,7 +1581,16 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       my->shared_memory_dir = sfd;
   }
 
-  my->comments_storage_path = my->shared_memory_dir / options.at("comments-rocksdb-path").as<bfs::path>();
+  my->comments_storage_path = my->shared_memory_dir / "comments-rocksdb-storage";
+
+  if( options.count( "comments-rocksdb-path" ) )
+  {
+    auto crp = options.at( "comments-rocksdb-path" ).as<bfs::path>();
+    if( crp.is_relative() )
+      my->comments_storage_path = my->shared_memory_dir / crp;
+    else
+      my->comments_storage_path = crp;
+  }
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
