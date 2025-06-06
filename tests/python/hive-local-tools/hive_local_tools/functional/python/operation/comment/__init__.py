@@ -30,7 +30,7 @@ from schemas.transaction import TransactionLegacy
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
-    from schemas.operations.claim_reward_balance_operation import ClaimRewardBalanceOperationLegacy
+    from schemas.operations.claim_reward_balance_operation import ClaimRewardBalanceOperation
     from schemas.operations.comment_operation import CommentOperation
     from schemas.operations.comment_options_operation import CommentOptionsOperationLegacy
     from schemas.operations.representations.legacy_representation import LegacyRepresentation
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 class ClaimRewardBalanceTransaction(TransactionLegacy):
-    operations: list[LegacyRepresentation[ClaimRewardBalanceOperationLegacy]]
+    operations: list[LegacyRepresentation[ClaimRewardBalanceOperation]]
     rc_cost: int
 
 
