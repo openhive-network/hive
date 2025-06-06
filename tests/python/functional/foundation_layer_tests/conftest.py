@@ -17,7 +17,7 @@ def wallet(node):
 def block_logs_for_testing_location() -> Path:
     destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
     assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
-    return Path(destination_variable)
+    return Path(destination_variable) / "empty_block_logs"
 
 
 @pytest.fixture()
