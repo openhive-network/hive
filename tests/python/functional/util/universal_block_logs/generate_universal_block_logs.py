@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from schemas.policies import DisableSwapTypes, set_policies
 import argparse
 import json
 import os
@@ -49,6 +49,7 @@ ACCOUNT_CREATION_FEE_AFTER_HF_20: Final[tt.Asset.Test] = tt.Asset.Test(3)
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count() * 2
 
+set_policies(DisableSwapTypes(disabled=True))
 
 def prepare_block_log(
     output_block_log_directory: Path,
@@ -249,7 +250,7 @@ def prepare_block_log(
 
 
 def __invest(account: str, _) -> tuple[TransferToVestingOperation]:
-    return (TransferToVestingOperation(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),)
+    return (TransferToVestingOperation(from_=account, to=account, amount=INVEST_PER_ACCOUNT),)
 
 
 def generate_authority(
@@ -340,7 +341,7 @@ def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
 
     return (
         AccountCreateOperation(
-            fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
+            fee=INITIAL_ACCOUNT_CREATION_FEE,
             creator=AccountName("initminer"),
             new_account_name=AccountName(account),
             owner=signer_authority,
@@ -362,7 +363,7 @@ def __create_and_fund_account(
 ]:
     return (
         AccountCreateOperation(
-            fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
+            fee=INITIAL_ACCOUNT_CREATION_FEE,
             creator=AccountName("initminer"),
             new_account_name=AccountName(account),
             owner=authority["owner"],
@@ -374,19 +375,19 @@ def __create_and_fund_account(
         TransferOperation(
             from_=AccountName("initminer"),
             to=AccountName(account),
-            amount=(HIVE_PER_ACCOUNT - tt.Asset.Test(2)).as_legacy(),
+            amount=(HIVE_PER_ACCOUNT - tt.Asset.Test(2)),
             memo=f"hive_transfer-{account}",
         ),
         TransferOperation(
             from_=AccountName("initminer"),
             to=AccountName(account),
-            amount=TBD_PER_ACCOUNT.as_legacy(),
+            amount=TBD_PER_ACCOUNT,
             memo=f"hbd_transfer-{account}",
         ),
         DelegateVestingSharesOperation(
             delegatee=AccountName(account),
             delegator=AccountName("initminer"),
-            vesting_shares=DELEGATION_PER_ACCOUNT.as_legacy(),
+            vesting_shares=DELEGATION_PER_ACCOUNT,
         ),
     )
 
@@ -408,6 +409,8 @@ def __create_post(account_name: str, _: None) -> tuple[CommentOperation]:
 def __generate_and_broadcast_transaction(
     func: callable, node: tt.InitNode, wallet: tt.OldWallet, authority: str, account_names: list[str]
 ) -> None:
+    if len(account_names) == 0:
+        return
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
     tapos_data = get_tapos_data(to_cpp_string(block_id))
@@ -424,6 +427,9 @@ def __generate_and_broadcast_transaction(
         extensions=[],
         signatures=[],
         operations=[],
+        block_num=gdpo.head_block_number,
+        transaction_id="0"*40,
+        transaction_num=0
     )
 
     for name in account_names:
