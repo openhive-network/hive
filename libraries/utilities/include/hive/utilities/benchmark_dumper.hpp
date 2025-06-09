@@ -86,13 +86,12 @@ public:
     measurement                   total_measurement;
   };
 
-  typedef std::function<void(index_memory_details_cntr_t&)> get_indexes_memory_details_t;
+  typedef std::function<void(index_memory_details_cntr_t&, uint64_t&)> get_stat_details_t;
   typedef std::function<void(database_object_sizeof_cntr_t&)> get_database_objects_sizeofs_t;
 
   bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
 
-  void initialize(get_database_objects_sizeofs_t get_database_objects_sizeofs,
-              const char* file_name)
+  void initialize(get_database_objects_sizeofs_t get_database_objects_sizeofs, const char* file_name)
   {
     _file_name = file_name;
     _init_sys_time = _last_sys_time = fc::time_point::now();
@@ -101,7 +100,7 @@ public:
     get_database_objects_sizeofs(_all_data.database_object_sizeofs);
   }
 
-  const measurement& measure(uint32_t block_number, get_indexes_memory_details_t get_indexes_memory_details)
+  const measurement& measure(uint32_t block_number, get_stat_details_t get_stat_details)
   {
     validate_is_initialized();
     uint64_t current_virtual = 0;
@@ -113,11 +112,11 @@ public:
   
     measurement data;
     data.set( block_number,
-            (current_sys_time - _last_sys_time).count()/1000, // real_ms
-            int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
-            current_virtual,
-            peak_virtual );
-    get_indexes_memory_details(data.index_memory_details_cntr);
+      (current_sys_time - _last_sys_time).count()/1000, // real_ms
+      int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
+      current_virtual,
+      peak_virtual );
+    get_stat_details( data.index_memory_details_cntr );
   
     _last_sys_time = current_sys_time;
     _last_cpu_time = current_cpu_time;
@@ -130,13 +129,15 @@ public:
       peak_virtual );
 
     // no sense to store data that will not be dumped to file
-    if(   _all_data.measurements.empty() || is_file_available() ) _all_data.measurements.push_back( data );
-    else  _all_data.measurements[0] = data;
+    if( _all_data.measurements.empty() || is_file_available() )
+      _all_data.measurements.push_back( data );
+    else
+      _all_data.measurements[0] = data;
 
     return _all_data.measurements.back();
   }
 
-  const measurement& dump(bool finalMeasure, get_indexes_memory_details_t get_indexes_memory_details)
+  const measurement& dump(bool finalMeasure, get_stat_details_t get_stat_details)
   {
     validate_is_initialized();
     if(finalMeasure)
@@ -146,7 +147,7 @@ public:
 
       idxData.clear();
 
-      get_indexes_memory_details(idxData);
+      get_stat_details( idxData );
 
       std::sort(idxData.begin(), idxData.end(),
         [](const index_memory_details_t& info1, const index_memory_details_t& info2) -> bool
@@ -156,7 +157,7 @@ public:
       );
     }
 
-    if(is_file_available()) 
+    if(is_file_available())
     {
       const fc::path path(_file_name);
       try

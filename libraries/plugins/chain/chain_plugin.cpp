@@ -53,7 +53,7 @@ using hive::chain::block_id_type;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
-using get_indexes_memory_details_type = std::function< void( index_memory_details_cntr_t& ) >;
+using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
 
 #define NUM_THREADS 1
 
@@ -265,7 +265,7 @@ class chain_plugin_impl
     hive::utilities::benchmark_dumper   dumper;
     hive::chain::open_args              db_open_args;
     block_log_open_args                 bl_open_args;
-    get_indexes_memory_details_type     get_indexes_memory_details;
+    get_stat_details_t                  get_stat_details;
     boost::signals2::connection         dumper_post_apply_block;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
@@ -860,11 +860,9 @@ void chain_plugin_impl::initial_settings()
 
   db._max_mempool_size = max_mempool_size;
 
-  const auto& abstract_index_cntr = db.get_abstract_index_cntr();
-
-  get_indexes_memory_details = [ this, &abstract_index_cntr ]
-    (index_memory_details_cntr_t& index_memory_details_cntr)
+  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr)
   {
+    const auto& abstract_index_cntr = db.get_abstract_index_cntr();
     for (auto idx : abstract_index_cntr)
     {
       auto info = idx->get_statistics();
@@ -961,7 +959,7 @@ void chain_plugin_impl::open()
     if( dump_memory_details )
     {
       setup_benchmark_dumper();
-      dumper.dump( true, get_indexes_memory_details );
+      dumper.dump( true, get_stat_details );
     }
   } FC_LOG_AND_RETHROW()
 
@@ -1337,7 +1335,7 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
 
     if( benchmark_interval > 0 )
     {
-      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, get_indexes_memory_details );
+      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, get_stat_details );
       ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
           ("b", total_data.block_number)
           ("rt", total_data.real_ms)
@@ -1823,7 +1821,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       if( my->benchmark_interval && ( current_block_number % my->benchmark_interval == 0 ) )
       {
         const hive::utilities::benchmark_dumper::measurement& measure =
-          my->dumper.measure( current_block_number, my->get_indexes_memory_details );
+          my->dumper.measure( current_block_number, my->get_stat_details );
 
         ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
           ("n", current_block_number)
