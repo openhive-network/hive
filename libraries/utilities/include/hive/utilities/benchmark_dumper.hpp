@@ -59,21 +59,23 @@ public:
   class measurement
   {
   public:
-    void set(uint32_t bn, int64_t rm, int32_t cs, uint64_t cm, uint64_t pm)
+    void set( uint32_t bn, int64_t rm, int32_t cs, uint64_t cm, uint64_t pm, uint64_t sf )
     {
       block_number = bn;
       real_ms = rm;
       cpu_ms = cs;
       current_mem = cm;
       peak_mem = pm;
+      shm_free = sf;
     }
 
   public:
     uint32_t block_number = 0;
     int64_t  real_ms = 0;
     int32_t  cpu_ms = 0;
-    uint64_t current_mem = 0;
-    uint64_t peak_mem = 0;
+    uint64_t current_mem = 0; // in kB
+    uint64_t peak_mem = 0; // in kB
+    uint64_t shm_free = 0; // in kB
     index_memory_details_cntr_t index_memory_details_cntr;
   };
 
@@ -111,12 +113,15 @@ public:
     clock_t current_cpu_time = clock();
   
     measurement data;
+    uint64_t shm_free = 0;
+    get_stat_details( data.index_memory_details_cntr, shm_free );
+    shm_free /= 1024; // typically db.get_free_memory() so the value is in bytes - recalculate to match other values
     data.set( block_number,
       (current_sys_time - _last_sys_time).count()/1000, // real_ms
       int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
       current_virtual,
-      peak_virtual );
-    get_stat_details( data.index_memory_details_cntr );
+      peak_virtual,
+      shm_free );
   
     _last_sys_time = current_sys_time;
     _last_cpu_time = current_cpu_time;
@@ -126,7 +131,8 @@ public:
       (_last_sys_time - _init_sys_time).count()/1000,
       int((_last_cpu_time - _init_cpu_time) * 1000 / CLOCKS_PER_SEC),
       current_virtual,
-      peak_virtual );
+      peak_virtual,
+      shm_free);
 
     // no sense to store data that will not be dumped to file
     if( _all_data.measurements.empty() || is_file_available() )
@@ -146,8 +152,10 @@ public:
       auto& idxData = _all_data.total_measurement.index_memory_details_cntr;
 
       idxData.clear();
+      uint64_t shm_free = 0;
 
-      get_stat_details( idxData );
+      get_stat_details( idxData, shm_free );
+      _all_data.total_measurement.shm_free = shm_free / 1024;
       _all_data.total_measurement.block_number = block_number;
 
       std::sort(idxData.begin(), idxData.end(),
@@ -202,7 +210,7 @@ FC_REFLECT( hive::utilities::benchmark_dumper::database_object_sizeof_t,
         (object_name)(object_size) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
-        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(index_memory_details_cntr) )
+        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(index_memory_details_cntr) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
         (database_object_sizeofs)(measurements)(total_measurement) )
