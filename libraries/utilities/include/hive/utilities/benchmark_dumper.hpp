@@ -137,7 +137,7 @@ public:
     return _all_data.measurements.back();
   }
 
-  const measurement& dump(bool finalMeasure, get_stat_details_t get_stat_details)
+  const measurement& dump(bool finalMeasure, uint32_t block_number, get_stat_details_t get_stat_details)
   {
     validate_is_initialized();
     if(finalMeasure)
@@ -148,6 +148,7 @@ public:
       idxData.clear();
 
       get_stat_details( idxData );
+      _all_data.total_measurement.block_number = block_number;
 
       std::sort(idxData.begin(), idxData.end(),
         [](const index_memory_details_t& info1, const index_memory_details_t& info2) -> bool
