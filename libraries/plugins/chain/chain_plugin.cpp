@@ -959,7 +959,7 @@ void chain_plugin_impl::open()
     if( dump_memory_details )
     {
       setup_benchmark_dumper();
-      dumper.dump( true, get_stat_details );
+      dumper.dump( true, db.head_block_num(), get_stat_details );
     }
   } FC_LOG_AND_RETHROW()
 
@@ -1335,7 +1335,7 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
 
     if( benchmark_interval > 0 )
     {
-      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, get_stat_details );
+      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, db.head_block_num(), get_stat_details );
       ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
           ("b", total_data.block_number)
           ("rt", total_data.real_ms)
