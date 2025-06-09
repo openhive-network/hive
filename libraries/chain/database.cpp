@@ -197,6 +197,7 @@ void database::initialize_state_independent_data(const open_args& args)
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
 
   initialize_indexes();
+  get_comments_handler().open();
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 
@@ -292,6 +293,7 @@ void database::wipe(const fc::path& shared_mem_dir)
 {
   if( get_is_open() )
     close();
+  get_comments_handler().wipe();
   chainbase::database::wipe( shared_mem_dir );
 }
 
@@ -309,6 +311,7 @@ void database::close()
     // DB state (issue #336).
     clear_pending();
 
+    get_comments_handler().close();
     chainbase::database::flush();
 
     auto lib = this->get_last_irreversible_block_num();

@@ -23,12 +23,12 @@ rocksdb_storage_processor::rocksdb_storage_processor( database& db, const bfs::p
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
   provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app );
-  provider->init( destroy_database_on_startup );
   snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
 }
 
 rocksdb_storage_processor::~rocksdb_storage_processor()
 {
+  close();
 }
 
 void rocksdb_storage_processor::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
@@ -159,9 +159,19 @@ void rocksdb_storage_processor::load_snapshot( const hive::chain::load_snapshot_
   snapshot->load_snapshot( note );
 }
 
-void rocksdb_storage_processor::shutdown( bool remove_db )
+void rocksdb_storage_processor::open()
 {
-  provider->shutdownDb( remove_db );
+  provider->init( destroy_database_on_startup );
+}
+
+void rocksdb_storage_processor::close()
+{
+  provider->shutdownDb( destroy_database_on_shutdown );
+}
+
+void rocksdb_storage_processor::wipe()
+{
+  provider->wipeDb();
 }
 
 void rocksdb_storage_processor::update_lib( uint32_t lib )
