@@ -34,6 +34,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
 
+#include <hive/chain/external_storage/placeholder_comment_archive.hpp>
+
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 
@@ -104,6 +106,8 @@ BOOST_AUTO_TEST_SUITE(block_tests)
 void open_test_database( database& db, block_storage_i& block_storage,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
+  auto comment_archive = std::make_shared<placeholder_comment_archive>( db );
+  db.set_comments_handler( comment_archive );
   hive::chain::open_args args;
   hive::chain::block_storage_i::block_log_open_args bl_args;
   args.data_dir = dir;

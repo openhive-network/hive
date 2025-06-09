@@ -44,7 +44,9 @@ class rocksdb_storage_processor: public comments_handler
     void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
-    void shutdown( bool remove_db = false ) override;
+    void open() override;
+    void close() override;
+    void wipe() override;
 
     void update_lib( uint32_t ) override;
     void update_reindex_point( uint32_t ) override;
