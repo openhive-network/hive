@@ -138,14 +138,7 @@ class chain_plugin_impl
 
       if( chain_sync_con.connected() )
         chain_sync_con.disconnect();
-
-      if( rocksdb_processor )
-        rocksdb_processor->shutdown();
     }
-
-    void shutdown( bool destroyOnShutdown );
-
-    void init_rocksdb_storage( const bfs::path& comments_storage_path, bool destroy_on_startup );
 
     void register_snapshot_provider(state_snapshot_provider& provider)
     {
@@ -309,8 +302,6 @@ class chain_plugin_impl
 
     appbase::application& theApp;
 
-    comments_handler::ptr rocksdb_processor;
-
   private:
     bool _push_block( const block_flow_control& block_ctrl );
 
@@ -456,18 +447,6 @@ struct chain_plugin_impl::write_request_visitor
     return last_block_number;
   }
 };
-
-void chain_plugin_impl::shutdown( bool destroyOnShutdown )
-{
-  rocksdb_processor->shutdown( destroyOnShutdown );
-}
-
-void chain_plugin_impl::init_rocksdb_storage( const bfs::path& comments_storage_path, bool destroy_on_startup )
-{
-  rocksdb_processor = std::make_shared<rocksdb_storage_processor>( db, shared_memory_dir, comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
-
-  db.set_comments_handler( rocksdb_processor );
-}
 
 bool chain_plugin_impl::is_interrupt_request() const
 {
@@ -847,6 +826,12 @@ bool chain_plugin_impl::start_replay_processing(
 void chain_plugin_impl::initial_settings()
 {
   db.set_block_writer( default_block_writer.get() );
+
+  ilog( "Preparing comment archive..." );
+  //ABW: TODO: add implementation choice here
+  auto comment_archive = std::make_shared<rocksdb_storage_processor>( db, shared_memory_dir,
+    comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
+  db.set_comments_handler( comment_archive );
 
   if( statsd_on_replay )
   {
@@ -1865,9 +1850,6 @@ void chain_plugin::plugin_startup()
   ilog("Database opening...");
   my->open();
 
-  ilog("Preparing rocksDB storage for comments...");
-  my->init_rocksdb_storage( my->comments_storage_path, my->destroyDatabaseOnStartup );
-
   ilog("Looking for snapshot processing requests...");
   my->process_snapshot();
 
@@ -1932,8 +1914,6 @@ void chain_plugin::plugin_shutdown()
   my->db.close();
   my->default_block_writer->close();
   my->block_storage->close_storage();
-
-  my->shutdown( my->destroyDatabaseOnShutdown );
 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
