@@ -1530,12 +1530,13 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   auto blockNo = _mainDb.head_block_num();
 
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&) {});
-  ilog("State snapshot generation. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, uint64_t& shm_free ) { shm_free = _mainDb.get_free_memory(); } );
+  ilog("State snapshot generation. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
     ("rt", measure.real_ms)
     ("ct", measure.cpu_ms)
     ("cm", measure.current_mem)
-    ("pm", measure.peak_mem));
+    ("pm", measure.peak_mem)
+    ("sf", measure.shm_free));
 
   ilog("Snapshot generation finished");
   return;
@@ -1659,12 +1660,13 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);
 
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&) {});
-  ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, uint64_t& shm_free ) { shm_free = _mainDb.get_free_memory(); } );
+  ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
     ("rt", measure.real_ms)
     ("ct", measure.cpu_ms)
     ("cm", measure.current_mem)
-    ("pm", measure.peak_mem));
+    ("pm", measure.peak_mem)
+    ("sf", measure.shm_free));
 
   ilog("Snapshot loading finished, starting validate_invariants to check consistency...");
   _mainDb.validate_invariants();

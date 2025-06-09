@@ -860,8 +860,9 @@ void chain_plugin_impl::initial_settings()
 
   db._max_mempool_size = max_mempool_size;
 
-  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr)
+  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, uint64_t& shm_free)
   {
+    shm_free = db.get_free_memory();
     const auto& abstract_index_cntr = db.get_abstract_index_cntr();
     for (auto idx : abstract_index_cntr)
     {
@@ -1336,12 +1337,13 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
     if( benchmark_interval > 0 )
     {
       const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, db.head_block_num(), get_stat_details );
-      ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+      ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
           ("b", total_data.block_number)
           ("rt", total_data.real_ms)
           ("ct", total_data.cpu_ms)
           ("cm", total_data.current_mem)
-          ("pm", total_data.peak_mem) );
+          ("pm", total_data.peak_mem)
+          ("sf", total_data.shm_free) );
     }
 
     if( stop_replay_at > 0 && stop_replay_at == last_block_number )
@@ -1823,12 +1825,13 @@ void chain_plugin::plugin_initialize(const variables_map& options)
         const hive::utilities::benchmark_dumper::measurement& measure =
           my->dumper.measure( current_block_number, my->get_stat_details );
 
-        ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+        ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
           ("n", current_block_number)
           ("rt", measure.real_ms)
           ("ct", measure.cpu_ms)
           ("cm", measure.current_mem)
-          ("pm", measure.peak_mem) );
+          ("pm", measure.peak_mem)
+          ("sf", measure.shm_free) );
 
         get_app().notify_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
