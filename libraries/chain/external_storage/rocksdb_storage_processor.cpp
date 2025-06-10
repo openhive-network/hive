@@ -33,6 +33,7 @@ rocksdb_storage_processor::~rocksdb_storage_processor()
 
 void rocksdb_storage_processor::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
 
   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
   FC_ASSERT( _volatile_idx.find( _comment.get_author_and_permlink_hash() ) == _volatile_idx.end(),
@@ -55,6 +56,9 @@ void rocksdb_storage_processor::on_cashout( const comment_object& _comment, cons
 
     o.block_number    = db.head_block_num();
   });
+
+  stats.comment_cashout_processing.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++stats.comment_cashout_processing.count;
 }
 
 void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
@@ -104,6 +108,8 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
   if( _volatile_idx.size() < volatile_objects_limit )
     return;
 
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   auto _itr = _volatile_idx.begin();
 
 #ifdef DBG_MOVE_INFO
@@ -112,6 +118,7 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
 
   bool _do_flush = false;
 
+  uint64_t count = 0;
   while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
   {
     const auto& _current = *_itr;
@@ -127,24 +134,44 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
 
     db.remove( *_comment );
     db.remove( _current );
+
+    ++count;
   }
 
   if( _do_flush )
     provider->flush();
+
+  stats.comment_lib_processing.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  stats.comment_lib_processing.count += count;
 }
 
 comment rocksdb_storage_processor::get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   auto _hash = comment_object::compute_author_and_permlink_hash( author, permlink );
   const auto* _comment = db.find< comment_object, by_permlink >( _hash );
   if( _comment )
   {
+    stats.comment_accessed_from_index.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++stats.comment_accessed_from_index.count;
     return comment( _comment );
   }
   else
   {
     const auto _external_comment = get_comment_impl( _hash );
-    FC_ASSERT( !comment_is_required || _external_comment, "Comment with `id`/`permlink` ${author}/${permlink} not found", (author)(permlink) );
+    uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    if( _external_comment )
+    {
+      stats.comment_accessed_from_archive.time += time;
+      ++stats.comment_accessed_from_archive.count;
+    }
+    else
+    {
+      stats.comment_not_found.time += time;
+      ++stats.comment_not_found.count;
+      FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
+    }
     return comment( _external_comment );
   }
 }
