@@ -1278,20 +1278,7 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
 /* Comments */
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
-  FC_ASSERT( 0 < args.comments.size() && args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
-    "list of comments to find not filled or too big" );
-  find_comments_return result;
-  result.comments.reserve( args.comments.size() );
-
-  for( auto& key: args.comments )
-  {
-    auto comment = _db.find_comment( key.first, key.second );
-
-    if( comment )
-      result.comments.emplace_back( *comment, _db );
-  }
-
-  return result;
+  FC_ASSERT( false, "Supported by Hivemind" );
 }
 
 /* Votes */
