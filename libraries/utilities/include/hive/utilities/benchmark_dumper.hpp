@@ -12,7 +12,7 @@ namespace hive { namespace utilities {
 
 /**
   * Time and memory usage measuring tool.
-  * Call \see initialize when you're ready to start the measurments.
+  * Call \see initialize when you're ready to start the measurements.
   * Call \see measure as many times you need.
   * Call \see dump to print the measurements into the file json style.
   * The values of \see measure and \see dump are returned if you need further processing (e.g. pretty print to console).
@@ -60,17 +60,6 @@ public:
 
   typedef std::vector<index_memory_details_t> index_memory_details_cntr_t;
 
-  struct database_object_sizeof_t
-  {
-    database_object_sizeof_t(std::string&& name, size_t size)
-      : object_name(name), object_size(size) {}
-
-    std::string    object_name;
-    size_t         object_size = 0;
-  };
-
-  typedef std::vector<database_object_sizeof_t> database_object_sizeof_cntr_t;
-
   class measurement
   {
   public:
@@ -100,23 +89,20 @@ public:
 
   struct TAllData
   {
-    database_object_sizeof_cntr_t database_object_sizeofs;
     TMeasurements                 measurements;
     measurement                   total_measurement;
   };
 
   typedef std::function<void(index_memory_details_cntr_t&, comment_archive_details_t&, uint64_t&)> get_stat_details_t;
-  typedef std::function<void(database_object_sizeof_cntr_t&)> get_database_objects_sizeofs_t;
 
   bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
 
-  void initialize(get_database_objects_sizeofs_t get_database_objects_sizeofs, const char* file_name)
+  void initialize( const char* file_name )
   {
     _file_name = file_name;
     _init_sys_time = _last_sys_time = fc::time_point::now();
     _init_cpu_time = _last_cpu_time = clock();
     _pid = getpid();
-    get_database_objects_sizeofs(_all_data.database_object_sizeofs);
   }
 
   const measurement& measure( uint32_t block_number, get_stat_details_t get_stat_details );
@@ -150,11 +136,8 @@ FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)
         (additional_container_allocation)(total_index_mem_usage) )
 
-FC_REFLECT( hive::utilities::benchmark_dumper::database_object_sizeof_t,
-        (object_name)(object_size) )
-
 FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
         (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(comment_archive_stats)(index_memory_details_cntr) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
-        (database_object_sizeofs)(measurements)(total_measurement) )
+        (measurements)(total_measurement) )

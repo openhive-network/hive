@@ -1461,7 +1461,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   try
   {
   benchmark_dumper dumper;
-  dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_dump.json");
+  dumper.initialize( "state_snapshot_dump.json" );
 
   bfs::path actualStoragePath = _storagePath / snapshotName;
   actualStoragePath = actualStoragePath.normalize();
@@ -1563,7 +1563,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   ilog("Trying to access snapshot in the location: `${p}'", ("p", actualStoragePath.string()));
 
   benchmark_dumper dumper;
-  dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
+  dumper.initialize( "state_snapshot_load.json" );
 
   std::shared_ptr<hive::chain::full_block_type> lib;
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
