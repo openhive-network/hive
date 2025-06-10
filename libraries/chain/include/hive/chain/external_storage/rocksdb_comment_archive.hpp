@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 
 namespace bfs = boost::filesystem;
 
-class rocksdb_storage_processor: public comments_handler
+class rocksdb_comment_archive : public comments_handler
 {
   private:
 
@@ -32,9 +32,9 @@ class rocksdb_storage_processor: public comments_handler
 
   public:
 
-    rocksdb_storage_processor( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
+    rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
       appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown );
-    virtual ~rocksdb_storage_processor();
+    virtual ~rocksdb_comment_archive();
 
     void on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
     void on_irreversible_block( uint32_t block_num ) override;
