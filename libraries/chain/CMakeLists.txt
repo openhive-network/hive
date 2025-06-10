@@ -1,12 +1,14 @@
 file(GLOB HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/smt_objects/*.hpp" "include/hive/chain/dhf_objects/*.hpp")
 
-if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries"
-    AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries/CMakeLists.txt" )
-  add_subdirectory(compression_dictionaries)
-  set( COMPRESSION_DICTIONARY_LIBRARIES hive_chain_compression_dictionaries )
-  set( HAS_COMPRESSION_DICTIONARIES TRUE )
-else()
-  message( FATAL_ERROR  "The compression_dicitonaries submodule has not been cloned, it is required for builds")
+if( NOT DEFINED SKIP_COMPRESSION_DICTIONARIES )
+  if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries"
+      AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries/CMakeLists.txt" )
+    add_subdirectory(compression_dictionaries)
+    set( COMPRESSION_DICTIONARY_LIBRARIES hive_chain_compression_dictionaries )
+    set( HAS_COMPRESSION_DICTIONARIES TRUE )
+  else()
+    message( FATAL_ERROR  "The compression_dicitonaries submodule has not been cloned, it is required for builds")
+  endif()
 endif()
 
 ## SORT .cpp by most likely to change / break compile
