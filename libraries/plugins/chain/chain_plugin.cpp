@@ -959,11 +959,9 @@ void chain_plugin_impl::open()
     });
     db.open( db_open_args );
 
+    setup_benchmark_dumper();
     if( dump_memory_details )
-    {
-      setup_benchmark_dumper();
       dumper.dump( true, db.head_block_num(), get_stat_details );
-    }
   } FC_LOG_AND_RETHROW()
 
   was_error = false;
@@ -1430,21 +1428,9 @@ void chain_plugin_impl::write_default_database_config( bfs::path &p )
 
 void chain_plugin_impl::setup_benchmark_dumper()
 {
-  if(!this->dumper.is_initialized())
+  if( not dumper.is_initialized() )
   {
-    typedef hive::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
-    const auto abstract_index_cntr = this->db.get_abstract_index_cntr();
-    auto get_database_objects_sizeofs = [ this, &abstract_index_cntr ]
-      (database_object_sizeof_cntr_t& database_object_sizeof_cntr)
-    {
-      database_object_sizeof_cntr.reserve(abstract_index_cntr.size());
-      for (auto idx : abstract_index_cntr)
-      {
-        auto info = idx->get_statistics();
-        database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
-      }
-    };
-    this->dumper.initialize( get_database_objects_sizeofs, (this->dump_memory_details ? BENCHMARK_FILE_NAME : "") );
+    dumper.initialize( dump_memory_details ? BENCHMARK_FILE_NAME : "" );
   }
 }
 
@@ -1644,7 +1630,6 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     }
   }
 
-  this->my->setup_benchmark_dumper();
   my->benchmark_is_enabled = (options.count( "advanced-benchmark" ) != 0);
 
   if( options.count( "statsd-record-on-replay" ) )
