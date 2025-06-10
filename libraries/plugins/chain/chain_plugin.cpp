@@ -53,6 +53,7 @@ using hive::chain::block_id_type;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
+using comment_archive_details_t = hive::utilities::benchmark_dumper::comment_archive_details_t;
 using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
 
 #define NUM_THREADS 1
@@ -860,7 +861,7 @@ void chain_plugin_impl::initial_settings()
 
   db._max_mempool_size = max_mempool_size;
 
-  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, uint64_t& shm_free)
+  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, uint64_t& shm_free)
   {
     shm_free = db.get_free_memory();
     const auto& abstract_index_cntr = db.get_abstract_index_cntr();
@@ -870,6 +871,7 @@ void chain_plugin_impl::initial_settings()
       index_memory_details_cntr.emplace_back(std::move(info._value_type_name), info._item_count,
         info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
     }
+    comment_archive_stats = comments_handler::stats;
   };
 
   fc::variant database_config;
