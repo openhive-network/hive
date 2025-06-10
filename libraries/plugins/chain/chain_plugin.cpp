@@ -10,7 +10,7 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
-#include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
+#include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
@@ -830,7 +830,7 @@ void chain_plugin_impl::initial_settings()
 
   ilog( "Preparing comment archive..." );
   //ABW: TODO: add implementation choice here
-  auto comment_archive = std::make_shared<rocksdb_storage_processor>( db, shared_memory_dir,
+  auto comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
     comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
   db.set_comments_handler( comment_archive );
 

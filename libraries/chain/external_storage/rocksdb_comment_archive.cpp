@@ -5,7 +5,7 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
-#include <hive/chain/external_storage/rocksdb_storage_processor.hpp>
+#include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_snapshot.hpp>
@@ -17,7 +17,7 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
-rocksdb_storage_processor::rocksdb_storage_processor( database& db, const bfs::path& blockchain_storage_path,
+rocksdb_comment_archive::rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path,
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
@@ -26,12 +26,12 @@ rocksdb_storage_processor::rocksdb_storage_processor( database& db, const bfs::p
   snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
 }
 
-rocksdb_storage_processor::~rocksdb_storage_processor()
+rocksdb_comment_archive::~rocksdb_comment_archive()
 {
   close();
 }
 
-void rocksdb_storage_processor::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
+void rocksdb_comment_archive::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -61,7 +61,7 @@ void rocksdb_storage_processor::on_cashout( const comment_object& _comment, cons
   ++stats.comment_cashout_processing.count;
 }
 
-void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
+void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
 #ifdef DBG_MOVE_DETAILS_INFO
   ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
@@ -78,7 +78,7 @@ void rocksdb_storage_processor::move_to_external_storage_impl( uint32_t block_nu
   provider->save( _key, _value );
 }
 
-std::shared_ptr<comment_object> rocksdb_storage_processor::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
+std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
 {
   Slice _key( hash.data(), hash.data_size() );
 
@@ -96,7 +96,7 @@ std::shared_ptr<comment_object> rocksdb_storage_processor::get_comment_impl( con
   return std::shared_ptr<comment_object>( new comment_object ( _obj.comment_id, _obj.parent_comment, hash, _obj.depth ) );
 }
 
-void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
+void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
 
@@ -113,7 +113,7 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
   auto _itr = _volatile_idx.begin();
 
 #ifdef DBG_MOVE_INFO
-  ilog( "rocksdb_storage_processor: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
+  ilog( "rocksdb_comment_archive: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
 #endif
 
   bool _do_flush = false;
@@ -145,7 +145,7 @@ void rocksdb_storage_processor::on_irreversible_block( uint32_t block_num )
   stats.comment_lib_processing.count += count;
 }
 
-comment rocksdb_storage_processor::get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const
+comment rocksdb_comment_archive::get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -176,37 +176,37 @@ comment rocksdb_storage_processor::get_comment( const account_id_type& author, c
   }
 }
 
-void rocksdb_storage_processor::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_comment_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   snapshot->save_snaphot( note );
 }
 
-void rocksdb_storage_processor::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
+void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
 {
   snapshot->load_snapshot( note );
 }
 
-void rocksdb_storage_processor::open()
+void rocksdb_comment_archive::open()
 {
   provider->init( destroy_database_on_startup );
 }
 
-void rocksdb_storage_processor::close()
+void rocksdb_comment_archive::close()
 {
   provider->shutdownDb( destroy_database_on_shutdown );
 }
 
-void rocksdb_storage_processor::wipe()
+void rocksdb_comment_archive::wipe()
 {
   provider->wipeDb();
 }
 
-void rocksdb_storage_processor::update_lib( uint32_t lib )
+void rocksdb_comment_archive::update_lib( uint32_t lib )
 {
   provider->update_lib( lib );
 }
 
-void rocksdb_storage_processor::update_reindex_point( uint32_t rp )
+void rocksdb_comment_archive::update_reindex_point( uint32_t rp )
 {
   provider->update_reindex_point( rp );
 }
