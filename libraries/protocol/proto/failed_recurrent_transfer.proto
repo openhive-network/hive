@@ -1,8 +1,9 @@
 syntax = "proto2";
 
-import "asset.proto";
-
 package hive.protocol.buffers;
+
+import "asset.proto";
+import "recurrent_transfer_extension.proto";
 
 /* Related to recurrent_transfer_operation.
  * Generated during block processing instead of fill_recurrent_transfer_operation when there is not enought funds on from account.
