@@ -8,6 +8,11 @@ GENERATOR_NAME=$2
 echo "$GENERATOR_NAME"
 TESTING_BLOCK_LOGS_DIR=$3
 echo "$TESTING_BLOCK_LOGS_DIR"
+REGISTRY=$4
+if [ -z "$REGISTRY" ]; then
+  echo "Registry is not specified." >&2
+  exit 1
+fi
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
@@ -15,9 +20,6 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$SCRIPTPATH/docker_image_utils.sh"
 
 submodule_path=$CI_PROJECT_DIR
-REGISTRY=$CI_REGISTRY_IMAGE
-REGISTRY_USER=$REGISTRY_USER
-REGISTRY_PASSWORD=$REGISTRY_PASS
 IMGNAME=testing-block-logs
 
 echo "Attempting to get commit for: $submodule_path"
@@ -36,8 +38,6 @@ tag=$GENERATOR_NAME-$final_checksum
 img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
 _img_path=$( build_image_registry_path "$tag" "$REGISTRY" $IMGNAME )
 _img_tag="$tag"
-
-echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
 docker_image_exists "$img" image_exists

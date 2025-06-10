@@ -10,9 +10,12 @@ if [ ! -s "$ENV_FILE" ]; then
   exit 1
 fi
 
-REGISTRY=$CI_REGISTRY_IMAGE
-REGISTRY_USER=$REGISTRY_USER
-REGISTRY_PASSWORD=$REGISTRY_PASS
+REGISTRY="$2"
+if [ -z "$REGISTRY" ]; then
+  echo "Registry is not specified." >&2
+  exit 1
+fi
+
 IMGNAME="testing-block-logs"
 FINAL_PREFIX="combined"
 FINAL_CHECKSUM=$(sha256sum "$ENV_FILE" | cut -d' ' -f1)
@@ -28,8 +31,6 @@ if [ "$image_exists" -eq 1 ]; then
   echo "Image $FINAL_IMAGE already exists. Skipping build."
   exit 0
 fi
-
-echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$CI_REGISTRY" --password-stdin
 
 echo "Generating simplified Dockerfile using direct external image references..."
 cat <<EOF > Dockerfile
