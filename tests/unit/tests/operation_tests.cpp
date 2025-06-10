@@ -752,7 +752,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
     BOOST_TEST_MESSAGE( "--- Testing voting on a non-existent comment" );
-    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "!comment_is_required || _external_comment" );
+    HIVE_REQUIRE_ASSERT( vote( "bob", "blah", "alice", HIVE_100_PERCENT, alice_post_key ), "!comment_is_required" );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
@@ -8323,7 +8323,7 @@ BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
     generate_block();
 
     HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr", fc::exception );
-    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required || _external_comment", fc::exception );
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required", fc::exception );
   }
   FC_LOG_AND_RETHROW()
 }
