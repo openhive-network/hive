@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+import "future_extensions.proto";
+
+message recurrent_transfer_pair_id {
+  required uint32 pair_id = 1 [json_name = "pair_id"];
+}
+
+message recurrent_transfer_extension {
+  oneof extension {
+    void_t void_t = 1 [json_name = "void_t"];
+    recurrent_transfer_pair_id recurrent_transfer_pair_id = 2 [json_name = "recurrent_transfer_pair_id"];
+  }
+}
