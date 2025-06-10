@@ -26,9 +26,6 @@ class comments_handler : public external_storage_snapshot
     virtual void close() = 0;
     virtual void wipe() = 0;
 
-    virtual void update_lib( uint32_t ) = 0;
-    virtual void update_reindex_point( uint32_t ) = 0;
-
     static hive::utilities::benchmark_dumper::comment_archive_details_t stats; // note: times should be measured in nanoseconds
 };
 

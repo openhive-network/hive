@@ -26,9 +26,6 @@ class placeholder_comment_archive final : public comments_handler
     virtual void open() override;
     virtual void close() override;
     virtual void wipe() override;
-
-    virtual void update_lib( uint32_t ) override;
-    virtual void update_reindex_point( uint32_t ) override;
 };
 
-}}
+} }
