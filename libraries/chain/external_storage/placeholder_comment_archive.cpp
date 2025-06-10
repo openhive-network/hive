@@ -63,15 +63,5 @@ void placeholder_comment_archive::wipe()
   // do nothing - there is no extra data
 }
 
-void placeholder_comment_archive::update_lib( uint32_t lib )
-{
-  // do nothing
-}
-
-void placeholder_comment_archive::update_reindex_point( uint32_t rp )
-{
-  // do nothing
-}
-
 } } // hive::chain
 
