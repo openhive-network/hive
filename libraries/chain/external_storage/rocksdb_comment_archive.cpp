@@ -201,16 +201,6 @@ void rocksdb_comment_archive::wipe()
   provider->wipeDb();
 }
 
-void rocksdb_comment_archive::update_lib( uint32_t lib )
-{
-  provider->update_lib( lib );
-}
-
-void rocksdb_comment_archive::update_reindex_point( uint32_t rp )
-{
-  provider->update_reindex_point( rp );
-}
-
-}}
+} }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_comment_index )
