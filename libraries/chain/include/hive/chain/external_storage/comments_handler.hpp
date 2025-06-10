@@ -7,6 +7,8 @@
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/comment_object.hpp>
 
+#include <hive/utilities/benchmark_dumper.hpp>
+
 namespace hive { namespace chain {
 
 class comments_handler : public external_storage_snapshot
@@ -26,6 +28,8 @@ class comments_handler : public external_storage_snapshot
 
     virtual void update_lib( uint32_t ) = 0;
     virtual void update_reindex_point( uint32_t ) = 0;
+
+    static hive::utilities::benchmark_dumper::comment_archive_details_t stats; // note: times should be measured in nanoseconds
 };
 
 } } // hive::chain

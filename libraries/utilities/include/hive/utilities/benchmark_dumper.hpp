@@ -20,6 +20,21 @@ namespace hive { namespace utilities {
 class benchmark_dumper
 {
 public:
+  struct counter_t
+  {
+    uint64_t count = 0;
+    uint64_t time = 0; // cumulative in ns
+    uint64_t avg_time_ns = 0; // only updated on write to report
+  };
+  struct comment_archive_details_t
+  {
+    counter_t comment_accessed_from_index;
+    counter_t comment_accessed_from_archive;
+    counter_t comment_not_found;
+    counter_t comment_cashout_processing;
+    counter_t comment_lib_processing;
+  };
+
   struct index_memory_details_t
   {
     index_memory_details_t(std::string&& name, size_t size, size_t i_sizeof,
@@ -76,6 +91,8 @@ public:
     uint64_t current_mem = 0; // in kB
     uint64_t peak_mem = 0; // in kB
     uint64_t shm_free = 0; // in kB
+
+    comment_archive_details_t   comment_archive_stats;
     index_memory_details_cntr_t index_memory_details_cntr;
   };
 
@@ -88,7 +105,7 @@ public:
     measurement                   total_measurement;
   };
 
-  typedef std::function<void(index_memory_details_cntr_t&, uint64_t&)> get_stat_details_t;
+  typedef std::function<void(index_memory_details_cntr_t&, comment_archive_details_t&, uint64_t&)> get_stat_details_t;
   typedef std::function<void(database_object_sizeof_cntr_t&)> get_database_objects_sizeofs_t;
 
   bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
@@ -102,86 +119,8 @@ public:
     get_database_objects_sizeofs(_all_data.database_object_sizeofs);
   }
 
-  const measurement& measure(uint32_t block_number, get_stat_details_t get_stat_details)
-  {
-    validate_is_initialized();
-    uint64_t current_virtual = 0;
-    uint64_t peak_virtual = 0;
-    read_mem(_pid, &current_virtual, &peak_virtual);
-  
-    fc::time_point current_sys_time = fc::time_point::now();
-    clock_t current_cpu_time = clock();
-  
-    measurement data;
-    uint64_t shm_free = 0;
-    get_stat_details( data.index_memory_details_cntr, shm_free );
-    shm_free /= 1024; // typically db.get_free_memory() so the value is in bytes - recalculate to match other values
-    data.set( block_number,
-      (current_sys_time - _last_sys_time).count()/1000, // real_ms
-      int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
-      current_virtual,
-      peak_virtual,
-      shm_free );
-  
-    _last_sys_time = current_sys_time;
-    _last_cpu_time = current_cpu_time;
-    _total_blocks = block_number;
-
-    _all_data.total_measurement.set(_total_blocks,
-      (_last_sys_time - _init_sys_time).count()/1000,
-      int((_last_cpu_time - _init_cpu_time) * 1000 / CLOCKS_PER_SEC),
-      current_virtual,
-      peak_virtual,
-      shm_free);
-
-    // no sense to store data that will not be dumped to file
-    if( _all_data.measurements.empty() || is_file_available() )
-      _all_data.measurements.push_back( data );
-    else
-      _all_data.measurements[0] = data;
-
-    return _all_data.measurements.back();
-  }
-
-  const measurement& dump(bool finalMeasure, uint32_t block_number, get_stat_details_t get_stat_details)
-  {
-    validate_is_initialized();
-    if(finalMeasure)
-    {
-      /// Collect index data including dynamic container sizes, what can be time consuming
-      auto& idxData = _all_data.total_measurement.index_memory_details_cntr;
-
-      idxData.clear();
-      uint64_t shm_free = 0;
-
-      get_stat_details( idxData, shm_free );
-      _all_data.total_measurement.shm_free = shm_free / 1024;
-      _all_data.total_measurement.block_number = block_number;
-
-      std::sort(idxData.begin(), idxData.end(),
-        [](const index_memory_details_t& info1, const index_memory_details_t& info2) -> bool
-        {
-          return info1.total_index_mem_usage > info2.total_index_mem_usage;
-        }
-      );
-    }
-
-    if(is_file_available())
-    {
-      const fc::path path(_file_name);
-      try
-      {
-        fc::json::save_to_file(_all_data, path);
-      }
-      catch ( const fc::exception& except )
-      {
-        elog( "error writing benchmark data to file ${filename}: ${error}",
-            ( "filename", path )("error", except.to_detail_string() ) );
-      }
-    }
-
-    return _all_data.total_measurement;
-  }
+  const measurement& measure( uint32_t block_number, get_stat_details_t get_stat_details );
+  const measurement& dump( bool finalMeasure, uint32_t block_number, get_stat_details_t get_stat_details );
 
 private:
   bool read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual);
@@ -201,16 +140,21 @@ private:
 
 } } // hive::utilities
 
+FC_REFLECT( hive::utilities::benchmark_dumper::counter_t,
+        (count)(avg_time_ns) ) // note: total time (in nanoseconds) is not printed
+FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
+        (comment_accessed_from_index)(comment_accessed_from_archive)(comment_not_found)
+        (comment_cashout_processing)(comment_lib_processing) )
+
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)
-        (additional_container_allocation)(total_index_mem_usage)
-        )
+        (additional_container_allocation)(total_index_mem_usage) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::database_object_sizeof_t,
         (object_name)(object_size) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
-        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(index_memory_details_cntr) )
+        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(comment_archive_stats)(index_memory_details_cntr) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
         (database_object_sizeofs)(measurements)(total_measurement) )
