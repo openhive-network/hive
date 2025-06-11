@@ -13,9 +13,6 @@ variables:
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
-  # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-2
-  TEST_IMAGE_TAG: "@sha256:81f56a1820497ff3cb1342327b7242dc50270db04cbfdd8d6198af1bb0e910b3"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -36,6 +33,7 @@ include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
+  - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
 
 prepare_hived_image:
   extends: .prepare_hived_image
