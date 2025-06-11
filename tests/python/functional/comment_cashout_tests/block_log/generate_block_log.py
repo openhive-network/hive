@@ -156,7 +156,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
 
 def wait_for_comment_payment(node: tt.InitNode) -> None:
     cashout_time = tt.Time.parse(
-        node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]]).comments[0].cashout_time
+        node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]]).cashout_infos[0].cashout_info.cashout_time
     )
     tt.logger.info(f"Cashout time: {cashout_time}")
     tt.logger.info(f"Head block time: {node.get_head_block_time()}")

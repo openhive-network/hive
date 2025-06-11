@@ -420,9 +420,13 @@ class Comment:
         return create_transaction_with_any_operation(self.__wallet, [comment_options_operation], broadcast)
 
     def assert_options_are_applied(self) -> None:
-        comment_content = self.__node.api.database.find_comments(comments=[[self.author, self.__permlink]]).comments[0]
+        comment_content = (
+            self.__node.api.database.get_comment_pending_payouts(comments=[[self.author, self.__permlink]])
+            .cashout_infos[0]
+            .cashout_info
+        )
 
-        for key in ["max_accepted_payout", "percent_hbd", "allow_votes", "allow_curation_rewards", "beneficiaries"]:
+        for key in ["max_accepted_payout", "percent_hbd", "allow_votes", "allow_curation_rewards"]:
             if key in self.__comment_options:
                 if key != "max_accepted_payout":
                     assert self.__comment_options[key] == comment_content[key], f"{key} is not applied"

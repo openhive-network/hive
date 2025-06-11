@@ -77,7 +77,7 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     # The account voted for the comment before declining vote rights the rights. This is correct behavior.
-    assert node.api.database.find_comments(comments=[["creator-0", "comment-of-creator-0"]]).comments[0].net_votes == 1
+    assert node.api.database.get_comment_pending_payouts(comments=[["creator-0", "comment-of-creator-0"]]).cashout_infos[0].cashout_info.net_votes == 1
 
     assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
@@ -120,7 +120,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     assert old_voting_power_value > alice.vote_manabar.current_mana, "voting power wasn't decreasted after casting vote"
 
     node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    assert node.api.database.find_comments(comments=[["creator-0", "comment-of-creator-0"]]).comments[0].net_votes == 1
+    assert node.api.database.get_comment_pending_payouts(comments=[["creator-0", "comment-of-creator-0"]]).cashout_infos[0].cashout_info.net_votes == 1
 
     node.wait_for_irreversible_block()
     node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))

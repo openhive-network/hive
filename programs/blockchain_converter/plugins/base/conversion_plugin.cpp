@@ -226,9 +226,9 @@ namespace hive { namespace converter { namespace plugins {
       fc::to_variant(posts, accounts_v);
 
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "database_api.find_comments", "{\"comments\":" + fc::json::to_string(accounts_v) + '}' );
+      auto var_obj = post( local_output_con, using_url, "database_api.get_comment_pending_payouts", "{\"comments\":" + fc::json::to_string(accounts_v) + '}' );
 
-      return var_obj.contains("comments") && var_obj["comments"].is_array() && var_obj["comments"].get_array().size() == posts.size();
+      return var_obj.contains("cashout_infos") && var_obj["cashout_infos"].is_array() && var_obj["cashout_infos"].get_array().size() == posts.size();
     }
     FC_CAPTURE_AND_RETHROW( (posts) )
   }

@@ -12,7 +12,7 @@ def test_cumulative_payout_for_comments(prepare_environment, network_type) -> No
     networks_builder = prepare_environment
     api_node = networks_builder.networks[0].node("FullApiNode0")
     cashout_time = tt.Time.parse(
-        api_node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"]
+        api_node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]])["cashout_infos"][0]["cashout_info"]["cashout_time"]
     )
     tt.logger.info(f"Cashout time: {cashout_time}")
 
