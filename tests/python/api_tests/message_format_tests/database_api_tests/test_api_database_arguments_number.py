@@ -17,7 +17,6 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
         {"accounts": ["hive.fund", "initminer", "miners", "null", "steem.dao", "temp"]},
     ],
     ["find_collateralized_conversion_requests", {"account": "initminer"}],
-    ["find_comments", {"comments": [["hive.fund", "https://api.hive.blog"]]}],
     [
         "find_decline_voting_rights_requests",
         {"accounts": ["hive.fund", "initminer", "miners", "null", "steem.dao", "temp"]},

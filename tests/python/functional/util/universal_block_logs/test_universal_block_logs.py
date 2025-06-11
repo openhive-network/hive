@@ -39,9 +39,9 @@ def test_block_log_with_several_type_of_signatures(replayed_node: tt.InitNode, t
     assert get_vesting_price(node) > 1_799_900, "Too low price Hive to Vest"
     assert (
         len(
-            node.api.database.find_comments(
+            node.api.database.get_comment_pending_payouts(
                 comments=[[random_author, f"permlink-{random_author.split('-')[1]}"]]
-            ).comments
+            ).cashout_infos
         )
         == 1
     )
