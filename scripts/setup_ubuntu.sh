@@ -105,9 +105,16 @@ install_user_packages() {
 
 install_docker_cli() {
   DOCKER_VERSION=$1
+  BUILDX_VERSION="v0.24.0"
+
   curl -fsSLO "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"
   sudo tar xzvf "docker-${DOCKER_VERSION}.tgz" --strip 1 -C /usr/local/bin docker/docker
   rm "docker-${DOCKER_VERSION}.tgz"
+
+  curl -fsSLO "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+  sudo mkdir -p /usr/libexec/docker/cli-plugins
+  sudo mv "buildx-${BUILDX_VERSION}.linux-amd64" /usr/libexec/docker/cli-plugins/docker-buildx
+  sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
 }
 
 create_hived_admin_account() {
