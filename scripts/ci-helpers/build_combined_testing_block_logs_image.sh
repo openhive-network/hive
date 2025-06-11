@@ -16,6 +16,14 @@ if [ -z "$REGISTRY" ]; then
   exit 1
 fi
 
+IMAGE_OUTPUT="--load"
+for arg in "$@"; do
+  if [ "$arg" == "--push" ]; then
+    IMAGE_OUTPUT="--push"
+    break
+  fi
+done
+
 IMGNAME="testing-block-logs"
 FINAL_PREFIX="combined"
 FINAL_CHECKSUM=$(sha256sum "$ENV_FILE" | cut -d' ' -f1)
@@ -58,9 +66,14 @@ echo "Dockerfile generated:"
 cat Dockerfile
 
 echo "Building combined image: $FINAL_IMAGE"
-docker build -t "$FINAL_IMAGE" .
+docker buildx build \
+    --progress="plain" \
+    --tag "$FINAL_IMAGE" \
+    "${IMAGE_OUTPUT}" \
+    --file Dockerfile .
 
-echo "Pushing combined image: $FINAL_IMAGE"
-docker push "$FINAL_IMAGE"
-
-echo "Combined testing-block-logs image pushed: $FINAL_IMAGE"
+if [ "$IMAGE_OUTPUT" = "--push" ]; then
+  echo "Combined testing-block-logs image pushed: $FINAL_IMAGE"
+else
+  echo "Combined testing-block-logs image built locally: $FINAL_IMAGE"
+fi

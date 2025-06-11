@@ -14,6 +14,14 @@ if [ -z "$REGISTRY" ]; then
   exit 1
 fi
 
+IMAGE_OUTPUT="--load"
+for arg in "$@"; do
+  if [ "$arg" == "--push" ]; then
+    IMAGE_OUTPUT="--push"
+    break
+  fi
+done
+
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # shellcheck source=./docker_image_utils.sh
@@ -67,9 +75,16 @@ EXPOSE 80
 EOF
   cat Dockerfile
   echo "Build docker image containing testing_block_logs"
-  docker build -t "$img" .
-  docker push "$img"
-  echo "Created and push docker image with testing block logs: $img"
+  docker buildx build \
+      --progress="plain" \
+      --tag "$img" \
+      "${IMAGE_OUTPUT}" \
+      --file Dockerfile .
+  if [ "$IMAGE_OUTPUT" = "--push" ]; then
+    echo "Image pushed: $img"
+  else
+    echo "Image built locally: $img"
+  fi
 fi
 
 echo "$GENERATOR_NAME=$final_checksum" > "$TESTING_BLOCK_LOGS_DIR/checksums/${GENERATOR_NAME}.env"

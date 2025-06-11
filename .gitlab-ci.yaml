@@ -1240,7 +1240,7 @@ generate_testing_block_logs:
   script:
     - mkdir -p $TESTING_BLOCK_LOGS_DIR/checksums
     - echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" "$CI_REGISTRY_IMAGE" --password-stdin
-    - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH" "$GENERATOR_NAME" "$TESTING_BLOCK_LOGS_DIR" "$CI_REGISTRY_IMAGE"
+    - $CI_PROJECT_DIR/scripts/ci-helpers/testing_block_log_image_generator.sh "$GENERATOR_PATH" "$GENERATOR_NAME" "$TESTING_BLOCK_LOGS_DIR" "$CI_REGISTRY_IMAGE" --push
   parallel:
     matrix:
       - GENERATOR_NAME: empty_block_logs
@@ -1279,7 +1279,7 @@ build_combined_testing_block_logs_image:
     - echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" "$CI_REGISTRY_IMAGE" --password-stdin
     - echo "==== COMIBNED CHECKSUMS ===="
     - cat $CI_PROJECT_DIR/testing_block_logs/combined_checksums.env
-    - $CI_PROJECT_DIR/scripts/ci-helpers/build_combined_testing_block_logs_image.sh "$CI_PROJECT_DIR/testing_block_logs/combined_checksums.env" "$CI_REGISTRY_IMAGE"
+    - $CI_PROJECT_DIR/scripts/ci-helpers/build_combined_testing_block_logs_image.sh "$CI_PROJECT_DIR/testing_block_logs/combined_checksums.env" "$CI_REGISTRY_IMAGE" --push
   artifacts:
     reports:
       dotenv: testing_block_log_latest_version.env
