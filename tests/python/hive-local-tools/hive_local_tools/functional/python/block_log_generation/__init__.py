@@ -17,4 +17,13 @@ def parse_block_log_generator_args():
         type=Path,
         help="Optional path to the input block log directory. Required only in certain cases.",
     )
+    parser.add_argument(
+        "--universal-block-log-type",
+        default=None,
+        choices=["open_sign", "multi_sign", "single_sign", "maximum_sign"],
+        help=(
+            "Type of universal block log to generate. Available options: 'open_sign', 'multi_sign', 'single_sign',"
+            " 'maximum_sign'."
+        ),
+    )
     return parser.parse_args()
