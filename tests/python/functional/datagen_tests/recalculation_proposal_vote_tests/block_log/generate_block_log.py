@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import os
 from datetime import datetime
 from pathlib import Path
@@ -8,8 +7,9 @@ from typing import Final
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
-from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional import __generate_and_broadcast_transaction
+from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets.hbd import AssetHbdHF26
 from schemas.fields.assets.hive import AssetHiveHF26
@@ -326,7 +326,5 @@ def __vest_account(voter: str) -> TransferToVestingOperation:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     prepare_block_log_with_many_vote_for_proposals(args.output_block_log_directory)

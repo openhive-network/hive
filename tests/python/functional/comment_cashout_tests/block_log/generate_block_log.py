@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import os
 from pathlib import Path
 from typing import Final
@@ -9,6 +8,7 @@ import shared_tools.networks_architecture as networks
 import test_tools as tt
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHiveHF26
 from schemas.fields.basic import AccountName, PublicKey
@@ -248,9 +248,7 @@ def delegate_rc_to_payers(node: tt.InitNode, wallet: tt.Wallet, voters: list[str
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     # Step 1 generate base network with witnesses
     os.environ["GENERATE_NEW_BLOCK_LOG"] = "1"
     prepare_blocklog_network(args.output_block_log_directory)

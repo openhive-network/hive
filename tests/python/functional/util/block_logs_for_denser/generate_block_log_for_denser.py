@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import datetime
 from pathlib import Path
 
@@ -14,15 +13,11 @@ from hive_local_tools.constants import (
     MIRRORNET_SKELETON_KEY,
 )
 from hive_local_tools.functional import wait_for_current_hardfork
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
 )
 from schemas.operations.custom_json_operation import CustomJsonOperation
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--input-block-log-directory", type=Path)
-parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-args = parser.parse_args()
 
 
 def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
@@ -293,4 +288,5 @@ class Community:
 
 
 if __name__ == "__main__":
+    args = parse_block_log_generator_args()
     generate_blocklog_for_denser(args.input_block_log_directory)

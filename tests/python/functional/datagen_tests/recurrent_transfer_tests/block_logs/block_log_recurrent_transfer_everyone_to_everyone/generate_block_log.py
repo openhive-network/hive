@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import argparse
 import math
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
-from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 import test_tools as tt
+from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.queen_utils import (
     __create_account,
@@ -188,7 +188,5 @@ def __get_head_block_time(node: tt.AnyNode) -> datetime:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     prepare_block_log(args.output_block_log_directory)

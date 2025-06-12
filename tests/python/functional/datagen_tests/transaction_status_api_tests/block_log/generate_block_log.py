@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 
 import test_tools as tt
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 
 
 def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
@@ -31,7 +31,5 @@ def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     prepare_block_log_with_witnesses(args.output_block_log_directory)

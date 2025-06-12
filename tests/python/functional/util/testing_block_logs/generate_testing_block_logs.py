@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 
 from loguru import logger
 
 import test_tools as tt
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 
 
 def generate_and_copy_empty_log(
@@ -46,8 +46,6 @@ def prepare_empty_logs(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     prepare_empty_logs(args.output_block_log_directory)
     # TODO: Add generation of other logs here.
