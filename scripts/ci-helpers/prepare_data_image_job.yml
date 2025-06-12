@@ -7,7 +7,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: b87d23ff08491d5006db9eddbec1520190266c0d # develop
+    ref: 4a5dba49a241e68d2a1d0fbce242f3e3b966ee81 # develop
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
