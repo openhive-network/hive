@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import os
 from pathlib import Path
 from typing import Final
@@ -8,6 +7,7 @@ from typing import Final
 import test_tools as tt
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHiveHF26
 
@@ -121,7 +121,5 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
+    args = parse_block_log_generator_args()
     prepare_block_log_with_many_to_one_recurrent_transfers(args.output_block_log_directory)
