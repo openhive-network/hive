@@ -1,6 +1,5 @@
 from __future__ import annotations
-from schemas.policies import DisableSwapTypes, set_policies
-import argparse
+
 import json
 import os
 import random
@@ -13,6 +12,7 @@ from loguru import logger
 import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 from hive_local_tools.functional.python import generate_block
+from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.operation import get_vesting_price
 from schemas.fields.basic import AccountName
@@ -23,6 +23,7 @@ from schemas.operations.comment_operation import CommentOperation
 from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperation
 from schemas.operations.transfer_operation import TransferOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
+from schemas.policies import DisableSwapTypes, set_policies
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
@@ -54,7 +55,6 @@ set_policies(DisableSwapTypes(disabled=True))
 def prepare_block_log(
     output_block_log_directory: Path,
     signature_type: Literal["open_sign", "multi_sign", "single_sign", "maximum_sign"],
-    activate_current_hf: int,
 ) -> None:
     """
     This script generate block_log with specific conditions:
@@ -70,8 +70,6 @@ def prepare_block_log(
       10) wait for activate current hardfork,
       11) restart node unlock `delayed votes` after vesting delegation.
     """
-    block_log_directory = output_block_log_directory / f"block_log_{signature_type}"
-
     logger.disable("helpy")
     logger.disable("test_tools")
 
@@ -83,17 +81,18 @@ def prepare_block_log(
         if witness != "initminer":
             node.config.witness.append(witness)
             node.config.private_key.append(witness_key)
-        save_keys_to_file(name=witness, witness_key=witness_key, file_path=block_log_directory / "witnesses_keys.txt")
+        save_keys_to_file(name=witness, witness_key=witness_key, file_path=output_block_log_directory / "witnesses_keys.txt")
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
+    activate_current_hf = {"open_sign": 450, "single_sign": 570, "multi_sign": 1200, "maximum_sign": 100}
     five_days_in_blocks = 5 * 24 * 60 * 60 // 3
 
     block_log_config = tt.AlternateChainSpecs(
         genesis_time=int(tt.Time.now(serialize=False).timestamp()),
         hardfork_schedule=[
             tt.HardforkSchedule(hardfork=18, block_num=0),
-            tt.HardforkSchedule(hardfork=current_hardfork_number, block_num=activate_current_hf + five_days_in_blocks),
+            tt.HardforkSchedule(hardfork=current_hardfork_number, block_num=activate_current_hf[signature_type] + five_days_in_blocks),
         ],
         init_supply=INIT_SUPPLY,
         hbd_init_supply=HBD_INIT_SUPPLY,
@@ -101,7 +100,7 @@ def prepare_block_log(
         init_witnesses=WITNESSES,
         min_root_comment_interval=3,
     )
-    block_log_config.export_to_file(block_log_directory)
+    block_log_config.export_to_file(output_block_log_directory)
 
     node.run(alternate_chain_specs=block_log_config, arguments=[f"--chain-id={CHAIN_ID}"])
     tt.logger.info(f"Price Hive/Vest: {get_vesting_price(node)}")
@@ -152,7 +151,7 @@ def prepare_block_log(
         generate_block(node, 1)
         tt.logger.info(f"Finish creating signers! @Block: {node.get_last_block_number()}")
 
-    authority = generate_authority(wallet, signature_type, output_directory=block_log_directory)
+    authority = generate_authority(wallet, signature_type, output_directory=output_block_log_directory)
 
     # create_accounts, fund hbd and hive
     tt.logger.info(f"Start creating accounts! @Block: {node.get_last_block_number()}")
@@ -242,11 +241,11 @@ def prepare_block_log(
     generate_block(node, 250)
 
     node.close()
-    node.block_log.copy_to(block_log_directory, artifacts="optional")
-    timestamp = tt.BlockLog(block_log_directory, "auto").get_head_block_time()
-    with open(block_log_directory.joinpath("timestamp"), "w", encoding="utf-8") as file:
+    node.block_log.copy_to(output_block_log_directory, artifacts="optional")
+    timestamp = tt.BlockLog(output_block_log_directory, "auto").get_head_block_time()
+    with open(output_block_log_directory.joinpath("timestamp"), "w", encoding="utf-8") as file:
         file.write(timestamp.isoformat(timespec="seconds")[:19])
-    tt.logger.info(f"Save block log file to {block_log_directory}")
+    tt.logger.info(f"Save block log file to {output_block_log_directory}")
 
 
 def __invest(account: str, _) -> tuple[TransferToVestingOperation]:
@@ -479,10 +478,5 @@ def save_keys_to_file(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-block-log-directory", type=Path, default=Path(__file__).parent)
-    args = parser.parse_args()
-    prepare_block_log(args.output_block_log_directory, "open_sign", 450)
-    prepare_block_log(args.output_block_log_directory, "single_sign", 570)
-    prepare_block_log(args.output_block_log_directory, "multi_sign", 1200)
-    prepare_block_log(args.output_block_log_directory, "maximum_sign", 100)
+    args = parse_block_log_generator_args()
+    prepare_block_log(args.output_block_log_directory, args.universal_block_log_type)
