@@ -82,8 +82,10 @@ BOOST_AUTO_TEST_CASE( basic_validation )
     request = "{\"jsonrpc\": \"2.0\", \"method_\": \"call\", \"params\": [], \"id\": 1}";
     make_request( request, JSON_RPC_INVALID_REQUEST );
 
+    const char* message = "Assert Exception:v.size() == 2: method specification invalid. Should be api.method";
+    const char* assertion_hash = "14981283872383296705";
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"xyz\", \"params\": [], \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": 123, \"params\": [], \"id\": 1}";
     make_request( request, JSON_RPC_INVALID_REQUEST );
@@ -203,24 +205,32 @@ BOOST_AUTO_TEST_CASE( misc_validation )
   try
   {
     std::string request;
+    const char* message = nullptr;
+    const char* assertion_hash = nullptr;
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"a.b.c\", \"params\": [\"a\",\"b\", {} ], \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    message = "Assert Exception:v.size() == 2: method specification invalid. Should be api.method";
+    assertion_hash = "14981283872383296705";
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"a..c\", \"params\": [\"a\",\"b\", {} ], \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"fake_api.fake_method\", \"params\": [\"a\",\"b\", {} ], \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    message = "Assert Exception:api_itr != data._registered_apis.end(): Could not find API fake_api";
+    assertion_hash = "13750519470524334703";
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"call\", \"params\": [\"fake_api\",\"fake_method\", {} ], \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"call\", \"params\": {}, \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    message = "Assert Exception:v.size() == 2 || v.size() == 3: params should be {\"api\", \"method\", \"args\"";
+    assertion_hash = "8186778060031572570";
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"call\", \"params\": { \"fake_api\":\"database_api\", \"fake_method\":\"get_dynamic_global_properties\", \"fake_args\":{} }, \"id\": 1}";
-    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR );
+    make_request( request, JSON_RPC_PARSE_PARAMS_ERROR, false, true, message, assertion_hash );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -282,36 +292,40 @@ BOOST_AUTO_TEST_CASE( database_api_negative )
   {
     std::string request;
     const char* message = nullptr;
+    const char* assertion_hash = nullptr;
 
     // empty list of accounts to find
     message = "Assert Exception:0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT: list of accounts to find not filled or too big";
+    assertion_hash = "16016890266862695388";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\", {}], \"id\":15}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\"], \"id\":15}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"params\":{}, \"id\":16}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"id\":18}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     // limit cannot be (default) 0
     message = "Assert Exception:0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT: limit not set or too big";
+    assertion_hash = "17514538304006355483";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{}, \"id\":10}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":0}, \"id\":10}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
 
     // order not set
     message = "Assert Exception:false: Unknown or unsupported sort order 'not_set'";
+    assertion_hash = "3372626016653902757";
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10}, \"id\":10}";
-    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
   }
   FC_LOG_AND_RETHROW()
 }

@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when owner key and active key are present. Now the transaction passes." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 3*HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, {active_key, alice_private_key}, database::skip_transaction_dupe_check ),
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, {active_key, alice_private_key} ),
       "util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(), account_auth.previous_owner_update, account_auth.last_owner_update ) && \"update\"" );
 
     validate_database();
@@ -8350,7 +8350,7 @@ BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
     generate_block();
 
     HIVE_REQUIRE_EXCEPTION( db->get_comment( "unknown", string( "test" ) ), "_account != nullptr && \"By name\"", fc::exception );
-    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required || _external_comment", fc::exception );
+    HIVE_REQUIRE_EXCEPTION( db->get_comment( "alice", string( "unknown" ) ), "!comment_is_required", fc::exception );
   }
   FC_LOG_AND_RETHROW()
 }
