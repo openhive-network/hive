@@ -36,7 +36,7 @@ class rocksdb_comment_archive : public comments_handler
       appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown );
     virtual ~rocksdb_comment_archive();
 
-    void on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
+    void on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
     void on_irreversible_block( uint32_t block_num ) override;
 
     comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const override;

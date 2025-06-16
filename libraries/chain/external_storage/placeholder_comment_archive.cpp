@@ -6,7 +6,7 @@ namespace hive { namespace chain {
 
 hive::utilities::benchmark_dumper::comment_archive_details_t comments_handler::stats;
 
-void placeholder_comment_archive::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
+void placeholder_comment_archive::on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
   ++stats.comment_cashout_processing.count;
   // just count calls

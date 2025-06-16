@@ -663,12 +663,13 @@ void database::remove_old_cashouts()
   const auto& idx = get_index< comment_cashout_index, by_cashout_time >();
   auto itr = idx.find( fc::time_point_sec::maximum() );
 
+  auto block_num = head_block_num();
   while( itr != idx.end() )
   {
     const auto& current = *itr;
     const auto& comment = get_comment( current );
     ++itr;
-    get_comments_handler().on_cashout( comment, current );
+    get_comments_handler().on_cashout( block_num, comment, current );
     remove( current );
   }
 }
@@ -2653,6 +2654,7 @@ void database::process_comment_cashout()
     * against a reward fund state that is snapshotted before all payouts in the block.
     */
   int count = 0;
+  auto block_num = head_block_num();
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
   while( _current != cidx.end() && _current->get_cashout_time() <= _now )
@@ -2670,7 +2672,7 @@ void database::process_comment_cashout()
 
       if( has_hardfork( HIVE_HARDFORK_0_19 ) )
       {
-        get_comments_handler().on_cashout( _comment, *_current );
+        get_comments_handler().on_cashout( block_num, _comment, *_current );
         remove( *_current );
       }
     }
