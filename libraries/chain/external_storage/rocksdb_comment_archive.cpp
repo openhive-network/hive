@@ -57,7 +57,7 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
     o.block_number    = _block_num;
   });
 
-  stats.comment_cashout_processing.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  stats.comment_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.comment_cashout_processing.count;
 }
 
@@ -141,7 +141,7 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
   if( _do_flush )
     provider->flush();
 
-  stats.comment_lib_processing.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  stats.comment_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.comment_lib_processing.count += count;
 }
 
@@ -153,7 +153,7 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
   const auto* _comment = db.find< comment_object, by_permlink >( _hash );
   if( _comment )
   {
-    stats.comment_accessed_from_index.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    stats.comment_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++stats.comment_accessed_from_index.count;
     return comment( _comment );
   }
@@ -163,12 +163,12 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
     uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     if( _external_comment )
     {
-      stats.comment_accessed_from_archive.time += time;
+      stats.comment_accessed_from_archive.time_ns += time;
       ++stats.comment_accessed_from_archive.count;
     }
     else
     {
-      stats.comment_not_found.time += time;
+      stats.comment_not_found.time_ns += time;
       ++stats.comment_not_found.count;
       FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
     }

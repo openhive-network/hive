@@ -5,20 +5,19 @@ namespace hive { namespace utilities {
 
 #define PROC_STATUS_LINE_LENGTH 1028
 
-void diff_and_average( benchmark_dumper::counter_t& current, const benchmark_dumper::counter_t& previous )
+void operator -= ( benchmark_dumper::counter_t& current, const benchmark_dumper::counter_t& previous )
 {
   current.count -= previous.count;
-  current.time -= previous.time;
-  current.avg_time_ns = current.time / std::max( current.count, 1lu );
+  current.time_ns -= previous.time_ns;
 }
 
-void diff_and_average( benchmark_dumper::comment_archive_details_t& current, const benchmark_dumper::comment_archive_details_t& previous )
+void operator -= ( benchmark_dumper::comment_archive_details_t& current, const benchmark_dumper::comment_archive_details_t& previous )
 {
-  diff_and_average( current.comment_accessed_from_index, previous.comment_accessed_from_index );
-  diff_and_average( current.comment_accessed_from_archive, previous.comment_accessed_from_archive );
-  diff_and_average( current.comment_not_found, previous.comment_not_found );
-  diff_and_average( current.comment_cashout_processing, previous.comment_cashout_processing );
-  diff_and_average( current.comment_lib_processing, previous.comment_lib_processing );
+  current.comment_accessed_from_index -= previous.comment_accessed_from_index;
+  current.comment_accessed_from_archive -= previous.comment_accessed_from_archive;
+  current.comment_not_found -= previous.comment_not_found;
+  current.comment_cashout_processing -= previous.comment_cashout_processing;
+  current.comment_lib_processing -= previous.comment_lib_processing;
 }
 
 const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )
@@ -42,7 +41,7 @@ const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_n
     peak_virtual,
     shm_free );
   auto current_comment_archive_stats = data.comment_archive_stats;
-  diff_and_average( data.comment_archive_stats, _all_data.total_measurement.comment_archive_stats );
+  data.comment_archive_stats -= _all_data.total_measurement.comment_archive_stats;
 
   _last_sys_time = current_sys_time;
   _last_cpu_time = current_cpu_time;
@@ -80,7 +79,6 @@ const benchmark_dumper::measurement& benchmark_dumper::dump( bool finalMeasure, 
     get_stat_details( idxData, caData, shm_free );
     _all_data.total_measurement.shm_free = shm_free / 1024;
     _all_data.total_measurement.block_number = block_number;
-    diff_and_average( caData, comment_archive_details_t() );
 
     std::sort( idxData.begin(), idxData.end(),
       []( const index_memory_details_t& info1, const index_memory_details_t& info2 ) -> bool
