@@ -199,5 +199,184 @@ BOOST_AUTO_TEST_CASE( nested_comments )
   FC_LOG_AND_RETHROW()
 }
 
+void fork_reverts_cashout_scanario( const std::string& comment_archive_type, bool migrate, bool undoable_migration )
+{
+  configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
+  autoscope( []() { configuration_data.reset_cashout_values(); } );
+
+  hived_fixture test;
+  test.postponed_init( {
+    hived_fixture::config_line_t( { "comment-archive", { comment_archive_type } } ),
+    hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } )
+  } );
+  test.generate_block();
+  test.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+  test.generate_block();
+  test.db->_log_hardforks = true;
+
+  test.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
+
+  // Fill up the rest of miners
+  for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
+  {
+    test.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_pub_key );
+    test.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
+    test.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_priv_key, "foo.bar", test.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
+  }
+  // disable OBI to allow forking
+  test.witness_plugin->disable_fast_confirm();
+
+  // create 'alice'
+  fc::ecc::private_key alice_private_key = test.generate_private_key( "alice" );
+  fc::ecc::private_key alice_post_key = test.generate_private_key( "alice_post" );
+  test.account_create( "alice", alice_private_key.get_public_key(), alice_post_key.get_public_key() );
+
+  test.generate_block();
+
+  const auto& comment_idx = test.db->get_index< comment_index, by_id >();
+
+  BOOST_TEST_MESSAGE( "Testing scenario where fork reverts cashout event" );
+
+  hive::chain::comment comment;
+  hive::chain::comment_id_type comment_id;
+  fc::time_point_sec cashout_time;
+  uint32_t cashout_block_num = 0;
+  auto get_comment = [&]( const std::string& author, const std::string& permlink )
+  {
+    comment = test.get_comment( author, permlink );
+    comment_id = comment.get_id();
+    cashout_time = test.db->find_comment_cashout( *comment.get() )->get_cashout_time();
+  };
+
+  // create comment
+  test.post_comment( "alice", "test1", "test", "testtest", "test", alice_post_key );
+  test.generate_block();
+  get_comment( "alice", "test1" );
+
+  // wait for comment to be near cashout
+  test.generate_blocks( cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
+
+  // pass cashout - check with vote that comment exists
+  test.generate_block();
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< comment_payout_update_operation >::value );
+  cashout_block_num = test.db->head_block_num();
+  test.vote( "alice", "test1", "alice", 100, alice_post_key );
+
+  // pop block that processed cashout
+  test.db->pop_block();
+
+  // check with another vote that comment exists
+  test.vote( "alice", "test1", "alice", 200, alice_post_key );
+
+  // pass cashout again (like in normal fork, last block is considered missing) - check with third vote that comment exists
+  test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< comment_payout_update_operation >::value );
+  test.generate_block();
+  test.vote( "alice", "test1", "alice", 300, alice_post_key );
+  test.generate_block();
+
+  BOOST_TEST_MESSAGE( "Testing scenario where fork reverts LIB change for block that contained cashout event" );
+
+  // check that comment still exists in main index
+  BOOST_CHECK( comment_idx.find( comment_id ) != comment_idx.end() );
+
+  // run until block with cashout becomes irreversible
+  test.generate_until_irreversible_block( cashout_block_num );
+  // comment should migrate to archive (according to 'migrate' test flag - NONE has no migration)
+  // ABW: note that this test assumes comments are migrated immediately - for RocksDB version, set volatile_objects_limit to 0 at the start of test once we can control that value)
+  BOOST_CHECK_EQUAL( comment_idx.find( comment_id ) == comment_idx.end(), migrate );
+
+  // pop block that processed LIB change (the LIB itself won't revert, but removal of comment from main index will, unless special measures are taken, like in MEMORY)
+  test.db->pop_block();
+  BOOST_CHECK_EQUAL( comment_idx.find( comment_id ) != comment_idx.end(), !migrate || undoable_migration );
+
+  // reapply the block (popped block is missing)
+  test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
+  // because LIB itself did not revert, above block production did not execute LIB event, we need another block
+  test.generate_block();
+  // comment should migrate to archive again (be removed from main index again), unless of course there is no migration at all (or migration is not undoable)
+  BOOST_CHECK_EQUAL( comment_idx.find( comment_id ) == comment_idx.end(), migrate );
+
+  BOOST_TEST_MESSAGE( "Testing scenario where fork reverts cashout event and comment is deleted before cashout is reapplied" );
+
+  // create comment
+  test.post_comment( "alice", "test2", "test", "to be deleted", "test", alice_post_key );
+  test.generate_block();
+  get_comment( "alice", "test2" );
+
+  // wait for comment to be near cashout
+  test.generate_blocks( cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
+
+  // pass cashout - check with downvote that comment exists (since we don't want to block comment deletion we need to use downvote, since the vote will be reapplied after pop)
+  test.generate_block();
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< comment_payout_update_operation >::value );
+  cashout_block_num = test.db->head_block_num();
+  test.vote( "alice", "test2", "alice", -100, alice_post_key );
+
+  // pop block that processed cashout
+  test.db->pop_block();
+
+  // check with another downvote that comment exists
+  test.vote( "alice", "test2", "alice", -200, alice_post_key );
+
+  // delete comment so cashout won't happen again
+  test.delete_comment( "alice", "test2", alice_post_key );
+
+  // pass cashout point again (last block is considered missing), but this time cashout should not happen - check with third vote that comment is not there
+  test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< producer_reward_operation >::value );
+  test.generate_block();
+  HIVE_REQUIRE_ASSERT( test.vote( "alice", "test2", "alice", -300, alice_post_key ), "!comment_is_required" );
+  test.generate_block();
+
+  BOOST_TEST_MESSAGE( "Testing scenario where fork reverts cashout event and comment is deleted before cashout is reapplied but new comment is created in its place" );
+
+  // create comment
+  test.post_comment( "alice", "test3", "test", "to be deleted", "test", alice_post_key );
+  test.generate_block();
+  get_comment( "alice", "test3" );
+
+  // wait for comment to be near cashout
+  test.generate_blocks( cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
+
+  // pass cashout - check with downvote that comment exists
+  test.generate_block();
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< comment_payout_update_operation >::value );
+  cashout_block_num = test.db->head_block_num();
+  test.vote( "alice", "test3", "alice", -100, alice_post_key );
+
+  // pop block that processed cashout
+  test.db->pop_block();
+
+  // check with another downvote that comment exists
+  test.vote( "alice", "test3", "alice", -200, alice_post_key );
+
+  // delete comment so cashout won't happen again
+  test.delete_comment( "alice", "test3", alice_post_key );
+
+  // create new comment so it reuses the same author/permlink (that is still new comment, so it can't be archived)
+  test.post_comment( "alice", "test3", "test", "replacement comment", "test", alice_post_key );
+  auto old_id = comment_id;
+  auto old_cashout_time = cashout_time;
+  get_comment( "alice", "test3" );
+  BOOST_CHECK_LT( old_id, comment_id ); // ABW: that is generally true, except when it wraps
+  BOOST_CHECK( old_cashout_time < cashout_time );
+
+  // pass cashout point again (last block is considered missing), but this time cashout should not happen (cashout of replacement comment is in the future)
+  test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
+  BOOST_CHECK_EQUAL( test.get_last_operations(1)[0].which(), operation::tag< producer_reward_operation >::value );
+  test.generate_block();
+  // we've reused author/permlink, so we can't use vote to see if old version was removed, but new version should not have been archived
+  BOOST_CHECK( comment_idx.find( comment_id ) != comment_idx.end() );
+  test.generate_block();
+};
+
+BOOST_FIXTURE_TEST_CASE( fork_reverts_cashout, empty_fixture )
+{
+  fork_reverts_cashout_scanario( "NONE", false, false );
+  fork_reverts_cashout_scanario( "MEMORY", true, false );
+  fork_reverts_cashout_scanario( "ROCKSDB", true, true );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
