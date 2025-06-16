@@ -25,13 +25,13 @@ comment placeholder_comment_archive::get_comment( const account_id_type& author,
   const auto* _comment = db.find< comment_object, by_permlink >( _hash );
   if( _comment )
   {
-    stats.comment_accessed_from_index.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    stats.comment_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++stats.comment_accessed_from_index.count;
     return comment( _comment );
   }
   else
   {
-    stats.comment_not_found.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    stats.comment_not_found.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++stats.comment_not_found.count;
     FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
     return comment();

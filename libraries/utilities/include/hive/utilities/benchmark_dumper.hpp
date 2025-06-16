@@ -23,8 +23,7 @@ public:
   struct counter_t
   {
     uint64_t count = 0;
-    uint64_t time = 0; // cumulative in ns
-    uint64_t avg_time_ns = 0; // only updated on write to report
+    uint64_t time_ns = 0; // cumulative time in ns
   };
   struct comment_archive_details_t
   {
@@ -127,7 +126,7 @@ private:
 } } // hive::utilities
 
 FC_REFLECT( hive::utilities::benchmark_dumper::counter_t,
-        (count)(avg_time_ns) ) // note: total time (in nanoseconds) is not printed
+        (count)(time_ns) )
 FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
         (comment_accessed_from_index)(comment_accessed_from_archive)(comment_not_found)
         (comment_cashout_processing)(comment_lib_processing) )
