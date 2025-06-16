@@ -17,7 +17,7 @@ class comments_handler : public external_storage_snapshot
 
     using ptr = std::shared_ptr<comments_handler>;
 
-    virtual void on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout ) = 0;
+    virtual void on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout ) = 0;
     virtual void on_irreversible_block( uint32_t block_num ) = 0;
 
     virtual comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const = 0;
