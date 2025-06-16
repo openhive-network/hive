@@ -31,7 +31,7 @@ rocksdb_comment_archive::~rocksdb_comment_archive()
   close();
 }
 
-void rocksdb_comment_archive::on_cashout( const comment_object& _comment, const comment_cashout_object& _comment_cashout )
+void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -41,8 +41,8 @@ void rocksdb_comment_archive::on_cashout( const comment_object& _comment, const 
 
 #ifdef DBG_INFO
   auto& _account = db.get_account( _comment_cashout.get_author_id() );
-  ilog( "head: ${head} lib: ${lib} Store a comment with hash: ${hash}, with author/permlink: ${author}/${permlink}",
-    ( "head", db.head_block_num() )( "lib", db.get_last_irreversible_block_num() )
+  ilog( "head: ${_block_num} lib: ${lib} Store a comment with hash: ${hash}, with author/permlink: ${author}/${permlink}",
+    ( _block_num )( "lib", db.get_last_irreversible_block_num() )
     ( "hash", _comment.get_author_and_permlink_hash() )
     ( "author", _account.get_name() )( "permlink", _comment_cashout.get_permlink() ) );
 #endif
@@ -54,7 +54,7 @@ void rocksdb_comment_archive::on_cashout( const comment_object& _comment, const 
     o.depth           = _comment.get_depth();
     o.set_author_and_permlink_hash( _comment.get_author_and_permlink_hash() );
 
-    o.block_number    = db.head_block_num();
+    o.block_number    = _block_num;
   });
 
   stats.comment_cashout_processing.time += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
