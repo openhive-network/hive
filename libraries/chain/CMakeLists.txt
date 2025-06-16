@@ -82,6 +82,7 @@ add_library( hive_chain
              rc/resource_sizes.cpp
              rc/resource_user.cpp
 
+             external_storage/memory_comment_archive.cpp
              external_storage/placeholder_comment_archive.cpp
              external_storage/rocksdb_storage_provider.cpp
              external_storage/rocksdb_comment_storage_provider.cpp
