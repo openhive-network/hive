@@ -22,7 +22,7 @@ class state_snapshot_provider;
 
 namespace detail
 { 
-  class chain_plugin_impl;   
+  class chain_plugin_impl;
   class chain_plugin_impl_deleter
   {
     public:
