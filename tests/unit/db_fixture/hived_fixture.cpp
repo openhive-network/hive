@@ -280,7 +280,7 @@ void check_id_equal( const fc::variant& id_a, const fc::variant& id_b )
 }
 
 void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail,
-  fc::optional< fc::variant > id, const char* message )
+  fc::optional< fc::variant > id, const char* message, const char* assert_hash /*= nullptr*/ )
 {
   fc::variant_object error;
   int64_t answer_code;
@@ -306,6 +306,14 @@ void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code
       BOOST_TEST_MESSAGE( error["message"].as_string() );
     if( message != nullptr )
       BOOST_CHECK_EQUAL( error[ "message" ].as_string(), message );
+    if( assert_hash != nullptr )
+    {
+      BOOST_REQUIRE( error.contains( "data" ) );
+      BOOST_REQUIRE( error["data"].is_object() );
+      fc::variant_object data = error["data"].get_object();
+      BOOST_REQUIRE( data.contains( "assert_hash" ) );
+      BOOST_CHECK_EQUAL( data["assert_hash"].as_string(), assert_hash );
+    }
   }
   else
   {
@@ -340,7 +348,7 @@ void json_rpc_database_fixture::make_array_request( std::string& request, int64_
 }
 
 fc::variant json_rpc_database_fixture::make_request( std::string& request, int64_t code, bool is_warning, bool is_fail,
-  const char* message )
+  const char* message, const char* assert_hash /*= nullptr*/ )
 {
   fc::variant answer = get_answer( request );
   BOOST_REQUIRE( answer.is_object() );
@@ -352,7 +360,7 @@ fc::variant json_rpc_database_fixture::make_request( std::string& request, int64
   }
   catch( ... ) {}
 
-  review_answer( answer, code, is_warning, is_fail, id, message );
+  review_answer( answer, code, is_warning, is_fail, id, message, assert_hash );
 
   return answer;
 }
