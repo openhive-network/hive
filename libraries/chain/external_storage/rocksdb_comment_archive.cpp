@@ -188,16 +188,19 @@ void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_su
 
 void rocksdb_comment_archive::open()
 {
+  // volatile_comment_index is registered in database, so it is handled automatically
   provider->init( destroy_database_on_startup );
 }
 
 void rocksdb_comment_archive::close()
 {
+  // volatile_comment_index is registered in database, so it is handled automatically
   provider->shutdownDb( destroy_database_on_shutdown );
 }
 
 void rocksdb_comment_archive::wipe()
 {
+  // volatile_comment_index is registered in database, so it is handled automatically
   provider->wipeDb();
 }
 

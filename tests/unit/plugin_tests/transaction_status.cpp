@@ -17,10 +17,6 @@ using namespace hive::protocol;
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR BOOST_PP_STRINGIZE( TRANSACTION_STATUS_TEST_BLOCK_DEPTH )
 #define TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET 1300
 
-struct empty_fixture
-{
-};
-
 using trx_status = hive::plugins::transaction_status::transaction_status;
 
 BOOST_FIXTURE_TEST_SUITE( transaction_status, empty_fixture );

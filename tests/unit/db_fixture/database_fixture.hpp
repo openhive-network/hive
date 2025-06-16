@@ -238,6 +238,8 @@ autoscope set_mainnet_feed_values( bool auto_reset = true );
 fc::path common_init( appbase::application& app, bool remove_db_files, const fc::path& data_dir,
   const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
 
+struct empty_fixture {};
+
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins
@@ -442,6 +444,8 @@ struct database_fixture {
   asset get_vesting( const string& account_name )const;
   asset get_vest_rewards( const string& account_name )const;
   asset get_vest_rewards_as_hive( const string& account_name )const;
+
+  comment get_comment( const string& author, const string& permlink )const;
 
 private:
 

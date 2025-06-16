@@ -1008,6 +1008,11 @@ asset database_fixture::get_vest_rewards_as_hive( const string& account_name )co
   return db->get_account( account_name ).get_vest_rewards_as_hive();
 }
 
+comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const
+{
+  return db->get_comment( author, permlink );
+}
+
 void database_fixture::post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body,
   const std::string& _parent_author, const std::string& _parent_permlink, const fc::ecc::private_key& _post_key )
 {
