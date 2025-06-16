@@ -10,6 +10,8 @@
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
+#include <hive/chain/external_storage/memory_comment_archive.hpp>
+#include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
@@ -213,6 +215,12 @@ class chain_plugin_impl
     uint64_t                         max_mempool_size = 0;
     bool                             destroyDatabaseOnStartup = false;
     bool                             destroyDatabaseOnShutdown = false;
+
+    enum class comment_archive_type
+    {
+      NONE, MEMORY, ROCKSDB
+    };
+    comment_archive_type             comment_archive_choice = comment_archive_type::ROCKSDB;
 
     uint32_t allow_future_time = 5;
 
@@ -829,9 +837,25 @@ void chain_plugin_impl::initial_settings()
   db.set_block_writer( default_block_writer.get() );
 
   ilog( "Preparing comment archive..." );
-  //ABW: TODO: add implementation choice here
-  auto comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-    comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
+  comments_handler::ptr comment_archive;
+  switch( comment_archive_choice )
+  {
+  case comment_archive_type::NONE:
+    ilog( "'NONE' - comments won't be archived" );
+    comment_archive = std::make_shared<placeholder_comment_archive>( db );
+    break;
+  case comment_archive_type::MEMORY:
+    ilog( "'MEMORY' - comments will be archived in separate index in memory" );
+    comment_archive = std::make_shared<memory_comment_archive>( db );
+    break;
+  case comment_archive_type::ROCKSDB:
+  default:
+    ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}",
+      ( "csp", comments_storage_path.c_str() ) );
+    comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
+      comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
+    break;
+  }
   db.set_comments_handler( comment_archive );
 
   if( statsd_on_replay )
@@ -1504,6 +1528,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
       ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
+#ifdef USE_ALTERNATE_CHAIN_ID
+      ("comment-archive", bpo::value<string>()->default_value("ROCKSDB"), "Type of comment archive to use: NONE means comments won't be archived, MEMORY keeps archived comments in memory, ROCKSDB stores them in RocksDB. Default: ROCKSDB")
+#endif
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1564,6 +1591,18 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     else
       my->comments_storage_path = crp;
   }
+
+  std::string comment_archive_type_str( "ROCKSDB" );
+  if( options.count( "comment-archive" ) )
+    comment_archive_type_str = options.at( "comment-archive" ).as<std::string>();
+  if( comment_archive_type_str == "NONE" )
+    my->comment_archive_choice = detail::chain_plugin_impl::comment_archive_type::NONE;
+  else if( comment_archive_type_str == "MEMORY" )
+    my->comment_archive_choice = detail::chain_plugin_impl::comment_archive_type::MEMORY;
+  else if( comment_archive_type_str == "ROCKSDB" )
+    my->comment_archive_choice = detail::chain_plugin_impl::comment_archive_type::ROCKSDB;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown comment archive type" );
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
