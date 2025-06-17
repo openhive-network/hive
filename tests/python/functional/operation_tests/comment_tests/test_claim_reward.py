@@ -27,6 +27,7 @@ def node():
     init_node.config.plugin.append("account_history_api")
 
     init_node.run(
+        timeout=60.0,
         time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),
