@@ -232,14 +232,7 @@ extended_block_log_creation:
     - if: $CI_COMMIT_BRANCH == "master"
       when: never
     - if: $CI_COMMIT_BRANCH
-      changes:
-        paths:
-          - scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
-          - scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh
-          - scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh
-          - tests/python/functional/util/block_logs_for_denser/generate_block_log_for_denser.py
       when: always
-    - when: never
   tags:
     - public-runner-docker
     - hived-for-tests

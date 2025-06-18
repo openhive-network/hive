@@ -8,7 +8,7 @@ variables:
   image: "registry.gitlab.syncad.com/hive/hive/ci-base-image$TEST_IMAGE_TAG"
   timeout: 1 hour
   variables:
-    REGISTRY: ""
+    REGISTRY: "${CI_REGISTRY_IMAGE}"
     REGISTRY_USER: "${CI_REGISTRY_USER}"
     REGISTRY_PASS: "${CI_REGISTRY_PASSWORD}"
     IMAGE_TAG: ""
