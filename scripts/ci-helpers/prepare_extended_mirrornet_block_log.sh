@@ -4,6 +4,7 @@ set -e
 
 # Paths
 SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
+source "$SCRIPT_DIR/docker_image_utils.sh"
 SRC_DIR="$(realpath "${SCRIPT_DIR}/../..")"
 BINARY_PATH="${BINARY_PATH:?}"
 MIRRORNET_SOURCE_5M_DATA_DIR=${MIRRORNET_SOURCE_5M_DATA_DIR:?}
@@ -16,6 +17,18 @@ GET_DEV_KEY_PATH=${GET_DEV_KEY_PATH:-"${BINARY_PATH}/get_dev_key"}
 COMPRESS_BLOCK_LOG_PATH=${COMPRESS_BLOCK_LOG_PATH:-"${BINARY_PATH}/compress_block_log"}
 BLOCKCHAIN_CONVERTER_PATH=${BLOCKCHAIN_CONVERTER_PATH:-"${BINARY_PATH}/blockchain_converter"}
 BLOCK_LOG_UTIL_PATH=${BLOCK_LOG_UTIL_PATH:-"${BINARY_PATH}/block_log_util"}
+
+# The image tag is generated from the checksum of these source files.
+IMAGE_SOURCE_FILES=(
+  "scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml"
+  "scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh"
+  "scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh"
+  "tests/python/functional/util/block_logs_for_denser/generate_block_log_for_denser.py"
+)
+IMAGE_TAG=$(cat "${IMAGE_SOURCE_FILES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
+IMG_NAME=extended-block-log
+
+IMAGE_FULL_NAME=$( build_image_name "$IMAGE_TAG" "$REGISTRY" $IMG_NAME )
 
 # Python settings
 export PYPROJECT_DIR="${SRC_DIR}/tests/python/hive-local-tools"
@@ -34,26 +47,21 @@ MIRRORNET_SKELETON_KEY=${MIRRORNET_SKELETON_KEY:-"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43
 # Other settings
 NUMBER_OF_BLOCKS=${NUMBER_OF_BLOCKS:-"5000000"}
 NUMBER_OF_PROCESSES=${NUMBER_OF_PROCESSES:-"8"}
-REGISTRY=${REGISTRY:-"registry.gitlab.syncad.com/hive/hive"}
-IMAGE_TAG=${IMAGE_TAG:-"latest"}
-TAG="${REGISTRY}/extended-block-log:${IMAGE_TAG}"
-
-function image-exists() {
-    local image=$1
-    docker manifest inspect "$image" > /dev/null
-    return $?
-}
 
 function generate-env() {
-    echo "EXTENDED_BLOCK_LOG_IMAGE=${TAG}" > "${SRC_DIR}/block_log.env" 
+    echo "EXTENDED_BLOCK_LOG_IMAGE=${IMAGE_FULL_NAME}" > "${SRC_DIR}/block_log.env"
 }
 
-if image-exists "$TAG"
+IMAGE_EXIST=0
+docker_image_exists "$IMAGE_FULL_NAME" IMAGE_EXIST
+if [ "$IMAGE_EXIST" -eq 1 ];
 then
-    echo "Image $TAG already exists. Skipping build..."
+    echo "Image $IMAGE_FULL_NAME already exists. Skipping build..."
     generate-env
     exit 0
 fi
+
+echo "${IMAGE_FULL_NAME} image is missing. Start extended mirrornet block logs..."
 
 pushd "${SRC_DIR}"
 
@@ -108,11 +116,11 @@ COPY block_log* /blockchain/
 EOF
 
 time docker build \
-    --tag "${TAG}" \
+    --tag "${IMAGE_FULL_NAME}" \
     --file "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}/Dockerfile" \
     "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}"
 
-time docker push "${TAG}"
+time docker push "${IMAGE_FULL_NAME}"
 
 generate-env
 
