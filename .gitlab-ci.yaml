@@ -27,8 +27,6 @@ variables:
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
 
-  BEEKEEPY_INITIALIZATION_TIMEOUT: 30
-
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'

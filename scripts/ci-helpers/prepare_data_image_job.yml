@@ -4,6 +4,8 @@ variables:
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+  BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
+  BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
 
 include:
   - project: 'hive/common-ci-configuration'
