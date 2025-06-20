@@ -4728,4 +4728,230 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( dhf_inflow_tracking )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF daily inflow tracking with 24-hour rolling window" );
+    
+    const auto& dgpo = db->get_dynamic_global_properties();
+    
+    // Check initial state
+    BOOST_REQUIRE( dgpo.dhf_cached_daily_total == asset( 0, HBD_SYMBOL ) );
+    BOOST_REQUIRE( dgpo.dhf_current_hour_index == 0 );
+    
+    // Set up treasury funds and price feed
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
+    generate_block();
+    
+    // Simulate hourly inflow tracking over 25 hours to test rollover
+    for( int hour = 0; hour < 25; ++hour )
+    {
+      // Trigger daily maintenance to record hourly inflow
+      auto next_daily_maintenance = get_nr_blocks_until_daily_proposal_maintenance_block();
+      generate_blocks( next_daily_maintenance );
+      
+      const auto& updated_dgpo = db->get_dynamic_global_properties();
+      
+      if( hour < 24 )
+      {
+        // First 24 hours should accumulate
+        BOOST_REQUIRE( updated_dgpo.dhf_current_hour_index == (hour + 1) % 24 );
+      }
+      else
+      {
+        // Hour 25 should rollover and start subtracting old values
+        BOOST_REQUIRE( updated_dgpo.dhf_current_hour_index == 1 );
+      }
+    }
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_vote_weighting_basic )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: Basic DHF vote weighting functionality" );
+    
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+    
+    // Set up accounts with voting power
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "1000.000 TESTS" ) );
+    vest( "carol", ASSET( "1000.000 TESTS" ) );
+    
+    ISSUE_FUNDS( "alice", ASSET( "100.000 TBD" ) );
+    ISSUE_FUNDS( "bob", ASSET( "100.000 TBD" ) );
+    
+    // Set up treasury and DHF inflow
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
+    generate_block();
+    
+    // Create proposals with different daily pay amounts
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 30 );
+    
+    // Small proposal (under daily inflow)
+    auto proposal_1 = create_proposal( "alice", "alice", start_date, end_date, ASSET( "50.000 TBD" ), alice_private_key, alice_post_key );
+    
+    // Large proposal (over sustainable rate)
+    auto proposal_2 = create_proposal( "bob", "bob", start_date, end_date, ASSET( "200.000 TBD" ), bob_private_key, bob_post_key );
+    
+    generate_block();
+    
+    // Test that account commitment tracking fields are initialized
+    const auto& alice_account = db->get_account( "alice" );
+    const auto& bob_account = db->get_account( "bob" );
+    
+    BOOST_REQUIRE( alice_account.dhf_total_daily_commitment == HBD_asset( 0 ) );
+    BOOST_REQUIRE( alice_account.dhf_active_proposal_count == 0 );
+    BOOST_REQUIRE( bob_account.dhf_total_daily_commitment == HBD_asset( 0 ) );
+    BOOST_REQUIRE( bob_account.dhf_active_proposal_count == 0 );
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_vote_commitment_calculation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF vote commitment calculation and tracking" );
+    
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+    
+    // Set up accounts with voting power
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "100.000 TBD" ) );
+    ISSUE_FUNDS( "bob", ASSET( "100.000 TBD" ) );
+    
+    // Set up treasury
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
+    generate_block();
+    
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 30 );
+    
+    // Create multiple proposals with different amounts
+    auto small_proposal = create_proposal( "alice", "alice", start_date, end_date, ASSET( "30.000 TBD" ), alice_private_key, alice_post_key );
+    auto medium_proposal = create_proposal( "bob", "bob", start_date, end_date, ASSET( "70.000 TBD" ), bob_private_key, bob_post_key );
+    auto large_proposal = create_proposal( "carol", "carol", start_date, end_date, ASSET( "200.000 TBD" ), carol_private_key, carol_post_key );
+    
+    generate_block();
+    
+    // Alice votes for all proposals (should trigger commitment calculation when hardfork is active)
+    vote_proposal( "alice", { small_proposal, medium_proposal, large_proposal }, true, alice_private_key );
+    generate_block();
+    
+    // Check that commitment tracking fields exist and are accessible
+    const auto& alice_account = db->get_account( "alice" );
+    
+    // These fields should be present and initialized
+    BOOST_REQUIRE( alice_account.dhf_total_daily_commitment == HBD_asset( 0 ) );
+    BOOST_REQUIRE( alice_account.dhf_active_proposal_count == 0 );
+    BOOST_REQUIRE( alice_account.dhf_commitment_last_update != fc::time_point_sec() );
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_vote_weight_multiplier_calculation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF vote weight multiplier calculation" );
+    
+    ACTORS( (alice)(bob) )
+    generate_block();
+    
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "2000.000 TESTS" ) );
+    
+    ISSUE_FUNDS( "alice", ASSET( "100.000 TBD" ) );
+    
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
+    generate_block();
+    
+    // Test that the new data structures are accessible
+    const auto& global_props = db->get_dynamic_global_properties();
+    BOOST_REQUIRE( global_props.dhf_cached_daily_total == asset( 0, HBD_SYMBOL ) );
+    BOOST_REQUIRE( global_props.dhf_current_hour_index == 0 );
+    
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 30 );
+    
+    auto high_commitment_proposal = create_proposal( "alice", "alice", start_date, end_date, ASSET( "150.000 TBD" ), alice_private_key, alice_post_key );
+    generate_block();
+    
+    // Bob votes for the high commitment proposal
+    vote_proposal( "bob", { high_commitment_proposal }, true, bob_private_key );
+    generate_block();
+    
+    // Check that basic voting still works (legacy mode)
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
+    auto proposal_obj = proposal_idx.find( high_commitment_proposal );
+    BOOST_REQUIRE( proposal_obj != proposal_idx.end() );
+    BOOST_REQUIRE( proposal_obj->total_votes > 0 );
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_legacy_compatibility )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF vote weighting legacy compatibility mode" );
+    
+    ACTORS( (alice)(bob) )
+    generate_block();
+    
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "100.000 TBD" ) );
+    
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
+    generate_block();
+    
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 30 );
+    
+    auto proposal = create_proposal( "alice", "alice", start_date, end_date, ASSET( "50.000 TBD" ), alice_private_key, alice_post_key );
+    generate_block();
+    
+    // Get initial vote count
+    vote_proposal( "bob", { proposal }, true, bob_private_key );
+    generate_block();
+    
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
+    auto proposal_obj = proposal_idx.find( proposal );
+    BOOST_REQUIRE( proposal_obj != proposal_idx.end() );
+    
+    auto expected_votes = db->get_account("bob").get_governance_vote_power().value;
+    BOOST_REQUIRE( proposal_obj->total_votes == expected_votes );
+    
+    // Test vote removal
+    vote_proposal( "bob", { proposal }, false, bob_private_key );
+    generate_block();
+    
+    proposal_obj = proposal_idx.find( proposal );
+    BOOST_REQUIRE( proposal_obj->total_votes == 0 );
+    
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()

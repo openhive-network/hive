@@ -183,6 +183,14 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
           _db.remove( *found );
       }
     }
+
+    // Update voter's DHF commitment tracking after vote changes
+    // TODO: Enable when hardfork is active
+    // if( _db.has_hardfork( HIVE_HARDFORK_DHF_VOTE_WEIGHTING ) )
+    // {
+    //   dhf_processor processor( _db );
+    //   processor.update_voter_dhf_commitment( o.voter );
+    // }
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }

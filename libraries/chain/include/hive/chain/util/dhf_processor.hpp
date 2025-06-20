@@ -38,10 +38,15 @@ class dhf_processor
 
     uint64_t calculate_votes( uint32_t pid );
     void calculate_votes( const t_proposals& proposals );
+    void calculate_votes_with_weighting( const t_proposals& proposals );
 
     void sort_by_votes( t_proposals& proposals );
 
     asset get_treasury_fund();
+    asset get_daily_dhf_inflow();
+    void update_daily_inflow_tracker( const asset& hourly_amount );
+    uint32_t calculate_vote_weight_multiplier( const account_name_type& voter, const asset& total_commitment, const asset& daily_inflow, uint32_t minimum_weight = 0 );
+    void update_voter_dhf_commitment( const account_name_type& voter );
 
     asset calculate_maintenance_budget( const time_point_sec& head_time );
 

@@ -156,6 +156,12 @@ namespace hive { namespace chain {
 
       asset dhf_interval_ledger = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 
+      // DHF daily inflow tracking for vote weighting
+      fc::array< asset, 24 > dhf_hourly_inflows = fc::array< asset, 24 >(); ///< Rolling 24-hour window of hourly DHF inflows
+      uint8_t dhf_current_hour_index = 0; ///< Current index in the rolling window
+      asset dhf_cached_daily_total = asset( 0, HBD_SYMBOL ); ///< Cached sum of all 24 hourly inflows
+      time_point_sec dhf_inflow_last_update = HIVE_GENESIS_TIME; ///< Last time inflow tracking was updated
+
       uint16_t downvote_pool_percent = 0;
 
       // limits number of objects removed in one automatic operation (only applies to situations where many
@@ -223,6 +229,10 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (vesting_reward_percent)
           (proposal_fund_percent)
           (dhf_interval_ledger)
+          (dhf_hourly_inflows)
+          (dhf_current_hour_index)
+          (dhf_cached_daily_total)
+          (dhf_inflow_last_update)
           (downvote_pool_percent)
           (current_remove_threshold)
           (max_consecutive_recurrent_transfer_failures)

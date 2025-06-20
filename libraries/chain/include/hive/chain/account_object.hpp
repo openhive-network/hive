@@ -247,6 +247,12 @@ namespace hive { namespace chain {
 
       uint8_t           savings_withdraw_requests = 0;
       bool              can_vote = true;
+
+      // DHF voting commitment tracking for vote weighting
+      HBD_asset         dhf_total_daily_commitment = HBD_asset( 0 ); ///< Total HBD/day this account is committed to via active proposal votes
+      time_point_sec    dhf_commitment_last_update = fc::time_point_sec::maximum(); ///< Last time DHF commitment was recalculated
+      uint16_t          dhf_active_proposal_count = 0; ///< Number of active proposals this account is voting for
+
     private:
       bool              mined = true; //(not read by consensus code)
 
@@ -742,7 +748,9 @@ FC_REFLECT( hive::chain::account_object,
           (created)(block_created)(last_account_update)(last_post)(last_root_post)
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)(governance_vote_expiration_ts)
           (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
-          (savings_withdraw_requests)(can_vote)(mined)
+          (savings_withdraw_requests)(can_vote)
+          (dhf_total_daily_commitment)(dhf_commitment_last_update)(dhf_active_proposal_count)
+          (mined)
           (memo_key)
           (proxied_vsf_votes)
           (delayed_votes)

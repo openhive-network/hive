@@ -261,6 +261,11 @@ add_boost_test( chain_test
    proposal_tests/proposals_removing_with_threshold_01
    proposal_tests/proposals_removing_with_threshold_02
    proposal_tests/converting_hive_to_dhf
+   proposal_tests/dhf_inflow_tracking
+   proposal_tests/dhf_vote_weighting_basic
+   proposal_tests/dhf_vote_commitment_calculation
+   proposal_tests/dhf_vote_weight_multiplier_calculation
+   proposal_tests/dhf_legacy_compatibility
    serialization_tests/serialization_raw_test
    serialization_tests/serialization_json_test
    serialization_tests/legacy_asset_test

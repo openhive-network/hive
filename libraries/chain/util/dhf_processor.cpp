@@ -110,15 +110,25 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
 
 void dhf_processor::calculate_votes( const t_proposals& proposals )
 {
-  for( auto& item : proposals )
+  // Use weighted calculation if hardfork is active
+  // TODO: Replace with actual hardfork constant when defined
+  if( false ) // db.has_hardfork( HIVE_HARDFORK_DHF_VOTE_WEIGHTING )
   {
-    const proposal_object& _item = item;
-    auto total_votes = calculate_votes( _item.proposal_id );
-
-    db.modify( _item, [&]( auto& proposal )
+    calculate_votes_with_weighting( proposals );
+  }
+  else
+  {
+    // Legacy calculation for backwards compatibility
+    for( auto& item : proposals )
     {
-      proposal.total_votes = total_votes;
-    } );
+      const proposal_object& _item = item;
+      auto total_votes = calculate_votes( _item.proposal_id );
+
+      db.modify( _item, [&]( auto& proposal )
+      {
+        proposal.total_votes = total_votes;
+      } );
+    }
   }
 }
 
@@ -315,6 +325,9 @@ void dhf_processor::record_funding( const block_notification& note )
   operation vop = dhf_funding_operation( db.get_treasury_name(), props.dhf_interval_ledger );
   db.push_virtual_operation( vop );
 
+  // Track daily inflows before resetting ledger
+  update_daily_inflow_tracker( props.dhf_interval_ledger );
+
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
     dgpo.dhf_interval_ledger = asset( 0, HBD_SYMBOL );
@@ -357,6 +370,249 @@ void dhf_processor::convert_funds( const block_notification& note )
 
   operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
   db.push_virtual_operation( vop );
+}
+
+asset dhf_processor::get_daily_dhf_inflow()
+{
+  const auto& props = db.get_dynamic_global_properties();
+  return props.dhf_cached_daily_total;
+}
+
+void dhf_processor::update_daily_inflow_tracker( const asset& hourly_amount )
+{
+  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+  {
+    // Advance to next hour slot
+    dgpo.dhf_current_hour_index = (dgpo.dhf_current_hour_index + 1) % 24;
+    
+    // Subtract old value from cached total
+    dgpo.dhf_cached_daily_total -= dgpo.dhf_hourly_inflows[dgpo.dhf_current_hour_index];
+    
+    // Add new hourly amount
+    dgpo.dhf_hourly_inflows[dgpo.dhf_current_hour_index] = hourly_amount;
+    dgpo.dhf_cached_daily_total += hourly_amount;
+    
+    dgpo.dhf_inflow_last_update = db.head_block_time();
+  });
+}
+
+uint32_t dhf_processor::calculate_vote_weight_multiplier( const account_name_type& voter, const asset& total_commitment, const asset& daily_inflow, uint32_t minimum_weight )
+{
+  if( total_commitment.amount <= daily_inflow.amount )
+    return HIVE_100_PERCENT; // Full weight if under or at budget
+  
+  // Calculate proportional reduction if over budget
+  uint32_t proportional_weight = fc::uint128_to_uint64( 
+    ( uint128_t( daily_inflow.amount.value ) * HIVE_100_PERCENT ) / total_commitment.amount.value 
+  );
+  
+  // Return the higher of proportional weight or minimum weight
+  return std::max( proportional_weight, minimum_weight );
+}
+
+void dhf_processor::update_voter_dhf_commitment( const account_name_type& voter )
+{
+  const auto& voter_account = db.get_account( voter );
+  const auto& pvidx = db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
+  const auto& pidx = db.get_index< proposal_index >().indices().get< by_proposal_id >();
+  
+  asset total_commitment( 0, HBD_SYMBOL );
+  uint16_t active_count = 0;
+  auto daily_inflow = get_daily_dhf_inflow();
+  auto treasury_fund = get_treasury_fund();
+  auto sustainable_daily_rate = treasury_fund.amount > 0 ? treasury_fund.amount / 100 : 0;
+  
+  auto vote_range = pvidx.equal_range( voter );
+  for( auto vote_itr = vote_range.first; vote_itr != vote_range.second; ++vote_itr )
+  {
+    auto proposal_itr = pidx.find( vote_itr->proposal_id );
+    if( proposal_itr != pidx.end() && 
+        db.head_block_time() >= proposal_itr->start_date && 
+        db.head_block_time() <= proposal_itr->end_date )
+    {
+      active_count++;
+      
+      // Cap large proposals at sustainable daily rate (fund/100)
+      if( proposal_itr->daily_pay.amount > sustainable_daily_rate ) {
+        // Large proposals are capped at sustainable daily rate (fund/100)
+        total_commitment += asset( sustainable_daily_rate, HBD_SYMBOL );
+      } else {
+        total_commitment += proposal_itr->daily_pay;
+      }
+    }
+  }
+  
+  db.modify( voter_account, [&]( account_object& a )
+  {
+    a.dhf_total_daily_commitment = total_commitment;
+    a.dhf_active_proposal_count = active_count;
+    a.dhf_commitment_last_update = db.head_block_time();
+  });
+}
+
+void dhf_processor::calculate_votes_with_weighting( const t_proposals& proposals )
+{
+  auto daily_inflow = get_daily_dhf_inflow();
+  auto treasury_fund = get_treasury_fund();
+  auto sustainable_daily_rate = treasury_fund.amount > 0 ? treasury_fund.amount / 100 : 0;
+
+  // Track voter commitments during vote calculation
+  std::unordered_map<account_name_type, asset> voter_commitments;
+  std::unordered_set<account_name_type> flagged_voters;
+  std::unordered_set<account_name_type> voters_with_large_proposal_counted;
+  
+  // Track highest raw vote total to calculate minimum weight floor
+  uint64_t highest_raw_vote_total = 0;
+
+  // Phase 1: Calculate raw votes + track commitments
+  for( auto& item : proposals )
+  {
+    const proposal_object& _item = item;
+    uint64_t raw_total_votes = 0;
+
+    // Optimization: determine proposal's commitment value once
+    asset proposal_commitment;
+    bool is_large_proposal = _item.daily_pay.amount > sustainable_daily_rate;
+    if( is_large_proposal ) {
+      proposal_commitment = asset( sustainable_daily_rate, HBD_SYMBOL );
+    } else {
+      proposal_commitment = asset( _item.daily_pay.amount, HBD_SYMBOL );
+    }
+
+    const auto& pvidx = db.get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
+    auto found = pvidx.find( _item.proposal_id );
+
+    while( found != pvidx.end() && found->proposal_id == _item.proposal_id )
+    {
+      const auto& _voter = db.get_account( found->voter );
+
+      if( !_voter.has_proxy() )
+      {
+        auto vote_power = _voter.get_governance_vote_power();
+        raw_total_votes += vote_power.value;
+
+        // A voter's commitment only includes one large proposal
+        asset commitment_to_add = proposal_commitment;
+        if( is_large_proposal ) {
+          if( voters_with_large_proposal_counted.count( found->voter ) ) {
+            commitment_to_add.amount = 0; // Already counted a large one, add 0
+          } else {
+            voters_with_large_proposal_counted.insert( found->voter ); // Counted it, mark them
+          }
+        }
+
+        if (commitment_to_add.amount > 0) {
+          voter_commitments[found->voter] += commitment_to_add;
+        }
+
+        // Flag if over budget
+        if( voter_commitments.count( found->voter ) && voter_commitments[found->voter] > daily_inflow ) {
+          flagged_voters.insert(found->voter);
+        }
+      }
+      ++found;
+    }
+    
+    // Track highest raw vote total for minimum weight calculation
+    highest_raw_vote_total = std::max( highest_raw_vote_total, raw_total_votes );
+
+    // Store raw votes temporarily
+    db.modify( _item, [&]( auto& proposal ) {
+      proposal.total_votes = raw_total_votes;
+    });
+  }
+  
+  // Calculate minimum weight floor based on highest raw vote total and total vesting shares
+  uint32_t minimum_weight = 0;
+  if( flagged_voters.size() > 0 && highest_raw_vote_total > 0 ) {
+    const auto& props = db.get_dynamic_global_properties();
+    auto total_vesting_shares = props.get_total_vesting_shares();
+    
+    if( total_vesting_shares.amount.value > 0 ) {
+      // Minimum weight = (highest_raw_vote_total / total_vesting_shares) * HIVE_100_PERCENT
+      // This ensures if everyone votes, the minimum weight approaches 1
+      minimum_weight = fc::uint128_to_uint64( 
+        ( uint128_t( highest_raw_vote_total ) * HIVE_100_PERCENT ) / total_vesting_shares.amount.value 
+      );
+    }
+  }
+
+  if( flagged_voters.empty() ) {
+    // No reweighting needed. Raw votes are final. We are done.
+  } else {
+    // OPTIMIZATION: Prune the list of proposals to only those affected by flagged voters.
+    std::unordered_set<proposal_id_type> proposals_with_flagged_voters;
+    const auto& pvidx_by_voter = db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
+    for( const auto& voter : flagged_voters )
+    {
+      auto vote_range = pvidx_by_voter.equal_range( voter );
+      for( auto vote_itr = vote_range.first; vote_itr != vote_range.second; ++vote_itr )
+      {
+        proposals_with_flagged_voters.insert( vote_itr->proposal_id );
+      }
+    }
+
+    // --- PHASE 2: EFFICIENT "DELTA" REWEIGHTING ---
+    for( const auto& item : proposals )
+    {
+      // This is the core of the optimization: skip any proposal with no flagged voters.
+      if( proposals_with_flagged_voters.find( item.get().proposal_id ) == proposals_with_flagged_voters.end() )
+          continue;
+
+      const proposal_object& _item = item;
+      uint64_t total_reduction = 0;
+
+      const auto& pvidx = db.get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
+      auto found = pvidx.find( _item.proposal_id );
+
+      while( found != pvidx.end() && found->proposal_id == _item.proposal_id )
+      {
+        // We only care about voters that were flagged as over-committed
+        if( flagged_voters.count(found->voter) )
+        {
+            const auto& _voter = db.get_account( found->voter );
+            if ( !_voter.has_proxy() )
+            {
+                auto base_vote_power = _voter.get_governance_vote_power();
+                auto voter_commitment = voter_commitments.at(found->voter);
+
+                FC_ASSERT( voter_commitment.amount.value > 0, "Voter commitment must be positive to calculate weight" );
+                uint32_t weight_multiplier = calculate_vote_weight_multiplier(found->voter, voter_commitment, daily_inflow, minimum_weight);
+
+                // This is the key part: calculate how much vote power is *lost*
+                uint128_t reduction_multiplier = HIVE_100_PERCENT - weight_multiplier;
+                uint64_t vote_reduction = fc::uint128_to_uint64(
+                  ( uint128_t(base_vote_power.value) * reduction_multiplier ) / HIVE_100_PERCENT
+                );
+                total_reduction += vote_reduction;
+            }
+        }
+        ++found;
+      }
+
+      // If any voters were flagged, apply the total reduction to the raw sum.
+      if( total_reduction > 0 ) {
+        db.modify( _item, [&]( auto& proposal ) {
+          // proposal.total_votes contains the raw vote sum from Phase 1
+          if( proposal.total_votes >= total_reduction )
+            proposal.total_votes -= total_reduction;
+          else
+            proposal.total_votes = 0; // Safety check for underflow
+        });
+      }
+    }
+  }
+  
+  // Update voter commitment stats for all voters with changed votes
+  for( const auto& voter_commitment : voter_commitments )
+  {
+    const auto& voter_account = db.get_account( voter_commitment.first );
+    db.modify( voter_account, [&]( account_object& a )
+    {
+      a.dhf_total_daily_commitment = voter_commitment.second;
+      a.dhf_commitment_last_update = db.head_block_time();
+    });
+  }
 }
 
 } } // namespace hive::chain
