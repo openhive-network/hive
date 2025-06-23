@@ -4,11 +4,16 @@
 
 #include <chainbase/allocator_helpers.hpp>
 
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/interprocess/allocators/adaptive_pool.hpp>
+
 #include <map>
 
 namespace hive { namespace chain {
 
 class database;
+using boost::multi_index::hashed_unique;
 
 class memory_comment_archive final : public comments_handler
 {
@@ -39,10 +44,13 @@ class memory_comment_archive final : public comments_handler
     typedef multi_index_container<
       comment_object,
       indexed_by<
-        ordered_unique< tag< by_permlink >,
-          const_mem_fun< comment_object, const comment_object::author_and_permlink_hash_type&, &comment_object::get_author_and_permlink_hash > >
+        hashed_unique< tag< by_permlink >,
+          //ABW: note - hashed index is the fastest, but it has a very nasty flaw - it takes a lot of time (minutes) and space to
+          //rehash once in a while, so it cannot be used in live sync, especially not on witness nodes
+        const_mem_fun< comment_object, const comment_object::author_and_permlink_hash_type&, &comment_object::get_author_and_permlink_hash > >
       >,
-      multi_index_allocator< comment_object >
+      boost::interprocess::adaptive_pool< comment_object, boost::interprocess::managed_mapped_file::segment_manager, 128*1024 >
+        //ABW: note - pool_allocator_t can't be used with hashed index as it does not support allocation of multiple objects at once
     > archived_comment_index;
 
     struct archive_object_type
