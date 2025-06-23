@@ -84,12 +84,20 @@ class ripemd160
 
 namespace std
 {
-    template<>
-    struct hash<fc::ripemd160>
-    {
-       size_t operator()( const fc::ripemd160& s )const
-       {
-           return  *((size_t*)&s);
-       }
-    };
+  template<>
+  struct hash<fc::ripemd160>
+  {
+     size_t operator()( const fc::ripemd160& s )const
+     {
+       return *((size_t*)&s);
+     }
+  };
+}
+
+namespace boost
+{
+  inline std::size_t hash_value( const fc::ripemd160& s )
+  {
+    return *((size_t*)&s);
+  }
 }
