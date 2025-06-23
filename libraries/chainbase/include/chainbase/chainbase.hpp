@@ -170,13 +170,28 @@ namespace chainbase {
       }
   };
 
-  template<uint16_t TypeNumber, typename Derived, typename HasDynamicAlloc = std::false_type>
+  template<uint16_t TypeNumber, typename Derived, typename HasDynamicAlloc = std::false_type, typename EnableNoUndo = std::false_type>
   struct object
   {
     typedef oid<Derived> id_type;
     typedef oid_ref<Derived> id_ref_type;
     enum { type_id = TypeNumber };
+    /*
+    Mark chain object class with true_type when it has elements that need to be passed an allocator.
+    It adds code that collects dynamic allocation for benchmarks.
+    */
     typedef HasDynamicAlloc has_dynamic_alloc_t;
+    /*
+    Do not mark chain object class with it unless you know what you are doing! It enables "no undo"
+    destructions of objects, but optimized for very specific scenario, where you are guaranteed that
+    creation/modification of object prior of its "no undo" destruction is not present on different
+    active revision of undo stack. If used in different scenario, rare forking events can lead to
+    crashes or inconsistent state.
+    Example: comment_object is not modified and there is 7 day grace period between creation and destruction
+    during migration to archive, so there is no waiting undo element when migration is performed;
+    the same is not true for volatile_comment_object
+    */
+    typedef EnableNoUndo enable_no_undo_t;
   };
 
   /** this class is ment to be specified to enable lookup of index type by object type using
@@ -462,7 +477,8 @@ namespace chainbase {
           _item_additional_allocation += new_size - old_size;
       }
 
-      void remove( const value_type& obj ) {
+      void remove( const value_type& obj )
+      {
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           size = obj.get_dynamic_alloc();
@@ -473,7 +489,8 @@ namespace chainbase {
       }
 
       template< typename ByIndex >
-      typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI) {
+      typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI)
+      {
         auto& idx = _indices.template get< ByIndex >();
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
@@ -483,6 +500,19 @@ namespace chainbase {
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation -= size;
         return ret;
+      }
+
+      template< typename U = value_type, typename std::enable_if_t< U::enable_no_undo_t::value, bool > = true >
+      void remove_no_undo( const U& obj )
+      {
+        // if you have doubts that you can use this routine, most likely you must not use it;
+        // if you don't have doubts about it, you most likely should have them :o)
+        size_t size = 0;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          size = obj.get_dynamic_alloc();
+        _indices.erase( _indices.iterator_to( obj ) );
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation -= size;
       }
 
       template< typename ByIndex, typename ExternalStorageProcessor, typename Iterator = typename MultiIndexType::template index_iterator<ByIndex>::type >
@@ -1247,87 +1277,95 @@ namespace chainbase {
       template< typename ObjectType, typename IndexedByType, typename CompatibleKey >
       const ObjectType* find( CompatibleKey&& key )const
       {
-          CHAINBASE_REQUIRE_READ_LOCK("find", ObjectType);
-          typedef typename get_index_type< ObjectType >::type index_type;
-          const auto& idx = get_index< index_type >().indicies().template get< IndexedByType >();
-          auto itr = idx.find( std::forward< CompatibleKey >( key ) );
-          if( itr == idx.end() ) return nullptr;
-          return &*itr;
+        CHAINBASE_REQUIRE_READ_LOCK("find", ObjectType);
+        typedef typename get_index_type< ObjectType >::type index_type;
+        const auto& idx = get_index< index_type >().indicies().template get< IndexedByType >();
+        auto itr = idx.find( std::forward< CompatibleKey >( key ) );
+        if( itr == idx.end() ) return nullptr;
+        return &*itr;
       }
 
       template< typename ObjectType >
       const ObjectType* find( oid< ObjectType > key = oid_ref< ObjectType >() ) const
       {
-          CHAINBASE_REQUIRE_READ_LOCK("find", ObjectType);
-          typedef typename get_index_type< ObjectType >::type index_type;
-          const auto& idx = get_index< index_type >().indices();
-          auto itr = idx.find( key );
-          if( itr == idx.end() ) return nullptr;
-          return &*itr;
+        CHAINBASE_REQUIRE_READ_LOCK("find", ObjectType);
+        typedef typename get_index_type< ObjectType >::type index_type;
+        const auto& idx = get_index< index_type >().indices();
+        auto itr = idx.find( key );
+        if( itr == idx.end() ) return nullptr;
+        return &*itr;
       }
 
       template< typename ObjectType, typename IndexedByType, typename CompatibleKey >
       const ObjectType& get( CompatibleKey&& key )const
       {
-          CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
-          auto obj = find< ObjectType, IndexedByType >( std::forward< CompatibleKey >( key ) );
-          if( !obj )
-          {
-            typedef typename get_index_type< ObjectType >::type index_type;
-            std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
-            std::string indexed_by_typename = boost::core::demangle(typeid(IndexedByType).name());
-            std::string compatible_key_typename = boost::core::demangle(typeid(CompatibleKey).name());
+        CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
+        auto obj = find< ObjectType, IndexedByType >( std::forward< CompatibleKey >( key ) );
+        if( !obj )
+        {
+          typedef typename get_index_type< ObjectType >::type index_type;
+          std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          std::string indexed_by_typename = boost::core::demangle(typeid(IndexedByType).name());
+          std::string compatible_key_typename = boost::core::demangle(typeid(CompatibleKey).name());
             
-            fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: ${kt} at multiindex lookup: ${multiindex}.index<${indexed_by_typename}>",
-              ("kt", compatible_key_typename)("multiindex", index_type_name)("indexed_by_typename", indexed_by_typename)("key", key)));
+          fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: ${kt} at multiindex lookup: ${multiindex}.index<${indexed_by_typename}>",
+            ("kt", compatible_key_typename)("multiindex", index_type_name)("indexed_by_typename", indexed_by_typename)("key", key)));
 
-            CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string() ));
-          }
-          return *obj;
+          CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string() ));
+        }
+        return *obj;
       }
 
       template< typename ObjectType >
       const ObjectType& get( const oid< ObjectType >& key = oid_ref< ObjectType >() )const
       {
-          CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
-          auto obj = find< ObjectType >( key );
-          if( !obj )
-          {
-            typedef typename get_index_type< ObjectType >::type index_type;
-            std::string compatible_key_typename = boost::core::demangle(typeid(ObjectType).name());
+        CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
+        auto obj = find< ObjectType >( key );
+        if( !obj )
+        {
+          typedef typename get_index_type< ObjectType >::type index_type;
+          std::string compatible_key_typename = boost::core::demangle(typeid(ObjectType).name());
 
-            std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
 
-            fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: oid<${kt}> at multiindex lookup: ${multiindex}",
-              ("kt", compatible_key_typename)("multiindex", index_type_name)("key", key)));
+          fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: oid<${kt}> at multiindex lookup: ${multiindex}",
+            ("kt", compatible_key_typename)("multiindex", index_type_name)("key", key)));
 
-            CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string()));
-          }
-          return *obj;
+          CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string()));
+        }
+        return *obj;
       }
 
       template<typename ObjectType, typename Modifier>
       void modify( const ObjectType& obj, Modifier&& m )
       {
-          CHAINBASE_REQUIRE_WRITE_LOCK("modify", ObjectType);
-          typedef typename get_index_type<ObjectType>::type index_type;
-          get_mutable_index<index_type>().modify( obj, std::forward<Modifier>( m ) );
+        CHAINBASE_REQUIRE_WRITE_LOCK("modify", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        get_mutable_index<index_type>().modify( obj, std::forward<Modifier>( m ) );
       }
 
       template<typename ObjectType>
       void remove( const ObjectType& obj )
       {
-          CHAINBASE_REQUIRE_WRITE_LOCK("remove", ObjectType);
-          typedef typename get_index_type<ObjectType>::type index_type;
-          return get_mutable_index<index_type>().remove( obj );
+        CHAINBASE_REQUIRE_WRITE_LOCK("remove", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        return get_mutable_index<index_type>().remove( obj );
+      }
+
+      template<typename ObjectType>
+      void remove_no_undo( const ObjectType& obj )
+      {
+        CHAINBASE_REQUIRE_WRITE_LOCK( "remove_no_undo", ObjectType );
+        typedef typename get_index_type<ObjectType>::type index_type;
+        return get_mutable_index<index_type>().remove_no_undo( obj );
       }
 
       template<typename ObjectType, typename ... Args>
       const ObjectType& create( Args&&... args )
       {
-          CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
-          typedef typename get_index_type<ObjectType>::type index_type;
-          return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
+        CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
       }
 
       template< typename ObjectType >

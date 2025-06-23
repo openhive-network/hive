@@ -40,7 +40,7 @@ void memory_comment_archive::on_irreversible_block( uint32_t block_num )
         continue; // see comment in on_cashout
 
       archive->comments.emplace( commentI->copy_chain_object() );
-      db.remove( *commentI );
+      db.remove_no_undo( *commentI );
       ++count;
     }
     comments_in_blocks.erase( comments_in_blocks.begin() );
