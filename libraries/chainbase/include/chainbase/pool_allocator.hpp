@@ -367,6 +367,8 @@ namespace chainbase {
 
   template <typename T, uint32_t BLOCK_SIZE = DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE>
   using multi_index_allocator = std::conditional_t<_ENABLE_MULTI_INDEX_POOL_ALLOCATOR,
+    //bip::adaptive_pool<T, bip::managed_mapped_file::segment_manager, BLOCK_SIZE>, <-- ABW: it is way slower
+    //  than pool_allocator_t, especially for large amounts of data that we have in mainnet
     pool_allocator_t<T, BLOCK_SIZE>,
     allocator<T> >;
 
