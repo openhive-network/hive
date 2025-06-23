@@ -21,7 +21,7 @@ namespace hive { namespace chain {
   using protocol::votable_asset_info;
 #endif
 
-  class comment_object : public object< comment_object_type, comment_object >
+  class comment_object : public object< comment_object_type, comment_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */>
   {
     CHAINBASE_OBJECT( comment_object );
     public:
