@@ -18,4 +18,4 @@ export LD=${CROSS_ROOT}/bin/${CROSS_TRIPPLE}-ld
 export QEMU_LD_PREFIX="${CROSS_ROOT}/${CROSS_TRIPPLE}/sysroot"
 export QEMU_SET_ENV="LD_LIBRARY_PATH=${CROSS_ROOT}/lib:${QEMU_LD_PREFIX}"
 
-cmake --toolchain ${CROSS_ROOT}/Toolchain.cmake -B build -S. -GNinja && cmake --build build
+cmake --toolchain ${CROSS_ROOT}/Toolchain.cmake -B build -S. -GNinja && cmake --build build "$@"
