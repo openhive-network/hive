@@ -5612,12 +5612,7 @@ components:
           type: integer
           example: 3205281453
     hbd_exchange_rate:
-      type: object
-      properties:
-        base:
-          $ref: '#/components/schemas/balance'
-        quote:
-          $ref: '#/components/schemas/balance'
+      $ref: '#/components/schemas/base_and_quote'
     is_known_transaction:
       type: object
       properties:
@@ -6401,7 +6396,7 @@ components:
           description: >-
             The version of the hardfork that was voted for.
         hbd_exchange_rate:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/base_and_quote'
           description: >-
             The HBD exchange rate.
         id:
