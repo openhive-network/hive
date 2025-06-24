@@ -509,7 +509,10 @@ void blockchain_worker_thread_pool::set_last_checkpoint(uint32_t last_checkpoint
 void blockchain_worker_thread_pool::shutdown()
 {
   ilog("shutting down worker threads");
-  my->running.store(false, std::memory_order_relaxed);
+  {
+    std::unique_lock<std::mutex> lock(my->work_queue_mutex);
+    my->running.store(false, std::memory_order_relaxed);
+  }
   my->work_queue_condition_variable.notify_all();
   std::for_each(my->threads.begin(), my->threads.end(), [](std::thread& thread) { thread.join(); });
   my->threads.clear();
