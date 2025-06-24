@@ -10,6 +10,10 @@ INCLUDE(hive_build_types)
 project( Hive )
 cmake_minimum_required( VERSION 3.22.1 )
 
+if(POLICY CMP0167)
+   cmake_policy(SET CMP0167 OLD)
+endif()
+
 set( BLOCKCHAIN_NAME "Hive" )
 
 set( CMAKE_CXX_STANDARD 17 )
@@ -159,7 +163,7 @@ LIST( APPEND  BOOST_COMPONENTS
       system
       thread
       program_options
-      unit_test_framework )
+      unit_test_framework)
 
 set( GENERATED_ASSERT_ID_DIR ${CMAKE_BINARY_DIR}/generated_assert_id )
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
