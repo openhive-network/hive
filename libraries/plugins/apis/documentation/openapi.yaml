@@ -294,7 +294,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_accounts_response'
+                $ref: '#/components/schemas/find_accounts_response'
               example: {
                 "accounts": [
                   {
@@ -4115,6 +4115,13 @@ components:
           type: boolean
           example: true
           description: Optional.
+    find_accounts_response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/account'
     find_account_recovery:
       type: object
       properties:
@@ -4370,7 +4377,7 @@ components:
     find_vesting_delegation_expirations_response:
       type: object
       properties:
-        expirations:
+        delegations:
           type: array
           items:
             $ref: '#/components/schemas/vesting_delegation_expirations'
