@@ -2162,24 +2162,29 @@ paths:
                 "accounts": [
                   {
                     "active": {
-                      "account_auths": [],
+                      "account_auths": [
+                        [
+                          "pettycash",
+                          1
+                        ]
+                      ],
                       "key_auths": [
                         [
-                          "STM8dczRoMv35FZ9MHDHSDj75wQKT5P7B15o6CmgjmGvF7pHRFnm3",
+                          "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
                           1
                         ]
                       ],
                       "weight_threshold": 1
                     },
                     "balance": {
-                      "amount": "0",
+                      "amount": "743431",
                       "nai": "@@000000021",
                       "precision": 3
                     },
                     "can_vote": true,
                     "comment_count": 0,
-                    "created": "2025-03-14T17:49:21",
-                    "curation_rewards": 0,
+                    "created": "2020-03-06T12:22:51",
+                    "curation_rewards": 20,
                     "delayed_votes": [],
                     "delegated_vesting_shares": {
                       "amount": "0",
@@ -2187,39 +2192,39 @@ paths:
                       "precision": 6
                     },
                     "downvote_manabar": {
-                      "current_mana": 2523502754,
-                      "last_update_time": 1742298630
+                      "current_mana": 5831078449,
+                      "last_update_time": 1735711413
                     },
-                    "governance_vote_expiration_ts": "1969-12-31T23:59:59",
+                    "governance_vote_expiration_ts": "2026-05-11T00:45:09",
                     "hbd_balance": {
                       "amount": "0",
                       "nai": "@@000000013",
                       "precision": 3
                     },
-                    "hbd_last_interest_payment": "1970-01-01T00:00:00",
+                    "hbd_last_interest_payment": "2020-10-21T02:45:12",
                     "hbd_seconds": "0",
-                    "hbd_seconds_last_update": "1970-01-01T00:00:00",
-                    "id": 2561639,
+                    "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                    "id": 1370484,
                     "is_smt": false,
-                    "json_metadata": "[]",
+                    "json_metadata": "",
                     "last_account_recovery": "1970-01-01T00:00:00",
-                    "last_account_update": "1970-01-01T00:00:00",
+                    "last_account_update": "2021-11-09T21:56:27",
                     "last_owner_update": "1970-01-01T00:00:00",
-                    "last_post": "1970-01-01T00:00:00",
-                    "last_post_edit": "1970-01-01T00:00:00",
-                    "last_root_post": "1970-01-01T00:00:00",
-                    "last_vote_time": "1970-01-01T00:00:00",
+                    "last_post": "2025-03-20T16:39:33",
+                    "last_post_edit": "2025-03-20T16:39:33",
+                    "last_root_post": "2025-03-20T16:39:33",
+                    "last_vote_time": "2025-01-01T06:03:33",
                     "lifetime_vote_count": 0,
-                    "memo_key": "STM6MpgnBRjJv4pB2wGGSKVFeqNdLnAX1TSW2vn3ah4Pbqxtktq6j",
+                    "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
                     "mined": false,
-                    "name": "a--------------0",
+                    "name": "hiveio",
                     "next_vesting_withdrawal": "1969-12-31T23:59:59",
                     "open_recurrent_transfers": 0,
                     "owner": {
                       "account_auths": [],
                       "key_auths": [
                         [
-                          "STM7kSqdruvZrWgPxHaNSX1YEZzUr7xBLuALSeonk8NUp2eAV8FWB",
+                          "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
                           1
                         ]
                       ],
@@ -2228,24 +2233,33 @@ paths:
                     "pending_claimed_accounts": 0,
                     "pending_transfers": 0,
                     "post_bandwidth": 0,
-                    "post_count": 0,
+                    "post_count": 80,
                     "post_voting_power": {
-                      "amount": "10094011016",
+                      "amount": "23324313796",
                       "nai": "@@000000037",
                       "precision": 6
                     },
                     "posting": {
-                      "account_auths": [],
+                      "account_auths": [
+                        [
+                          "threespeak",
+                          1
+                        ],
+                        [
+                          "vimm.app",
+                          1
+                        ]
+                      ],
                       "key_auths": [
                         [
-                          "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q",
+                          "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
                           1
                         ]
                       ],
                       "weight_threshold": 1
                     },
-                    "posting_json_metadata": "",
-                    "posting_rewards": 0,
+                    "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                    "posting_rewards": 1919844,
                     "previous_owner_update": "1970-01-01T00:00:00",
                     "proxied_vsf_votes": [
                       0,
@@ -2255,14 +2269,14 @@ paths:
                     ],
                     "proxy": "",
                     "received_vesting_shares": {
-                      "amount": "10094011016",
+                      "amount": "0",
                       "nai": "@@000000037",
                       "precision": 6
                     },
-                    "recovery_account": "leo.voter",
+                    "recovery_account": "steempeak",
                     "reset_account": "null",
                     "reward_hbd_balance": {
-                      "amount": "0",
+                      "amount": "50418",
                       "nai": "@@000000013",
                       "precision": 3
                     },
@@ -2272,12 +2286,12 @@ paths:
                       "precision": 3
                     },
                     "reward_vesting_balance": {
-                      "amount": "0",
+                      "amount": "291242001054",
                       "nai": "@@000000037",
                       "precision": 6
                     },
                     "reward_vesting_hive": {
-                      "amount": "0",
+                      "amount": "171636",
                       "nai": "@@000000021",
                       "precision": 3
                     },
@@ -2286,6 +2300,32 @@ paths:
                       "nai": "@@000000021",
                       "precision": 3
                     },
+                    "savings_hbd_balance": {
+                      "amount": "0",
+                      "nai": "@@000000013",
+                      "precision": 3
+                    },
+                    "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                    "savings_hbd_seconds": "0",
+                    "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                    "savings_withdraw_requests": 0,
+                    "to_withdraw": 0,
+                    "vesting_shares": {
+                      "amount": "23324313796",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "vesting_withdraw_rate": {
+                      "amount": "0",
+                      "nai": "@@000000037",
+                      "precision": 6
+                    },
+                    "voting_manabar": {
+                      "current_mana": 22857989494,
+                      "last_update_time": 1735711413
+                    },
+                    "withdraw_routes": 0,
+                    "withdrawn": 0,
                     "witnesses_voted_for": 0
                   }
                 ]
@@ -3554,6 +3594,35 @@ components:
           format: date-time
           description: >-
             The time of the previous owner update made by the account.
+          curation_rewards:
+            type: integer
+            description: Total curation rewards accumulated by the account.
+          delayed_votes:
+            type: array
+            items:
+              $ref: '#/components/schemas/delayed_votes'
+            description: Array of delayed votes.
+          governance_vote_expiration_ts:
+            type: string
+            format: date-time
+            description: Timestamp when governance votes expire.
+          is_smt:
+            type: boolean
+            description: Indicates if the account is an SMT.
+          open_recurrent_transfers:
+            type: integer
+            description: Number of open recurrent transfers.
+          posting_rewards:
+            type: integer
+            description: Total posting rewards accumulated by the account.
+          proxied_vsf_votes:
+            type: array
+            items:
+              type: integer
+            description: Proxy votes levels.
+          witnesses_voted_for:
+            type: integer
+            description: Number of witnesses voted for by the account.
     account_recovery:
       type: object
       properties:
@@ -3946,6 +4015,20 @@ components:
           example: 11
           description: >-
             The ID of the request.
+    delayed_votes:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+          example: "2021-02-24T05:08:21"
+          description: >-
+            The time when the vote was delayed.
+        val:
+          type: string
+          example: "11550765516955"
+          description: >-
+            The value of the delayed vote, represented as a string.
     escrow:
       type: object
       properties:
