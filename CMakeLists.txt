@@ -10,6 +10,10 @@ INCLUDE(hive_build_types)
 project( Hive )
 cmake_minimum_required( VERSION 3.22.1 )
 
+if(POLICY CMP0167)
+   cmake_policy(SET CMP0167 OLD)
+endif()
+
 set( BLOCKCHAIN_NAME "Hive" )
 
 set( CMAKE_CXX_STANDARD 17 )

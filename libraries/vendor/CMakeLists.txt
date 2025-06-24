@@ -49,11 +49,13 @@ GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
 
 MESSAGE ( STATUS "Snappy::snappy (IMPORTED_LOCATION): ${prop}" )
 
-GET_TARGET_PROPERTY( prop Snappy::snappy-static IMPORTED_LOCATION_RELWITHDEBINFO )
+# Seems that nowadays versions of smappy library define just single target:
 
-MESSAGE ( STATUS "Snappy::snappy-static (IMPORTED_LOCATION): ${prop}" )
-
-SET_TARGET_PROPERTIES( Snappy::snappy PROPERTIES IMPORTED_LOCATION ${prop} IMPORTED_LOCATION_RELWITHDEBINFO ${prop} )
+IF ( TARGET Snappy::snappy-static )
+  GET_TARGET_PROPERTY( prop Snappy::snappy-static IMPORTED_LOCATION_RELWITHDEBINFO )
+  MESSAGE ( STATUS "Snappy::snappy-static (IMPORTED_LOCATION): ${prop}, overriding standard target path to force static linking" )
+  SET_TARGET_PROPERTIES( Snappy::snappy PROPERTIES IMPORTED_LOCATION ${prop} IMPORTED_LOCATION_RELWITHDEBINFO ${prop} )
+ENDIF()
 
 SET(ZSTD_BUILD_SHARED OFF)
 SET(ZSTD_BUILD_STATIC ON)
