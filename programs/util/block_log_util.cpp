@@ -38,12 +38,23 @@
 #include <atomic>
 #include <algorithm>
 
-#define CREATE_APP_AND_THREAD_POOL                                                                             \
-  appbase::application theApp;                                                                                 \
-  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool(theApp); \
-  thread_pool.set_thread_pool_size(threads_num);                                                               \
-  BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); }                                                   \
-  BOOST_SCOPE_EXIT_END
+struct shutdown_executor
+{
+  shutdown_executor(uint32_t threads_num) :
+    the_app(),
+    thread_pool( hive::chain::blockchain_worker_thread_pool(the_app) )
+  {
+    thread_pool.set_thread_pool_size(threads_num);
+  }
+  ~shutdown_executor()
+  {
+    // Ensure that the thread pool is shut down before its users' destructors are called.
+    thread_pool.shutdown();
+  }
+
+  appbase::application the_app;
+  hive::chain::blockchain_worker_thread_pool thread_pool;
+};
 
 using block_log_info = hive::chain::block_log_file_name_info;
 
@@ -1115,10 +1126,10 @@ int main(int argc, char **argv)
         return 1;
       }
 
-      CREATE_APP_AND_THREAD_POOL
+      shutdown_executor se(threads_num);
 
       dlog("block_log_util will perform verify-checksums-from-file operation on file: ${path_to_file}", (path_to_file));
-      return validate_block_log_checksums_from_file(path_to_file, theApp, thread_pool) ? 0 : 1;
+      return validate_block_log_checksums_from_file(path_to_file, se.the_app, se.thread_pool) ? 0 : 1;
     }
     else if (options_map.count("merge-block-logs"))
     {
@@ -1144,10 +1155,10 @@ int main(int argc, char **argv)
         return 1;
       }
 
-      CREATE_APP_AND_THREAD_POOL
+      shutdown_executor se(threads_num);
 
       dlog("block_log_util will perform merge block logs operation. Input directory: ${input_block_log_files_dir}, output directory: ${output_block_log_file_dir}, block-number: ${max_block_number}", (input_block_log_files_dir)(output_block_log_file_dir)(max_block_number));
-      return merge_block_logs(input_block_log_files_dir, output_block_log_file_dir, max_block_number, theApp, thread_pool) ? 0 : 1;
+      return merge_block_logs(input_block_log_files_dir, output_block_log_file_dir, max_block_number, se.the_app, se.thread_pool) ? 0 : 1;
     }
     // we should handle operation which request block_log file
     else
@@ -1195,7 +1206,7 @@ int main(int argc, char **argv)
         return 1;
       }
 
-      CREATE_APP_AND_THREAD_POOL
+      shutdown_executor se(threads_num);
 
       if (options_map.count("compare"))
       {
@@ -1210,7 +1221,7 @@ int main(int argc, char **argv)
         const fc::path second_block_log_path = options_map["second-block-log"].as<boost::filesystem::path>();
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
         dlog("block_log_util will perform compare operation between block_log: ${block_log_path} and ${second_block_log_path}, from: ${first_block}, to: ${last_block}", (block_log_path)(second_block_log_path)(first_block)(last_block));
-        return compare_block_logs(block_log_path, second_block_log_path, first_block, last_block, theApp, thread_pool) ? 0 : 1;
+        return compare_block_logs(block_log_path, second_block_log_path, first_block, last_block, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("find-end"))
       {
@@ -1220,7 +1231,7 @@ int main(int argc, char **argv)
       else if (options_map.count("generate-artifacts"))
       {
         dlog("block_log_util will open block_log: ${block_log_path} and generate artifacts file if necessary", (block_log_path));
-        return generate_artifacts(block_log_path, theApp, thread_pool) ? 0 : 1;
+        return generate_artifacts(block_log_path, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block"))
       {
@@ -1234,7 +1245,7 @@ int main(int argc, char **argv)
         ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
              (block_log_path)(first_block)(last_block)(header_only)(pretty)(binary)(output_dir));
 
-        return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, theApp, thread_pool) ? 0 : 1;
+        return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block-artifacts"))
       {
@@ -1248,7 +1259,7 @@ int main(int argc, char **argv)
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
         dlog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
              (block_log_path)(first_block)(last_block)(header_only)(full_match_verification));
-        return get_block_artifacts(block_log_path, first_block, last_block, header_only, full_match_verification, theApp, thread_pool) ? 0 : 1;
+        return get_block_artifacts(block_log_path, first_block, last_block, header_only, full_match_verification, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("get-block-ids"))
       {
@@ -1259,14 +1270,14 @@ int main(int argc, char **argv)
 
         dlog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, print_block_numbers: ${print_block_numbers}",
              (block_log_path)(first_block)(last_block)(print_block_numbers));
-        return get_block_ids(block_log_path, first_block, last_block, print_block_numbers, theApp, thread_pool) ? 0 : 1;
+        return get_block_ids(block_log_path, first_block, last_block, print_block_numbers, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("sha256sum"))
       {
         update_options_map(sha256sum_options);
         const fc::optional<uint32_t> checkpoint_every_n_blocks = options_map.count("checkpoint") ? options_map["checkpoint"].as<uint32_t>() : fc::optional<uint32_t>();
         dlog("block_log_util will perform sha256sum operation on block_log: ${block_log_path}, checkpoint_every_n_blocks: ${checkpoint_every_n_blocks}", (block_log_path)(checkpoint_every_n_blocks));
-        checksum_block_log(block_log_path, checkpoint_every_n_blocks, theApp, thread_pool);
+        checksum_block_log(block_log_path, checkpoint_every_n_blocks, se.the_app, se.thread_pool);
       }
       else if (options_map.count("split"))
       {
@@ -1289,7 +1300,7 @@ int main(int argc, char **argv)
         const fc::path output_dir = options_map["output-dir"].as<boost::filesystem::path>();
         dlog("block_log_util will perform split block_log operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, output_dir: ${output_dir}, files_count: ${files_count}",
              (block_log_path)(first_block)(last_block)(output_dir)(files_count));
-        return split_block_log(block_log_path, first_block, last_block, output_dir, files_count, theApp, thread_pool) ? 0 : 1;
+        return split_block_log(block_log_path, first_block, last_block, output_dir, files_count, se.the_app, se.thread_pool) ? 0 : 1;
       }
       else if (options_map.count("truncate"))
       {
@@ -1298,12 +1309,12 @@ int main(int argc, char **argv)
         const uint32_t block_number = options_map["block-number"].as<uint32_t>();
         const bool force = options_map.count("force") ? true : false;
         dlog("block_log_util will perform truncate operation on block_log: ${block_log_path}, block_number: ${block_number}, force: ${force}", (block_log_path)(block_number)(force));
-        truncate_block_log(block_log_path, block_number, force, theApp, thread_pool);
+        truncate_block_log(block_log_path, block_number, force, se.the_app, se.thread_pool);
       }
       else if (options_map.count("get-head-block-number"))
       {
         dlog("block_log_util will perform get-head-block-number operation on block_log: ${block_log_path}", (block_log_path));
-        get_head_block_number(block_log_path, theApp, thread_pool);
+        get_head_block_number(block_log_path, se.the_app, se.thread_pool);
       }
       else
         FC_THROW("block_log operation was not recognized. cmd arguments: ${args}", ("args", get_arguments_as_string(options_map)));
