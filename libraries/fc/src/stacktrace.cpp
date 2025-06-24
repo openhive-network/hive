@@ -212,7 +212,7 @@ void segfault_handler(int sig_num, siginfo_t * info, void * ucontext)
 #elif defined(__x86_64__) // gcc specific
    caller_address = (void *) uc->uc_mcontext.rip; // RIP: x86_64 specific
 #else
-#error Unsupported architecture. // TODO: Add support for other arch.
+//#error Unsupported architecture. // TODO: Add support for other arch.
 #endif
 
    FC_UNUSED(caller_address);
