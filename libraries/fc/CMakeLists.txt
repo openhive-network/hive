@@ -15,6 +15,7 @@ INCLUDE(GetPrerequisites)
 INCLUDE( VersionMacros )
 INCLUDE( SetupTargetMacros )
 INCLUDE(GetGitRevisionDescription)
+INCLUDE(FindSSE)
 
 get_git_head_revision("${CMAKE_CURRENT_SOURCE_DIR}" GIT_REFSPEC FC_GIT_REVISION_SHA)
 get_git_unix_timestamp("${CMAKE_CURRENT_SOURCE_DIR}" FC_GIT_REVISION_UNIX_TIMESTAMP)
@@ -98,7 +99,7 @@ else ( MSVC )
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${SECP256K1_SRC_DIR}
      BINARY_DIR ${SEC256K1_BINARY_DIR}
-     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
+     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --host=${CMAKE_SYSTEM_PROCESSOR} --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.a ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.so
@@ -279,7 +280,7 @@ setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRA
 # begin readline stuff
 find_package(Curses)
 
-set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
+set( Readline_USE_STATIC_LIBS OFF CACHE BOOL "Use static readline libraries" )
 find_package(Readline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
