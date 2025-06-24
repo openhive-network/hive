@@ -62,7 +62,7 @@ MACRO( ADD_TARGET_PACKAGE_LIBRARIES target_name _package_name use_static_libs )
 
   IF ( ${use_static_libs} )
     MESSAGE( STATUS "Setting up ${_package_name} STATIC libraries for target: ${target_name}" )
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
     SET( ${package_name}_USE_STATIC_LIBS TRUE )
   ELSE() 
     MESSAGE( STATUS "Setting up ${_package_name} SHARED libraries for target: ${target_name}" )
