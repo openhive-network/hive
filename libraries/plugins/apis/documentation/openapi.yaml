@@ -4418,6 +4418,16 @@ components:
             oneOf:
               - $ref: '#/components/schemas/comment_pending_payout_type'
               - $ref: '#/components/schemas/comment_pending_empty_payout_type'
+    get_active_witnesses_response:
+      type: object
+      properties:
+        witnesses:
+          type: array
+          items:
+            type: string
+          example: ["witness1", "witness2"]
+          description: >-
+            An array of strings representing the active witnesses.
     get_config_response:
       type: object
       properties:
@@ -5088,6 +5098,193 @@ components:
           $ref: '#/components/schemas/balance'
         quote:
           $ref: '#/components/schemas/balance'
+    get_dynamic_global_properties_response:
+      type: object
+      properties:
+        available_account_subsidies:
+          type: integer
+          description: >-
+            Number of available account creation subsidies, representing how many new accounts can be created with existing budget.
+        content_reward_percent:
+          type: integer
+          description: >-
+            Percentage of the total reward pool allocated to content creators based on voting.
+        current_aslot:
+          type: integer
+          description: >-
+            The current "average slot" number, an indicator of the current position in the consensus schedule.
+        current_hbd_supply:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The current total supply of Hive-backed dollars (HBD) in circulation.
+        current_remove_threshold:
+          type: integer
+          description: >-
+            The current threshold (in basis points) for account removal or vesting actions.
+        current_supply:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The total supply of HIVE tokens currently in circulation.
+        current_witness:
+          type: string
+          description: >-
+            Name of the witness currently producing the block.
+        delegation_return_period:
+          type: integer
+          description: >-
+            The period (in seconds) after which delegated vesting shares are returned.
+        dhf_interval_ledger:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The balance-adjusted ledger amount associated with the Dynamic Hosting Fund (DHF) interval.
+        downvote_pool_percent:
+          type: integer
+          description: >-
+            The percentage (basis points) of the total voting power allocated to the downvote pool.
+        early_voting_seconds:
+          type: integer
+          description: >-
+            Duration in seconds during which early votes are accepted before the official voting period.
+        hbd_interest_rate:
+          type: integer
+          description: >-
+            Annual interest rate (in basis points) paid on HBD savings or deposits.
+        hbd_print_rate:
+          type: integer
+          description: >-
+            Rate (basis points) determining how much HBD is printed or issued based on economic conditions.
+        hbd_start_percent:
+          type: integer
+          description: >-
+            The minimum percentage at which HBD creation process begins under peg stability mechanisms.
+        hbd_stop_percent:
+          type: integer
+          description: >-
+            The maximum percentage at which HBD creation halts during the peg stabilization process.
+        head_block_id:
+          type: string
+          description: >-
+            The block ID of the latest block in the chain.
+        head_block_number:
+          type: integer
+          description: >-
+            The number (height) of the latest block.
+        id:
+          type: integer
+          description: >-
+            Unique ID for the global properties object.
+        init_hbd_supply:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The initial amount of HBD supply at network launch or reset.
+        last_budget_time:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp of the last budget allocation cycle.
+        last_irreversible_block_num:
+          type: integer
+          description: >-
+            Block number of the last irreversible block (finalized confirmed block).
+        max_consecutive_recurrent_transfer_failures:
+          type: integer
+          description: >-
+            Maximum allowed consecutive failures for scheduled recurrent transfers before cancellation.
+        max_open_recurrent_transfers:
+          type: integer
+          description: >-
+            Maximum number of concurrently active recurrent transfer schedules.
+        max_recurrent_transfer_end_date:
+          type: integer
+          description: >-
+            The maximum allowed end date (timestamp in days) for recurrent transfer schedules.
+        maximum_block_size:
+          type: integer
+          description: >-
+            The maximum size (in bytes) allowed for a single block.
+        mid_voting_seconds:
+          type: integer
+          description: >-
+            Duration (in seconds) of mid-phase voting window for proposals.
+        min_recurrent_transfers_recurrence:
+          type: integer
+          description: >-
+            Minimum recurrence interval (in hours) for scheduled recurrent transfers.
+        next_daily_maintenance_time:
+          type: string
+          format: date-time
+          description: >-
+            Scheduled time for the next daily blockchain maintenance.
+        next_maintenance_time:
+          type: string
+          format: date-time
+          description: >-
+            Scheduled time for the overall next blockchain maintenance.
+        num_pow_witnesses:
+          type: integer
+          description: >-
+            Count of proof-of-work (PoW) witnesses active in the network.
+        participation_count:
+          type: integer
+          description: >-
+            Number of active participants/stakeholders currently participating in governance or voting processes.
+        pending_rewarded_vesting_hive:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of HIVE tokens pending as vested rewards that will be converted into vesting shares.
+        pending_rewarded_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The amount of vesting shares slated to be awarded as part of pending rewards.
+        proposal_fund_percent:
+          type: integer
+          description: >-
+            Percentage of the total reward fund allocated for governance proposals, incentive programs, or development funding.
+        recent_slots_filled:
+          type: string
+          description: >-
+            String representing the high-water mark of recent slots filled, typically a large number indicating network activity.
+        reverse_auction_seconds:
+          type: integer
+          description: >-
+            Duration in seconds allocated to reverse auction procedures, possibly for resource allocation.
+        time:
+          type: string
+          format: date-time
+          description: >-
+            The current blockchain timestamp.
+        total_pow:
+          type: integer
+          description: >-
+            Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily.
+        total_reward_fund_hive:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The total reward fund HIVE.
+        total_reward_shares2:
+          type: string
+          description: >-
+            String representing reward shares (possibly an internal accounting value).
+        total_vesting_fund_hive:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            Total HIVE allocated to vesting (vesting fund) — funds set aside for vesting.
+        total_vesting_shares:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            Total vesting shares issued.
+        vesting_reward_percent:
+          type: integer
+          description: >-
+            Percentage (basis points) of reward allocated to vesting.
+        virtual_supply:
+          $ref: '#/components/schemas/balance'
+          description: >-
+            The blockchain's "virtual" supply, an internal accounting measure that may slightly differ from actual circulating tokens.
+        vote_power_reserve_rate:
+          type: integer
+          description: >-
+            The rate at which vote power reserves are maintained or replenished.
     get_feed_history_response:
       type: object
       properties:
