@@ -33,7 +33,7 @@ if [ "${TARGET_COMMIT}" != "${CURRENT_COMMIT}" ]; then
     echo "Hive source changed to ${HIVE_SRC}"
 fi
 
-"${HIVE_SRC}/scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh"
+"${HIVE_SRC}/scripts/ci-helpers/prepare_extended_mirrornet_block_log.sh" --push
 
 if ! cmp -s "${HIVE_SRC}/block_log.env" "${WORKING_DIR}/block_log.env"; then
     mv "${HIVE_SRC}/block_log.env" "${WORKING_DIR}/block_log.env"

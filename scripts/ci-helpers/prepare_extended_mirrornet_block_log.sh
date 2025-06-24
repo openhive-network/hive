@@ -18,6 +18,14 @@ COMPRESS_BLOCK_LOG_PATH=${COMPRESS_BLOCK_LOG_PATH:-"${BINARY_PATH}/compress_bloc
 BLOCKCHAIN_CONVERTER_PATH=${BLOCKCHAIN_CONVERTER_PATH:-"${BINARY_PATH}/blockchain_converter"}
 BLOCK_LOG_UTIL_PATH=${BLOCK_LOG_UTIL_PATH:-"${BINARY_PATH}/block_log_util"}
 
+IMAGE_OUTPUT="--load"
+for arg in "$@"; do
+  if [ "$arg" == "--push" ]; then
+    IMAGE_OUTPUT="--push"
+    break
+  fi
+done
+
 # The image tag is generated from the checksum of these source files.
 IMAGE_SOURCE_FILES=(
   "scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml"
@@ -115,12 +123,18 @@ COPY *.json /blockchain/
 COPY block_log* /blockchain/
 EOF
 
-time docker build \
-    --tag "${IMAGE_FULL_NAME}" \
-    --file "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}/Dockerfile" \
-    "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}"
+time docker buildx build \
+  --progress="plain" \
+  --tag "$IMAGE_FULL_NAME" \
+  "$IMAGE_OUTPUT" \
+  --file "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}/Dockerfile" \
+  "${EXTENDED_MIRRORNET_BLOCKCHAIN_DATA_DIR}"
 
-time docker push "${IMAGE_FULL_NAME}"
+if [ "$IMAGE_OUTPUT" = "--push" ]; then
+  echo "Image pushed: $IMAGE_FULL_NAME"
+else
+  echo "Image built locally: $IMAGE_FULL_NAME"
+fi
 
 generate-env
 
