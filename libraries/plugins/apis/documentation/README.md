@@ -1,7 +1,7 @@
 **1. Start HTTP server in current directory**
 
 ```
-python3 start-swagger.py --url:192.168.6.7
+python3 start-swagger.py --url 192.168.6.7
 ```
 
 ```
