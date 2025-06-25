@@ -5673,6 +5673,14 @@ components:
         chain_id:
           type: string
           example: "beeab0de00000000000000000000000000000000000000000000000000000000"
+        haf_revision:
+          type: string
+          example: "0e2bd7c69cc26928665281435165fd3288940db9"
+        node_type:
+          type: string
+          example: "mainnet"
+          description: >-
+            The type of node (e.g., mainnet, testnet).
     get_witness_schedule_response:
       type: object
       properties:
