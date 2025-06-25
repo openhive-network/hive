@@ -3684,11 +3684,19 @@ components:
         account_auths:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/auth_with_weight'
         key_auths:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/auth_with_weight'
+    auth_with_weight:
+      type: array
+      items:
+        anyOf:
+          - type: string
+          - type: integer
+      minItems: 2
+      maxItems: 2
     balance:
       type: object
       properties:
