@@ -4004,6 +4004,9 @@ components:
           example: "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
         cashout_info:
           $ref: '#/components/schemas/cashout_info'
+      required:
+        - author
+        - permlink
     decline_voting_rights:
       type: object
       properties:
@@ -4513,9 +4516,7 @@ components:
         cashout_infos:
           type: array
           items:
-            oneOf:
-              - $ref: '#/components/schemas/comment_pending_payout_type'
-              - $ref: '#/components/schemas/comment_pending_empty_payout_type'
+            $ref: '#/components/schemas/comment_pending_payout_type'
     get_active_witnesses_response:
       type: object
       properties:
