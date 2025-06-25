@@ -5522,19 +5522,19 @@ components:
           description: >-
             The ID of the feed history.
         current_max_history:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/base_and_quote'
           description: >-
             The current maximum history of the feed.
         current_median_history:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/base_and_quote'
           description: >-
             The current median history of the feed.
         current_min_history:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/base_and_quote'
           description: >-
             The current minimum history of the feed.
         market_median_history:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/base_and_quote'
           description: >-
             The market median history of the feed.
         price_history:
