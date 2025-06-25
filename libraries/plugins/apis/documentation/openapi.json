@@ -299,7 +299,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/list_accounts_response"
+                                    "$ref": "#/components/schemas/find_accounts_response"
                                 },
                                 "example": {
                                     "accounts": [
@@ -1439,7 +1439,7 @@
                                     "SMT_MAX_ICO_TIERS": 10,
                                     "HBD_SYMBOL": {
                                         "nai": "@@000000013",
-                                        "precision": 3
+                                        "decimals": 3
                                     },
                                     "HIVE_INITIAL_VOTE_POWER_RATE": 40,
                                     "HIVE_REDUCED_VOTE_POWER_RATE": 10,
@@ -1649,11 +1649,11 @@
                                     "HIVE_VOTING_MANA_REGENERATION_SECONDS": 432000,
                                     "HIVE_SYMBOL": {
                                         "nai": "@@000000021",
-                                        "precision": 3
+                                        "decimals": 3
                                     },
                                     "VESTS_SYMBOL": {
                                         "nai": "@@000000037",
-                                        "precision": 6
+                                        "decimals": 6
                                     },
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": "18446744073709551615",
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2": "340282366920938463463374607431768211455",
@@ -2422,24 +2422,29 @@
                                     "accounts": [
                                         {
                                             "active": {
-                                                "account_auths": [],
+                                                "account_auths": [
+                                                    [
+                                                        "pettycash",
+                                                        1
+                                                    ]
+                                                ],
                                                 "key_auths": [
                                                     [
-                                                        "STM8dczRoMv35FZ9MHDHSDj75wQKT5P7B15o6CmgjmGvF7pHRFnm3",
+                                                        "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
                                                         1
                                                     ]
                                                 ],
                                                 "weight_threshold": 1
                                             },
                                             "balance": {
-                                                "amount": "0",
+                                                "amount": "743431",
                                                 "nai": "@@000000021",
                                                 "precision": 3
                                             },
                                             "can_vote": true,
                                             "comment_count": 0,
-                                            "created": "2025-03-14T17:49:21",
-                                            "curation_rewards": 0,
+                                            "created": "2020-03-06T12:22:51",
+                                            "curation_rewards": 20,
                                             "delayed_votes": [],
                                             "delegated_vesting_shares": {
                                                 "amount": "0",
@@ -2447,39 +2452,39 @@
                                                 "precision": 6
                                             },
                                             "downvote_manabar": {
-                                                "current_mana": 2523502754,
-                                                "last_update_time": 1742298630
+                                                "current_mana": 5831078449,
+                                                "last_update_time": 1735711413
                                             },
-                                            "governance_vote_expiration_ts": "1969-12-31T23:59:59",
+                                            "governance_vote_expiration_ts": "2026-05-11T00:45:09",
                                             "hbd_balance": {
                                                 "amount": "0",
                                                 "nai": "@@000000013",
                                                 "precision": 3
                                             },
-                                            "hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                            "hbd_last_interest_payment": "2020-10-21T02:45:12",
                                             "hbd_seconds": "0",
-                                            "hbd_seconds_last_update": "1970-01-01T00:00:00",
-                                            "id": 2561639,
+                                            "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                            "id": 1370484,
                                             "is_smt": false,
-                                            "json_metadata": "[]",
+                                            "json_metadata": "",
                                             "last_account_recovery": "1970-01-01T00:00:00",
-                                            "last_account_update": "1970-01-01T00:00:00",
+                                            "last_account_update": "2021-11-09T21:56:27",
                                             "last_owner_update": "1970-01-01T00:00:00",
-                                            "last_post": "1970-01-01T00:00:00",
-                                            "last_post_edit": "1970-01-01T00:00:00",
-                                            "last_root_post": "1970-01-01T00:00:00",
-                                            "last_vote_time": "1970-01-01T00:00:00",
+                                            "last_post": "2025-03-20T16:39:33",
+                                            "last_post_edit": "2025-03-20T16:39:33",
+                                            "last_root_post": "2025-03-20T16:39:33",
+                                            "last_vote_time": "2025-01-01T06:03:33",
                                             "lifetime_vote_count": 0,
-                                            "memo_key": "STM6MpgnBRjJv4pB2wGGSKVFeqNdLnAX1TSW2vn3ah4Pbqxtktq6j",
+                                            "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
                                             "mined": false,
-                                            "name": "a--------------0",
+                                            "name": "hiveio",
                                             "next_vesting_withdrawal": "1969-12-31T23:59:59",
                                             "open_recurrent_transfers": 0,
                                             "owner": {
                                                 "account_auths": [],
                                                 "key_auths": [
                                                     [
-                                                        "STM7kSqdruvZrWgPxHaNSX1YEZzUr7xBLuALSeonk8NUp2eAV8FWB",
+                                                        "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
                                                         1
                                                     ]
                                                 ],
@@ -2488,24 +2493,33 @@
                                             "pending_claimed_accounts": 0,
                                             "pending_transfers": 0,
                                             "post_bandwidth": 0,
-                                            "post_count": 0,
+                                            "post_count": 80,
                                             "post_voting_power": {
-                                                "amount": "10094011016",
+                                                "amount": "23324313796",
                                                 "nai": "@@000000037",
                                                 "precision": 6
                                             },
                                             "posting": {
-                                                "account_auths": [],
+                                                "account_auths": [
+                                                    [
+                                                        "threespeak",
+                                                        1
+                                                    ],
+                                                    [
+                                                        "vimm.app",
+                                                        1
+                                                    ]
+                                                ],
                                                 "key_auths": [
                                                     [
-                                                        "STM4uSuD4da2uqp52J2pQ7Pth3hGa7j4ECyrHASnXmmH16NymEg6Q",
+                                                        "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
                                                         1
                                                     ]
                                                 ],
                                                 "weight_threshold": 1
                                             },
-                                            "posting_json_metadata": "",
-                                            "posting_rewards": 0,
+                                            "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                            "posting_rewards": 1919844,
                                             "previous_owner_update": "1970-01-01T00:00:00",
                                             "proxied_vsf_votes": [
                                                 0,
@@ -2515,14 +2529,14 @@
                                             ],
                                             "proxy": "",
                                             "received_vesting_shares": {
-                                                "amount": "10094011016",
+                                                "amount": "0",
                                                 "nai": "@@000000037",
                                                 "precision": 6
                                             },
-                                            "recovery_account": "leo.voter",
+                                            "recovery_account": "steempeak",
                                             "reset_account": "null",
                                             "reward_hbd_balance": {
-                                                "amount": "0",
+                                                "amount": "50418",
                                                 "nai": "@@000000013",
                                                 "precision": 3
                                             },
@@ -2532,12 +2546,12 @@
                                                 "precision": 3
                                             },
                                             "reward_vesting_balance": {
-                                                "amount": "0",
+                                                "amount": "291242001054",
                                                 "nai": "@@000000037",
                                                 "precision": 6
                                             },
                                             "reward_vesting_hive": {
-                                                "amount": "0",
+                                                "amount": "171636",
                                                 "nai": "@@000000021",
                                                 "precision": 3
                                             },
@@ -2546,6 +2560,32 @@
                                                 "nai": "@@000000021",
                                                 "precision": 3
                                             },
+                                            "savings_hbd_balance": {
+                                                "amount": "0",
+                                                "nai": "@@000000013",
+                                                "precision": 3
+                                            },
+                                            "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                            "savings_hbd_seconds": "0",
+                                            "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                            "savings_withdraw_requests": 0,
+                                            "to_withdraw": 0,
+                                            "vesting_shares": {
+                                                "amount": "23324313796",
+                                                "nai": "@@000000037",
+                                                "precision": 6
+                                            },
+                                            "vesting_withdraw_rate": {
+                                                "amount": "0",
+                                                "nai": "@@000000037",
+                                                "precision": 6
+                                            },
+                                            "voting_manabar": {
+                                                "current_mana": 22857989494,
+                                                "last_update_time": 1735711413
+                                            },
+                                            "withdraw_routes": 0,
+                                            "withdrawn": 0,
                                             "witnesses_voted_for": 0
                                         }
                                     ]
@@ -3767,7 +3807,46 @@
                     "previous_owner_update": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "The time of the previous owner update made by the account."
+                        "description": "The time of the previous owner update made by the account.",
+                        "curation_rewards": {
+                            "type": "integer",
+                            "description": "Total curation rewards accumulated by the account."
+                        },
+                        "delayed_votes": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/delayed_votes"
+                            },
+                            "description": "Array of delayed votes."
+                        },
+                        "governance_vote_expiration_ts": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Timestamp when governance votes expire."
+                        },
+                        "is_smt": {
+                            "type": "boolean",
+                            "description": "Indicates if the account is an SMT."
+                        },
+                        "open_recurrent_transfers": {
+                            "type": "integer",
+                            "description": "Number of open recurrent transfers."
+                        },
+                        "posting_rewards": {
+                            "type": "integer",
+                            "description": "Total posting rewards accumulated by the account."
+                        },
+                        "proxied_vsf_votes": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            },
+                            "description": "Proxy votes levels."
+                        },
+                        "witnesses_voted_for": {
+                            "type": "integer",
+                            "description": "Number of witnesses voted for by the account."
+                        }
                     }
                 }
             },
@@ -3849,16 +3928,31 @@
                     "account_auths": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/auth_with_weight"
                         }
                     },
                     "key_auths": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/auth_with_weight"
                         }
                     }
                 }
+            },
+            "auth_with_weight": {
+                "type": "array",
+                "items": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2
             },
             "balance": {
                 "type": "object",
@@ -4285,6 +4379,22 @@
                     }
                 }
             },
+            "delayed_votes": {
+                "type": "object",
+                "properties": {
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2021-02-24T05:08:21",
+                        "description": "The time when the vote was delayed."
+                    },
+                    "val": {
+                        "type": "string",
+                        "example": "11550765516955",
+                        "description": "The value of the delayed vote, represented as a string."
+                    }
+                }
+            },
             "escrow": {
                 "type": "object",
                 "properties": {
@@ -4383,6 +4493,17 @@
                         "type": "boolean",
                         "example": true,
                         "description": "Optional."
+                    }
+                }
+            },
+            "find_accounts_response": {
+                "type": "object",
+                "properties": {
+                    "accounts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/account"
+                        }
                     }
                 }
             },
@@ -4752,7 +4873,7 @@
             "find_vesting_delegation_expirations_response": {
                 "type": "object",
                 "properties": {
-                    "expirations": {
+                    "delegations": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/vesting_delegation_expirations"
@@ -4946,6 +5067,22 @@
                     }
                 }
             },
+            "get_active_witnesses_response": {
+                "type": "object",
+                "properties": {
+                    "witnesses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "witness1",
+                            "witness2"
+                        ],
+                        "description": "An array of strings representing the active witnesses."
+                    }
+                }
+            },
             "get_config_response": {
                 "type": "object",
                 "properties": {
@@ -5006,7 +5143,7 @@
                         "description": "Max ICO tiers for SMT."
                     },
                     "HBD_SYMBOL": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/nai_decimal",
                         "description": "HBD asset symbol and precision."
                     },
                     "HIVE_INITIAL_VOTE_POWER_RATE": {
@@ -5690,11 +5827,11 @@
                         "description": "Voting mana regeneration in seconds."
                     },
                     "HIVE_SYMBOL": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/nai_decimal",
                         "description": "HIVE asset symbol and precision."
                     },
                     "VESTS_SYMBOL": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/nai_decimal",
                         "description": "VESTS asset symbol and precision."
                     },
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": {
@@ -5828,6 +5965,190 @@
                     "HIVE_DB_FORMAT_VERSION": {
                         "type": "string",
                         "description": "Database format version."
+                    },
+                    "HIVE_1_BASIS_POINT": {
+                        "type": "integer",
+                        "description": "One basis point in HIVE."
+                    },
+                    "HIVE_COLLATERALIZED_CONVERSION_DELAY": {
+                        "type": "integer",
+                        "description": "Delay for collateralized conversion (in microseconds)."
+                    },
+                    "HIVE_COLLATERALIZED_CONVERSION_FEE": {
+                        "type": "integer",
+                        "description": "Fee for collateralized conversion (in basis points)."
+                    },
+                    "HIVE_CONVERSION_COLLATERAL_RATIO": {
+                        "type": "integer",
+                        "description": "Collateral ratio for conversion."
+                    },
+                    "HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD": {
+                        "type": "integer",
+                        "description": "Daily proposal maintenance period (seconds)."
+                    },
+                    "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
+                        "type": "string",
+                        "description": "Default public key string for HF9 compromised accounts."
+                    },
+                    "HIVE_DELAYED_VOTING_INTERVAL_SECONDS": {
+                        "type": "integer",
+                        "description": "Delayed voting interval in seconds."
+                    },
+                    "HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS": {
+                        "type": "integer",
+                        "description": "Total delayed voting interval in seconds."
+                    },
+                    "HIVE_EARLY_VOTING_SECONDS_HF25": {
+                        "type": "integer",
+                        "description": "Early voting period for HF25 in seconds."
+                    },
+                    "HIVE_ENABLE_SMT": {
+                        "type": "boolean",
+                        "description": "Flag to enable SMT (Simple Mining Token)."
+                    },
+                    "HIVE_GLOBAL_REMOVE_THRESHOLD": {
+                        "type": "integer",
+                        "description": "Global threshold for account removal (basis points)."
+                    },
+                    "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD": {
+                        "type": "integer",
+                        "description": "Governance vote expiration period (in microseconds)."
+                    },
+                    "HIVE_HBD_HARD_LIMIT": {
+                        "type": "integer",
+                        "description": "Hard limit for HBD supply."
+                    },
+                    "HIVE_HBD_HARD_LIMIT_PRE_HF26": {
+                        "type": "integer",
+                        "description": "Pre-HF26 hard limit for HBD supply."
+                    },
+                    "HIVE_HBD_START_PERCENT_HF26": {
+                        "type": "integer",
+                        "description": "HBD start percent for HF26."
+                    },
+                    "HIVE_HBD_STOP_PERCENT_HF26": {
+                        "type": "integer",
+                        "description": "HBD stop percent for HF26."
+                    },
+                    "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
+                        "type": "string",
+                        "description": "Public key string for HF9 compromised accounts."
+                    },
+                    "HIVE_INIT_PUBLIC_KEY": {
+                        "type": "string",
+                        "description": "Public key for the initial account."
+                    },
+                    "HIVE_MAX_COMMENT_BENEFICIARIES": {
+                        "type": "integer",
+                        "description": "Maximum number of beneficiaries for a comment."
+                    },
+                    "HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES": {
+                        "type": "integer",
+                        "description": "Maximum consecutive failures for recurrent transfers."
+                    },
+                    "HIVE_MAX_OPEN_RECURRENT_TRANSFERS": {
+                        "type": "integer",
+                        "description": "Maximum number of open recurrent transfers."
+                    },
+                    "HIVE_MAX_PENDING_TRANSFERS": {
+                        "type": "integer",
+                        "description": "Maximum number of pending transfers."
+                    },
+                    "HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK": {
+                        "type": "integer",
+                        "description": "Maximum number of recurrent transfers allowed per block."
+                    },
+                    "HIVE_MAX_RECURRENT_TRANSFER_END_DATE": {
+                        "type": "integer",
+                        "description": "Maximum end date for recurrent transfers in days."
+                    },
+                    "HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION": {
+                        "type": "integer",
+                        "description": "Maximum time until signature expiration in seconds."
+                    },
+                    "HIVE_MID_VOTING_SECONDS_HF25": {
+                        "type": "integer",
+                        "description": "Mid-voting period for HF25 in seconds."
+                    },
+                    "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE": {
+                        "type": "integer",
+                        "description": "Minimum recurrence period for recurrent transfers in hours."
+                    },
+                    "HIVE_ONE_DAY_SECONDS": {
+                        "type": "integer",
+                        "description": "Number of seconds in one day."
+                    },
+                    "HIVE_PROPOSAL_CONVERSION_RATE": {
+                        "type": "integer",
+                        "description": "Conversion rate for proposals."
+                    },
+                    "HIVE_PROPOSAL_FEE_INCREASE_AMOUNT": {
+                        "type": "integer",
+                        "description": "Amount by which proposal fees increase."
+                    },
+                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS": {
+                        "type": "integer",
+                        "description": "Number of days over which proposal fees increase."
+                    },
+                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC": {
+                        "type": "integer",
+                        "description": "Number of seconds for proposal fee increase period."
+                    },
+                    "HIVE_RC_BUCKET_TIME_LENGTH": {
+                        "type": "integer",
+                        "description": "Length of the resource credit bucket time in seconds."
+                    },
+                    "HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT": {
+                        "type": "integer",
+                        "description": "Historical adjustment for account creation in resource credits."
+                    },
+                    "HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP": {
+                        "type": "integer",
+                        "description": "Maximum number of accounts per delegation operation."
+                    },
+                    "HIVE_RC_REGEN_TIME": {
+                        "type": "integer",
+                        "description": "Resource credit regeneration time in seconds."
+                    },
+                    "HIVE_RC_STATS_REPORT_FREQUENCY": {
+                        "type": "integer",
+                        "description": "Frequency of resource credit stats reports in seconds."
+                    },
+                    "HIVE_RC_WINDOW_BUCKET_COUNT": {
+                        "type": "integer",
+                        "description": "Number of buckets in the resource credit window."
+                    },
+                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25": {
+                        "type": "integer",
+                        "description": "Reverse auction window for HF25 in seconds."
+                    },
+                    "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS": {
+                        "type": "integer",
+                        "description": "Margin for block stats to be considered up-to-date."
+                    },
+                    "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM": {
+                        "type": "integer",
+                        "description": "Margin for fast confirmation to be considered up-to-date."
+                    },
+                    "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS": {
+                        "type": "integer",
+                        "description": "Margin for pending transactions to be considered up-to-date."
+                    },
+                    "HIVE_WITNESS_SHUTDOWN_THRESHOLD": {
+                        "type": "integer",
+                        "description": "Threshold for witness shutdown in seconds."
+                    },
+                    "NEW_HIVE_TREASURY_ACCOUNT": {
+                        "type": "string",
+                        "description": "New treasury account name."
+                    },
+                    "OBSOLETE_TREASURY_ACCOUNT": {
+                        "type": "string",
+                        "description": "Obsolete treasury account name."
+                    },
+                    "OLD_CHAIN_ID": {
+                        "type": "string",
+                        "description": "Old chain ID for compatibility."
                     }
                 }
             },
@@ -5842,6 +6163,195 @@
                     }
                 }
             },
+            "get_dynamic_global_properties_response": {
+                "type": "object",
+                "properties": {
+                    "available_account_subsidies": {
+                        "type": "integer",
+                        "description": "Number of available account creation subsidies, representing how many new accounts can be created with existing budget."
+                    },
+                    "content_reward_percent": {
+                        "type": "integer",
+                        "description": "Percentage of the total reward pool allocated to content creators based on voting."
+                    },
+                    "current_aslot": {
+                        "type": "integer",
+                        "description": "The current \"average slot\" number, an indicator of the current position in the consensus schedule."
+                    },
+                    "current_hbd_supply": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The current total supply of Hive-backed dollars (HBD) in circulation."
+                    },
+                    "current_remove_threshold": {
+                        "type": "integer",
+                        "description": "The current threshold (in basis points) for account removal or vesting actions."
+                    },
+                    "current_supply": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The total supply of HIVE tokens currently in circulation."
+                    },
+                    "current_witness": {
+                        "type": "string",
+                        "description": "Name of the witness currently producing the block."
+                    },
+                    "delegation_return_period": {
+                        "type": "integer",
+                        "description": "The period (in seconds) after which delegated vesting shares are returned."
+                    },
+                    "dhf_interval_ledger": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The balance-adjusted ledger amount associated with the Dynamic Hosting Fund (DHF) interval."
+                    },
+                    "downvote_pool_percent": {
+                        "type": "integer",
+                        "description": "The percentage (basis points) of the total voting power allocated to the downvote pool."
+                    },
+                    "early_voting_seconds": {
+                        "type": "integer",
+                        "description": "Duration in seconds during which early votes are accepted before the official voting period."
+                    },
+                    "hbd_interest_rate": {
+                        "type": "integer",
+                        "description": "Annual interest rate (in basis points) paid on HBD savings or deposits."
+                    },
+                    "hbd_print_rate": {
+                        "type": "integer",
+                        "description": "Rate (basis points) determining how much HBD is printed or issued based on economic conditions."
+                    },
+                    "hbd_start_percent": {
+                        "type": "integer",
+                        "description": "The minimum percentage at which HBD creation process begins under peg stability mechanisms."
+                    },
+                    "hbd_stop_percent": {
+                        "type": "integer",
+                        "description": "The maximum percentage at which HBD creation halts during the peg stabilization process."
+                    },
+                    "head_block_id": {
+                        "type": "string",
+                        "description": "The block ID of the latest block in the chain."
+                    },
+                    "head_block_number": {
+                        "type": "integer",
+                        "description": "The number (height) of the latest block."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Unique ID for the global properties object."
+                    },
+                    "init_hbd_supply": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The initial amount of HBD supply at network launch or reset."
+                    },
+                    "last_budget_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp of the last budget allocation cycle."
+                    },
+                    "last_irreversible_block_num": {
+                        "type": "integer",
+                        "description": "Block number of the last irreversible block (finalized confirmed block)."
+                    },
+                    "max_consecutive_recurrent_transfer_failures": {
+                        "type": "integer",
+                        "description": "Maximum allowed consecutive failures for scheduled recurrent transfers before cancellation."
+                    },
+                    "max_open_recurrent_transfers": {
+                        "type": "integer",
+                        "description": "Maximum number of concurrently active recurrent transfer schedules."
+                    },
+                    "max_recurrent_transfer_end_date": {
+                        "type": "integer",
+                        "description": "The maximum allowed end date (timestamp in days) for recurrent transfer schedules."
+                    },
+                    "maximum_block_size": {
+                        "type": "integer",
+                        "description": "The maximum size (in bytes) allowed for a single block."
+                    },
+                    "mid_voting_seconds": {
+                        "type": "integer",
+                        "description": "Duration (in seconds) of mid-phase voting window for proposals."
+                    },
+                    "min_recurrent_transfers_recurrence": {
+                        "type": "integer",
+                        "description": "Minimum recurrence interval (in hours) for scheduled recurrent transfers."
+                    },
+                    "next_daily_maintenance_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Scheduled time for the next daily blockchain maintenance."
+                    },
+                    "next_maintenance_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Scheduled time for the overall next blockchain maintenance."
+                    },
+                    "num_pow_witnesses": {
+                        "type": "integer",
+                        "description": "Count of proof-of-work (PoW) witnesses active in the network."
+                    },
+                    "participation_count": {
+                        "type": "integer",
+                        "description": "Number of active participants/stakeholders currently participating in governance or voting processes."
+                    },
+                    "pending_rewarded_vesting_hive": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The amount of HIVE tokens pending as vested rewards that will be converted into vesting shares."
+                    },
+                    "pending_rewarded_vesting_shares": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The amount of vesting shares slated to be awarded as part of pending rewards."
+                    },
+                    "proposal_fund_percent": {
+                        "type": "integer",
+                        "description": "Percentage of the total reward fund allocated for governance proposals, incentive programs, or development funding."
+                    },
+                    "recent_slots_filled": {
+                        "type": "string",
+                        "description": "String representing the high-water mark of recent slots filled, typically a large number indicating network activity."
+                    },
+                    "reverse_auction_seconds": {
+                        "type": "integer",
+                        "description": "Duration in seconds allocated to reverse auction procedures, possibly for resource allocation."
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The current blockchain timestamp."
+                    },
+                    "total_pow": {
+                        "type": "integer",
+                        "description": "Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily."
+                    },
+                    "total_reward_fund_hive": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The total reward fund HIVE."
+                    },
+                    "total_reward_shares2": {
+                        "type": "string",
+                        "description": "String representing reward shares (possibly an internal accounting value)."
+                    },
+                    "total_vesting_fund_hive": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "Total HIVE allocated to vesting (vesting fund) — funds set aside for vesting."
+                    },
+                    "total_vesting_shares": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "Total vesting shares issued."
+                    },
+                    "vesting_reward_percent": {
+                        "type": "integer",
+                        "description": "Percentage (basis points) of reward allocated to vesting."
+                    },
+                    "virtual_supply": {
+                        "$ref": "#/components/schemas/balance",
+                        "description": "The blockchain's \"virtual\" supply, an internal accounting measure that may slightly differ from actual circulating tokens."
+                    },
+                    "vote_power_reserve_rate": {
+                        "type": "integer",
+                        "description": "The rate at which vote power reserves are maintained or replenished."
+                    }
+                }
+            },
             "get_feed_history_response": {
                 "type": "object",
                 "properties": {
@@ -5851,19 +6361,19 @@
                         "description": "The ID of the feed history."
                     },
                     "current_max_history": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/base_and_quote",
                         "description": "The current maximum history of the feed."
                     },
                     "current_median_history": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/base_and_quote",
                         "description": "The current median history of the feed."
                     },
                     "current_min_history": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/base_and_quote",
                         "description": "The current minimum history of the feed."
                     },
                     "market_median_history": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/base_and_quote",
                         "description": "The market median history of the feed."
                     },
                     "price_history": {
@@ -6053,6 +6563,15 @@
                     "chain_id": {
                         "type": "string",
                         "example": "beeab0de00000000000000000000000000000000000000000000000000000000"
+                    },
+                    "haf_revision": {
+                        "type": "string",
+                        "example": "0e2bd7c69cc26928665281435165fd3288940db9"
+                    },
+                    "node_type": {
+                        "type": "string",
+                        "example": "mainnet",
+                        "description": "The type of node (e.g., mainnet, testnet)."
                     }
                 }
             },
@@ -6163,15 +6682,7 @@
                 }
             },
             "hbd_exchange_rate": {
-                "type": "object",
-                "properties": {
-                    "base": {
-                        "$ref": "#/components/schemas/balance"
-                    },
-                    "quote": {
-                        "$ref": "#/components/schemas/balance"
-                    }
-                }
+                "$ref": "#/components/schemas/base_and_quote"
             },
             "is_known_transaction": {
                 "type": "object",
@@ -6462,6 +6973,21 @@
                         "items": {
                             "$ref": "#/components/schemas/witness"
                         }
+                    }
+                }
+            },
+            "nai_decimal": {
+                "type": "object",
+                "properties": {
+                    "nai": {
+                        "type": "string",
+                        "example": "@@000000021",
+                        "description": "The NAI (Network Asset Identifier) of the asset."
+                    },
+                    "decimals": {
+                        "type": "integer",
+                        "example": 3,
+                        "description": "The number of decimal places for the asset."
                     }
                 }
             },
@@ -7162,7 +7688,7 @@
                         "description": "The version of the hardfork that was voted for."
                     },
                     "hbd_exchange_rate": {
-                        "$ref": "#/components/schemas/balance",
+                        "$ref": "#/components/schemas/base_and_quote",
                         "description": "The HBD exchange rate."
                     },
                     "id": {
