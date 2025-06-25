@@ -1294,7 +1294,7 @@ paths:
                 "SMT_INITIAL_VESTING_PER_UNIT": 1000000,
                 "SMT_BALLAST_SUPPLY_PERCENT": 10,
                 "SMT_MAX_ICO_TIERS": 10,
-                "HBD_SYMBOL": {"nai": "@@000000013", "precision": 3},
+                "HBD_SYMBOL": {"nai": "@@000000013", "decimals": 3},
                 "HIVE_INITIAL_VOTE_POWER_RATE": 40,
                 "HIVE_REDUCED_VOTE_POWER_RATE": 10,
                 "HIVE_100_PERCENT": 10000,
@@ -1501,8 +1501,8 @@ paths:
                 "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS": 604800,
                 "HIVE_VOTE_DUST_THRESHOLD": 50000000,
                 "HIVE_VOTING_MANA_REGENERATION_SECONDS": 432000,
-                "HIVE_SYMBOL": {"nai": "@@000000021", "precision": 3},
-                "VESTS_SYMBOL": {"nai": "@@000000037", "precision": 6},
+                "HIVE_SYMBOL": {"nai": "@@000000021", "decimals": 3},
+                "VESTS_SYMBOL": {"nai": "@@000000037", "decimals": 6},
                 "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": "18446744073709551615",
                 "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2": "340282366920938463463374607431768211455",
                 "HIVE_VOTES_PER_PERIOD_SMT_HF": 50,
@@ -4564,7 +4564,7 @@ components:
           type: integer
           description: Max ICO tiers for SMT.
         HBD_SYMBOL:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/nai_decimal'
           description: HBD asset symbol and precision.
         HIVE_INITIAL_VOTE_POWER_RATE:
           type: integer
@@ -5077,10 +5077,10 @@ components:
           type: integer
           description: Voting mana regeneration in seconds.
         HIVE_SYMBOL:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/nai_decimal'
           description: HIVE asset symbol and precision.
         VESTS_SYMBOL:
-          $ref: '#/components/schemas/balance'
+          $ref: '#/components/schemas/nai_decimal'
           description: VESTS asset symbol and precision.
         HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH:
           type: string
@@ -5943,6 +5943,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/witness'
+    nai_decimal:
+      type: object
+      properties:
+        nai:
+          type: string
+          example: "@@000000021"
+          description: >-
+            The NAI (Network Asset Identifier) of the asset.
+        decimals:
+          type: integer
+          example: 3
+          description: >-
+            The number of decimal places for the asset.
     operation_body:
       type: object
       x-sql-datatype: JSON
