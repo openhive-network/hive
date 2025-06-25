@@ -5181,6 +5181,144 @@ components:
         HIVE_DB_FORMAT_VERSION:
           type: string
           description: Database format version.
+        HIVE_1_BASIS_POINT:
+          type: integer
+          description: One basis point in HIVE.
+        HIVE_COLLATERALIZED_CONVERSION_DELAY:
+          type: integer
+          description: Delay for collateralized conversion (in microseconds).
+        HIVE_COLLATERALIZED_CONVERSION_FEE:
+          type: integer
+          description: Fee for collateralized conversion (in basis points).
+        HIVE_CONVERSION_COLLATERAL_RATIO:
+          type: integer
+          description: Collateral ratio for conversion.
+        HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD:
+          type: integer
+          description: Daily proposal maintenance period (seconds).
+        HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR:
+          type: string
+          description: Default public key string for HF9 compromised accounts.
+        HIVE_DELAYED_VOTING_INTERVAL_SECONDS:
+          type: integer
+          description: Delayed voting interval in seconds.
+        HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS:
+          type: integer
+          description: Total delayed voting interval in seconds.
+        HIVE_EARLY_VOTING_SECONDS_HF25:
+          type: integer
+          description: Early voting period for HF25 in seconds.
+        HIVE_ENABLE_SMT:
+          type: boolean
+          description: Flag to enable SMT (Simple Mining Token).
+        HIVE_GLOBAL_REMOVE_THRESHOLD:
+          type: integer
+          description: Global threshold for account removal (basis points).
+        HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD:
+          type: integer
+          description: Governance vote expiration period (in microseconds).
+        HIVE_HBD_HARD_LIMIT:
+          type: integer
+          description: Hard limit for HBD supply.
+        HIVE_HBD_HARD_LIMIT_PRE_HF26:
+          type: integer
+          description: Pre-HF26 hard limit for HBD supply.
+        HIVE_HBD_START_PERCENT_HF26:
+          type: integer
+          description: HBD start percent for HF26.
+        HIVE_HBD_STOP_PERCENT_HF26:
+          type: integer
+          description: HBD stop percent for HF26.
+        HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR:
+          type: string
+          description: Public key string for HF9 compromised accounts.
+        HIVE_INIT_PUBLIC_KEY:
+          type: string
+          description: Public key for the initial account.
+        HIVE_MAX_COMMENT_BENEFICIARIES:
+          type: integer
+          description: Maximum number of beneficiaries for a comment.
+        HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES:
+          type: integer
+          description: Maximum consecutive failures for recurrent transfers.
+        HIVE_MAX_OPEN_RECURRENT_TRANSFERS:
+          type: integer
+          description: Maximum number of open recurrent transfers.
+        HIVE_MAX_PENDING_TRANSFERS:
+          type: integer
+          description: Maximum number of pending transfers.
+        HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK:
+          type: integer
+          description: Maximum number of recurrent transfers allowed per block.
+        HIVE_MAX_RECURRENT_TRANSFER_END_DATE:
+          type: integer
+          description: Maximum end date for recurrent transfers in days.
+        HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION:
+          type: integer
+          description: Maximum time until signature expiration in seconds.
+        HIVE_MID_VOTING_SECONDS_HF25:
+          type: integer
+          description: Mid-voting period for HF25 in seconds.
+        HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE:
+          type: integer
+          description: Minimum recurrence period for recurrent transfers in hours.
+        HIVE_ONE_DAY_SECONDS:
+          type: integer
+          description: Number of seconds in one day.
+        HIVE_PROPOSAL_CONVERSION_RATE:
+          type: integer
+          description: Conversion rate for proposals.
+        HIVE_PROPOSAL_FEE_INCREASE_AMOUNT:
+          type: integer
+          description: Amount by which proposal fees increase.
+        HIVE_PROPOSAL_FEE_INCREASE_DAYS:
+          type: integer
+          description: Number of days over which proposal fees increase.
+        HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC:
+          type: integer
+          description: Number of seconds for proposal fee increase period.
+        HIVE_RC_BUCKET_TIME_LENGTH:
+          type: integer
+          description: Length of the resource credit bucket time in seconds.
+        HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT:
+          type: integer
+          description: Historical adjustment for account creation in resource credits.
+        HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP:
+          type: integer
+          description: Maximum number of accounts per delegation operation.
+        HIVE_RC_REGEN_TIME:
+          type: integer
+          description: Resource credit regeneration time in seconds.
+        HIVE_RC_STATS_REPORT_FREQUENCY:
+          type: integer
+          description: Frequency of resource credit stats reports in seconds.
+        HIVE_RC_WINDOW_BUCKET_COUNT:
+          type: integer
+          description: Number of buckets in the resource credit window.
+        HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25:
+          type: integer
+          description: Reverse auction window for HF25 in seconds.
+        HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS:
+          type: integer
+          description: Margin for block stats to be considered up-to-date.
+        HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM:
+          type: integer
+          description: Margin for fast confirmation to be considered up-to-date.
+        HIVE_UP_TO_DATE_MARGIN__PENDING_TXS:
+          type: integer
+          description: Margin for pending transactions to be considered up-to-date.
+        HIVE_WITNESS_SHUTDOWN_THRESHOLD:
+          type: integer
+          description: Threshold for witness shutdown in seconds.
+        NEW_HIVE_TREASURY_ACCOUNT:
+          type: string
+          description: New treasury account name.
+        OBSOLETE_TREASURY_ACCOUNT:
+          type: string
+          description: Obsolete treasury account name.
+        OLD_CHAIN_ID:
+          type: string
+          description: Old chain ID for compatibility.
     get_current_price_feed_response:
       type: object
       properties:
