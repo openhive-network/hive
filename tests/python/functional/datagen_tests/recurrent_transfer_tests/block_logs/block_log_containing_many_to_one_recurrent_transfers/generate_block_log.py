@@ -9,7 +9,8 @@ from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHiveHF26
+from schemas.fields.assets import AssetHive
+
 
 from hive_local_tools.functional.python.queen_utils import (
     __create_account,
@@ -22,7 +23,7 @@ NUMBER_OF_SENDER_ACCOUNTS: Final[int] = 50_000
 ACCOUNTS_PER_CHUNK: Final[int] = 500
 MAX_WORKERS: Final[int] = os.cpu_count()
 RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
-SINGLE_TRANSFER_AMOUNT: Final[AssetHiveHF26] = AssetHiveHF26(amount=1)
+SINGLE_TRANSFER_AMOUNT: Final[AssetHive] = AssetHive(amount=AssetNaiAmount(1)),
 
 
 def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_directory: Path) -> None:
