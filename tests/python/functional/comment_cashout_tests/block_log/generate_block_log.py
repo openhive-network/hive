@@ -76,7 +76,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     # slot 0 of block log
     base_network_block_lo_genesis_time = tt.BlockLog(output_block_log_directory / "base_network_block_log", "auto").get_block(block_number=1).timestamp - tt.Time.seconds(3)
     acs = tt.AlternateChainSpecs(
-        genesis_time=base_network_block_lo_genesis_time.timestamp(),
+        genesis_time=int(base_network_block_lo_genesis_time.timestamp()),
         hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
         hbd_init_supply=100_000, init_supply=200_000_000_000,
         initial_vesting=tt.InitialVesting(hive_amount=10_000_000_000, vests_per_hive=1800),
