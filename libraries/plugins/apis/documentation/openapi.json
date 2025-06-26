@@ -3847,7 +3847,71 @@
                             "type": "integer",
                             "description": "Number of witnesses voted for by the account."
                         }
-                    }
+                    },
+                    "required": [
+                        "id",
+                        "name",
+                        "owner",
+                        "active",
+                        "posting",
+                        "memo_key",
+                        "json_metadata",
+                        "posting_json_metadata",
+                        "proxy",
+                        "last_owner_update",
+                        "last_account_update",
+                        "created",
+                        "mined",
+                        "recovery_account",
+                        "reset_account",
+                        "comment_count",
+                        "lifetime_vote_count",
+                        "can_vote",
+                        "voting_manabar",
+                        "downvote_manabar",
+                        "balance",
+                        "savings_balance",
+                        "hbd_balance",
+                        "hbd_seconds",
+                        "hbd_seconds_last_update",
+                        "hbd_last_interest_payment",
+                        "savings_hbd_balance",
+                        "savings_hbd_seconds",
+                        "savings_hbd_seconds_last_update",
+                        "savings_hbd_last_interest_payment",
+                        "savings_withdraw_requests",
+                        "reward_hbd_balance",
+                        "reward_hive_balance",
+                        "reward_vesting_balance",
+                        "reward_vesting_hive",
+                        "vesting_shares",
+                        "delegated_vesting_shares",
+                        "received_vesting_shares",
+                        "vesting_withdraw_rate",
+                        "post_voting_power",
+                        "next_vesting_withdrawal",
+                        "withdrawn",
+                        "to_withdraw",
+                        "withdraw_routes",
+                        "pending_transfers",
+                        "pending_claimed_accounts",
+                        "post_bandwidth",
+                        "post_count",
+                        "last_post",
+                        "last_root_post",
+                        "last_post_edit",
+                        "last_vote_time",
+                        "last_account_recovery",
+                        "previous_owner_update",
+                        "curation_rewards",
+                        "delayed_votes",
+                        "governance_vote_expiration_ts",
+                        "is_smt",
+                        "open_recurrent_transfers",
+                        "posting_rewards",
+                        "proxied_vsf_votes",
+                        "witnesses_voted_for"
+                    ]
                 }
             },
             "account_recovery": {
@@ -3873,7 +3937,13 @@
                         "$ref": "#/components/schemas/auths",
                         "description": "New owner authority of the account."
                     }
-                }
+                },
+                "required": [
+                    "account_to_recover",
+                    "expires",
+                    "id",
+                    "new_owner_authority"
+                ]
             },
             "account_subsidy_rd": {
                 "type": "object",
@@ -3911,7 +3981,15 @@
                         "type": "integer",
                         "example": 10000
                     }
-                }
+                },
+                "required": [
+                    "budget_per_time_unit",
+                    "decay_params",
+                    "max_pool_size",
+                    "min_decay",
+                    "pool_eq",
+                    "resource_unit"
+                ]
             },
             "array_of_operations": {
                 "type": "array",
@@ -3937,7 +4015,12 @@
                             "$ref": "#/components/schemas/auth_with_weight"
                         }
                     }
-                }
+                },
+                "required": [
+                    "weight_threshold",
+                    "account_auths",
+                    "key_auths"
+                ]
             },
             "auth_with_weight": {
                 "type": "array",
@@ -3966,7 +4049,12 @@
                     "precision": {
                         "type": "integer"
                     }
-                }
+                },
+                "required": [
+                    "amount",
+                    "nai",
+                    "precision"
+                ]
             },
             "base_and_quote": {
                 "type": "object",
@@ -3979,7 +4067,11 @@
                         "$ref": "#/components/schemas/balance",
                         "description": "The quote asset of the price."
                     }
-                }
+                },
+                "required": [
+                    "base",
+                    "quote"
+                ]
             },
             "beneficiaries": {
                 "type": "array",
@@ -3992,7 +4084,11 @@
                         "weight": {
                             "type": "integer"
                         }
-                    }
+                    },
+                    "required": [
+                        "account",
+                        "weight"
+                    ]
                 }
             },
             "bids_and_asks": {
@@ -4021,7 +4117,14 @@
                         "type": "string",
                         "example": "0.00000000000000000"
                     }
-                }
+                },
+                "required": [
+                    "created",
+                    "hbd",
+                    "hive",
+                    "order_price",
+                    "real_price"
+                ]
             },
             "block": {
                 "type": "object",
@@ -4082,7 +4185,19 @@
                         "example": [],
                         "description": "An array of transaction IDs included in the block."
                     }
-                }
+                },
+                "required": [
+                    "previous",
+                    "timestamp",
+                    "witness",
+                    "transaction_merkle_root",
+                    "extensions",
+                    "witness_signature",
+                    "transactions",
+                    "block_id",
+                    "signing_key",
+                    "transaction_ids"
+                ]
             },
             "block_header": {
                 "type": "object",
@@ -4112,7 +4227,14 @@
                         "$ref": "#/components/schemas/extensions",
                         "example": []
                     }
-                }
+                },
+                "required": [
+                    "previous",
+                    "timestamp",
+                    "witness",
+                    "transaction_merkle_root",
+                    "extensions"
+                ]
             },
             "broadcast_transaction": {
                 "type": "object",
@@ -4124,7 +4246,11 @@
                         "type": "integer",
                         "example": -1
                     }
-                }
+                },
+                "required": [
+                    "trx",
+                    "max_block_age"
+                ]
             },
             "broadcast_transaction_response": {
                 "type": "object"
@@ -4209,7 +4335,28 @@
                         "type": "boolean",
                         "example": true
                     }
-                }
+                },
+                "required": [
+                    "total_vote_weight",
+                    "total_payout_value",
+                    "curator_payout_value",
+                    "max_accepted_payout",
+                    "author_rewards",
+                    "children_abs_rshares",
+                    "net_rshares",
+                    "abs_rshares",
+                    "vote_rshares",
+                    "net_votes",
+                    "active",
+                    "last_payout",
+                    "cashout_time",
+                    "max_cashout_time",
+                    "percent_hbd",
+                    "reward_weight",
+                    "allow_replies",
+                    "allow_votes",
+                    "allow_curation_rewards"
+                ]
             },
             "comment": {
                 "type": "object",
@@ -4321,20 +4468,43 @@
                     "vote_rshares": {
                         "type": "integer"
                     }
-                }
-            },
-            "comment_pending_empty_payout_type": {
-                "type": "object",
-                "properties": {
-                    "author": {
-                        "type": "string",
-                        "example": "hbd.funder"
-                    },
-                    "permlink": {
-                        "type": "string",
-                        "example": "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
-                    }
-                }
+                },
+                "required": [
+                    "abs_rshares",
+                    "allow_curation_rewards",
+                    "allow_replies",
+                    "allow_votes",
+                    "author",
+                    "author_rewards",
+                    "beneficiaries",
+                    "body",
+                    "cashout_time",
+                    "category",
+                    "children",
+                    "children_abs_rshares",
+                    "created",
+                    "curator_payout_value",
+                    "depth",
+                    "id",
+                    "json_metadata",
+                    "last_payout",
+                    "last_update",
+                    "max_accepted_payout",
+                    "max_cashout_time",
+                    "net_rshares",
+                    "net_votes",
+                    "parent_author",
+                    "parent_permlink",
+                    "percent_hbd",
+                    "permlink",
+                    "reward_weight",
+                    "root_author",
+                    "root_permlink",
+                    "title",
+                    "total_payout_value",
+                    "total_vote_weight",
+                    "vote_rshares"
+                ]
             },
             "comment_pending_payout": {
                 "type": "array",
@@ -4356,7 +4526,11 @@
                     "cashout_info": {
                         "$ref": "#/components/schemas/cashout_info"
                     }
-                }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
             },
             "decline_voting_rights": {
                 "type": "object",
@@ -4377,7 +4551,12 @@
                         "example": 11,
                         "description": "The ID of the request."
                     }
-                }
+                },
+                "required": [
+                    "account",
+                    "effective_date",
+                    "id"
+                ]
             },
             "delayed_votes": {
                 "type": "object",
@@ -4393,7 +4572,11 @@
                         "example": "11550765516955",
                         "description": "The value of the delayed vote, represented as a string."
                     }
-                }
+                },
+                "required": [
+                    "time",
+                    "val"
+                ]
             },
             "escrow": {
                 "type": "object",
@@ -4461,7 +4644,22 @@
                         "example": false,
                         "description": "Indicates if the escrow is disputed."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "escrow_id",
+                    "from",
+                    "to",
+                    "agent",
+                    "ratification_deadline",
+                    "escrow_expiration",
+                    "hbd_balance",
+                    "hive_balance",
+                    "pending_fee",
+                    "to_approved",
+                    "agent_approved",
+                    "disputed"
+                ]
             },
             "extensions": {
                 "type": "array",
@@ -4474,7 +4672,11 @@
                         "value": {
                             "type": "string"
                         }
-                    }
+                    },
+                    "required": [
+                        "type",
+                        "value"
+                    ]
                 }
             },
             "find_accounts": {
@@ -4494,7 +4696,10 @@
                         "example": true,
                         "description": "Optional."
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "find_accounts_response": {
                 "type": "object",
@@ -4505,7 +4710,10 @@
                             "$ref": "#/components/schemas/account"
                         }
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "find_account_recovery": {
                 "type": "object",
@@ -4531,7 +4739,13 @@
                         "example": "",
                         "description": "The name of the account that will be used to recover the account."
                     }
-                }
+                },
+                "required": [
+                    "account_to_recover",
+                    "effective_on",
+                    "id",
+                    "recovery_account"
+                ]
             },
             "find_account_recovery_requests": {
                 "type": "object",
@@ -4545,7 +4759,10 @@
                             "hiveio"
                         ]
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "find_account_recovery_requests_response": {
                 "type": "object",
@@ -4556,7 +4773,10 @@
                             "$ref": "#/components/schemas/account_recovery"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "find_change_recovery_account_requests": {
                 "type": "object",
@@ -4570,7 +4790,10 @@
                             "hiveio"
                         ]
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "find_change_recovery_account_requests_response": {
                 "type": "object",
@@ -4581,7 +4804,10 @@
                             "$ref": "#/components/schemas/find_account_recovery"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "find_collateralized_conversion": {
                 "type": "object",
@@ -4612,7 +4838,15 @@
                         "example": 1,
                         "description": "The ID of the request."
                     }
-                }
+                },
+                "required": [
+                    "collateral_amount",
+                    "conversion_date",
+                    "converted_amount",
+                    "id",
+                    "owner",
+                    "requestid"
+                ]
             },
             "find_collateralized_conversion_requests": {
                 "type": "object",
@@ -4622,7 +4856,10 @@
                         "example": "hiveio",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_collateralized_conversion_requests_response": {
                 "type": "object",
@@ -4633,7 +4870,10 @@
                             "$ref": "#/components/schemas/find_collateralized_conversion"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "find_comments": {
                 "type": "array",
@@ -4646,7 +4886,9 @@
                         "author",
                         "permlink"
                     ],
-                    "description": "An array of strings representing the author and permlink of the comment to query."
+                    "description": "An array of strings representing the author and permlink of the comment to query.",
+                    "minItems": 2,
+                    "maxItems": 2
                 }
             },
             "find_comments_response": {
@@ -4658,7 +4900,10 @@
                             "$ref": "#/components/schemas/comment"
                         }
                     }
-                }
+                },
+                "required": [
+                    "comments"
+                ]
             },
             "find_decline_voting_rights_requests": {
                 "type": "object",
@@ -4672,7 +4917,10 @@
                             "hiveio"
                         ]
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "find_decline_voting_rights_requests_response": {
                 "type": "object",
@@ -4683,7 +4931,10 @@
                             "$ref": "#/components/schemas/decline_voting_rights"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "find_escrows": {
                 "type": "object",
@@ -4692,7 +4943,10 @@
                         "type": "string",
                         "example": ""
                     }
-                }
+                },
+                "required": [
+                    "from"
+                ]
             },
             "find_escrows_response": {
                 "type": "object",
@@ -4703,7 +4957,10 @@
                             "$ref": "#/components/schemas/escrow"
                         }
                     }
-                }
+                },
+                "required": [
+                    "escrows"
+                ]
             },
             "find_hbd_conversion_requests": {
                 "type": "object",
@@ -4713,7 +4970,10 @@
                         "example": "",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_hbd_conversion_requests_response": {
                 "type": "object",
@@ -4724,7 +4984,10 @@
                             "$ref": "#/components/schemas/hbd_conversion"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "find_limit_orders": {
                 "type": "object",
@@ -4734,7 +4997,10 @@
                         "example": "",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_limit_orders_response": {
                 "type": "object",
@@ -4745,7 +5011,10 @@
                             "$ref": "#/components/schemas/orders"
                         }
                     }
-                }
+                },
+                "required": [
+                    "orders"
+                ]
             },
             "find_owner_histories": {
                 "type": "object",
@@ -4754,7 +5023,10 @@
                         "type": "string",
                         "example": ""
                     }
-                }
+                },
+                "required": [
+                    "owner"
+                ]
             },
             "find_owner_histories_response": {
                 "type": "object",
@@ -4765,7 +5037,10 @@
                             "$ref": "#/components/schemas/owner_auth_history"
                         }
                     }
-                }
+                },
+                "required": [
+                    "owner_auths"
+                ]
             },
             "find_proposals": {
                 "type": "object",
@@ -4780,7 +5055,10 @@
                         ],
                         "description": "An array of int representing id of proposals."
                     }
-                }
+                },
+                "required": [
+                    "proposal_ids"
+                ]
             },
             "find_proposals_response": {
                 "type": "object",
@@ -4791,7 +5069,10 @@
                             "$ref": "#/components/schemas/proposals"
                         }
                     }
-                }
+                },
+                "required": [
+                    "proposals"
+                ]
             },
             "find_rc_accounts": {
                 "type": "object",
@@ -4806,7 +5087,10 @@
                         ],
                         "description": "An array of strings representing accounts to query. "
                     }
-                }
+                },
+                "required": [
+                    "keys"
+                ]
             },
             "find_rc_accounts_response": {
                 "type": "object",
@@ -4817,7 +5101,10 @@
                             "$ref": "#/components/schemas/rc_account_object"
                         }
                     }
-                }
+                },
+                "required": [
+                    "rc_accounts"
+                ]
             },
             "find_recurrent_transfers": {
                 "type": "object",
@@ -4826,7 +5113,10 @@
                         "type": "string",
                         "example": ""
                     }
-                }
+                },
+                "required": [
+                    "from"
+                ]
             },
             "find_recurrent_transfers_response": {
                 "type": "object",
@@ -4837,7 +5127,10 @@
                             "$ref": "#/components/schemas/recurrent_transfer"
                         }
                     }
-                }
+                },
+                "required": [
+                    "recurrent_transfers"
+                ]
             },
             "find_savings_withdrawals": {
                 "type": "object",
@@ -4847,7 +5140,10 @@
                         "example": "",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_savings_withdrawals_response": {
                 "type": "object",
@@ -4858,7 +5154,10 @@
                             "$ref": "#/components/schemas/savings_withdrawal"
                         }
                     }
-                }
+                },
+                "required": [
+                    "withdrawals"
+                ]
             },
             "find_vesting_delegation_expirations": {
                 "type": "object",
@@ -4868,7 +5167,10 @@
                         "example": "",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_vesting_delegation_expirations_response": {
                 "type": "object",
@@ -4879,7 +5181,10 @@
                             "$ref": "#/components/schemas/vesting_delegation_expirations"
                         }
                     }
-                }
+                },
+                "required": [
+                    "delegations"
+                ]
             },
             "find_vesting_delegations": {
                 "type": "object",
@@ -4889,7 +5194,10 @@
                         "example": "",
                         "description": "The name of the account to query."
                     }
-                }
+                },
+                "required": [
+                    "account"
+                ]
             },
             "find_vesting_delegations_response": {
                 "type": "object",
@@ -4900,7 +5208,10 @@
                             "$ref": "#/components/schemas/vesting_delegation"
                         }
                     }
-                }
+                },
+                "required": [
+                    "delegations"
+                ]
             },
             "find_votes": {
                 "type": "object",
@@ -4915,7 +5226,11 @@
                         "example": "announcing-the-launch-of-hive-blockchain",
                         "description": "The permlink of the post to query."
                     }
-                }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
             },
             "find_votes_response": {
                 "type": "object",
@@ -4926,7 +5241,10 @@
                             "$ref": "#/components/schemas/vote"
                         }
                     }
-                }
+                },
+                "required": [
+                    "votes"
+                ]
             },
             "find_withdraw_vesting_routes": {
                 "type": "object",
@@ -4941,7 +5259,11 @@
                         "example": "by_destination",
                         "description": "The order in which to return the results."
                     }
-                }
+                },
+                "required": [
+                    "account",
+                    "order"
+                ]
             },
             "find_withdraw_vesting_routes_response": {
                 "type": "object",
@@ -4952,7 +5274,10 @@
                             "$ref": "#/components/schemas/withdraw_vesting_routes"
                         }
                     }
-                }
+                },
+                "required": [
+                    "routes"
+                ]
             },
             "find_witnesses": {
                 "type": "object",
@@ -4967,7 +5292,10 @@
                         ],
                         "description": "An array of strings representing account names to query."
                     }
-                }
+                },
+                "required": [
+                    "owners"
+                ]
             },
             "find_witnesses_response": {
                 "type": "object",
@@ -4978,7 +5306,10 @@
                             "$ref": "#/components/schemas/witness"
                         }
                     }
-                }
+                },
+                "required": [
+                    "witnesses"
+                ]
             },
             "get_block": {
                 "type": "object",
@@ -4988,7 +5319,10 @@
                         "example": 0,
                         "description": "An integer representing the block number to query."
                     }
-                }
+                },
+                "required": [
+                    "block_num"
+                ]
             },
             "get_block_header_response": {
                 "type": "object",
@@ -4996,7 +5330,10 @@
                     "block": {
                         "$ref": "#/components/schemas/block_header"
                     }
-                }
+                },
+                "required": [
+                    "block"
+                ]
             },
             "get_block_range": {
                 "type": "object",
@@ -5011,7 +5348,11 @@
                         "example": 0,
                         "description": "The maximum number of blocks to return."
                     }
-                }
+                },
+                "required": [
+                    "starting_block_num",
+                    "count"
+                ]
             },
             "get_block_range_response": {
                 "type": "object",
@@ -5022,7 +5363,10 @@
                             "$ref": "#/components/schemas/block"
                         }
                     }
-                }
+                },
+                "required": [
+                    "blocks"
+                ]
             },
             "get_block_response": {
                 "type": "object",
@@ -5030,7 +5374,10 @@
                     "header": {
                         "$ref": "#/components/schemas/block"
                     }
-                }
+                },
+                "required": [
+                    "header"
+                ]
             },
             "get_comment_pending_payouts": {
                 "type": "object",
@@ -5047,7 +5394,10 @@
                             ]
                         ]
                     }
-                }
+                },
+                "required": [
+                    "comments"
+                ]
             },
             "get_comment_pending_payouts_response": {
                 "type": "object",
@@ -5055,17 +5405,13 @@
                     "cashout_infos": {
                         "type": "array",
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/comment_pending_payout_type"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/comment_pending_empty_payout_type"
-                                }
-                            ]
+                            "$ref": "#/components/schemas/comment_pending_payout_type"
                         }
                     }
-                }
+                },
+                "required": [
+                    "cashout_infos"
+                ]
             },
             "get_active_witnesses_response": {
                 "type": "object",
@@ -5081,7 +5427,10 @@
                         ],
                         "description": "An array of strings representing the active witnesses."
                     }
-                }
+                },
+                "required": [
+                    "witnesses"
+                ]
             },
             "get_config_response": {
                 "type": "object",
@@ -6150,7 +6499,275 @@
                         "type": "string",
                         "description": "Old chain ID for compatibility."
                     }
-                }
+                },
+                "required": [
+                    "IS_TEST_NET",
+                    "TESTNET_BLOCK_LIMIT",
+                    "SMT_MAX_VOTABLE_ASSETS",
+                    "SMT_VESTING_WITHDRAW_INTERVAL_SECONDS",
+                    "SMT_UPVOTE_LOCKOUT",
+                    "SMT_EMISSION_MIN_INTERVAL_SECONDS",
+                    "SMT_EMIT_INDEFINITELY",
+                    "SMT_MAX_NOMINAL_VOTES_PER_DAY",
+                    "SMT_MAX_VOTES_PER_REGENERATION",
+                    "SMT_DEFAULT_VOTES_PER_REGEN_PERIOD",
+                    "SMT_DEFAULT_PERCENT_CURATION_REWARDS",
+                    "SMT_INITIAL_VESTING_PER_UNIT",
+                    "SMT_BALLAST_SUPPLY_PERCENT",
+                    "SMT_MAX_ICO_TIERS",
+                    "HBD_SYMBOL",
+                    "HIVE_INITIAL_VOTE_POWER_RATE",
+                    "HIVE_REDUCED_VOTE_POWER_RATE",
+                    "HIVE_100_PERCENT",
+                    "HIVE_1_PERCENT",
+                    "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD",
+                    "HIVE_ACTIVE_CHALLENGE_COOLDOWN",
+                    "HIVE_ACTIVE_CHALLENGE_FEE",
+                    "HIVE_ADDRESS_PREFIX",
+                    "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK",
+                    "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR",
+                    "HIVE_APR_PERCENT_MULTIPLY_PER_ROUND",
+                    "HIVE_APR_PERCENT_SHIFT_PER_BLOCK",
+                    "HIVE_APR_PERCENT_SHIFT_PER_HOUR",
+                    "HIVE_APR_PERCENT_SHIFT_PER_ROUND",
+                    "HIVE_BANDWIDTH_AVERAGE_WINDOW_SECONDS",
+                    "HIVE_BANDWIDTH_PRECISION",
+                    "HIVE_BENEFICIARY_LIMIT",
+                    "HIVE_BLOCKCHAIN_PRECISION",
+                    "HIVE_BLOCKCHAIN_PRECISION_DIGITS",
+                    "HIVE_BLOCKCHAIN_HARDFORK_VERSION",
+                    "HIVE_BLOCKCHAIN_VERSION",
+                    "HIVE_BLOCK_INTERVAL",
+                    "HIVE_BLOCKS_PER_DAY",
+                    "HIVE_BLOCKS_PER_HOUR",
+                    "HIVE_BLOCKS_PER_YEAR",
+                    "HIVE_CASHOUT_WINDOW_SECONDS",
+                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12",
+                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17",
+                    "HIVE_CHAIN_ID",
+                    "HIVE_COMMENT_REWARD_FUND_NAME",
+                    "HIVE_COMMENT_TITLE_LIMIT",
+                    "HIVE_CONTENT_APR_PERCENT",
+                    "HIVE_CONTENT_CONSTANT_HF0",
+                    "HIVE_CONTENT_CONSTANT_HF21",
+                    "HIVE_CONTENT_REWARD_PERCENT_HF16",
+                    "HIVE_CONTENT_REWARD_PERCENT_HF21",
+                    "HIVE_CONVERSION_DELAY",
+                    "HIVE_CONVERSION_DELAY_PRE_HF_16",
+                    "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO",
+                    "HIVE_CREATE_ACCOUNT_DELEGATION_TIME",
+                    "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER",
+                    "HIVE_CURATE_APR_PERCENT",
+                    "HIVE_CUSTOM_OP_DATA_MAX_LENGTH",
+                    "HIVE_CUSTOM_OP_ID_MAX_LENGTH",
+                    "HIVE_DEFAULT_HBD_INTEREST_RATE",
+                    "HIVE_DOWNVOTE_POOL_PERCENT_HF21",
+                    "HIVE_EQUIHASH_K",
+                    "HIVE_EQUIHASH_N",
+                    "HIVE_FEED_HISTORY_WINDOW",
+                    "HIVE_FEED_HISTORY_WINDOW_PRE_HF_16",
+                    "HIVE_FEED_INTERVAL_BLOCKS",
+                    "HIVE_GENESIS_TIME",
+                    "HIVE_HARDFORK_REQUIRED_WITNESSES",
+                    "HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS",
+                    "HIVE_INFLATION_NARROWING_PERIOD",
+                    "HIVE_INFLATION_RATE_START_PERCENT",
+                    "HIVE_INFLATION_RATE_STOP_PERCENT",
+                    "HIVE_INIT_MINER_NAME",
+                    "HIVE_INIT_PUBLIC_KEY_STR",
+                    "HIVE_INIT_SUPPLY",
+                    "HIVE_HBD_INIT_SUPPLY",
+                    "HIVE_INIT_TIME",
+                    "HIVE_IRREVERSIBLE_THRESHOLD",
+                    "HIVE_LIQUIDITY_APR_PERCENT",
+                    "HIVE_LIQUIDITY_REWARD_BLOCKS",
+                    "HIVE_LIQUIDITY_REWARD_PERIOD_SEC",
+                    "HIVE_LIQUIDITY_TIMEOUT_SEC",
+                    "HIVE_MAX_ACCOUNT_CREATION_FEE",
+                    "HIVE_MAX_ACCOUNT_NAME_LENGTH",
+                    "HIVE_MAX_ACCOUNT_WITNESS_VOTES",
+                    "HIVE_MAX_ASSET_WHITELIST_AUTHORITIES",
+                    "HIVE_MAX_AUTHORITY_MEMBERSHIP",
+                    "HIVE_MAX_BLOCK_SIZE",
+                    "HIVE_SOFT_MAX_BLOCK_SIZE",
+                    "HIVE_MAX_CASHOUT_WINDOW_SECONDS",
+                    "HIVE_MAX_COMMENT_DEPTH",
+                    "HIVE_MAX_COMMENT_DEPTH_PRE_HF17",
+                    "HIVE_MAX_FEED_AGE_SECONDS",
+                    "HIVE_MAX_INSTANCE_ID",
+                    "HIVE_MAX_MEMO_SIZE",
+                    "HIVE_MAX_WITNESSES",
+                    "HIVE_MAX_MINER_WITNESSES_HF0",
+                    "HIVE_MAX_MINER_WITNESSES_HF17",
+                    "HIVE_MAX_PERMLINK_LENGTH",
+                    "HIVE_MAX_PROXY_RECURSION_DEPTH",
+                    "HIVE_MAX_RATION_DECAY_RATE",
+                    "HIVE_MAX_RESERVE_RATIO",
+                    "HIVE_MAX_RUNNER_WITNESSES_HF0",
+                    "HIVE_MAX_RUNNER_WITNESSES_HF17",
+                    "HIVE_MAX_SATOSHIS",
+                    "HIVE_MAX_SHARE_SUPPLY",
+                    "HIVE_MAX_SIG_CHECK_DEPTH",
+                    "HIVE_MAX_SIG_CHECK_ACCOUNTS",
+                    "HIVE_MAX_TIME_UNTIL_EXPIRATION",
+                    "HIVE_MAX_TRANSACTION_SIZE",
+                    "HIVE_MAX_UNDO_HISTORY",
+                    "HIVE_MAX_URL_LENGTH",
+                    "HIVE_MAX_VOTE_CHANGES",
+                    "HIVE_MAX_VOTED_WITNESSES_HF0",
+                    "HIVE_MAX_VOTED_WITNESSES_HF17",
+                    "HIVE_MAX_WITHDRAW_ROUTES",
+                    "HIVE_MAX_WITNESS_URL_LENGTH",
+                    "HIVE_MIN_ACCOUNT_CREATION_FEE",
+                    "HIVE_MIN_ACCOUNT_NAME_LENGTH",
+                    "HIVE_MIN_BLOCK_SIZE_LIMIT",
+                    "HIVE_MIN_BLOCK_SIZE",
+                    "HIVE_MIN_CONTENT_REWARD",
+                    "HIVE_MIN_CURATE_REWARD",
+                    "HIVE_MIN_PERMLINK_LENGTH",
+                    "HIVE_MIN_REPLY_INTERVAL",
+                    "HIVE_MIN_REPLY_INTERVAL_HF20",
+                    "HIVE_MIN_ROOT_COMMENT_INTERVAL",
+                    "HIVE_MIN_COMMENT_EDIT_INTERVAL",
+                    "HIVE_MIN_VOTE_INTERVAL_SEC",
+                    "HIVE_MINER_ACCOUNT",
+                    "HIVE_MINER_PAY_PERCENT",
+                    "HIVE_MIN_FEEDS",
+                    "HIVE_MINING_REWARD",
+                    "HIVE_MINING_TIME",
+                    "HIVE_MIN_LIQUIDITY_REWARD",
+                    "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC",
+                    "HIVE_MIN_PAYOUT_HBD",
+                    "HIVE_MIN_POW_REWARD",
+                    "HIVE_MIN_PRODUCER_REWARD",
+                    "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT",
+                    "HIVE_MIN_TRANSACTION_SIZE_LIMIT",
+                    "HIVE_MIN_UNDO_HISTORY",
+                    "HIVE_NULL_ACCOUNT",
+                    "HIVE_NUM_INIT_MINERS",
+                    "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM",
+                    "HIVE_OWNER_AUTH_RECOVERY_PERIOD",
+                    "HIVE_OWNER_CHALLENGE_COOLDOWN",
+                    "HIVE_OWNER_CHALLENGE_FEE",
+                    "HIVE_OWNER_UPDATE_LIMIT",
+                    "HIVE_POST_AVERAGE_WINDOW",
+                    "HIVE_POST_REWARD_FUND_NAME",
+                    "HIVE_POST_WEIGHT_CONSTANT",
+                    "HIVE_POW_APR_PERCENT",
+                    "HIVE_PRODUCER_APR_PERCENT",
+                    "HIVE_PROXY_TO_SELF_ACCOUNT",
+                    "HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC",
+                    "HIVE_SECONDS_PER_YEAR",
+                    "HIVE_PROPOSAL_FUND_PERCENT_HF0",
+                    "HIVE_PROPOSAL_FUND_PERCENT_HF21",
+                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF19",
+                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF17",
+                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6",
+                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20",
+                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21",
+                    "HIVE_ROOT_POST_PARENT",
+                    "HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT",
+                    "HIVE_SAVINGS_WITHDRAW_TIME",
+                    "HIVE_HBD_START_PERCENT_HF14",
+                    "HIVE_HBD_START_PERCENT_HF20",
+                    "HIVE_HBD_STOP_PERCENT_HF14",
+                    "HIVE_HBD_STOP_PERCENT_HF20",
+                    "HIVE_SECOND_CASHOUT_WINDOW",
+                    "HIVE_SOFT_MAX_COMMENT_DEPTH",
+                    "HIVE_START_MINER_VOTING_BLOCK",
+                    "HIVE_START_VESTING_BLOCK",
+                    "HIVE_TEMP_ACCOUNT",
+                    "HIVE_UPVOTE_LOCKOUT_HF7",
+                    "HIVE_UPVOTE_LOCKOUT_HF17",
+                    "HIVE_UPVOTE_LOCKOUT_SECONDS",
+                    "HIVE_VESTING_FUND_PERCENT_HF16",
+                    "HIVE_VESTING_WITHDRAW_INTERVALS",
+                    "HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16",
+                    "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS",
+                    "HIVE_VOTE_DUST_THRESHOLD",
+                    "HIVE_VOTING_MANA_REGENERATION_SECONDS",
+                    "HIVE_SYMBOL",
+                    "VESTS_SYMBOL",
+                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH",
+                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2",
+                    "HIVE_VOTES_PER_PERIOD_SMT_HF",
+                    "HIVE_MAX_LIMIT_ORDER_EXPIRATION",
+                    "HIVE_DELEGATION_RETURN_PERIOD_HF0",
+                    "HIVE_DELEGATION_RETURN_PERIOD_HF20",
+                    "HIVE_RD_MIN_DECAY_BITS",
+                    "HIVE_RD_MAX_DECAY_BITS",
+                    "HIVE_RD_DECAY_DENOM_SHIFT",
+                    "HIVE_RD_MAX_POOL_BITS",
+                    "HIVE_RD_MAX_BUDGET_1",
+                    "HIVE_RD_MAX_BUDGET_2",
+                    "HIVE_RD_MAX_BUDGET_3",
+                    "HIVE_RD_MAX_BUDGET",
+                    "HIVE_RD_MIN_DECAY",
+                    "HIVE_RD_MIN_BUDGET",
+                    "HIVE_RD_MAX_DECAY",
+                    "HIVE_ACCOUNT_SUBSIDY_PRECISION",
+                    "HIVE_WITNESS_SUBSIDY_BUDGET_PERCENT",
+                    "HIVE_WITNESS_SUBSIDY_DECAY_PERCENT",
+                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY",
+                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET",
+                    "HIVE_DECAY_BACKSTOP_PERCENT",
+                    "HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT",
+                    "HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT",
+                    "HIVE_TREASURY_ACCOUNT",
+                    "HIVE_TREASURY_FEE",
+                    "HIVE_PROPOSAL_MAINTENANCE_PERIOD",
+                    "HIVE_PROPOSAL_MAINTENANCE_CLEANUP",
+                    "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH",
+                    "HIVE_PROPOSAL_MAX_IDS_NUMBER",
+                    "HIVE_NETWORK_TYPE",
+                    "HIVE_DB_FORMAT_VERSION",
+                    "HIVE_1_BASIS_POINT",
+                    "HIVE_COLLATERALIZED_CONVERSION_DELAY",
+                    "HIVE_COLLATERALIZED_CONVERSION_FEE",
+                    "HIVE_CONVERSION_COLLATERAL_RATIO",
+                    "HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD",
+                    "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR",
+                    "HIVE_DELAYED_VOTING_INTERVAL_SECONDS",
+                    "HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS",
+                    "HIVE_EARLY_VOTING_SECONDS_HF25",
+                    "HIVE_ENABLE_SMT",
+                    "HIVE_GLOBAL_REMOVE_THRESHOLD",
+                    "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD",
+                    "HIVE_HBD_HARD_LIMIT",
+                    "HIVE_HBD_HARD_LIMIT_PRE_HF26",
+                    "HIVE_HBD_START_PERCENT_HF26",
+                    "HIVE_HBD_STOP_PERCENT_HF26",
+                    "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR",
+                    "HIVE_INIT_PUBLIC_KEY",
+                    "HIVE_MAX_COMMENT_BENEFICIARIES",
+                    "HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES",
+                    "HIVE_MAX_OPEN_RECURRENT_TRANSFERS",
+                    "HIVE_MAX_PENDING_TRANSFERS",
+                    "HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK",
+                    "HIVE_MAX_RECURRENT_TRANSFER_END_DATE",
+                    "HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION",
+                    "HIVE_MID_VOTING_SECONDS_HF25",
+                    "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE",
+                    "HIVE_ONE_DAY_SECONDS",
+                    "HIVE_PROPOSAL_CONVERSION_RATE",
+                    "HIVE_PROPOSAL_FEE_INCREASE_AMOUNT",
+                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS",
+                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC",
+                    "HIVE_RC_BUCKET_TIME_LENGTH",
+                    "HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT",
+                    "HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP",
+                    "HIVE_RC_REGEN_TIME",
+                    "HIVE_RC_STATS_REPORT_FREQUENCY",
+                    "HIVE_RC_WINDOW_BUCKET_COUNT",
+                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25",
+                    "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS",
+                    "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM",
+                    "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS",
+                    "HIVE_WITNESS_SHUTDOWN_THRESHOLD",
+                    "NEW_HIVE_TREASURY_ACCOUNT",
+                    "OBSOLETE_TREASURY_ACCOUNT",
+                    "OLD_CHAIN_ID"
+                ]
             },
             "get_current_price_feed_response": {
                 "type": "object",
@@ -6161,7 +6778,11 @@
                     "quote": {
                         "$ref": "#/components/schemas/balance"
                     }
-                }
+                },
+                "required": [
+                    "base",
+                    "quote"
+                ]
             },
             "get_dynamic_global_properties_response": {
                 "type": "object",
@@ -6350,7 +6971,54 @@
                         "type": "integer",
                         "description": "The rate at which vote power reserves are maintained or replenished."
                     }
-                }
+                },
+                "required": [
+                    "available_account_subsidies",
+                    "content_reward_percent",
+                    "current_aslot",
+                    "current_hbd_supply",
+                    "current_remove_threshold",
+                    "current_supply",
+                    "current_witness",
+                    "delegation_return_period",
+                    "dhf_interval_ledger",
+                    "downvote_pool_percent",
+                    "early_voting_seconds",
+                    "hbd_interest_rate",
+                    "hbd_print_rate",
+                    "hbd_start_percent",
+                    "hbd_stop_percent",
+                    "head_block_id",
+                    "head_block_number",
+                    "id",
+                    "init_hbd_supply",
+                    "last_budget_time",
+                    "last_irreversible_block_num",
+                    "max_consecutive_recurrent_transfer_failures",
+                    "max_open_recurrent_transfers",
+                    "max_recurrent_transfer_end_date",
+                    "maximum_block_size",
+                    "mid_voting_seconds",
+                    "min_recurrent_transfers_recurrence",
+                    "next_daily_maintenance_time",
+                    "next_maintenance_time",
+                    "num_pow_witnesses",
+                    "participation_count",
+                    "pending_rewarded_vesting_hive",
+                    "pending_rewarded_vesting_shares",
+                    "proposal_fund_percent",
+                    "recent_slots_filled",
+                    "reverse_auction_seconds",
+                    "time",
+                    "total_pow",
+                    "total_reward_fund_hive",
+                    "total_reward_shares2",
+                    "total_vesting_fund_hive",
+                    "total_vesting_shares",
+                    "vesting_reward_percent",
+                    "virtual_supply",
+                    "vote_power_reserve_rate"
+                ]
             },
             "get_feed_history_response": {
                 "type": "object",
@@ -6383,7 +7051,15 @@
                         },
                         "description": "An array of price history objects."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "current_max_history",
+                    "current_median_history",
+                    "current_min_history",
+                    "market_median_history",
+                    "price_history"
+                ]
             },
             "get_hardfork_properties_response": {
                 "type": "object",
@@ -6417,7 +7093,15 @@
                         },
                         "description": "An array of strings representing the processed hardforks."
                     }
-                }
+                },
+                "required": [
+                    "current_hardfork_version",
+                    "id",
+                    "last_hardfork",
+                    "next_hardfork",
+                    "next_hardfork_time",
+                    "processed_hardforks"
+                ]
             },
             "get_key_references": {
                 "type": "object",
@@ -6430,9 +7114,12 @@
                         "example": [
                             "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9"
                         ],
-                        "description": "An array of strings representing keys to query. "
+                        "description": "An array of strings representing keys to query."
                     }
-                }
+                },
+                "required": [
+                    "keys"
+                ]
             },
             "get_key_references_response": {
                 "type": "object",
@@ -6443,7 +7130,10 @@
                             "type": "string"
                         }
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "get_order_book": {
                 "type": "object",
@@ -6468,7 +7158,12 @@
                         "type": "integer",
                         "example": 0
                     }
-                }
+                },
+                "required": [
+                    "base",
+                    "quote",
+                    "limit"
+                ]
             },
             "get_order_book_response": {
                 "type": "object",
@@ -6485,7 +7180,11 @@
                             "$ref": "#/components/schemas/bids_and_asks"
                         }
                     }
-                }
+                },
+                "required": [
+                    "asks",
+                    "bids"
+                ]
             },
             "get_potential_signatures": {
                 "type": "object",
@@ -6493,7 +7192,10 @@
                     "trx": {
                         "$ref": "#/components/schemas/transaction"
                     }
-                }
+                },
+                "required": [
+                    "trx"
+                ]
             },
             "get_potential_signatures_response": {
                 "type": "object",
@@ -6504,7 +7206,10 @@
                             "$ref": "#/components/schemas/auths"
                         }
                     }
-                }
+                },
+                "required": [
+                    "keys"
+                ]
             },
             "get_required_signatures": {
                 "type": "object",
@@ -6512,7 +7217,10 @@
                     "trx": {
                         "$ref": "#/components/schemas/transaction"
                     }
-                }
+                },
+                "required": [
+                    "trx"
+                ]
             },
             "get_reward_funds_response": {
                 "type": "object",
@@ -6523,7 +7231,10 @@
                             "$ref": "#/components/schemas/reward_funds"
                         }
                     }
-                }
+                },
+                "required": [
+                    "funds"
+                ]
             },
             "get_transaction_hex": {
                 "type": "object",
@@ -6531,7 +7242,10 @@
                     "trx": {
                         "$ref": "#/components/schemas/transaction"
                     }
-                }
+                },
+                "required": [
+                    "trx"
+                ]
             },
             "get_transaction_hex_response": {
                 "type": "object",
@@ -6540,7 +7254,10 @@
                         "type": "string",
                         "example": "00000000000000000000000000"
                     }
-                }
+                },
+                "required": [
+                    "hex"
+                ]
             },
             "get_version_response": {
                 "type": "object",
@@ -6573,7 +7290,15 @@
                         "example": "mainnet",
                         "description": "The type of node (e.g., mainnet, testnet)."
                     }
-                }
+                },
+                "required": [
+                    "blockchain_version",
+                    "hive_revision",
+                    "fc_revision",
+                    "chain_id",
+                    "haf_revision",
+                    "node_type"
+                ]
             },
             "get_witness_schedule_response": {
                 "type": "object",
@@ -6653,7 +7378,27 @@
                         "type": "integer",
                         "example": 25
                     }
-                }
+                },
+                "required": [
+                    "account_subsidy_rd",
+                    "account_subsidy_witness_rd",
+                    "current_shuffled_witnesses",
+                    "current_virtual_time",
+                    "elected_weight",
+                    "hardfork_required_witnesses",
+                    "id",
+                    "majority_version",
+                    "max_miner_witnesses",
+                    "max_runner_witnesses",
+                    "max_voted_witnesses",
+                    "median_props",
+                    "min_witness_account_subsidy_decay",
+                    "miner_weight",
+                    "next_shuffle_block_num",
+                    "num_scheduled_witnesses",
+                    "timeshare_weight",
+                    "witness_pay_normalization_factor"
+                ]
             },
             "hbd_conversion": {
                 "type": "object",
@@ -6679,7 +7424,14 @@
                         "type": "integer",
                         "example": 3205281453
                     }
-                }
+                },
+                "required": [
+                    "amount",
+                    "conversion_date",
+                    "id",
+                    "owner",
+                    "requestid"
+                ]
             },
             "hbd_exchange_rate": {
                 "$ref": "#/components/schemas/base_and_quote"
@@ -6691,7 +7443,10 @@
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000"
                     }
-                }
+                },
+                "required": [
+                    "id"
+                ]
             },
             "is_known_transaction_response": {
                 "type": "object",
@@ -6700,7 +7455,10 @@
                         "type": "boolean",
                         "description": "Indicates if the transaction is known."
                     }
-                }
+                },
+                "required": [
+                    "is_known"
+                ]
             },
             "list_account_recovery_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6714,7 +7472,10 @@
                             "$ref": "#/components/schemas/account_recovery"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "list_accounts": {
                 "type": "object",
@@ -6739,7 +7500,12 @@
                         "example": true,
                         "description": "Optional."
                     }
-                }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order"
+                ]
             },
             "list_accounts_response": {
                 "type": "object",
@@ -6750,7 +7516,10 @@
                             "$ref": "#/components/schemas/account"
                         }
                     }
-                }
+                },
+                "required": [
+                    "accounts"
+                ]
             },
             "list_change_recovery_account_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6764,7 +7533,10 @@
                             "$ref": "#/components/schemas/find_account_recovery"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "list_collateralized_conversion_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6778,7 +7550,10 @@
                             "$ref": "#/components/schemas/find_collateralized_conversion"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "list_decline_voting_rights_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6792,7 +7567,10 @@
                             "$ref": "#/components/schemas/decline_voting_rights"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "list_escrows": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6806,7 +7584,10 @@
                             "$ref": "#/components/schemas/escrow"
                         }
                     }
-                }
+                },
+                "required": [
+                    "escrows"
+                ]
             },
             "list_hbd_conversion_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6820,7 +7601,10 @@
                             "$ref": "#/components/schemas/hbd_conversion"
                         }
                     }
-                }
+                },
+                "required": [
+                    "requests"
+                ]
             },
             "list_limit_orders": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6834,7 +7618,10 @@
                             "$ref": "#/components/schemas/orders"
                         }
                     }
-                }
+                },
+                "required": [
+                    "orders"
+                ]
             },
             "list_owner_histories": {
                 "$ref": "#/components/schemas/start_limit"
@@ -6848,10 +7635,13 @@
                             "$ref": "#/components/schemas/owner_auth_history"
                         }
                     }
-                }
+                },
+                "required": [
+                    "owner_auths"
+                ]
             },
             "list_proposal_votes": {
-                "$ref": "#/components/schemas/start_limit_proposals"
+                "$ref": "#/components/schemas/start_limit_proposals_votes"
             },
             "list_proposal_votes_response": {
                 "type": "object",
@@ -6862,7 +7652,10 @@
                             "$ref": "#/components/schemas/proposal_vote"
                         }
                     }
-                }
+                },
+                "required": [
+                    "proposal_votes"
+                ]
             },
             "list_proposals": {
                 "$ref": "#/components/schemas/start_limit_proposals"
@@ -6876,7 +7669,10 @@
                             "$ref": "#/components/schemas/proposals"
                         }
                     }
-                }
+                },
+                "required": [
+                    "proposals"
+                ]
             },
             "list_savings_withdrawals": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6890,7 +7686,10 @@
                             "$ref": "#/components/schemas/savings_withdrawal"
                         }
                     }
-                }
+                },
+                "required": [
+                    "withdrawals"
+                ]
             },
             "list_vesting_delegation_expirations": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6904,7 +7703,10 @@
                             "$ref": "#/components/schemas/vesting_delegation_expirations"
                         }
                     }
-                }
+                },
+                "required": [
+                    "delegations"
+                ]
             },
             "list_vesting_delegations": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6918,7 +7720,10 @@
                             "$ref": "#/components/schemas/vesting_delegation"
                         }
                     }
-                }
+                },
+                "required": [
+                    "delegations"
+                ]
             },
             "list_votes": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6932,7 +7737,10 @@
                             "$ref": "#/components/schemas/vote"
                         }
                     }
-                }
+                },
+                "required": [
+                    "votes"
+                ]
             },
             "list_withdraw_vesting_routes": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6946,7 +7754,10 @@
                             "$ref": "#/components/schemas/withdraw_vesting_routes"
                         }
                     }
-                }
+                },
+                "required": [
+                    "routes"
+                ]
             },
             "list_witness_votes": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6960,7 +7771,10 @@
                             "$ref": "#/components/schemas/witness_vote"
                         }
                     }
-                }
+                },
+                "required": [
+                    "votes"
+                ]
             },
             "list_witnesses": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -6974,7 +7788,10 @@
                             "$ref": "#/components/schemas/witness"
                         }
                     }
-                }
+                },
+                "required": [
+                    "witnesses"
+                ]
             },
             "nai_decimal": {
                 "type": "object",
@@ -6989,7 +7806,11 @@
                         "example": 3,
                         "description": "The number of decimal places for the asset."
                     }
-                }
+                },
+                "required": [
+                    "nai",
+                    "decimals"
+                ]
             },
             "operation_body": {
                 "type": "object",
@@ -7001,7 +7822,11 @@
                     "value": {
                         "type": "object"
                     }
-                }
+                },
+                "required": [
+                    "type",
+                    "value"
+                ]
             },
             "orders": {
                 "type": "object",
@@ -7050,7 +7875,16 @@
                             }
                         }
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "created",
+                    "expiration",
+                    "seller",
+                    "orderid",
+                    "for_sale",
+                    "sell_price"
+                ]
             },
             "owner_auth_history": {
                 "type": "object",
@@ -7075,7 +7909,13 @@
                         "$ref": "#/components/schemas/auths",
                         "description": "The previous owner authority of the account."
                     }
-                }
+                },
+                "required": [
+                    "account",
+                    "id",
+                    "last_valid_time",
+                    "previous_owner_authority"
+                ]
             },
             "post_voting_power": {
                 "$ref": "#/components/schemas/balance"
@@ -7095,7 +7935,12 @@
                     "proposal": {
                         "$ref": "#/components/schemas/proposals"
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "voter",
+                    "proposal"
+                ]
             },
             "proposals": {
                 "type": "object",
@@ -7154,7 +7999,20 @@
                         "example": "active",
                         "description": "The status of the proposal."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "proposal_id",
+                    "creator",
+                    "receiver",
+                    "start_date",
+                    "end_date",
+                    "daily_pay",
+                    "subject",
+                    "permlink",
+                    "total_votes",
+                    "status"
+                ]
             },
             "rc_account_object": {
                 "type": "object",
@@ -7175,7 +8033,13 @@
                         "example": "0",
                         "description": "The maximum resource credits available for the account."
                     }
-                }
+                },
+                "required": [
+                    "account",
+                    "rc_manabar",
+                    "max_rc_creation_adjustment",
+                    "max_rc"
+                ]
             },
             "recurrent_transfer": {
                 "type": "object",
@@ -7224,7 +8088,18 @@
                         "example": 3,
                         "description": "The number of remaining executions of the transfer."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "trigger_date",
+                    "from",
+                    "to",
+                    "amount",
+                    "memo",
+                    "recurrence",
+                    "consecutive_failures",
+                    "remaining_executions"
+                ]
             },
             "reward_funds": {
                 "type": "object",
@@ -7272,7 +8147,19 @@
                     "reward_balance": {
                         "$ref": "#/components/schemas/balance"
                     }
-                }
+                },
+                "required": [
+                    "author_reward_curve",
+                    "content_constant",
+                    "curation_reward_curve",
+                    "id",
+                    "last_update",
+                    "name",
+                    "percent_content_rewards",
+                    "percent_curation_rewards",
+                    "recent_claims",
+                    "reward_balance"
+                ]
             },
             "savings_withdrawal": {
                 "type": "object",
@@ -7312,7 +8199,16 @@
                         "example": "demo.com",
                         "description": "The name of the account that will receive the withdrawal."
                     }
-                }
+                },
+                "required": [
+                    "amount",
+                    "complete",
+                    "from",
+                    "id",
+                    "memo",
+                    "request_id",
+                    "to"
+                ]
             },
             "start_limit": {
                 "type": "object",
@@ -7327,7 +8223,11 @@
                         "example": 10,
                         "description": null
                     }
-                }
+                },
+                "required": [
+                    "start",
+                    "limit"
+                ]
             },
             "start_limit_order": {
                 "type": "object",
@@ -7347,7 +8247,12 @@
                         "example": "order_name",
                         "description": null
                     }
-                }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order"
+                ]
             },
             "start_limit_proposals": {
                 "type": "object",
@@ -7378,8 +8283,59 @@
                         "type": "string",
                         "example": "all",
                         "description": null
+                    },
+                    "last_id": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The last ID of the proposal to start from."
                     }
-                }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order",
+                    "order_direction",
+                    "status"
+                ]
+            },
+            "start_limit_proposals_votes": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "object",
+                        "example": [
+                            10
+                        ],
+                        "description": null
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": null
+                    },
+                    "order": {
+                        "type": "string",
+                        "example": "by_voter_proposal",
+                        "description": null
+                    },
+                    "order_direction": {
+                        "type": "string",
+                        "example": "ascending",
+                        "description": null
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "all",
+                        "description": null
+                    }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order",
+                    "order_direction",
+                    "status"
+                ]
             },
             "transaction": {
                 "type": "object",
@@ -7412,7 +8368,15 @@
                         },
                         "example": []
                     }
-                }
+                },
+                "required": [
+                    "ref_block_num",
+                    "ref_block_prefix",
+                    "expiration",
+                    "operations",
+                    "extensions",
+                    "signatures"
+                ]
             },
             "verify_account_authority": {
                 "type": "object",
@@ -7432,7 +8396,11 @@
                         ],
                         "description": "An array of strings representing the keys to verify."
                     }
-                }
+                },
+                "required": [
+                    "account",
+                    "signers"
+                ]
             },
             "verify_account_authority_response": {
                 "type": "object",
@@ -7441,7 +8409,10 @@
                         "type": "boolean",
                         "example": true
                     }
-                }
+                },
+                "required": [
+                    "valid"
+                ]
             },
             "verify_authority": {
                 "type": "object",
@@ -7453,7 +8424,11 @@
                         "type": "string",
                         "example": "legacy"
                     }
-                }
+                },
+                "required": [
+                    "trx",
+                    "pack"
+                ]
             },
             "verify_authority_response": {
                 "type": "object",
@@ -7463,7 +8438,10 @@
                         "example": true,
                         "description": "Indicates whether the transaction has all of the required signatures."
                     }
-                }
+                },
+                "required": [
+                    "valid"
+                ]
             },
             "verify_signatures": {
                 "type": "object",
@@ -7512,7 +8490,15 @@
                         "example": [],
                         "description": "An array of strings representing the required other keys."
                     }
-                }
+                },
+                "required": [
+                    "hash",
+                    "signatures",
+                    "required_owner",
+                    "required_active",
+                    "required_posting",
+                    "required_other"
+                ]
             },
             "verify_signatures_response": {
                 "type": "object",
@@ -7521,7 +8507,10 @@
                         "type": "boolean",
                         "example": true
                     }
-                }
+                },
+                "required": [
+                    "valid"
+                ]
             },
             "vesting_delegation": {
                 "type": "object",
@@ -7550,7 +8539,14 @@
                         "$ref": "#/components/schemas/balance",
                         "description": "The amount of vesting shares delegated."
                     }
-                }
+                },
+                "required": [
+                    "delegator",
+                    "delegatee",
+                    "id",
+                    "min_delegation_time",
+                    "vesting_shares"
+                ]
             },
             "vesting_delegation_expirations": {
                 "type": "object",
@@ -7574,7 +8570,13 @@
                         "example": "2018-12-05T21:46:48",
                         "description": "The expiration time of the delegation."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "delegator",
+                    "vesting_shares",
+                    "expiration"
+                ]
             },
             "vote": {
                 "type": "object",
@@ -7625,7 +8627,18 @@
                         "example": -1,
                         "description": "The number of changes made to the vote."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "voter",
+                    "author",
+                    "permlink",
+                    "weight",
+                    "rshares",
+                    "vote_percent",
+                    "last_update",
+                    "num_changes"
+                ]
             },
             "voting_manabar": {
                 "type": "object",
@@ -7636,7 +8649,11 @@
                     "last_update_time": {
                         "type": "integer"
                     }
-                }
+                },
+                "required": [
+                    "current_mana",
+                    "last_update_time"
+                ]
             },
             "withdraw_vesting_routes": {
                 "type": "object",
@@ -7664,7 +8681,14 @@
                         "example": 12345,
                         "description": "The ID of the withdrawal route."
                     }
-                }
+                },
+                "required": [
+                    "from_account",
+                    "to_account",
+                    "percent",
+                    "auto_vest",
+                    "id"
+                ]
             },
             "witness": {
                 "type": "object",
@@ -7750,7 +8774,30 @@
                     "votes": {
                         "type": "integer"
                     }
-                }
+                },
+                "required": [
+                    "available_witness_account_subsidies",
+                    "created",
+                    "hardfork_time_vote",
+                    "hardfork_version_vote",
+                    "hbd_exchange_rate",
+                    "id",
+                    "last_aslot",
+                    "last_confirmed_block_num",
+                    "last_hbd_exchange_update",
+                    "last_work",
+                    "owner",
+                    "pow_worker",
+                    "props",
+                    "running_version",
+                    "signing_key",
+                    "total_missed",
+                    "url",
+                    "virtual_last_update",
+                    "virtual_position",
+                    "virtual_scheduled_time",
+                    "votes"
+                ]
             },
             "witness_props": {
                 "type": "object",
@@ -7775,7 +8822,14 @@
                         "type": "integer",
                         "description": "The maximum size of a block."
                     }
-                }
+                },
+                "required": [
+                    "account_creation_fee",
+                    "account_subsidy_budget",
+                    "account_subsidy_decay",
+                    "hbd_interest_rate",
+                    "maximum_block_size"
+                ]
             },
             "witness_vote": {
                 "type": "object",
@@ -7794,7 +8848,12 @@
                         "example": "alice",
                         "description": "The name of the account that voted for the witness."
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "witness",
+                    "account"
+                ]
             }
         }
     },
