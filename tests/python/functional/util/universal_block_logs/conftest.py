@@ -12,8 +12,6 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
     WITNESSES,
 )
 
-from schemas.decoders import get_hf26_decoder
-
 SHARED_MEMORY_FILE_SIZE: Final[int] = 24
 WEBSERVER_THREAD_POOL_SIZE: Final[int] = 16
 

@@ -25,7 +25,8 @@ from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
-    from schemas.operations import AnyOperation
+    from schemas.fields.hive_int import HiveInt
+    from schemas.operations import Hf26Operations
     from schemas.virtual_operation import (
         VirtualOperation as SchemaVirtualOperation,
     )
@@ -232,7 +233,7 @@ class _BaseManabar(ABC):
 
     @property
     def current_mana(self) -> int:
-        return self.manabar.current_mana
+        return int(self.manabar.current_mana)
 
     @property
     def last_update_time(self) -> datetime:
@@ -240,7 +241,7 @@ class _BaseManabar(ABC):
 
     @property
     def max_mana(self) -> int:
-        return self.manabar.maximum
+        return int(self.manabar.maximum)
 
     @abstractmethod
     def _get_specific_manabar(self) -> ExtendedManabar:
@@ -260,8 +261,8 @@ class _BaseManabar(ABC):
         return int(
             wax.calculate_current_manabar_value(
                 now=int(head_block_time.timestamp()),
-                max_mana=int(self.max_mana),
-                current_mana=int(self.current_mana),
+                max_mana=self.max_mana,
+                current_mana=self.current_mana,
                 last_update_time=int(self.last_update_time),
             ).result
         )
@@ -372,7 +373,7 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, operations: list[AnyOperation], broadcast: bool = True
+    wallet: tt.Wallet, operations: list[Hf26Operations], broadcast: bool = True
 ) -> dict[str, Any]:
     return wallet.send(operations=operations, broadcast=broadcast, blocking=True)
 
@@ -521,7 +522,7 @@ def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversibl
 
 
 class ExtendedManabar(Manabar):
-    maximum: int
+    maximum: HiveInt
 
 
 def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:

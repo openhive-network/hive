@@ -20,7 +20,7 @@ def test_account_creation(wallet: tt.Wallet) -> None:
     [
         (
             "too-long-account-name",
-            'Expected `str` of length <= 16',
+            "Expected `str` of length <= 16",
         ),
         (
             "to",

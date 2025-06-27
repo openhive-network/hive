@@ -16,7 +16,6 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.fields.assets import AssetBase as AssetBase
 from schemas.fields.assets import AssetHive
 from schemas.operations import (
     CommentOptionsOperation,
@@ -30,37 +29,40 @@ from schemas.transaction import TransactionLegacy
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
-    from schemas.operations.claim_reward_balance_operation import ClaimRewardBalanceOperation
-    from schemas.operations.comment_operation import CommentOperation
-    from schemas.operations.comment_options_operation import CommentOptionsOperationLegacy
-    from schemas.operations.representations.legacy_representation import LegacyRepresentation
-    from schemas.operations.vote_operation import VoteOperation
+    from schemas.operations.representation_types import (
+        LegacyRepresentationClaimRewardBalanceOperation,
+        LegacyRepresentationCommentOperation,
+        LegacyRepresentationCommentOptionsOperation,
+        LegacyRepresentationDeleteCommentOperation,
+        LegacyRepresentationVoteOperation,
+    )
 
 
 class ClaimRewardBalanceTransaction(TransactionLegacy):
-    operations: list[LegacyRepresentation[ClaimRewardBalanceOperation]]
+    operations: list[LegacyRepresentationClaimRewardBalanceOperation]
     rc_cost: int
 
 
 class CommentTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentation[CommentOperation]] | tuple[
-        LegacyRepresentation[CommentOperation], LegacyRepresentation[CommentOptionsOperationLegacy]
-    ]
+    operations: (
+        tuple[LegacyRepresentationCommentOperation]
+        | tuple[LegacyRepresentationCommentOperation, LegacyRepresentationCommentOptionsOperation]
+    )
     rc_cost: int = 0
 
 
 class DeleteCommentTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentation[DeleteCommentOperation]]
+    operations: tuple[LegacyRepresentationDeleteCommentOperation]
     rc_cost: int
 
 
 class VoteTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentation[VoteOperation]]
+    operations: tuple[LegacyRepresentationVoteOperation]
     rc_cost: int
 
 
 class CommentOptionsTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentation[CommentOptionsOperationLegacy]]
+    operations: tuple[LegacyRepresentationCommentOptionsOperation]
     rc_cost: int = 0
 
 
