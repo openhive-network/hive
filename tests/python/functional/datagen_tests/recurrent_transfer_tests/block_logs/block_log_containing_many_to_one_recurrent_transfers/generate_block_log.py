@@ -10,6 +10,7 @@ from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHive
+from schemas.policies import DisableSwapTypes, set_policies
 from hive_local_tools.functional.python.queen_utils import (
     __create_account,
     __recurrent_transfer,
@@ -22,6 +23,8 @@ ACCOUNTS_PER_CHUNK: Final[int] = 500
 MAX_WORKERS: Final[int] = os.cpu_count()
 RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
 SINGLE_TRANSFER_AMOUNT: Final[AssetHive] = AssetHive(amount=1)
+
+set_policies(DisableSwapTypes(disabled=True))
 
 
 def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_directory: Path) -> None:
