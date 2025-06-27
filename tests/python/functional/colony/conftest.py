@@ -4,7 +4,6 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import UNIVERSAL_BLOCK_LOGS_PATH
-from schemas.decoders import get_hf26_decoder
 
 
 @pytest.fixture()

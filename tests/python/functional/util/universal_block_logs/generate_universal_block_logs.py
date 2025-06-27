@@ -410,6 +410,7 @@ def __generate_and_broadcast_transaction(
     func: callable, node: tt.InitNode, wallet: tt.OldWallet, authority: str, account_names: list[str]
 ) -> None:
     if len(account_names) == 0:
+        tt.logger.info("No account names provided, skipping transaction generation.")
         return
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id

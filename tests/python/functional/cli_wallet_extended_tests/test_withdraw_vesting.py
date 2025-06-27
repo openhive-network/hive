@@ -7,9 +7,9 @@ from .utilities import create_accounts
 
 
 def test_withdraw_vesting(wallet: tt.OldWallet) -> None:
-    def check_withdraw_data(get_account: tt.Account, vesting_withdraw_rate: tt.Asset.Vest, to_withdraw: int) -> None:
-        assert tt.Asset.from_legacy(get_account["vesting_withdraw_rate"]) == vesting_withdraw_rate
-        assert get_account["to_withdraw"] == to_withdraw
+    def check_withdraw_data(account: tt.Account, vesting_withdraw_rate: tt.Asset.Vest, to_withdraw: int) -> None:
+        assert tt.Asset.from_legacy(account["vesting_withdraw_rate"]) == vesting_withdraw_rate
+        assert account["to_withdraw"] == to_withdraw
 
     def check_route_data(withdraw_vesting_route: WalletResponse) -> dict:
         _ops = withdraw_vesting_route["operations"]
