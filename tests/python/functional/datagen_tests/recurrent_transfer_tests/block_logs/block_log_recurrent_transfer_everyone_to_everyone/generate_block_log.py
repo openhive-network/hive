@@ -17,7 +17,7 @@ from hive_local_tools.functional.python.queen_utils import (
     __transfer,
     __vesting_delegate,
 )
-from schemas.fields.assets import AssetHiveHF26
+from schemas.fields.assets import AssetHive
 
 if TYPE_CHECKING:
     from datetime import datetime

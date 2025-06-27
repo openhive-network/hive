@@ -11,8 +11,8 @@ from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets.hbd import AssetHbdHF26
-from schemas.fields.assets.hive import AssetHiveHF26
+from schemas.fields.assets import AssetHbd
+from schemas.fields.assets import AssetHive
 from schemas.fields.basic import AccountName, PublicKey
 from schemas.fields.compound import Authority
 from schemas.operations.account_create_operation import AccountCreateOperation
@@ -313,7 +313,7 @@ def __transfer_account(voter: str) -> TransferToVestingOperation:
     return TransferOperation(
         from_="initminer",
         to=voter,
-        amount=AssetHbdHF26(amount=10000),
+        amount=AssetHbd(amount=10000),
         memo=f"supply_hbd_transfer-{voter}",
     )
 
@@ -321,7 +321,7 @@ def __transfer_account(voter: str) -> TransferToVestingOperation:
 def __vest_account(voter: str) -> TransferToVestingOperation:
     account_number = int(voter.split("-")[1])
     return TransferToVestingOperation(
-        from_="initminer", to=voter, amount=AssetHiveHF26(amount=(100000 + account_number))
+        from_="initminer", to=voter, amount=AssetHive(amount=(100000 + account_number))
     )
 
 
