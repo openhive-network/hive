@@ -73,14 +73,24 @@ def __generate_and_broadcast_transaction(
     assert ref_block_num >= 0, f"ref_block_num value `{ref_block_num}` is invalid`"
     assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
 
-    transaction = (SimpleTransactionLegacy if isinstance(wallet, tt.OldWallet) else SimpleTransaction)(
-        ref_block_num=HiveInt(ref_block_num),
-        ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=gdpo.time + timedelta(seconds=1800),
-        extensions=[],
-        signatures=[],
-        operations=[],
-    )
+    default_transaction_data = {
+        "ref_block_num": HiveInt(ref_block_num),
+        "ref_block_prefix": HiveInt(ref_block_prefix),
+        "expiration": gdpo.time + timedelta(seconds=1800),
+        "extensions": [],
+        "signatures": [],
+        "operations": [],
+    }
+
+    if isinstance(wallet, tt.OldWallet):
+        transaction = SimpleTransactionLegacy(
+            **default_transaction_data,
+            block_num=gdpo.head_block_number,
+            transaction_id="0" * 40,
+            transaction_num=0,
+        )
+    else:
+        transaction = SimpleTransaction(**default_transaction_data)
 
     is_batch_mode = "executions" in kwargs and "recurrence" in kwargs
 
