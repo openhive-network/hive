@@ -16,6 +16,7 @@ from schemas.fields.compound import Authority
 from schemas.operations.account_create_operation import AccountCreateOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.operations.vote_operation import VoteOperation
+from schemas.policies import DisableSwapTypes, set_policies
 from shared_tools.complex_networks import generate_networks
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
@@ -28,6 +29,8 @@ CONFIG = {
         {"InitNode": True, "FullApiNode": 4, "WitnessNodes": [1, 1, 1]},
     ]
 }
+
+set_policies(DisableSwapTypes(disabled=True))
 
 
 def prepare_blocklog_network(output_block_log_directory: Path) -> None:
