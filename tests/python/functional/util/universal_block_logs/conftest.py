@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Final
+from typing import Final, Literal
 
 import pytest
 
@@ -23,9 +24,11 @@ def test_id(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture()
 def replayed_node(request: pytest.FixtureRequest) -> tuple:
-    block_log_directory = Path(__file__).parent / request.param[0]
+    destination_variable = os.environ.get("TESTING_BLOCK_LOGS_DESTINATION")
+    assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
+    block_log_directory = Path(destination_variable) / request.param[0]
     block_log = tt.BlockLog(block_log_directory, "auto")
-    alternate_chain_spec_path = block_log_directory / tt.AlternateChainSpecs.FILENAME
+    acs = tt.AlternateChainSpecs.parse_file(block_log_directory / tt.AlternateChainSpecs.FILENAME)
 
     node = tt.InitNode()
 
@@ -54,7 +57,7 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
         time_control=tt.StartTimeControl(start_time="head_block_time"),
         timeout=240,
         wait_for_live=True,
-        alternate_chain_specs=tt.AlternateChainSpecs.parse_file(alternate_chain_spec_path),
+        alternate_chain_specs=acs,
         arguments=[f"--chain-id={CHAIN_ID}"],
     )
 
@@ -65,12 +68,23 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
     return node, wallet, request.param[1]
 
 
-def import_keys(wallet: tt.OldWallet, block_log_type: str) -> None:
-    match block_log_type:
-        case "block_log_multi_sign":
-            wallet.api.import_keys([tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)])
-        case "block_log_single_sign":
-            wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
-        case "block_log_maximum_sign":
-            for signer in SIGNERS:
-                wallet.api.import_keys([tt.PrivateKey(signer, secret=f"secret-{num}") for num in range(40)])
+def import_keys(
+    wallet: tt.OldWallet,
+    block_log_type: Literal[
+        "multi_sign_universal_block_log",
+        "open_sign_universal_block_log",
+        "single_sign_universal_block_log",
+        "maximum_sign_universal_block_log",
+    ],
+) -> None:
+    if "multi_sign" in block_log_type:
+        keys = [tt.PrivateKey("account", secret=f"secret-{num}") for num in range(5)]
+        wallet.api.import_keys(keys)
+    elif "single_sign" in block_log_type or "open_sign" in block_log_type:
+        wallet.api.import_key(tt.PrivateKey("account", secret="secret"))
+    elif "maximum_sign" in block_log_type:
+        for signer in SIGNERS:
+            keys = [tt.PrivateKey(signer, secret=f"secret-{num}") for num in range(40)]
+            wallet.api.import_keys(keys)
+    else:
+        raise ValueError(f"Unsupported block_log_type: {block_log_type}")
