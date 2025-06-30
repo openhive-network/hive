@@ -14,7 +14,7 @@ class rocksdb_comment_archive : public comments_handler
   private:
 
 #ifdef IS_TEST_NET
-    const size_t volatile_objects_limit = 0;
+    size_t volatile_objects_limit = 0;
 #else
     const size_t volatile_objects_limit = 10'000;
 #endif
@@ -47,6 +47,13 @@ class rocksdb_comment_archive : public comments_handler
     void open() override;
     void close() override;
     void wipe() override;
+
+#ifdef IS_TEST_NET
+    void set_volatile_objects_limit( size_t value )
+    {
+      volatile_objects_limit = value;
+    }
+#endif
 };
 
 } }

@@ -11,6 +11,7 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
 
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
@@ -19,6 +20,8 @@
 #include "../db_fixture/clean_database_fixture.hpp"
 
 #include <cmath>
+
+#include <boost/scope_exit.hpp>
 
 using namespace hive;
 using namespace hive::chain;
@@ -98,6 +101,98 @@ BOOST_AUTO_TEST_CASE( basic_checks )
 
     _create_or_update_comments( "bob", bob_post_key );
     _check_comments( bob_id, false/*before_payout*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_checks_with_threshold )
+{
+  try
+  {
+    ACTORS( (alice0) (alice1) (alice2) (alice3) (alice4) (bob) )
+
+    dynamic_cast<hive::chain::rocksdb_comment_archive&>( db->get_comments_handler() ).set_volatile_objects_limit( 5 );
+
+    BOOST_SCOPE_EXIT( &db )
+    {
+      dynamic_cast<hive::chain::rocksdb_comment_archive&>( db->get_comments_handler() ).set_volatile_objects_limit( 0 );
+    } BOOST_SCOPE_EXIT_END
+
+    struct _data
+    {
+      std::string name;
+      account_id_type id;
+    };
+
+    std::vector<_data> _accounts{ {"alice0", alice0_id}, {"alice1", alice1_id}, {"alice2", alice2_id}, {"alice3", alice3_id}, {"alice4", alice4_id} };
+
+    for( auto& item : _accounts )
+      vest( item.name, ASSET( "10.000 TESTS" ) );
+
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    auto _create_or_update_comments = [&, this]()
+    {
+      signed_transaction tx;
+
+      comment_operation comment_op;
+
+      comment_op.permlink = "test";
+      comment_op.parent_permlink = "test";
+      comment_op.title = "foo";
+      comment_op.body = "bar";
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      for( auto& item : _accounts )
+      {
+        comment_op.author = item.name;
+        tx.operations.push_back( comment_op );
+      }
+
+      push_transaction( tx, { alice0_post_key, alice1_post_key, alice2_post_key, alice3_post_key, alice4_post_key } );
+    };
+
+    auto _check_comments = [&, this]( bool before_payout )
+    {
+      for( auto& item : _accounts )
+      {
+        const auto& _alice_comment = db->get_comment( item.name, string( "test" ) );
+        const comment_cashout_object* _alice_comment_cashout = db->find_comment_cashout( *_alice_comment );
+
+        auto _hash = comment_object::compute_author_and_permlink_hash( item.id, string( "test" ) );
+        const auto* _alice_shm_comment = db->find< comment_object, by_permlink >( _hash );
+
+        if( before_payout )
+        {
+          BOOST_REQUIRE( _alice_comment_cashout != nullptr );
+          BOOST_REQUIRE( _alice_shm_comment != nullptr );
+        }
+        else
+        {
+          BOOST_REQUIRE( _alice_comment_cashout == nullptr );
+          BOOST_REQUIRE( _alice_shm_comment == nullptr );
+        }
+      }
+    };
+
+    _create_or_update_comments();
+    _check_comments( true/*before_payout*/ );
+
+    auto _number_blocks = HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL;
+
+    generate_blocks( _number_blocks / 2 );
+
+    _create_or_update_comments();
+    _check_comments( true/*before_payout*/ );
+
+    generate_blocks( _number_blocks / 2 );
+    generate_blocks( 100 );
+
+    _create_or_update_comments();
+    _check_comments( false/*before_payout*/ );
   }
   FC_LOG_AND_RETHROW()
 }
