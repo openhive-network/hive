@@ -390,13 +390,6 @@ plugin_test:
     - name: $TEST_BLOCK_LOG_LATEST_VERSION_IMAGE
       alias: test-block-log-server
 
-.universal-block-log-service:
-  variables:
-    UNIVERSAL_BLOCK_LOG_SERVER: "http://universal-block-log-server:80"
-  services:
-    - name: $UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE
-      alias: universal-block-log-server
-
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends:
@@ -1374,6 +1367,18 @@ generate_testing_block_logs:
 
       - GENERATOR_NAME: transaction_status_api
         GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/generate_block_log.py
+
+      - GENERATOR_NAME: open_sign_universal_block_log
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py
+
+      - GENERATOR_NAME: single_sign_universal_block_log
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py
+
+      - GENERATOR_NAME: multi_sign_universal_block_log
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py
+
+      - GENERATOR_NAME: maximum_sign_universal_block_log
+        GENERATOR_PATH: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/generate_universal_block_logs.py
   artifacts:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
@@ -1400,61 +1405,23 @@ build_combined_testing_block_logs_image:
   tags:
     - public-runner-docker
 
-generate_universal_block_logs_and_save_image:
-  stage: build
-  extends: [.extended_block_log_creation, .test_tools_based]
-  timeout: 2h 30m
-  variables:
-    GIT_DEPTH: 0
-    UNIVERSAL_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/universal_block_logs"
-  script:
-  - $CI_PROJECT_DIR/scripts/ci-helpers/universal_block_log_image_generator.sh
-  artifacts:
-     reports:
-       dotenv:
-         - universal_block_log_latest_version.env
-         - universal_block_log_latest_commit_short_sha.env
-  tags:
-  - public-runner-docker
-  - hived-for-tests
-
-.fetch_universal_block_logs:
-  # Usage:
-  # 1. Add - !reference [.fetch_universal_block_logs, script] at the beginning of your test script section.
-  # 2. Set the appropriate values for:
-  #    - UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE (required, should be set in universal_block_log_image_generator.sh)
-  #    - UNIVERSAL_BLOCK_LOG_SERVER (required, should be set in .universal-block-log-service)
-  #    - UNIVERSAL_BLOCK_LOGS_SOURCES (required, should be set in test job)
-  #    - UNIVERSAL_BLOCK_LOGS_DESTINATION (required, should be set in test job)
-  script:
-    - |
-      test -n "$UNIVERSAL_BLOCK_LOG_LATEST_VERSION_IMAGE"
-      test -n "$UNIVERSAL_BLOCK_LOG_SERVER"
-      test -n "$UNIVERSAL_BLOCK_LOGS_DESTINATION"
-      curl -I $UNIVERSAL_BLOCK_LOG_SERVER || (echo "error connecting to service universal-block-log-server" && false)
-      IFS=" " read -ra BLOCK_LOGS <<< $UNIVERSAL_BLOCK_LOGS_SOURCES
-      for i in "${BLOCK_LOGS[@]}"
-      do
-        echo "$i"
-        wget -q -nH -np -P $UNIVERSAL_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 $UNIVERSAL_BLOCK_LOG_SERVER/$i
-      done
-
 universal_block_log_tests:
   stage: test
   extends:
     - .test_tools_based
-    - .universal-block-log-service
+    - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_universal_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
       artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
-    UNIVERSAL_BLOCK_LOGS_SOURCES: universal_block_logs/
-    UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
-    - !reference [.fetch_universal_block_logs, script]
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+    - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
     - !reference [.run-pytest, script]
   tags:
@@ -1464,17 +1431,19 @@ colony_tests:
   stage: test
   extends:
     - .test_tools_based
-    - .universal-block-log-service
+    - .test-block-log-service
   needs:
     - !reference [.test_tools_based, needs]
-    - job: generate_universal_block_logs_and_save_image
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
-    UNIVERSAL_BLOCK_LOGS_SOURCES: universal_block_logs/block_log_single_sign/
-    UNIVERSAL_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
-    - !reference [.fetch_universal_block_logs, script]
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+    - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
   tags:
