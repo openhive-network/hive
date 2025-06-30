@@ -31,7 +31,7 @@ def node_client(node: tt.InitNode | tt.RemoteNode, worker_id) -> NodeClientMaker
     def _node_client(accounts: list[dict] | None = None) -> Hive:
         accounts = accounts or []
 
-        keys = copy.deepcopy(node.config.private_key)
+        keys = node.config.private_key.copy()
 
         for account in accounts:
             keys.append(account["private_key"])
