@@ -19,10 +19,10 @@ from python.functional.util.universal_block_logs.generate_universal_block_logs i
 @pytest.mark.parametrize(
     "replayed_node",
     [
-        ("block_log_multi_sign", {"owner": 5, "active": 5, "posting": 5}),
-        ("block_log_open_sign", {"owner": 0, "active": 0, "posting": 0}),
-        ("block_log_single_sign", {"owner": 1, "active": 1, "posting": 1}),
-        ("block_log_maximum_sign", {"owner": 1600, "active": 1600, "posting": 1600}),
+        ("multi_sign_universal_block_log", {"owner": 5, "active": 5, "posting": 5}),
+        ("open_sign_universal_block_log", {"owner": 0, "active": 0, "posting": 0}),
+        ("single_sign_universal_block_log", {"owner": 1, "active": 1, "posting": 1}),
+        ("maximum_sign_universal_block_log", {"owner": 1600, "active": 1600, "posting": 1600}),
     ],
     ids=["block_log_multi_sign", "block_log_open_sign", "block_log_single_sign", "block_log_maximum_sign"],
     indirect=True,
