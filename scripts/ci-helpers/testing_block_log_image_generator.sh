@@ -40,9 +40,15 @@ else
   echo "${img} image is missing. Starting generation of testing block logs..."
   echo "Save block logs to directory: $TESTING_BLOCK_LOGS_DIR"
   export LOGURU_LEVEL=INFO
-  OUTPUT_DIR_PARAMETER=--output-block-log-directory="$TESTING_BLOCK_LOGS_DIR/block_logs_for_testing"
-  python3 "$GENERATOR_PATH" "$OUTPUT_DIR_PARAMETER"
-  ls -R "$TESTING_BLOCK_LOGS_DIR"
+
+  ARGS=(--output-block-log-directory "$TESTING_BLOCK_LOGS_DIR/block_logs_for_testing")
+
+  if [[ "$GENERATOR_NAME" == *"universal_block_log"* ]]; then
+    UNIVERSAL_TYPE=$(echo "$GENERATOR_NAME" | cut -d'_' -f1-2)
+    ARGS+=(--universal-block-log-type "$UNIVERSAL_TYPE")
+  fi
+
+  python3 "$GENERATOR_PATH" "${ARGS[@]}"
 
   echo "Build a Dockerfile"
 
