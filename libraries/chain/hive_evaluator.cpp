@@ -13,7 +13,6 @@
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
-#include <hive/chain/util/recurrent_transfer_extension_visitor.hpp>
 
 #include <fc/macros.hpp>
 
@@ -3316,7 +3315,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   asset available = _db.get_balance( from_account, op.amount.symbol );
   FC_ASSERT( available >= op.amount, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
 
-  recurrent_transfer_extension_visitor vtor;
+  recurrent_transfer_operation::recurrent_transfer_extension_visitor vtor;
   for( const auto& e : op.extensions )
     e.visit( vtor );
   uint8_t rtp_id = vtor.pair_id;
