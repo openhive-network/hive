@@ -12,7 +12,6 @@ or package in which they will be used. e.g.:
 """
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Final
 
 from schemas.transaction import TransactionLegacy
@@ -166,7 +165,3 @@ MIRRORNET_5M_WITNESSES: Final[list] = [
     "rabbit-63",
     "pfunk",
 ]
-
-UNIVERSAL_BLOCK_LOGS_PATH: Final[Path] = (
-    Path(__file__).resolve().parents[2] / "functional" / "util" / "universal_block_logs"
-)
