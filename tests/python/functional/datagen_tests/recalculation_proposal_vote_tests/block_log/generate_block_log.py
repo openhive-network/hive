@@ -323,9 +323,7 @@ def __transfer_account(voter: str) -> TransferToVestingOperation:
 
 def __vest_account(voter: str) -> TransferToVestingOperation:
     account_number = int(voter.split("-")[1])
-    return TransferToVestingOperation(
-        from_="initminer", to=voter, amount=AssetHive(amount=(100000 + account_number))
-    )
+    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=(100000 + account_number)))
 
 
 if __name__ == "__main__":

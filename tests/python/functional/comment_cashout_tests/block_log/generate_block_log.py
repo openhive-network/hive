@@ -45,8 +45,8 @@ def prepare_blocklog_network(output_block_log_directory: Path) -> None:
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    Path(output_block_log_directory/"base_network_block_log").mkdir(parents=True, exist_ok=True)
-    generate_networks(architecture, output_block_log_directory/"base_network_block_log", terminate_nodes=True)
+    Path(output_block_log_directory / "base_network_block_log").mkdir(parents=True, exist_ok=True)
+    generate_networks(architecture, output_block_log_directory / "base_network_block_log", terminate_nodes=True)
     tt.logger.info(f"Save block log file to {output_block_log_directory/'base_network_block_log'}")
 
 
@@ -76,11 +76,14 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     init_node.config.private_key.append("5JD9oWa9mzPeGWCXrw7wsbp4v72BWAqHLEdhS3u5AkRLYW7CErL")
 
     # slot 0 of block log
-    base_network_block_lo_genesis_time = tt.BlockLog(output_block_log_directory / "base_network_block_log", "auto").get_block(block_number=1).timestamp - tt.Time.seconds(3)
+    base_network_block_lo_genesis_time = tt.BlockLog(
+        output_block_log_directory / "base_network_block_log", "auto"
+    ).get_block(block_number=1).timestamp - tt.Time.seconds(3)
     acs = tt.AlternateChainSpecs(
         genesis_time=int(base_network_block_lo_genesis_time.timestamp()),
         hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
-        hbd_init_supply=100_000, init_supply=200_000_000_000,
+        hbd_init_supply=100_000,
+        init_supply=200_000_000_000,
         initial_vesting=tt.InitialVesting(hive_amount=10_000_000_000, vests_per_hive=1800),
         witness_custom_op_block_limit=100,
     )
@@ -173,7 +176,9 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
 
 def wait_for_comment_payment(node: tt.InitNode) -> None:
     cashout_time = tt.Time.parse(
-        node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]]).cashout_infos[0].cashout_info.cashout_time
+        node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]])
+        .cashout_infos[0]
+        .cashout_info.cashout_time
     )
     tt.logger.info(f"Cashout time: {cashout_time}")
     tt.logger.info(f"Head block time: {node.get_head_block_time()}")
