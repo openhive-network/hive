@@ -1840,7 +1840,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev716+f0822b48"
+wax = "0.3.10.dev722+cabed72b"
 
 [package.source]
 type = "directory"
@@ -1973,13 +1973,13 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev716+f0822b48"
+version = "0.3.10.dev722+cabed72b"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev716+f0822b48-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:26532d215bf300dd9417295b71503bbc51a284c15a2da57cbf0c1e744c51bcc9"},
+    {file = "wax-0.3.10.dev722+cabed72b-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:9b1cb9a50ee7737eebb87bb05c96f8ae8eb31644a9ff3dea14bd12f1994317b4"},
 ]
 
 [package.dependencies]
