@@ -89,7 +89,7 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
         __generate_and_broadcast_transaction,
         args=(wallet, init_node, __transfer_to_vesting),
         args_sequences=(account_names,),
-        kwargs={"transfer_asset":AssetHive(amount=10)},
+        kwargs={"transfer_asset": AssetHive(amount=10)},
         amount=NUMBER_OF_SENDER_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
