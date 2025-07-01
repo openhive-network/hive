@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from msgspec import ValidationError
+from schemas.errors import ValidationError
 
 if TYPE_CHECKING:
     import test_tools as tt
