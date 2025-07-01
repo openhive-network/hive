@@ -7,7 +7,8 @@ from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
 from beekeepy.exceptions.overseer import ErrorInResponseError
-from msgspec import ValidationError
+from schemas.errors import ValidationError
+
 
 @run_for("testnet")
 def test_default_recovery_agent(node: tt.InitNode) -> None:
