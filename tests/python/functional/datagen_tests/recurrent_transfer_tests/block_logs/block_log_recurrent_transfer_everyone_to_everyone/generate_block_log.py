@@ -33,6 +33,7 @@ HBD_INIT_SUPPLY: Final[int] = 30_000_000_000
 
 set_policies(DisableSwapTypes(disabled=True))
 
+
 def prepare_block_log(output_block_log_directory: Path) -> None:
     """
     This script generate block_log with specific conditions. The entire block_log can be divided into four parts:
@@ -63,7 +64,7 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
         init_supply=INIT_SUPPLY,
         hbd_init_supply=HBD_INIT_SUPPLY,
         initial_vesting=tt.InitialVesting(vests_per_hive=1800, hive_amount=INITIAL_VESTING),
-        init_witnesses=WITNESSES
+        init_witnesses=WITNESSES,
     )
     node.run(alternate_chain_specs=acs)
     generate_block(node, 1)  # need to activate hardforks
@@ -105,7 +106,9 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
     # transfer liquid
     tt.logger.info("Started transfer HIVE to accounts...")
 
-    liquid_per_account = (node.api.database.find_accounts(accounts=["initminer"]).accounts[0].balance / AMOUNT_OF_ALL_ACCOUNTS).amount
+    liquid_per_account = (
+        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].balance / AMOUNT_OF_ALL_ACCOUNTS
+    ).amount
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
         args=(wallet, node, __transfer),
@@ -119,7 +122,9 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
     tt.logger.info("Finish transfer HIVE to accounts!")
 
     # vesting delegate
-    vs_per_account = node.api.database.find_accounts(accounts=["initminer"]).accounts[0].vesting_shares / AMOUNT_OF_ALL_ACCOUNTS
+    vs_per_account = (
+        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].vesting_shares / AMOUNT_OF_ALL_ACCOUNTS
+    )
     tt.logger.info("Started vesting delegate to accounts...")
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
@@ -161,7 +166,9 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
 
     # wait for recurrent transfers to be processed
     all_accounts_names = wallet_hf26.list_accounts()
-    blocks_to_wait = math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
+    blocks_to_wait = math.ceil(
+        len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK
+    )
     with node.temporarily_change_timeout(seconds=360):
         generate_block(node, blocks_to_wait)
 

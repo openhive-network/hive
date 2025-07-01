@@ -52,6 +52,7 @@ MAX_WORKERS: Final[int] = os.cpu_count() * 2
 
 set_policies(DisableSwapTypes(disabled=True))
 
+
 def prepare_block_log(
     output_block_log_directory: Path,
     signature_type: Literal["open_sign", "multi_sign", "single_sign", "maximum_sign"],
@@ -81,7 +82,9 @@ def prepare_block_log(
         if witness != "initminer":
             node.config.witness.append(witness)
             node.config.private_key.append(witness_key)
-        save_keys_to_file(name=witness, witness_key=witness_key, file_path=output_block_log_directory / "witnesses_keys.txt")
+        save_keys_to_file(
+            name=witness, witness_key=witness_key, file_path=output_block_log_directory / "witnesses_keys.txt"
+        )
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
@@ -92,7 +95,9 @@ def prepare_block_log(
         genesis_time=int(tt.Time.now(serialize=False).timestamp()),
         hardfork_schedule=[
             tt.HardforkSchedule(hardfork=18, block_num=0),
-            tt.HardforkSchedule(hardfork=current_hardfork_number, block_num=activate_current_hf[signature_type] + five_days_in_blocks),
+            tt.HardforkSchedule(
+                hardfork=current_hardfork_number, block_num=activate_current_hf[signature_type] + five_days_in_blocks
+            ),
         ],
         init_supply=INIT_SUPPLY,
         hbd_init_supply=HBD_INIT_SUPPLY,
@@ -137,12 +142,7 @@ def prepare_block_log(
         tt.logger.info(f"Start creating signers! @Block: {node.get_last_block_number()}")
         execute_function_in_threads(
             __generate_and_broadcast_transaction,
-            args=(
-                __create_signer,
-                node,
-                wallet,
-                None
-            ),
+            args=(__create_signer, node, wallet, None),
             args_sequences=(SIGNERS,),
             amount=40,
             chunk_size=40,
@@ -354,12 +354,7 @@ def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
 
 def __create_and_fund_account(
     account: str, authority: dict
-) -> tuple[
-    AccountCreateOperation,
-    TransferOperation,
-    TransferOperation,
-    DelegateVestingSharesOperation,
-]:
+) -> tuple[AccountCreateOperation, TransferOperation, TransferOperation, DelegateVestingSharesOperation,]:
     return (
         AccountCreateOperation(
             fee=INITIAL_ACCOUNT_CREATION_FEE,
@@ -428,8 +423,8 @@ def __generate_and_broadcast_transaction(
         signatures=[],
         operations=[],
         block_num=gdpo.head_block_number,
-        transaction_id="0"*40,
-        transaction_num=0
+        transaction_id="0" * 40,
+        transaction_num=0,
     )
 
     for name in account_names:
