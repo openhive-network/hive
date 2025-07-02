@@ -1075,40 +1075,62 @@ namespace hive { namespace protocol {
     */
   struct recurrent_transfer_operation : public base_operation
   {
-    struct recurrent_transfer_extension_visitor
-    {
-      uint8_t pair_id = 0; // default recurrent transfer id is 0
-      bool was_pair_id = false;
-
-      typedef void result_type;
-
-      void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
+    private:
+      struct recurrent_transfer_extension_visitor
       {
-        was_pair_id = true;
-        pair_id = recurrent_transfer_pair_id.pair_id;
+        uint8_t pair_id = 0; // default recurrent transfer id is 0
+        bool was_pair_id = false;
+
+        typedef void result_type;
+
+        void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
+        {
+          was_pair_id = true;
+          pair_id = recurrent_transfer_pair_id.pair_id;
+        }
+
+        void operator()( const hive::void_t& ) {}
+      };
+
+    public:
+
+      account_name_type from;
+      /// Account to transfer asset to
+      account_name_type to;
+      /// The amount of asset to transfer from @ref from to @ref to
+      asset             amount;
+
+      string            memo;
+      /// How often will the payment be triggered, unit: hours
+      uint16_t          recurrence = 0;
+
+      // How many times the recurrent payment will be executed
+      uint16_t          executions = 0;
+
+      /// Extensions, only recurrent_transfer_pair_id is supported so far
+      recurrent_transfer_extensions_type   extensions;
+
+      void              validate()const;
+      void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
+
+      /// Returns pair id specific to given operation. explicitValue if not null will be set to true if pair_id was explicitly specified in the operation.
+      uint8_t get_pair_id( const recurrent_transfer_extensions_type& _extensions, bool* explicitValue = nullptr ) const
+      {
+        recurrent_transfer_extension_visitor _vtor;
+
+        for( const auto& e : _extensions )
+          e.visit( _vtor );
+
+        if( explicitValue )
+          *explicitValue = _vtor.was_pair_id;
+
+        return _vtor.pair_id;
       }
 
-      void operator()( const hive::void_t& ) {}
-    };
-
-    account_name_type from;
-    /// Account to transfer asset to
-    account_name_type to;
-    /// The amount of asset to transfer from @ref from to @ref to
-    asset             amount;
-
-    string            memo;
-    /// How often will the payment be triggered, unit: hours
-    uint16_t          recurrence = 0;
-
-    // How many times the recurrent payment will be executed
-    uint16_t          executions = 0;
-
-    /// Extensions, only recurrent_transfer_pair_id is supported so far
-    recurrent_transfer_extensions_type   extensions;
-
-    void              validate()const;
-    void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
+      uint8_t get_pair_id( bool* explicitValue = nullptr ) const
+      {
+        return get_pair_id( extensions, explicitValue );
+      }
   };
 
   struct witness_block_approve_operation : public base_operation
