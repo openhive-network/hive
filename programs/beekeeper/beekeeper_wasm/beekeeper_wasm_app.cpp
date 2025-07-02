@@ -30,7 +30,7 @@ void beekeeper_wasm_app::set_program_options()
   beekeeper_app_base::set_program_options();
 }
 
-init_data beekeeper_wasm_app::initialize( int argc, char** argv )
+uint32_t beekeeper_wasm_app::initialize( int argc, char** argv )
 {
   bpo::store( bpo::parse_command_line( argc, argv, options_cfg ), args );
   return initialize_program_options();
@@ -69,7 +69,7 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_
                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit );
 }
 
-init_data beekeeper_wasm_app::init( int argc, char** argv )
+uint32_t beekeeper_wasm_app::init( int argc, char** argv )
 {
   return run( argc, argv );
 }

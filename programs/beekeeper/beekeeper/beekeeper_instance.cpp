@@ -62,8 +62,8 @@ namespace beekeeper {
     if( !wallet_dir_lock->try_lock() )
     {
         wallet_dir_lock.reset();
-        wlog( "Failed to lock access to a wallet directory. Probably another beekeeper instance is running. Beekeeper API is disabled." );
-        return;
+        elog( "Failed to lock access to a wallet directory. Probably another beekeeper instance is running." );
+        throw std::runtime_error( "A working directory is taken by another beekeeper instance" );
     }
 
     instance_started = true;

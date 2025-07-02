@@ -27,12 +27,12 @@ class beekeeper_app: public beekeeper_app_base
     std::shared_ptr<mutex_handler> mtx_handler;
 
     std::string check_version();
-    bool save_keys( const std::string& wallet_name, const std::string& wallet_password );
+    uint32_t save_keys( const std::string& wallet_name, const std::string& wallet_password );
 
     const boost::program_options::variables_map& get_args() const override;
     bfs::path get_data_dir() const override;
     void setup( const boost::program_options::variables_map& args ) override;
-    init_data save_keys( const boost::program_options::variables_map& args ) override;
+    uint32_t save_keys( const boost::program_options::variables_map& args ) override;
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit ) override;
 
@@ -41,7 +41,7 @@ class beekeeper_app: public beekeeper_app_base
   protected:
 
     void set_program_options() override;
-    init_data initialize( int argc, char** argv ) override;
+    uint32_t initialize( int argc, char** argv ) override;
     void start() override;
 
   public:
@@ -49,7 +49,7 @@ class beekeeper_app: public beekeeper_app_base
     beekeeper_app();
     ~beekeeper_app() override;
 
-    init_data init( int argc, char** argv ) override;
+    uint32_t init( int argc, char** argv ) override;
 };
 
 }

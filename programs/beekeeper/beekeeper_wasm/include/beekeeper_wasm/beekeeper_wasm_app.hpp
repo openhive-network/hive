@@ -16,7 +16,7 @@ class beekeeper_wasm_app: public beekeeper_app_base
   protected:
 
     void set_program_options() override;
-    init_data initialize( int argc, char** argv ) override;
+    uint32_t initialize( int argc, char** argv ) override;
     void start() override;
 
     const boost::program_options::variables_map& get_args() const override;
@@ -30,7 +30,7 @@ class beekeeper_wasm_app: public beekeeper_app_base
     beekeeper_wasm_app();
     ~beekeeper_wasm_app() override;
 
-    init_data init( int argc, char** argv ) override;
+    uint32_t init( int argc, char** argv ) override;
 };
 
 }
