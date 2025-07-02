@@ -15,6 +15,14 @@
 
 namespace beekeeper {
 
+  struct initialization_result
+  {
+    enum result {
+      ok,
+      fail
+    };
+  };
+
 using private_key_type  = fc::ecc::private_key;
 using public_key_type   = fc::ecc::public_key;
 using signature_type    = fc::ecc::compact_signature;
@@ -24,12 +32,6 @@ using chain_id_type     = fc::sha256;
 using fc::flat_set;
 
 using seconds_type = uint32_t;
-
-struct init_data
-{
-  bool status = false;
-  std::string version;
-};
 
 struct wallet_details
 {
@@ -328,7 +330,6 @@ namespace fc
   void to_variant( const beekeeper::list_wallets_return& var, fc::variant& vo );
   void to_variant( const beekeeper::public_key_details& var, fc::variant& vo );
   void to_variant( const beekeeper::signature_return& var, fc::variant& vo );
-  void to_variant( const beekeeper::init_data& var, fc::variant& vo );
   void to_variant( const beekeeper::has_matching_private_key_return& var, fc::variant& vo );
   void to_variant( const beekeeper::encrypt_data_return& var, fc::variant& vo );
   void to_variant( const beekeeper::decrypt_data_return& var, fc::variant& vo );
@@ -339,8 +340,6 @@ namespace fc
   void from_variant( const fc::variant& var, beekeeper::wallet_data& vo );
   void to_variant( const beekeeper::wallet_data& var, fc::variant& vo );
 }
-
-FC_REFLECT( beekeeper::init_data, (status)(version) )
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
 FC_REFLECT( beekeeper::public_key_details, (public_key) )

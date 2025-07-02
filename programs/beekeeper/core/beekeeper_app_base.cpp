@@ -38,7 +38,7 @@ void beekeeper_app_base::set_program_options()
     ;
 }
 
-init_data beekeeper_app_base::initialize_program_options()
+uint32_t beekeeper_app_base::initialize_program_options()
 {
   try {
       const boost::program_options::variables_map& _args = get_args();
@@ -65,28 +65,23 @@ init_data beekeeper_app_base::initialize_program_options()
         ilog( "Backtrace on segfault is enabled." );
       }
 
-      /*
-        When two beekeepers try to get access to the same directory, a second beekeeper should start, but without the beekeeper API.
-        It is enough, that `app_status_api` plugin is enabled because has to inform that the beekeeper doesn't work properly.
-      */
-      if( !wallet_manager_ptr->start() )
-        return { true, "" };
+      wallet_manager_ptr->start();
 
       return save_keys( _args );
 
   } FC_LOG_AND_RETHROW()
 }
 
-init_data beekeeper_app_base::run( int argc, char** argv )
+uint32_t beekeeper_app_base::run( int argc, char** argv )
 {
   set_program_options();
 
-  auto _init_data = initialize( argc, argv );
+  auto _result = initialize( argc, argv );
 
   if( should_start_loop() )
     start();
 
-  return _init_data;
+  return _result;
 }
 
 }

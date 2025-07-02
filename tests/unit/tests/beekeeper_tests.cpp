@@ -773,7 +773,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
     beekeeper_api _obj( { "--wallet-dir", b_mgr.dir.string() } );
 
-    BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ), fc::json::format_validation_mode::full ).as<beekeeper::init_data>().status );
+    BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ), fc::json::format_validation_mode::full ).as<beekeeper::beekeeper_api::init_data>().status == 0 );
 
     auto _token = extract_json( _obj.create_session( "banana" ) );
     BOOST_TEST_MESSAGE( _token );
@@ -1278,7 +1278,7 @@ class wasm_simulation_executor
       for( auto& stage_timeout : stage_timeouts )
       {
         beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-        BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ), fc::json::format_validation_mode::full ).as<beekeeper::init_data>().status );
+        BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ), fc::json::format_validation_mode::full ).as<beekeeper::beekeeper_api::init_data>().status == 0 );
 
         auto _details = sim.create( _beekeeper, simulation_name, nr_sessions, nr_wallets, timeouts );
         sim.test( _beekeeper, "Wait for: " + std::to_string( stage_timeout ) + "[s]", _details, stage_timeout );
@@ -1416,7 +1416,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_refresh_timeout)
       b_mgr.remove_wallets();
 
       beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ), fc::json::format_validation_mode::full ).as<beekeeper::init_data>().status );
+      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ), fc::json::format_validation_mode::full ).as<beekeeper::beekeeper_api::init_data>().status == 0 );
 
       auto _token = get_wasm_data( extract_json( _beekeeper.create_session( "salt" ) ) );
       _beekeeper.create( _token, "w0" );
@@ -2066,7 +2066,7 @@ BOOST_AUTO_TEST_CASE(get_version)
       BOOST_TEST_MESSAGE( "WASM beekeeper" );
       beekeeper_api _obj( { "--wallet-dir", b_mgr.dir.string() } );
 
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ), fc::json::format_validation_mode::full ).as<beekeeper::init_data>().status );
+      BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ), fc::json::format_validation_mode::full ).as<beekeeper::beekeeper_api::init_data>().status == 0 );
 
       auto _version_str = extract_json( _obj.get_version() );
       beekeeper::get_version_return _version = fc::json::from_string( _version_str, fc::json::format_validation_mode::full ).as<beekeeper::get_version_return>();

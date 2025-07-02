@@ -23,22 +23,22 @@ class beekeeper_app_base
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager>  wallet_manager_ptr;
 
-    virtual init_data initialize( int argc, char** argv ) = 0;
+    virtual uint32_t initialize( int argc, char** argv ) = 0;
     virtual void start() = 0;
     virtual bool should_start_loop() const { return true; };
 
-    init_data run( int argc, char** argv );
+    uint32_t run( int argc, char** argv );
 
     virtual void set_program_options();
 
   protected:
 
-    init_data initialize_program_options();
+    uint32_t initialize_program_options();
 
     virtual const boost::program_options::variables_map& get_args() const = 0;
     virtual bfs::path get_data_dir() const = 0;
     virtual void setup( const boost::program_options::variables_map& args ) = 0;
-    virtual init_data save_keys( const boost::program_options::variables_map& args ) { return { true, utility::get_revision() }; };
+    virtual uint32_t save_keys( const boost::program_options::variables_map& args ) { return 0; };
 
     virtual std::shared_ptr<beekeeper::beekeeper_wallet_manager> create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit ) = 0;
 
@@ -47,7 +47,7 @@ class beekeeper_app_base
     beekeeper_app_base();
     virtual ~beekeeper_app_base();
 
-    virtual init_data init( int argc, char** argv ) = 0;
+    virtual uint32_t init( int argc, char** argv ) = 0;
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> get_wallet_manager()
     {
