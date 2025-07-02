@@ -82,12 +82,6 @@ namespace fc
     vo = v;
   }
 
-  void to_variant( const beekeeper::init_data& var, fc::variant& vo )
-  {
-    variant v = mutable_variant_object( "status", var.status )( "version", var.version );
-    vo = v;
-  }
-
   void to_variant( const beekeeper::has_matching_private_key_return& var, fc::variant& vo )
   {
     variant v = mutable_variant_object( "exists", var.exists );

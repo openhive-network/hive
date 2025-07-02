@@ -18,7 +18,7 @@ namespace beekeeper {
     beekeeper::beekeeper_wasm_app app;
 
     std::string create_params_info() const;
-    init_data init_impl();
+    beekeeper_api::init_data init_impl();
   };
 
   std::string beekeeper_api::impl::create_params_info() const
@@ -42,10 +42,10 @@ namespace beekeeper {
     _impl->params.insert( _impl->params.begin(), "" );//a fake path to exe (not used, but it's necessary)
   }
 
-  init_data beekeeper_api::impl::init_impl()
+  beekeeper_api::init_data beekeeper_api::impl::init_impl()
   {
     char** _params = nullptr;
-    init_data _result;
+    uint32_t _result = initialization_result::ok;
 
     BOOST_SCOPE_EXIT(&_params)
     {
@@ -59,7 +59,7 @@ namespace beekeeper {
 
     _result = app.init( params.size(), _params );
 
-    return _result;
+    return { _result, utility::get_revision() };
   }
 
   public_key_type beekeeper_api::create( const std::string& source )
@@ -389,3 +389,21 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 };
+
+namespace fc
+{
+  void to_variant( const beekeeper::beekeeper_api::init_data& var, variant& vo )
+  {
+    variant v = mutable_variant_object( "status", var.status )( "version", var.version );
+    vo = v;
+  }
+
+  void from_variant( const variant& var, beekeeper::beekeeper_api::init_data& vo )
+  {
+    auto  _obj = var.get_object();
+    vo.status = _obj["status"].as_uint64();
+    vo.version = _obj["version"].as_string();
+  }
+}
+
+FC_REFLECT( beekeeper::beekeeper_api::init_data, (status)(version) )

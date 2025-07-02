@@ -12,6 +12,13 @@ namespace beekeeper {
 
 class beekeeper_api final
 {
+  public:
+    struct init_data
+    {
+      uint32_t status = false;
+      std::string version;
+    };
+
   private:
     class impl;
 
@@ -27,7 +34,7 @@ class beekeeper_api final
   
     /*
       HIVE_ADDRESS_PREFIX from protocol/config.hpp is not accessible for WASM beekeeper so here a duplicate is defined.
-      At now this is only one allowed prefix, by maybe in the future custom prefixes could be used as well.
+      At now this is only one allowed prefix, but maybe in the future custom prefixes could be used as well.
     */
     const char* prefix = "STM";
 
@@ -96,4 +103,10 @@ class beekeeper_api final
     std::string is_wallet_unlocked( const std::string& token, const std::string& wallet_name );
 };
 
+}
+
+namespace fc
+{
+  void to_variant( const beekeeper::beekeeper_api::init_data& var, fc::variant& vo );
+  void from_variant( const variant& var, beekeeper::beekeeper_api::init_data& vo );
 }

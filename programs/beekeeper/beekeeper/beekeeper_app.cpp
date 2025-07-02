@@ -59,9 +59,9 @@ struct keys_container
   std::string private_key;
 };
 
-bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string& wallet_password )
+uint32_t beekeeper_app::save_keys( const std::string& wallet_name, const std::string& wallet_password )
 {
-  bool _result = true;
+  uint32_t _result = initialization_result::ok;
 
   if( wallet_name.empty() || wallet_password.empty() )
     return _result;
@@ -102,7 +102,7 @@ bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string
     wallet_manager_ptr->close_session( _token, false/*allow_close_all_sessions_action*/ );
   };
 
-  auto _exec_action = [&_filename, &_result]( std::function<void()>&& call )
+  auto _exec_action = [&_result]( std::function<void()>&& call )
   {
     try
     {
@@ -110,22 +110,22 @@ bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string
     }
     catch ( const boost::exception& e )
     {
-      _result = false;
+      _result = initialization_result::fail;
       elog( boost::diagnostic_information(e) );
     }
     catch ( const fc::exception& e )
     {
-      _result = false;
+      _result = initialization_result::fail;
       elog( e.to_detail_string() );
     }
     catch ( const std::exception& e )
     {
-      _result = false;
+      _result = initialization_result::fail;
       elog( e.what() );
     }
     catch ( ... )
     {
-      _result = false;
+      _result = initialization_result::fail;
       elog( "Unknown error" );
     }
   };
@@ -146,7 +146,7 @@ bool beekeeper_app::save_keys( const std::string& wallet_name, const std::string
   return _result;
 }
 
-init_data beekeeper_app::initialize( int argc, char** argv )
+uint32_t beekeeper_app::initialize( int argc, char** argv )
 {
   app.add_program_options( options_cli, options_cfg );
   app.set_app_name( "beekeeper" );
@@ -162,11 +162,11 @@ init_data beekeeper_app::initialize( int argc, char** argv )
   start_loop = initializationResult.should_start_loop();
 
   if( !initializationResult.should_start_loop() )
-    return { initializationResult.get_result_code() == appbase::initialization_result::ok, "" };
+    return initializationResult.get_result_code();
   else
   {
     auto _initialization = initialize_program_options();
-    if( !_initialization.status )
+    if( _initialization == initialization_result::fail )
     {
       start_loop = false;
       return _initialization;
@@ -220,9 +220,9 @@ void beekeeper_app::setup( const boost::program_options::variables_map& args )
   unlock_interval = args.at("unlock-interval").as<uint64_t>();
 }
 
-init_data beekeeper_app::save_keys( const boost::program_options::variables_map& args )
+uint32_t beekeeper_app::save_keys( const boost::program_options::variables_map& args )
 {
-  bool _result = true;
+  uint32_t _result = initialization_result::ok;
 
   using _strings_pair_type = std::pair< std::string, std::string >;
   fc::flat_map< std::string, std::string > _items;
@@ -231,14 +231,14 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
   for( auto& item : _items )
   {
     _result = save_keys( item.first, item.second );
-    if( !_result )
+    if( _result == initialization_result::fail )
       break;
   }
 
   if( args.count("export-keys-wallet") )
     start_loop = false;
 
-  return { _result, utility::get_revision() };
+  return _result;
 }
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
@@ -255,11 +255,12 @@ bool beekeeper_app::should_start_loop() const
   return start_loop;
 };
 
-init_data beekeeper_app::init( int argc, char** argv )
+uint32_t beekeeper_app::init( int argc, char** argv )
 {
+  uint32_t _result = initialization_result::fail;
   try
   {
-    return run( argc, argv );
+    _result = run( argc, argv );
   }
   catch ( const boost::exception& e )
   {
@@ -278,7 +279,7 @@ init_data beekeeper_app::init( int argc, char** argv )
     elog("unknown exception");
   }
 
-  return init_data();
+  return _result;
 }
 
 }

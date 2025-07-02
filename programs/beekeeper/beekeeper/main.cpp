@@ -5,5 +5,5 @@
 int main( int argc, char** argv )
 {
   beekeeper::beekeeper_app _app;
-  return _app.init( argc, argv ).status ? 0 : 1;
+  return _app.init( argc, argv );
 }
