@@ -10320,10 +10320,7 @@ BOOST_AUTO_TEST_CASE( extensions_in_virtual_operations_generated_after_recurrent
       auto _recent_ops = get_last_operations( 1 );
       auto _last_op = _recent_ops.back().get< fill_recurrent_transfer_operation >();
 
-      recurrent_transfer_operation::recurrent_transfer_extension_visitor _vtor;
-      for( const auto& e : _last_op.extensions )
-        e.visit( _vtor );
-      BOOST_REQUIRE( _vtor.pair_id == _pair_id_value );
+      BOOST_REQUIRE( op.get_pair_id( _last_op.extensions ) == _pair_id_value );
     }
 
     generate_blocks( db->head_block_time() + fc::hours( op.recurrence ) );
@@ -10332,10 +10329,7 @@ BOOST_AUTO_TEST_CASE( extensions_in_virtual_operations_generated_after_recurrent
       auto _recent_ops = get_last_operations( 1 );
       auto _last_op = _recent_ops.back().get< failed_recurrent_transfer_operation >();
 
-      recurrent_transfer_operation::recurrent_transfer_extension_visitor _vtor;
-      for( const auto& e : _last_op.extensions )
-        e.visit( _vtor );
-      BOOST_REQUIRE( _vtor.pair_id == _pair_id_value );
+      BOOST_REQUIRE( op.get_pair_id( _last_op.extensions ) == _pair_id_value );
     }
   }
   FC_LOG_AND_RETHROW()
