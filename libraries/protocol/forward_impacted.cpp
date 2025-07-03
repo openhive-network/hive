@@ -13,7 +13,8 @@ using namespace hive::protocol;
 struct get_impacted_account_visitor
 {
   flat_set<account_name_type>& _impacted;
-  get_impacted_account_visitor( flat_set<account_name_type>& impact ):_impacted( impact ) {}
+  account_name_type* _owner_impacted = nullptr;
+  get_impacted_account_visitor( flat_set<account_name_type>& impact, account_name_type* owner_impact = nullptr ):_impacted( impact ), _owner_impacted( owner_impact ) {}
   typedef void result_type;
 
   template<typename T>
@@ -29,6 +30,8 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.new_account_name );
     _impacted.insert( op.creator );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const account_create_with_delegation_operation& op )
@@ -490,6 +493,12 @@ struct get_impacted_account_visitor
 void operation_get_impacted_accounts( const operation& op, flat_set<account_name_type>& result )
 {
   get_impacted_account_visitor vtor = get_impacted_account_visitor( result );
+  op.visit( vtor );
+}
+
+void operation_get_owner_impacted_accounts( const operation& op, flat_set<account_name_type>& result, account_name_type& result2 )
+{
+  get_impacted_account_visitor vtor = get_impacted_account_visitor( result, &result2 );
   op.visit( vtor );
 }
 
