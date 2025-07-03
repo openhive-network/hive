@@ -38,12 +38,16 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.new_account_name );
     _impacted.insert( op.creator );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const account_created_operation& op )
   {
     _impacted.insert( op.creator );
     _impacted.insert( op.new_account_name );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const comment_operation& op )
@@ -51,6 +55,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.author );
     if( op.parent_author.size() )
       _impacted.insert( op.parent_author );
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   struct comment_options_impacted_visitor
@@ -80,18 +86,24 @@ struct get_impacted_account_visitor
     for( const auto& ext : op.extensions )
       for( const auto& route : ext.visit( comment_options_impacted_visitor{} ) )
         _impacted.insert( route.account );
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   void operator()( const vote_operation& op )
   {
     _impacted.insert( op.voter );
     _impacted.insert( op.author );
+    if( _owner_impacted )
+      *_owner_impacted = op.voter;
   }
 
   void operator()( const transfer_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const escrow_transfer_operation& op )
@@ -99,6 +111,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const escrow_approve_operation& op )
@@ -106,6 +120,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.who;
   }
 
   void operator()( const escrow_dispute_operation& op )
@@ -113,6 +129,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.who;
   }
 
   void operator()( const escrow_release_operation& op )
@@ -120,6 +138,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.who;
   }
 
   void operator()( const transfer_to_vesting_operation& op )
@@ -130,18 +150,24 @@ struct get_impacted_account_visitor
     {
       _impacted.insert( op.to );
     }
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const set_withdraw_vesting_route_operation& op )
   {
     _impacted.insert( op.from_account );
     _impacted.insert( op.to_account );
+    if( _owner_impacted )
+      *_owner_impacted = op.from_account;
   }
 
   void operator()( const account_witness_vote_operation& op )
   {
     _impacted.insert( op.account );
     _impacted.insert( op.witness );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()( const account_witness_proxy_operation& op )
@@ -149,16 +175,22 @@ struct get_impacted_account_visitor
     _impacted.insert( op.account );
     if ( !op.is_clearing_proxy() )
       _impacted.insert( op.proxy );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()( const feed_publish_operation& op )
   {
     _impacted.insert( op.publisher );
+    if( _owner_impacted )
+      *_owner_impacted = op.publisher;
   }
 
   void operator()( const pow_operation& op )
   {
     _impacted.insert( op.worker_account );
+    if( _owner_impacted )
+      *_owner_impacted = op.worker_account;
   }
 
   struct pow2_impacted_visitor
@@ -177,89 +209,132 @@ struct get_impacted_account_visitor
   void operator()( const pow2_operation& op )
   {
     _impacted.insert( op.work.visit( pow2_impacted_visitor() ) );
+    if( _owner_impacted )
+      *_owner_impacted = op.work.visit( pow2_impacted_visitor() );
   }
 
   void operator()( const request_account_recovery_operation& op )
   {
     _impacted.insert( op.account_to_recover );
     _impacted.insert( op.recovery_account );
+    if( _owner_impacted )
+      *_owner_impacted = op.recovery_account;
   }
 
   void operator()( const recover_account_operation& op )
   {
     _impacted.insert( op.account_to_recover );
+    if( _owner_impacted )
+      *_owner_impacted = op.account_to_recover;
   }
 
   void operator()( const change_recovery_account_operation& op )
   {
     _impacted.insert( op.account_to_recover );
+    if( _owner_impacted )
+      *_owner_impacted = op.account_to_recover;
   }
 
   void operator()( const transfer_to_savings_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const transfer_from_savings_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const delegate_vesting_shares_operation& op )
   {
     _impacted.insert( op.delegator );
     _impacted.insert( op.delegatee );
+    if( _owner_impacted )
+      *_owner_impacted = op.delegator;
   }
 
   void operator()( const witness_set_properties_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const create_claimed_account_operation& op )
   {
     _impacted.insert( op.creator );
     _impacted.insert( op.new_account_name );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const recurrent_transfer_operation& op )
   {
       _impacted.insert( op.from );
       _impacted.insert( op.to );
+      if( _owner_impacted )
+        *_owner_impacted = op.from;
   }
 
   // vops
 
+  /**
+    *  Note: not sure if the owner is correct for these virtual operations:
+    *  fill_order_operation
+    *  comment_benefactor_reward_operation
+    *  proposal_pay_operation
+    *  hardfork_hive_operation
+    *  hardfork_hive_restore_operation
+    *  consolidate_treasury_balance_operation
+    *  escrow_approved_operation
+    *  escrow_rejected_operation
+    */
   void operator()( const author_reward_operation& op )
   {
     _impacted.insert( op.author );
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   void operator()( const curation_reward_operation& op )
   {
     _impacted.insert( op.curator );
+    if( _owner_impacted )
+      *_owner_impacted = op.curator;
   }
 
   void operator()( const liquidity_reward_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const interest_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const fill_convert_request_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const fill_collateralized_convert_request_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const fill_vesting_withdraw_operation& op )
@@ -268,6 +343,8 @@ struct get_impacted_account_visitor
     {
       _impacted.insert( op.from_account );
       _impacted.insert( op.to_account );
+      if( _owner_impacted )
+        *_owner_impacted = op.from_account;
     }
   }
 
@@ -275,117 +352,161 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.from_account );
     _impacted.insert( op.to_account );
+    if( _owner_impacted )
+      *_owner_impacted = op.from_account;
   }
 
   void operator()( const pow_reward_operation& op )
   {
     _impacted.insert( op.worker );
+    if( _owner_impacted )
+      *_owner_impacted = op.worker;
   }
 
   void operator()( const vesting_shares_split_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const shutdown_witness_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const fill_order_operation& op )
   {
     _impacted.insert( op.current_owner );
     _impacted.insert( op.open_owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.current_owner; // not sure about this
   }
 
   void operator()(const limit_order_cancelled_operation& op)
   {
     _impacted.insert(op.seller);
+    if( _owner_impacted )
+      *_owner_impacted = op.seller;
   }
 
   void operator()( const fill_transfer_from_savings_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const return_vesting_delegation_operation& op )
   {
     _impacted.insert( op.account );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()(const comment_reward_operation& op)
   {
     _impacted.insert(op.author);
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   void operator()(const effective_comment_vote_operation& op)
   {
     _impacted.emplace(op.author);
     _impacted.emplace(op.voter);
+    if( _owner_impacted )
+      *_owner_impacted = op.voter;
   }
 
   void operator()(const ineffective_delete_comment_operation& op)
   {
     _impacted.emplace(op.author);
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   void operator()(const comment_payout_update_operation& op)
   {
     _impacted.insert(op.author);
+    if( _owner_impacted )
+      *_owner_impacted = op.author;
   }
 
   void operator()( const comment_benefactor_reward_operation& op )
   {
     _impacted.insert( op.benefactor );
     _impacted.insert( op.author );
+    if( _owner_impacted )
+      *_owner_impacted = op.benefactor; // not sure about this
   }
 
   void operator()( const producer_reward_operation& op )
   {
     _impacted.insert( op.producer );
+    if( _owner_impacted )
+      *_owner_impacted = op.producer;
   }
 
   void operator()(const proposal_pay_operation& op)
   {
     _impacted.insert(op.receiver);
     _impacted.insert(op.payer);
+    if( _owner_impacted )
+      *_owner_impacted = op.payer; // not sure about this
   }
 
   void operator()( const create_proposal_operation& op )
   {
     _impacted.insert( op.creator );
     _impacted.insert( op.receiver );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const update_proposal_operation& op )
   {
     _impacted.insert( op.creator );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const update_proposal_votes_operation& op )
   {
     _impacted.insert( op.voter );
+    if( _owner_impacted )
+      *_owner_impacted = op.voter;
   }
 
   void operator()( const remove_proposal_operation& op )
   {
     _impacted.insert( op.proposal_owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.proposal_owner;
   }
 
   void operator()( const dhf_funding_operation& op )
   {
     _impacted.insert( op.treasury );
+    if( _owner_impacted )
+      *_owner_impacted = op.treasury;
   }
 
   void operator()( const delayed_voting_operation& op )
   {
     _impacted.insert( op.voter );
+    if( _owner_impacted )
+      *_owner_impacted = op.voter;
   }
 
   void operator()( const hardfork_operation& op )
   {
     _impacted.insert( HIVE_INIT_MINER_NAME );
+    if( _owner_impacted )
+      *_owner_impacted = HIVE_INIT_MINER_NAME;
   }
 
   void operator()( const hardfork_hive_operation& op )
@@ -393,33 +514,45 @@ struct get_impacted_account_visitor
     _impacted.insert( op.treasury );
     _impacted.insert( op.account );
     _impacted.insert( op.other_affected_accounts.begin(), op.other_affected_accounts.end() );
+    if( _owner_impacted )
+      *_owner_impacted = op.treasury; // not sure about this
   }
 
   void operator()( const hardfork_hive_restore_operation& op )
   {
     _impacted.insert( op.treasury );
     _impacted.insert( op.account );
+    if( _owner_impacted )
+      *_owner_impacted = op.treasury; // not sure about this
   }
 
   void operator()( const dhf_conversion_operation& op )
   {
     _impacted.insert( op.treasury );
+    if( _owner_impacted )
+      *_owner_impacted = op.treasury;
   }
 
   void operator()( const consolidate_treasury_balance_operation& op )
   {
     _impacted.insert( NEW_HIVE_TREASURY_ACCOUNT );
     _impacted.insert( OBSOLETE_TREASURY_ACCOUNT );
+    if( _owner_impacted )
+      *_owner_impacted = NEW_HIVE_TREASURY_ACCOUNT; // not sure about this
   }
 
   void operator()( const clear_null_account_balance_operation& op )
   {
     _impacted.insert( HIVE_NULL_ACCOUNT );
+    if( _owner_impacted )
+      *_owner_impacted = HIVE_NULL_ACCOUNT;
   }
 
   void operator()( const expired_account_notification_operation& op )
   {
     _impacted.insert( op.account );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()( const changed_recovery_account_operation& op )
@@ -427,39 +560,53 @@ struct get_impacted_account_visitor
     _impacted.insert( op.account );
     _impacted.insert( op.old_recovery_account );
     _impacted.insert( op.new_recovery_account );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()( const system_warning_operation& op )
   {
     _impacted.insert( HIVE_INIT_MINER_NAME );
+    if( _owner_impacted )
+      *_owner_impacted = HIVE_INIT_MINER_NAME;
   }
 
   void operator()( const fill_recurrent_transfer_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const failed_recurrent_transfer_operation& op )
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+    if( _owner_impacted )
+      *_owner_impacted = op.from;
   }
 
   void operator()( const producer_missed_operation& op )
   {
     _impacted.insert( op.producer );
+    if( _owner_impacted )
+      *_owner_impacted = op.producer;
   }
 
   void operator()( const proposal_fee_operation& op )
   {
     _impacted.insert( op.creator );
     _impacted.insert( op.treasury );
+    if( _owner_impacted )
+      *_owner_impacted = op.creator;
   }
 
   void operator()( const collateralized_convert_immediate_conversion_operation& op )
   {
     _impacted.insert( op.owner );
+    if( _owner_impacted )
+      *_owner_impacted = op.owner;
   }
 
   void operator()( const escrow_approved_operation& op )
@@ -467,6 +614,8 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.from; // not sure about this
   }
 
   void operator()( const escrow_rejected_operation& op )
@@ -474,17 +623,23 @@ struct get_impacted_account_visitor
     _impacted.insert( op.from );
     _impacted.insert( op.to );
     _impacted.insert( op.agent );
+    if( _owner_impacted )
+      *_owner_impacted = op.from; // not sure about this
   }
 
   void operator()( const proxy_cleared_operation& op )
   {
     _impacted.insert( op.account );
     _impacted.insert( op.proxy );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   void operator()( const declined_voting_rights_operation& op )
   {
     _impacted.insert( op.account );
+    if( _owner_impacted )
+      *_owner_impacted = op.account;
   }
 
   //void operator()( const operation& op ){}
