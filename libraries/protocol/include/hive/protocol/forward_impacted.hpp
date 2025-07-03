@@ -14,6 +14,11 @@ void operation_get_impacted_accounts(
   const hive::protocol::operation& op,
   fc::flat_set<protocol::account_name_type>& result );
 
+void operation_get_owner_impacted_accounts(
+  const hive::protocol::operation& op,
+  fc::flat_set<protocol::account_name_type>& result,
+  protocol::account_name_type& result2 );
+
 typedef std::set<std::string> stringset;
 
 struct collected_metadata_t
