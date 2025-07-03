@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/comment_object.hpp>
 
@@ -16,6 +17,19 @@ enum comment_rocksdb_object_types
   volatile_comment_object_type = ( HIVE_COMMENT_ROCKSDB_SPACE_ID << 8 )
 };
 
+struct extended_hash_creator
+{
+  static std::string get_extended_hash( const account_id_type& author_id, const comment_object::author_and_permlink_hash_type& hash )
+  {
+    std::string _result = std::to_string( author_id.get_value() );
+    auto _first_element_size = _result.size();
+
+    _result.resize( _first_element_size + hash.data_size() );
+    std::memcpy( _result.data() + _first_element_size, hash.data(), hash.data_size() );
+
+    return _result;
+  }
+};
 class volatile_comment_object : public object< volatile_comment_object_type, volatile_comment_object >
 {
   CHAINBASE_OBJECT( volatile_comment_object );
@@ -33,6 +47,7 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 
     uint32_t                                      block_number = 0;
 
+    account_id_type                               author_id;
   private:
 
     comment_object::author_and_permlink_hash_type author_and_permlink_hash;
@@ -81,7 +96,7 @@ class rocksdb_comment_object
 } } // hive::chain
 
 
-FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(depth)(block_number)(author_and_permlink_hash) )
+FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(depth)(block_number)(author_id)(author_and_permlink_hash) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_comment_object, hive::chain::volatile_comment_index )
 
 FC_REFLECT( hive::chain::rocksdb_comment_object, (comment_id)(parent_comment)(depth) )

@@ -55,6 +55,7 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
     o.set_author_and_permlink_hash( _comment.get_author_and_permlink_hash() );
 
     o.block_number    = _block_num;
+    o.author_id       = _comment_cashout.get_author_id();
   });
 
   stats.comment_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -68,7 +69,9 @@ void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num,
         ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
 #endif
 
-  Slice _key( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
+  auto _extended_hash = extended_hash_creator::get_extended_hash( volatile_object.author_id, volatile_object.get_author_and_permlink_hash() );
+  Slice _key( _extended_hash.data(), _extended_hash.size() );
+  //Slice _key( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
 
   rocksdb_comment_object _obj( volatile_object );
 
@@ -78,9 +81,11 @@ void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num,
   provider->save( _key, _value );
 }
 
-std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
+std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash, const char* extended_hash, size_t extended_hash_size ) const
 {
-  Slice _key( hash.data(), hash.data_size() );
+  FC_ASSERT( extended_hash );
+
+  Slice _key( extended_hash, extended_hash_size );
 
   PinnableSlice _buffer;
 
@@ -159,7 +164,8 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
   }
   else
   {
-    const auto _external_comment = get_comment_impl( _hash );
+    auto _extended_hash = extended_hash_creator::get_extended_hash( author, _hash );
+    const auto _external_comment = get_comment_impl( _hash, _extended_hash.data(), _extended_hash.size() );
     uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     if( _external_comment )
     {
