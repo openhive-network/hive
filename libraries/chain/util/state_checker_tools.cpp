@@ -43,25 +43,24 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
   }
 }
 
-void verify_match_of_blockchain_configuration(fc::mutable_variant_object current_blockchain_config, const fc::variant &full_current_blockchain_config_as_variant, const std::string &full_stored_blockchain_config_json, const uint32_t hardfork)
+void verify_match_of_blockchain_configuration(fc::mutable_variant_object current_blockchain_config, const fc::variant &full_current_blockchain_config_as_variant, const std::string &full_stored_blockchain_config_json)
 {
   constexpr char HIVE_TREASURY_ACCOUNT_KEY[] = "HIVE_TREASURY_ACCOUNT";
   constexpr char HIVE_CHAIN_ID_KEY[] = "HIVE_CHAIN_ID";
   constexpr char HIVE_BLOCKCHAIN_VERSION_KEY[] = "HIVE_BLOCKCHAIN_VERSION";
 
   fc::mutable_variant_object stored_blockchain_config = fc::json::from_string(full_stored_blockchain_config_json, fc::json::format_validation_mode::full).get_object();
-  const std::string current_hive_chain_id = current_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
   const std::string stored_hive_chain_id = stored_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
 
 #if defined(USE_ALTERNATE_CHAIN_ID) || defined(IS_TEST_NET)
+  const std::string current_hive_chain_id = current_blockchain_config[HIVE_CHAIN_ID_KEY].as_string();
   // mirrornet & testnet  
   if (current_hive_chain_id != stored_hive_chain_id)
     FC_THROW_EXCEPTION(blockchain_config_mismatch_exception, "Chain id stored in database: ${stored_hive_chain_id} mismatch chain-id from configuration: ${current_hive_chain_id}", (stored_hive_chain_id)(current_hive_chain_id));
 #else
-  // mainnet
-  if ((hardfork < HIVE_HARDFORK_1_24 && (current_hive_chain_id != std::string(OLD_CHAIN_ID) || current_hive_chain_id != stored_hive_chain_id)) ||
-      (hardfork >= HIVE_HARDFORK_1_24 && (current_hive_chain_id != std::string(HIVE_CHAIN_ID) || current_hive_chain_id != stored_hive_chain_id)))
-    FC_THROW_EXCEPTION(blockchain_config_mismatch_exception, "chain id mismatch. Current config: ${current_hive_chain_id}, stored in db: ${stored_hive_chain_id}, hf: ${hardfork}", (current_hive_chain_id)(stored_hive_chain_id)(hardfork));
+  // mainnet - expected chain id is OLD_CHAIN_ID or HIVE_CHAIN_ID.
+  if (stored_hive_chain_id != std::string(OLD_CHAIN_ID) && stored_hive_chain_id != std::string(HIVE_CHAIN_ID))
+    FC_THROW_EXCEPTION(blockchain_config_mismatch_exception, "chain id stored in database: ${stored_hive_chain_id} doesn't match chain id expected for mainnet.", (stored_hive_chain_id));
 #endif
 
   stored_blockchain_config.erase(HIVE_TREASURY_ACCOUNT_KEY);
