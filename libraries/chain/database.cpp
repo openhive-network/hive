@@ -3533,7 +3533,7 @@ void database::verify_match_of_blockchain_configuration()
   if (full_stored_blockchain_config_json.empty())
     set_blockchain_config(full_current_blockchain_config_as_json_string);
   else if (full_stored_blockchain_config_json != full_current_blockchain_config_as_json_string)
-    util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json, get_hardfork());
+    util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json);
 }
 
 std::string database::get_current_decoded_types_data_json()
