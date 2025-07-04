@@ -3752,11 +3752,11 @@
                         "description": "The time of the next vesting withdrawal."
                     },
                     "withdrawn": {
-                        "type": "string",
+                        "type": "integer",
                         "description": "The total vesting shares already withdrawn from active withdrawals."
                     },
                     "to_withdraw": {
-                        "type": "string",
+                        "type": "integer",
                         "description": "The remaining total vesting shares needed to complete withdrawals."
                     },
                     "withdraw_routes": {
