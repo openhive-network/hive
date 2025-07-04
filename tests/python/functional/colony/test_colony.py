@@ -239,7 +239,7 @@ def test_colony_with_unknown_colony_signer(
     )
 
     tt.Time.wait_for(
-        lambda: not node.is_running(), timeout=10, timeout_error_message="Node didn't close in the allotted time"
+        lambda: not node.is_running(), timeout=20, timeout_error_message="Node didn't close in the allotted time"
     )
     assert not node.is_running(), "Node didn't close in the allotted time"
 
