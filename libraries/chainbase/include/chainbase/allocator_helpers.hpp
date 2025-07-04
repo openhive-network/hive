@@ -21,7 +21,7 @@
 // #define ENABLE_STD_ALLOCATOR // ENABLE_STD_ALLOCATOR option has been removed from CMake file.
 
 #define ENABLE_MULTI_INDEX_POOL_ALLOCATOR
-// #define ENABLE_UNDO_STATE_POOL_ALLOCATOR
+#define ENABLE_UNDO_STATE_POOL_ALLOCATOR
 
 #if defined(ENABLE_STD_ALLOCATOR)
 #define _ENABLE_STD_ALLOCATOR true
@@ -119,24 +119,24 @@ namespace chainbase {
     boost::container::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
     bip::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > > >;
 
-  template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< KEY_TYPE >, typename OPTIONS = boost::container::tree_assoc_defaults>
+  template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< KEY_TYPE > >
   using t_set = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     std::set< KEY_TYPE, LESS_FUNC, ALLOC >,
-    bip::set< KEY_TYPE, LESS_FUNC, ALLOC, OPTIONS > >;
+    bip::set< KEY_TYPE, LESS_FUNC, ALLOC > >;
 
   template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
   using t_flat_map = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >,
     bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > > >;
 
-  template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< t_pair< KEY_TYPE, VALUE_TYPE > >, typename OPTIONS = boost::container::tree_assoc_defaults >
+  template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >
   using t_map = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
     std::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC >,
-    bip::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC, OPTIONS > >;
+    bip::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC > >;
 
-  template< typename T >
+  template< typename T, typename ALLOC = allocator< T > >
   using t_deque = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::deque< T, allocator< T > >,
-    bip::deque< T, allocator< T > > >;
+    std::deque< T, ALLOC >,
+    bip::deque< T, ALLOC > >;
 
 } // namespace chainbase

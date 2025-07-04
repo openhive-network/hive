@@ -253,31 +253,6 @@ namespace chainbase {
   { unpackFn(*this); }                                                                     \
   template <class T> friend class chainbase::generic_index
 
-
-  template< typename value_type >
-  class undo_state
-  {
-    public:
-      typedef typename value_type::id_type                      id_type;
-      typedef allocator< std::pair<const id_type, value_type> > id_value_allocator_type;
-      typedef allocator< id_type >                              id_allocator_type;
-
-      template<typename Allocator>
-      undo_state( Allocator al )
-      :old_values( id_value_allocator_type( al ) ),
-        removed_values( id_value_allocator_type( al ) ),
-        new_ids( id_allocator_type( al ) ){}
-
-      typedef boost::interprocess::map< id_type, value_type, std::less<id_type>, id_value_allocator_type >  id_value_type_map;
-      typedef boost::interprocess::set< id_type, std::less<id_type>, id_allocator_type >                    id_type_set;
-
-      id_value_type_map            old_values;
-      id_value_type_map            removed_values;
-      id_type_set                  new_ids;
-      id_type                      old_next_id = id_type(0);
-      int64_t                      revision = 0;
-  };
-
   class int_incrementer
   {
   public:
@@ -366,18 +341,42 @@ namespace chainbase {
       typedef typename index_type::value_type                       value_type;
       typedef typename value_type::id_type                          id_type;
       typedef allocator< generic_index >                            allocator_type;
-      typedef undo_state< value_type >                              undo_state_type;
+
+      struct undo_state
+      {
+        typedef undo_allocator_carrier< std::pair<const id_type, value_type> > id_value_allocator_type;
+        typedef undo_allocator_carrier< id_type >                              id_allocator_type;
+
+        undo_state( generic_index& index )
+        : old_values( id_value_allocator_type( index._shared_undo_object_allocator ) ),
+          removed_values( id_value_allocator_type( index._shared_undo_object_allocator ) ),
+          new_ids( id_allocator_type( index._shared_undo_id_allocator ) )
+        {}
+
+        typedef t_map< id_type, value_type, std::less<id_type>, id_value_allocator_type > id_value_type_map;
+        typedef t_set< id_type, std::less<id_type>, id_allocator_type >                   id_type_set;
+
+        id_value_type_map            old_values;
+        id_value_type_map            removed_values;
+        id_type_set                  new_ids;
+        id_type                      old_next_id = id_type( 0 );
+        int64_t                      revision = 0;
+      };
 
       template <typename Allocator>
-      generic_index( Allocator a, bfs::path p )
+      generic_index( const Allocator& a, bfs::path p )
       : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+        _shared_undo_object_allocator( a ),
+        _shared_undo_id_allocator( a ),
         _indices( a, p ),
         _size_of_value_type( sizeof(value_type) ),
         _size_of_this(sizeof(*this)) {}
 
       template <typename Allocator>
-      generic_index( Allocator a )
+      generic_index( const Allocator& a )
       : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+        _shared_undo_object_allocator( a ),
+        _shared_undo_id_allocator( a ),
         _indices( a ),
         _size_of_value_type( sizeof(value_type) ),
         _size_of_this(sizeof(*this)) {}
@@ -574,7 +573,8 @@ namespace chainbase {
 
       const index_type& indices()const { return _indices; }
 
-      void clear() {
+      void clear()
+      {
         _indices.clear();
         _item_additional_allocation = 0;
       }
@@ -584,8 +584,7 @@ namespace chainbase {
       {
         ++_revision;
 
-        auto a = _indices.get_allocator();
-        _stack.emplace_back( get_allocator_helper_t<value_type>::get_generic_allocator(a) );
+        _stack.emplace_back( *this );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
       }
@@ -913,7 +912,10 @@ namespace chainbase {
         head.new_ids.insert( v.get_id() );
       }
 
-      boost::interprocess::deque< undo_state_type, allocator<undo_state_type> > _stack;
+      t_deque< undo_state > _stack;
+      // Shared allocators used as 'impl' in all undo_state layers
+      undo_state_allocator<typename undo_state::id_value_type_map::stored_allocator_type::value_type> _shared_undo_object_allocator;
+      undo_state_allocator<typename undo_state::id_type_set::stored_allocator_type::value_type> _shared_undo_id_allocator;
 
       /**
         *  Each new session increments the revision, a squash will decrement the revision by combining

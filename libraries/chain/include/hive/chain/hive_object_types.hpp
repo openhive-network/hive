@@ -28,7 +28,6 @@ using chainbase::oid;
 using chainbase::oid_ref;
 using chainbase::allocator;
 using chainbase::multi_index_allocator;
-using chainbase::undo_state_allocator;
 
 using hive::protocol::block_id_type;
 using hive::protocol::transaction_id_type;
