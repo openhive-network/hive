@@ -565,7 +565,6 @@ cli_wallet_extended_tests:
 .fork_test_base:
   stage: test
   extends: .test_tools_based
-
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
     PYTEST_NUMBER_OF_PROCESSES: 3
@@ -577,24 +576,16 @@ cli_wallet_extended_tests:
   artifacts:
     expire_in: 2 days
 
-fork_tests_1_of_3:
+fork_tests:
   extends: .fork_test_base
+  parallel:
+    matrix:
+      - GROUP: "group_1"
+      - GROUP: "group_2"
+      - GROUP: "group_3"
   variables:
-    PYTEST_ARGS: "-m fork_tests_group_1"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_1.xml
-
-fork_tests_2_of_3:
-  extends: .fork_test_base
-  variables:
-    PYTEST_ARGS: "-m fork_tests_group_2"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_2.xml
-
-fork_tests_3_of_3:
-  extends: .fork_test_base
-  variables:
-    PYTEST_ARGS: "-m fork_tests_group_3"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_3.xml
-
+    PYTEST_ARGS: "-m fork_tests_${GROUP}"
+    PYTEST_JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/fork_tests/report_${GROUP}.xml"
 
 hf26_tests:
   stage: test
