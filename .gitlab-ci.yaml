@@ -1312,7 +1312,8 @@ colony_tests:
     - job: build_combined_testing_block_logs_image
       artifacts: true
   variables:
-    PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_TIMEOUT_MINUTES: 20
+    PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
