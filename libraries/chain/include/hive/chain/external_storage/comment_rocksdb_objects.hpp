@@ -21,11 +21,14 @@ struct extended_hash_creator
 {
   static std::string get_extended_hash( const account_id_type& author_id, const comment_object::author_and_permlink_hash_type& hash )
   {
-    std::string _result = std::to_string( author_id.get_value() );
-    auto _first_element_size = _result.size();
+    std::string _result;
 
-    _result.resize( _first_element_size + hash.data_size() );
-    std::memcpy( _result.data() + _first_element_size, hash.data(), hash.data_size() );
+    auto _val = author_id.get_value();
+    auto _val_size = sizeof( _val );
+
+    _result.resize( _val_size + hash.data_size() );
+    std::memcpy( _result.data(), &_val, _val_size );
+    std::memcpy( _result.data() + _val_size, hash.data(), hash.data_size() );
 
     return _result;
   }
