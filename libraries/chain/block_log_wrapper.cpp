@@ -619,7 +619,11 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   // Any log file created on previous run?
   part_file_names_t part_file_names;
   look_for_part_files( part_file_names );
-  
+
+  ilog( "${number} part file(s) of split block log found in ${data_dir}.",
+        ("number", part_file_names.size())
+        ("data_dir", _open_args.data_dir) );
+
   if( part_file_names.empty() )
   {
     // No part file name found. Try splitting legacy monolithic file if allowed & possible.
@@ -669,7 +673,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
   // Determine actual needed tail part number.
   uint32_t actual_tail_number_needed = head_part_number;
-  if( _open_args.load_snapshot || _open_args.force_replay ||
+  if( _open_args.force_replay ||
       head_part_number <= (unsigned int)_block_log_split )
   {
     // When hard replay is in cards, ignore current state head (will be overridden anyway),
@@ -679,7 +683,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   }
   else
   {
-    if ( _open_args.replay && not _open_args.force_replay && state_head_block )
+    if ( not _open_args.load_snapshot && _open_args.replay && not _open_args.force_replay && state_head_block )
     {
       // For regular replay require all parts beginning from state head block to be present & opened.
       actual_tail_number_needed = 

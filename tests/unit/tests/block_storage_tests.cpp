@@ -1201,5 +1201,139 @@ BOOST_AUTO_TEST_CASE( snapshot_replay_split_to_zero )
   }
 }
 
+BOOST_AUTO_TEST_CASE( snapshot_pruned_to_pruned )
+{
+  try {
+    ilog( "Verify that loading snapshot succeeds with pruned log." );
+
+    fc::path extended_log_path;
+    fc::path extended_log_temp_path;
+
+    const uint32_t extended_block_count = 4*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+
+    // Don't shorten the extended log after generation.
+    auto post_generation_processor = [&](const fc::path& data_dir){
+    };
+
+    // No log to restore here.
+    auto post_dump_processor = [&](const fc::path& data_dir){
+    };
+
+    auto post_load_processor = [&](hived_fixture& fixture){
+      // Verify that database was restored with the same block log.
+      auto lib_num_db = fixture.db->get_last_irreversible_block_num();
+      auto lib_db = fixture.db->get_last_irreversible_block_data();
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_num_db );
+      BOOST_REQUIRE( lib_db );
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_db->get_block_num() );
+
+      const block_read_i& block_reader = fixture.get_chain_plugin().block_reader();
+      // Verify head block from "official" irreversible block storage.
+      auto lib_storage = block_reader.head_block();
+      auto lib_by_number = block_reader.get_block_by_number( extended_block_count );
+      BOOST_REQUIRE( lib_by_number );
+      BOOST_REQUIRE_EQUAL( lib_by_number->get_block_id(), lib_storage->get_block_id() );
+      BOOST_REQUIRE_EQUAL( lib_by_number->get_block_num(), lib_storage->get_block_num() );
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_storage->get_block_num() );
+
+      // Check that blocks from block log's 1st part are not available.
+      BOOST_REQUIRE_THROW( block_reader.get_block_by_number( 1 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( block_reader.get_block_by_number( BLOCKS_IN_SPLIT_BLOCK_LOG_FILE ), fc::assert_exception );
+    };
+
+    // Run snapshot-load-with-incremental-replay scenario with pruned file block storage.
+    post_snapshot_replay_block_storage_switch( 2 /*initial_block_storage*/,
+                                               2 /*target_block_storage*/, 
+                                               post_generation_processor, 
+                                               post_dump_processor,
+                                               post_load_processor,
+                                               extended_block_count /*extended_block_count*/);
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( snapshot_replay_pruned_to_pruned )
+{
+  try {
+    ilog( "Verify that loading snapshot with incremental replay succeeds with pruned log." );
+
+    fc::path extended_log_path;
+    fc::path extended_log_temp_path;
+
+    const uint32_t extended_block_count = 4*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+
+    // Lambda called after initial extended log was generated. 
+    // Note that the extended block log is split but not pruned (9999).
+    auto post_generation_processor = [&](const fc::path& data_dir){
+      // Shorten the block log by hiding the head part.
+      fc::path block_log_dir = data_dir / "blockchain";
+      extended_log_path = block_log_dir / block_log_file_name_info::get_nth_part_file_name( 4 );
+      extended_log_temp_path = block_log_dir / "temp_log";
+      // Rename head part of the log to make it shorter.
+      fc::rename( extended_log_path, extended_log_temp_path );
+      // Delete its artifacts file.
+      fc::remove_all( block_log_dir / 
+        ( block_log_file_name_info::get_nth_part_file_name( 4 ) + block_log_file_name_info::_artifacts_extension) );
+
+      ilog("Instantiating hived_fixture to force-replay shortened block log.");
+      hived_fixture fixture( false /*remove blockchain & state*/ );
+      fixture.postponed_init( {
+        config_line( { "block-log-split", { std::to_string( 9999 /*initial_block_storage*/ ) } } ),
+        config_line( { "plugin", { "state_snapshot" } } ),
+        config_line( { "force-replay", { "" } } )
+      });
+    };
+
+    // Lambda called after snapshot was dumped (with shortened state/log)
+    auto post_dump_processor = [&](const fc::path& data_dir){
+      // Restore extended log before snapshot is loaded.
+      fc::rename( extended_log_temp_path, extended_log_path );
+      // Remove no longer needed 1st part of the log.
+      fc::path block_log_dir = data_dir / "blockchain";
+      auto first_part_file_name = block_log_file_name_info::get_nth_part_file_name( 1 );
+      fc::remove_all( block_log_dir / first_part_file_name );
+      fc::remove_all( block_log_dir / 
+        ( first_part_file_name + block_log_file_name_info::_artifacts_extension) );
+    };
+
+    auto post_load_processor = [&](hived_fixture& fixture){
+      // Verify that database was restored and incremental replay succeeded.
+      auto lib_num_db = fixture.db->get_last_irreversible_block_num();
+      auto lib_db = fixture.db->get_last_irreversible_block_data();
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_num_db );
+      BOOST_REQUIRE( lib_db );
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_db->get_block_num() );
+
+      const block_read_i& block_reader = fixture.get_chain_plugin().block_reader();
+      // Verify head block from "official" irreversible block storage.
+      auto lib_storage = block_reader.head_block();
+      auto lib_by_number = block_reader.get_block_by_number( extended_block_count );
+      BOOST_REQUIRE( lib_by_number );
+      BOOST_REQUIRE_EQUAL( lib_by_number->get_block_id(), lib_storage->get_block_id() );
+      BOOST_REQUIRE_EQUAL( lib_by_number->get_block_num(), lib_storage->get_block_num() );
+      BOOST_REQUIRE_EQUAL( extended_block_count, lib_storage->get_block_num() );
+
+      // Check that blocks from block log's 1st part are not available.
+      BOOST_REQUIRE_THROW( block_reader.get_block_by_number( 1 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( block_reader.get_block_by_number( BLOCKS_IN_SPLIT_BLOCK_LOG_FILE ), fc::assert_exception );
+    };
+
+    // Run snapshot-load-with-incremental-replay scenario, 
+    // using split value while generating extended block log & dumping snapshot and
+    // pruned value while loading snapshot (see lambdas above).
+    post_snapshot_replay_block_storage_switch( 9999 /*initial_block_storage*/,
+                                               2 /*target_block_storage*/, 
+                                               post_generation_processor,
+                                               post_dump_processor,
+                                               post_load_processor, 
+                                               extended_block_count /*extended_block_count*/);
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
