@@ -70,6 +70,8 @@ def prepare_block_log(
       9) each account create post,
       10) wait for activate current hardfork,
       11) restart node unlock `delayed votes` after vesting delegation.
+      12) done
+      12) done
     """
     logger.disable("helpy")
     logger.disable("test_tools")

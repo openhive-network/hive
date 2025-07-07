@@ -1219,6 +1219,9 @@ generate_testing_block_logs:
   variables:
     GIT_DEPTH: 0
     TESTING_BLOCK_LOGS_DIR: "$CI_PROJECT_DIR/testing_block_logs"
+  needs:
+    - job: testnet_node_build
+      artifacts: true
   script:
     - mkdir -p $TESTING_BLOCK_LOGS_DIR/checksums
     - echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" "$CI_REGISTRY_IMAGE" --password-stdin
@@ -1258,6 +1261,7 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
+    - public-runner-docker
     - hived-for-tests
 
 build_combined_testing_block_logs_image:

@@ -28,6 +28,8 @@ def prepare_empty_logs(
 ) -> None:
     """
     This script generates block logs (both split and monlithic) of different length with empty blocks only
+      12) done
+      12) done
     """
     logger.disable("helpy")
     logger.disable("test_tools")
