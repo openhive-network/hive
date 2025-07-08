@@ -1,0 +1,48 @@
+[build-system]
+requires = [
+    "poetry-core>=1.7.0",
+    "poetry-dynamic-versioning>=1.0.0,<2.0.0",
+]
+build-backend = "poetry_dynamic_versioning.backend"
+
+
+[tool.poetry]
+name = "account_by_key_api"
+version = "0.0.0"
+description = ""
+authors = []
+
+packages = [
+    { include = "account_by_key_api" },
+]
+include = [
+    { path =  "account_by_key_api/*", format = ["wheel", "sdist"] }
+]
+source = [
+    { name = "PyPI", priority = "primary" },
+    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+beekeepy="0.0.1.dev395+7844f5f"
+
+
+[tool.poetry-dynamic-versioning]
+enable = true
+format-jinja = """
+    {%- set dirty_postfix = '.dirty' if dirty else '' -%}
+    {%- if distance == 0 and not dirty -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}{{ dirty_postfix }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}{{ dirty_postfix }}
+    {%- endif -%}
+"""
+
+[tool.poetry-dynamic-versioning.substitution]
+files = [
+    "account_by_key_api/__init__.py",
+]

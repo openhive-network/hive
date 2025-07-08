@@ -1,0 +1,27 @@
+[build-system]
+requires = [
+    "poetry-core>=1.7.0",
+    "poetry-dynamic-versioning>=1.0.0,<2.0.0",
+]
+build-backend = "poetry_dynamic_versioning.backend"
+
+
+[tool.poetry]
+name = "api_generation"
+version = "0.0.0"
+description = ""
+authors = []
+
+packages = [
+    { include = "api_generation" },
+]
+source = [
+    { name = "PyPI", priority = "primary" },
+    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+schemas="0.0.1.dev369+ef896c2"
+beekeepy="0.0.1.dev395+7844f5f"
