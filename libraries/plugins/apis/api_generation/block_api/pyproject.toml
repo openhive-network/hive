@@ -18,16 +18,10 @@ packages = [
 include = [
     { path =  "block_api/*", format = ["wheel", "sdist"] }
 ]
-source = [
-    { name = "PyPI", priority = "primary" },
-    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
-]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-beekeepy="0.0.1.dev395+8ff3146"
-
+api_generation = { path="../api_generation/"}
 
 [tool.poetry-dynamic-versioning]
 enable = true

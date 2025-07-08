@@ -7,22 +7,23 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "account_by_key_api"
+name = "api_generation"
 version = "0.0.0"
-description = ""
+description = "Common api generator"
 authors = []
 
 packages = [
-    { include = "account_by_key_api" },
+    { include = "api_generation" }
 ]
 include = [
-    { path =  "account_by_key_api/*", format = ["wheel", "sdist"] }
+    { path =  "api_generation/*", format = ["wheel", "sdist"] }
 ]
 
 
 [tool.poetry.dependencies]
 python = "^3.12"
-api_generation = { path="../api_generation/"}
+schemas = { version = "0.0.1.dev367+fa1d763", source = "gitlab-schemas" }
+beekeepy = { version = "0.0.1.dev395+8ff3146", source = "gitlab-beekeepy" }
 
 
 [tool.poetry-dynamic-versioning]
@@ -38,8 +39,7 @@ format-jinja = """
     {%- endif -%}
 """
 
-
 [tool.poetry-dynamic-versioning.substitution]
 files = [
-    "account_by_key_api/__init__.py",
+    "api_generation/__init__.py"
 ]
