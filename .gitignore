@@ -76,6 +76,21 @@ libraries/wallet/Doxyfile
 libraries/wallet/api_documentation.cpp
 libraries/wallet/doxygen
 libraries/plugins/sql_serializer
+libraries/plugins/apis/api_generation/account_by_key_api/dist
+libraries/plugins/apis/api_generation/account_by_key_api/account_by_key_api/account_by_key_api_description.py
+libraries/plugins/apis/api_generation/account_by_key_api/account_by_key_api/account_by_key_api_client.py
+libraries/plugins/apis/api_generation/database_api/dist
+libraries/plugins/apis/api_generation/database_api/database_api/database_api_description.py
+libraries/plugins/apis/api_generation/database_api/database_api/database_api_client.py
+libraries/plugins/apis/api_generation/rc_api/dist
+libraries/plugins/apis/api_generation/rc_api/rc_api/rc_api_description.py
+libraries/plugins/apis/api_generation/rc_api/rc_api/rc_api_client.py
+libraries/plugins/apis/api_generation/block_api/dist
+libraries/plugins/apis/api_generation/block_api/block_api/block_api_description.py
+libraries/plugins/apis/api_generation/block_api/block_api/block_api_client.py
+libraries/plugins/apis/api_generation/network_broadcast_api/dist
+libraries/plugins/apis/api_generation/network_broadcast_api/network_broadcast_api/network_broadcast_api_description.py
+libraries/plugins/apis/api_generation/network_broadcast_api/network_broadcast_api/network_broadcast_api_client.py
 
 programs/build_helpers/hive_build_helpers/__pycache__/
 programs/util/dump_hive_schema
