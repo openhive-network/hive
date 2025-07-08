@@ -61,10 +61,10 @@ struct keys_container
 
 uint32_t beekeeper_app::save_keys( const std::string& wallet_name, const std::string& wallet_password )
 {
-  uint32_t _result = initialization_result::ok;
+  uint32_t _result = initialization_result::fail;
 
   if( wallet_name.empty() || wallet_password.empty() )
-    return _result;
+    return initialization_result::ok;
 
   const std::string _filename = wallet_name + ".keys";
 
@@ -107,25 +107,22 @@ uint32_t beekeeper_app::save_keys( const std::string& wallet_name, const std::st
     try
     {
       call();
+      _result = initialization_result::ok;
     }
     catch ( const boost::exception& e )
     {
-      _result = initialization_result::fail;
       elog( boost::diagnostic_information(e) );
     }
     catch ( const fc::exception& e )
     {
-      _result = initialization_result::fail;
       elog( e.to_detail_string() );
     }
     catch ( const std::exception& e )
     {
-      _result = initialization_result::fail;
       elog( e.what() );
     }
     catch ( ... )
     {
-      _result = initialization_result::fail;
       elog( "Unknown error" );
     }
   };
@@ -134,7 +131,7 @@ uint32_t beekeeper_app::save_keys( const std::string& wallet_name, const std::st
   {
     _exec_action( _finish );
 
-    if ( _result )
+    if ( _result == initialization_result::ok )
       ilog( "*****Keys have been saved*****" );
     else
       elog( "*****Saving keys failed*****" );
