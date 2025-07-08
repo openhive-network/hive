@@ -182,6 +182,11 @@ class HashComparator final : public AComparator
     {
       return a == b;
     }
+
+    bool CanKeysWithDifferentByteContentsBeEqual() const override
+    {
+      return false;
+    }
 };
 
 using TransactionIdComparator = HashComparator;

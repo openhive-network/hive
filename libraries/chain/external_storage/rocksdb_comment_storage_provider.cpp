@@ -1,6 +1,9 @@
 
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 
+#include "rocksdb/slice_transform.h"
+#include "rocksdb/table.h"
+
 namespace hive { namespace chain {
 
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
@@ -18,6 +21,13 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
 
   columnDefs.emplace_back("account_permlink_hash", ColumnFamilyOptions());
   auto& byTxIdColumn = columnDefs.back();
+
+  byTxIdColumn.options.prefix_extractor.reset( rocksdb::NewFixedPrefixTransform(4) );
+
+  rocksdb::BlockBasedTableOptions table_options;
+  table_options.data_block_index_type = rocksdb::BlockBasedTableOptions::kDataBlockBinaryAndHash;
+  byTxIdColumn.options.table_factory.reset( NewBlockBasedTableFactory(table_options) );
+
   byTxIdColumn.options.comparator = by_Hash_Comparator();
 
   return columnDefs;
