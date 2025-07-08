@@ -22,6 +22,7 @@ source = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
+toml = "^0.10.2"
 api_generation = { path="./api_generation/"}
 account_by_key_api = { path="./account_by_key_api/" }
 block_api = { path="./block_api/" }
