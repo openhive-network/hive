@@ -1219,6 +1219,213 @@ authority_tests:
   tags:
     - public-runner-docker
 
+.generate_python_api_client_package_template:
+  extends: .project_develop_configuration_template
+  variables:
+    API_NAME: ""
+    COMMON_API_GENERATION_PACKAGE_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
+    PYPROJECT_DIR: "${COMMON_API_GENERATION_PACKAGE_DIR}/${API_NAME}"
+  script:
+    - poetry -C "${COMMON_API_GENERATION_PACKAGE_DIR}" install
+    - poetry -C "${PYPROJECT_DIR}" run python generate_description.py
+    - poetry -C "${PYPROJECT_DIR}" run python generate_client.py
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/${API_NAME}/${API_NAME}_client.py"
+      - "${PYPROJECT_DIR}/${API_NAME}/${API_NAME}_description.py"
+  tags:
+    - public-runner-docker
+
+generate_database_api_python_client:
+    extends: .generate_python_api_client_package_template
+    variables:
+        API_NAME: "database_api"
+    stage: build
+    tags:
+        - public-runner-docker
+
+build_database_api_wheel:
+  needs:
+    - job: generate_database_api_python_client
+      artifacts: true
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/database_api"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  tags:
+    - public-runner-docker
+
+.deploy_database_api_needs: &deploy_database_api_needs
+  needs:
+    - job: generate_database_api_python_client
+      artifacts: true
+    - job: build_database_api_wheel
+      artifacts: true
+
+deploy_database_api_wheel_to_gitlab:
+  stage: deploy
+  needs:
+    - job: build_database_api_wheel
+      artifacts: true
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/database_api"
+  <<: *deploy_database_api_needs
+  tags:
+    - public-runner-docker
+  when: on_success
+
+generate_rc_api_python_client:
+    extends: .generate_python_api_client_package_template
+    variables:
+        API_NAME: "rc_api"
+    stage: build
+    tags:
+        - public-runner-docker
+
+build_rc_api_wheel:
+  needs:
+    - job: generate_rc_api_python_client
+      artifacts: true
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/rc_api"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  tags:
+    - public-runner-docker
+
+.deploy_rc_api_needs: &deploy_rc_api_needs
+  needs:
+    - job: generate_rc_api_python_client
+      artifacts: true
+    - job: build_rc_api_wheel
+      artifacts: true
+
+deploy_rc_api_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/rc_api"
+  <<: *deploy_rc_api_needs
+  tags:
+    - public-runner-docker
+  when: on_success
+
+generate_block_api_python_client:
+    extends: .generate_python_api_client_package_template
+    variables:
+        API_NAME: "block_api"
+    stage: build
+    tags:
+        - public-runner-docker
+
+build_block_api_wheel:
+  needs:
+    - job: generate_block_api_python_client
+      artifacts: true
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/block_api"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  tags:
+    - public-runner-docker
+
+.deploy_block_api_needs: &deploy_block_api_needs
+  needs:
+    - job: generate_block_api_python_client
+      artifacts: true
+    - job: build_block_api_wheel
+      artifacts: true
+
+deploy_block_api_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/block_api"
+  <<: *deploy_block_api_needs
+  tags:
+    - public-runner-docker
+  when: on_success
+
+generate_network_broadcast_api_python_client:
+    extends: .generate_python_api_client_package_template
+    variables:
+        API_NAME: "network_broadcast_api"
+    stage: build
+    tags:
+        - public-runner-docker
+
+build_network_broadcast_api_wheel:
+  needs:
+    - job: generate_network_broadcast_api_python_client
+      artifacts: true
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/network_broadcast_api"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  tags:
+    - public-runner-docker
+
+.deploy_network_broadcast_api_needs: &deploy_network_broadcast_api_needs
+  needs:
+    - job: generate_network_broadcast_api_python_client
+      artifacts: true
+    - job: build_network_broadcast_api_wheel
+      artifacts: true
+
+deploy_network_broadcast_api_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/network_broadcast_api"
+  <<: *deploy_network_broadcast_api_needs
+  tags:
+    - public-runner-docker
+  when: on_success
+
+generate_account_by_key_api_python_client:
+    extends: .generate_python_api_client_package_template
+    variables:
+        API_NAME: "account_by_key_api"
+    stage: build
+    tags:
+        - public-runner-docker
+
+build_account_by_key_api_wheel:
+  needs:
+    - job: generate_account_by_key_api_python_client
+      artifacts: true
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  tags:
+    - public-runner-docker
+
+.deploy_account_by_key_api_needs: &deploy_account_by_key_api_needs
+  needs:
+    - job: generate_account_by_key_api_python_client
+      artifacts: true
+    - job: build_account_by_key_api_wheel
+      artifacts: true
+
+deploy_account_by_key_api_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
+  <<: *deploy_account_by_key_api_needs
+  tags:
+    - public-runner-docker
+  when: on_success
+
+
 generate_testing_block_logs:
   stage: build
   extends: [.extended_block_log_creation, .test_tools_based]
