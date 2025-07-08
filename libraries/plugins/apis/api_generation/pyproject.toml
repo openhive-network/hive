@@ -7,21 +7,22 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "api_generation"
+name = "api_generation_root"
 version = "0.0.0"
 description = ""
 authors = []
+package-mode=false
 
-packages = [
-    { include = "api_generation" },
-]
 source = [
     { name = "PyPI", priority = "primary" },
     { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
     { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
 ]
 
+
 [tool.poetry.dependencies]
 python = "^3.12"
-schemas="0.0.1.dev369+ef896c2"
-beekeepy="0.0.1.dev395+7844f5f"
+toml = "^0.10.2"
+api_generation = { path="./api_generation/"}
+account_by_key_api = { path="./account_by_key_api/" }
+block_api = { path="./block_api/" }
