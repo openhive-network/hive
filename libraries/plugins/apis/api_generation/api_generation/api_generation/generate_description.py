@@ -10,14 +10,16 @@ if TYPE_CHECKING:
     from api_generation.common import AvailableApis
 
 
-def generate_description(api: AvailableApis) -> None:
+def generate_description(api: AvailableApis, base_directory: Path) -> None:
     apis_to_skip = available_apis.copy()
     apis_to_skip.remove(api)
 
     api_description_dict_name = f"{api}_description"
 
-    api_generation_path = Path(__file__).parent.parent
-    openapi_json_path = api_generation_path.parent / "documentation" / "openapi.json"
+    api_generation_path = base_directory 
+    openapi_json_path = base_directory.parent / "documentation" / "openapi.json"
+
+    print(f"Attempting to process {api} from Swagger file: {openapi_json_path}")
 
     generate_json_rpc_api_description(
         api_description_dict_name,
