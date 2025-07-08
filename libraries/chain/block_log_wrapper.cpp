@@ -673,19 +673,23 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
   uint32_t head_part_number = part_file_names.crbegin()->part_number;
   // Determine actual needed tail part number.
   uint32_t actual_tail_number_needed = head_part_number;
-  if( _open_args.force_replay ||
-      head_part_number <= (unsigned int)_block_log_split )
+  if( _open_args.force_replay || // hard replay overriding state head block
+      (_open_args.replay && not state_head_block) || // regular replay and no state head block
+      head_part_number <= (unsigned int)_block_log_split // block log is effectively not pruned
+    )
   {
     // When hard replay is in cards, ignore current state head (will be overridden anyway),
     // and split as many parts as it's possible from the source log.
-    // Do the same when block log is effectively not pruned (yet).
+    // Do the same when block log is effectively not pruned (yet) and for regular replay
+    // when no state head block is provided.
     actual_tail_number_needed = 1;
   }
   else
   {
-    if ( not _open_args.load_snapshot && _open_args.replay && not _open_args.force_replay && state_head_block )
+    if( _open_args.replay && state_head_block && not _open_args.load_snapshot )
     {
-      // For regular replay require all parts beginning from state head block to be present & opened.
+      // For regular replay require all parts beginning from state head block to be 
+      // present & opened (possibly incremental replay).
       actual_tail_number_needed = 
         get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
     }

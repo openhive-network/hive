@@ -252,6 +252,37 @@ BOOST_AUTO_TEST_CASE( clean_replay_legacy_to_split )
   }
 }
 
+BOOST_AUTO_TEST_CASE( clean_replay_split_to_effectively_pruned )
+{
+  try {
+    ilog( "Testing switching from split block log to effectively pruned one with successful replay due to removed state." );
+
+    // Get dedicated temporary directory for database (shm) files 
+    // which is used to hide database from second (replay) run.
+    fc::temp_directory shm_dir( hive::utilities::temp_directory_path() );
+
+    {
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_2( "block-log-split", std::to_string( MAX_FILES_OF_SPLIT_BLOCK_LOG ),
+                      "shared-file-dir", shm_dir.path().string() );
+
+      // Generate enough blocks to fill 3 parts of split block log.  
+      for( int i = 0; i < 2*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE +1; ++i )
+        fixture.generate_block();
+    }
+    {
+      hived_fixture fixture( false /*remove blockchain*/ );
+      // Note that setting block-log-split to 1 will effectively prune block log
+      // (part 1 is not needed after replay).
+      INIT_FIXTURE_2( "block-log-split", "1", "replay-blockchain", "" );
+    }
+
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 BOOST_AUTO_TEST_CASE( replay_legacy_to_zero )
 {
   try {
