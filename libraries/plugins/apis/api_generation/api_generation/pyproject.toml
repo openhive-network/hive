@@ -24,4 +24,4 @@ source = [
 python = "^3.12"
 toml = "^0.10.2"
 jinja2 = "^3.1.6"
-beekeepy="0.0.1.dev395+7844f5f"
+beekeepy="0.0.1.dev409+f074107"
