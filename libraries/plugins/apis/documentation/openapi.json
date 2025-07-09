@@ -1293,7 +1293,7 @@
                     "database_api"
                 ],
                 "summary": "Returns the list of active witnesses.",
-                "description": null,
+                "description": "null",
                 "operationId": "get_active_witnesses",
                 "responses": {
                     "200": {
@@ -3578,6 +3578,70 @@
         "schemas": {
             "account": {
                 "type": "object",
+                 "required": [
+                        "id",
+                        "name",
+                        "owner",
+                        "active",
+                        "posting",
+                        "memo_key",
+                        "json_metadata",
+                        "posting_json_metadata",
+                        "proxy",
+                        "last_owner_update",
+                        "last_account_update",
+                        "created",
+                        "mined",
+                        "recovery_account",
+                        "reset_account",
+                        "comment_count",
+                        "lifetime_vote_count",
+                        "can_vote",
+                        "voting_manabar",
+                        "downvote_manabar",
+                        "balance",
+                        "savings_balance",
+                        "hbd_balance",
+                        "hbd_seconds",
+                        "hbd_seconds_last_update",
+                        "hbd_last_interest_payment",
+                        "savings_hbd_balance",
+                        "savings_hbd_seconds",
+                        "savings_hbd_seconds_last_update",
+                        "savings_hbd_last_interest_payment",
+                        "savings_withdraw_requests",
+                        "reward_hbd_balance",
+                        "reward_hive_balance",
+                        "reward_vesting_balance",
+                        "reward_vesting_hive",
+                        "vesting_shares",
+                        "delegated_vesting_shares",
+                        "received_vesting_shares",
+                        "vesting_withdraw_rate",
+                        "post_voting_power",
+                        "next_vesting_withdrawal",
+                        "withdrawn",
+                        "to_withdraw",
+                        "withdraw_routes",
+                        "pending_transfers",
+                        "pending_claimed_accounts",
+                        "post_bandwidth",
+                        "post_count",
+                        "last_post",
+                        "last_root_post",
+                        "last_post_edit",
+                        "last_vote_time",
+                        "last_account_recovery",
+                        "previous_owner_update",
+                        "curation_rewards",
+                        "delayed_votes",
+                        "governance_vote_expiration_ts",
+                        "is_smt",
+                        "open_recurrent_transfers",
+                        "posting_rewards",
+                        "proxied_vsf_votes",
+                        "witnesses_voted_for"
+                    ],
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -3847,71 +3911,7 @@
                             "type": "integer",
                             "description": "Number of witnesses voted for by the account."
                         }
-                    },
-                    "required": [
-                        "id",
-                        "name",
-                        "owner",
-                        "active",
-                        "posting",
-                        "memo_key",
-                        "json_metadata",
-                        "posting_json_metadata",
-                        "proxy",
-                        "last_owner_update",
-                        "last_account_update",
-                        "created",
-                        "mined",
-                        "recovery_account",
-                        "reset_account",
-                        "comment_count",
-                        "lifetime_vote_count",
-                        "can_vote",
-                        "voting_manabar",
-                        "downvote_manabar",
-                        "balance",
-                        "savings_balance",
-                        "hbd_balance",
-                        "hbd_seconds",
-                        "hbd_seconds_last_update",
-                        "hbd_last_interest_payment",
-                        "savings_hbd_balance",
-                        "savings_hbd_seconds",
-                        "savings_hbd_seconds_last_update",
-                        "savings_hbd_last_interest_payment",
-                        "savings_withdraw_requests",
-                        "reward_hbd_balance",
-                        "reward_hive_balance",
-                        "reward_vesting_balance",
-                        "reward_vesting_hive",
-                        "vesting_shares",
-                        "delegated_vesting_shares",
-                        "received_vesting_shares",
-                        "vesting_withdraw_rate",
-                        "post_voting_power",
-                        "next_vesting_withdrawal",
-                        "withdrawn",
-                        "to_withdraw",
-                        "withdraw_routes",
-                        "pending_transfers",
-                        "pending_claimed_accounts",
-                        "post_bandwidth",
-                        "post_count",
-                        "last_post",
-                        "last_root_post",
-                        "last_post_edit",
-                        "last_vote_time",
-                        "last_account_recovery",
-                        "previous_owner_update",
-                        "curation_rewards",
-                        "delayed_votes",
-                        "governance_vote_expiration_ts",
-                        "is_smt",
-                        "open_recurrent_transfers",
-                        "posting_rewards",
-                        "proxied_vsf_votes",
-                        "witnesses_voted_for"
-                    ]
+                    }
                 }
             },
             "account_recovery": {
@@ -7483,17 +7483,17 @@
                     "start": {
                         "type": "object",
                         "example": "",
-                        "description": null
+                        "description": "null"
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": null
+                        "description": "null"
                     },
                     "order": {
                         "type": "string",
                         "example": "by_name",
-                        "description": null
+                        "description": "null"
                     },
                     "delayed_votes_active": {
                         "type": "boolean",
@@ -8216,12 +8216,12 @@
                     "start": {
                         "type": "object",
                         "example": [],
-                        "description": null
+                        "description": "null"
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": null
+                        "description": "null"
                     }
                 },
                 "required": [
@@ -8235,17 +8235,17 @@
                     "start": {
                         "type": "object",
                         "example": [],
-                        "description": null
+                        "description": "null"
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": null
+                        "description": "null"
                     },
                     "order": {
                         "type": "string",
                         "example": "order_name",
-                        "description": null
+                        "description": "null"
                     }
                 },
                 "required": [
@@ -8262,27 +8262,27 @@
                         "example": [
                             10
                         ],
-                        "description": null
+                        "description": "null"
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": null
+                        "description": "null"
                     },
                     "order": {
                         "type": "string",
                         "example": "by_voter_proposal",
-                        "description": null
+                        "description": "null"
                     },
                     "order_direction": {
                         "type": "string",
                         "example": "ascending",
-                        "description": null
+                        "description": "null"
                     },
                     "status": {
                         "type": "string",
                         "example": "all",
-                        "description": null
+                        "description": "null"
                     },
                     "last_id": {
                         "type": "integer",
@@ -8306,27 +8306,27 @@
                         "example": [
                             10
                         ],
-                        "description": null
+                        "description": "null"
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": null
+                        "description": "null"
                     },
                     "order": {
                         "type": "string",
                         "example": "by_voter_proposal",
-                        "description": null
+                        "description": "null"
                     },
                     "order_direction": {
                         "type": "string",
                         "example": "ascending",
-                        "description": null
+                        "description": "null"
                     },
                     "status": {
                         "type": "string",
                         "example": "all",
-                        "description": null
+                        "description": "null"
                     }
                 },
                 "required": [
