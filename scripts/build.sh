@@ -97,8 +97,8 @@ pushd "$abs_build_dir"
 
 echo "Building Hive!"
 
-cmake -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
-ninja "$@"
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
+ninja -v "$@"
 
 if [[ "$CLEAN_AFTER_BUILD" == "true" ]]; then
     echo "Cleaning up after build..."

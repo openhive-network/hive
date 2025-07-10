@@ -98,6 +98,8 @@ RUN <<-EOF
   --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  --cmake-arg="-DCMAKE_C_FLAGS=-fprofile-arcs -ftest-coverage" \
+  --cmake-arg="-DCMAKE_CXX_FLAGS=-fprofile-arcs -ftest-coverage" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 
