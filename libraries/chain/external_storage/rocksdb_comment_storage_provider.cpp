@@ -20,6 +20,8 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
   auto& byTxIdColumn = columnDefs.back();
   byTxIdColumn.options.comparator = by_Hash_Comparator();
 
+  byTxIdColumn.options.bottommost_compression = rocksdb::CompressionType::kSnappyCompression;
+
   return columnDefs;
 }
 
@@ -65,7 +67,21 @@ void rocksdb_comment_storage_provider::flush()
 
 void rocksdb_comment_storage_provider::update_lib( uint32_t lib )
 {
-  rocksdb_storage_provider::update_lib( lib );
+  try
+  {
+    rocksdb_storage_provider::update_lib( lib );
+  }
+  catch(...)
+  {
+    try
+    {
+      std::rethrow_exception( std::current_exception() );
+    }
+    catch( const std::exception& e )
+    {
+      elog("exception: ${what}", ("what", e.what()));
+    }
+  }
 }
 
 void rocksdb_comment_storage_provider::update_reindex_point( uint32_t rp )

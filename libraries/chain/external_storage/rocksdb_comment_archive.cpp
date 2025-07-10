@@ -35,15 +35,15 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_permlink >();
-  FC_ASSERT( _volatile_idx.find( _comment.get_author_and_permlink_hash() ) == _volatile_idx.end(),
+  const auto& _volatile_idx = db.get_index< volatile_comment_index, by_comment_id >();
+  FC_ASSERT( _volatile_idx.find( _comment.get_id() ) == _volatile_idx.end(),
     "Incorrect duplicate archiving of the same comment" ); //ABW: because volatile_comment_index is under undo, this should never happen
 
 #ifdef DBG_INFO
   auto& _account = db.get_account( _comment_cashout.get_author_id() );
-  ilog( "head: ${_block_num} lib: ${lib} Store a comment with hash: ${hash}, with author/permlink: ${author}/${permlink}",
+  ilog( "head: ${_block_num} lib: ${lib} Store a comment with permlink: ${permlink}, with author/permlink: ${author}/${permlink}",
     ( _block_num )( "lib", db.get_last_irreversible_block_num() )
-    ( "hash", _comment.get_author_and_permlink_hash() )
+    ( "permlink", _comment.permlink.c_str() )
     ( "author", _account.get_name() )( "permlink", _comment_cashout.get_permlink() ) );
 #endif
 
@@ -52,9 +52,11 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
     o.comment_id      = _comment.get_id();
     o.parent_comment  = _comment.get_parent_id();
     o.depth           = _comment.get_depth();
-    o.set_author_and_permlink_hash( _comment.get_author_and_permlink_hash() );
 
     o.block_number    = _block_num;
+
+    o.author_id       = _comment_cashout.get_author_id();
+    o.permlink        = _comment_cashout.get_permlink();
   });
 
   stats.comment_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -64,11 +66,12 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
 void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
 {
 #ifdef DBG_MOVE_DETAILS_INFO
-  ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
-        ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
+  ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, permlink: ${permlink}",
+        ("comment_id", volatile_object.comment_id)("permlink", volatile_object.permlink.c_str()())("lib", block_num) );
 #endif
 
-  Slice _key( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
+  auto _custom_hash = custom_hash_creator::get_custom_hash( volatile_object.author_id, volatile_object.permlink.c_str(), volatile_object.permlink.size() );
+  Slice _key( _custom_hash.data(), _custom_hash.size() );
 
   rocksdb_comment_object _obj( volatile_object );
 
@@ -78,9 +81,11 @@ void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num,
   provider->save( _key, _value );
 }
 
-std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
+std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash, const char* custom_hash, size_t custom_hash_size ) const
 {
-  Slice _key( hash.data(), hash.data_size() );
+  FC_ASSERT( custom_hash );
+
+  Slice _key( custom_hash, custom_hash_size );
 
   PinnableSlice _buffer;
 
@@ -159,7 +164,8 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
   }
   else
   {
-    const auto _external_comment = get_comment_impl( _hash );
+    auto _custom_hash = custom_hash_creator::get_custom_hash( author, permlink.c_str(), permlink.size() );
+    const auto _external_comment = get_comment_impl( _hash, _custom_hash.data(), _custom_hash.size() );
     uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     if( _external_comment )
     {

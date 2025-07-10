@@ -16,16 +16,32 @@ enum comment_rocksdb_object_types
   volatile_comment_object_type = ( HIVE_COMMENT_ROCKSDB_SPACE_ID << 8 )
 };
 
+struct custom_hash_creator
+{
+  static std::string get_custom_hash( const account_id_type& author_id, const char* permlink, int32_t permlink_size )
+  {
+    std::string _result;
+
+    auto _val = author_id.get_value();
+    auto _val_size = sizeof( _val );
+
+    _result.resize( _val_size + permlink_size + 1 );
+
+    std::memcpy( _result.data(), &_val, _val_size );
+    _result[ _val_size ] = '@';
+    std::memcpy( _result.data() + _val_size + 1, permlink, permlink_size );
+
+    return _result;
+  }
+};
+  
 class volatile_comment_object : public object< volatile_comment_object_type, volatile_comment_object >
 {
   CHAINBASE_OBJECT( volatile_comment_object );
 
   public:
 
-    CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_comment_object )
-
-    const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
-    void set_author_and_permlink_hash( const comment_object::author_and_permlink_hash_type& val ) { author_and_permlink_hash = val; }
+    CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_comment_object, (permlink) )
 
     comment_id_type                               comment_id;
     comment_id_type                               parent_comment;
@@ -33,15 +49,14 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 
     uint32_t                                      block_number = 0;
 
-  private:
-
-    comment_object::author_and_permlink_hash_type author_and_permlink_hash;
+    account_id_type                               author_id;
+    shared_string                                 permlink;
 };
 
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
 
 struct by_block;
-struct by_permlink;
+struct by_comment_id;
 
 typedef multi_index_container<
     volatile_comment_object,
@@ -54,8 +69,8 @@ typedef multi_index_container<
           const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
         >
       >,
-      ordered_unique< tag< by_permlink >,
-        const_mem_fun< volatile_comment_object, const comment_object::author_and_permlink_hash_type&, &volatile_comment_object::get_author_and_permlink_hash > >
+      ordered_unique< tag< by_comment_id >,
+        member< volatile_comment_object, comment_id_type, &volatile_comment_object::comment_id > >
     >,
     multi_index_allocator< volatile_comment_object >
   > volatile_comment_index;
@@ -81,7 +96,7 @@ class rocksdb_comment_object
 } } // hive::chain
 
 
-FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(depth)(block_number)(author_and_permlink_hash) )
+FC_REFLECT( hive::chain::volatile_comment_object, (id)(comment_id)(parent_comment)(depth)(block_number)(author_id)(permlink) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_comment_object, hive::chain::volatile_comment_index )
 
 FC_REFLECT( hive::chain::rocksdb_comment_object, (comment_id)(parent_comment)(depth) )

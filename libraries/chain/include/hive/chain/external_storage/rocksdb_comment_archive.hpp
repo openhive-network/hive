@@ -28,7 +28,7 @@ class rocksdb_comment_archive : public comments_handler
     bool destroy_database_on_shutdown = false;
 
     void move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object );
-    std::shared_ptr<comment_object> get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const;
+    std::shared_ptr<comment_object> get_comment_impl( const comment_object::author_and_permlink_hash_type& hash, const char* custom_hash, size_t custom_hash_size ) const;
 
   public:
 
