@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def generate_description(api: AvailableApis, base_directory: Path) -> Path:
-    apis_to_skip = available_apis.copy()
+    apis_to_skip = available_apis
     apis_to_skip.remove(api)
 
     api_description_dict_name = f"{api}_description"
