@@ -40,7 +40,7 @@ install_all_runtime_packages() {
   echo "Attempting to install all runtime packages..."
   assert_is_root
 
-  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
+  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget lcov && apt-get clean && rm -r /var/lib/apt/lists/*
 
   #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0
   # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
