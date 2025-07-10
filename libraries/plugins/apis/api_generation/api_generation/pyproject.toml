@@ -7,11 +7,11 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "api_generation_root"
+name = "api_generation"
 version = "0.0.0"
 description = ""
 authors = []
-package-mode=false
+package-mode=true
 
 source = [
     { name = "PyPI", priority = "primary" },
@@ -23,6 +23,5 @@ source = [
 [tool.poetry.dependencies]
 python = "^3.12"
 toml = "^0.10.2"
-api_generation = { path="./api_generation/"}
-account_by_key_api = { path="./account_by_key_api/" }
-block_api = { path="./block_api/" }
+jinja2 = "^3.1.6"
+beekeepy="0.0.1.dev395+7844f5f"

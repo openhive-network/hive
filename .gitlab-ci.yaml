@@ -1219,35 +1219,29 @@ authority_tests:
   tags:
     - public-runner-docker
 
-.generate_python_api_client_package_template:
+generate_python_api_clients:
   extends: .project_develop_configuration_template
   variables:
-    API_NAME: ""
-    COMMON_API_GENERATION_PACKAGE_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
-    PYPROJECT_DIR: "${COMMON_API_GENERATION_PACKAGE_DIR}/${API_NAME}"
+    API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
+    PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
   script:
-    - poetry -C "${COMMON_API_GENERATION_PACKAGE_DIR}" install
-    - poetry -C "${PYPROJECT_DIR}" run python generate_description.py
-    - poetry -C "${PYPROJECT_DIR}" run python generate_client.py
+    - $API_GENERATION_DIR/build.sh
   artifacts:
     expire_in: 1 week
     paths:
-      - "${PYPROJECT_DIR}/${API_NAME}/${API_NAME}_client.py"
-      - "${PYPROJECT_DIR}/${API_NAME}/${API_NAME}_description.py"
+      - "${API_GENERATION_DIR}/database_api"
+      - "${API_GENERATION_DIR}/rc_api"
+      - "${API_GENERATION_DIR}/block_api"
+      - "${API_GENERATION_DIR}/network_broadcast_api"
+      - "${API_GENERATION_DIR}/account_by_key_api"
+  stage: build
   tags:
     - public-runner-docker
 
-generate_database_api_python_client:
-    extends: .generate_python_api_client_package_template
-    variables:
-        API_NAME: "database_api"
-    stage: build
-    tags:
-        - public-runner-docker
 
 build_database_api_wheel:
   needs:
-    - job: generate_database_api_python_client
+    - job: generate_python_api_clients
       artifacts: true
   extends: .build_wheel_template
   variables:
@@ -1256,11 +1250,16 @@ build_database_api_wheel:
   stage: build
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/database_api"
+      - "build_wheel.env"
 
 .deploy_database_api_needs: &deploy_database_api_needs
   needs:
-    - job: generate_database_api_python_client
-      artifacts: true
     - job: build_database_api_wheel
       artifacts: true
 
@@ -1277,17 +1276,9 @@ deploy_database_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
-generate_rc_api_python_client:
-    extends: .generate_python_api_client_package_template
-    variables:
-        API_NAME: "rc_api"
-    stage: build
-    tags:
-        - public-runner-docker
-
 build_rc_api_wheel:
   needs:
-    - job: generate_rc_api_python_client
+    - job: generate_python_api_clients
       artifacts: true
   extends: .build_wheel_template
   variables:
@@ -1296,11 +1287,17 @@ build_rc_api_wheel:
   stage: build
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/rc_api"
+      - "build_wheel.env"
+
 
 .deploy_rc_api_needs: &deploy_rc_api_needs
   needs:
-    - job: generate_rc_api_python_client
-      artifacts: true
     - job: build_rc_api_wheel
       artifacts: true
 
@@ -1314,17 +1311,9 @@ deploy_rc_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
-generate_block_api_python_client:
-    extends: .generate_python_api_client_package_template
-    variables:
-        API_NAME: "block_api"
-    stage: build
-    tags:
-        - public-runner-docker
-
 build_block_api_wheel:
   needs:
-    - job: generate_block_api_python_client
+    - job: generate_python_api_clients
       artifacts: true
   extends: .build_wheel_template
   variables:
@@ -1333,11 +1322,17 @@ build_block_api_wheel:
   stage: build
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/block_api"
+      - "build_wheel.env"
+
 
 .deploy_block_api_needs: &deploy_block_api_needs
   needs:
-    - job: generate_block_api_python_client
-      artifacts: true
     - job: build_block_api_wheel
       artifacts: true
 
@@ -1351,17 +1346,9 @@ deploy_block_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
-generate_network_broadcast_api_python_client:
-    extends: .generate_python_api_client_package_template
-    variables:
-        API_NAME: "network_broadcast_api"
-    stage: build
-    tags:
-        - public-runner-docker
-
 build_network_broadcast_api_wheel:
   needs:
-    - job: generate_network_broadcast_api_python_client
+    - job: generate_python_api_clients
       artifacts: true
   extends: .build_wheel_template
   variables:
@@ -1370,11 +1357,16 @@ build_network_broadcast_api_wheel:
   stage: build
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/network_broadcast_api"
+      - "build_wheel.env"
 
 .deploy_network_broadcast_api_needs: &deploy_network_broadcast_api_needs
   needs:
-    - job: generate_network_broadcast_api_python_client
-      artifacts: true
     - job: build_network_broadcast_api_wheel
       artifacts: true
 
@@ -1387,18 +1379,16 @@ deploy_network_broadcast_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
-
-generate_account_by_key_api_python_client:
-    extends: .generate_python_api_client_package_template
-    variables:
-        API_NAME: "account_by_key_api"
-    stage: build
-    tags:
-        - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - deploy_wheel.env
+    reports:
+      dotenv: deploy_wheel.env
 
 build_account_by_key_api_wheel:
   needs:
-    - job: generate_account_by_key_api_python_client
+    - job: generate_python_api_clients
       artifacts: true
   extends: .build_wheel_template
   variables:
@@ -1407,11 +1397,17 @@ build_account_by_key_api_wheel:
   stage: build
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/account_by_key_api"
+      - "build_wheel.env"
+
 
 .deploy_account_by_key_api_needs: &deploy_account_by_key_api_needs
   needs:
-    - job: generate_account_by_key_api_python_client
-      artifacts: true
     - job: build_account_by_key_api_wheel
       artifacts: true
 
@@ -1424,7 +1420,6 @@ deploy_account_by_key_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
-
 
 generate_testing_block_logs:
   stage: build

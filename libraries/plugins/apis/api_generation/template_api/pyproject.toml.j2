@@ -7,16 +7,17 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "rc_api"
+name = "{{ api_name }}"
 version = "0.0.0"
 description = ""
 authors = []
+package-mode=true
 
 packages = [
-    { include = "rc_api" },
+    { include = "{{ api_name }}" },
 ]
 include = [
-    { path =  "rc_api/*", format = ["wheel", "sdist"] }
+    { path =  "{{ api_name }}/*", format = ["wheel", "sdist"] }
 ]
 source = [
     { name = "PyPI", priority = "primary" },
@@ -26,11 +27,12 @@ source = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
-beekeepy="0.0.1.dev395+7844f5f"
+beekeepy="{{ versions.beekeepy }}"
 
 [tool.poetry-dynamic-versioning]
 enable = true
 format-jinja = """
+{% raw %}
     {%- set dirty_postfix = '.dirty' if dirty else '' -%}
     {%- if distance == 0 and not dirty -%}
         {{ serialize_pep440(base, stage, revision) }}
@@ -39,9 +41,10 @@ format-jinja = """
     {%- else -%}
         {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}{{ dirty_postfix }}
     {%- endif -%}
+{% endraw %}
 """
 
 [tool.poetry-dynamic-versioning.substitution]
 files = [
-    "rc_api/__init__.py",
+    "{{ api_name }}/__init__.py",
 ]
