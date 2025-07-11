@@ -1083,12 +1083,7 @@ namespace hive { namespace protocol {
 
         typedef void result_type;
 
-        void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
-        {
-          was_pair_id = true;
-          pair_id = recurrent_transfer_pair_id.pair_id;
-        }
-
+        void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id );
         void operator()( const hive::void_t& ) {}
       };
 
@@ -1114,23 +1109,8 @@ namespace hive { namespace protocol {
       void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
 
       /// Returns pair id specific to given operation. explicitValue if not null will be set to true if pair_id was explicitly specified in the operation.
-      uint8_t get_pair_id( const recurrent_transfer_extensions_type& _extensions, bool* explicitValue = nullptr ) const
-      {
-        recurrent_transfer_extension_visitor _vtor;
-
-        for( const auto& e : _extensions )
-          e.visit( _vtor );
-
-        if( explicitValue )
-          *explicitValue = _vtor.was_pair_id;
-
-        return _vtor.pair_id;
-      }
-
-      uint8_t get_pair_id( bool* explicitValue = nullptr ) const
-      {
-        return get_pair_id( extensions, explicitValue );
-      }
+      uint8_t get_pair_id( const recurrent_transfer_extensions_type& _extensions, bool* explicitValue = nullptr ) const;
+      uint8_t get_pair_id( bool* explicitValue = nullptr ) const;
   };
 
   struct witness_block_approve_operation : public base_operation
