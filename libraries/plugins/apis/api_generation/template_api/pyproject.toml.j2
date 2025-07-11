@@ -31,6 +31,7 @@ beekeepy="{{ versions.beekeepy }}"
 
 [tool.poetry-dynamic-versioning]
 enable = true
+pattern = '''^v?(?P<base>\d+\.\d+\.\d+)(?:(?P<stage>[a-zA-Z]+)(?P<revision>\d+))?$'''
 format-jinja = """
 {% raw %}
     {%- set dirty_postfix = '.dirty' if dirty else '' -%}
