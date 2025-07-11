@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import json
 import os
 import random
@@ -23,7 +22,7 @@ from schemas.operations.comment_operation import CommentOperation
 from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperation
 from schemas.operations.transfer_operation import TransferOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.policies import DisableSwapTypes, set_policies
+from schemas.policies import DisableSwapTypesPolicy, set_policies
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
@@ -50,7 +49,7 @@ ACCOUNT_CREATION_FEE_AFTER_HF_20: Final[tt.Asset.Test] = tt.Asset.Test(3)
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count() * 2
 
-set_policies(DisableSwapTypes(disabled=True))
+set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log(

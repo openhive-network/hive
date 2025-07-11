@@ -18,7 +18,7 @@ from hive_local_tools.functional.python.queen_utils import (
     __vesting_delegate,
 )
 from schemas.fields.assets import AssetHive
-from schemas.policies import DisableSwapTypes, set_policies
+from schemas.policies import DisableSwapTypesPolicy, set_policies
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -31,7 +31,7 @@ INIT_SUPPLY: Final[int] = 400_000_000_000
 INITIAL_VESTING: Final[int] = 50_000_000_000
 HBD_INIT_SUPPLY: Final[int] = 30_000_000_000
 
-set_policies(DisableSwapTypes(disabled=True))
+set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log(output_block_log_directory: Path) -> None:
