@@ -745,4 +745,28 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
+  void recurrent_transfer_operation::recurrent_transfer_extension_visitor::operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
+  {
+    was_pair_id = true;
+    pair_id = recurrent_transfer_pair_id.pair_id;
+  }
+
+  uint8_t recurrent_transfer_operation::get_pair_id( const recurrent_transfer_extensions_type& _extensions, bool* explicitValue ) const
+  {
+    recurrent_transfer_extension_visitor _vtor;
+
+    for( const auto& e : _extensions )
+      e.visit( _vtor );
+
+    if( explicitValue )
+      *explicitValue = _vtor.was_pair_id;
+
+    return _vtor.pair_id;
+  }
+
+  uint8_t recurrent_transfer_operation::get_pair_id( bool* explicitValue ) const
+  {
+    return get_pair_id( extensions, explicitValue );
+  }
+
 } } // hive::protocol
