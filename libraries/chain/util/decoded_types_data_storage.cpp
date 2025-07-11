@@ -10,7 +10,7 @@ std::string calculate_checksum_from_string(const std::string_view str)
 {
   fc::ripemd160::encoder encoder;
   encoder.write(str.data(), str.size());
-  return std::move(encoder.result().str());
+  return encoder.result().str();
 }
 
 decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_name, const size_t _type_size, const size_t type_align)
