@@ -212,13 +212,13 @@ tests-no-zope = ["cloudpickle ; platform_python_implementation == \"CPython\"", 
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev395+7844f5f"
+version = "0.0.1.dev398+4c1f881"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev395+7844f5f-py3-none-any.whl", hash = "sha256:1e62cef1d0eb98c21d96c3355bd6b153d40c56ffcaeba82930f11e9e73cf60b1"},
+    {file = "beekeepy-0.0.1.dev398+4c1f881-py3-none-any.whl", hash = "sha256:79d82bea0805bfaa178461f0af71cc924c71fe0affb12ed9b76a65d496d67267"},
 ]
 
 [package.dependencies]
@@ -228,7 +228,7 @@ loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
-schemas = "0.0.1.dev369+ef896c2"
+schemas = "0.0.1.dev380+0c1fb07"
 setuptools = "77.0.3"
 types-setuptools = "76.0.0.20250313"
 
@@ -354,17 +354,17 @@ markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"",
 
 [[package]]
 name = "database-api"
-version = "1.25.2rc0.dev5173+56d5ad9a8"
+version = "1.25.2rc0.dev5185+035678abe"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "database_api-1.25.2rc0.dev5173+56d5ad9a8-py3-none-any.whl", hash = "sha256:3db6f79290392a274a9694577b8b239e0fa7ed059987d4a1d096577ee52af51b"},
+    {file = "database_api-1.25.2rc0.dev5185+035678abe-py3-none-any.whl", hash = "sha256:161e12887729eaa0a250a5758b5f7ddf864966c2f9b4e62defcc106d6ba2c4b2"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev395+7844f5f"
+beekeepy = "0.0.1.dev398+4c1f881"
 
 [package.source]
 type = "legacy"
@@ -1106,17 +1106,17 @@ files = [
 
 [[package]]
 name = "network-broadcast-api"
-version = "1.25.2rc0.dev5173+56d5ad9a8"
+version = "1.25.2rc0.dev5185+035678abe"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "network_broadcast_api-1.25.2rc0.dev5173+56d5ad9a8-py3-none-any.whl", hash = "sha256:bf6f5982fa3e5facde96aac567ca8903318320817e9aa5b639bea717e5a459a6"},
+    {file = "network_broadcast_api-1.25.2rc0.dev5185+035678abe-py3-none-any.whl", hash = "sha256:7877662db1d94698bcd99b018b1a4a0f713f7a8d816b378b97abba50e4c615c5"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev395+7844f5f"
+beekeepy = "0.0.1.dev398+4c1f881"
 
 [package.source]
 type = "legacy"
@@ -2066,7 +2066,7 @@ version = "0.6.5"
 description = "An extremely fast Python linter and code formatter, written in Rust."
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "dev", "ruff"]
+groups = ["dev", "ruff"]
 files = [
     {file = "ruff-0.6.5-py3-none-linux_armv6l.whl", hash = "sha256:7e4e308f16e07c95fc7753fc1aaac690a323b2bb9f4ec5e844a97bb7fbebd748"},
     {file = "ruff-0.6.5-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:932cd69eefe4daf8c7d92bd6689f7e8182571cb934ea720af218929da7bd7d69"},
@@ -2090,19 +2090,21 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev369+ef896c2"
+version = "0.0.1.dev380+0c1fb07"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "schemas-0.0.1.dev369+ef896c2-py3-none-any.whl", hash = "sha256:6d9e1388f12168b67ca47de1cce06d1d10ca83954631e91971a73ba073a8b502"},
+    {file = "schemas-0.0.1.dev380+0c1fb07-py3-none-any.whl", hash = "sha256:d5affa660994c448d726e2b0209ab0a0081f4ac681dc487386ac9aadf595877f"},
 ]
 
 [package.dependencies]
 datamodel-code-generator = "0.30.1"
 msgspec = "0.18.6"
-ruff = "0.6.5"
+
+[package.extras]
+api-generation = ["ruff (==0.11.5)"]
 
 [package.source]
 type = "legacy"
@@ -2224,7 +2226,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev764+3c0a0a3c"
+wax = "0.3.10.dev767+73f86727"
 
 [package.source]
 type = "directory"
@@ -2390,20 +2392,20 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev764+3c0a0a3c"
+version = "0.3.10.dev767+73f86727"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev764+3c0a0a3c-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:c0aea5dca1d5ab95dd13727d977b1bd465bac708e388a4183dc042dbc1ac1b56"},
+    {file = "wax-0.3.10.dev767+73f86727-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:1fc4f30a312c4bd817cb6d0e6a1f13d793c863aa95ebed46d2775d828642e067"},
 ]
 
 [package.dependencies]
-database_api = "1.25.2rc0.dev5173+56d5ad9a8"
+database_api = "1.25.2rc0.dev5185+035678abe"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
-network_broadcast_api = "1.25.2rc0.dev5173+56d5ad9a8"
+network_broadcast_api = "1.25.2rc0.dev5185+035678abe"
 protobuf = "4.24.4"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
