@@ -21,7 +21,7 @@ from schemas.operations.create_proposal_operation import CreateProposalOperation
 from schemas.operations.transfer_operation import TransferOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
-from schemas.policies import DisableSwapTypes, set_policies
+from schemas.policies import DisableSwapTypesPolicy, set_policies
 
 NUMBER_OF_VOTING_ACCOUNTS: Final[int] = 12_000
 NUMBER_OF_PROPOSALS = 12_000
@@ -29,7 +29,7 @@ ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count()
 TIME_MULTIPLIER: Final[int] = 4
 
-set_policies(DisableSwapTypes(disabled=True))
+set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: Path) -> None:
