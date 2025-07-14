@@ -51,8 +51,14 @@ SHELL ["/bin/bash", "-c"]
 USER root
 WORKDIR /usr/local/src
 
-# Install additionally development packages
-RUN ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived"
+RUN ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived" && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        lcov \
+        perl \
+        ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    lcov --version && genhtml --version || echo "lcov tools installed"
 
 USER hived_admin
 WORKDIR /home/hived_admin
@@ -94,14 +100,14 @@ RUN <<-EOF
   sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
 
   ./source/${HIVE_SUBDIR}/scripts/build.sh --source-dir="./source/${HIVE_SUBDIR}" --binary-dir="./build" \
-  --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
-  --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
-  --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
-  --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
-  --cmake-arg="-DCMAKE_C_FLAGS=-fprofile-arcs -ftest-coverage" \
-  --cmake-arg="-DCMAKE_CXX_FLAGS=-fprofile-arcs -ftest-coverage" \
-  --flat-binary-directory="${INSTALLATION_DIR}" \
-  --clean-after-build
+    --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
+    --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
+    --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
+    --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+    --cmake-arg="-DCMAKE_C_FLAGS=-fprofile-arcs -ftest-coverage" \
+    --cmake-arg="-DCMAKE_CXX_FLAGS=-fprofile-arcs -ftest-coverage" \
+    --flat-binary-directory="${INSTALLATION_DIR}" \
+    --clean-after-build
 
   sudo chown -R hived "${INSTALLATION_DIR}/"*
 EOF
