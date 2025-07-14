@@ -212,13 +212,13 @@ tests-no-zope = ["cloudpickle ; platform_python_implementation == \"CPython\"", 
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev395+7844f5f"
+version = "0.0.1.dev399+80e8b8a"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev395+7844f5f-py3-none-any.whl", hash = "sha256:1e62cef1d0eb98c21d96c3355bd6b153d40c56ffcaeba82930f11e9e73cf60b1"},
+    {file = "beekeepy-0.0.1.dev399+80e8b8a-py3-none-any.whl", hash = "sha256:24c6e1d0fd9e59dbafb948ca749b049214a6bf212fcb8c4b086ee422997e947d"},
 ]
 
 [package.dependencies]
@@ -229,8 +229,6 @@ psutil = "7.0.0"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
 schemas = "0.0.1.dev369+ef896c2"
-setuptools = "77.0.3"
-types-setuptools = "76.0.0.20250313"
 
 [package.source]
 type = "legacy"
@@ -354,17 +352,17 @@ markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"",
 
 [[package]]
 name = "database-api"
-version = "1.25.2rc0.dev5173+56d5ad9a8"
+version = "1.25.2rc0.dev5203+c9d7607f2"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "database_api-1.25.2rc0.dev5173+56d5ad9a8-py3-none-any.whl", hash = "sha256:3db6f79290392a274a9694577b8b239e0fa7ed059987d4a1d096577ee52af51b"},
+    {file = "database_api-1.25.2rc0.dev5203+c9d7607f2-py3-none-any.whl", hash = "sha256:f9ee5f42a9c7b0c3caf557513d03b55a9c95ca4d77561017824a2baad25e26f8"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev395+7844f5f"
+beekeepy = "0.0.1.dev399+80e8b8a"
 
 [package.source]
 type = "legacy"
@@ -1106,17 +1104,17 @@ files = [
 
 [[package]]
 name = "network-broadcast-api"
-version = "1.25.2rc0.dev5173+56d5ad9a8"
+version = "1.25.2rc0.dev5203+c9d7607f2"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "network_broadcast_api-1.25.2rc0.dev5173+56d5ad9a8-py3-none-any.whl", hash = "sha256:bf6f5982fa3e5facde96aac567ca8903318320817e9aa5b639bea717e5a459a6"},
+    {file = "network_broadcast_api-1.25.2rc0.dev5203+c9d7607f2-py3-none-any.whl", hash = "sha256:ed78d14ba924e795a5d67286371c31e0af77ae11ece54180e3b0db3acf167059"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev395+7844f5f"
+beekeepy = "0.0.1.dev399+80e8b8a"
 
 [package.source]
 type = "legacy"
@@ -2224,7 +2222,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev764+3c0a0a3c"
+wax = "0.3.10.dev773+c4c137d6"
 
 [package.source]
 type = "directory"
@@ -2295,21 +2293,6 @@ files = [
 
 [package.dependencies]
 types-urllib3 = "*"
-
-[[package]]
-name = "types-setuptools"
-version = "76.0.0.20250313"
-description = "Typing stubs for setuptools"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "types_setuptools-76.0.0.20250313-py3-none-any.whl", hash = "sha256:bf454b2a49b8cfd7ebcf5844d4dd5fe4c8666782df1e3663c5866fd51a47460e"},
-    {file = "types_setuptools-76.0.0.20250313.tar.gz", hash = "sha256:b2be66f550f95f3cad2a7d46177b273c7e9c80df7d257fa57addbbcfc8126a9e"},
-]
-
-[package.dependencies]
-setuptools = "*"
 
 [[package]]
 name = "types-urllib3"
@@ -2390,20 +2373,20 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev764+3c0a0a3c"
+version = "0.3.10.dev773+c4c137d6"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev764+3c0a0a3c-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:c0aea5dca1d5ab95dd13727d977b1bd465bac708e388a4183dc042dbc1ac1b56"},
+    {file = "wax-0.3.10.dev773+c4c137d6-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:10a6b691b7e0aab49e83430a0f89789d2e2bf2b031192ef5c3036cbb1480f1bc"},
 ]
 
 [package.dependencies]
-database_api = "1.25.2rc0.dev5173+56d5ad9a8"
+database_api = "1.25.2rc0.dev5203+c9d7607f2"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
-network_broadcast_api = "1.25.2rc0.dev5173+56d5ad9a8"
+network_broadcast_api = "1.25.2rc0.dev5203+c9d7607f2"
 protobuf = "4.24.4"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
