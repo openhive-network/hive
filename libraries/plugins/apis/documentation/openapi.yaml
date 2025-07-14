@@ -4442,16 +4442,19 @@ components:
       required:
         - requests
     find_comments:
-      type: array
-      items:
-        type: array
-        items:
-          type: string
-        example: ["author", "permlink"]
-        description: >-
-          An array of strings representing the author and permlink of the comment to query.
-        minItems: 2
-        maxItems: 2
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            example: ["author", "permlink"]
+            description: >-
+              An array of strings representing the author and permlink of the comment to query.
+            minItems: 2
+            maxItems: 2
     find_comments_response:
       type: object
       properties:
