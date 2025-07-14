@@ -1162,7 +1162,6 @@ paths:
       tags:
         - database_api
       summary: Returns the list of active witnesses.
-      description: 
       operationId: get_active_witnesses
       responses:
         '200':
@@ -3623,69 +3622,69 @@ components:
           witnesses_voted_for:
             type: integer
             description: Number of witnesses voted for by the account.
-        required:
-          - id
-          - name
-          - owner
-          - active
-          - posting
-          - memo_key
-          - json_metadata
-          - posting_json_metadata
-          - proxy
-          - last_owner_update
-          - last_account_update
-          - created
-          - mined
-          - recovery_account
-          - reset_account
-          - comment_count
-          - lifetime_vote_count
-          - can_vote
-          - voting_manabar
-          - downvote_manabar
-          - balance
-          - savings_balance
-          - hbd_balance
-          - hbd_seconds
-          - hbd_seconds_last_update
-          - hbd_last_interest_payment
-          - savings_hbd_balance
-          - savings_hbd_seconds
-          - savings_hbd_seconds_last_update
-          - savings_hbd_last_interest_payment
-          - savings_withdraw_requests
-          - reward_hbd_balance
-          - reward_hive_balance
-          - reward_vesting_balance
-          - reward_vesting_hive
-          - vesting_shares
-          - delegated_vesting_shares
-          - received_vesting_shares
-          - vesting_withdraw_rate
-          - post_voting_power
-          - next_vesting_withdrawal
-          - withdrawn
-          - to_withdraw
-          - withdraw_routes
-          - pending_transfers
-          - pending_claimed_accounts
-          - post_bandwidth
-          - post_count
-          - last_post
-          - last_root_post
-          - last_post_edit
-          - last_vote_time
-          - last_account_recovery
-          - previous_owner_update
-          - curation_rewards
-          - delayed_votes
-          - governance_vote_expiration_ts
-          - is_smt
-          - open_recurrent_transfers
-          - posting_rewards
-          - proxied_vsf_votes
-          - witnesses_voted_for
+      required:
+        - id
+        - name
+        - owner
+        - active
+        - posting
+        - memo_key
+        - json_metadata
+        - posting_json_metadata
+        - proxy
+        - last_owner_update
+        - last_account_update
+        - created
+        - mined
+        - recovery_account
+        - reset_account
+        - comment_count
+        - lifetime_vote_count
+        - can_vote
+        - voting_manabar
+        - downvote_manabar
+        - balance
+        - savings_balance
+        - hbd_balance
+        - hbd_seconds
+        - hbd_seconds_last_update
+        - hbd_last_interest_payment
+        - savings_hbd_balance
+        - savings_hbd_seconds
+        - savings_hbd_seconds_last_update
+        - savings_hbd_last_interest_payment
+        - savings_withdraw_requests
+        - reward_hbd_balance
+        - reward_hive_balance
+        - reward_vesting_balance
+        - reward_vesting_hive
+        - vesting_shares
+        - delegated_vesting_shares
+        - received_vesting_shares
+        - vesting_withdraw_rate
+        - post_voting_power
+        - next_vesting_withdrawal
+        - withdrawn
+        - to_withdraw
+        - withdraw_routes
+        - pending_transfers
+        - pending_claimed_accounts
+        - post_bandwidth
+        - post_count
+        - last_post
+        - last_root_post
+        - last_post_edit
+        - last_vote_time
+        - last_account_recovery
+        - previous_owner_update
+        - curation_rewards
+        - delayed_votes
+        - governance_vote_expiration_ts
+        - is_smt
+        - open_recurrent_transfers
+        - posting_rewards
+        - proxied_vsf_votes
+        - witnesses_voted_for
     account_recovery:
       type: object
       properties:
@@ -6482,15 +6481,12 @@ components:
         start:
           type: object
           example: ""
-          description:
         limit:
           type: integer
           example: 10
-          description:
         order:
           type: string
           example: by_name
-          description:
         delayed_votes_active:
           type: boolean
           example: true
@@ -7057,11 +7053,9 @@ components:
         start:
           type: object
           example: []
-          description:
         limit:
           type: integer
           example: 10
-          description:
       required:
         - start
         - limit
@@ -7071,15 +7065,12 @@ components:
         start:
           type: object
           example: []
-          description:
         limit:
           type: integer
           example: 10
-          description:
         order:
           type: string
           example: order_name
-          description:
       required:
         - start
         - limit
@@ -7090,23 +7081,18 @@ components:
         start:
           type: object
           example: [10]
-          description:
         limit:
           type: integer
           example: 10
-          description:
         order:
           type: string
           example: by_voter_proposal
-          description:
         order_direction:
           type: string
           example: ascending
-          description:
         status:
           type: string
           example: all
-          description:
         last_id:
           type: integer
           example: 0
@@ -7124,23 +7110,18 @@ components:
         start:
           type: object
           example: [10]
-          description:
         limit:
           type: integer
           example: 10
-          description:
         order:
           type: string
           example: by_voter_proposal
-          description:
         order_direction:
           type: string
           example: ascending
-          description:
         status:
           type: string
           example: all
-          description:
       required:
         - start
         - limit
