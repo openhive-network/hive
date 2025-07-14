@@ -13,7 +13,9 @@
 #include <hive/chain/external_storage/memory_comment_archive.hpp>
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
+#include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 
@@ -56,6 +58,7 @@ using hive::chain::block_id_type;
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
 using comment_archive_details_t = hive::utilities::benchmark_dumper::comment_archive_details_t;
+using account_archive_details_t = hive::utilities::benchmark_dumper::account_archive_details_t;
 using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
 
 #define NUM_THREADS 1
@@ -137,6 +140,8 @@ class chain_plugin_impl
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
+    bfs::path                        state_storage_path;
+    uint32_t                         retention_blocks = 0;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -152,6 +157,7 @@ class chain_plugin_impl
     bool                             force_replay = false;
     bool                             validate_during_replay = false;
     uint32_t                         benchmark_interval = 0;
+    uint32_t                         live_benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
     bool                             replay_in_memory = false;
     std::vector< std::string >       replay_memory_indices{};
@@ -225,6 +231,7 @@ class chain_plugin_impl
     block_log_open_args                 bl_open_args;
     get_stat_details_t                  get_stat_details;
     boost::signals2::connection         dumper_post_apply_block;
+    boost::signals2::connection         end_of_sync_conn;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
@@ -279,6 +286,24 @@ class chain_plugin_impl
       */
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
                               const block_read_i& block_reader ) const;
+
+  private:
+
+    accounts_handler::ptr account_archive;
+
+  public:
+
+    bool live_mode = false;
+
+    void end_of_syncing()
+    {
+      live_mode = true;
+      if( account_archive )
+      {
+        ilog("Remove a limit for account objects");
+        account_archive->remove_objects_limit();
+      }
+    }
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -793,6 +818,7 @@ void chain_plugin_impl::initial_settings()
 
   ilog( "Preparing comment archive..." );
   comments_handler::ptr comment_archive;
+
   switch( comment_archive_choice )
   {
   case comment_archive_type::NONE:
@@ -811,7 +837,14 @@ void chain_plugin_impl::initial_settings()
       comments_storage_path, theApp );
     break;
   }
+
+  ilog( "'ROCKSDB' - accounts will be archived in RocksDB at ${csp}",
+    ( "csp", state_storage_path.c_str() ) );
+  account_archive = std::make_shared<rocksdb_account_archive>( db, shared_memory_dir,
+    state_storage_path, retention_blocks, theApp );
+
   db.set_comments_handler( comment_archive );
+  db.set_accounts_handler( account_archive );
 
   if( statsd_on_replay )
   {
@@ -831,7 +864,7 @@ void chain_plugin_impl::initial_settings()
 
   db._max_mempool_size = max_mempool_size;
 
-  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, uint64_t& shm_free)
+  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, account_archive_details_t& account_archive_stats, uint64_t& shm_free)
   {
     shm_free = db.get_free_memory();
     const auto& abstract_index_cntr = db.get_abstract_index_cntr();
@@ -842,6 +875,7 @@ void chain_plugin_impl::initial_settings()
         info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
     }
     comment_archive_stats = comments_handler::stats;
+    account_archive_stats = accounts_stats::stats;
   };
 
   fc::variant database_config;
@@ -849,6 +883,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.data_dir = theApp.data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
   db_open_args.comments_storage_path = comments_storage_path;
+  db_open_args.state_storage_path = state_storage_path;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
@@ -1504,10 +1539,13 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
+      ("set-live-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks for LIVE mode")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
       ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
+      ("state-rocksdb-path", bpo::value<bfs::path>()->default_value("state-rocksdb-storage"), "the location of the accounts data files" )
+      ("rocksdb-retention-blocks", bpo::value<uint32_t>()->default_value(1200), "How long to retain account's data in shared memory after last access before moving it to RocksDB storage. Default is 1200 blocks (1 hour).")
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1543,16 +1581,24 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       my->shared_memory_dir = sfd;
   }
 
-  my->comments_storage_path = my->shared_memory_dir / "comments-rocksdb-storage";
-
-  if( options.count( "comments-rocksdb-path" ) )
+  auto _set_rocksdb_directory = [&]( bfs::path& path, const std::string& directory_name, const std::string& parameter_name )
   {
-    auto crp = options.at( "comments-rocksdb-path" ).as<bfs::path>();
-    if( crp.is_relative() )
-      my->comments_storage_path = my->shared_memory_dir / crp;
-    else
-      my->comments_storage_path = crp;
-  }
+    path = my->shared_memory_dir / directory_name;
+
+    if( options.count( parameter_name ) )
+    {
+      auto crp = options.at( parameter_name ).as<bfs::path>();
+      if( crp.is_relative() )
+        path = my->shared_memory_dir / crp;
+      else
+        path = crp;
+    }
+  };
+
+  _set_rocksdb_directory( my->comments_storage_path, "comments-rocksdb-storage", "comments-rocksdb-path" );
+  _set_rocksdb_directory( my->state_storage_path, "state-rocksdb-storage", "state-rocksdb-path" );
+
+  my->retention_blocks = options.at( "rocksdb-retention-blocks" ).as< uint32_t >();
 
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )
@@ -1584,6 +1630,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
+  my->live_benchmark_interval  =
+    options.count( "set-live-benchmark-interval" ) ? options.at( "set-live-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
   my->validate_invariants = options.at( "validate-database-invariants" ).as<bool>();
   my->dump_memory_details = options.at( "dump-memory-details" ).as<bool>();
@@ -1807,7 +1855,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   resource_credits::set_flood_limiters(options.at("rc-flood-level").as<uint16_t>(),
                                        options.at("rc-flood-surcharge").as<uint16_t>());
 
-  if(my->benchmark_interval > 0)
+  if(my->benchmark_interval > 0 || my->live_benchmark_interval > 0)
   {
     my->dumper_post_apply_block = db().add_post_apply_block_handler([&](const hive::chain::block_notification& note) noexcept {
       const uint32_t current_block_number = note.block_num;
@@ -1826,10 +1874,23 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
         get_app().notify_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
+      if( my->live_mode && my->live_benchmark_interval && ( current_block_number % my->live_benchmark_interval == 0 ) )
+      {
+        const hive::utilities::benchmark_dumper::measurement& measure =
+          my->dumper.measure( current_block_number, my->get_stat_details );
+
+        ilog("Accounts report at block ${n}. ${log}",
+          ("n", current_block_number)("log", fc::json::to_string(measure.account_archive_stats)));
+      }
     }, *this, 0);
   }
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
+
+  #ifndef IS_TEST_NET
+    my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
+      { my->end_of_syncing(); }, *this, 0 );
+  #endif
 
 } FC_LOG_AND_RETHROW() }
 
@@ -1926,6 +1987,8 @@ void chain_plugin::plugin_shutdown()
   my->default_block_writer->close();
   my->block_storage->close_storage();
 
+  hive::utilities::disconnect_signal( my->end_of_sync_conn );
+ 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }

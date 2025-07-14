@@ -44,6 +44,18 @@ const Comparator* by_txId_Comparator()
   return &c;
 }
 
+const Comparator* by_time_account_name_pair_Comparator()
+{
+  static time_account_name_pair_ComparatorImpl c;
+  return &c;
+}
+
+const Comparator* by_time_account_id_pair_Comparator()
+{
+  static time_account_id_pair_ComparatorImpl c;
+  return &c;
+}
+
 bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
 {
   auto fi = _ahInfoCache.find(name);
@@ -53,7 +65,7 @@ bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_histor
     return true;
   }
 
-  ah_info_by_name_slice_t key(name.data);
+  account_name_slice_t key(name.data);
   PinnableSlice buffer;
   auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
   if(s.ok())
@@ -70,7 +82,7 @@ void CachableWriteBatch::putAHInfo(const account_name_type& name, const account_
 {
   _ahInfoCache[name] = ahInfo;
   auto serializeBuf = dump(ahInfo);
-  ah_info_by_name_slice_t nameSlice(name.data);
+  account_name_slice_t nameSlice(name.data);
   auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
   checkStatus(s);
 }
@@ -94,6 +106,18 @@ void registerSnapshotComparators() {
           return by_Hash_Comparator();
         });
 
+    snapshotLibrary->AddFactory<const ::rocksdb::Comparator>(
+        "hive::chain::PrimitiveTypeComparatorImpl<unsigned int> const*",
+        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
+          return by_id_Comparator();
+        });
+
+    snapshotLibrary->AddFactory<const ::rocksdb::Comparator>(
+        "hive::chain::PrimitiveTypeComparatorImpl<fc::erpair<unsigned long, unsigned long> > const*",
+        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
+          return by_account_name_Comparator();
+        });
+
     ::rocksdb::ObjectRegistry::Default()->AddLibrary(snapshotLibrary);
 
     ilog("Successfully registered snapshot comparators with RocksDB ObjectLibrary");
@@ -108,7 +132,7 @@ void registerAccountHistoryComparators() {
     ilog("Registering account history comparators with RocksDB ObjectLibrary");
 
     accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::by_id_ComparatorImpl const*",
+        "hive::chain::PrimitiveTypeComparatorImpl<unsigned int> const*",
         [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
           return by_id_Comparator();
         });
@@ -120,7 +144,7 @@ void registerAccountHistoryComparators() {
         });
 
     accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::by_account_name_ComparatorImpl const*",
+        "hive::chain::PrimitiveTypeComparatorImpl<fc::erpair<unsigned long, unsigned long> > const*",
         [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
           return by_account_name_Comparator();
         });

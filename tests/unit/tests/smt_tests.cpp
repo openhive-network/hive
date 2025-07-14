@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     generate_block();
 
-    const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
+    const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
     asset required_creation_fee = dgpo.smt_creation_fee;
     unsigned int test_amount = required_creation_fee.amount.value;
 

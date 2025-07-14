@@ -43,10 +43,10 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     const auto& treasury_account =_db.get_treasury();
 
     const auto& owner_account = _db.get_account( o.creator );
-    const auto* receiver_account = _db.find_account( o.receiver );
+    auto receiver_account = _db.find_account( o.receiver );
 
     /// Just to check the receiver account exists.
-    FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
+    FC_ASSERT(receiver_account, "Specified receiver account: ${r} must exist in the blockchain",
       ("r", o.receiver));
 
     auto commentObject = _db.find_comment(o.creator, o.permlink);
@@ -77,7 +77,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
     _db.adjust_balance( owner_account, -fee_hbd );
     /// Fee shall be paid to the treasury
-    _db.adjust_balance(treasury_account, fee_hbd );
+    _db.adjust_balance( treasury_account, fee_hbd );
 
     _db.push_virtual_operation( proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
   }
@@ -143,9 +143,9 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
     const auto& voter = _db.get_account(o.voter);
 
     if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-      FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+      FC_ASSERT( voter.can_vote() && "Voter declined voting rights, therefore casting votes is forbidden." );
 
-    _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+    _db.modify( voter, [&]( account_object& a ) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
     for( const auto pid : o.proposal_ids )
     {

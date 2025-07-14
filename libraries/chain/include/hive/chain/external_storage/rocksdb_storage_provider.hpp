@@ -1,6 +1,7 @@
 #pragma once
 
-#include <hive/chain/database.hpp>
+#include <appbase/application.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 #include <hive/chain/external_storage/external_basic_provider.hpp>
 
@@ -29,6 +30,8 @@ using ::rocksdb::ColumnFamilyDescriptor;
 using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
+using ::rocksdb::WideColumns;
+using ::rocksdb::PinnableWideColumns;
 
 class rocksdb_storage_provider: public external_basic_provider
 {
@@ -102,8 +105,14 @@ class rocksdb_storage_provider: public external_basic_provider
     void update_lib( uint32_t ) override;
     uint32_t get_lib() const override { return _cached_irreversible_block; }
 
-    void save( const Slice& key, const Slice& value );
-    bool read( const Slice& key, PinnableSlice& value );
+    void save( ColumnTypes column_type, const Slice& key, const Slice& value );
+    bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
+    void remove( ColumnTypes column_type, const Slice& key );
+
+    void put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns );
+    bool get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns );
+
+    ColumnFamilyHandle* getColumnHandle( ColumnTypes column );
 };
 
 }}

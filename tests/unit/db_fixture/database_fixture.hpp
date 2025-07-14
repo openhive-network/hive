@@ -298,7 +298,7 @@ struct database_fixture {
 
   fc::string get_current_time_iso_string() const;
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const string& creator,
     const private_key_type& creator_key,
@@ -308,19 +308,19 @@ struct database_fixture {
     const string& json_metadata
   );
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create_default_fee(
+    const account_object& account_create_default_fee(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const public_key_type& key
   );
@@ -428,7 +428,7 @@ struct database_fixture {
   uint64_t get_nr_blocks_until_proposal_maintenance_block();
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
-  account_id_type get_account_id( const string& account_name )const;
+  account_id_type get_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
   asset get_savings( const string& account_name )const;
