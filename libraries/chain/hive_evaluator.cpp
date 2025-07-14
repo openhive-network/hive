@@ -439,7 +439,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
-    meta.account = new_account.get_id();
+    meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
   });
 #else
@@ -545,7 +545,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
-    meta.account = new_account.get_id();
+    meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
   });
 #else
@@ -679,7 +679,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
   {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    _db.modify( _db.get< account_metadata_object, by_account >( account.get_name() ), [&]( account_metadata_object& meta )
     {
       from_string( meta.json_metadata, o.json_metadata );
       if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
@@ -744,7 +744,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
   {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    _db.modify( _db.get< account_metadata_object, by_account >( account.get_name() ), [&]( account_metadata_object& meta )
     {
       if ( o.json_metadata.size() > 0 )
         from_string( meta.json_metadata, o.json_metadata );
@@ -2265,7 +2265,7 @@ void pow_apply( database& db, Operation o )
 #ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
-      meta.account = new_account.get_id();
+      meta.account = new_account.get_name();
     });
 #else
     FC_UNUSED( new_account );
@@ -2406,7 +2406,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 #ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
-      meta.account = new_account.get_id();
+      meta.account = new_account.get_name();
     });
 #else
     FC_UNUSED( new_account );
@@ -2668,7 +2668,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
-    meta.account = new_account.get_id();
+    meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
   });
 #else

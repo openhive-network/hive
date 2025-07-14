@@ -339,7 +339,7 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( account_metadata_object, (json_metadata)(posting_json_metadata) )
 
-      account_id_type   account;
+      account_name_type account;
       shared_string     json_metadata;
       shared_string     posting_json_metadata;
 
@@ -596,7 +596,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< account_metadata_object, account_id_type, &account_metadata_object::account > >
+        member< account_metadata_object, account_name_type, &account_metadata_object::account > >
     >,
     multi_index_allocator< account_metadata_object >
   > account_metadata_index;

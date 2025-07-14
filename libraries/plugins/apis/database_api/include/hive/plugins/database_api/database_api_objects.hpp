@@ -546,7 +546,7 @@ struct api_account_object
     previous_owner_update = auth.previous_owner_update;
     last_owner_update = auth.last_owner_update;
 #ifdef COLLECT_ACCOUNT_METADATA
-    const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
+    const auto* maybe_meta = db.find< account_metadata_object, by_account >( name );
     if( maybe_meta )
     {
       json_metadata = to_string( maybe_meta->json_metadata );
