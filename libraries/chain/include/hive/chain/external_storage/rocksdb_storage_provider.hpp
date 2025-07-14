@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
@@ -113,8 +114,13 @@ class rocksdb_storage_provider
 
     void init( bool destroy_on_startup );
 
-    void save( const Slice& key, const Slice& value );
-    bool read( const Slice& key, PinnableSlice& value );
+  protected:
+
+    void save( ColumnTypes column_type, const Slice& key, const Slice& value );
+    bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
+
+  public:
+
     void flush();
 };
 

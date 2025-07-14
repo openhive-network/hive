@@ -23,4 +23,14 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
   return columnDefs;
 }
 
+void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
+{
+  rocksdb_storage_provider::save( ColumnTypes::COMMENT, key, value );
+}
+
+bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
+{
+  return rocksdb_storage_provider::read( ColumnTypes::COMMENT, key, value );
+}
+
 }}

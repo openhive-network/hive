@@ -34,16 +34,6 @@ void rocksdb_base_storage_provider::wipeDb()
   rocksdb_storage_provider::wipeDb();
 }
 
-void rocksdb_base_storage_provider::save( const Slice& key, const Slice& value )
-{
-  rocksdb_storage_provider::save( key, value );
-}
-
-bool rocksdb_base_storage_provider::read( const Slice& key, PinnableSlice& value )
-{
-  return rocksdb_storage_provider::read( key, value );
-}
-
 void rocksdb_base_storage_provider::flush()
 {
   rocksdb_storage_provider::flush();

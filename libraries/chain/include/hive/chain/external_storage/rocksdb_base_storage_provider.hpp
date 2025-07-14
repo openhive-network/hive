@@ -39,8 +39,6 @@ class rocksdb_base_storage_provider: public rocksdb_storage_provider, public ext
     void shutdownDb( bool removeDB = false ) override;
     void wipeDb() override;
 
-    void save( const Slice& key, const Slice& value ) override;
-    bool read( const Slice& key, PinnableSlice& value ) override;
     void flush() override;
 
     void update_lib( uint32_t ) override;

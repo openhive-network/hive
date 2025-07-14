@@ -30,7 +30,7 @@ using ::rocksdb::Comparator;
   */
 #define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
 
-enum CommentsColumns
+enum ColumnTypes
 {
   COMMENT = 0
 };
