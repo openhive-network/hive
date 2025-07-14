@@ -21,9 +21,9 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
-  HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
+  HIVE_ADD_PLUGIN_INDEX( db, account_metadata_index );
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
-  snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
+  snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
 }
 
 rocksdb_account_archive::~rocksdb_account_archive()
