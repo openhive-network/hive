@@ -47,6 +47,15 @@ namespace hive { namespace chain {
         db.remove( old_obj );
       }
 
+      template< typename Index >
+      const void remove( const std::string& name )
+      {
+        const auto& idx = db.get_index< Index, by_name >();
+        const auto& found = idx.find( name );
+        if( found != idx.end() )
+          db.remove( *found );
+      }
+
       //Save old objects before launching 'undo' mechanism.
       //The objects are always sorted using 'by_id' index.
       template< typename Index >

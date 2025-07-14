@@ -955,6 +955,21 @@ std::string state_snapshot_plugin::impl::generate_name() const
 
 void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abstract_index* idx, index_dump_writer* writer)
   {
+  auto _exception_info = [&]( const std::string& message, bool is_bad_alloc = false )
+  {
+    if( is_bad_alloc )
+      wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
+
+    wlog( "${details}", ("details", message) );
+    wlog("index description: ${idx_desc}", ("idx_desc", writer->getIndexDescription()));
+
+    wlog("During a snapshot writing an error is detected. Loading another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
+    _exception = std::current_exception();
+
+  };
+
   try
   {
     writer->set_processing_success(false);
@@ -963,13 +978,7 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abst
   }
   catch( boost::interprocess::bad_alloc& ex )
   {
-    wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
-    wlog( "${details}", ("details",ex.what()) );
-
-    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( ex.what(), true/*is_bad_alloc*/ );
     /*
       https://www.boost.org/doc/libs/1_74_0/doc/html/thread/thread_management.html
 
@@ -983,23 +992,24 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abst
     */
     throw boost::thread_interrupted();
   }
-  catch( fc::exception& e )
+  catch( fc::exception& ex )
   {
-    wlog( "Problem with a snapshot writing." );
-    wlog( "${e}", (e) );
-
-    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( ex.what() );
+    throw boost::thread_interrupted();
+  }
+  catch( const boost::exception& ex )
+  {
+    _exception_info( boost::diagnostic_information(ex) );
+    throw boost::thread_interrupted();
+  }
+  catch ( const std::exception& ex )
+  {
+    _exception_info( ex.what() );
     throw boost::thread_interrupted();
   }
   catch(...)
   {
-    wlog("During a snapshot writing an error is detected. Writing another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( "" );
     throw boost::thread_interrupted();
   }
   }
@@ -1398,11 +1408,27 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
   hive::chain::load_snapshot_supplement_notification notification(load_helper);
 
   _mainDb.get_comments_handler().load_snapshot(notification);
+  _mainDb.get_accounts_handler().load_snapshot(notification);
   _mainDb.notify_load_snapshot_data_supplement(notification);
   }
 
 void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader)
   {
+  auto _exception_info = [&]( const std::string& message, bool is_bad_alloc = false )
+  {
+    if( is_bad_alloc )
+      wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
+
+    wlog( "${details}", ("details", message) );
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+
+    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
+    _is_error.store( true );
+
+    _exception = std::current_exception();
+
+  };
+
   try
   {
     reader->set_processing_success(false);
@@ -1411,14 +1437,7 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
   }
   catch( boost::interprocess::bad_alloc& ex )
   {
-    wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
-    wlog( "${details}", ("details",ex.what()) );
-    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-
-    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( ex.what(), true/*is_bad_alloc*/ );
     /*
       https://www.boost.org/doc/libs/1_74_0/doc/html/thread/thread_management.html
 
@@ -1432,26 +1451,24 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
     */
     throw boost::thread_interrupted();
   }
-  catch( fc::exception& e )
+  catch( fc::exception& ex )
   {
-    wlog( "Problem with a snapshot loading." );
-    wlog( "${e}", (e) );
-    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-
-    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( ex.what() );
+    throw boost::thread_interrupted();
+  }
+  catch( const boost::exception& ex )
+  {
+    _exception_info( boost::diagnostic_information(ex) );
+    throw boost::thread_interrupted();
+  }
+  catch ( const std::exception& ex )
+  {
+    _exception_info( ex.what() );
     throw boost::thread_interrupted();
   }
   catch(...)
   {
-    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
-
-    wlog("During a snapshot loading an error is detected. Loading another indexes will be stopped as soon as possible");
-    _is_error.store( true );
-
-    _exception = std::current_exception();
+    _exception_info( "" );
     throw boost::thread_interrupted();
   }
   }
@@ -1524,13 +1541,14 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
 
   _mainDb.get_comments_handler().save_snapshot(notification);
+  _mainDb.get_accounts_handler().save_snapshot(notification);
   _mainDb.notify_prepare_snapshot_data_supplement(notification);
 
   store_snapshot_manifest(actualStoragePath, builtWriters, dump_helper);
 
   auto blockNo = _mainDb.head_block_num();
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );
@@ -1663,7 +1681,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );

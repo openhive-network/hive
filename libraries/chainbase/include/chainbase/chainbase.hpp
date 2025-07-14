@@ -414,6 +414,24 @@ namespace chainbase {
       }
 
       /**
+        * Construct a new element in the multi_index_container.
+        */
+      template< typename U = value_type, typename ...Args, typename std::enable_if_t< U::enable_no_undo_t::value, bool > = true >
+      const value_type& emplace_no_undo( Args&&... args ) {
+        auto a = _indices.get_allocator();
+        auto insert_result = _indices.emplace( get_allocator_helper_t<value_type>::get_generic_allocator(a), std::forward<Args>( args )... );
+
+        if( !insert_result.second ) {
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
+        }
+
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation += insert_result.first->get_dynamic_alloc();
+        return *insert_result.first;
+      }
+
+      /**
         * Construct a new element and puts in the multi_index_container, basing on snapshot stream.
         */
       void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack,
@@ -1318,6 +1336,14 @@ namespace chainbase {
         CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
         typedef typename get_index_type<ObjectType>::type index_type;
         return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
+      }
+
+      template<typename ObjectType, typename ... Args>
+      const ObjectType& create_no_undo( Args&&... args )
+      {
+        CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        return get_mutable_index<index_type>(). template emplace_no_undo<ObjectType>( std::forward<Args>( args )... );
       }
 
       template< typename ObjectType >
