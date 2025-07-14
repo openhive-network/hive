@@ -260,7 +260,7 @@ std::list<account_name_type> verify_authority_accounts_exist_impl(
   std::list<account_name_type> _incorrect_accounts;
   for( const std::pair< account_name_type, weight_type >& aw : auth.account_auths )
   {
-    const account_object* a = db.find_account( aw.first );
+    const auto* a = db.find_account( aw.first );
     if( is_required )
     {
       FC_ASSERT( a != nullptr, "New ${ac} authority on account ${aa} references non-existing account ${aref}",
@@ -526,8 +526,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   _db.modify( creator, [&]( account_object& c )
   {
-    c.balance -= o.fee;
-    c.delegated_vesting_shares += o.delegation;
+    c.set_balance( c.get_balance() - o.fee );
+    c.set_delegated_vesting( c.get_delegated_vesting() + o.delegation );
   });
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
@@ -668,9 +668,9 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   _db.modify( account, [&]( account_object& acc )
   {
     if( o.memo_key != public_key_type() )
-        acc.memo_key = o.memo_key;
+        acc.set_memo_key( o.memo_key );
 
-    acc.last_account_update = _db.head_block_time();
+    acc.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -734,9 +734,9 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   _db.modify( account, [&]( account_object& acc )
   {
     if( o.memo_key && *o.memo_key != public_key_type() )
-        acc.memo_key = *o.memo_key;
+        acc.set_memo_key( *o.memo_key );
 
-    acc.last_account_update = _db.head_block_time();
+    acc.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -942,35 +942,35 @@ void comment_evaluator::do_apply( const comment_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_0_20__2019 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.get_last_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else
     {
-      FC_ASSERT( ( _now - auth.last_post ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.last_post) );
+      FC_ASSERT( ( _now - auth.get_last_post() ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
 
     uint16_t reward_weight = HIVE_100_PERCENT;
-    uint64_t post_bandwidth = auth.post_bandwidth;
+    uint64_t post_bandwidth = auth.get_post_bandwidth();
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && !parent )
     {
-      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.last_root_post.sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
+      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.get_last_root_post().sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
       uint32_t old_weight = uint32_t( ( post_bandwidth * ( HIVE_POST_AVERAGE_WINDOW - post_delta_time ) ) / HIVE_POST_AVERAGE_WINDOW );
       post_bandwidth = ( old_weight + HIVE_100_PERCENT );
       reward_weight = uint16_t( std::min( ( HIVE_POST_WEIGHT_CONSTANT * HIVE_100_PERCENT ) / ( post_bandwidth * post_bandwidth ), uint64_t( HIVE_100_PERCENT ) ) );
@@ -980,12 +980,12 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       if( !parent )
       {
-        a.last_root_post = _now;
-        a.post_bandwidth = uint32_t( post_bandwidth );
+        a.set_last_root_post( _now );
+        a.set_post_bandwidth( uint32_t( post_bandwidth ) );
       }
-      a.last_post = _now;
-      a.last_post_edit = _now;
-      a.post_count++;
+      a.set_last_post( _now );
+      a.set_last_post_edit( _now );
+      a.set_post_count( a.get_post_count() + 1 );
     });
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -1030,7 +1030,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
-      FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
+      FC_ASSERT( _now - auth.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
     }
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
@@ -1058,7 +1058,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.modify( auth, [&]( account_object& a )
     {
-      a.last_post_edit = _now;
+      a.set_last_post_edit( _now );
     });
 
   } // end EDIT case
@@ -1075,7 +1075,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
 
     FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
     FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
-    FC_ASSERT( from_account.pending_escrow_transfers < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
+    FC_ASSERT( from_account.get_pending_escrow_transfers() < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
 
     asset hive_spent = o.hive_amount;
     asset hbd_spent = o.hbd_amount;
@@ -1090,7 +1090,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     _db.create<escrow_object>( o.from, o.to, o.agent, o.hive_amount, o.hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
     _db.modify( from_account, []( account_object& a )
     {
-      a.pending_escrow_transfers++;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() + 1 );
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
@@ -1145,7 +1145,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
       _db.modify( _db.get_account( escrow.from ), []( account_object& a )
       {
-        a.pending_escrow_transfers--;
+        a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
       } );
       _db.remove( escrow );
     }
@@ -1237,7 +1237,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     {
       _db.modify( from_account, []( account_object& a )
       {
-        a.pending_escrow_transfers--;
+        a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
       } );
       _db.remove( e );
     }
@@ -1325,7 +1325,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   }
 
   FC_ASSERT( account.get_vesting() >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
-  FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
+  FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.get_delegated_vesting() >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc.regenerate_rc_mana( account, now );
@@ -1338,14 +1338,14 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
       FC_ASSERT( account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
     else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-      FC_ASSERT( account.vesting_withdraw_rate.amount != 0, "This operation would not change the vesting withdraw rate." );
+      FC_ASSERT( account.get_vesting_withdraw_rate().amount != 0, "This operation would not change the vesting withdraw rate." );
 
     _db.modify( account, [&]( account_object& a )
     {
-      a.vesting_withdraw_rate = asset( 0, VESTS_SYMBOL );
-      a.next_vesting_withdrawal = time_point_sec::maximum();
-      a.to_withdraw.amount = 0;
-      a.withdrawn.amount = 0;
+      a.set_vesting_withdraw_rate( asset( 0, VESTS_SYMBOL ) );
+      a.set_next_vesting_withdrawal( time_point_sec::maximum() );
+      a.set_to_withdraw( asset( 0, VESTS_SYMBOL ) );
+      a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
     } );
   }
   else
@@ -1369,16 +1369,16 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       //TODO: fix after HF28 along with problem in perform_vesting_share_split()
       //new condition allows change of power down rate to 1 even for accounts with artificial 1 already there;
       //after HF28, once we remove artificial 1 (will be back to proper 0), original check from HF5 will
-      //be sufficient again, since account.has_active_power_down() <=> (account.vesting_withdraw_rate == 0)
+      //be sufficient again, since account.has_active_power_down() <=> (account.get_vesting_withdraw_rate() == 0)
       if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
-        FC_ASSERT( account.vesting_withdraw_rate != new_vesting_withdraw_rate || !account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
+        FC_ASSERT( account.get_vesting_withdraw_rate() != new_vesting_withdraw_rate || !account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-        FC_ASSERT( account.vesting_withdraw_rate != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
+        FC_ASSERT( account.get_vesting_withdraw_rate() != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
-      a.vesting_withdraw_rate = new_vesting_withdraw_rate;
-      a.next_vesting_withdrawal = now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
-      a.to_withdraw.amount = o.vesting_shares.amount;
-      a.withdrawn.amount = 0;
+      a.set_vesting_withdraw_rate( new_vesting_withdraw_rate );
+      a.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
+      a.set_to_withdraw( o.vesting_shares );
+      a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -1402,7 +1402,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
   if( itr == wd_idx.end() )
   {
     FC_ASSERT( o.percent != 0, "Cannot create a 0% destination." );
-    FC_ASSERT( from_account.withdraw_routes < HIVE_MAX_WITHDRAW_ROUTES, "Account already has the maximum number of routes." );
+    FC_ASSERT( from_account.get_withdraw_routes() < HIVE_MAX_WITHDRAW_ROUTES, "Account already has the maximum number of routes." );
 
     _db.create< withdraw_vesting_route_object >( [&]( withdraw_vesting_route_object& wvdo )
     {
@@ -1414,7 +1414,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
     _db.modify( from_account, [&]( account_object& a )
     {
-      a.withdraw_routes++;
+      a.set_withdraw_routes( a.get_withdraw_routes() + 1 );
     });
   }
   else if( o.percent == 0 )
@@ -1423,7 +1423,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
     _db.modify( from_account, [&]( account_object& a )
     {
-      a.withdraw_routes--;
+      a.set_withdraw_routes( a.get_withdraw_routes() - 1 );
     });
   }
   else
@@ -1454,7 +1454,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.can_vote && "Account has declined the ability to vote and cannot proxy votes." );
+  FC_ASSERT( account.can_vote() && "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   _db.nullify_proxied_witness_votes( account );
@@ -1491,7 +1491,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
     delta[0] = account.get_direct_governance_vote_power();
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i+1] = account.proxied_vsf_votes[i];
+      delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account.has_proxy(), "Proxy must change." );
@@ -1509,7 +1509,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 {
   const auto& voter = _db.get_account( o.account );
   FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
-  FC_ASSERT( voter.can_vote && "Account has declined its voting rights." );
+  FC_ASSERT( voter.can_vote() && "Account has declined its voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
@@ -1522,7 +1522,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     if ( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
     {
-      FC_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." ); // TODO: Remove after hardfork 2
+      FC_ASSERT( voter.get_witnesses_voted_for() < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." ); // TODO: Remove after hardfork 2
 
       _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
           v.witness = witness.owner;
@@ -1548,7 +1548,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     }
     _db.modify( voter, [&]( account_object& a ) {
-      a.witnesses_voted_for++;
+      a.set_witnesses_voted_for( a.get_witnesses_voted_for() + 1 );
     });
 
   } else {
@@ -1565,7 +1565,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
       });
     }
     _db.modify( voter, [&]( account_object& a ) {
-      a.witnesses_voted_for--;
+      a.set_witnesses_voted_for( a.get_witnesses_voted_for() - 1 );
     });
     _db.remove( *itr );
   }
@@ -1578,7 +1578,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter = _db.get_account( o.voter );
 
-  FC_ASSERT( voter.can_vote && "Voter has declined their voting rights." );
+  FC_ASSERT( voter.can_vote() && "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -1595,11 +1595,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   int64_t current_power = 0;
   {
-    int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
+    int64_t elapsed_seconds = _now.sec_since_epoch() - voter.get_voting_manabar().last_update_time;
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
-    current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
+    current_power = std::min( int64_t(voter.get_voting_manabar().current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
     FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
   }
   int64_t abs_weight = abs(o.weight);
@@ -1653,9 +1653,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    a.voting_manabar.current_mana = current_power - used_power; // always nonnegative
-    a.last_vote_time = _now;
-    a.voting_manabar.last_update_time = _now.sec_since_epoch();
+    a.get_voting_manabar().current_mana = current_power - used_power; // always nonnegative
+    a.set_last_vote_time( _now );
+    a.get_voting_manabar().last_update_time = _now.sec_since_epoch();
   } );
 
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
@@ -1872,7 +1872,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& voter   = _db.get_account( o.voter );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
+  FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -1887,7 +1887,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   auto _now = _db.head_block_time();
   FC_ASSERT( _now < comment_cashout->get_cashout_time(), "Comment is actively being rewarded. Cannot vote on comment." );
   if( !_db.has_hardfork( HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN ) )
-    FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
+    FC_ASSERT( ( _now - voter.get_last_vote_time() ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
@@ -1928,20 +1928,20 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
-      used_mana = ( std::max( ( ( uint128_t( voter.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter.voting_manabar.current_mana ) )
+      used_mana = ( std::max( ( ( uint128_t( voter.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
     else
     {
-      used_mana = ( std::max( ( uint128_t( voter.downvote_manabar.current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter.voting_manabar.current_mana ) )
+      used_mana = ( std::max( ( uint128_t( voter.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
   }
   else
   {
-    used_mana = ( uint128_t( voter.voting_manabar.current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+    used_mana = ( uint128_t( voter.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
 
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
@@ -1953,16 +1953,16 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
     // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
-    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
+    FC_ASSERT( voter.get_voting_manabar().current_mana + voter.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
       "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter.get_voting_manabar().current_mana )( "d", voter.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
     // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
-    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
+    FC_ASSERT( voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
       "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
   int64_t abs_rshares = fc::uint128_to_int64(used_mana);
@@ -1981,7 +1981,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
-      if( fc::uint128_to_int64(used_mana) > a.downvote_manabar.current_mana )
+      if( fc::uint128_to_int64(used_mana) > a.get_downvote_manabar().current_mana )
       {
         /* used mana is always less than downvote_mana + voting_mana because the amount used
           * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
@@ -1989,21 +1989,21 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           * is strictly smaller than voting_mana. This is the same reason why a check is not
           * required when using voting mana on its own as an upvote.
           */
-        auto remainder = fc::uint128_to_int64(used_mana) - a.downvote_manabar.current_mana;
-        a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
-        a.voting_manabar.use_mana( remainder );
+        auto remainder = fc::uint128_to_int64(used_mana) - a.get_downvote_manabar().current_mana;
+        a.get_downvote_manabar().use_mana( a.get_downvote_manabar().current_mana );
+        a.get_voting_manabar().use_mana( remainder );
       }
       else
       {
-        a.downvote_manabar.use_mana( fc::uint128_to_int64(used_mana) );
+        a.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
       }
     }
     else
     {
-      a.voting_manabar.use_mana( fc::uint128_to_int64(used_mana) );
+      a.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
     }
 
-    a.last_vote_time = _now;
+    a.set_last_vote_time( _now );
   } );
 
   /// this is the rshares voting for or against the post
@@ -2289,7 +2289,7 @@ void pow_apply( database& db, Operation o )
 #endif
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
-    FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
+    FC_ASSERT( worker_account.get_last_account_update() < db.head_block_time(), "Worker account must not have updated their account this block." );
 
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
@@ -2639,8 +2639,8 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.balance -= o.fee;
-    a.pending_claimed_accounts++;
+    a.set_balance( a.get_balance() - o.fee );
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
   });
 }
 
@@ -2651,7 +2651,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& creator = _db.get_account( o.creator );
   const auto& props = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( creator.pending_claimed_accounts > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
+  FC_ASSERT( creator.get_pending_claimed_accounts() > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
 
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
@@ -2659,7 +2659,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.pending_claimed_accounts--;
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() - 1 );
   });
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -2835,7 +2835,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
   const auto& from = _db.get_account( op.from );
   _db.get_account(op.to); // Verify to account exists
 
-  FC_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
+  FC_ASSERT( from.get_savings_withdraw_requests() < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
@@ -2848,7 +2848,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   _db.modify( from, [&]( account_object& a )
   {
-    a.savings_withdraw_requests++;
+    a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() + 1 );
   });
 }
 
@@ -2861,7 +2861,7 @@ void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_fro
   const auto& from = _db.get_account( op.from );
   _db.modify( from, [&]( account_object& a )
   {
-    a.savings_withdraw_requests--;
+    a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
   });
 }
 
@@ -2872,7 +2872,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
   const auto& account = _db.get_account( o.account );
 
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-    FC_ASSERT( account.can_vote && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
+    FC_ASSERT( account.can_vote() && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
   auto itr = request_idx.find( account.get_name() );
@@ -2962,9 +2962,9 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       _db.rc.regenerate_rc_mana( a, now );
     }
 
-    a.vesting_shares += op.reward_vests;
-    a.reward_vesting_balance -= op.reward_vests;
-    a.reward_vesting_hive -= reward_vesting_hive_to_move;
+    a.set_vesting( a.get_vesting() + op.reward_vests );
+    a.set_vest_rewards( a.get_vest_rewards() - op.reward_vests );
+    a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
   } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc.update_account_after_vest_change( acnt, now );
@@ -2987,7 +2987,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
   //TODO: can be removed once SMT hardfork activates
   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature", "claim_reward_balance2_operation requires hardfork ${x}",
     ( "x", HIVE_SMT_HARDFORK ) );
-  const account_object* a = nullptr; // Lazily initialized below because it may turn out unnecessary.
+  const auto* a = nullptr; // Lazily initialized below because it may turn out unnecessary.
 
   for( const asset& token : op.reward_tokens )
   {
@@ -3026,9 +3026,9 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         _db.rc.regenerate_rc_mana( *a, now );
         _db.modify( *a, [&]( account_object& a )
         {
-          a.vesting_shares += token;
-          a.reward_vesting_balance -= token;
-          a.reward_vesting_hive -= reward_vesting_hive_to_move;
+          a.set_vesting( a.get_vesting() + token );
+          a.set_vest_rewards( a.get_vest_rewards() - token );
+          a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
         } );
         _db.rc.update_account_after_vest_change( *a, now );
 
@@ -3088,19 +3088,19 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       util::update_manabar( gpo, a );
     } );
 
-    available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
+    available_shares = asset( delegator.get_voting_manabar().current_mana, VESTS_SYMBOL );
     if( gpo.downvote_pool_percent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
         available_downvote_shares = asset(
-          fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
+          fc::uint128_to_int64( ( uint128_t( delegator.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
           + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ), VESTS_SYMBOL );
       }
       else
       {
         available_downvote_shares = asset(
-          ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
+          ( delegator.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
           + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1, VESTS_SYMBOL );
       }
     }
@@ -3110,11 +3110,11 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     }
 
     // Assume delegated VESTS are used first when consuming mana. You cannot delegate received vesting shares
-    available_shares.amount = std::min( available_shares.amount, max_mana - delegator.received_vesting_shares.amount );
-    available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.received_vesting_shares.amount );
+    available_shares.amount = std::min( available_shares.amount, max_mana - delegator.get_received_vesting().amount );
+    available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.get_received_vesting().amount );
 
-    if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
-      && delegator.get_total_vesting_withdrawal() > delegator.vesting_withdraw_rate.amount )
+    if( delegator.get_next_vesting_withdrawal() < fc::time_point_sec::maximum()
+      && delegator.get_total_vesting_withdrawal() > delegator.get_vesting_withdraw_rate().amount )
     {
       /*
       Account cannot delegate **any** VESTS that they are powering down. Therefore we have to reduce
@@ -3123,7 +3123,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       skip that step when power down is in last week, because then whole power down (subtracting) equals
       current week's power down (adding).
       */
-      auto weekly_withdraw = delegator.get_next_vesting_withdrawal();
+      auto weekly_withdraw = delegator.get_active_next_vesting_withdrawal();
       auto remaining_withdraw = delegator.get_total_vesting_withdrawal();
       available_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
       available_downvote_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
@@ -3159,19 +3159,19 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      a.delegated_vesting_shares += op.vesting_shares;
+      a.set_delegated_vesting( a.get_delegated_vesting() + op.vesting_shares );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( op.vesting_shares.amount.value );
+        a.get_voting_manabar().use_mana( op.vesting_shares.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
-          a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+          a.get_downvote_manabar().use_mana( op.vesting_shares.amount.value );
         }
       }
     } );
@@ -3183,7 +3183,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
         util::update_manabar( gpo, a, op.vesting_shares.amount.value );
       }
 
-      a.received_vesting_shares += op.vesting_shares;
+      a.set_received_vesting( a.get_received_vesting() + op.vesting_shares );
     } );
   }
   // Else if the delegation is increasing
@@ -3201,19 +3201,19 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      a.delegated_vesting_shares += delta;
+      a.set_delegated_vesting( a.get_delegated_vesting() + delta );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( delta.amount.value );
+        a.get_voting_manabar().use_mana( delta.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
-          a.downvote_manabar.use_mana( delta.amount.value );
+          a.get_downvote_manabar().use_mana( delta.amount.value );
         }
       }
     } );
@@ -3225,7 +3225,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
         util::update_manabar( gpo, a, delta.amount.value );
       }
 
-      a.received_vesting_shares += delta;
+      a.set_received_vesting( a.get_received_vesting() + delta );
     } );
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
@@ -3258,21 +3258,21 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
         util::update_manabar( gpo, a );
       }
 
-      a.received_vesting_shares -= delta;
+      a.set_received_vesting( a.get_received_vesting() - delta );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( delta.amount.value );
+        a.get_voting_manabar().use_mana( delta.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
           {
-            a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+            a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
           }
           else
           {
-            a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+            a.get_downvote_manabar().use_mana( op.vesting_shares.amount.value );
           }
         }
       }
@@ -3326,7 +3326,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
   if( itr == rt_idx.end() )
   {
-    FC_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
+    FC_ASSERT( from_account.get_open_recurrent_transfers() < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesn't exist
     FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount" );
     const auto& recurrent_transfer = _db.create< recurrent_transfer_object >( _db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id );
@@ -3335,7 +3335,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
     _db.modify(from_account, [](account_object& a )
     {
-      a.open_recurrent_transfers++;
+      a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() + 1 );
     } );
   }
   else if( op.amount.amount == 0 )
@@ -3343,8 +3343,8 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.remove( *itr );
     _db.modify( from_account, [&](account_object& a )
     {
-      FC_ASSERT( a.open_recurrent_transfers > 0 && "No (more) open recurrent transfers" );
-      a.open_recurrent_transfers--;
+      FC_ASSERT( a.get_open_recurrent_transfers() > 0 && "No (more) open recurrent transfers" );
+      a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
     } );
   }
   else
