@@ -99,7 +99,7 @@ private:
 
   void cache_auths_of( const account_name_type& account_name )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( account_name );
+    auto acct_itr = _plugin._db.find_account_authority( account_name );
     if( acct_itr ) _plugin.cache_auths( *acct_itr );
   }
 };
@@ -177,8 +177,8 @@ struct post_operation_visitor
 
       for( const std::string& acc : hardfork9::get_compromised_accounts() )
       {
-        const account_object* account = db.find_account( acc );
-        if( account == nullptr )
+        auto account = db.find_account( acc );
+        if( !account )
           continue;
 
         public_key_type new_key (HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
@@ -200,7 +200,7 @@ private:
 
   void update_key_lookup_of( const account_name_type& account_name )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( account_name );
+    auto acct_itr = _plugin._db.find_account_authority( account_name );
     if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
   }
 };

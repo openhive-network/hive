@@ -386,7 +386,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
   const protocol::account_name_type lowerbound = arguments.get_array().at(0).as<protocol::account_name_type>();
   uint32_t limit = arguments.get_array().at(1).as<uint32_t>();
   FC_ASSERT( limit <= 1000 );
-  const auto& accounts_by_name = _db.get_index< chain::account_index, chain::by_name >();
+  const auto& accounts_by_name = _db.get_index< chain::tiny_account_index, chain::by_name >();
   list_accounts_return result;
 
   for( auto itr = accounts_by_name.lower_bound( lowerbound ); limit-- && itr != accounts_by_name.end(); ++itr )
@@ -409,7 +409,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
   verify_args( arguments, 1 );
 
   chain::account_name_type acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
-  const chain::account_object* account = _db.find_account(acc_name);
+  auto account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
     result = database_api::api_account_object(*account, _db, true);
@@ -437,7 +437,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 
   for( const auto& acc_name: _accounts )
   {
-    const chain::account_object* account = _db.find_account( acc_name );
+    auto account = _db.find_account( acc_name );
     if (account)
       result.push_back(database_api::api_account_object( *account, _db, delayed_votes_active ) );
   }

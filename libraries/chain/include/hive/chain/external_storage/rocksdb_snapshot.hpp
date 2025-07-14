@@ -5,6 +5,8 @@
 
 #include <rocksdb/db.h>
 
+#include<hive/chain/database.hpp>
+
 #include<string>
 
 namespace hive { namespace chain {

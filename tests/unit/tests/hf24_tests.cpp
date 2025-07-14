@@ -220,22 +220,22 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       {
         gpo.proposal_fund_percent = 0;
       } );
-      auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
+      const auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
       db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.balance = ASSET( "5.000 TESTS" );
-        t.savings_balance = ASSET( "3.000 TESTS" );
-        t.reward_hive_balance = ASSET( "2.000 TESTS" );
-        t.hbd_balance = ASSET( "5.000 TBD" );
-        t.savings_hbd_balance = ASSET( "3.000 TBD" );
-        t.reward_hbd_balance = ASSET( "2.000 TBD" );
+        t.set_balance( ASSET( "5.000 TESTS" ) );
+        t.set_savings( ASSET( "3.000 TESTS" ) );
+        t.set_rewards( ASSET( "2.000 TESTS" ) );
+        t.set_hbd_balance( ASSET( "5.000 TBD" ) );
+        t.set_hbd_savings( ASSET( "3.000 TBD" ) );
+        t.set_hbd_rewards( ASSET( "2.000 TBD" ) );
       } );
     } );
     database_fixture::validate_database();
     {
-      auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
+      const auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
       BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 5000 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 3000 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 2000 );
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     database_fixture::validate_database();
 
     {
-      auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
+      const auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
       BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 0 );
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, 0 );
     }
     {
-      auto& treasury = db->get_account( NEW_HIVE_TREASURY_ACCOUNT );
+      const auto& treasury = db->get_account( NEW_HIVE_TREASURY_ACCOUNT );
       BOOST_REQUIRE_EQUAL( treasury.get_balance().amount.value, 14999 ); //rounding during vest->hive conversion
       BOOST_REQUIRE_EQUAL( treasury.get_savings().amount.value, 3000 );
       BOOST_REQUIRE_EQUAL( treasury.get_rewards().amount.value, 2000 );

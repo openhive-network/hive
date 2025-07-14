@@ -2,8 +2,6 @@
 
 #include <hive/chain/external_storage/rocksdb_base_storage_provider.hpp>
 
-#include <hive/chain/database.hpp>
-
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 
@@ -15,7 +13,7 @@
 
 namespace hive { namespace chain {
 
-class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider
+class rocksdb_account_storage_provider: public rocksdb_base_storage_provider
 {
   private:
 
@@ -23,14 +21,14 @@ class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider
 
   public:
 
-    using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
+    using ptr = std::shared_ptr<rocksdb_account_storage_provider>;
 
-    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
-    ~rocksdb_comment_storage_provider() override{}
+    rocksdb_account_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    ~rocksdb_account_storage_provider() override{}
 
     void save( ColumnTypes column_type, const Slice& key, const Slice& value ) override;
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
-    void remove( ColumnTypes column_type, const Slice& key ) override { /*Not supported here.*/ };
+    void remove( ColumnTypes column_type, const Slice& key ) override;
 };
 
 }}

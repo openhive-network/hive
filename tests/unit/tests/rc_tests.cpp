@@ -23,10 +23,10 @@ int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const acco
     {
       auto max_rc = account.get_maximum_rc();
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
-      account.rc_manabar.regenerate_mana( manabar_params, db.head_block_time() );
+      account.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );
   } );
-  return acc.rc_manabar.current_mana;
+  return acc.get_rc_manabar().current_mana;
 }
 
 void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
@@ -35,8 +35,8 @@ void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object&
   {
     db.modify( acc, [&]( account_object& account )
     {
-      account.rc_manabar.current_mana = 0;
-      account.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+      account.get_rc_manabar().current_mana = 0;
+      account.get_rc_manabar().last_update_time = db.head_block_time().sec_since_epoch();
     } );
   } );
 }
@@ -368,9 +368,9 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     push_transaction( tx, {victim_private_key, victim_new_private_key} );
     tx.clear();
     //RC cost covered by the network - no RC spent on any account (it would fail if victim was charged like it used to be)
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief_mana, thief_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief_mana, thief_rc.get_rc_manabar().current_mana );
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
     BOOST_TEST_MESSAGE( "victim wants to try to rob rc from recovery agent or network" );
@@ -405,16 +405,16 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     tx.operations.push_back( recover );
     HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_active_private_key/*that key is needed for claim account*/, victim_testB_private_key} ), "has_mana", plugin_exception );
     tx.clear();
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.get_rc_manabar().current_mana );
     //test 2: after recovery
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( recover );
     tx.operations.push_back( expensive );
     HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_active_private_key, victim_testB_private_key} ), "has_mana", plugin_exception );
     tx.clear();
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.get_rc_manabar().current_mana );
     //test 3: add something less expensive so the tx will go through
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     transfer_operation cheap;
@@ -427,8 +427,8 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     push_transaction( tx, {victim_new_private_key, victim_active_private_key, victim_testB_private_key} );
     tx.clear();
     //RC consumed from victim - recovery is not free if mixed with other operations
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_GT( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_GT( pre_tx_victim_mana, victim_rc.get_rc_manabar().current_mana );
 
     validate_database();
   }
@@ -530,13 +530,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     tx.operations.push_back( transfer );
     //oops! recovery failed when combined with transfer because it's not free then
     HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim1_private_key, victim1_new_private_key, victim2_private_key, victim2_new_private_key, victim3_private_key, victim3_new_private_key} ), "has_mana", plugin_exception );
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim3_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim3_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.get_rc_manabar().current_mana );
     //remove transfer from tx
     tx.operations.pop_back();
     
@@ -546,13 +546,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     //signatures (2 in this case) for the tx to be free
     HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim1_private_key, victim1_new_private_key, victim2_private_key, victim2_new_private_key, victim3_private_key, victim3_new_private_key} ), "has_mana", plugin_exception );
     tx.clear();
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim3_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim3_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.get_rc_manabar().current_mana );
     //try separate transactions
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover.account_to_recover = "victim1";
@@ -575,13 +575,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     tx.operations.push_back( recover );
     push_transaction( tx, {victim3_private_key, victim3_new_private_key} );
     tx.clear();
-    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( 0, victim3_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.rc_manabar.current_mana );
-    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( 0, victim3_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief1_mana, thief1_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief2_mana, thief2_rc.get_rc_manabar().current_mana );
+    BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.get_rc_manabar().current_mana );
 
     validate_database();
   }
@@ -730,7 +730,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       ( "k", key_count )( "c", ITERATIONS ) );
     for( int i = 0; i < ITERATIONS; ++i )
     {
-      ilog( "iteration ${i}, RC = ${r}", ( "i", i )( "r", victim_rc.rc_manabar.current_mana ) );
+      ilog( "iteration ${i}, RC = ${r}", ( "i", i )( "r", victim_rc.get_rc_manabar().current_mana ) );
       BOOST_TEST_MESSAGE( "thief steals private keys of signers and sets authority to himself" );
       signed_transaction tx;
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );

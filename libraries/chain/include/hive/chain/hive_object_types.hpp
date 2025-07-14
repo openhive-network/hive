@@ -86,6 +86,7 @@ enum object_type
   rc_usage_bucket_object_type,
   rc_stats_object_type,
   rc_expired_delegation_object_type,
+  tiny_account_object_type,
 
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
@@ -357,6 +358,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_usage_bucket_object_type)
             (rc_stats_object_type)
             (rc_expired_delegation_object_type)
+            (tiny_account_object_type)
 
 #ifdef HIVE_ENABLE_SMT
             (smt_token_object_type)

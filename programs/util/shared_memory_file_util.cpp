@@ -345,6 +345,7 @@ namespace shared_memory_file_util
 
     // List of all indices which can be found in shared memory file.
     save_index_name(add_index_to_db<hive::chain::account_index>());
+    save_index_name(add_index_to_db<hive::chain::tiny_account_index>());
     save_index_name(add_index_to_db<hive::chain::account_metadata_index>());
     save_index_name(add_index_to_db<hive::chain::owner_authority_history_index>());
     save_index_name(add_index_to_db<hive::chain::account_authority_index>());

@@ -35,6 +35,7 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
+#include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
@@ -107,7 +108,11 @@ void open_test_database( database& db, block_storage_i& block_storage,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
   auto comment_archive = std::make_shared<placeholder_comment_archive>( db );
+  auto account_archive = std::make_shared<rocksdb_account_archive>( db, dir, dir / "accounts-rocksdb-storage", app );
+
   db.set_comments_handler( comment_archive );
+  db.set_accounts_handler( account_archive );
+
   hive::chain::open_args args;
   hive::chain::block_storage_i::block_log_open_args bl_args;
   args.data_dir = dir;
@@ -612,6 +617,545 @@ BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm)
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
     BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
     BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db1.head_block_id());
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm_00)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+    hive::plugins::chain::chain_plugin& chain_plugin1 = fixture1.get_chain_plugin();
+
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    comment_operation _comment_op;
+    _comment_op.author = "initminer";
+    _comment_op.permlink = "my-permlink";
+    _comment_op.parent_permlink = "my-permlink";
+    _comment_op.title = "my-title";
+    _comment_op.body = "my-body";
+
+    BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
+    fixture1.generate_blocks(10);
+    fixture1.push_transaction(_comment_op, init_account_priv_key);
+    fixture1.generate_blocks(50);
+    fixture1.push_transaction(_comment_op, init_account_priv_key);
+    fixture1.generate_blocks(3);
+
+    dump_witnesses("db1", db1);
+    dump_blocks("db1", db1, fixture1.get_block_reader());
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 65);
+
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    dump_witnesses("db2", db2);
+    dump_blocks("db2", db2, fixture2.get_block_reader());
+
+    BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().get_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db1.head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
+    dump_witnesses("db2", db2);
+    dump_blocks("db2", db2, fixture2.get_block_reader());
+    BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
+
+    // db1 and db2 are now in sync, but their last_irreversible should be about 15 blocks old.  Go ahead and
+    // use fast-confirms to bring the last_irreversible up to the current head block.
+    // (this isn't strictly necessary to achieve the goal of this test case, but it's probably more 
+    // representative of how the blockchains will look in real life)
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().get_block_by_number(db1.head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      bool _make_comment = false;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
+
+          if( !_make_comment )
+          {
+            fixture1.push_transaction(_comment_op, init_account_priv_key);
+            fixture2.push_transaction(_comment_op, init_account_priv_key);
+          }
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+
+          PUSH_TX(chain_plugin2, trx, init_account_priv_key);
+
+          _make_comment = true;
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), db1.head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+
+    // fork.  db2 will generate the next block, but we won't propagate it.
+    // then db1 will generate the a block at the same height.
+    BOOST_TEST_MESSAGE("Simulating a fork by generating a block in db2 that won't be shared with db1");
+    witness::block_producer block_producer2( chain_plugin2 );
+    const fc::time_point_sec head_block_time = db2.head_block_time();
+    const fc::time_point_sec orphan_slot_time = head_block_time + HIVE_BLOCK_INTERVAL;
+    const fc::time_point_sec real_slot_time = orphan_slot_time + HIVE_BLOCK_INTERVAL;
+    BOOST_TEST_MESSAGE("head block time is " << head_block_time << ", orphan block time will be " << orphan_slot_time);
+    const uint32_t orphan_slot_num = db2.get_slot_at_time(orphan_slot_time);
+    const uint32_t real_slot_num = db2.get_slot_at_time(real_slot_time);
+    BOOST_TEST_MESSAGE("head slot num is " << db2.get_slot_at_time(head_block_time) << ", orphan slot num will be " << orphan_slot_num);
+    BOOST_TEST_MESSAGE("On db1 blockchain, we'll skip the block that should have been produced at time " << orphan_slot_time << 
+                       " by " << db2.get_scheduled_witness(orphan_slot_num) << ", and instead produce the block at time " <<
+                       real_slot_time << " with " << db2.get_scheduled_witness(real_slot_num));
+    std::shared_ptr<full_block_type> orphan_block = GENERATE_BLOCK(block_producer2, 
+                                                                   orphan_slot_time, 
+                                                                   db2.get_scheduled_witness(orphan_slot_num), 
+                                                                   init_account_priv_key, database::skip_nothing);
+    BOOST_TEST_MESSAGE("Generated block #" << orphan_block->get_block_num() << " with id " << orphan_block->get_block_id().str() <<
+                       " generated by witness " << orphan_block->get_block_header().witness << ", pushing to db2");
+    PUSH_BLOCK(chain_plugin2, orphan_block);
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num() - 1);
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_header().timestamp, orphan_slot_time);
+
+    BOOST_TEST_MESSAGE("Creating the other side of the fork by generating a block in db1 that doesn't include db2's head block");
+    db2.get_scheduled_witness(db2.head_block_num() + 1), 
+    fixture1.generate_block(0, init_account_priv_key, 1 /* <-- skip one block */);
+    std::shared_ptr<full_block_type> real_block = fixture1.get_block_reader().get_block_by_number(db1.head_block_num());
+    BOOST_TEST_MESSAGE("Generated block #" << real_block->get_block_num() << " with id " << real_block->get_block_id().str() <<
+                       " generated by witness " << real_block->get_block_header().witness << ", pushed to db1");
+    BOOST_REQUIRE_EQUAL(real_block->get_block_num(), orphan_block->get_block_num());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_header().timestamp, real_slot_time);
+    BOOST_REQUIRE_NE(orphan_block->get_block_id(), real_block->get_block_id());
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_NE(db1.head_block_id(), db2.head_block_id());
+
+    // reconnect
+    BOOST_TEST_MESSAGE("Reconnecting the two networks");
+    PUSH_BLOCK(chain_plugin1, orphan_block);
+    PUSH_BLOCK(chain_plugin2, real_block);
+    // nothing should happen yet
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db1.head_block_id());
+
+    // now let db2 see the fast-confirm messages of all the 20 other witnesses that were on db1
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm for the new non-orphan head block");
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      const account_name_type witness_for_real_block = real_block->get_block_header().witness;
+      const account_name_type witness_for_orphan_block = orphan_block->get_block_header().witness;
+      //bool _make_comment = false;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_real_block && // the wit that generated the block doesn't fast-confirm their own block
+            fast_confirming_witness != witness_for_orphan_block) // and the wit from db2 won't, because his head is still the orphan block
+        {
+          BOOST_TEST_MESSAGE("Confirming real block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = real_block->get_block_id();
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
+          // if( !_make_comment )
+          // {
+          //   fixture1.push_transaction(_comment_op, init_account_priv_key);
+          // }
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+
+          PUSH_TX(chain_plugin2, trx, init_account_priv_key);
+
+          //_make_comment = true;
+        }
+    }
+
+    BOOST_TEST_MESSAGE("Verifying that the forked node rejoins after receiving fast confirmations, even though the new chain isn't longer");
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), db1.head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db1.head_block_id());
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm_01)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+    hive::plugins::chain::chain_plugin& chain_plugin1 = fixture1.get_chain_plugin();
+
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+
+    comment_operation _comment_op;
+    _comment_op.author = "initminer";
+    _comment_op.permlink = "my-permlink";
+    _comment_op.parent_permlink = "my-permlink";
+    _comment_op.title = "my-title";
+    _comment_op.body = "my-body";
+
+    transfer_operation _transfer_op;
+    _transfer_op.from = "initminer";
+    _transfer_op.to = "initminer11";
+    _transfer_op.amount = asset(1, HIVE_SYMBOL);
+
+    fixture1.generate_blocks(10);
+    fixture1.push_transaction(_transfer_op, init_account_priv_key);
+    fixture1.generate_blocks(53);
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY");
+    {
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().get_block_by_number(db1.head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
+
+          if( db1.get_last_irreversible_block_num() > 60 )
+            break;
+        }
+    }
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY-END");
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture1.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+//=========================================================
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().get_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2-END");
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture2.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK");
+    fixture2.generate_blocks(1);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK-END");
+
+    std::shared_ptr<full_block_type> orphan_block = fixture2.get_block_reader().get_block_by_number(db2.head_block_num());
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK");
+    PUSH_BLOCK(chain_plugin1, orphan_block);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK");
+//=========================================================
+    // witness::block_producer block_producer2( chain_plugin2 );
+    // const fc::time_point_sec head_block_time = db2.head_block_time();
+    // const fc::time_point_sec orphan_slot_time = head_block_time + HIVE_BLOCK_INTERVAL;
+    // const uint32_t orphan_slot_num = db2.get_slot_at_time(orphan_slot_time);
+
+    // ilog("");
+    // ilog("");
+    // ilog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^GENERATE_BLOCK from unit test");
+    // std::shared_ptr<full_block_type> orphan_block = GENERATE_BLOCK(block_producer2,
+    //                                                                orphan_slot_time,
+    //                                                                db2.get_scheduled_witness(orphan_slot_num), 
+    //                                                                init_account_priv_key, database::skip_nothing);
+    // ilog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^GENERATE_BLOCK from unit test-END");
+    // ilog("");
+    // ilog("");
+
+    // BOOST_TEST_MESSAGE("Generated block #" << orphan_block->get_block_num() << " with id " << orphan_block->get_block_id().str() <<
+    //                    " generated by witness " << orphan_block->get_block_header().witness << ", pushing to db2");
+
+    // ilog("PUSH_BLOCK from unit test");
+    // PUSH_BLOCK(chain_plugin1, orphan_block);
+    // ilog("PUSH_BLOCK from unit test - END");
+//=========================================================
+
+
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm_02)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+    hive::plugins::chain::chain_plugin& chain_plugin1 = fixture1.get_chain_plugin();
+
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+
+    comment_operation _comment_op;
+    _comment_op.author = "initminer";
+    _comment_op.permlink = "my-permlink";
+    _comment_op.parent_permlink = "my-permlink";
+    _comment_op.title = "my-title";
+    _comment_op.body = "my-body";
+
+    transfer_operation _transfer_op;
+    _transfer_op.from = "initminer";
+    _transfer_op.to = "initminer11";
+    _transfer_op.amount = asset(1, HIVE_SYMBOL);
+
+    transfer_operation _transfer_op2;
+    _transfer_op2.from = "initminer";
+    _transfer_op2.to = "initminer10";
+    _transfer_op2.amount = asset(1, HIVE_SYMBOL);
+
+    transfer_operation _transfer_op3;
+    _transfer_op3.from = "initminer";
+    _transfer_op3.to = "initminer12";
+    _transfer_op3.amount = asset(1, HIVE_SYMBOL);
+
+    fixture1.generate_blocks(10);
+
+    for( uint cnt = 0; cnt < 1000; ++cnt )
+    {
+      ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-TRANSFER TRANSACTION");
+      if( cnt % 9 == 0 )
+      {
+        fixture1.push_transaction(_transfer_op, init_account_priv_key);
+        fixture1.push_transaction(_transfer_op2, init_account_priv_key);
+      }
+      if( cnt % 11 == 0 )
+      {
+        fixture1.push_transaction(_transfer_op3, init_account_priv_key);
+      }
+      ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-TRANSFER END-TRANSACTION");
+
+      ilog("");
+      ilog("");
+      ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY");
+      if( cnt % 6 == 0 )
+      {
+        const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+        const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                          wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                          wso_for_irreversibility.num_scheduled_witnesses);
+        std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().get_block_by_number(db1.head_block_num());
+        const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+
+        for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+          if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+          {
+            BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+            witness_block_approve_operation fast_confirm_op;
+            fast_confirm_op.witness = fast_confirming_witness;
+            fast_confirm_op.block_id = full_head_block->get_block_id();
+            fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
+
+          }
+      }
+      fixture1.generate_blocks(1);
+    }
+
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture1.generate_blocks(1);
+    fixture1.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+//=========================================================
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().get_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture2.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK");
+    fixture2.generate_blocks(1);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK");
+    std::shared_ptr<full_block_type> orphan_block = fixture2.get_block_reader().get_block_by_number(db2.head_block_num());
+    PUSH_BLOCK(chain_plugin1, orphan_block);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK-END");
+
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm_03)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+    hive::plugins::chain::chain_plugin& chain_plugin1 = fixture1.get_chain_plugin();
+
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+
+    comment_operation _comment_op;
+    _comment_op.author = "initminer";
+    _comment_op.permlink = "my-permlink";
+    _comment_op.parent_permlink = "my-permlink";
+    _comment_op.title = "my-title";
+    _comment_op.body = "my-body";
+
+    transfer_operation _transfer_op;
+    _transfer_op.from = "initminer";
+    _transfer_op.to = "initminer11";
+    _transfer_op.amount = asset(1, HIVE_SYMBOL);
+
+    fixture1.generate_blocks(10);
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY");
+    {
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().get_block_by_number(db1.head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
+
+        }
+    }
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@FAST CONFIRMING TO IRREVERSIBILITY-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture1.generate_blocks(1);
+    fixture1.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().get_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@Copying initial blocks generated in db1 to db2-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION");
+    fixture2.push_transaction(_comment_op, init_account_priv_key);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@CREATE-COMMENT TRANSACTION-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK");
+    fixture2.generate_blocks(1);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@GENERATE BLOCK-END");
+
+    ilog("");
+    ilog("");
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK");
+    std::shared_ptr<full_block_type> orphan_block = fixture2.get_block_reader().get_block_by_number(db2.head_block_num());
+    PUSH_BLOCK(chain_plugin1, orphan_block);
+    ilog("@@@@@@@@@@@@@@@@@@@@@@@@@@PUSH BLOCK-END");
+
   }
   catch (const fc::exception& e)
   {

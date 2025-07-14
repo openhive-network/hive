@@ -1,7 +1,6 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
-
 #include <hive/chain/index.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
