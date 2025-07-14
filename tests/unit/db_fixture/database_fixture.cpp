@@ -419,11 +419,11 @@ void database_fixture::issue_funds(
       db.modify( db.get_account( account_name ), [&]( account_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          a.balance += amount;
+          a.set_balance( a.get_balance() + amount );
         else if( amount.symbol == HBD_SYMBOL )
         {
-          a.hbd_balance += amount;
-          a.hbd_seconds_last_update = db.head_block_time();
+          a.set_hbd_balance( a.get_hbd_balance() + HBD_asset( amount ) );
+          a.set_hbd_seconds_last_update( db.head_block_time() );
         }
       });
 
@@ -1246,20 +1246,20 @@ bool database_fixture::compare_delayed_vote_count( const account_name_type& name
   for(const auto& usr : idx)
     if(usr.get_name() == name)
     {
-      if (usr.delayed_votes.size() != data_to_compare.size()) {
-        BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.delayed_votes.size());
+      if (usr.get_delayed_votes().size() != data_to_compare.size()) {
+        BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.get_delayed_votes().size());
         return false;
       }
       const auto p = std::mismatch(
-        usr.delayed_votes.begin(),
-        usr.delayed_votes.end(),
+        usr.get_delayed_votes().begin(),
+        usr.get_delayed_votes().end(),
         data_to_compare.begin(),
         data_to_compare.end(),
         [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
-      if (p.first != usr.delayed_votes.end() && p.second != data_to_compare.end()) {
+      if (p.first != usr.get_delayed_votes().end() && p.second != data_to_compare.end()) {
         BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
       }
-      return p.first == usr.delayed_votes.end() && p.second == data_to_compare.end();
+      return p.first == usr.get_delayed_votes().end() && p.second == data_to_compare.end();
     }
   return false;
 };

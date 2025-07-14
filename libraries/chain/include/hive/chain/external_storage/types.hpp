@@ -30,9 +30,16 @@ using ::rocksdb::Comparator;
   */
 #define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
 
-enum CommentsColumns
+enum ColumnTypes
 {
-  COMMENT = 0
+  COMMENT = 0,
+  ACCOUNT_METADATA,
+  ACCOUNT_AUTHORITY,
+  ACCOUNT,
+  ACCOUNT_BY_ID,
+  ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL,
+  ACCOUNT_BY_DELAYED_VOTING,
+  ACCOUNT_BY_GOVERNANCE_VOTE_EXPIRATION_TS
 };
 
 enum Columns
@@ -239,8 +246,8 @@ typedef PrimitiveTypeComparatorImpl< ah_op_id_pair > ah_op_by_id_ComparatorImpl;
 typedef std::pair<account_name_type::Storage, size_t> account_name_storage_id_pair;
 
 typedef PrimitiveTypeSlice< block_op_id_pair > op_by_block_num_slice_t;
-typedef PrimitiveTypeSlice< uint32_t > by_block_slice_t;
-typedef PrimitiveTypeSlice< account_name_type::Storage > ah_info_by_name_slice_t;
+typedef PrimitiveTypeSlice< uint32_t > uint32_slice_t;
+typedef PrimitiveTypeSlice< account_name_type::Storage > account_name_slice_t;
 typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
 
 typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
@@ -256,6 +263,8 @@ const Comparator* op_by_block_num_Comparator();
 const Comparator* by_account_name_Comparator();
 const Comparator* ah_op_by_id_Comparator();
 const Comparator* by_txId_Comparator();
+const Comparator* by_time_account_name_pair_Comparator();
+const Comparator* by_time_account_id_pair_Comparator();
 
 /** Represents an AH entry in mapped to account name.
   *  Holds additional informations, which are needed to simplify pruning process.

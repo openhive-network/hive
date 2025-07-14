@@ -192,20 +192,20 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.hbd_balance;
-      auto before_receiver_hbd_balance = _receiver.hbd_balance;
-      auto before_voter_01_hbd_balance = _voter_01.hbd_balance;
-      auto before_treasury_hbd_balance = _treasury.hbd_balance;
+      auto before_creator_hbd_balance = _creator.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.hbd_balance;
-      auto after_receiver_hbd_balance = _receiver.hbd_balance;
-      auto after_voter_01_hbd_balance = _voter_01.hbd_balance;
-      auto after_treasury_hbd_balance = _treasury.hbd_balance;
+      auto after_creator_hbd_balance = _creator.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -599,14 +599,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc4");
       BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc1");
 
-      BOOST_REQUIRE(db->get_account( "acc1" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc2" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc3" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc4" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc5" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc6" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc7" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc8" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_witnesses_voted_for() == 0);
 
       time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
       BOOST_REQUIRE(first_expiring_ts == fc::time_point_sec::maximum());
@@ -1861,9 +1861,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const account_object& before_alice_account = db->get_account( creator );
     const account_object& before_bob_account = db->get_account( receiver );
 
-    auto before_alice_hbd_balance = before_alice_account.hbd_balance;
-    auto before_bob_hbd_balance = before_bob_account.hbd_balance;
-    auto before_treasury_balance = before_treasury_account.hbd_balance;
+    auto before_alice_hbd_balance = before_alice_account.get_hbd_balance();
+    auto before_bob_hbd_balance = before_bob_account.get_hbd_balance();
+    auto before_treasury_balance = before_treasury_account.get_hbd_balance();
 
     create_proposal_operation op;
 
@@ -1887,9 +1887,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const account_object& after_alice_account = db->get_account( creator );
     const account_object& after_bob_account = db->get_account( receiver );
 
-    auto after_alice_hbd_balance = after_alice_account.hbd_balance;
-    auto after_bob_hbd_balance = after_bob_account.hbd_balance;
-    auto after_treasury_balance = after_treasury_account.hbd_balance;
+    auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
+    auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
+    auto after_treasury_balance = after_treasury_account.get_hbd_balance();
 
     generate_block();
 

@@ -44,8 +44,8 @@ uint32_t nr_intervals_in_delayed_voting()
 
 #define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
-#define DELAYED_VOTES( account ) static_cast<int64_t>( db->get_account( account ).sum_delayed_votes.value )
-#define CAN_VOTE( account ) db->get_account( account ).can_vote
+#define DELAYED_VOTES( account ) static_cast<int64_t>( db->get_account( account ).get_sum_delayed_votes().value )
+#define CAN_VOTE( account ) db->get_account( account ).can_vote()
 
 namespace
 {
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto fill = [ this ]( proxy_data& proxy, const std::string& account_name, size_t nr_interval, size_t seconds )
     {
-      auto dq = db->get_account( account_name ).delayed_votes;
+      auto dq = db->get_account( account_name ).get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto cmp = [ this ]( proxy_data& proxy, const std::string& account_name, size_t val, size_t nr_interval, size_t seconds )
     {
-      auto dq = db->get_account( account_name ).delayed_votes;
+      auto dq = db->get_account( account_name ).get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -1588,7 +1588,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 {
-  auto vcmp = []( const std::vector< delayed_votes_data >& a, const account_object::t_delayed_votes& b )
+  auto vcmp = []( const std::vector< delayed_votes_data >& a, const account_details::t_delayed_votes& b )
   {
     return std::equal( a.begin(), a.end(), b.begin() );
   };
@@ -1622,32 +1622,32 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
   fc::time_point_sec time = db->head_block_time() + fc::minutes( 5 );
 
   auto& __alice = db->get_account( "alice" );
-  auto alice_dv = __alice.delayed_votes;
-  auto alice_sum = __alice.sum_delayed_votes;
+  auto alice_dv = __alice.get_delayed_votes();
+  auto alice_sum = __alice.get_sum_delayed_votes();
 
   auto& __bob = db->get_account( "bob" );
-  auto bob_dv = __bob.delayed_votes;
-  auto bob_sum = __bob.sum_delayed_votes;
+  auto bob_dv = __bob.get_delayed_votes();
+  auto bob_sum = __bob.get_sum_delayed_votes();
 
   {
     delayed_voting::opt_votes_update_data_items _items;
     dv.update_votes( _items, time );
     auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.delayed_votes ) );
-    BOOST_REQUIRE( alice_sum == _alice.sum_delayed_votes );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
   }
   {
     dv.update_votes( items, time );
     auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.delayed_votes ) );
-    BOOST_REQUIRE( alice_sum == _alice.sum_delayed_votes );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
   }
   {
     dv.add_votes( items, false/*withdraw_executor*/, 0/*val*/, db->get_account( "alice" ) );
     dv.update_votes( items, time );
     auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.delayed_votes ) );
-    BOOST_REQUIRE( alice_sum == _alice.sum_delayed_votes );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
   }
   {
     dv.add_votes( items, false/*withdraw_executor*/, -5/*val*/, db->get_account( "alice" ) );
@@ -1672,12 +1672,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
     dv.update_votes( items, time );
 
     auto& alice2 = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val + 70 + 7 } }, alice2.delayed_votes ) );
-    BOOST_REQUIRE( alice_sum + 70 + 7 == alice2.sum_delayed_votes );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val + 70 + 7 } }, alice2.get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum + 70 + 7 == alice2.get_sum_delayed_votes() );
 
     auto& bob2 = db->get_account( "bob" );
-    BOOST_REQUIRE( vcmp( { { bob_dv[0].time, bob_dv[0].val + 88 - 8 } }, bob2.delayed_votes ) );
-    BOOST_REQUIRE( bob_sum + 88 - 8 == bob2.sum_delayed_votes );
+    BOOST_REQUIRE( vcmp( { { bob_dv[0].time, bob_dv[0].val + 88 - 8 } }, bob2.get_delayed_votes() ) );
+    BOOST_REQUIRE( bob_sum + 88 - 8 == bob2.get_sum_delayed_votes() );
   }
 
 }

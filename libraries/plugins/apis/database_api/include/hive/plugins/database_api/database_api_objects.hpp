@@ -111,8 +111,8 @@ struct api_vesting_delegation_object
 {
   api_vesting_delegation_object( const vesting_delegation_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( db.get_account( o.get_delegator() ).get_name() ),
-    delegatee( db.get_account( o.get_delegatee() ).get_name() ),
+    delegator( db.get_account( o.get_delegator() )->get_name() ),
+    delegatee( db.get_account( o.get_delegatee() )->get_name() ),
     vesting_shares( o.get_vesting() ),
     min_delegation_time( o.get_min_delegation_time() )
   {}
@@ -128,7 +128,7 @@ struct api_vesting_delegation_expiration_object
 {
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    delegator( db.get_account( o.get_delegator() )->get_name() ),
     vesting_shares( o.get_vesting() ),
     expiration( o.get_expiration_time() )
   {}
@@ -144,7 +144,7 @@ struct api_convert_request_object
   api_convert_request_object() {}
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
-    owner( db.get_account( o.get_owner() ).get_name() ),
+    owner( db.get_account( o.get_owner() )->get_name() ),
     requestid( o.get_request_id() ),
     amount( o.get_convert_amount() ),
     conversion_date( o.get_conversion_date() )
@@ -162,7 +162,7 @@ struct api_collateralized_convert_request_object
   api_collateralized_convert_request_object() {}
   api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
     id( o.get_id() ),
-    owner( db.get_account( o.get_owner() ).get_name() ),
+    owner( db.get_account( o.get_owner() )->get_name() ),
     requestid( o.get_request_id() ),
     collateral_amount( o.get_collateral_amount() ),
     converted_amount( o.get_converted_amount() ),
@@ -392,7 +392,7 @@ struct api_comment_object
 
       for( auto& route : cc->get_beneficiaries() )
       {
-        beneficiaries.emplace_back( db.get_account( route.account_id ).get_name(), route.weight );
+        beneficiaries.emplace_back( db.get_account( route.account_id )->get_name(), route.weight );
       }
 
     }
@@ -461,7 +461,7 @@ struct api_comment_vote_object
     voter = db.get( cv.get_voter() ).get_name();
     const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
     assert( cc != nullptr ); //votes should not exist after cashout
-    author = db.get_account( cc->get_author_id() ).get_name();
+    author = db.get_account( cc->get_author_id() )->get_name();
     permlink = to_string( cc->get_permlink() );
   }
 
@@ -482,71 +482,71 @@ struct api_account_object
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
     id( a.get_id() ),
     name( a.get_name() ),
-    memo_key( a.memo_key ),
+    memo_key( a.get_memo_key() ),
     proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
-    last_account_update( a.last_account_update ),
+    last_account_update( a.get_last_account_update() ),
     created( a.get_block_creation_time() ),
     mined( a.was_mined() ),
     reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.get_block_last_account_recovery_time() ),
-    post_count( a.post_count ),
-    can_vote( a.can_vote ),
-    voting_manabar( a.voting_manabar ),
-    downvote_manabar( a.downvote_manabar ),
+    post_count( a.get_post_count() ),
+    can_vote( a.can_vote() ),
+    voting_manabar( a.get_voting_manabar() ),
+    downvote_manabar( a.get_downvote_manabar() ),
     balance( a.get_balance() ),
     savings_balance( a.get_savings() ),
-    hbd_balance( a.hbd_balance ),
-    hbd_seconds( a.hbd_seconds ),
-    hbd_seconds_last_update( a.hbd_seconds_last_update ),
-    hbd_last_interest_payment( a.hbd_last_interest_payment ),
+    hbd_balance( a.get_hbd_balance() ),
+    hbd_seconds( a.get_hbd_seconds() ),
+    hbd_seconds_last_update( a.get_hbd_seconds_last_update() ),
+    hbd_last_interest_payment( a.get_hbd_last_interest_payment() ),
     savings_hbd_balance( a.get_hbd_savings() ),
-    savings_hbd_seconds( a.savings_hbd_seconds ),
-    savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
-    savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
-    savings_withdraw_requests( a.savings_withdraw_requests ),
+    savings_hbd_seconds( a.get_savings_hbd_seconds() ),
+    savings_hbd_seconds_last_update( a.get_savings_hbd_seconds_last_update() ),
+    savings_hbd_last_interest_payment( a.get_savings_hbd_last_interest_payment() ),
+    savings_withdraw_requests( a.get_savings_withdraw_requests() ),
     reward_hbd_balance( a.get_hbd_rewards() ),
     reward_hive_balance( a.get_rewards() ),
     reward_vesting_balance( a.get_vest_rewards() ),
     reward_vesting_hive( a.get_vest_rewards_as_hive() ),
-    curation_rewards( a.curation_rewards.amount ),
-    posting_rewards( a.posting_rewards.amount ),
-    vesting_shares( a.vesting_shares ),
-    delegated_vesting_shares( a.delegated_vesting_shares ),
-    received_vesting_shares( a.received_vesting_shares ),
-    vesting_withdraw_rate( a.vesting_withdraw_rate ),
-    next_vesting_withdrawal( a.next_vesting_withdrawal ),
-    withdrawn( a.withdrawn.amount ),
-    to_withdraw( a.to_withdraw.amount ),
-    withdraw_routes( a.withdraw_routes ),
-    pending_transfers( a.pending_escrow_transfers ),
-    witnesses_voted_for( a.witnesses_voted_for ),
-    last_post( a.last_post ),
-    last_root_post( a.last_root_post ),
-    last_post_edit( a.last_post_edit ),
-    last_vote_time( a.last_vote_time ),
-    post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts ),
-    open_recurrent_transfers( a.open_recurrent_transfers ),
+    curation_rewards( a.get_curation_rewards().amount ),
+    posting_rewards( a.get_posting_rewards().amount ),
+    vesting_shares( a.get_vesting() ),
+    delegated_vesting_shares( a.get_delegated_vesting() ),
+    received_vesting_shares( a.get_received_vesting() ),
+    vesting_withdraw_rate( a.get_vesting_withdraw_rate() ),
+    next_vesting_withdrawal( a.get_next_vesting_withdrawal() ),
+    withdrawn( a.get_withdrawn().amount ),
+    to_withdraw( a.get_to_withdraw().amount ),
+    withdraw_routes( a.get_withdraw_routes() ),
+    pending_transfers( a.get_pending_escrow_transfers() ),
+    witnesses_voted_for( a.get_witnesses_voted_for() ),
+    last_post( a.get_last_post() ),
+    last_root_post( a.get_last_root_post() ),
+    last_post_edit( a.get_last_post_edit() ),
+    last_vote_time( a.get_last_vote_time() ),
+    post_bandwidth( a.get_post_bandwidth() ),
+    pending_claimed_accounts( a.get_pending_claimed_accounts() ),
+    open_recurrent_transfers( a.get_open_recurrent_transfers() ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
     if( a.has_proxy() )
-      proxy = db.get_account( a.get_proxy() ).get_name();
+      proxy = db.get_account( a.get_proxy() )->get_name();
     if( a.has_recovery_account() )
-      recovery_account = db.get_account( a.get_recovery_account() ).get_name();
+      recovery_account = db.get_account( a.get_recovery_account() )->get_name();
 
-    size_t n = a.proxied_vsf_votes.size();
+    size_t n = a.get_proxied_vsf_votes().size();
     proxied_vsf_votes.reserve( n );
     for( size_t i=0; i<n; i++ )
-      proxied_vsf_votes.push_back( a.proxied_vsf_votes[i] );
+      proxied_vsf_votes.push_back( a.get_proxied_vsf_votes()[i] );
 
-    const auto& auth = db.get< account_authority_object, by_account >( name );
-    owner = authority( auth.owner );
-    active = authority( auth.active );
-    posting = authority( auth.posting );
-    previous_owner_update = auth.previous_owner_update;
-    last_owner_update = auth.last_owner_update;
+    auto auth = db.get_account_authority( name );
+    owner = authority( auth->owner );
+    active = authority( auth->active );
+    posting = authority( auth->posting );
+    previous_owner_update = auth->previous_owner_update;
+    last_owner_update = auth->last_owner_update;
 #ifdef COLLECT_ACCOUNT_METADATA
-    const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
+    const auto* maybe_meta = db.find< account_metadata_object, by_name >( name );
     if( maybe_meta )
     {
       json_metadata = to_string( maybe_meta->json_metadata );
@@ -561,7 +561,7 @@ struct api_account_object
 #endif
 
     if( delayed_votes_active )
-      delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
+      delayed_votes = vector< delayed_votes_data >{ a.get_delayed_votes().begin(), a.get_delayed_votes().end() };
 
     post_voting_power = VEST_asset(a.get_effective_vesting_shares());
   }

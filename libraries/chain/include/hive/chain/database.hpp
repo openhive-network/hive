@@ -15,6 +15,7 @@
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/accounts_handler.hpp>
 
 #include <hive/utilities/data_collector.hpp>
 
@@ -87,6 +88,7 @@ namespace chain {
     fc::path data_dir;
     fc::path shared_mem_dir;
     fc::path comments_storage_path;
+    fc::path accounts_storage_path;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
@@ -258,15 +260,18 @@ namespace chain {
       /// Gives name of account with NO authority which holds resources for payouts according to proposals (at a time of given hardfork)
       std::string            get_treasury_name( uint32_t hardfork )const;
       std::string            get_treasury_name()const { return get_treasury_name( get_hardfork() ); }
-      const account_object&  get_treasury()const { return get_account( get_treasury_name() ); }
+      account                get_treasury()const { return get_account( get_treasury_name() ); }
       /// Returns true for any account name that was ever a treasury account
       bool                   is_treasury( const account_name_type& name )const;
 
-      const account_object&  get_account(  const account_id_type      id )const;
-      const account_object*  find_account( const account_id_type&     id )const;
+      account_authority get_account_authority( const account_name_type& account_name )const;
+      account_metadata get_account_metadata( const account_name_type& account_name )const;
 
-      const account_object&  get_account(  const account_name_type& name )const;
-      const account_object*  find_account( const account_name_type& name )const;
+      account get_account(  const account_id_type      id )const;
+      account find_account( const account_id_type&     id )const;
+
+      account get_account(  const account_name_type& name )const;
+      account find_account( const account_name_type& name )const;
 
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
@@ -480,7 +485,7 @@ namespace chain {
       void adjust_balance( const account_object& a, const asset& delta );
       void adjust_balance( const account_name_type& name, const asset& delta )
       {
-        adjust_balance( get_account( name ), delta );
+        adjust_balance( *get_account( name ), delta );
       }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
@@ -488,7 +493,7 @@ namespace chain {
       void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
       void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
       {
-        adjust_reward_balance( get_account( name ), value_delta, share_delta );
+        adjust_reward_balance( *get_account( name ), value_delta, share_delta );
       }
 
       void adjust_supply( const asset& delta, bool adjust_vesting = false );
@@ -496,10 +501,10 @@ namespace chain {
       void update_owner_authority( const account_object& account, const authority& owner_authority );
 
       asset get_balance( const account_object& a, asset_symbol_type symbol )const;
-      asset get_savings_balance( const account_object& a, asset_symbol_type symbol )const;
+      asset get_savings( const account_object& a, asset_symbol_type symbol )const;
       asset get_balance( const account_name_type& aname, asset_symbol_type symbol )const
       {
-        return get_balance( get_account( aname ), symbol );
+        return get_balance( *get_account( aname ), symbol );
       }
 
       /** this updates the votes for witnesses as a result of account voting proxy changing */
@@ -828,6 +833,7 @@ namespace chain {
       std::optional<time_point_sec> _current_timestamp;
 
       comments_handler::ptr         _comments_handler;
+      accounts_handler::ptr         _accounts_handler;
 
     public:
 
@@ -848,6 +854,38 @@ namespace chain {
       {
         FC_ASSERT( _comments_handler );
         return *_comments_handler.get();
+      }
+
+      void set_accounts_handler( accounts_handler::ptr obj )
+      {
+        _accounts_handler = obj;
+      }
+
+      accounts_handler& get_accounts_handler() const
+      {
+        FC_ASSERT( _accounts_handler );
+        return *_accounts_handler.get();
+      }
+
+      template<typename ObjectType, typename ... Args>
+      const ObjectType& create( Args&&... args )
+      {
+        const ObjectType& _result = chainbase::database::create<ObjectType>( args... );
+        get_accounts_handler().create( _result );
+        return _result;
+      }
+
+      template<typename ObjectType, typename Modifier>
+      void modify( const ObjectType& obj, Modifier&& m )
+      {
+        if( !get_accounts_handler().modify<ObjectType>( obj, m ) )
+          chainbase::database::modify( obj, m );
+      }
+
+      template<typename ByIndex>
+      std::shared_ptr<account_iterator<ByIndex>> get_iterator() const
+      {
+        return get_accounts_handler().get_iterator<ByIndex>();
       }
 
     private:

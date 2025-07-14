@@ -1049,10 +1049,10 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hbd_balance = ASSET( "10.000 TBD" );
-        a.reward_hive_balance = ASSET( "10.000 TESTS" );
-        a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-        a.reward_vesting_hive = ASSET( "10.000 TESTS" );
+        a.set_hbd_rewards( ASSET( "10.000 TBD" ) );
+        a.set_rewards( ASSET( "10.000 TESTS" ) );
+        a.set_vest_rewards( ASSET( "10.000000 VESTS" ) );
+        a.set_vest_rewards_as_hive( ASSET( "10.000 TESTS" ) );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )

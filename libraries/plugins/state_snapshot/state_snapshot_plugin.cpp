@@ -1398,6 +1398,7 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
   hive::chain::load_snapshot_supplement_notification notification(load_helper);
 
   _mainDb.get_comments_handler().load_snapshot(notification);
+  _mainDb.get_accounts_handler().load_snapshot(notification);
   _mainDb.notify_load_snapshot_data_supplement(notification);
   }
 
@@ -1524,13 +1525,14 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
 
   _mainDb.get_comments_handler().save_snapshot(notification);
+  _mainDb.get_accounts_handler().save_snapshot(notification);
   _mainDb.notify_prepare_snapshot_data_supplement(notification);
 
   store_snapshot_manifest(actualStoragePath, builtWriters, dump_helper);
 
   auto blockNo = _mainDb.head_block_num();
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );
@@ -1663,7 +1665,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );

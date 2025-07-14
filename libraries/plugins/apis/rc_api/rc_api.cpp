@@ -94,9 +94,9 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
   {
     for( const account_name_type& a : args.accounts )
     {
-      const account_object* rc_account = _db.find_account( a );
+      auto rc_account = _db.find_account( a );
 
-      if( rc_account != nullptr )
+      if( rc_account )
       {
         result.rc_accounts.emplace_back( *rc_account, _db );
       }
@@ -142,11 +142,11 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   auto key = args.start.as< vector< fc::variant > >();
   FC_ASSERT( key.size() == 2, "by_from start requires 2 value. (from, to)" );
 
-  const account_object* delegator = _db.find< account_object, hive::chain::by_name >( key[0].as< account_name_type >() );
+  auto delegator = _db.find_account( key[0].as< account_name_type >() );
   // If the delegatee is not provided, we default to the first id
   auto delegatee_id = account_id_type::start_id();
   if (key[1].as< account_name_type >() != "") {
-    const account_object* delegatee = _db.find< account_object, hive::chain::by_name >( key[1].as< account_name_type >() );
+    auto delegatee = _db.find_account( key[1].as< account_name_type >() );
     FC_ASSERT( delegatee, "Account ${a} does not exist", ("a", key[1].as< account_name_type >()) );
     delegatee_id = delegatee->get_id();
   }
@@ -160,8 +160,8 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   while( result.rc_direct_delegations.size() < args.limit && itr != end && itr->from == delegator->get_id())
   {
     const rc_direct_delegation_object& rcdd = *itr;
-    const account_object &to_account = _db.get<account_object, by_id>(rcdd.to);
-    result.rc_direct_delegations.emplace_back( *itr, delegator->get_name(), to_account.get_name() );
+    auto to_account = _db.get_account( rcdd.to );
+    result.rc_direct_delegations.emplace_back( *itr, delegator->get_name(), to_account->get_name() );
     ++itr;
   }
 
