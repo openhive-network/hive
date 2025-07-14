@@ -13,6 +13,7 @@
 #include <hive/chain/external_storage/memory_comment_archive.hpp>
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
+#include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
@@ -135,6 +136,7 @@ class chain_plugin_impl
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
+    bfs::path                        accounts_storage_path;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -792,6 +794,10 @@ void chain_plugin_impl::initial_settings()
 
   ilog( "Preparing comment archive..." );
   comments_handler::ptr comment_archive;
+
+  ilog( "Preparing account archive..." );
+  accounts_handler::ptr account_archive;
+
   switch( comment_archive_choice )
   {
   case comment_archive_type::NONE:
@@ -808,9 +814,15 @@ void chain_plugin_impl::initial_settings()
       ( "csp", comments_storage_path.c_str() ) );
     comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
       comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
+
+    ilog( "'ROCKSDB' - accounts will be archived in RocksDB at ${csp}",
+      ( "csp", accounts_storage_path.c_str() ) );
+    account_archive = std::make_shared<rocksdb_account_archive>( db, shared_memory_dir,
+      accounts_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
     break;
   }
   db.set_comments_handler( comment_archive );
+  db.set_accounts_handler( account_archive );
 
   if( statsd_on_replay )
   {
@@ -857,6 +869,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.data_dir = theApp.data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
   db_open_args.comments_storage_path = comments_storage_path;
+  db_open_args.accounts_storage_path = accounts_storage_path;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
@@ -1502,6 +1515,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
       ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
+      ("accounts-rocksdb-path", bpo::value<bfs::path>()->default_value("accounts-rocksdb-storage"), "the location of the accounts data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1537,16 +1551,22 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       my->shared_memory_dir = sfd;
   }
 
-  my->comments_storage_path = my->shared_memory_dir / "comments-rocksdb-storage";
-
-  if( options.count( "comments-rocksdb-path" ) )
+  auto _set_rocksdb_directory = [&]( bfs::path& path, const std::string& directory_name, const std::string& parameter_name )
   {
-    auto crp = options.at( "comments-rocksdb-path" ).as<bfs::path>();
-    if( crp.is_relative() )
-      my->comments_storage_path = my->shared_memory_dir / crp;
-    else
-      my->comments_storage_path = crp;
-  }
+    path = my->shared_memory_dir / directory_name;
+
+    if( options.count( parameter_name ) )
+    {
+      auto crp = options.at( parameter_name ).as<bfs::path>();
+      if( crp.is_relative() )
+        path = my->shared_memory_dir / crp;
+      else
+        path = crp;
+    }
+  };
+
+  _set_rocksdb_directory( my->comments_storage_path, "comments-rocksdb-storage", "comments-rocksdb-path" );
+  _set_rocksdb_directory( my->accounts_storage_path, "accounts-rocksdb-storage", "accounts-rocksdb-path" );
 
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )

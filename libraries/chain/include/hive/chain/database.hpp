@@ -15,6 +15,7 @@
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/accounts_handler.hpp>
 
 #include <hive/utilities/data_collector.hpp>
 
@@ -87,6 +88,7 @@ namespace chain {
     fc::path data_dir;
     fc::path shared_mem_dir;
     fc::path comments_storage_path;
+    fc::path accounts_storage_path;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
@@ -826,6 +828,7 @@ namespace chain {
       std::optional<time_point_sec> _current_timestamp;
 
       comments_handler::ptr         _comments_handler;
+      accounts_handler::ptr         _accounts_handler;
 
     public:
 
@@ -846,6 +849,17 @@ namespace chain {
       {
         FC_ASSERT( _comments_handler );
         return *_comments_handler.get();
+      }
+
+      void set_accounts_handler( accounts_handler::ptr obj )
+      {
+        _accounts_handler = obj;
+      }
+
+      accounts_handler& get_accounts_handler() const
+      {
+        FC_ASSERT( _accounts_handler );
+        return *_accounts_handler.get();
       }
 
     private:
