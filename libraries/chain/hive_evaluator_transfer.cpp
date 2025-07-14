@@ -86,7 +86,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
 
     FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
     FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
-    FC_ASSERT( from_account.pending_escrow_transfers < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
+    FC_ASSERT( from_account.get_pending_escrow_transfers() < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
 
     HIVE_asset o_hive_amount = o.get_hive_amount();
     HBD_asset o_hbd_amount = o.get_hbd_amount();
@@ -103,7 +103,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     _db.create<escrow_object>( from_account, to_account, agent_account, o_hive_amount, o_hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
     _db.modify( from_account, []( account_object& a )
     {
-      a.pending_escrow_transfers++;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() + 1 );
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )

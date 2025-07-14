@@ -1,5 +1,7 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/database.hpp>
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/asset.hpp>
@@ -65,7 +67,19 @@ struct rc_account_api_object
 {
   rc_account_api_object(){}
 
-  rc_account_api_object( const hive::chain::account_object& a, const hive::chain::database& db );
+  rc_account_api_object( const account_object& a, const database& db ) :
+    account( a.get_name() )
+  {
+    const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
+    const auto& assets = db.get< assets_object, by_account_id >( a.get_id() );
+    const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
+
+    rc_manabar = mrc.get_rc_manabar();
+    max_rc_creation_adjustment = asset( mrc.get_rc_adjustment(), VESTS_SYMBOL );
+    max_rc = a.get_maximum_rc( mrc, assets, time_obj ).value;
+    delegated_rc = mrc.get_delegated_rc().value;
+    received_delegated_rc = mrc.get_received_rc().value;
+  }
 
   account_name_type     account;
   hive::chain::util::manabar   rc_manabar;

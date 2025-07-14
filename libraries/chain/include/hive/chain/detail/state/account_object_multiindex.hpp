@@ -4,8 +4,6 @@
 namespace hive { namespace chain {
 
   struct by_proxy;
-  struct by_next_vesting_withdrawal;
-  struct by_delayed_voting;
   struct by_governance_vote_expiration_ts;
   /**
     * @ingroup object_index
@@ -22,18 +20,6 @@ namespace hive { namespace chain {
           const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,
           const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
         > /// composite key by proxy
-      >,
-      ordered_unique< tag< by_next_vesting_withdrawal >,
-        composite_key< account_object,
-          member< account_object, time_point_sec, &account_object::next_vesting_withdrawal >,
-          const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
-        > /// composite key by_next_vesting_withdrawal
-      >,
-      ordered_unique< tag< by_delayed_voting >,
-        composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_oldest_delayed_vote_time >,
-          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
-        >
       >,
       ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< account_object,

@@ -439,6 +439,11 @@ struct database_fixture {
   asset get_vest_rewards( const string& account_name )const;
   asset get_vest_rewards_as_hive( const string& account_name )const;
 
+  const util::manabar& get_voting_manabar( const string& account_name )const;
+  const util::manabar& get_downvote_manabar( const string& account_name )const;
+  share_type get_effective_vesting_shares( const string& account_name )const;
+  time_point_sec get_last_vote_time( const string& account_name )const;
+
   comment get_comment( const string& author, const string& permlink )const;
 
 private:

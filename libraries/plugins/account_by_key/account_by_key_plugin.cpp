@@ -179,7 +179,7 @@ struct post_operation_visitor
 
       for( const std::string& acc : hardfork9::get_compromised_accounts() )
       {
-        const account_object* account = db.find_account( acc );
+        const auto* account = db.find_account( acc );
         if( account == nullptr )
           continue;
 
