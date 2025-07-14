@@ -12,6 +12,7 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/smt_objects.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
 
@@ -221,7 +222,7 @@ void database::apply_hardfork( uint32_t hardfork )
       {
         for( const std::string& acc : hardfork9::get_compromised_accounts() )
         {
-          const account_object* account = find_account( acc );
+          const auto* account = find_account( acc );
           if( account == nullptr )
             continue;
 
@@ -244,7 +245,35 @@ void database::apply_hardfork( uint32_t hardfork )
       break;
     case HIVE_HARDFORK_0_12:
       {
-        apply_hardfork_12_comment_cashout_fix();
+        const auto& comment_idx = get_index< comment_cashout_index >().indices();
+
+        for( auto itr = comment_idx.begin(); itr != comment_idx.end(); ++itr )
+        {
+          // At the hardfork time, all new posts with no votes get their cashout time set to +12 hrs from head block time.
+          // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
+          // initial payout so we don't have to handle the case of posts that should be frozen that aren't
+          const comment_object& comment = get_comment( *itr );
+          const comment_cashout_ex_object* c_ex = find_comment_cashout_ex( comment );
+          if( comment.is_root() )
+          {
+            // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semantics)
+            if( !c_ex->was_paid() && itr->get_cashout_time() == fc::time_point_sec::maximum() )
+            {
+              modify( *itr, [&]( comment_cashout_object & c )
+              {
+                c.set_cashout_time( head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17 );
+              });
+            }
+            // Has been paid out, needs to be on second cashout window
+            else if( c_ex->was_paid() )
+            {
+              modify( *itr, [&]( comment_cashout_object& c )
+              {
+                c.set_cashout_time( c_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW );
+              });
+            }
+          }
+        }
 
         // liquidity reward mechanism no longer active after HF12
         auto& liquidity_reward_balance_idx = get_mutable_index< liquidity_reward_balance_index >();
@@ -300,7 +329,52 @@ void database::apply_hardfork( uint32_t hardfork )
           g.total_reward_shares2 = 0;
         });
 
-        apply_hardfork_17_comment_cashout_fix();
+        /*
+        * For all current comments we will either keep their current cashout time, or extend it to 1 week
+        * after creation.
+        *
+        * We cannot do a simple iteration by cashout time because we are editting cashout time.
+        * More specifically, we will be adding an explicit cashout time to all comments with parents.
+        * To find all discussions that have not been paid out we fir iterate over posts by cashout time.
+        * Before the hardfork these are all root posts. Iterate over all of their children, adding each
+        * to a specific list. Next, update payout times for all discussions on the root post. This defines
+        * the min cashout time for each child in the discussion. Then iterate over the children and set
+        * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
+        */
+        const auto& comment_idx = get_index< comment_cashout_index, by_cashout_time >();
+        const auto& by_root_idx = get_index< comment_cashout_ex_index, by_root >();
+        vector< const comment_cashout_object* > root_posts;
+        root_posts.reserve( HIVE_HF_17_NUM_POSTS );
+        vector< const comment_cashout_object* > replies;
+        replies.reserve( HIVE_HF_17_NUM_REPLIES );
+
+        for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->get_cashout_time() < fc::time_point_sec::maximum(); ++itr )
+        {
+          root_posts.push_back( &(*itr) );
+          auto root_id = itr->get_comment_id();
+
+          for( auto reply_itr = by_root_idx.lower_bound( root_id ); reply_itr != by_root_idx.end() && reply_itr->get_root_id() == root_id; ++reply_itr )
+          {
+            const comment_cashout_object* comment_cashout = find_comment_cashout( reply_itr->get_comment_id() );
+            replies.push_back( comment_cashout );
+          }
+        }
+
+        for( const auto& itr : root_posts )
+        {
+          modify( *itr, [&]( comment_cashout_object& c )
+          {
+            c.set_cashout_time( std::max( c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS, c.get_cashout_time() ) );
+          });
+        }
+
+        for( const auto& itr : replies )
+        {
+          modify( *itr, [&]( comment_cashout_object& c )
+          {
+            c.set_cashout_time( std::max( calculate_discussion_payout_time( get_comment( c ), c ), c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS ) );
+          });
+        }
       }
       break;
     case HIVE_HARDFORK_0_18:
@@ -392,7 +466,7 @@ void database::apply_hardfork( uint32_t hardfork )
           }
         } );
         // override value for new account tokens using parameters provided by witnesses
-        rc().set_pool_params( wso );
+        rc.set_pool_params( wso );
         dlog( "Initial RC params: ${o}", ( "o", rc_params ) );
 
         // create usage statistics buckets (empty, but with proper timestamps, last bucket has current timestamp)
@@ -412,13 +486,17 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& idx = get_index< account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
-          modify( *it, [&]( account_object& account )
+          const auto& _manabars_rc_object = get< manabars_rc_object, by_account_id >( it->get_id() );
+          const auto& _assets_obj = get< assets_object, by_account_id >( it->get_id() );
+          const auto& _time_obj = get< time_object, by_account_id >( it->get_id() );
+
+          modify( _manabars_rc_object, [&]( manabars_rc_object& manabars_rc_object )
           {
-            account.rc_adjustment = HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT;
-            account.rc_manabar.last_update_time = now.sec_since_epoch();
-            auto max_rc = account.get_maximum_rc().value;
-            account.rc_manabar.current_mana = max_rc;
-            account.last_max_rc = max_rc;
+            manabars_rc_object.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
+            manabars_rc_object.get_rc_manabar().last_update_time = now.sec_since_epoch();
+            auto max_rc = it->get_maximum_rc( _manabars_rc_object, _assets_obj, _time_obj ).value;
+            manabars_rc_object.get_rc_manabar().current_mana = max_rc;
+            manabars_rc_object.set_last_max_rc( max_rc );
           } );
         }
 
@@ -439,9 +517,16 @@ void database::apply_hardfork( uint32_t hardfork )
       // Create the treasury account if it does not exist
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
       if( find_account(treasury_name) == nullptr ) {
-          create<account_object>(treasury_name, head_block_time());
-          push_virtual_operation( *this,
-            account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
+          const auto& new_account = create<account_object>(treasury_name, head_block_time());
+          // Create all split objects for the treasury account
+          account_id_type account_id = new_account.get_id();
+          create< recovery_object >( account_id );
+          create< assets_object >( account_id );
+          create< manabars_rc_object >( account_id );
+          create< time_object >( account_id );
+          create< delayed_votes_object >( account_id );
+          push_virtual_operation(
+            *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
 
       lock_account( get_treasury() );
@@ -547,9 +632,16 @@ void database::apply_hardfork( uint32_t hardfork )
     const auto treasury_name = get_treasury_name();
 
     if( find_account(treasury_name) == nullptr ) {
-        create<account_object>(treasury_name, head_block_time());
-        push_virtual_operation( *this,
-          account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
+        const auto& new_account = create<account_object>(treasury_name, head_block_time());
+        // Create all split objects for the treasury account
+        account_id_type account_id = new_account.get_id();
+        create< recovery_object >( account_id );
+        create< assets_object >( account_id );
+        create< manabars_rc_object >( account_id );
+        create< time_object >( account_id );
+        create< delayed_votes_object >( account_id );
+        push_virtual_operation(
+          *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
     }
 
     lock_account( get_treasury() );

@@ -162,7 +162,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     const auto& voter = _db.get_account(o.voter);
 
-    FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+    FC_ASSERT( voter.can_vote() && "Voter declined voting rights, therefore casting votes is forbidden." );
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 

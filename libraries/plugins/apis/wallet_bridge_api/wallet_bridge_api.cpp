@@ -420,7 +420,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
   verify_args( arguments, 1 );
 
   chain::account_name_type acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
-  const chain::account_object* account = _db.find_account(acc_name);
+  const auto* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
     result = database_api::api_account_object(*account, _db, _metadata_plugin, true);
@@ -448,7 +448,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 
   for( const auto& acc_name: _accounts )
   {
-    const chain::account_object* account = _db.find_account( acc_name );
+    const auto* account = _db.find_account( acc_name );
     if (account)
       result.push_back(database_api::api_account_object( *account, _db, _metadata_plugin, delayed_votes_active ) );
   }
