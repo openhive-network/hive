@@ -48,7 +48,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const account_update_operation& op )const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account );
+    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account );
     if( auth_ptr == nullptr )
       return false;
 
@@ -68,7 +68,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const account_update2_operation& op )const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account );
+    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account );
     if( auth_ptr == nullptr )
       return false;
 
@@ -88,7 +88,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const recover_account_operation& op ) const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account_to_recover );
+    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account_to_recover );
     if( auth_ptr == nullptr )
       return false;
 
@@ -106,19 +106,19 @@ struct count_differential_operation_visitor
     //not use state in case of max_rc == 0, we don't collect differential usage (at least for now,
     //might be changed later)
 
-    const auto* from_ptr = _db.find_account( op.from );
-    if( from_ptr == nullptr )
+    auto from_ptr = _db.find_account( op.from );
+    if( !from_ptr )
       return false;
 
     int64_t usage = 0;
     for( const auto& to : op.delegatees )
     {
-      const auto* to_ptr = _db.find_account( to );
-      if( to_ptr == nullptr )
+      auto to_ptr = _db.find_account( to );
+      if( !to_ptr )
         return false;
 
       const auto* delegation_ptr = _db.find< rc_direct_delegation_object, by_from_to >(
-        boost::make_tuple( from_ptr->get_id(), to_ptr->get_id() ) );
+        boost::make_tuple( from_ptr->get_account_id(), to_ptr->get_account_id() ) );
       if( delegation_ptr != nullptr )
         usage += _w.delegate_rc_base_size;
     }

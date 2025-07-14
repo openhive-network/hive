@@ -20,6 +20,36 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
   current.comment_lib_processing -= previous.comment_lib_processing;
 }
 
+void operator -= ( benchmark_dumper::account_archive_details_t& current, const benchmark_dumper::account_archive_details_t& previous )
+{
+  current.account_metadata_created            -= previous.account_metadata_created;
+  current.account_metadata_modified           -= previous.account_metadata_modified;
+  current.account_metadata_accessed_by_name   -= previous.account_metadata_accessed_by_name;
+
+  current.account_authority_created           -=  previous.account_authority_created;
+  current.account_authority_modified          -= previous.account_authority_modified;
+  current.account_authority_accessed_by_name  -= previous.account_authority_accessed_by_name;
+
+  current.account_created                     -= previous.account_created;
+  current.account_modified                    -= previous.account_modified;
+  current.account_accessed_by_name            -= previous.account_accessed_by_name;
+  current.account_accessed_by_id              -= previous.account_accessed_by_id;
+
+  current.account_total_next                  -= previous.account_total_next;
+  current.account_total_begin                 -= previous.account_total_begin;
+  current.account_begin                       -= previous.account_begin;
+  current.account_next_basic                  -= previous.account_next_basic;
+  current.account_next_skip_the_same          -= previous.account_next_skip_the_same;
+  current.account_next_skip_obsolete          -= previous.account_next_skip_obsolete;
+  current.account_no_skip_obsolete            -= previous.account_no_skip_obsolete;
+  current.account_create_rocksdb              -= previous.account_create_rocksdb;
+  current.account_create_volatile             -= previous.account_create_volatile;
+  current.account_moved_to_storage            -= previous.account_moved_to_storage;
+  current.account_flush_to_storage            -= previous.account_flush_to_storage;
+  current.account_cmp                         -= previous.account_cmp;
+  current.account_get                         -= previous.account_get;
+}
+
 const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )
 {
   validate_is_initialized();
@@ -32,7 +62,7 @@ const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_n
 
   measurement data;
   uint64_t shm_free = 0;
-  get_stat_details( data.index_memory_details_cntr, data.comment_archive_stats, shm_free );
+  get_stat_details( data.index_memory_details_cntr, data.comment_archive_stats, data.account_archive_stats, shm_free );
   shm_free /= 1024; // typically db.get_free_memory() so the value is in bytes - recalculate to match other values
   data.set( block_number,
     ( current_sys_time - _last_sys_time ).count() / 1000, // real_ms
@@ -42,6 +72,9 @@ const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_n
     shm_free );
   auto current_comment_archive_stats = data.comment_archive_stats;
   data.comment_archive_stats -= _all_data.total_measurement.comment_archive_stats;
+
+  auto current_account_archive_stats = data.account_archive_stats;
+  data.account_archive_stats -= _all_data.total_measurement.account_archive_stats;
 
   _last_sys_time = current_sys_time;
   _last_cpu_time = current_cpu_time;
@@ -54,6 +87,7 @@ const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_n
     peak_virtual,
     shm_free );
   _all_data.total_measurement.comment_archive_stats = current_comment_archive_stats;
+  _all_data.total_measurement.account_archive_stats = current_account_archive_stats;
 
   // no sense to store data that will not be dumped to file
   if( _all_data.measurements.empty() || is_file_available() )
@@ -72,11 +106,12 @@ const benchmark_dumper::measurement& benchmark_dumper::dump( bool finalMeasure, 
     /// Collect index data including dynamic container sizes, what can be time consuming
     auto& idxData = _all_data.total_measurement.index_memory_details_cntr;
     auto& caData = _all_data.total_measurement.comment_archive_stats;
+    auto& aaData = _all_data.total_measurement.account_archive_stats;
 
     idxData.clear();
     uint64_t shm_free = 0;
 
-    get_stat_details( idxData, caData, shm_free );
+    get_stat_details( idxData, caData, aaData, shm_free );
     _all_data.total_measurement.shm_free = shm_free / 1024;
     _all_data.total_measurement.block_number = block_number;
 

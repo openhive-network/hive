@@ -109,7 +109,7 @@ public:
     return fixture->get_current_time_iso_string();
   }
 
-  const account_object& account_create(
+    const account_object& account_create(
     const fc::string& name,
     const fc::string& creator,
     const private_key_type& creator_key,
@@ -123,7 +123,7 @@ public:
     return fixture->account_create(name, creator, creator_key, fee, key, post_key, json_metadata);
   }
 
-  const account_object& account_create(
+    const account_object& account_create(
     const fc::string& name,
     const public_key_type& key,
     const public_key_type& post_key
@@ -133,7 +133,7 @@ public:
     return fixture->account_create(name, key, post_key);
   }
 
-  const account_object& account_create_default_fee(
+    const account_object& account_create_default_fee(
     const fc::string& name,
     const public_key_type& key,
     const public_key_type& post_key
@@ -143,7 +143,7 @@ public:
     return fixture->account_create_default_fee(name, key, post_key);
   }
 
-  const account_object& account_create(
+    const account_object& account_create(
     const fc::string& name,
     const public_key_type& key
   )

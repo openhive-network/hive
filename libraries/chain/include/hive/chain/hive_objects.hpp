@@ -33,7 +33,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       convert_request_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _owner, const HBD_asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
-        : id( _id ), owner( _owner.get_id() ), amount( _amount ), requestid( _requestid ), conversion_date( _conversion_time )
+        : id( _id ), owner( _owner.get_account_id() ), amount( _amount ), requestid( _requestid ), conversion_date( _conversion_time )
       {}
 
       //amount of HBD to be converted to HIVE
@@ -66,7 +66,7 @@ namespace hive { namespace chain {
       collateralized_convert_request_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _owner, const HIVE_asset& _collateral_amount, const HBD_asset& _converted_amount,
         const time_point_sec& _conversion_time, uint32_t _requestid )
-        : id( _id ), owner( _owner.get_id() ), collateral_amount( _collateral_amount ), converted_amount( _converted_amount ),
+        : id( _id ), owner( _owner.get_account_id() ), collateral_amount( _collateral_amount ), converted_amount( _converted_amount ),
         requestid( _requestid ), conversion_date( _conversion_time )
       {}
 
@@ -355,7 +355,7 @@ namespace hive { namespace chain {
         const time_point_sec& _trigger_date, const account_object& _from,
         const account_object& _to, const asset& _amount, const string& _memo,
         const uint16_t _recurrence, const uint16_t _remaining_executions, const uint8_t _pair_id )
-      : id( _id ), trigger_date( _trigger_date ), from_id( _from.get_id() ), to_id( _to.get_id() ),
+      : id( _id ), trigger_date( _trigger_date ), from_id( _from.get_account_id() ), to_id( _to.get_account_id() ),
         amount( _amount ), memo( a ), recurrence( _recurrence ), remaining_executions( _remaining_executions ), pair_id( _pair_id )
       {
         from_string( memo, _memo );

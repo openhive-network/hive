@@ -154,7 +154,7 @@ class witness_plugin_impl
           "Detected private posting key in memo field. You should change your posting keys." );
     }
 
-    const auto& memo_key = account.memo_key;
+    const auto& memo_key = account.get_memo_key();
     for( auto& key : keys )
       HIVE_ASSERT( memo_key != key,  plugin_exception,
         "Detected private memo key in memo field. You should change your memo key." );
@@ -176,7 +176,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                _db.get< account_authority_object, chain::by_account >( o.from ) );
+                _db.get_account_authority( o.from ) );
     }
 
     void operator()( const transfer_to_savings_operation& o )const
@@ -184,7 +184,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                _db.get< account_authority_object, chain::by_account >( o.from ) );
+                _db.get_account_authority( o.from ) );
     }
 
     void operator()( const transfer_from_savings_operation& o )const
@@ -192,7 +192,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                _db.get< account_authority_object, chain::by_account >( o.from ) );
+                _db.get_account_authority( o.from ) );
     }
 
     void operator()( const recurrent_transfer_operation& o )const
@@ -200,7 +200,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
           _db.get< chain::account_object, chain::by_name >( o.from ),
-          _db.get< account_authority_object, chain::by_account >( o.from ) );
+          _db.get_account_authority( o.from ) );
     }
   };
 

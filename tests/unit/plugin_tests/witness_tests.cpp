@@ -92,6 +92,8 @@ struct witness_fixture : public hived_fixture
 
     postponed_init( config_args );
 
+    db->get_accounts_handler().set_limit( std::numeric_limits<size_t>::max() );
+
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
 
@@ -817,8 +819,8 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         account_id_type alice_id, carol_id;
         db->with_read_lock( [&]()
         {
-          alice_id = db->get_account( "alice" ).get_id();
-          carol_id = db->get_account( "carol" ).get_id();
+          alice_id = db->get_account( "alice" ).get_account_id();
+          carol_id = db->get_account( "carol" ).get_account_id();
         } );
 
         const auto& comment_idx = db->get_index< comment_index, by_id >();
@@ -892,7 +894,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
           "ears.";
         ilog( "sending carol/cat (failure - too early)" );
         HIVE_REQUIRE_ASSERT( schedule_transaction( comment ),
-          "( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && \"Post HF20\"" );
+          "( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && \"Post HF20\"" );
         fc::usleep( fc::seconds( 2 * HIVE_BLOCK_INTERVAL ) );
         ilog( "sending carol/cat" );
         schedule_transaction( comment );

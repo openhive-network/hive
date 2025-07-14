@@ -88,10 +88,15 @@ set( SOURCES
              external_storage/placeholder_comment_archive.cpp
              external_storage/rocksdb_storage_provider.cpp
              external_storage/rocksdb_comment_storage_provider.cpp
+             external_storage/rocksdb_account_storage_provider.cpp
+             external_storage/rocksdb_base_storage_provider.cpp
              external_storage/rocksdb_comment_archive.cpp
+             external_storage/rocksdb_account_archive.cpp
              external_storage/rocksdb_snapshot.cpp
              external_storage/types.cpp
-
+             external_storage/account_rocksdb_objects.cpp
+             external_storage/account_authority_rocksdb_objects.cpp
+             external_storage/account_metadata_rocksdb_objects.cpp
              ${HEADERS}
            )
 

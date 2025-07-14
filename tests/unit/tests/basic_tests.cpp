@@ -684,12 +684,14 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 480u ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 672u );
-  BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
-  BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 136u );
-  BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
-  BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 312u );
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 496u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 624u );
+  BOOST_CHECK_EQUAL( sizeof( tiny_account_object ), 72u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( tiny_account_index::MULTIINDEX_NODE_TYPE ), 264u );
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 96u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 192u );
+  BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 256u ); //as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 352u );
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( witness_object ), 352u ); //small but potentially as many as account_object
@@ -1114,7 +1116,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
   */
   dtds.register_new_type<hive::chain::account_object>();
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 33 );
   {
     const hive::chain::util::decoded_type_data& decoded_public_key_type = dtds.get_decoded_type_data<hive::protocol::public_key_type>();
 
@@ -1145,22 +1147,22 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
     BOOST_CHECK( decoded_account_object.members );
-    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 58 );
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 9 );
   }
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 33 ); // decoded types map size shouldn't change.
 
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 29 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 34 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 40 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 40 );
   {
     BOOST_CHECK_NO_THROW(dtds.register_new_type<hive::void_t>());
-    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 36 );
+    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 41 );
     const hive::chain::util::decoded_type_data& decoded_hive_void_t =dtds.get_decoded_type_data<hive::void_t>();
     BOOST_CHECK( decoded_hive_void_t.reflected );
     BOOST_CHECK( !decoded_hive_void_t.enum_values );
@@ -1492,9 +1494,10 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f1d1ffb67d5b16ff922dd66afdd98a4043cf8909" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "8a8a73c8a77292e0685109e0caf6040da28ba70c" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "e492c85b420461ce856b14b80edb3649e4996d86" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f138a52bfb14ab6afbca9b2c50707d445f4e6998" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::tiny_account_object>(dtds), "01932752723874ba653eff8b0641d005ed8ec65c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "3be41be5376d4d40d20dc6a39033b872d9334f43" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "a8d46da870fa6d9f015bf1eb9c213702f512f445" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "cf8a309d076970b83c8e7ada88b01277a43dc726" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::owner_authority_history_object>(dtds), "9d53248dc82b3a48870f9f56ebe18a1d3a9a7766" );
@@ -1585,9 +1588,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1614,9 +1617,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1643,9 +1646,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1670,9 +1673,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1695,9 +1698,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1720,9 +1723,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1815,17 +1818,17 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
 
   generate_block();
 
-  const auto& alice_auth = db->get< account_authority_object, by_account >( "alice" );
-  const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
-  const auto& carol_auth = db->get< account_authority_object, by_account >( "carol" );
-  const auto& dan_auth = db->get< account_authority_object, by_account >( "dan" );
+  const auto& alice_auth = db->get< account_authority_object, by_name >( "alice" );
+  const auto& bob_auth = db->get< account_authority_object, by_name >( "bob" );
+  const auto& carol_auth = db->get< account_authority_object, by_name >( "carol" );
+  const auto& dan_auth = db->get< account_authority_object, by_name >( "dan" );
 
   // alice has her own keys for each role, but she also redirects to bob for posting,
   // carol for active and dan for owner
 
-  auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-  auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-  auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+  auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).active ); };
+  auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).owner ); };
+  auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_name >( name ).posting ); };
   auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
   required_authorities_type required_authorities;

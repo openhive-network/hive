@@ -35,6 +35,7 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
+#include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
@@ -107,7 +108,11 @@ void open_test_database( database& db, block_storage_i& block_storage,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
   auto comment_archive = std::make_shared<placeholder_comment_archive>( db );
+  auto account_archive = std::make_shared<rocksdb_account_archive>( db, dir, dir / "accounts-rocksdb-storage", app );
+
   db.set_comments_handler( comment_archive );
+  db.set_accounts_handler( account_archive );
+
   hive::chain::open_args args;
   hive::chain::block_storage_i::block_log_open_args bl_args;
   args.data_dir = dir;
@@ -379,7 +384,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
 
-    auto alice_id = db1.get_account( "alice" ).get_id();
+    auto alice_id = db1.get_account( "alice" ).get_account_id();
     BOOST_CHECK( db1.get(alice_id).get_name() == "alice" );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),

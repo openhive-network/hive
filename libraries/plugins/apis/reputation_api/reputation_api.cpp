@@ -23,7 +23,7 @@ DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )
 {
   FC_ASSERT( args.limit <= 1000, "Cannot retrieve more than 1000 account reputations at a time." );
 
-  const auto& acc_idx = _db.get_index< chain::account_index >().indices().get< chain::by_name >();
+  const auto& acc_idx = _db.get_index< hive::chain::tiny_account_index, hive::chain::by_name >();
   const auto& rep_idx = _db.get_index< reputation::reputation_index >().indices().get< reputation::by_account >();
 
   auto acc_itr = acc_idx.lower_bound( args.account_lower_bound );

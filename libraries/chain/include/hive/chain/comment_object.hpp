@@ -68,7 +68,7 @@ namespace hive { namespace chain {
   )
     : id ( _id )
   {
-    author_and_permlink_hash = compute_author_and_permlink_hash( _author.get_id(), _permlink );
+    author_and_permlink_hash = compute_author_and_permlink_hash( _author.get_account_id(), _permlink );
 
     if( _parent_comment != nullptr )
     {
@@ -107,7 +107,7 @@ namespace hive { namespace chain {
       {
         stored_beneficiary_route_type() {}
         stored_beneficiary_route_type( const account_object& a, const uint16_t& w )
-          : account_id( a.get_id() ), weight( w )
+          : account_id( a.get_account_id() ), weight( w )
         {}
 
         account_id_type account_id;
@@ -123,7 +123,7 @@ namespace hive { namespace chain {
         const comment_object& _comment, const account_object& _author, const std::string& _permlink,
         const time_point_sec& _creation_time, const time_point_sec& _cashout_time )
       : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
-        author_id( _author.get_id() ), permlink( a ), created( _creation_time ),
+        author_id( _author.get_account_id() ), permlink( a ), created( _creation_time ),
         cashout_time( _cashout_time ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )
@@ -392,7 +392,7 @@ namespace hive { namespace chain {
       comment_vote_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _voter, const comment_object& _comment,
         const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
-      : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
+      : id( _id ), voter( _voter.get_account_id() ), comment( _comment.get_id() ), weight( _weight ),
         rshares( _rshares ), vote_percent( _vote_percent ), last_update( _creation_time )
       {}
 

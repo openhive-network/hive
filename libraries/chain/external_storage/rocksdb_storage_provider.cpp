@@ -215,23 +215,35 @@ void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
   FC_ASSERT(minor == STORE_MINOR_VERSION, "Store minor version mismatch");
 }
 
-void rocksdb_storage_provider::save( const Slice& key, const Slice& value )
+void rocksdb_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
 {
-  auto s = getWriteBuffer().Put( _columnHandles[CommentsColumns::COMMENT], key, value );
+  auto s = getWriteBuffer().Put( getColumnHandle(column_type), key, value );
   checkStatus(s);
 }
 
-bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
+bool rocksdb_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
 {
   ReadOptions rOptions;
 
-  ::rocksdb::Status s = getStorage()->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
+  ::rocksdb::Status s = getStorage()->Get( rOptions, getColumnHandle(column_type), key, &value );
   return s.ok();
+}
+
+void rocksdb_storage_provider::remove( ColumnTypes column_type, const Slice& key )
+{
+  auto s = getWriteBuffer().Delete( getColumnHandle(column_type), key );
+  checkStatus(s);
 }
 
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();
+}
+
+ColumnFamilyHandle* rocksdb_storage_provider::getColumnHandle( ColumnTypes column_type )
+{
+  FC_ASSERT( column_type < _columnHandles.size() );
+  return _columnHandles[column_type];
 }
 
 void rocksdb_storage_provider::load_lib()

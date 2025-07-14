@@ -21,7 +21,7 @@ struct votes_update_data_less
   bool operator()( const votes_update_data& obj1, const votes_update_data& obj2 ) const 
   {
     FC_ASSERT( obj1.account && obj2.account, "unexpected error: ${error}", ("error", delayed_voting_messages::object_is_null ) );
-    return obj1.account->get_id() < obj2.account->get_id();
+    return obj1.account->get_account_id() < obj2.account->get_account_id();
   }
 };
 
