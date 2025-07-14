@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
-    const account_object& bob_account = db->get_account( "bob" );
+    const auto& alice_account = db->get_account( "alice" );
+    const auto& bob_account = db->get_account( "bob" );
 
     asset alice_0 = asset( 0, alice_symbol );
 
@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
+    const auto& alice_account = db->get_account( "alice" );
 
     tx.operations.clear();
 
@@ -578,8 +578,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
-    const account_object& bob_account = db->get_account( "bob" );
+    const auto& alice_account = db->get_account( "alice" );
+    const auto& bob_account = db->get_account( "bob" );
 
     asset alice_0 = asset( 0, alice_symbol );
 
@@ -1049,10 +1049,10 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hbd_balance = ASSET( "10.000 TBD" );
-        a.reward_hive_balance = ASSET( "10.000 TESTS" );
-        a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-        a.reward_vesting_hive = ASSET( "10.000 TESTS" );
+        a.set_hbd_rewards( ASSET( "10.000 TBD" ) );
+        a.set_rewards( ASSET( "10.000 TESTS" ) );
+        a.set_vest_rewards( ASSET( "10.000000 VESTS" ) );
+        a.set_vest_rewards_as_hive( ASSET( "10.000 TESTS" ) );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )

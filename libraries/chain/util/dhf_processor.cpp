@@ -136,7 +136,7 @@ void dhf_processor::sort_by_votes( t_proposals& proposals )
 
 asset dhf_processor::get_treasury_fund()
 {
-  auto& treasury_account = db.get_treasury();
+  const auto& treasury_account = db.get_treasury();
 
   return treasury_account.get_hbd_balance();
 }
@@ -334,11 +334,11 @@ void dhf_processor::convert_funds( const block_notification& note )
     _dgpo.next_daily_maintenance_time = block_ts + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
-  const auto &treasury_account = db.get_treasury();
-  if (treasury_account.balance.amount == 0)
+  const auto& treasury_account = db.get_treasury();
+  if (treasury_account.get_balance().amount == 0)
     return;
 
-  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )
