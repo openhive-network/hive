@@ -41,7 +41,7 @@ class rocksdb_comment_archive : public comments_handler
 
     comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const override;
 
-    void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
+    void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
     void open() override;

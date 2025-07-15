@@ -20,7 +20,7 @@ class placeholder_comment_archive final : public comments_handler
 
     virtual comment get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const override;
 
-    virtual void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
+    virtual void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     virtual void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
     virtual void open() override;

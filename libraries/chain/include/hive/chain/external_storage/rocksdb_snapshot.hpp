@@ -31,7 +31,7 @@ class rocksdb_snapshot: public external_storage_snapshot
     rocksdb_snapshot( std::string name, std::string storage_name, database& db,
                       const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider );
 
-    void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
+    void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 
 };

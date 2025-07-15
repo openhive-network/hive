@@ -23,7 +23,7 @@ rocksdb_snapshot::rocksdb_snapshot( std::string name, std::string storage_name, 
   FC_ASSERT( _provider );
 }
 
-void rocksdb_snapshot::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_snapshot::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   fc::path actual_path(note.external_data_storage_base_path);
   actual_path /= _storage_name;

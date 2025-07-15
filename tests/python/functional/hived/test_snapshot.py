@@ -101,7 +101,7 @@ def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> N
     assert os.path.isfile(node.directory / "current_decoded_types_details.log")
     assert os.path.isfile(node.directory / "loaded_from_shm_decoded_types_details.log")
 
-    warning_msg = "Snaphot has more plugins than current hived configuration"
+    warning_msg = "Snapshot has more plugins than current hived configuration"
     assert warning_msg in (node.directory / "stderr.log").read_text()
 
 

@@ -38,7 +38,7 @@ comment placeholder_comment_archive::get_comment( const account_id_type& author,
   }
 }
 
-void placeholder_comment_archive::save_snaphot( const prepare_snapshot_supplement_notification& note )
+void placeholder_comment_archive::save_snapshot( const prepare_snapshot_supplement_notification& note )
 {
   // do nothing - there is no extra data to store
 }
