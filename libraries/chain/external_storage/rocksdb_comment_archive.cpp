@@ -176,9 +176,9 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
   }
 }
 
-void rocksdb_comment_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_comment_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
-  snapshot->save_snaphot( note );
+  snapshot->save_snapshot( note );
 }
 
 void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )

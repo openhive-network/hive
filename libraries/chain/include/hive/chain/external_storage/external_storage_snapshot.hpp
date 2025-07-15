@@ -13,7 +13,7 @@ class external_storage_snapshot
 
     using ptr = std::shared_ptr<external_storage_snapshot>;
 
-    virtual void save_snaphot( const prepare_snapshot_supplement_notification& note ) = 0;
+    virtual void save_snapshot( const prepare_snapshot_supplement_notification& note ) = 0;
     virtual void load_snapshot( const load_snapshot_supplement_notification& note ) = 0;
 };
 

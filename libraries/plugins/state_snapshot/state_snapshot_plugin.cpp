@@ -1523,7 +1523,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   
   hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
 
-  _mainDb.get_comments_handler().save_snaphot(notification);
+  _mainDb.get_comments_handler().save_snapshot(notification);
   _mainDb.notify_prepare_snapshot_data_supplement(notification);
 
   store_snapshot_manifest(actualStoragePath, builtWriters, dump_helper);
@@ -1584,7 +1584,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
 
     if (snapshot_has_more_plugins)
-      wlog("Snaphot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+      wlog("Snapshot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
     else if (!current_plugins.empty())
       wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
   }
