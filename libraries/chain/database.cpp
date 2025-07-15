@@ -198,6 +198,7 @@ void database::initialize_state_independent_data(const open_args& args)
 
   initialize_indexes();
   get_comments_handler().open();
+  get_accounts_handler().open();
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 
@@ -294,6 +295,7 @@ void database::wipe(const fc::path& shared_mem_dir)
   if( get_is_open() )
     close();
   get_comments_handler().wipe();
+  get_accounts_handler().wipe();
   chainbase::database::wipe( shared_mem_dir );
 }
 
@@ -312,6 +314,7 @@ void database::close()
     clear_pending();
 
     get_comments_handler().close();
+    get_accounts_handler().close();
     chainbase::database::flush();
 
     auto lib = this->get_last_irreversible_block_num();
@@ -570,12 +573,14 @@ void database::create_account_metadata( const account_object& account,
                                         const std::optional<std::string>& json_metadata )
 {
 #ifdef COLLECT_ACCOUNT_METADATA
-  create< account_metadata_object >( [&]( account_metadata_object& meta )
+  create< account_metadata_object >( [&, this]( account_metadata_object& meta )
   {
     meta.account = account.get_name();
     if( json_metadata )
       from_string( meta.json_metadata, *json_metadata );
-  });
+
+    get_accounts_handler().store_volatile_account_metadata( head_block_num(), meta );
+  } );
 #endif
 }
 
@@ -5124,6 +5129,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       //  ("b", new_last_irreversible)("ob", old_last_irreversible));
 
       get_comments_handler().on_irreversible_block( new_last_irreversible );
+      get_accounts_handler().on_irreversible_block( new_last_irreversible );
 
       //ABW: notifying one by one seems like a potential waste - notification receiver can't optimize its work
       for (uint32_t i = old_last_irreversible + 1; i <= new_last_irreversible; ++i)

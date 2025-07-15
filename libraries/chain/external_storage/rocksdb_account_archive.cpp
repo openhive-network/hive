@@ -5,7 +5,6 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
@@ -24,7 +23,7 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
-  HIVE_ADD_PLUGIN_INDEX( db, account_metadata_index );
+  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_metadata_index );
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
 }
@@ -34,22 +33,19 @@ rocksdb_account_archive::~rocksdb_account_archive()
   close();
 }
 
-// void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object )
-// {
-// #ifdef DBG_MOVE_DETAILS_INFO
-//   ilog( "lib ${lib} Move to external storage a comment with id: ${comment_id}, hash: ${hash}",
-//         ("comment_id", volatile_object.comment_id)("hash", volatile_object.get_author_and_permlink_hash())("lib", block_num) );
-// #endif
+void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const volatile_account_metadata_object& volatile_object )
+{
+  auto _account = static_cast<std::string>( volatile_object.account );
+  
+  Slice _key( _account.data(), _account.size() );
 
-//   Slice _key( volatile_object.get_author_and_permlink_hash().data(), volatile_object.get_author_and_permlink_hash().data_size() );
+  rocksdb_account_metadata_object _obj( volatile_object );
 
-//   rocksdb_comment_object _obj( volatile_object );
+  auto _serialize_buffer = dump( _obj );
+  Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
 
-//   auto _serialize_buffer = dump( _obj );
-//   Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
-
-//   provider->save( _key, _value );
-// }
+  provider->save( _key, _value );
+}
 
 std::shared_ptr<account_metadata_object> rocksdb_account_archive::get_account_metadata_impl( const std::string& account_name ) const
 {
@@ -76,51 +72,66 @@ std::shared_ptr<account_metadata_object> rocksdb_account_archive::get_account_me
 
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
-//   provider->update_lib( block_num );
+  provider->update_lib( block_num );
 
-//   if( !db.has_hardfork( HIVE_HARDFORK_0_19 ) )
-//     return;
+  const auto& _volatile_idx = db.get_index< volatile_account_metadata_index, by_block >();
 
-//   const auto& _volatile_idx = db.get_index< volatile_comment_index, by_block >();
+  if( _volatile_idx.size() < volatile_objects_limit )
+    return;
 
-//   if( _volatile_idx.size() < volatile_objects_limit )
-//     return;
+  auto time_start = std::chrono::high_resolution_clock::now();
 
-//   auto time_start = std::chrono::high_resolution_clock::now();
+  auto _itr = _volatile_idx.begin();
 
-//   auto _itr = _volatile_idx.begin();
+#ifdef DBG_MOVE_INFO
+  ilog( "rocksdb_account_archive: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
+#endif
 
-// #ifdef DBG_MOVE_INFO
-//   ilog( "rocksdb_account_archive: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
-// #endif
+  bool _do_flush = false;
 
-//   bool _do_flush = false;
+  uint64_t count = 0;
+  while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
+  {
+    const auto& _current = *_itr;
+    ++_itr;
 
-//   uint64_t count = 0;
-//   while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
-//   {
-//     const auto& _current = *_itr;
-//     ++_itr;
+    move_to_external_storage_impl( block_num, _current );
 
-//     move_to_external_storage_impl( block_num, _current );
+    if( !_do_flush )
+      _do_flush = true;
 
-//     if( !_do_flush )
-//       _do_flush = true;
+    const auto* _account_metadata = db.find< account_metadata_object, by_account >( _current.account );
+    FC_ASSERT( _account_metadata );
 
-//     const auto* _comment = db.find_comment( _current.comment_id );
-//     FC_ASSERT( _comment );
+    db.remove( *_account_metadata );
+    db.remove( _current );
 
-//     db.remove( *_comment );
-//     db.remove( _current );
+    ++count;
+  }
 
-//     ++count;
-//   }
+  if( _do_flush )
+    provider->flush();
 
-//   if( _do_flush )
-//     provider->flush();
+  stats.account_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  stats.account_lib_processing.count += count;
+}
 
-//   stats.comment_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-//   stats.comment_lib_processing.count += count;
+void rocksdb_account_archive::store_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj )
+{
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  db.create< volatile_account_metadata_object >( [&]( volatile_account_metadata_object& o )
+  {
+    o.account_metadata_id   = obj.get_id();
+    o.account               = obj.account;
+    o.json_metadata         = obj.json_metadata;
+    o.posting_json_metadata = obj.posting_json_metadata;;
+
+    o.block_number          = block_num;
+  });
+
+  stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++stats.account_cashout_processing.count;
 }
 
 account_metadata rocksdb_account_archive::get_account_metadata( const std::string& account_name ) const
@@ -153,7 +164,7 @@ account_metadata rocksdb_account_archive::get_account_metadata( const std::strin
   }
 }
 
-void rocksdb_account_archive::write_account_metadata( const account_metadata& obj ) const
+void rocksdb_account_archive::update_account_metadata( const account_metadata& obj )
 {
 
 }
