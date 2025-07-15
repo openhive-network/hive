@@ -8,6 +8,7 @@
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
+#include <hive/protocol/testnet_blockchain_configuration.hpp>
 #include <hive/protocol/transaction_util.hpp>
 
 #include <hive/utilities/signal.hpp>
@@ -24,7 +25,17 @@
 
 
 #define DISTANCE_CALC_PRECISION (10000)
+
+#ifdef IS_TEST_NET
+
+using namespace hive::protocol::testnet_blockchain_configuration;
+
+#define BLOCK_PRODUCING_LAG_TIME (2500)
+
+#else
 #define BLOCK_PRODUCING_LAG_TIME (750)
+#endif
+
 #define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (200000)
 #define DEFAULT_WITNESS_PARTICIPATION (33)
 

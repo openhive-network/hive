@@ -33,6 +33,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_init_hbd_supply())
 #define HIVE_INITIAL_VESTING                  (configuration_data.get_initial_vesting())
 #define HIVE_INITIAL_VESTING_PRICE            (configuration_data.get_initial_vesting_price())
+#define BLOCK_PRODUCING_LAG_TIME
 
 #else
 
