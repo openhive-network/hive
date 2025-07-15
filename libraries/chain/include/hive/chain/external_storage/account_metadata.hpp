@@ -23,7 +23,9 @@ public:
   const std::string get_posting_json_metadata() const { return ptr->posting_json_metadata.c_str(); }
 
   const account_metadata_object& operator*() const { return *ptr; }
-  const account_metadata_object* get() const { return ptr; }
+  account_metadata_object& operator*() { return const_cast<account_metadata_object&>( *ptr ); }
+
+  bool is_shm() const { return external == nullptr; }
 };
 
 
