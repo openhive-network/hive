@@ -579,7 +579,7 @@ void database::create_account_metadata( const account_object& account,
     if( json_metadata )
       from_string( meta.json_metadata, *json_metadata );
 
-    get_accounts_handler().store_volatile_account_metadata( head_block_num(), meta );
+    get_accounts_handler().create_volatile_account_metadata( head_block_num(), meta );
   } );
 #endif
 }

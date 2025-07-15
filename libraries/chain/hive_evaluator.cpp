@@ -663,7 +663,8 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
   {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_name() ), [&]( account_metadata_object& meta )
+    account_metadata _account_metadata = _db.get_accounts_handler().get_account_metadata( account.get_name() );
+    _db.modify( *_account_metadata, [&]( account_metadata_object& meta )
     {
       from_string( meta.json_metadata, o.json_metadata );
       if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
@@ -671,6 +672,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
         from_string( meta.posting_json_metadata, o.json_metadata );
       }
     });
+    _db.get_accounts_handler().create_volatile_account_metadata( _db.head_block_num(), *_account_metadata );
   }
   #endif
 
@@ -728,7 +730,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
   {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_name() ), [&]( account_metadata_object& meta )
+    account_metadata _account_metadata = _db.get_accounts_handler().get_account_metadata( account.get_name() );
+    _db.modify( *_account_metadata, [&]( account_metadata_object& meta )
     {
       if ( o.json_metadata.size() > 0 )
         from_string( meta.json_metadata, o.json_metadata );
@@ -736,6 +739,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
       if ( o.posting_json_metadata.size() > 0 )
         from_string( meta.posting_json_metadata, o.posting_json_metadata );
     });
+    _db.get_accounts_handler().create_volatile_account_metadata( _db.head_block_num(), *_account_metadata );
   }
   #endif
 

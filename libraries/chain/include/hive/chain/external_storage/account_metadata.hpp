@@ -22,10 +22,8 @@ public:
   const std::string get_json_metadata() const { return ptr->json_metadata.c_str(); }
   const std::string get_posting_json_metadata() const { return ptr->posting_json_metadata.c_str(); }
 
-  //operator bool() const { return ptr != nullptr; }
-
-  //const comment_object& operator*() const { return *ptr; }
-  //const comment_object* get() const { return ptr; }
+  const account_metadata_object& operator*() const { return *ptr; }
+  const account_metadata_object* get() const { return ptr; }
 };
 
 

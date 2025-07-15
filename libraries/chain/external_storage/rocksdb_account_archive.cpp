@@ -101,9 +101,9 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
       _do_flush = true;
 
     const auto* _account_metadata = db.find< account_metadata_object, by_account >( _current.account );
-    FC_ASSERT( _account_metadata );
+    if( _account_metadata )
+      db.remove( *_account_metadata );
 
-    db.remove( *_account_metadata );
     db.remove( _current );
 
     ++count;
@@ -116,7 +116,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   stats.account_lib_processing.count += count;
 }
 
-void rocksdb_account_archive::store_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj )
+void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -162,11 +162,6 @@ account_metadata rocksdb_account_archive::get_account_metadata( const std::strin
     }
     return account_metadata( _external_account_metadata );
   }
-}
-
-void rocksdb_account_archive::update_account_metadata( const account_metadata& obj )
-{
-
 }
 
 void rocksdb_account_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
