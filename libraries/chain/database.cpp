@@ -566,6 +566,19 @@ const hardfork_property_object& database::get_hardfork_property_object()const
   return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
+void database::create_account_metadata( const account_object& account,
+                                        const std::optional<std::string>& json_metadata )
+{
+#ifdef COLLECT_ACCOUNT_METADATA
+  create< account_metadata_object >( [&]( account_metadata_object& meta )
+  {
+    meta.account = account.get_name();
+    if( json_metadata )
+      from_string( meta.json_metadata, *json_metadata );
+  });
+#endif
+}
+
 const comment_object& database::get_comment_for_payout_time( const comment_object& comment )const
 {
   if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.is_root() )

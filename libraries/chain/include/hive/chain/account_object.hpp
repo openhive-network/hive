@@ -339,6 +339,17 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( account_metadata_object, (json_metadata)(posting_json_metadata) )
 
+      template< typename Allocator >
+      account_metadata_object( allocator< Allocator > a, account_metadata_id_type _id,
+                                const std::string& account,
+                                const std::string& json_metadata,
+                                const std::string& posting_json_metadata )
+      : id( _id ), account( account), json_metadata( a ), posting_json_metadata( a )
+      {
+        from_string( this->json_metadata, json_metadata );
+        from_string( this->posting_json_metadata, posting_json_metadata );
+      }
+
       account_name_type account;
       shared_string     json_metadata;
       shared_string     posting_json_metadata;

@@ -24,9 +24,10 @@ class volatile_account_metadata_object : public object< volatile_account_metadat
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_metadata_object, (json_metadata)(posting_json_metadata) )
 
-    account_name_type account;
-    shared_string     json_metadata;
-    shared_string     posting_json_metadata;
+    account_metadata_id_type  account_metadata_id;
+    account_name_type         account;
+    shared_string             json_metadata;
+    shared_string             posting_json_metadata;
 
     uint32_t                                      block_number = 0;
 };
@@ -59,20 +60,22 @@ class rocksdb_account_metadata_object
 
     rocksdb_account_metadata_object( const volatile_account_metadata_object& obj )
     {
+      id                    = obj.account_metadata_id;
       account               = obj.account;
       json_metadata         = obj.json_metadata.c_str();
       posting_json_metadata = obj.posting_json_metadata.c_str();
     }
 
-    account_name_type account;
-    std::string       json_metadata;
-    std::string       posting_json_metadata;
+    account_metadata_id_type  id;
+    account_name_type         account;
+    std::string               json_metadata;
+    std::string               posting_json_metadata;
 };
 
 } } // hive::chain
 
 
-FC_REFLECT( hive::chain::volatile_account_metadata_object, (id)(account)(json_metadata)(posting_json_metadata) )
+FC_REFLECT( hive::chain::volatile_account_metadata_object, (id)(account_metadata_id)(account)(json_metadata)(posting_json_metadata) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_metadata_object, hive::chain::volatile_account_metadata_index )
 
-FC_REFLECT( hive::chain::rocksdb_account_metadata_object, (account)(json_metadata)(posting_json_metadata) )
+FC_REFLECT( hive::chain::rocksdb_account_metadata_object, (id)(account)(json_metadata)(posting_json_metadata) )

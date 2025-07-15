@@ -6,6 +6,8 @@
 
 #include <hive/chain/hive_object_types.hpp>
 
+#include <hive/utilities/benchmark_dumper.hpp>
+
 namespace hive { namespace chain {
 
 class accounts_handler : public external_storage_snapshot
@@ -17,10 +19,13 @@ class accounts_handler : public external_storage_snapshot
     virtual void on_irreversible_block( uint32_t block_num ) = 0;
 
     virtual account_metadata get_account_metadata( const std::string& account_name ) const = 0;
+    virtual void write_account_metadata( const account_metadata& obj ) const = 0;
 
     virtual void open() = 0;
     virtual void close() = 0;
     virtual void wipe() = 0;
+
+    static hive::utilities::benchmark_dumper::account_archive_details_t stats; // note: times should be measured in nanoseconds
 };
 
 } } // hive::chain

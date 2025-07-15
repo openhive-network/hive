@@ -1530,7 +1530,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   auto blockNo = _mainDb.head_block_num();
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );
@@ -1663,7 +1663,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);
 
-  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, uint64_t& shm_free )
+  const auto& measure = dumper.measure( blockNo, [&]( benchmark_dumper::index_memory_details_cntr_t&, benchmark_dumper::comment_archive_details_t&, benchmark_dumper::account_archive_details_t&, uint64_t& shm_free )
   {
     shm_free = _mainDb.get_free_memory();
   } );

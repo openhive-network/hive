@@ -34,6 +34,15 @@ public:
     counter_t comment_lib_processing;
   };
 
+  struct account_archive_details_t
+  {
+    counter_t account_accessed_from_index;
+    counter_t account_accessed_from_archive;
+    counter_t account_not_found;
+    counter_t account_cashout_processing;
+    counter_t account_lib_processing;
+  };
+
   struct index_memory_details_t
   {
     index_memory_details_t(std::string&& name, size_t size, size_t i_sizeof,
@@ -81,6 +90,7 @@ public:
     uint64_t shm_free = 0; // in kB
 
     comment_archive_details_t   comment_archive_stats;
+    account_archive_details_t   account_archive_stats;
     index_memory_details_cntr_t index_memory_details_cntr;
   };
 
@@ -92,7 +102,7 @@ public:
     measurement                   total_measurement;
   };
 
-  typedef std::function<void(index_memory_details_cntr_t&, comment_archive_details_t&, uint64_t&)> get_stat_details_t;
+  typedef std::function<void(index_memory_details_cntr_t&, comment_archive_details_t&, account_archive_details_t&, uint64_t&)> get_stat_details_t;
 
   bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
 
@@ -131,12 +141,16 @@ FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
         (comment_accessed_from_index)(comment_accessed_from_archive)(comment_not_found)
         (comment_cashout_processing)(comment_lib_processing) )
 
+FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
+        (account_accessed_from_index)(account_accessed_from_archive)(account_not_found)
+        (account_cashout_processing)(account_lib_processing) )
+
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)
         (additional_container_allocation)(total_index_mem_usage) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
-        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(comment_archive_stats)(index_memory_details_cntr) )
+        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(shm_free)(comment_archive_stats)(account_archive_stats)(index_memory_details_cntr) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
         (measurements)(total_measurement) )

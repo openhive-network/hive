@@ -1,13 +1,14 @@
+#include <chainbase/chainbase.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/index.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/rocksdb_account_archive.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
-#include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_snapshot.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
@@ -16,6 +17,8 @@ namespace hive { namespace chain {
 //#define DBG_INFO
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
+
+hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
@@ -48,23 +51,28 @@ rocksdb_account_archive::~rocksdb_account_archive()
 //   provider->save( _key, _value );
 // }
 
-// std::shared_ptr<comment_object> rocksdb_account_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
-// {
-//   Slice _key( hash.data(), hash.data_size() );
+std::shared_ptr<account_metadata_object> rocksdb_account_archive::get_account_metadata_impl( const std::string& account_name ) const
+{
+  Slice _key( account_name.data(), account_name.size() );
 
-//   PinnableSlice _buffer;
+  PinnableSlice _buffer;
 
-//   bool _status = provider->read( _key, _buffer );
+  bool _status = provider->read( _key, _buffer );
 
-//   if( !_status )
-//     return std::shared_ptr<comment_object>();
+  if( !_status )
+    return std::shared_ptr<account_metadata_object>();
 
-//   rocksdb_comment_object _obj;
+  rocksdb_account_metadata_object _obj;
 
-//   load( _obj, _buffer.data(), _buffer.size() );
+  load( _obj, _buffer.data(), _buffer.size() );
 
-//   return std::shared_ptr<comment_object>( new comment_object ( _obj.comment_id, _obj.parent_comment, hash, _obj.depth ) );
-// }
+  auto& _indices = db.get_index< hive::chain::account_metadata_index >().indices();
+  auto _allocator = _indices.get_allocator();
+
+  return std::shared_ptr<account_metadata_object>( new account_metadata_object (
+                                                      chainbase::get_allocator_helper_t<account_metadata_object>::get_generic_allocator( _allocator ),
+                                                      _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
+}
 
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
@@ -117,33 +125,37 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
 account_metadata rocksdb_account_archive::get_account_metadata( const std::string& account_name ) const
 {
-//   auto time_start = std::chrono::high_resolution_clock::now();
+  auto time_start = std::chrono::high_resolution_clock::now();
 
-//   auto _hash = comment_object::compute_author_and_permlink_hash( author, permlink );
-//   const auto* _comment = db.find< comment_object, by_permlink >( _hash );
-//   if( _comment )
-//   {
-//     stats.comment_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-//     ++stats.comment_accessed_from_index.count;
-//     return comment( _comment );
-//   }
-//   else
-//   {
-//     const auto _external_comment = get_comment_impl( _hash );
-//     uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-//     if( _external_comment )
-//     {
-//       stats.comment_accessed_from_archive.time_ns += time;
-//       ++stats.comment_accessed_from_archive.count;
-//     }
-//     else
-//     {
-//       stats.comment_not_found.time_ns += time;
-//       ++stats.comment_not_found.count;
-//       FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
-//     }
-//     return comment( _external_comment );
-//   }
+  const auto* _account_metadata = db.find< account_metadata_object, by_account >( account_name );
+  if( _account_metadata )
+  {
+    stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++stats.account_accessed_from_index.count;
+    return account_metadata( _account_metadata );
+  }
+  else
+  {
+    const auto _external_account_metadata = get_account_metadata_impl( account_name );
+    uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    if( _external_account_metadata )
+    {
+      stats.account_accessed_from_archive.time_ns += time;
+      ++stats.account_accessed_from_archive.count;
+    }
+    else
+    {
+      stats.account_not_found.time_ns += time;
+      ++stats.account_not_found.count;
+      FC_ASSERT( false, "Account metadata not found" );
+    }
+    return account_metadata( _external_account_metadata );
+  }
+}
+
+void rocksdb_account_archive::write_account_metadata( const account_metadata& obj ) const
+{
+
 }
 
 void rocksdb_account_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
@@ -158,22 +170,22 @@ void rocksdb_account_archive::load_snapshot( const hive::chain::load_snapshot_su
 
 void rocksdb_account_archive::open()
 {
-  // volatile_comment_index is registered in database, so it is handled automatically
+  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->init( destroy_database_on_startup );
 }
 
 void rocksdb_account_archive::close()
 {
-  // volatile_comment_index is registered in database, so it is handled automatically
+  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->shutdownDb( destroy_database_on_shutdown );
 }
 
 void rocksdb_account_archive::wipe()
 {
-  // volatile_comment_index is registered in database, so it is handled automatically
+  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->wipeDb();
 }
 
 } }
 
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_comment_index )
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_metadata_index )

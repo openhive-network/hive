@@ -9060,7 +9060,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
 #ifdef COLLECT_ACCOUNT_METADATA // json_metadata is stored conditionally
-    const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
+    const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_name() );
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
     CHECK_NO_PROXY( bob );
@@ -9507,7 +9507,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
 #ifdef COLLECT_ACCOUNT_METADATA
-    const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.get_id() );
+    const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.get_name() );
     BOOST_REQUIRE( acct_metadata.json_metadata == "{\"bar\":\"foo\"}" );
     BOOST_REQUIRE( acct_metadata.posting_json_metadata == "{\"success\":true}" );
 #endif

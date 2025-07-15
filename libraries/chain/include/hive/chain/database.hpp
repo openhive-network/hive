@@ -302,6 +302,9 @@ namespace chain {
 
       const hardfork_property_object&        get_hardfork_property_object()const;
 
+      void create_account_metadata( const account_object& account,
+                                    const std::optional<std::string>& json_metadata = std::optional<std::string>() );
+
     private:
 
       const comment_object&                  get_comment_for_payout_time( const comment_object& comment )const;

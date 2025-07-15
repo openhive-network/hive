@@ -57,6 +57,7 @@ using hive::chain::block_id_type;
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
 using comment_archive_details_t = hive::utilities::benchmark_dumper::comment_archive_details_t;
+using account_archive_details_t = hive::utilities::benchmark_dumper::account_archive_details_t;
 using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
 
 #define NUM_THREADS 1
@@ -851,7 +852,7 @@ void chain_plugin_impl::initial_settings()
 
   db._max_mempool_size = max_mempool_size;
 
-  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, uint64_t& shm_free)
+  get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, account_archive_details_t& account_archive_stats, uint64_t& shm_free)
   {
     shm_free = db.get_free_memory();
     const auto& abstract_index_cntr = db.get_abstract_index_cntr();
@@ -862,6 +863,7 @@ void chain_plugin_impl::initial_settings()
         info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
     }
     comment_archive_stats = comments_handler::stats;
+    account_archive_stats = accounts_handler::stats;
   };
 
   fc::variant database_config;

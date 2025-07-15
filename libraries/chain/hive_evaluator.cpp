@@ -436,15 +436,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator );
 
-#ifdef COLLECT_ACCOUNT_METADATA
-  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-  {
-    meta.account = new_account.get_name();
-    from_string( meta.json_metadata, o.json_metadata );
-  });
-#else
-  FC_UNUSED( new_account );
-#endif
+  _db.create_account_metadata( new_account, o.json_metadata );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -542,15 +534,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, o.fee, &creator, o.delegation );
 
-#ifdef COLLECT_ACCOUNT_METADATA
-  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-  {
-    meta.account = new_account.get_name();
-    from_string( meta.json_metadata, o.json_metadata );
-  });
-#else
-  FC_UNUSED( new_account );
-#endif
+  _db.create_account_metadata( new_account, o.json_metadata );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -2262,14 +2246,7 @@ void pow_apply( database& db, Operation o )
       true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifdef COLLECT_ACCOUNT_METADATA
-    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-    {
-      meta.account = new_account.get_name();
-    });
-#else
-    FC_UNUSED( new_account );
-#endif
+    db.create_account_metadata( new_account );
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
@@ -2403,14 +2380,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifdef COLLECT_ACCOUNT_METADATA
-    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-    {
-      meta.account = new_account.get_name();
-    });
-#else
-    FC_UNUSED( new_account );
-#endif
+    db.create_account_metadata( new_account );
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
@@ -2665,15 +2635,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
-#ifdef COLLECT_ACCOUNT_METADATA
-  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-  {
-    meta.account = new_account.get_name();
-    from_string( meta.json_metadata, o.json_metadata );
-  });
-#else
-  FC_UNUSED( new_account );
-#endif
+  _db.create_account_metadata( new_account, o.json_metadata );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
