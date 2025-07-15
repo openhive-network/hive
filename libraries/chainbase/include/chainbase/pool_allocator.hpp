@@ -147,7 +147,7 @@ namespace chainbase {
             {
             for (uint32_t i = 1; i < BLOCK_SIZE; ++i, ++current)
               chunks[current].next = i;
-            chunks[current].next = 0;
+            chunks[current].next = invalid_index;
             current = 0;
             }
 
@@ -183,12 +183,12 @@ namespace chainbase {
 
           void reset_on_list_index() noexcept
             {
-            on_list_index = invalid_list_index;
+            on_list_index = invalid_index;
             }
 
           bool is_on_list() const noexcept
             {
-            return on_list_index != invalid_list_index;
+            return on_list_index != invalid_index;
             }
 
           uint32_t get_on_list_index() const noexcept
@@ -213,13 +213,13 @@ namespace chainbase {
             return chunks;
             }
 
-          static constexpr uint32_t invalid_list_index = std::numeric_limits<uint32_t>::max();
+          static constexpr uint32_t invalid_index = std::numeric_limits<uint32_t>::max();
 
         private:
           chunk_t   chunks[BLOCK_SIZE];
           uint32_t  current = 0;
           uint32_t  free_count = BLOCK_SIZE;
-          uint32_t  on_list_index = invalid_list_index;
+          uint32_t  on_list_index = invalid_index;
         };
 
       struct block_comparator_t
@@ -374,7 +374,7 @@ namespace chainbase {
   size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::blocks_popped_count = 0;
 
   template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::block_t::invalid_list_index;
+  constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::block_t::invalid_index;
 
   template <typename POOL_ALLOCATOR>
   class shared_pool_allocator_t;
