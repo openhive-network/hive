@@ -29,7 +29,8 @@ class rocksdb_account_archive : public accounts_handler
     bool destroy_database_on_startup = false;
     bool destroy_database_on_shutdown = false;
 
-    void move_to_external_storage_impl( uint32_t block_num, const volatile_account_metadata_object& volatile_object );
+    template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
+    void move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object );
 
     template<typename SHM_Object_Type, typename SHM_Object_Index>
     auto get_allocator() const;
@@ -42,6 +43,9 @@ class rocksdb_account_archive : public accounts_handler
 
     template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
     Object_Type get_object( const std::string& account_name ) const;
+
+    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
+    void on_irreversible_block_impl( uint32_t block_num );
 
   public:
 

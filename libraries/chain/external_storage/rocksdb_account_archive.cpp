@@ -33,13 +33,14 @@ rocksdb_account_archive::~rocksdb_account_archive()
   close();
 }
 
-void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const volatile_account_metadata_object& volatile_object )
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
+void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object )
 {
   auto _account = static_cast<std::string>( volatile_object.account );
   
   Slice _key( _account.data(), _account.size() );
 
-  rocksdb_account_metadata_object _obj( volatile_object );
+  RocksDB_Object_Type _obj( volatile_object );
 
   auto _serialize_buffer = dump( _obj );
   Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
@@ -96,11 +97,10 @@ std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const
   return create<SHM_Object_Type, SHM_Object_Index>( _buffer );
 }
 
-void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
+void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num )
 {
-  provider->update_lib( block_num );
-
-  const auto& _volatile_idx = db.get_index< volatile_account_metadata_index, by_block >();
+  const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
   if( _volatile_idx.size() < volatile_objects_limit )
     return;
@@ -121,12 +121,12 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
     const auto& _current = *_itr;
     ++_itr;
 
-    move_to_external_storage_impl( block_num, _current );
+    move_to_external_storage_impl<Volatile_Object_Type, RocksDB_Object_Type>( block_num, _current );
 
     if( !_do_flush )
       _do_flush = true;
 
-    const auto* _account_metadata = db.find< account_metadata_object, by_account >( _current.account );
+    const auto* _account_metadata = db.find< SHM_Object_Type, by_account >( _current.account );
     if( _account_metadata )
       db.remove( *_account_metadata );
 
@@ -140,6 +140,14 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
   stats.account_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.account_lib_processing.count += count;
+}
+
+void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
+{
+  provider->update_lib( block_num );
+
+  on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num );
+  on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num );
 }
 
 template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
