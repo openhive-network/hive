@@ -2,7 +2,7 @@
 #pragma once
 
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
-#include <hive/chain/external_storage/account_metadata.hpp>
+#include <hive/chain/external_storage/account_item.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 
