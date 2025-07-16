@@ -416,6 +416,8 @@ class witness_plugin_impl
       result = block_production_condition::exception_producing_block;
     }
 
+    fc_ilog(fc::logger::get("witness"), "result: ${r}", ("r", int(result)));
+
     switch(result)
     {
       case block_production_condition::produced:
