@@ -836,6 +836,14 @@ def hive_fund(
 @pytest.fixture()
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
+    node.config.log_logger =(
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
     node.config.plugin.append("account_history_api")
     node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     return node

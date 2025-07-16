@@ -15,6 +15,14 @@ def node_with_custom_witnesses() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
 
     node = tt.InitNode()
+    node.config.log_logger =(
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
     node.config.block_log_split = -1
 
     for witness in WITNESSES:

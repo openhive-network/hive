@@ -13,6 +13,14 @@ from .block_log.generate_block_log import WITNESSES
 def node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
+    node.config.log_logger =(
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
     node.config.block_log_split = -1
 
     for witness in WITNESSES:

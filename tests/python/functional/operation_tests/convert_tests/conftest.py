@@ -37,6 +37,14 @@ def create_node_and_wallet_for_convert_tests(
     init_witnesses: list[str], alternate_chain_spec: tt.AlternateChainSpecs
 ) -> tuple[tt.InitNode, tt.Wallet]:
     node = tt.InitNode()
+    node.config.log_logger = (
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
     node.config.witness.extend(init_witnesses)
     node.config.plugin.append("account_history_api")
     node.run(

@@ -20,6 +20,14 @@ def node():
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(20)]
 
     init_node = tt.InitNode()
+    init_node.config.log_logger = (
+            '{"name": "default", "level": "debug", "appender": "stderr"}',
+            '{"name": "user", "level": "debug", "appender": "stderr"}',
+            '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+            '{"name": "sync", "level": "debug", "appender": "p2p"}',
+            '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+            '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
 
     for witness in witnesses_required_for_hf06_and_later:
         init_node.config.witness.append(witness)

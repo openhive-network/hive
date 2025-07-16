@@ -15,6 +15,14 @@ if TYPE_CHECKING:
 def node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
+    node.config.log_logger = (
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
     node.run(
         time_control=tt.StartTimeControl(speed_up_rate=5),
         alternate_chain_specs=tt.AlternateChainSpecs(

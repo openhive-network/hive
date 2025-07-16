@@ -15,6 +15,14 @@ def fee(request) -> tt.Asset.TestT:
 def node(request, fee: tt.Asset.TestT) -> tt.InitNode:
     init_node = tt.InitNode()
     init_node.config.plugin.append("account_history_api")
+    init_node.config.log_logger =(
+        '{"name": "default", "level": "debug", "appender": "stderr"}',
+        '{"name": "user", "level": "debug", "appender": "stderr"}',
+        '{"name": "chainlock", "level": "debug", "appender": "p2p"}',
+        '{"name": "sync", "level": "debug", "appender": "p2p"}',
+        '{"name": "p2p", "level": "debug", "appender": "p2p"}',
+        '{"name":"witness","level":"debug","appender":"stderr"}'
+    )
 
     init_node.run(
         time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
