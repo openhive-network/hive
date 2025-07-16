@@ -429,6 +429,7 @@ void chain_plugin_impl::disable_p2p( bool also_disable_work )
 
 void chain_plugin_impl::start_write_processing()
 {
+  finish.status = false;
   write_processor_thread = std::make_shared<std::thread>([&]()
   {
     try
@@ -451,8 +452,6 @@ void chain_plugin_impl::start_write_processing()
         /// Notify waiting (main-thread) that starting shutdown procedure is allowed, since main-writer thread activity finished.
         this_->finish.cv.notify_one();
       } BOOST_SCOPE_EXIT_END
-
-      finish.status = false;
 
       uint32_t last_block_number = 0;
       fc::set_thread_name("write_queue");
