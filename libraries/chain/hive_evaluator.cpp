@@ -674,19 +674,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       }
     };
 
-    if( _account_metadata.is_shm() )
-    {
-      _db.modify( *_account_metadata, [&]( account_metadata_object& meta )
-      {
-        _modifier( meta );
-      });
-    }
-    else
-    {
-      _modifier( *_account_metadata );
-    }
-
-    _db.get_accounts_handler().create_volatile_account_metadata( _db.head_block_num(), *_account_metadata );
+    _db.update_account_metadata( account.get_name(), _modifier );
   }
   #endif
 
@@ -755,19 +743,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
         from_string( meta.posting_json_metadata, o.posting_json_metadata );
     };
 
-    if( _account_metadata.is_shm() )
-    {
-      _db.modify( *_account_metadata, [&]( account_metadata_object& meta )
-      {
-        _modifier( meta );
-      });
-    }
-    else
-    {
-      _modifier( *_account_metadata );
-    }
-
-    _db.get_accounts_handler().create_volatile_account_metadata( _db.head_block_num(), *_account_metadata );
+    _db.update_account_metadata( account.get_name(), _modifier );
   }
   #endif
 

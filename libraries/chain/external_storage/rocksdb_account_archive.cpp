@@ -125,7 +125,7 @@ void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_n
     o.account_metadata_id   = obj.get_id();
     o.account               = obj.account;
     o.json_metadata         = obj.json_metadata;
-    o.posting_json_metadata = obj.posting_json_metadata;;
+    o.posting_json_metadata = obj.posting_json_metadata;
 
     o.block_number          = block_num;
   });

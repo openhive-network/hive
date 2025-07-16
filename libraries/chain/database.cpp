@@ -569,8 +569,7 @@ const hardfork_property_object& database::get_hardfork_property_object()const
   return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::create_account_metadata( const account_object& account,
-                                        const std::optional<std::string>& json_metadata )
+void database::create_account_metadata( const account_object& account, const std::optional<std::string>& json_metadata )
 {
 #ifdef COLLECT_ACCOUNT_METADATA
   create< account_metadata_object >( [&, this]( account_metadata_object& meta )
@@ -581,6 +580,27 @@ void database::create_account_metadata( const account_object& account,
 
     get_accounts_handler().create_volatile_account_metadata( head_block_num(), meta );
   } );
+#endif
+}
+
+void database::update_account_metadata( const std::string& account_name, std::function<void(account_metadata_object&)> modifier )
+{
+#ifdef COLLECT_ACCOUNT_METADATA
+  account_metadata _account_metadata = get_accounts_handler().get_account_metadata( account_name );
+
+  if( _account_metadata.is_shm() )
+  {
+    modify( *_account_metadata, [&]( account_metadata_object& meta )
+    {
+      modifier( meta );
+    });
+  }
+  else
+  {
+    modifier( *_account_metadata );
+  }
+
+  get_accounts_handler().create_volatile_account_metadata( head_block_num(), *_account_metadata );
 #endif
 }
 

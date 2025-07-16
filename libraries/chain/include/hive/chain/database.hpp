@@ -302,8 +302,8 @@ namespace chain {
 
       const hardfork_property_object&        get_hardfork_property_object()const;
 
-      void create_account_metadata( const account_object& account,
-                                    const std::optional<std::string>& json_metadata = std::optional<std::string>() );
+      void create_account_metadata( const account_object& account, const std::optional<std::string>& json_metadata = std::optional<std::string>() );
+      void update_account_metadata( const std::string& account_name, std::function<void(account_metadata_object&)> modifier );
 
     private:
 
