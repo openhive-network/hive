@@ -1,6 +1,8 @@
 #pragma once
 
 #include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/account_authority_rocksdb_objects.hpp>
+
 #include <hive/chain/external_storage/accounts_handler.hpp>
 #include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
@@ -28,7 +30,18 @@ class rocksdb_account_archive : public accounts_handler
     bool destroy_database_on_shutdown = false;
 
     void move_to_external_storage_impl( uint32_t block_num, const volatile_account_metadata_object& volatile_object );
-    std::shared_ptr<account_metadata_object> get_account_metadata_impl( const std::string& account_name ) const;
+
+    template<typename SHM_Object_Type, typename SHM_Object_Index>
+    auto get_allocator() const;
+
+    template<typename SHM_Object_Type, typename SHM_Object_Index>
+    std::shared_ptr<SHM_Object_Type> create( const PinnableSlice& buffer ) const;
+
+    template<typename SHM_Object_Type, typename SHM_Object_Index>
+    std::shared_ptr<SHM_Object_Type> get_object_impl( const std::string& account_name ) const;
+
+    template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
+    Object_Type get_object( const std::string& account_name ) const;
 
   public:
 
@@ -40,6 +53,9 @@ class rocksdb_account_archive : public accounts_handler
 
     void create_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj ) override;
     account_metadata get_account_metadata( const std::string& account_name ) const override;
+
+    void create_volatile_account_authority( uint32_t block_num, const account_authority_object& obj ) override;
+    account_authority get_account_authority( const std::string& account_name ) const override;
 
     void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;

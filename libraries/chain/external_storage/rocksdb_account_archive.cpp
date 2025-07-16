@@ -47,7 +47,42 @@ void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num,
   provider->save( _key, _value );
 }
 
-std::shared_ptr<account_metadata_object> rocksdb_account_archive::get_account_metadata_impl( const std::string& account_name ) const
+template<typename SHM_Object_Type, typename SHM_Object_Index>
+auto rocksdb_account_archive::get_allocator() const
+{
+  auto& _indices = db.get_index<SHM_Object_Index>().indices();
+  auto _allocator = _indices.get_allocator();
+  return chainbase::get_allocator_helper_t<SHM_Object_Type>::get_generic_allocator( _allocator );
+}
+
+template<>
+std::shared_ptr<account_metadata_object> rocksdb_account_archive::create<account_metadata_object, account_metadata_index>( const PinnableSlice& buffer ) const
+{
+  rocksdb_account_metadata_object _obj;
+
+  load( _obj, buffer.data(), buffer.size() );
+
+  return std::shared_ptr<account_metadata_object>( new account_metadata_object(
+                                                      get_allocator<account_metadata_object, account_metadata_index>(),
+                                                      _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
+}
+
+template<>
+std::shared_ptr<account_authority_object> rocksdb_account_archive::create<account_authority_object, account_authority_index>( const PinnableSlice& buffer ) const
+{
+  rocksdb_account_authority_object _obj;
+
+  load( _obj, buffer.data(), buffer.size() );
+
+  return std::shared_ptr<account_authority_object>( new account_authority_object(
+                                                      get_allocator<account_authority_object, account_authority_index>(),
+                                                    _obj.id, _obj.account,
+                                                 _obj.owner, _obj.active, _obj.posting,
+                                 _obj.previous_owner_update, _obj.last_owner_update) );
+}
+
+template<typename SHM_Object_Type, typename SHM_Object_Index>
+std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const std::string& account_name ) const
 {
   Slice _key( account_name.data(), account_name.size() );
 
@@ -56,18 +91,9 @@ std::shared_ptr<account_metadata_object> rocksdb_account_archive::get_account_me
   bool _status = provider->read( _key, _buffer );
 
   if( !_status )
-    return std::shared_ptr<account_metadata_object>();
+    return std::shared_ptr<SHM_Object_Type>();
 
-  rocksdb_account_metadata_object _obj;
-
-  load( _obj, _buffer.data(), _buffer.size() );
-
-  auto& _indices = db.get_index< hive::chain::account_metadata_index >().indices();
-  auto _allocator = _indices.get_allocator();
-
-  return std::shared_ptr<account_metadata_object>( new account_metadata_object (
-                                                      chainbase::get_allocator_helper_t<account_metadata_object>::get_generic_allocator( _allocator ),
-                                                      _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
+  return create<SHM_Object_Type, SHM_Object_Index>( _buffer );
 }
 
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
@@ -116,6 +142,37 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   stats.account_lib_processing.count += count;
 }
 
+template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
+Object_Type rocksdb_account_archive::get_object( const std::string& account_name ) const
+{
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  const auto* _found = db.find<SHM_Object_Type, by_account>( account_name );
+  if( _found )
+  {
+    stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++stats.account_accessed_from_index.count;
+    return Object_Type( _found );
+  }
+  else
+  {
+    const auto _external_found = get_object_impl<SHM_Object_Type, SHM_Object_Index>( account_name );
+    uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    if( _external_found )
+    {
+      stats.account_accessed_from_archive.time_ns += time;
+      ++stats.account_accessed_from_archive.count;
+    }
+    else
+    {
+      stats.account_not_found.time_ns += time;
+      ++stats.account_not_found.count;
+      FC_ASSERT( false, "Account metadata not found" );
+    }
+    return Object_Type( _external_found );
+  }
+}
+
 void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
@@ -136,32 +193,35 @@ void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_n
 
 account_metadata rocksdb_account_archive::get_account_metadata( const std::string& account_name ) const
 {
+  return get_object<account_metadata, account_metadata_object, account_metadata_index>( account_name );
+}
+
+void rocksdb_account_archive::create_volatile_account_authority( uint32_t block_num, const account_authority_object& obj )
+{
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  const auto* _account_metadata = db.find< account_metadata_object, by_account >( account_name );
-  if( _account_metadata )
+  db.create< volatile_account_authority_object >( [&]( volatile_account_authority_object& o )
   {
-    stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++stats.account_accessed_from_index.count;
-    return account_metadata( _account_metadata );
-  }
-  else
-  {
-    const auto _external_account_metadata = get_account_metadata_impl( account_name );
-    uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    if( _external_account_metadata )
-    {
-      stats.account_accessed_from_archive.time_ns += time;
-      ++stats.account_accessed_from_archive.count;
-    }
-    else
-    {
-      stats.account_not_found.time_ns += time;
-      ++stats.account_not_found.count;
-      FC_ASSERT( false, "Account metadata not found" );
-    }
-    return account_metadata( _external_account_metadata );
-  }
+    o.account_authority_id  = obj.get_id();
+    o.account               = obj.account;
+
+    o.owner                 = obj.owner;
+    o.active                = obj.active;
+    o.posting               = obj.posting;
+
+    o.previous_owner_update = obj.previous_owner_update;
+    o.last_owner_update     = obj.last_owner_update;
+
+    o.block_number          = block_num;
+  });
+
+  stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++stats.account_cashout_processing.count;
+}
+
+account_authority rocksdb_account_archive::get_account_authority( const std::string& account_name ) const
+{
+  return get_object<account_authority, account_authority_object, account_authority_index>( account_name );
 }
 
 void rocksdb_account_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )

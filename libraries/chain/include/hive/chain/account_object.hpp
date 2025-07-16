@@ -371,6 +371,22 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) )
 
+      template< typename Allocator >
+      account_authority_object( allocator< Allocator > a, account_authority_id_type _id,
+                                const std::string& account,
+                                const authority& owner,
+                                const authority& active,
+                                const authority& posting,
+                                const time_point_sec& previous_owner_update,
+                                const time_point_sec& last_owner_update )
+      : id( _id ), account( account ), owner( a ), active( a ), posting( a ),
+        previous_owner_update( previous_owner_update ), last_owner_update( last_owner_update )
+      {
+        this->owner = owner;
+        this->active = active;
+        this->posting = posting;
+      }
+
       account_name_type account;
 
       shared_authority  owner;   ///< used for backup control, can set owner or active

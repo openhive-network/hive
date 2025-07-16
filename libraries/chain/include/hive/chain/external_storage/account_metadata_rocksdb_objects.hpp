@@ -11,7 +11,7 @@
 
 namespace hive { namespace chain {
 
-enum account_rocksdb_object_types
+enum account_metadata_rocksdb_object_types
 {
   volatile_account_metadata_object_type = ( HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID << 8 )
 };
