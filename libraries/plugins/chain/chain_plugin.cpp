@@ -239,7 +239,7 @@ class chain_plugin_impl
     struct
     {
       /// Flag should be set to true, to allow immediate exit on scenarios where writer thread didn't start yet
-      std::atomic_bool        status{true};
+      std::atomic_bool        status{false};
       std::mutex              mtx;
       std::condition_variable cv;
     } finish;
