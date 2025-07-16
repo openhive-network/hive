@@ -5,15 +5,15 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
-#define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 22
+#ifndef HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID
+#define HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID 22
 #endif
 
 namespace hive { namespace chain {
 
 enum account_rocksdb_object_types
 {
-  volatile_account_metadata_object_type = ( HIVE_ACCOUNT_ROCKSDB_SPACE_ID << 8 )
+  volatile_account_metadata_object_type = ( HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID << 8 )
 };
 
 class volatile_account_metadata_object : public object< volatile_account_metadata_object_type, volatile_account_metadata_object >
@@ -29,7 +29,7 @@ class volatile_account_metadata_object : public object< volatile_account_metadat
     shared_string             json_metadata;
     shared_string             posting_json_metadata;
 
-    uint32_t                                      block_number = 0;
+    uint32_t                  block_number = 0;
 };
 
 typedef oid_ref< volatile_account_metadata_object > volatile_account_metadata_id_type;
@@ -75,7 +75,7 @@ class rocksdb_account_metadata_object
 } } // hive::chain
 
 
-FC_REFLECT( hive::chain::volatile_account_metadata_object, (id)(account_metadata_id)(account)(json_metadata)(posting_json_metadata) )
+FC_REFLECT( hive::chain::volatile_account_metadata_object, (id)(account_metadata_id)(account)(json_metadata)(posting_json_metadata)(block_number) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_metadata_object, hive::chain::volatile_account_metadata_index )
 
 FC_REFLECT( hive::chain::rocksdb_account_metadata_object, (id)(account)(json_metadata)(posting_json_metadata) )
