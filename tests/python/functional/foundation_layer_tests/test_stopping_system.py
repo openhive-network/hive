@@ -115,12 +115,12 @@ def test_witness_node_from_replay(block_log_empty_430_split: tt.BlockLog, relati
 @pytest.mark.skip()
 def test_witness_node_from_snapshot(block_log_empty_430_split: tt.BlockLog, snapshot_430: tt.Snapshot) -> None:
     """
-        │------------generate-----------│
-    ────●───────────────────────────────■────────▶[t] # po załadowaniu snapa, zaczyna zatrzymuje się na 431
+        │------------generate------------│
+    ────●────────────────────────────────■────────▶[t] # po załadowaniu snapa, zaczyna zatrzymuje się na 431
     load-snapshot                      stop
 
         │─────────load-snapshot──────────│
-    ────●──────────────────────────■─────■────────▶[t] # po załadowaniu snapa, zaczyna zatrzymuje się na 431
+    ────●──────────────────────────■─────■────────▶[t] # po załadowaniu snapa, zaczyna zatrzymuje się na 431
       start                            stop
 
     """
@@ -235,6 +235,20 @@ def test_stop_at_load_replay(block_log_empty_430_split: tt.BlockLog, relative_st
     node.wait_for_block_with_number(block_log_empty_430_split.get_head_block_number() + 10)
 
     api_node = tt.ApiNode()
+
+    plugins_to_remove: Final = [
+        "chain_api",
+        "condenser_api",
+        "market_history_api",
+        "network_broadcast_api",
+        "node_status_api",
+        "reputation_api",
+        "rewards_api",
+        "transaction_status_api",
+    ]
+    for plugin_name in plugins_to_remove:
+        api_node.config.plugin.remove(plugin_name)
+    
     connect_nodes(first_node=node, second_node=api_node)
 
     if state == "sync":
