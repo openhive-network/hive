@@ -28,8 +28,8 @@ class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider
     rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_comment_storage_provider() override{}
 
-    void save( const Slice& key, const Slice& value ) override;
-    bool read( const Slice& key, PinnableSlice& value ) override;
+    void save( ColumnTypes column_type, const Slice& key, const Slice& value ) override;
+    bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
 };
 
 }}

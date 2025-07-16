@@ -75,7 +75,7 @@ void rocksdb_comment_archive::move_to_external_storage_impl( uint32_t block_num,
   auto _serialize_buffer = dump( _obj );
   Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
 
-  provider->save( _key, _value );
+  provider->save( ColumnTypes::COMMENT, _key, _value );
 }
 
 std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const
@@ -84,7 +84,7 @@ std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const
 
   PinnableSlice _buffer;
 
-  bool _status = provider->read( _key, _buffer );
+  bool _status = provider->read( ColumnTypes::COMMENT, _key, _buffer );
 
   if( !_status )
     return std::shared_ptr<comment_object>();

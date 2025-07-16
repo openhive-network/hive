@@ -23,14 +23,14 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
   return columnDefs;
 }
 
-void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
+void rocksdb_comment_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
 {
-  rocksdb_storage_provider::save( ColumnTypes::COMMENT, key, value );
+  rocksdb_storage_provider::save( column_type, key, value );
 }
 
-bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
+bool rocksdb_comment_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
 {
-  return rocksdb_storage_provider::read( ColumnTypes::COMMENT, key, value );
+  return rocksdb_storage_provider::read( column_type, key, value );
 }
 
 }}

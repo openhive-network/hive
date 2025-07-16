@@ -34,7 +34,7 @@ rocksdb_account_archive::~rocksdb_account_archive()
 }
 
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
-void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object )
+void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
 {
   auto _account = static_cast<std::string>( volatile_object.account );
   
@@ -45,7 +45,7 @@ void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num,
   auto _serialize_buffer = dump( _obj );
   Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
 
-  provider->save( _key, _value );
+  provider->save( column_type, _key, _value );
 }
 
 template<typename SHM_Object_Type, typename SHM_Object_Index>
@@ -83,13 +83,13 @@ std::shared_ptr<account_authority_object> rocksdb_account_archive::create<accoun
 }
 
 template<typename SHM_Object_Type, typename SHM_Object_Index>
-std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const std::string& account_name ) const
+std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const std::string& account_name, ColumnTypes column_type ) const
 {
   Slice _key( account_name.data(), account_name.size() );
 
   PinnableSlice _buffer;
 
-  bool _status = provider->read( _key, _buffer );
+  bool _status = provider->read( column_type, _key, _buffer );
 
   if( !_status )
     return std::shared_ptr<SHM_Object_Type>();
@@ -98,7 +98,7 @@ std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const
 }
 
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
-void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num )
+void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
@@ -121,7 +121,7 @@ void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num )
     const auto& _current = *_itr;
     ++_itr;
 
-    move_to_external_storage_impl<Volatile_Object_Type, RocksDB_Object_Type>( block_num, _current );
+    move_to_external_storage_impl<Volatile_Object_Type, RocksDB_Object_Type>( block_num, _current, column_type );
 
     if( !_do_flush )
       _do_flush = true;
@@ -146,12 +146,12 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
 
-  on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num );
-  on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num );
+  on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num, ColumnTypes::ACCOUNT_METADATA );
+  on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num, ColumnTypes::ACCOUNT_AUTHORITY );
 }
 
 template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-Object_Type rocksdb_account_archive::get_object( const std::string& account_name ) const
+Object_Type rocksdb_account_archive::get_object( const std::string& account_name, ColumnTypes column_type ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -164,7 +164,7 @@ Object_Type rocksdb_account_archive::get_object( const std::string& account_name
   }
   else
   {
-    const auto _external_found = get_object_impl<SHM_Object_Type, SHM_Object_Index>( account_name );
+    const auto _external_found = get_object_impl<SHM_Object_Type, SHM_Object_Index>( account_name, column_type );
     uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     if( _external_found )
     {
@@ -201,7 +201,7 @@ void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_n
 
 account_metadata rocksdb_account_archive::get_account_metadata( const std::string& account_name ) const
 {
-  return get_object<account_metadata, account_metadata_object, account_metadata_index>( account_name );
+  return get_object<account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
 }
 
 void rocksdb_account_archive::create_volatile_account_authority( uint32_t block_num, const account_authority_object& obj )
@@ -229,7 +229,7 @@ void rocksdb_account_archive::create_volatile_account_authority( uint32_t block_
 
 account_authority rocksdb_account_archive::get_account_authority( const std::string& account_name ) const
 {
-  return get_object<account_authority, account_authority_object, account_authority_index>( account_name );
+  return get_object<account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY );
 }
 
 void rocksdb_account_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )

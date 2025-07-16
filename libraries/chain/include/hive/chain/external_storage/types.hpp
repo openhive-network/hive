@@ -33,7 +33,8 @@ using ::rocksdb::Comparator;
 enum ColumnTypes
 {
   COMMENT = 0,
-  ACCOUNT
+  ACCOUNT_METADATA,
+  ACCOUNT_AUTHORITY
 };
 
 enum Columns

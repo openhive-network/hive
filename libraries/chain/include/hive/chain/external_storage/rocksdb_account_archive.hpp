@@ -30,7 +30,7 @@ class rocksdb_account_archive : public accounts_handler
     bool destroy_database_on_shutdown = false;
 
     template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
-    void move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object );
+    void move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type );
 
     template<typename SHM_Object_Type, typename SHM_Object_Index>
     auto get_allocator() const;
@@ -39,13 +39,13 @@ class rocksdb_account_archive : public accounts_handler
     std::shared_ptr<SHM_Object_Type> create( const PinnableSlice& buffer ) const;
 
     template<typename SHM_Object_Type, typename SHM_Object_Index>
-    std::shared_ptr<SHM_Object_Type> get_object_impl( const std::string& account_name ) const;
+    std::shared_ptr<SHM_Object_Type> get_object_impl( const std::string& account_name, ColumnTypes column_type ) const;
 
     template<typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-    Object_Type get_object( const std::string& account_name ) const;
+    Object_Type get_object( const std::string& account_name, ColumnTypes column_type ) const;
 
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
-    void on_irreversible_block_impl( uint32_t block_num );
+    void on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type );
 
   public:
 
