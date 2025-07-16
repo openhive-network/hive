@@ -1722,5 +1722,326 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( filled_undo_benchmark )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Benchmarking allocations of undo session elements" );
+
+    generate_blocks( 2 * HIVE_MAX_WITNESSES );
+    db->clear_pending();
+    ilog( "Undo stack is now empty" );
+
+    /*
+    The test checks time it takes to create/modify/delete small or big objects, without any other
+    work. It was mainly done to check influence of shared pool allocator applied to undo objects,
+    but can be also used to measure f.e. cutting of account_object into smaller chunks of data.
+    */
+    fc::optional<chainbase::database::undo_session_guard> undo_session;
+    const auto& account_idx = db->get_index< account_index, by_id >();
+    size_t account_idx_size = account_idx.size();
+    auto lastBuiltinAccountI = --account_idx.end();
+    const auto& comment_idx = db->get_index< comment_index, by_id >();
+    size_t comment_idx_size = comment_idx.size();
+
+    fc::time_point_sec now = fc::time_point::now();
+
+    const int NUMBER_OF_OBJECTS = 30000;
+
+    // create big objects with subcontainers: account_object (place on undo_state::new_ids)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( int i = 0; i < NUMBER_OF_OBJECTS; ++i )
+      {
+        auto account_name = "a" + std::to_string( i );
+        db->create< account_object >( account_name, now );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Creation of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove big objects from undo session through undo (they are on new_ids, so their size does not matter)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} new account_objects from new_ids through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size );
+    }
+
+    // create big objects again (place on undo_state::new_ids)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( int i = 0; i < NUMBER_OF_OBJECTS; ++i )
+      {
+        auto account_name = "a" + std::to_string( i );
+        db->create< account_object >( account_name, now );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Creation of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove big objects from undo session through commit (they are on new_ids, so their size does not matter)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} new account_objects from new_ids through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+    // now that we have solidified new accounts, move iterator to actual first new account
+    auto firstAccountI = lastBuiltinAccountI;
+    ++firstAccountI;
+
+    // create small objects: comment_object (place on undo_state::new_ids)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); ++accountI )
+      {
+        db->create< comment_object >( *accountI, "test", nullptr );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Creation of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove small objects from undo session through undo (they are on new_ids, so their size does not matter)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} new comment_objects from new_ids through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size );
+    }
+
+    // create small objects again (place on undo_state::new_ids)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); ++accountI )
+      {
+        db->create< comment_object >( *accountI, "test", nullptr );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Creation of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove small objects from undo session through commit (they are on new_ids, so their size does not matter)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} new comment_objects from new_ids through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+
+    // modify big objects (place on undo_state::old_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); ++accountI )
+      {
+        db->modify< account_object >( *accountI, []( account_object& obj ){} );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Modification of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove big objects from undo session through undo (old_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} modified account_objects from old_values through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+    // modify big objects again (place on undo_state::old_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); ++accountI )
+      {
+        db->modify< account_object >( *accountI, []( account_object& obj ) {} );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Modification of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove big objects from undo session through commit (old_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} modified account_objects from old_values through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+
+    // modify small objects (place on undo_state::old_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto commentI = comment_idx.begin(); commentI != comment_idx.end(); ++commentI )
+      {
+        db->modify< comment_object >( *commentI, []( comment_object& obj ) {} );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Modification of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove small objects from undo session through undo (old_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} modified comment_objects from old_values through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+    // modify small objects again (place on undo_state::old_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto commentI = comment_idx.begin(); commentI != comment_idx.end(); ++commentI )
+      {
+        db->modify< comment_object >( *commentI, []( comment_object& obj ) {} );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Modification of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+
+      // remove small objects from undo session through commit (old_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} modified comment_objects from old_values through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+
+    // delete big objects (place on undo_state::removed_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); )
+      {
+        const auto& accountO = *accountI;
+        ++accountI;
+        db->remove< account_object >( accountO );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removal of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size );
+
+      // remove big objects from undo session through undo (removed_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} account_objects from removed_values through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+    // we've removed object pointed by firstAccountI - even after undo, the iterator remains invalidated, restore it
+    firstAccountI = lastBuiltinAccountI;
+    ++firstAccountI;
+
+    // delete big objects again (place on undo_state::removed_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto accountI = firstAccountI; accountI != account_idx.end(); )
+      {
+        const auto& accountO = *accountI;
+        ++accountI;
+        db->remove< account_object >( accountO );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removal of ${x} account_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size );
+
+      // remove big objects from undo session through commit (removed_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} account_objects from removed_values through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( account_idx.size(), account_idx_size );
+    }
+
+
+    // delete small objects (place on undo_state::removed_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto commentI = comment_idx.begin(); commentI != comment_idx.end(); )
+      {
+        const auto& commentO = *commentI;
+        ++commentI;
+        db->remove< comment_object >( commentO );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removal of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size );
+
+      // remove small objects from undo session through undo (removed_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.undo();
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} comment_objects from removed_values through undo took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size + NUMBER_OF_OBJECTS );
+    }
+
+    // delete small objects again (place on undo_state::removed_values)
+    {
+      auto undo_session = db->start_undo_session();
+      auto time_start = std::chrono::high_resolution_clock::now();
+      for( auto commentI = comment_idx.begin(); commentI != comment_idx.end(); )
+      {
+        const auto& commentO = *commentI;
+        ++commentI;
+        db->remove< comment_object >( commentO );
+      }
+      auto duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removal of ${x} comment_objects took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size );
+
+      // remove small objects from undo session through commit (removed_values)
+      time_start = std::chrono::high_resolution_clock::now();
+      undo_session.push();
+      db->commit( db->revision() );
+      duration_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ilog( "Removing of ${x} comment_objects from removed_values through commit took ${t}ns (${o} per object)",
+        ( "x", NUMBER_OF_OBJECTS )( "t", duration_ns )( "o", ( duration_ns + NUMBER_OF_OBJECTS - 1 ) / NUMBER_OF_OBJECTS ) );
+      BOOST_REQUIRE_EQUAL( comment_idx.size(), comment_idx_size );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
