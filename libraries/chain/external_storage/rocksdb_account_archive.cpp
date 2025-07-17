@@ -24,6 +24,7 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_account_metadata_index );
+  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_authority_index );
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
 }
@@ -181,7 +182,7 @@ Object_Type rocksdb_account_archive::get_object( const std::string& account_name
   }
 }
 
-void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_num, const account_metadata_object& obj )
+void rocksdb_account_archive::create_volatile_account_metadata( const account_metadata_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -192,7 +193,7 @@ void rocksdb_account_archive::create_volatile_account_metadata( uint32_t block_n
     o.json_metadata         = obj.json_metadata;
     o.posting_json_metadata = obj.posting_json_metadata;
 
-    o.block_number          = block_num;
+    o.block_number          = db.head_block_num();
   });
 
   stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -204,7 +205,7 @@ account_metadata rocksdb_account_archive::get_account_metadata( const std::strin
   return get_object<account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
 }
 
-void rocksdb_account_archive::create_volatile_account_authority( uint32_t block_num, const account_authority_object& obj )
+void rocksdb_account_archive::create_volatile_account_authority( const account_authority_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -220,7 +221,7 @@ void rocksdb_account_archive::create_volatile_account_authority( uint32_t block_
     o.previous_owner_update = obj.previous_owner_update;
     o.last_owner_update     = obj.last_owner_update;
 
-    o.block_number          = block_num;
+    o.block_number          = db.head_block_num();
   });
 
   stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -263,3 +264,4 @@ void rocksdb_account_archive::wipe()
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_metadata_index )
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_authority_index )

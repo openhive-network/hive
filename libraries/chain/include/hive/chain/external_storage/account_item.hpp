@@ -22,6 +22,8 @@ public:
   Item& operator*() { return const_cast<Item&>( *ptr ); }
 
   bool is_shm() const { return external == nullptr; }
+
+  operator bool() const { return ptr != nullptr; }
 };
 
 using account_metadata = account_item<account_metadata_object>;
