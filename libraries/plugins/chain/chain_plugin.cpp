@@ -647,9 +647,9 @@ void chain_plugin_impl::start_write_processing()
               {
                 fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
                 //if (write_queue_processed_duration > fc::milliseconds(500))
-                  fc_wlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}µs (${per_block}µs/block)",
+                  fc_dlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}µs (${per_item}µs/item)",
                           (write_queue_items_processed)("write_queue_processed_duration", write_queue_processed_duration.count())
-                          ("per_block", write_queue_processed_duration.count() / write_queue_items_processed));
+                          ("per_item", write_queue_processed_duration.count() / write_queue_items_processed));
                 break;
               }
               if( not priority_write_queue.empty() )
