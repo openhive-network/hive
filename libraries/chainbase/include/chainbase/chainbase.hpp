@@ -268,7 +268,7 @@ namespace chainbase {
     {
       _target.fetch_sub(1, std::memory_order_relaxed);
       fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
-      fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
+      fc_dlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
     }
     int32_t get() const { return _target; }
 
@@ -1331,7 +1331,7 @@ namespace chainbase {
       auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) -> decltype( (*(Lambda*)nullptr)() )
       {
         uint32_t lock_serial_number = _next_read_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
-        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+        fc_dlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
                 ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
                 ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
                 (lock_serial_number));
@@ -1364,7 +1364,7 @@ namespace chainbase {
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
         uint32_t lock_serial_number = _next_write_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
-        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+        fc_dlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
                 ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
                 ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
                 (lock_serial_number));
@@ -1375,7 +1375,7 @@ namespace chainbase {
 #endif
 
         lock.lock();
-        fc_wlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
+        fc_dlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
                 ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
                 ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
                 (lock_serial_number));

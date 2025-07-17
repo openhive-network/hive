@@ -143,7 +143,7 @@ namespace hive { namespace chain {
           {
             --_target;
             fc::microseconds fork_lock_duration = fc::time_point::now() - _start_locking;
-            fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release fork_lock", ("held", fork_lock_duration.count()));
+            fc_dlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release fork_lock", ("held", fork_lock_duration.count()));
           }
           int32_t get()const { return _target; }
 
@@ -157,7 +157,7 @@ namespace hive { namespace chain {
       {
         chainbase::read_lock lock(_rw_lock, boost::defer_lock_t());
 
-        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+        fc_dlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
         BOOST_ATTRIBUTE_UNUSED
@@ -172,7 +172,7 @@ namespace hive { namespace chain {
           CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
         }
 
-        fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+        fc_dlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
       
         return callback();
@@ -182,14 +182,14 @@ namespace hive { namespace chain {
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
         chainbase::write_lock lock(_rw_lock, boost::defer_lock_t());
-        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+        fc_dlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
         BOOST_ATTRIBUTE_UNUSED
         int_incrementer2 ii(_write_lock_count);
 #endif
         lock.lock();
-        fc_wlog(fc::logger::get("chainlock"),"got fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+        fc_dlog(fc::logger::get("chainlock"),"got fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
         return callback();
       }
