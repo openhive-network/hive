@@ -58,7 +58,7 @@ class rocksdb_account_archive : public accounts_handler
     void create_volatile_account_metadata( const account_metadata_object& obj ) override;
     account_metadata get_account_metadata( const std::string& account_name ) const override;
 
-    void create_volatile_account_authority( const account_authority_object& obj ) override;
+    void create_volatile_account_authority( const account_authority_object& obj, bool init_genesis = false ) override;
     account_authority get_account_authority( const std::string& account_name ) const override;
 
     void save_snaphot( const prepare_snapshot_supplement_notification& note ) override;

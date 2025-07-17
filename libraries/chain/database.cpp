@@ -3681,7 +3681,7 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth );
+      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
 
     create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
@@ -3691,7 +3691,7 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth );
+      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
@@ -3702,7 +3702,7 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth );
+      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     } );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >([&](account_authority_object& auth)
@@ -3711,7 +3711,7 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth );
+      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     } );
 #endif
 
@@ -3722,7 +3722,7 @@ void database::init_genesis()
       auth.owner.weight_threshold = 0;
       auth.active.weight_threshold = 0;
       auth.posting.weight_threshold = 0;
-      get_accounts_handler().create_volatile_account_authority( auth );
+      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
 
     const auto init_witness = [&]( const account_name_type& account_name )
@@ -3736,7 +3736,7 @@ void database::init_genesis()
         auth.owner.weight_threshold = 1;
         auth.active  = auth.owner;
         auth.posting = auth.active;
-        get_accounts_handler().create_volatile_account_authority( auth );
+        get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
       });
 
       create< witness_object >( [&]( witness_object& w )
@@ -3775,7 +3775,7 @@ void database::init_genesis()
 #endif
         auth.active = auth.owner;
         auth.posting = auth.owner;
-        get_accounts_handler().create_volatile_account_authority( auth );
+        get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
       } );
     }
 
