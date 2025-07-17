@@ -1428,15 +1428,24 @@ colony_tests:
     - job: build_combined_testing_block_logs_image
       artifacts: true
   variables:
-    PYTEST_TIMEOUT_MINUTES: 20
+    PYTEST_TIMEOUT_MINUTES: 10
     PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+    PYTEST_ARGS: "-k ${TEST_NAME}"
   script:
     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
+  parallel:
+    matrix:
+      - TEST_NAME: test_start_colony_plugin
+      - TEST_NAME: test_start_colony_from_block_log
+      - TEST_NAME: test_colony_on_basic_network_structure
+      - TEST_NAME: test_colony_on_complex_network
+      - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
+      - TEST_NAME: test_colony_with_unknown_colony_signer
   tags:
     - public-runner-docker
