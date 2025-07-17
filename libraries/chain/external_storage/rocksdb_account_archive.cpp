@@ -233,9 +233,9 @@ account_authority rocksdb_account_archive::get_account_authority( const std::str
   return get_object<account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY );
 }
 
-void rocksdb_account_archive::save_snaphot( const hive::chain::prepare_snapshot_supplement_notification& note )
+void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
-  snapshot->save_snaphot( note );
+  snapshot->save_snapshot( note );
 }
 
 void rocksdb_account_archive::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )

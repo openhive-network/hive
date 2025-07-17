@@ -18,6 +18,7 @@ public:
   account_item( const std::shared_ptr<Item>& from_archive )
     : ptr( from_archive.get() ), external( from_archive ) {}
 
+  const Item* operator->() const { return ptr; }
   const Item& operator*() const { return *ptr; }
   Item& operator*() { return const_cast<Item&>( *ptr ); }
 

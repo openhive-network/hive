@@ -590,23 +590,27 @@ void database::update_account_metadata( const std::string& account_name, std::fu
 #endif
 }
 
-void database::update_account_authority( const std::string& account_name, std::function<void(account_authority_object&)> modifier )
+void database::update_account_authority( account_authority& obj, std::function<void(account_authority_object&)> modifier )
 {
-  account_authority _account_authority = get_accounts_handler().get_account_authority( account_name );
-
-  if( _account_authority.is_shm() )
+  if( obj.is_shm() )
   {
-    modify( *_account_authority, [&]( account_authority_object& meta )
+    modify( *obj, [&]( account_authority_object& meta )
     {
       modifier( meta );
     });
   }
   else
   {
-    modifier( *_account_authority );
+    modifier( *obj );
   }
 
-  get_accounts_handler().create_volatile_account_authority( *_account_authority );
+  get_accounts_handler().create_volatile_account_authority( *obj );
+}
+
+void database::update_account_authority( const std::string& account_name, std::function<void(account_authority_object&)> modifier )
+{
+  account_authority _account_authority = get_accounts_handler().get_account_authority( account_name );
+  update_account_authority( _account_authority, modifier );
 }
 
 const comment_object& database::get_comment_for_payout_time( const comment_object& comment )const
@@ -2215,7 +2219,7 @@ void database::update_owner_authority( const account_object& account, const auth
 {
   if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
-    create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.get_name() ).owner, head_block_time() );
+    create< owner_authority_history_object >( account, get_accounts_handler().get_account_authority( account.get_name() )->owner, head_block_time() );
   }
 
   auto _modifier = [&]( account_authority_object& auth )
@@ -4467,9 +4471,9 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
   {
-    auto get_active  =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner   =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).owner );  };
-    auto get_posting =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).posting );  };
+    auto get_active  =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->active; };
+    auto get_owner   =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->owner;  };
+    auto get_posting =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->posting;  };
     auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
 
     try

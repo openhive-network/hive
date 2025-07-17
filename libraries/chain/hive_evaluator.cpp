@@ -601,7 +601,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     o.posting->validate();
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+  const auto account_auth = _db.get_accounts_handler().get_account_authority( o.account );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
@@ -629,7 +629,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 # ifndef HIVE_CONVERTER_BUILD
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                      account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
+                                                      account_auth->previous_owner_update, account_auth->last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
 # endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
@@ -717,7 +717,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     o.posting->validate();
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+  auto account_auth = _db.get_accounts_handler().get_account_authority( o.account );
 
   if( o.owner )
     validate_auth_size( *o.owner );
@@ -729,7 +729,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   if( o.owner )
   {
     FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                    account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+                                                    account_auth->previous_owner_update, account_auth->last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
@@ -766,11 +766,12 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.active || o.posting )
   {
-    _db.modify( account_auth, [&]( account_authority_object& auth)
+    auto _modifier = [&]( account_authority_object& auth )
     {
       if( o.active )  auth.active  = *o.active;
       if( o.posting ) auth.posting = *o.posting;
-    });
+    };
+    _db.update_account_authority( account_auth, _modifier );
   }
 
 }
@@ -2295,10 +2296,10 @@ void pow_apply( database& db, Operation o )
 
   const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
-  const auto& worker_auth = db.get< account_authority_object, by_account >( o.get_worker_account() );
-  FC_ASSERT( worker_auth.active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
-  FC_ASSERT( worker_auth.active.key_auths.size() == 1, "Miners may only have one key authority." );
-  FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
+  auto worker_auth = db.get_accounts_handler().get_account_authority( o.get_worker_account() );
+  FC_ASSERT( worker_auth->active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth->active) );
+  FC_ASSERT( worker_auth->active.key_auths.size() == 1, "Miners may only have one key authority." );
+  FC_ASSERT( worker_auth->active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
 #endif
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )

@@ -303,6 +303,7 @@ namespace chain {
       const hardfork_property_object&        get_hardfork_property_object()const;
 
       void update_account_metadata( const std::string& account_name, std::function<void(account_metadata_object&)> modifier );
+      void update_account_authority( account_authority& obj, std::function<void(account_authority_object&)> modifier );
       void update_account_authority( const std::string& account_name, std::function<void(account_authority_object&)> modifier );
 
     private:

@@ -706,9 +706,9 @@ void colony_plugin_impl::start( uint32_t block_num )
       continue;
     }
 
-    auto get_active = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return _db.get_accounts_handler().get_account_authority( name )->active; };
+    auto get_owner = [&]( const std::string& name ) { return _db.get_accounts_handler().get_account_authority( name )->owner; };
+    auto get_posting = [&]( const std::string& name ) { return _db.get_accounts_handler().get_account_authority( name )->posting; };
     auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );

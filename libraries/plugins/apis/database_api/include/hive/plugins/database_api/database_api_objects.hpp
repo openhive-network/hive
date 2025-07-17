@@ -539,12 +539,12 @@ struct api_account_object
     for( size_t i=0; i<n; i++ )
       proxied_vsf_votes.push_back( a.proxied_vsf_votes[i] );
 
-    const auto& auth = db.get< account_authority_object, by_account >( name );
-    owner = authority( auth.owner );
-    active = authority( auth.active );
-    posting = authority( auth.posting );
-    previous_owner_update = auth.previous_owner_update;
-    last_owner_update = auth.last_owner_update;
+    auto auth = db.get_accounts_handler().get_account_authority( name );
+    owner = authority( auth->owner );
+    active = authority( auth->active );
+    posting = authority( auth->posting );
+    previous_owner_update = auth->previous_owner_update;
+    last_owner_update = auth->last_owner_update;
 #ifdef COLLECT_ACCOUNT_METADATA
     const auto* maybe_meta = db.find< account_metadata_object, by_account >( name );
     if( maybe_meta )
