@@ -1022,7 +1022,7 @@ namespace graphene { namespace net {
               fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
               if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
               {
-                delay_until_retry = std::max(delay_until_retry,fc::seconds(180));
+                delay_until_retry = std::min(delay_until_retry,fc::seconds(180));
               }
 
               if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
