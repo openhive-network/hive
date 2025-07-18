@@ -203,7 +203,7 @@ Object_Type rocksdb_account_archive::get_object( const std::string& account_name
       {
         stats.account_not_found.time_ns += time;
         ++stats.account_not_found.count;
-        FC_ASSERT( false, "Account metadata not found" );
+        FC_ASSERT( false, "Account data not found" );
       }
       return Object_Type( _external_found );
     }
@@ -214,15 +214,30 @@ void rocksdb_account_archive::create_volatile_account_metadata( const account_me
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  db.create< volatile_account_metadata_object >( [&]( volatile_account_metadata_object& o )
+  const auto& _volatile_idx = db.get_index<volatile_account_metadata_index, by_name>();
+  auto _found = _volatile_idx.find( obj.account );
+  if( _found != _volatile_idx.end() )
   {
-    o.account_metadata_id   = obj.get_id();
-    o.account               = obj.account;
-    o.json_metadata         = obj.json_metadata;
-    o.posting_json_metadata = obj.posting_json_metadata;
+    db.modify<volatile_account_metadata_object>( *_found, [&]( volatile_account_metadata_object& o )
+    {
+      o.json_metadata         = obj.json_metadata;
+      o.posting_json_metadata = obj.posting_json_metadata;
 
-    o.block_number          = db.head_block_num();
-  });
+      o.block_number          = db.head_block_num();
+    } );
+  }
+  else
+  {
+    db.create<volatile_account_metadata_object>( [&]( volatile_account_metadata_object& o )
+    {
+      o.account_metadata_id   = obj.get_id();
+      o.account               = obj.account;
+      o.json_metadata         = obj.json_metadata;
+      o.posting_json_metadata = obj.posting_json_metadata;
+
+      o.block_number          = db.head_block_num();
+    });
+  }
 
   stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.account_cashout_processing.count;
@@ -237,20 +252,39 @@ void rocksdb_account_archive::create_volatile_account_authority( const account_a
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  db.create< volatile_account_authority_object >( [&]( volatile_account_authority_object& o )
+  const auto& _volatile_idx = db.get_index<volatile_account_authority_index, by_name>();
+  auto _found = _volatile_idx.find( obj.account );
+  if( _found != _volatile_idx.end() )
   {
-    o.account_authority_id  = obj.get_id();
-    o.account               = obj.account;
+    db.modify<volatile_account_authority_object>( *_found, [&]( volatile_account_authority_object& o )
+    {
+      o.owner                 = obj.owner;
+      o.active                = obj.active;
+      o.posting               = obj.posting;
 
-    o.owner                 = obj.owner;
-    o.active                = obj.active;
-    o.posting               = obj.posting;
+      o.previous_owner_update = obj.previous_owner_update;
+      o.last_owner_update     = obj.last_owner_update;
 
-    o.previous_owner_update = obj.previous_owner_update;
-    o.last_owner_update     = obj.last_owner_update;
+      o.block_number          = init_genesis ? 0 : db.head_block_num();
+    } );
+  }
+  else
+  {
+    db.create< volatile_account_authority_object >( [&]( volatile_account_authority_object& o )
+    {
+      o.account_authority_id  = obj.get_id();
+      o.account               = obj.account;
 
-    o.block_number          = init_genesis ? 0 : db.head_block_num();
-  });
+      o.owner                 = obj.owner;
+      o.active                = obj.active;
+      o.posting               = obj.posting;
+
+      o.previous_owner_update = obj.previous_owner_update;
+      o.last_owner_update     = obj.last_owner_update;
+
+      o.block_number          = init_genesis ? 0 : db.head_block_num();
+    });
+  }
 
   stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.account_cashout_processing.count;
