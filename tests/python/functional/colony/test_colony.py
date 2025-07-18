@@ -76,7 +76,6 @@ def test_colony_on_basic_network_structure(
     colony_node = tt.ApiNode()
     nodes.append(colony_node)
     colony_node.config.shared_file_size = "4G"
-    colony_node.config.plugin.remove("rewards_api")
     set_log_level_to_info(colony_node)
 
     # connect nodes
@@ -181,7 +180,6 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     for num in range(4):
         nodes.append(tt.ApiNode())
         nodes[num].config.shared_file_size = "4G"
-        nodes[num].config.plugin.remove("rewards_api")
         nodes[num].config.p2p_seed_node = witness_node_p2p_endpoint
         set_log_level_to_info(nodes[num])
 
