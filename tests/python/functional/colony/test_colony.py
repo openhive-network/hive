@@ -16,7 +16,6 @@ WITNESSES = [f"witness-{w}" for w in range(20)]
 @pytest.mark.testnet()
 def test_start_colony_plugin() -> None:
     node = tt.InitNode()
-    set_log_level_to_info(node)
     node.config.plugin.append("colony")
     node.run()
 
@@ -30,7 +29,6 @@ def test_start_colony_from_block_log(
 ) -> None:
     node = tt.InitNode()
     node.config.shared_file_size = "4G"
-    set_log_level_to_info(node)
     prepare_colony_config(node)
     node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
@@ -71,12 +69,10 @@ def test_colony_on_basic_network_structure(
     for witness in WITNESSES:
         witness_node.config.private_key.append(tt.Account(witness).private_key)
     witness_node.config.private_key.append(tt.Account("initminer").private_key)
-    set_log_level_to_info(witness_node)
 
     colony_node = tt.ApiNode()
     nodes.append(colony_node)
     colony_node.config.shared_file_size = "4G"
-    set_log_level_to_info(colony_node)
 
     # connect nodes
     colony_node.config.p2p_endpoint = generate_free_addresses(1)[0]
@@ -121,14 +117,12 @@ def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate
 
     nodes[0].config.witness.append("initminer")
     nodes[0].config.private_key.append(tt.PrivateKey("initminer"))
-    set_log_level_to_info(nodes[0])
     open_addresses = generate_free_addresses(4)
     for wn, address in zip(nodes, open_addresses):
         wn.config.shared_file_size = "4G"
 
         wn.config.p2p_endpoint = address
         wn.config.p2p_seed_node = [a for a in open_addresses if a != address]
-        set_log_level_to_info(wn)
         prepare_colony_config(wn)
         wn.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
@@ -172,7 +166,6 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     witness_node.config.shared_file_size = "4G"
     witness_node.config.witness.append("initminer")
     witness_node.config.private_key.append(tt.PrivateKey("initminer"))
-    set_log_level_to_info(witness_node)
 
     witness_node_p2p_endpoint = generate_free_addresses(1)
     witness_node.config.p2p_endpoint = witness_node_p2p_endpoint[0]
@@ -181,7 +174,6 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
         nodes.append(tt.ApiNode())
         nodes[num].config.shared_file_size = "4G"
         nodes[num].config.p2p_seed_node = witness_node_p2p_endpoint
-        set_log_level_to_info(nodes[num])
 
         prepare_colony_config(nodes[num])
         nodes[num].config.colony_start_at_block = block_log_single_sign.get_head_block_number()
@@ -213,7 +205,6 @@ def test_colony_with_unknown_colony_signer(
 ) -> None:
     node = tt.InitNode()
     node.config.shared_file_size = "4G"
-    set_log_level_to_info(node)
     prepare_colony_config(node)
     node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
 
@@ -271,13 +262,3 @@ def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int 
         timeout_error_message="Colony has not reached the minimum number of transactions",
     )
     tt.logger.info("Colony started.")
-
-
-def set_log_level_to_info(node: tt.InitNode | tt.ApiNode) -> None:
-    node.config.log_logger = (
-        '{"name":"default","level":"info","appender":"stderr"} '
-        '{"name":"user","level":"info","appender":"stderr"} '
-        '{"name":"chainlock","level":"info","appender":"p2p"} '
-        '{"name":"sync","level":"info","appender":"p2p"} '
-        '{"name":"p2p","level":"info","appender":"p2p"}'
-    )
