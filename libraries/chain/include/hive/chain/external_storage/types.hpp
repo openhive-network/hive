@@ -238,7 +238,7 @@ typedef std::pair<account_name_type::Storage, size_t> account_name_storage_id_pa
 
 typedef PrimitiveTypeSlice< block_op_id_pair > op_by_block_num_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > by_block_slice_t;
-typedef PrimitiveTypeSlice< account_name_type::Storage > ah_info_by_name_slice_t;
+typedef PrimitiveTypeSlice< account_name_type::Storage > info_by_name_slice_t;
 typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
 
 typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;

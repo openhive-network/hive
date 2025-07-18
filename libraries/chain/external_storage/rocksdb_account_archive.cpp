@@ -37,9 +37,7 @@ rocksdb_account_archive::~rocksdb_account_archive()
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
 void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
 {
-  auto _account = static_cast<std::string>( volatile_object.account );
-  
-  Slice _key( _account.data(), _account.size() );
+  info_by_name_slice_t _key( volatile_object.account.data );
 
   RocksDB_Object_Type _obj( volatile_object );
 
@@ -104,7 +102,7 @@ std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_v
 template<typename SHM_Object_Type, typename SHM_Object_Index>
 std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const std::string& account_name, ColumnTypes column_type ) const
 {
-  Slice _key( account_name.data(), account_name.size() );
+  info_by_name_slice_t _key( account_name_type( account_name ).data );
 
   PinnableSlice _buffer;
 

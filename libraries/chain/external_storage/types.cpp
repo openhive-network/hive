@@ -47,7 +47,7 @@ bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_histor
     return true;
   }
 
-  ah_info_by_name_slice_t key(name.data);
+  info_by_name_slice_t key(name.data);
   PinnableSlice buffer;
   auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
   if(s.ok())
@@ -64,7 +64,7 @@ void CachableWriteBatch::putAHInfo(const account_name_type& name, const account_
 {
   _ahInfoCache[name] = ahInfo;
   auto serializeBuf = dump(ahInfo);
-  ah_info_by_name_slice_t nameSlice(name.data);
+  info_by_name_slice_t nameSlice(name.data);
   auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
   checkStatus(s);
 }
