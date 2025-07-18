@@ -38,13 +38,6 @@ def replayed_node(request: pytest.FixtureRequest) -> tuple:
     node.config.plugin.remove("account_by_key_api")
     node.config.shared_file_size = f"{SHARED_MEMORY_FILE_SIZE}G"
     node.config.webserver_thread_pool_size = f"{WEBSERVER_THREAD_POOL_SIZE!s}"
-    node.config.log_logger = (
-        '{"name":"default","level":"info","appender":"stderr"} '
-        '{"name":"user","level":"debug","appender":"stderr"} '
-        '{"name":"chainlock","level":"error","appender":"p2p"} '
-        '{"name":"sync","level":"debug","appender":"p2p"} '
-        '{"name":"p2p","level":"debug","appender":"p2p"}'
-    )
     node.config.block_log_split = 9999
 
     for witness in WITNESSES:
