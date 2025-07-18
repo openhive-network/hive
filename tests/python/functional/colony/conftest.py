@@ -18,18 +18,3 @@ def block_log_single_sign() -> tt.BlockLog:
     assert destination_variable is not None, "Path TESTING_BLOCK_LOGS_DESTINATION must be set!"
     block_log_directory = Path(destination_variable) / "single_sign_universal_block_log"
     return tt.BlockLog(block_log_directory, "auto")
-
-
-@pytest.fixture()
-def queen_chain_specification():
-    return tt.AlternateChainSpecs(
-        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-        hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
-    )
-
-
-@pytest.fixture()
-def queen_node():
-    node = tt.InitNode()
-    node.config.plugin.append("queen")
-    return node
