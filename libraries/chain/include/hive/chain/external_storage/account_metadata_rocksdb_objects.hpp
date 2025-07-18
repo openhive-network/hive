@@ -36,6 +36,7 @@ typedef oid_ref< volatile_account_metadata_object > volatile_account_metadata_id
 
 struct by_block;
 struct by_permlink;
+struct by_name;
 
 typedef multi_index_container<
     volatile_account_metadata_object,
@@ -45,6 +46,12 @@ typedef multi_index_container<
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_metadata_object,
           member< volatile_account_metadata_object, uint32_t, &volatile_account_metadata_object::block_number>,
+          const_mem_fun< volatile_account_metadata_object, volatile_account_metadata_object::id_type, &volatile_account_metadata_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_name >,
+        composite_key< volatile_account_metadata_object,
+          member< volatile_account_metadata_object, account_name_type, &volatile_account_metadata_object::account>,
           const_mem_fun< volatile_account_metadata_object, volatile_account_metadata_object::id_type, &volatile_account_metadata_object::get_id >
         >
       >

@@ -41,6 +41,7 @@ typedef oid_ref< volatile_account_authority_object > volatile_account_authority_
 
 struct by_block;
 struct by_permlink;
+struct by_name;
 
 typedef multi_index_container<
     volatile_account_authority_object,
@@ -50,6 +51,12 @@ typedef multi_index_container<
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_authority_object,
           member< volatile_account_authority_object, uint32_t, &volatile_account_authority_object::block_number>,
+          const_mem_fun< volatile_account_authority_object, volatile_account_authority_object::id_type, &volatile_account_authority_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_name >,
+        composite_key< volatile_account_authority_object,
+          member< volatile_account_authority_object, account_name_type, &volatile_account_authority_object::account>,
           const_mem_fun< volatile_account_authority_object, volatile_account_authority_object::id_type, &volatile_account_authority_object::get_id >
         >
       >
