@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from api_generation.common import available_apis
-from schemas.apis.api_client_generator import generate_json_rpc_api_description
+from schemas.apis.api_client_generator.json_rpc import generate_api_description
 
 if TYPE_CHECKING:
     from api_generation.common import AvailableApis
@@ -23,7 +23,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
 
     output_path = api_generation_path / api / api / f"{api}_description.py"
 
-    generate_json_rpc_api_description(
+    generate_api_description(
         api_description_dict_name,
         openapi_json_path,
         output_path,
