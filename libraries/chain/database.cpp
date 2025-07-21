@@ -1675,8 +1675,8 @@ void database::lock_account( const account_object& account )
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth );
     } );
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( account.get_name() ) );
   }
   else
   {
@@ -3692,8 +3692,8 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( HIVE_MINER_ACCOUNT ), true/*init_genesis*/ );
 
     create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >( [&]( account_authority_object& auth )
@@ -3702,8 +3702,8 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( HIVE_NULL_ACCOUNT ), true/*init_genesis*/ );
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
@@ -3713,8 +3713,8 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     } );
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( OBSOLETE_TREASURY_ACCOUNT ), true/*init_genesis*/ );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >([&](account_authority_object& auth)
     {
@@ -3722,8 +3722,8 @@ void database::init_genesis()
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
-      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     } );
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( NEW_HIVE_TREASURY_ACCOUNT ), true/*init_genesis*/ );
 #endif
 
     create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
@@ -3733,8 +3733,8 @@ void database::init_genesis()
       auth.owner.weight_threshold = 0;
       auth.active.weight_threshold = 0;
       auth.posting.weight_threshold = 0;
-      get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
     });
+    get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( HIVE_TEMP_ACCOUNT ), true/*init_genesis*/ );
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
@@ -3747,8 +3747,8 @@ void database::init_genesis()
         auth.owner.weight_threshold = 1;
         auth.active  = auth.owner;
         auth.posting = auth.active;
-        get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
       });
+      get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( account_name ), true/*init_genesis*/ );
 
       create< witness_object >( [&]( witness_object& w )
       {
@@ -3786,8 +3786,8 @@ void database::init_genesis()
 #endif
         auth.active = auth.owner;
         auth.posting = auth.owner;
-        get_accounts_handler().create_volatile_account_authority( auth, true/*init_genesis*/ );
       } );
+      get_accounts_handler().create_volatile_account_authority( get< account_authority_object, by_account >( STEEM_ACCOUNT_NAME ), true/*init_genesis*/ );
     }
 
     const auto& dgpo = create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME );

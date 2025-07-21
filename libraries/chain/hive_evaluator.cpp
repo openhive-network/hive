@@ -441,8 +441,8 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   {
     meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
-    _db.get_accounts_handler().create_volatile_account_metadata( meta );
   });
+  _db.get_accounts_handler().create_volatile_account_metadata( _db.get< account_metadata_object, by_account >( new_account.get_name() ) );
 #else
   FC_UNUSED( new_account );
 #endif
@@ -455,8 +455,8 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.posting = *_auth_posting;
     auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
-    _db.get_accounts_handler().create_volatile_account_authority( auth );
   });
+  _db.get_accounts_handler().create_volatile_account_authority( _db.get< account_authority_object, by_account >( o.new_account_name ) );
 
   asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
@@ -549,8 +549,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   {
     meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
-    _db.get_accounts_handler().create_volatile_account_metadata( meta );
   });
+  _db.get_accounts_handler().create_volatile_account_metadata( _db.get< account_metadata_object, by_account >( new_account.get_name() ) );
 #else
   FC_UNUSED( new_account );
 #endif
@@ -563,8 +563,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     auth.posting = o.posting;
     auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
-    _db.get_accounts_handler().create_volatile_account_authority( auth );
   });
+  _db.get_accounts_handler().create_volatile_account_authority( _db.get< account_authority_object, by_account >( o.new_account_name ) );
 
   if( o.delegation.amount > 0 || !_db.has_hardfork( HIVE_HARDFORK_0_19__997 ) )
   {
@@ -2276,8 +2276,8 @@ void pow_apply( database& db, Operation o )
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_name();
-      db.get_accounts_handler().create_volatile_account_metadata( meta );
     });
+    db.get_accounts_handler().create_volatile_account_metadata( db.get< account_metadata_object, by_account >( new_account.get_name() ) );
 #else
     FC_UNUSED( new_account );
 #endif
@@ -2288,8 +2288,8 @@ void pow_apply( database& db, Operation o )
       auth.owner = authority( 1, o.work.worker, 1);
       auth.active = auth.owner;
       auth.posting = auth.owner;
-      db.get_accounts_handler().create_volatile_account_authority( auth );
     });
+    db.get_accounts_handler().create_volatile_account_authority( db.get< account_authority_object, by_account >( o.get_worker_account() ) );
 
     db.push_virtual_operation( account_created_operation(new_account.get_name(), o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
@@ -2419,8 +2419,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_name();
-     _db.get_accounts_handler().create_volatile_account_metadata( meta );
     });
+    _db.get_accounts_handler().create_volatile_account_metadata( _db.get< account_metadata_object, by_account >( new_account.get_name() ) );
 #else
     FC_UNUSED( new_account );
 #endif
@@ -2431,8 +2431,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       auth.owner = authority( 1, *o.new_owner_key, 1);
       auth.active = auth.owner;
       auth.posting = auth.owner;
-      _db.get_accounts_handler().create_volatile_account_authority( auth );
     });
+    db.get_accounts_handler().create_volatile_account_authority( db.get< account_authority_object, by_account >( worker_account ) );
 
     db.create<witness_object>( [&]( witness_object& w )
     {
@@ -2684,8 +2684,8 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   {
     meta.account = new_account.get_name();
     from_string( meta.json_metadata, o.json_metadata );
-    _db.get_accounts_handler().create_volatile_account_metadata( meta );
   });
+  _db.get_accounts_handler().create_volatile_account_metadata( _db.get< account_metadata_object, by_account >( new_account.get_name() ) );
 #else
   FC_UNUSED( new_account );
 #endif
@@ -2698,8 +2698,8 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.posting = o.posting;
     auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
-    _db.get_accounts_handler().create_volatile_account_authority( auth );
   });
+  _db.get_accounts_handler().create_volatile_account_authority( _db.get< account_authority_object, by_account >( o.new_account_name ) );
 
   _db.push_virtual_operation( account_created_operation(new_account.get_name(), o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
 }
