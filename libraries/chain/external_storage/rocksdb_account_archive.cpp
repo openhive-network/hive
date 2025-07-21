@@ -143,9 +143,9 @@ void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, Co
     if( !_do_flush )
       _do_flush = true;
 
-    const auto* _account_metadata = db.find< SHM_Object_Type, by_account >( _current.account );
-    if( _account_metadata )
-      db.remove( *_account_metadata );
+    const auto* _shm_object = db.find< SHM_Object_Type, by_account >( _current.account );
+    if( _shm_object )
+      db.remove( *_shm_object );
 
     db.remove( _current );
 

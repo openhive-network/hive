@@ -18,7 +18,7 @@ class rocksdb_account_archive : public accounts_handler
 #ifdef IS_TEST_NET
     const size_t volatile_objects_limit = 0;
 #else
-    const size_t volatile_objects_limit = 5;
+    const size_t volatile_objects_limit = 1'000;
 #endif
 
     database& db;
