@@ -115,12 +115,12 @@ std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const
 }
 
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
-void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type )
+bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
   if( _volatile_idx.size() < volatile_objects_limit )
-    return;
+    return false;
 
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -152,19 +152,24 @@ void rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, Co
     ++count;
   }
 
-  if( _do_flush )
-    provider->flush();
 
   stats.account_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.account_lib_processing.count += count;
+
+  return _do_flush;
 }
 
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
 
-  on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num, ColumnTypes::ACCOUNT_METADATA );
-  on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num, ColumnTypes::ACCOUNT_AUTHORITY );
+  bool _do_flush_meta = on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num, ColumnTypes::ACCOUNT_METADATA );
+  bool _do_flush_authority = on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num, ColumnTypes::ACCOUNT_AUTHORITY );
+
+  if( _do_flush_meta || _do_flush_authority )
+  {
+    provider->flush();
+  }
 }
 
 template<typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>

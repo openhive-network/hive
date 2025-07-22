@@ -48,7 +48,7 @@ class rocksdb_account_archive : public accounts_handler
     Object_Type get_object( const std::string& account_name, ColumnTypes column_type ) const;
 
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
-    void on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type );
+    bool on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type );
 
   public:
 
