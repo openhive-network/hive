@@ -19,13 +19,13 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
   {
     columnDefs.emplace_back("account_metadata", ColumnFamilyOptions());
     auto& byTxIdColumn = columnDefs.back();
-    byTxIdColumn.options.comparator = by_account_name_Comparator();
+    byTxIdColumn.options.comparator = by_Hash_Comparator();
   }
 
   {
     columnDefs.emplace_back("account_authority", ColumnFamilyOptions());
     auto& byTxIdColumn = columnDefs.back();
-    byTxIdColumn.options.comparator = by_account_name_Comparator();
+    byTxIdColumn.options.comparator = by_Hash_Comparator();
   }
 
   return columnDefs;
