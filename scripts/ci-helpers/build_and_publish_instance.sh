@@ -133,3 +133,6 @@ echo "Pushing instance images"
 docker push "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
 docker push "${HIVEIO_IMG}"
 docker push "${HIVEBLOG_IMG}"
+
+# Add another variable pointing image name to use it while deploying i.e. clive project
+echo DOCKERHUB_IMAGE_NAME="hiveio/${CI_PROJECT_NAME}:$CI_COMMIT_TAG" >> docker_image_name.env
