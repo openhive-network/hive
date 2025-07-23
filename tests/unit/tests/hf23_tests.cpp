@@ -28,8 +28,8 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define DELEGATED_VESTS( account ) db->get_account( account ).get_delegated_vesting().amount.value
-#define RECEIVED_VESTS( account ) db->get_account( account ).get_received_vesting().amount.value
+#define DELEGATED_VESTS( account ) db->get_account( account ).assets.get_delegated_vesting().amount.value
+#define RECEIVED_VESTS( account ) db->get_account( account ).assets.get_received_vesting().amount.value
 
 namespace
 {
@@ -92,10 +92,10 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
       {
         auto& _acc = db->get_account( account );
 
-        idump(( _acc.get_balance() ));
-        idump(( _acc.get_hbd_balance() ));
-        BOOST_REQUIRE( _acc.get_balance() == asset( 0, HIVE_SYMBOL ) );
-        BOOST_REQUIRE( _acc.get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
+        idump(( _acc.assets.get_balance() ));
+        idump(( _acc.assets.get_hbd_balance() ));
+        BOOST_REQUIRE( _acc.assets.get_balance() == asset( 0, HIVE_SYMBOL ) );
+        BOOST_REQUIRE( _acc.assets.get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
       }
       BOOST_REQUIRE( get_balance( "dude" )      == asset( 68, HIVE_SYMBOL ) );
       BOOST_REQUIRE( get_hbd_balance( "dude" )  == asset( 78, HBD_SYMBOL ) );
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
         auto& _acc = db->get_account( account );
 
         BOOST_REQUIRE( account           == itr_old_balances->name );
-        BOOST_REQUIRE( _acc.get_balance() == itr_old_balances->balance );
-        BOOST_REQUIRE( _acc.get_hbd_balance() == itr_old_balances->hbd_balance );
+        BOOST_REQUIRE( _acc.assets.get_balance() == itr_old_balances->balance );
+        BOOST_REQUIRE( _acc.assets.get_hbd_balance() == itr_old_balances->hbd_balance );
 
         ++itr_old_balances;
       }
@@ -152,24 +152,24 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
       auto& _alice   = db->get_account( "alice" );
       auto& _bob     = db->get_account( "bob" );
 
-      auto alice_balance      = _alice.get_balance();
-      auto alice_hbd_balance  = _alice.get_hbd_balance();
-      auto bob_balance        = _bob.get_balance();
-      auto bob_hbd_balance    = _bob.get_hbd_balance();
+      auto alice_balance      = _alice.assets.get_balance();
+      auto alice_hbd_balance  = _alice.assets.get_hbd_balance();
+      auto bob_balance        = _bob.assets.get_balance();
+      auto bob_hbd_balance    = _bob.assets.get_hbd_balance();
 
       {
-        db->gather_balance( _alice.get_name(), _alice.get_balance(), _alice.get_hbd_balance() );
-        db->adjust_balance( db->get_treasury_name(), _alice.get_balance() );
-        db->adjust_balance( db->get_treasury_name(), _alice.get_hbd_balance() );
-        db->adjust_balance( "alice", -_alice.get_balance() );
-        db->adjust_balance( "alice", -_alice.get_hbd_balance() );
+        db->gather_balance( _alice.get_name(), _alice.assets.get_balance(), _alice.assets.get_hbd_balance() );
+        db->adjust_balance( db->get_treasury_name(), _alice.assets.get_balance() );
+        db->adjust_balance( db->get_treasury_name(), _alice.assets.get_hbd_balance() );
+        db->adjust_balance( "alice", -_alice.assets.get_balance() );
+        db->adjust_balance( "alice", -_alice.assets.get_hbd_balance() );
       }
       {
-        db->gather_balance( _bob.get_name(), _bob.get_balance(), _bob.get_hbd_balance() );
-        db->adjust_balance( db->get_treasury_name(), _bob.get_balance() );
-        db->adjust_balance( db->get_treasury_name(), _bob.get_hbd_balance() );
-        db->adjust_balance( "bob", -_bob.get_balance() );
-        db->adjust_balance( "bob", -_bob.get_hbd_balance() );
+        db->gather_balance( _bob.get_name(), _bob.assets.get_balance(), _bob.assets.get_hbd_balance() );
+        db->adjust_balance( db->get_treasury_name(), _bob.assets.get_balance() );
+        db->adjust_balance( db->get_treasury_name(), _bob.assets.get_hbd_balance() );
+        db->adjust_balance( "bob", -_bob.assets.get_balance() );
+        db->adjust_balance( "bob", -_bob.assets.get_hbd_balance() );
       }
 
       asset _2000 = ASSET( "2000.000 TESTS" );
@@ -206,8 +206,8 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
       std::set< std::string > restored_accounts = { "bob", "alice", "carol" };
 
-      auto treasury_balance_start      = db->get_treasury().get_balance();
-      auto treasury_hbd_balance_start  = db->get_treasury().get_hbd_balance();
+      auto treasury_balance_start      = db->get_treasury().assets.get_balance();
+      auto treasury_hbd_balance_start  = db->get_treasury().assets.get_hbd_balance();
 
       {
         auto last_supply = db->get_dynamic_global_properties().get_current_hbd_supply();
@@ -219,8 +219,8 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
         auto interest = db->get_dynamic_global_properties().get_current_hbd_supply() - last_supply - _4000;
 
-        BOOST_REQUIRE( db->get_treasury().get_balance() == _5000 + treasury_balance_start );
-        BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == _4000 + treasury_hbd_balance_start + interest );
+        BOOST_REQUIRE( db->get_treasury().assets.get_balance() == _5000 + treasury_balance_start );
+        BOOST_REQUIRE( db->get_treasury().assets.get_hbd_balance() == _4000 + treasury_hbd_balance_start + interest );
 
         treasury_balance_start     += _5000;
         treasury_hbd_balance_start += _4000 + interest;
@@ -234,13 +234,13 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
       auto& _bob2             = db->get_account( "bob" );
       const auto& _treasury2 = db->get_treasury();
 
-      BOOST_REQUIRE( _alice2.get_balance() == _2000 + alice_balance );
-      BOOST_REQUIRE( _alice2.get_hbd_balance() == _10 + alice_hbd_balance );
-      BOOST_REQUIRE( _bob2.get_balance() == _800 + bob_balance );
-      BOOST_REQUIRE( _bob2.get_hbd_balance() == _70 + bob_hbd_balance );
+      BOOST_REQUIRE( _alice2.assets.get_balance() == _2000 + alice_balance );
+      BOOST_REQUIRE( _alice2.assets.get_hbd_balance() == _10 + alice_hbd_balance );
+      BOOST_REQUIRE( _bob2.assets.get_balance() == _800 + bob_balance );
+      BOOST_REQUIRE( _bob2.assets.get_hbd_balance() == _70 + bob_hbd_balance );
 
-      BOOST_REQUIRE( _treasury2.get_balance() == treasury_balance_start - ( alice_balance + bob_balance ) );
-      BOOST_REQUIRE( _treasury2.get_hbd_balance() == treasury_hbd_balance_start - ( alice_hbd_balance + bob_hbd_balance ) );
+      BOOST_REQUIRE( _treasury2.assets.get_balance() == treasury_balance_start - ( alice_balance + bob_balance ) );
+      BOOST_REQUIRE( _treasury2.assets.get_hbd_balance() == treasury_hbd_balance_start - ( alice_hbd_balance + bob_hbd_balance ) );
     }
 
     database_fixture::validate_database();
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
 hive::chain::hf23_item get_balances( const account_object& obj )
 {
-  return hive::chain::hf23_item{ obj.get_balance(), obj.get_hbd_balance() };
+  return hive::chain::hf23_item{ obj.assets.get_balance(), obj.assets.get_hbd_balance() };
 }
 
 bool cmp_hf23_item( const hive::chain::hf23_item& a, const hive::chain::hf23_item& b )
@@ -1218,7 +1218,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
     auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance( "alice" );
-    BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
+    BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().assets.get_hbd_balance() ) );
     BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );
     BOOST_REQUIRE( alice_hbd == ASSET( "1000.000 TBD" ) );
 

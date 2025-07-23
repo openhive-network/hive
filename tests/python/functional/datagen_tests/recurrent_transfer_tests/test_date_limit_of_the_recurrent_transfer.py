@@ -65,9 +65,9 @@ def test_last_execution_of_recurrent_transfer_close_to_date_limit(node: tt.InitN
     wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     # Validate that sender's balance is equal 100 Tests
-    assert node.api.condenser.get_accounts(["sender"])[0].balance == "100.000 TESTS"
+    assert node.api.condenser.get_accounts(["sender"])[0].assets.get_balance() == "100.000 TESTS"
     # Validate that receiver's balance is equal 0 Tests
-    assert node.api.condenser.get_accounts(["receiver"])[0].balance == "0.000 TESTS"
+    assert node.api.condenser.get_accounts(["receiver"])[0].assets.get_balance() == "0.000 TESTS"
 
     wallet.api.recurrent_transfer(
         "sender",
@@ -79,6 +79,6 @@ def test_last_execution_of_recurrent_transfer_close_to_date_limit(node: tt.InitN
     )
 
     # Validate that sender's balance is equal 90 Tests
-    assert node.api.condenser.get_accounts(["sender"])[0].balance == "90.000 TESTS"
+    assert node.api.condenser.get_accounts(["sender"])[0].assets.get_balance() == "90.000 TESTS"
     # Validate that receiver's balance is equal 10 Tests
-    assert node.api.condenser.get_accounts(["receiver"])[0].balance == "10.000 TESTS"
+    assert node.api.condenser.get_accounts(["receiver"])[0].assets.get_balance() == "10.000 TESTS"

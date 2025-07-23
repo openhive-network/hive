@@ -500,7 +500,7 @@ namespace chain {
       void update_owner_authority( const account_object& account, const authority& owner_authority );
 
       asset get_balance( const account_object& a, asset_symbol_type symbol )const;
-      asset get_savings_balance( const account_object& a, asset_symbol_type symbol )const;
+      asset get_savings( const account_object& a, asset_symbol_type symbol )const;
       asset get_balance( const account_name_type& aname, asset_symbol_type symbol )const
       {
         return get_balance( get_account( aname ), symbol );

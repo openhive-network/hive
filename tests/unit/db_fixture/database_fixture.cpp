@@ -413,10 +413,10 @@ void database_fixture::issue_funds(
       db.modify( db.get_account( account_name ), [&]( account_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          a.balance += amount;
+          a.assets.set_balance( a.assets.get_balance() + amount );
         else if( amount.symbol == HBD_SYMBOL )
         {
-          a.hbd_balance += amount;
+          a.assets.set_hbd_balance( a.assets.get_hbd_balance() + HBD_asset( amount ) );
           a.hbd_seconds_last_update = db.head_block_time();
         }
       });
@@ -965,47 +965,47 @@ account_id_type database_fixture::get_account_id( const string& account_name )co
 
 asset database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+  return db->get_account( account_name ).assets.get_balance();
 }
 
 asset database_fixture::get_hbd_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_balance();
+  return db->get_account( account_name ).assets.get_hbd_balance();
 }
 
 asset database_fixture::get_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_savings();
+  return db->get_account( account_name ).assets.get_savings();
 }
 
 asset database_fixture::get_hbd_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_savings();
+  return db->get_account( account_name ).assets.get_hbd_savings();
 }
 
 asset database_fixture::get_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_rewards();
+  return db->get_account( account_name ).assets.get_rewards();
 }
 
 asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_rewards();
+  return db->get_account( account_name ).assets.get_hbd_rewards();
 }
 
 asset database_fixture::get_vesting( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vesting();
+  return db->get_account( account_name ).assets.get_vesting();
 }
 
 asset database_fixture::get_vest_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards();
+  return db->get_account( account_name ).assets.get_vest_rewards();
 }
 
 asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards_as_hive();
+  return db->get_account( account_name ).assets.get_vest_rewards_as_hive();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const

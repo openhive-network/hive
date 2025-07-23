@@ -309,7 +309,7 @@ void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_p
       /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
       db.modify( miner_account, [ &vest_modifier ]( hive::chain::account_object& account )
       {
-        account.vesting_shares += vest_modifier;
+        account.assets.set_vesting( account.assets.get_vesting() + vest_modifier );
       } );
     };
     db.rc.update_rc_for_custom_action( _update_initminer, miner_account );

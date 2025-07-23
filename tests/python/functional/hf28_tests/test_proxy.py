@@ -73,10 +73,10 @@ def test_sum_of_vesting_shares_on_first_layer_of_proxy(node: tt.InitNode) -> Non
     node.restart(time_control=tt.OffsetTimeControl(offset="+25h"))
 
     assert (bob := node.api.wallet_bridge.get_account("bob")) is not None
-    bob_vesting_shares = int(bob.vesting_shares.amount)
+    bob_vesting_shares = int(bob.assets.get_vesting().amount)
 
     assert (carol := node.api.wallet_bridge.get_account("carol")) is not None
-    carol_vesting_shares = int(carol.vesting_shares.amount)
+    carol_vesting_shares = int(carol.assets.get_vesting().amount)
 
     assert (alice := node.api.wallet_bridge.get_account("alice")) is not None
     assert alice.proxied_vsf_votes[0] == bob_vesting_shares + carol_vesting_shares
@@ -111,7 +111,7 @@ def test_proxy_change(node: tt.InitNode) -> None:
     wallet.api.set_voting_proxy("alice", "bob")
 
     assert (alice := node.api.wallet_bridge.get_account("alice")) is not None
-    alice_vesting_shares = alice.vesting_shares.amount
+    alice_vesting_shares = alice.assets.get_vesting().amount
     assert alice.proxy == "bob"
 
     wallet.api.set_voting_proxy("alice", "carol")
@@ -186,7 +186,7 @@ def test_vesting_shares_values_on_four_proxy_layers(node: tt.InitNode) -> None:
     vesting_shares = []
     for account_number in range(len(accounts) - 1):
         assert (account_0 := node.api.wallet_bridge.get_account(f"account-{account_number}")) is not None
-        vs_amount = int(account_0.vesting_shares.amount)
+        vs_amount = int(account_0.assets.get_vesting().amount)
 
         assert (account_1 := node.api.wallet_bridge.get_account(f"account-{account_number + 1}")) is not None
         vs_value_on_position = account_1.proxied_vsf_votes[0]

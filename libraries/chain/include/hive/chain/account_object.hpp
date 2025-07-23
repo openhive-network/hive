@@ -29,6 +29,7 @@ namespace hive { namespace chain {
     public:
 
       account_details::recovery recovery;
+      account_details::assets   assets;
 
     public:
       //constructor for creation of regular accounts
@@ -38,7 +39,9 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
-      : id( _id ), recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
+      : id( _id ),
+        recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
+        assets( incoming_delegation ),
         name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
@@ -47,7 +50,6 @@ namespace hive { namespace chain {
             _creation_time = time is retrieved from a head block
             _block_creation_time = time from a current block
         */
-        received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
         if( _fill_mana )
@@ -68,50 +70,24 @@ namespace hive { namespace chain {
         : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
       {}
 
-      //liquid HIVE balance
-      const HIVE_asset& get_balance() const { return balance; }
-      //HIVE balance in savings
-      const HIVE_asset& get_savings() const { return savings_balance; }
-      //unclaimed HIVE rewards
-      const HIVE_asset& get_rewards() const { return reward_hive_balance; }
-
-      //liquid HBD balance
-      const HBD_asset& get_hbd_balance() const { return hbd_balance; }
-      //HBD balance in savings
-      const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
-      //unclaimed HBD rewards
-      const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
-
-      //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      const VEST_asset& get_vesting() const { return vesting_shares; }
-      //VESTS that were delegated to other accounts
-      const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
-      //VESTS that were borrowed from other accounts
-      const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
-      //whole remainder of active power down (zero when not active)
-      share_type get_total_vesting_withdrawal() const { return to_withdraw.amount - withdrawn.amount; }
       //tells if account has active power down
       bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
       //value of active step of pending power down (or zero)
       share_type get_next_vesting_withdrawal() const
       {
         if( has_active_power_down() )
-          return std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
+          return std::min( assets.get_vesting_withdraw_rate().amount, assets.get_total_vesting_withdrawal() );
         else
           return 0;
       }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
-        share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
+        share_type total = assets.get_vesting().amount - assets.get_delegated_vesting().amount + assets.get_received_vesting().amount;
         if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
           total -= get_next_vesting_withdrawal();
         return total;
       }
-      //unclaimed VESTS rewards
-      const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
-      //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
       //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
       share_type get_maximum_rc( bool only_delegable = false ) const
@@ -164,27 +140,6 @@ namespace hive { namespace chain {
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
       util::manabar     rc_manabar;
-
-      HBD_asset         hbd_balance; ///< HBD liquid balance
-      HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
-      HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
-
-      HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
-      HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
-      HIVE_asset        balance;  ///< HIVE liquid balance
-      HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
-
-      VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
-      VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
-      VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
-      VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
-      VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
-
-      HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
-      HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
-
-      VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
-      VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
 
       share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
       share_type        delegated_rc; ///< RC delegated out to other accounts
@@ -275,12 +230,12 @@ namespace hive { namespace chain {
       // governance vote power of this account does not include "delayed votes"
       share_type get_direct_governance_vote_power() const
       {
-        FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
+        FC_ASSERT( sum_delayed_votes.value <= assets.get_vesting().amount, "",
                 ( "sum_delayed_votes",     sum_delayed_votes )
-                ( "vesting_shares.amount", vesting_shares.amount )
+                ( "vesting_shares.amount", assets.get_vesting().amount )
                 ( "account",               name ) );
   
-        return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+        return asset( assets.get_vesting().amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
       }
 
       /// This function should be used only when the account votes for a witness directly
@@ -724,21 +679,15 @@ namespace hive { namespace chain {
 } }
 
 FC_REFLECT( hive::chain::account_object,
-          (id)(proxy)
+          (id)
+          (recovery)(assets)
+          (proxy)
           (name)
           (hbd_seconds)
           (savings_hbd_seconds)
           (voting_manabar)
           (downvote_manabar)
           (rc_manabar)
-          (hbd_balance)(savings_hbd_balance)
-          (reward_hbd_balance)(reward_hive_balance)
-          (reward_vesting_hive)(balance)
-          (savings_balance)(reward_vesting_balance)
-          (vesting_shares)(delegated_vesting_shares)
-          (received_vesting_shares)(vesting_withdraw_rate)
-          (curation_rewards)(posting_rewards)
-          (withdrawn)(to_withdraw)
           (rc_adjustment)(delegated_rc)
           (received_rc)(last_max_rc)
           (pending_claimed_accounts)(sum_delayed_votes)

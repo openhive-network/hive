@@ -123,7 +123,7 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
 
     # vesting delegate
     vs_per_account = (
-        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].vesting_shares / AMOUNT_OF_ALL_ACCOUNTS
+        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].assets.get_vesting() / AMOUNT_OF_ALL_ACCOUNTS
     )
     tt.logger.info("Started vesting delegate to accounts...")
     execute_function_in_threads(
