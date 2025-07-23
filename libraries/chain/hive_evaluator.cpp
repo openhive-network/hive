@@ -2708,9 +2708,9 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.has_recovery_account() ) // Make sure recovery matches expected recovery account
+  if ( account_to_recover.recovery.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
-    const auto& recovery_account = _db.get_account( account_to_recover.get_recovery_account() );
+    const auto& recovery_account = _db.get_account( account_to_recover.recovery.get_recovery_account() );
     FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
@@ -2774,7 +2774,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.recovery.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -2799,8 +2799,8 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   _db.update_owner_authority( account, o.new_owner_authority );
   _db.modify( account, [&]( account_object& a )
   {
-    a.set_last_account_recovery_time( _db.head_block_time() );
-    a.set_block_last_account_recovery_time( _db.get_current_timestamp() );
+    a.recovery.set_last_account_recovery_time( _db.head_block_time() );
+    a.recovery.set_block_last_account_recovery_time( _db.get_current_timestamp() );
   });
 }
 
@@ -2818,7 +2818,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
+  else if( account_to_recover.recovery.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )

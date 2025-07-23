@@ -6,6 +6,7 @@
 #include <hive/protocol/fixed_string.hpp>
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/chain/account_details.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -24,6 +25,11 @@ namespace hive { namespace chain {
   class account_object : public object< account_object_type, account_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_object );
+
+    public:
+
+      account_details::recovery recovery;
+
     public:
       //constructor for creation of regular accounts
       template< typename Allocator >
@@ -32,7 +38,8 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
-      : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
+      : id( _id ), recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
+        name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
         /*
@@ -40,8 +47,6 @@ namespace hive { namespace chain {
             _creation_time = time is retrieved from a head block
             _block_creation_time = time from a current block
         */
-        if( _recovery_account != nullptr )
-          recovery_account = _recovery_account->get_id();
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -145,38 +150,10 @@ namespace hive { namespace chain {
         proxy = new_proxy.get_id();
       }
 
-      //tells if account has some designated account that can initiate recovery (if not, top witness can)
-      bool has_recovery_account() const { return recovery_account != account_id_type(); }
-      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
-      account_id_type get_recovery_account() const { return recovery_account; }
-      //sets new recovery account
-      void set_recovery_account(const account_object& new_recovery_account)
-      {
-        recovery_account = new_recovery_account.get_id();
-      }
-      //timestamp of last time account owner authority was successfully recovered
-      time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
-      //sets time of owner authority recovery
-      void set_last_account_recovery_time( time_point_sec recovery_time )
-      {
-        last_account_recovery = recovery_time;
-      }
-
-      //time from a current block
-      time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
-      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
-      {
-        block_last_account_recovery = block_recovery_time;
-      }
-
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
     private:
       account_id_type   proxy;
-
-      account_id_type   recovery_account;
-      time_point_sec    last_account_recovery;
-      time_point_sec    block_last_account_recovery;
 
       account_name_type name;
 
@@ -747,7 +724,7 @@ namespace hive { namespace chain {
 } }
 
 FC_REFLECT( hive::chain::account_object,
-          (id)(proxy)(recovery_account)(last_account_recovery)(block_last_account_recovery)
+          (id)(proxy)
           (name)
           (hbd_seconds)
           (savings_hbd_seconds)
