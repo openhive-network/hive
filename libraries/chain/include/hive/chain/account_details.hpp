@@ -89,58 +89,6 @@ namespace hive { namespace chain { namespace account_details {
       {
         received_vesting_shares += incoming_delegation;
       }
-
-      //liquid HIVE balance
-      const HIVE_asset& get_balance() const { return balance; }
-      void set_balance( const HIVE_asset& value ) { balance = value; }
-      //HIVE balance in savings
-      const HIVE_asset& get_savings() const { return savings_balance; }
-      void set_savings( const HIVE_asset& value ) { savings_balance = value; }
-      //unclaimed HIVE rewards
-      const HIVE_asset& get_rewards() const { return reward_hive_balance; }
-      const void set_rewards( const HIVE_asset& value ) { reward_hive_balance = value; }
-
-      //liquid HBD balance
-      const HBD_asset& get_hbd_balance() const { return hbd_balance; }
-      void set_hbd_balance( const HBD_asset& value ) { hbd_balance = value; }
-      //HBD balance in savings
-      const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
-      const void set_hbd_savings( const HBD_asset& value ) { savings_hbd_balance = value; }
-      //unclaimed HBD rewards
-      const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
-      const void set_hbd_rewards( const HBD_asset& value ) { reward_hbd_balance = value; }
-
-      //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      const VEST_asset& get_vesting() const { return vesting_shares; }
-      void set_vesting( const VEST_asset& value ) { vesting_shares = value; }
-
-      //VESTS that were delegated to other accounts
-      const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
-      const void set_delegated_vesting( const VEST_asset& value ) { delegated_vesting_shares = value; }
-      //VESTS that were borrowed from other accounts
-      const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
-      const void set_received_vesting( const VEST_asset& value ) { received_vesting_shares = value; }
-      //whole remainder of active power down (zero when not active)
-      share_type get_total_vesting_withdrawal() const { return to_withdraw.amount - withdrawn.amount; }
-      const VEST_asset& get_vesting_withdraw_rate() const { return vesting_withdraw_rate; }
-      const void set_vesting_withdraw_rate( const VEST_asset& value ) { vesting_withdraw_rate = value; }
-
-      //unclaimed VESTS rewards
-      const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
-      const void set_vest_rewards( const VEST_asset& value ) { reward_vesting_balance = value; }
-      //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
-      const void set_vest_rewards_as_hive( const HIVE_asset& value ) { reward_vesting_hive = value; }
-
-      const HIVE_asset& get_curation_rewards() const { return curation_rewards; }
-      void set_curation_rewards( const HIVE_asset& value ) { curation_rewards = value; }
-      const HIVE_asset& get_posting_rewards() const { return posting_rewards; }
-      void set_posting_rewards( const HIVE_asset& value ) { posting_rewards = value; }
-
-      const VEST_asset& get_withdrawn() const { return withdrawn; }
-      const void set_withdrawn( const VEST_asset& value ) { withdrawn = value; }
-      const VEST_asset& get_to_withdraw() const { return to_withdraw; }
-      const void set_to_withdraw( const VEST_asset& value ) { to_withdraw = value; }
   };
 
 }}}

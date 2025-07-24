@@ -84,7 +84,7 @@ def __get_resources_from_account(node: tt.InitNode, account_name: str) -> dict:
     return {
         "balance": account.balance,
         "hbd_balance": account.hbd_balance,
-        "vesting_shares": account.assets.get_vesting(),
+        "vesting_shares": account.get_vesting(),
     }
 
 

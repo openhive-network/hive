@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
     vest( "alice", ASSET( "10.000 TESTS" ) );
-    int64_t alice_vests = alice.assets.get_vesting().amount.value;
+    int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than I have should fail
     delegate_rc_operation op;
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
     vest( "alice", ASSET( "10.000 TESTS" ) );
-    int64_t alice_vests = alice.assets.get_vesting().amount.value;
+    int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than alice has should fail
     delegate_rc_operation op;
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan)(carol) )
     vest( "alice", ASSET( "10.000 TESTS" ) );
-    uint64_t alice_vests = alice.assets.get_vesting().amount.value;
+    uint64_t alice_vests = alice.get_vesting().amount.value;
 
     std::string json = "[";
     delegate_rc_operation op;
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
-    int64_t vesting_amount = alice_account_initial.assets.get_vesting().amount.value;
+    int64_t vesting_amount = alice_account_initial.get_vesting().amount.value;
     int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     // Delegate 10 rc to bob, the rest to dave, alice has rc_adjustment remaining rc
@@ -672,7 +672,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
-    uint64_t vesting_amount = uint64_t(alice_account_initial.assets.get_vesting().amount.value);
+    uint64_t vesting_amount = uint64_t(alice_account_initial.get_vesting().amount.value);
     int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     delegate_rc_operation op;
@@ -753,7 +753,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
 
     // We delegate all our vests and we don't have enough to sustain any of our remaining delegations
     const account_object& acct = db->get_account( "alice" );
-    dvso.vesting_shares = acct.assets.get_vesting();
+    dvso.vesting_shares = acct.get_vesting();
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
@@ -816,7 +816,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
 
     const account_object& alice_account_initial = db->get_account( "alice" );
     int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
-    int64_t vesting_shares = alice_account_initial.assets.get_vesting().amount.value;
+    int64_t vesting_shares = alice_account_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 
     BOOST_TEST_MESSAGE( "Setting up rc delegations" );
@@ -824,7 +824,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     delegate_rc_operation drc_op;
     drc_op.from = "alice";
     drc_op.delegatees = {"bob", "dave"};
-    drc_op.max_rc = alice_account_initial.assets.get_vesting().amount.value / 2;
+    drc_op.max_rc = alice_account_initial.get_vesting().amount.value / 2;
     push_custom_json_operation( {}, { "alice" }, HIVE_RC_CUSTOM_OPERATION_ID, fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) ), alice_post_key );
     generate_block();
 
@@ -833,11 +833,11 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
 
     withdraw_vesting_operation op;
     op.account = "alice";
-    op.vesting_shares = new_alice.assets.get_vesting();
+    op.vesting_shares = new_alice.get_vesting();
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.assets.get_vesting_withdraw_rate();
+    asset withdraw_rate = new_alice.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -980,7 +980,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
 
     const account_object& alice_account_initial = db->get_account( "alice" );
     int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
-    int64_t vesting_shares = alice_account_initial.assets.get_vesting().amount.value;
+    int64_t vesting_shares = alice_account_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 
     BOOST_TEST_MESSAGE( "Setting up vesting routes" );
@@ -1002,11 +1002,11 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
 
     withdraw_vesting_operation op;
     op.account = "alice";
-    op.vesting_shares = asset( new_alice.assets.get_vesting().amount, VESTS_SYMBOL );
+    op.vesting_shares = asset( new_alice.get_vesting().amount, VESTS_SYMBOL );
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.assets.get_vesting_withdraw_rate();
+    asset withdraw_rate = new_alice.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1133,7 +1133,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     delegate_rc_operation drc_op;
     drc_op.from = "alice";
     drc_op.delegatees = {"bob"};
-    drc_op.max_rc = db->get_account( "alice" ).assets.get_vesting().amount.value;
+    drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value;
     custom_json_operation custom_op;
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
@@ -1147,7 +1147,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     BOOST_REQUIRE( delta_delegation > delta_no_delegation );
 
     BOOST_TEST_MESSAGE( "Reducing the RC delegation" );
-    drc_op.max_rc = db->get_account( "alice" ).assets.get_vesting().amount.value / 2;
+    drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value / 2;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( drc_op ) );
     push_transaction(custom_op, alice_post_key);
     generate_block();
@@ -1369,12 +1369,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
-    int64_t vesting_amount = alice_account_initial.assets.get_vesting().amount.value;
+    int64_t vesting_amount = alice_account_initial.get_vesting().amount.value;
     int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     // We delegate all our vesting shares to bob
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.assets.get_vesting();
+    dvso.vesting_shares = alice_account_initial.get_vesting();
     dvso.delegator = "alice";
     dvso.delegatee = {"bob"};
     push_transaction(dvso, alice_private_key);
@@ -1494,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     // We delegate all our vesting shares to bob and carol
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.assets.get_vesting();
+    dvso.vesting_shares = alice_account_initial.get_vesting();
     dvso.vesting_shares.amount.value /= 2;
     dvso.delegator = "alice";
     dvso.delegatee = "bob";

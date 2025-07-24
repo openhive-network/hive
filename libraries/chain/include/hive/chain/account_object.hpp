@@ -26,10 +26,67 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( account_object );
 
-    public:
+    private:
 
       account_details::recovery recovery;
+
+    private:
+
       account_details::assets   assets;
+
+    public:
+
+      //liquid HIVE balance
+      const HIVE_asset& get_balance() const { return assets.balance; }
+      void set_balance( const HIVE_asset& value ) { assets.balance = value; }
+      //HIVE balance in savings
+      const HIVE_asset& get_savings() const { return assets.savings_balance; }
+      void set_savings( const HIVE_asset& value ) { assets.savings_balance = value; }
+      //unclaimed HIVE rewards
+      const HIVE_asset& get_rewards() const { return assets.reward_hive_balance; }
+      const void set_rewards( const HIVE_asset& value ) { assets.reward_hive_balance = value; }
+
+      //liquid HBD balance
+      const HBD_asset& get_hbd_balance() const { return assets.hbd_balance; }
+      void set_hbd_balance( const HBD_asset& value ) { assets.hbd_balance = value; }
+      //HBD balance in savings
+      const HBD_asset& get_hbd_savings() const { return assets.savings_hbd_balance; }
+      const void set_hbd_savings( const HBD_asset& value ) { assets.savings_hbd_balance = value; }
+      //unclaimed HBD rewards
+      const HBD_asset& get_hbd_rewards() const { return assets.reward_hbd_balance; }
+      const void set_hbd_rewards( const HBD_asset& value ) { assets.reward_hbd_balance = value; }
+
+      //all VESTS held by the account - use other routines to get active VESTS for specific uses
+      const VEST_asset& get_vesting() const { return assets.vesting_shares; }
+      void set_vesting( const VEST_asset& value ) { assets.vesting_shares = value; }
+
+      //VESTS that were delegated to other accounts
+      const VEST_asset& get_delegated_vesting() const { return assets.delegated_vesting_shares; }
+      const void set_delegated_vesting( const VEST_asset& value ) { assets.delegated_vesting_shares = value; }
+      //VESTS that were borrowed from other accounts
+      const VEST_asset& get_received_vesting() const { return assets.received_vesting_shares; }
+      const void set_received_vesting( const VEST_asset& value ) { assets.received_vesting_shares = value; }
+      //whole remainder of active power down (zero when not active)
+      share_type get_total_vesting_withdrawal() const { return assets.to_withdraw.amount - assets.withdrawn.amount; }
+      const VEST_asset& get_vesting_withdraw_rate() const { return assets.vesting_withdraw_rate; }
+      const void set_vesting_withdraw_rate( const VEST_asset& value ) { assets.vesting_withdraw_rate = value; }
+
+      //unclaimed VESTS rewards
+      const VEST_asset& get_vest_rewards() const { return assets.reward_vesting_balance; }
+      const void set_vest_rewards( const VEST_asset& value ) { assets.reward_vesting_balance = value; }
+      //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
+      const HIVE_asset& get_vest_rewards_as_hive() const { return assets.reward_vesting_hive; }
+      const void set_vest_rewards_as_hive( const HIVE_asset& value ) { assets.reward_vesting_hive = value; }
+
+      const HIVE_asset& get_curation_rewards() const { return assets.curation_rewards; }
+      void set_curation_rewards( const HIVE_asset& value ) { assets.curation_rewards = value; }
+      const HIVE_asset& get_posting_rewards() const { return assets.posting_rewards; }
+      void set_posting_rewards( const HIVE_asset& value ) { assets.posting_rewards = value; }
+
+      const VEST_asset& get_withdrawn() const { return assets.withdrawn; }
+      const void set_withdrawn( const VEST_asset& value ) { assets.withdrawn = value; }
+      const VEST_asset& get_to_withdraw() const { return assets.to_withdraw; }
+      const void set_to_withdraw( const VEST_asset& value ) { assets.to_withdraw = value; }
 
     public:
       //constructor for creation of regular accounts
@@ -76,14 +133,14 @@ namespace hive { namespace chain {
       share_type get_next_vesting_withdrawal() const
       {
         if( has_active_power_down() )
-          return std::min( assets.get_vesting_withdraw_rate().amount, assets.get_total_vesting_withdrawal() );
+          return std::min( get_vesting_withdraw_rate().amount, get_total_vesting_withdrawal() );
         else
           return 0;
       }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
-        share_type total = assets.get_vesting().amount - assets.get_delegated_vesting().amount + assets.get_received_vesting().amount;
+        share_type total = get_vesting().amount - get_delegated_vesting().amount + get_received_vesting().amount;
         if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
           total -= get_next_vesting_withdrawal();
         return total;
@@ -230,12 +287,12 @@ namespace hive { namespace chain {
       // governance vote power of this account does not include "delayed votes"
       share_type get_direct_governance_vote_power() const
       {
-        FC_ASSERT( sum_delayed_votes.value <= assets.get_vesting().amount, "",
+        FC_ASSERT( sum_delayed_votes.value <= get_vesting().amount, "",
                 ( "sum_delayed_votes",     sum_delayed_votes )
-                ( "vesting_shares.amount", assets.get_vesting().amount )
+                ( "vesting_shares.amount", get_vesting().amount )
                 ( "account",               name ) );
   
-        return asset( assets.get_vesting().amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+        return asset( get_vesting().amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
       }
 
       /// This function should be used only when the account votes for a witness directly

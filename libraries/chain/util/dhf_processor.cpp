@@ -138,7 +138,7 @@ asset dhf_processor::get_treasury_fund()
 {
   auto& treasury_account = db.get_treasury();
 
-  return treasury_account.assets.get_hbd_balance();
+  return treasury_account.get_hbd_balance();
 }
 
 asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
@@ -335,10 +335,10 @@ void dhf_processor::convert_funds( const block_notification& note )
   } );
 
   const auto &treasury_account = db.get_treasury();
-  if (treasury_account.assets.get_balance().amount == 0)
+  if (treasury_account.get_balance().amount == 0)
     return;
 
-  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.assets.get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )

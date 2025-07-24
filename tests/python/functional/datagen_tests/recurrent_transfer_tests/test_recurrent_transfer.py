@@ -14,9 +14,9 @@ def test_recurrent_transfer(node: tt.InitNode) -> None:
     wallet.create_account("receiver")
 
     # Validate that sender's balance is equal 100 Tests
-    assert node.api.wallet_bridge.get_accounts(["sender"])[0].assets.get_balance() == tt.Asset.Test(100)
+    assert node.api.wallet_bridge.get_accounts(["sender"])[0].get_balance() == tt.Asset.Test(100)
     # Validate that receiver's balance is equal 0 Tests
-    assert node.api.wallet_bridge.get_accounts(["receiver"])[0].assets.get_balance() == tt.Asset.Test(0)
+    assert node.api.wallet_bridge.get_accounts(["receiver"])[0].get_balance() == tt.Asset.Test(0)
 
     # Set up and send recurrent transfer
     wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(50), "recurrent transfer to receiver", 24, 2)
@@ -26,6 +26,6 @@ def test_recurrent_transfer(node: tt.InitNode) -> None:
     node.restart(time_control=tt.OffsetTimeControl(offset="+24h"))
 
     # Validate that sender's balance is equal 0 Tests after 24h
-    assert node.api.wallet_bridge.get_accounts(["sender"])[0].assets.get_balance() == tt.Asset.Test(0).as_nai()
+    assert node.api.wallet_bridge.get_accounts(["sender"])[0].get_balance() == tt.Asset.Test(0).as_nai()
     # Validate that receiver's balance is equal 100 (2*50 Tests) after 24h
-    assert node.api.wallet_bridge.get_accounts(["receiver"])[0].assets.get_balance() == tt.Asset.Test(100).as_nai()
+    assert node.api.wallet_bridge.get_accounts(["receiver"])[0].get_balance() == tt.Asset.Test(100).as_nai()

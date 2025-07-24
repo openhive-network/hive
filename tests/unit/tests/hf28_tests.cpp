@@ -1684,11 +1684,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // vesting shares split puts artificial 1 on vesting withdraw rate on accounts with no power down
     inject_hardfork( HIVE_HARDFORK_0_1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF5 activates "no op" check during power down and cancel power down
     inject_hardfork( HIVE_HARDFORK_0_5 );
@@ -1706,18 +1706,18 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     generate_block();
 
     // since 'alice' and 'bob' are now no longer affected by a bug, we can use them to check the power down with natural 1 withdraw rate
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).assets.get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).assets.get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 0 );
 
     withdraw_vesting( "alice", asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1, VESTS_SYMBOL ), alice_private_key);
     // above power down truncates down to zero, that is corrected to 1
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
     withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).assets.get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
@@ -1730,7 +1730,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
     withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).assets.get_vesting_withdraw_rate().amount.value, 2 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
     inject_hardfork( HIVE_HARDFORK_1_28 );
@@ -2383,7 +2383,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
-              const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.assets.get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.assets.get_hbd_balance());
+              const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.get_hbd_balance());
               const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.current_supply;
 
               new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
