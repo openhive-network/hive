@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !db->get_account( "bob" ).recovery.has_recovery_account() );
+    BOOST_REQUIRE( !db->get_account( "bob" ).has_recovery_account() );
     validate_database();
 
   }
@@ -9064,7 +9064,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
     CHECK_NO_PROXY( bob );
-    BOOST_REQUIRE( bob.recovery.get_recovery_account() == alice_id );
+    BOOST_REQUIRE( bob.get_recovery_account() == alice_id );
     BOOST_REQUIRE( bob.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
@@ -9097,7 +9097,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !db->get_account( "charlie" ).recovery.has_recovery_account() );
+    BOOST_REQUIRE( !db->get_account( "charlie" ).has_recovery_account() );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

@@ -30,6 +30,37 @@ namespace hive { namespace chain {
 
       account_details::recovery recovery;
 
+    public:
+
+      //tells if account has some designated account that can initiate recovery (if not, top witness can)
+      bool has_recovery_account() const { return recovery.recovery_account != account_id_type(); }
+
+      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
+      account_id_type get_recovery_account() const { return recovery.recovery_account; }
+
+      //sets new recovery account
+      void set_recovery_account(const account_id_type& new_recovery_account)
+      {
+        recovery.recovery_account = new_recovery_account;
+      }
+
+      //timestamp of last time account owner authority was successfully recovered
+      time_point_sec get_last_account_recovery_time() const { return recovery.last_account_recovery; }
+
+      //sets time of owner authority recovery
+      void set_last_account_recovery_time( time_point_sec recovery_time )
+      {
+        recovery.last_account_recovery = recovery_time;
+      }
+
+      //time from a current block
+      time_point_sec get_block_last_account_recovery_time() const { return recovery.block_last_account_recovery; }
+
+      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
+      {
+        recovery.block_last_account_recovery = block_recovery_time;
+      }
+
     private:
 
       account_details::assets   assets;

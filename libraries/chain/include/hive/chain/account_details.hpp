@@ -11,84 +11,46 @@ namespace hive { namespace chain { namespace account_details {
   using hive::protocol::VEST_asset;
   using hive::protocol::asset;
 
-  class recovery
+  struct recovery
   {
-    public:
+    account_id_type   recovery_account;
+    time_point_sec    last_account_recovery;
+    time_point_sec    block_last_account_recovery;
 
-      account_id_type   recovery_account;
-      time_point_sec    last_account_recovery;
-      time_point_sec    block_last_account_recovery;
-
-    public:
-
-      recovery() {}
-      recovery( const account_id_type recovery_account )
-              :recovery_account( recovery_account )
-      {}
-
-      //tells if account has some designated account that can initiate recovery (if not, top witness can)
-      bool has_recovery_account() const { return recovery_account != account_id_type(); }
-
-      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
-      account_id_type get_recovery_account() const { return recovery_account; }
-
-      //sets new recovery account
-      void set_recovery_account(const account_id_type& new_recovery_account)
-      {
-        recovery_account = new_recovery_account;
-      }
-
-      //timestamp of last time account owner authority was successfully recovered
-      time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
-
-      //sets time of owner authority recovery
-      void set_last_account_recovery_time( time_point_sec recovery_time )
-      {
-        last_account_recovery = recovery_time;
-      }
-
-      //time from a current block
-      time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
-
-      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
-      {
-        block_last_account_recovery = block_recovery_time;
-      }
+    recovery() {}
+    recovery( const account_id_type recovery_account )
+            :recovery_account( recovery_account ){}
   };
 
-  class assets
+  struct assets
   {
-    public:
+    HBD_asset         hbd_balance; ///< HBD liquid balance
+    HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
+    HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
-      HBD_asset         hbd_balance; ///< HBD liquid balance
-      HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
-      HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
+    HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
+    HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
+    HIVE_asset        balance;  ///< HIVE liquid balance
+    HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
-      HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
-      HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
-      HIVE_asset        balance;  ///< HIVE liquid balance
-      HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
+    VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
+    VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
+    VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
+    VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
+    VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
 
-      VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
-      VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
-      VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
-      VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
-      VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
+    HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
+    HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
 
-      HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
-      HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
+    VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
+    VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
 
-      VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
-      VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
+    assets(){}
 
-    public:
-
-      assets(){}
-
-      assets( const asset& incoming_delegation )
-      {
-        received_vesting_shares += incoming_delegation;
-      }
+    assets( const asset& incoming_delegation )
+    {
+      received_vesting_shares += incoming_delegation;
+    }
   };
 
 }}}
