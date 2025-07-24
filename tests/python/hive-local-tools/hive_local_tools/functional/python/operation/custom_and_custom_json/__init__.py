@@ -23,7 +23,10 @@ class CustomJson(Operation):
             self._wallet,
             [
                 CustomJsonOperation(
-                    required_auths=required_auths, required_posting_auths=required_posting_auths, id_=id_, json_=json_
+                    required_auths=required_auths,
+                    required_posting_auths=required_posting_auths,
+                    id_=str(id_),
+                    json_=json_,
                 )
             ],
             broadcast=False,
