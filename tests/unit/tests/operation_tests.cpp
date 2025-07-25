@@ -33,14 +33,14 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define VOTING_MANABAR( account_name ) db->get_account( account_name ).voting_manabar
-#define DOWNVOTE_MANABAR( account_name ) db->get_account( account_name ).downvote_manabar
+#define VOTING_MANABAR( account_name ) db->get_account( account_name ).get_voting_manabar()
+#define DOWNVOTE_MANABAR( account_name ) db->get_account( account_name ).get_downvote_manabar()
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
 inline uint16_t get_voting_power( const account_object& a )
 {
-  return (uint16_t)( a.voting_manabar.current_mana / a.get_effective_vesting_shares().value );
+  return (uint16_t)( a.get_voting_manabar().current_mana / a.get_effective_vesting_shares().value );
 }
 
 BOOST_FIXTURE_TEST_SUITE( operation_tests, clean_database_fixture )
@@ -772,38 +772,38 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Testing success" );
 
-    auto old_mana = _alice.voting_manabar.current_mana;
+    auto old_mana = _alice.get_voting_manabar().current_mana;
     vote( "alice", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
 
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), alice_id ) );
     int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
     BOOST_REQUIRE( _alice.last_vote_time == db->head_block_time() );
-    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == ( old_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == ( old_mana - _alice.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( itr != vote_idx.end() );
-    BOOST_REQUIRE( itr->get_rshares() == ( old_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( itr->get_rshares() == ( old_mana - _alice.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test reduced power for quick voting" ); // no such feature (anymore) - even more true after HF28
 
     generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
-    util::manabar old_manabar = _alice.voting_manabar;
+    util::manabar old_manabar = _alice.get_voting_manabar();
     util::manabar_params params( _alice.get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     vote( "bob", "foo", "alice", HIVE_100_PERCENT / 2, alice_post_key );
     itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice_id ) );
 
-    BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == ( old_manabar.current_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == ( old_manabar.current_mana - _alice.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( itr != vote_idx.end() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test payout time extension on vote" ); // such feature was scrapped with HF17
 
-    old_mana = _bob.voting_manabar.current_mana;
+    old_mana = _bob.get_voting_manabar().current_mana;
     auto old_net_rshares = alice_comment_cashout->get_net_rshares();
 
     generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
@@ -811,7 +811,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     vote( "alice", "foo", "bob", HIVE_100_PERCENT, bob_post_key );
     itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_id ) );
 
-    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_net_rshares + ( old_mana - _bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_net_rshares + ( old_mana - _bob.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( itr != vote_idx.end() );
     validate_database();
@@ -820,7 +820,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     old_net_rshares = bob_comment_cashout->get_net_rshares();
 
-    old_manabar = _sam.voting_manabar;
+    old_manabar = _sam.get_voting_manabar();
     params.max_mana = _sam.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
@@ -830,7 +830,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     util::manabar old_downvote_manabar;
     util::manabar_params downvote_params( _alice.get_effective_vesting_shares().value / 4, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
-    int64_t sam_weight = old_downvote_manabar.current_mana - _sam.downvote_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
+    int64_t sam_weight = old_downvote_manabar.current_mana - _sam.get_downvote_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - sam_weight );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -860,13 +860,13 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     used_power = ( ( HIVE_1_PERCENT * 25 * ( get_voting_power( _alice ) ) / HIVE_100_PERCENT ) + max_vote_denom - 1 ) / max_vote_denom;
     auto alice_voting_power = get_voting_power( _alice ) - used_power;
 
-    old_manabar = _alice.voting_manabar;
+    old_manabar = _alice.get_voting_manabar();
     params.max_mana = _alice.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     vote( "bob", "foo", "alice", HIVE_1_PERCENT * 25, alice_post_key );
 
-    new_rshares = old_manabar.current_mana - _alice.voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
+    new_rshares = old_manabar.current_mana - _alice.get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares + new_rshares );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -885,17 +885,17 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     used_power = ( used_power + max_vote_denom - 1 ) / max_vote_denom;
     alice_voting_power -= used_power;
 
-    old_manabar = _alice.voting_manabar;
+    old_manabar = _alice.get_voting_manabar();
     params.max_mana = _alice.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
-    old_downvote_manabar = _alice.downvote_manabar;
+    old_downvote_manabar = _alice.get_downvote_manabar();
     downvote_params.max_mana = _alice.get_effective_vesting_shares().value / 4;
     old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
 
     vote( "bob", "foo", "alice", HIVE_1_PERCENT * -75, alice_post_key );
 
-    new_rshares = old_downvote_manabar.current_mana - _alice.downvote_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
+    new_rshares = old_downvote_manabar.current_mana - _alice.get_downvote_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares - new_rshares );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -927,17 +927,17 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     {
       db.modify( _alice, [&]( account_object& a )
       {
-        a.downvote_manabar.current_mana /= 30;
-        a.downvote_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+        a.get_downvote_manabar().current_mana /= 30;
+        a.get_downvote_manabar().last_update_time = db.head_block_time().sec_since_epoch();
       });
     });
 
     int64_t alice_weight = 0;
 
-    old_downvote_manabar.current_mana = _alice.downvote_manabar.current_mana;
-    old_downvote_manabar.last_update_time = _alice.downvote_manabar.last_update_time;
-    old_manabar.current_mana = _alice.voting_manabar.current_mana;
-    old_manabar.last_update_time = _alice.voting_manabar.last_update_time;
+    old_downvote_manabar.current_mana = _alice.get_downvote_manabar().current_mana;
+    old_downvote_manabar.last_update_time = _alice.get_downvote_manabar().last_update_time;
+    old_manabar.current_mana = _alice.get_voting_manabar().current_mana;
+    old_manabar.last_update_time = _alice.get_voting_manabar().last_update_time;
     old_manabar.regenerate_mana( params, db->head_block_time() );
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
     alice_weight = params.max_mana * 60 * 60 * 24;
@@ -952,21 +952,21 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     BOOST_REQUIRE( alice_bob_vote->get_rshares() == -1 * ( alice_weight - HIVE_VOTE_DUST_THRESHOLD ) );
     BOOST_REQUIRE( alice_bob_vote->get_last_update() == db->head_block_time() );
     BOOST_REQUIRE( alice_bob_vote->get_vote_percent() == -1 * HIVE_100_PERCENT );
-    BOOST_REQUIRE( _alice.downvote_manabar.current_mana == 0 );
-    BOOST_REQUIRE( _alice.voting_manabar.current_mana == old_manabar.current_mana - alice_weight + old_downvote_manabar.current_mana );
+    BOOST_REQUIRE( _alice.get_downvote_manabar().current_mana == 0 );
+    BOOST_REQUIRE( _alice.get_voting_manabar().current_mana == old_manabar.current_mana - alice_weight + old_downvote_manabar.current_mana );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test reduced effectiveness when increasing rshares within lockout period" );
 
     generate_blocks( fc::time_point_sec( ( bob_comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
 
-    old_manabar = _dave.voting_manabar;
+    old_manabar = _dave.get_voting_manabar();
     params.max_mana = _dave.get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     vote( "bob", "foo", "dave", HIVE_100_PERCENT, dave_post_key );
 
-    new_rshares = old_manabar.current_mana - _dave.voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD;
+    new_rshares = old_manabar.current_mana - _dave.get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD;
     new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
 
     const auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment.get_id(), dave_id ) );
@@ -7528,11 +7528,11 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     const account_object& bob_acc = db->get_account( "bob" );
 
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS" ) );
-    BOOST_REQUIRE( alice_acc.voting_manabar.current_mana == old_manabar.current_mana - op.vesting_shares.amount.value );
-    BOOST_REQUIRE( alice_acc.downvote_manabar.current_mana == old_downvote_manabar.current_mana - op.vesting_shares.amount.value / 4 );
+    BOOST_REQUIRE( alice_acc.get_voting_manabar().current_mana == old_manabar.current_mana - op.vesting_shares.amount.value );
+    BOOST_REQUIRE( alice_acc.get_downvote_manabar().current_mana == old_downvote_manabar.current_mana - op.vesting_shares.amount.value / 4 );
     BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "10000000.000000 VESTS" ) );
-    BOOST_REQUIRE( bob_acc.voting_manabar.current_mana == old_bob_manabar.current_mana + op.vesting_shares.amount.value );
-    BOOST_REQUIRE( bob_acc.downvote_manabar.current_mana == old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
+    BOOST_REQUIRE( bob_acc.get_voting_manabar().current_mana == old_bob_manabar.current_mana + op.vesting_shares.amount.value );
+    BOOST_REQUIRE( bob_acc.get_downvote_manabar().current_mana == old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
 
     BOOST_TEST_MESSAGE( "--- Test that the delegation object is correct. " );
     auto delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( alice_acc.get_id(), bob_acc.get_id() ) );
@@ -7572,11 +7572,11 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
-    BOOST_REQUIRE( alice_acc.voting_manabar.current_mana == old_manabar.current_mana - delta );
-    BOOST_REQUIRE( alice_acc.downvote_manabar.current_mana == old_downvote_manabar.current_mana - delta / 4 );
+    BOOST_REQUIRE( alice_acc.get_voting_manabar().current_mana == old_manabar.current_mana - delta );
+    BOOST_REQUIRE( alice_acc.get_downvote_manabar().current_mana == old_downvote_manabar.current_mana - delta / 4 );
     BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "20000000.000000 VESTS"));
-    BOOST_REQUIRE( bob_acc.voting_manabar.current_mana == old_bob_manabar.current_mana + delta );
-    BOOST_REQUIRE( bob_acc.downvote_manabar.current_mana == old_bob_downvote_manabar.current_mana + delta / 4 );
+    BOOST_REQUIRE( bob_acc.get_voting_manabar().current_mana == old_bob_manabar.current_mana + delta );
+    BOOST_REQUIRE( bob_acc.get_downvote_manabar().current_mana == old_bob_downvote_manabar.current_mana + delta / 4 );
 
     BOOST_TEST_MESSAGE( "--- Test failure delegating delgated VESTS." );
 
@@ -7620,8 +7620,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     auto alice_comment = db->get_comment( "alice", string( "foo" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_id() ) );
-    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
-    BOOST_REQUIRE( itr->get_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_manabar.current_mana - db->get_account( "bob" ).get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( itr->get_rshares() == old_manabar.current_mana - db->get_account( "bob" ).get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD );
 
     generate_block();
     ACTORS( (sam)(dave) )
@@ -7657,8 +7657,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.voting_manabar.current_mana = a.downvote_manabar.current_mana * 3 / 4;
-        a.voting_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+        a.get_voting_manabar().current_mana = a.get_downvote_manabar().current_mana * 3 / 4;
+        a.get_voting_manabar().last_update_time = db.head_block_time().sec_since_epoch();
       });
     });
 
@@ -7674,10 +7674,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.voting_manabar.current_mana = a.get_effective_vesting_shares().value;
-        a.voting_manabar.last_update_time = db.head_block_time().sec_since_epoch();
-        a.downvote_manabar.current_mana = a.downvote_manabar.current_mana * 3 / 4;
-        a.downvote_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+        a.get_voting_manabar().current_mana = a.get_effective_vesting_shares().value;
+        a.get_voting_manabar().last_update_time = db.head_block_time().sec_since_epoch();
+        a.get_downvote_manabar().current_mana = a.get_downvote_manabar().current_mana * 3 / 4;
+        a.get_downvote_manabar().last_update_time = db.head_block_time().sec_since_epoch();
       });
     });
 
@@ -7691,8 +7691,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.downvote_manabar.current_mana = a.get_effective_vesting_shares().value / 4;
-        a.downvote_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+        a.get_downvote_manabar().current_mana = a.get_effective_vesting_shares().value / 4;
+        a.get_downvote_manabar().last_update_time = db.head_block_time().sec_since_epoch();
       });
     });
 

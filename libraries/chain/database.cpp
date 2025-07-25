@@ -1811,9 +1811,9 @@ void database::clear_account( const account_object& account )
         a.set_received_vesting( a.get_received_vesting() - delegation.get_vesting() );
         freed_delegations += delegation.get_vesting();
 
-        a.voting_manabar.use_mana( delegation.get_vesting().amount.value );
+        a.get_voting_manabar().use_mana( delegation.get_vesting().amount.value );
 
-        a.downvote_manabar.use_mana(
+        a.get_downvote_manabar().use_mana(
           fc::uint128_to_int64( ( uint128_t( delegation.get_vesting().amount.value ) * cprops.downvote_pool_percent ) /
           HIVE_100_PERCENT ) );
       } );
@@ -1845,8 +1845,8 @@ void database::clear_account( const account_object& account )
     modify( account, [&]( account_object& a )
     {
       util::update_manabar( cprops, a );
-      a.voting_manabar.current_mana = 0;
-      a.downvote_manabar.current_mana = 0;
+      a.get_voting_manabar().current_mana = 0;
+      a.get_downvote_manabar().current_mana = 0;
       a.set_vesting( VEST_asset( 0 ) );
       //FC_ASSERT( a.get_delegated_vesting() == freed_delegations, "Inconsistent amount of delegations" );
       a.set_delegated_vesting( VEST_asset( 0 ) );
@@ -6301,11 +6301,11 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *it, [&]( account_object& account )
           {
-            account.rc_adjustment = HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT;
-            account.rc_manabar.last_update_time = now.sec_since_epoch();
+            account.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
+            account.get_rc_manabar().last_update_time = now.sec_since_epoch();
             auto max_rc = account.get_maximum_rc().value;
-            account.rc_manabar.current_mana = max_rc;
-            account.last_max_rc = max_rc;
+            account.get_rc_manabar().current_mana = max_rc;
+            account.set_last_max_rc( max_rc );
           } );
         }
 

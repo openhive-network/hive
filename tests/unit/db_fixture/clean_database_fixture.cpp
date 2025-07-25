@@ -92,9 +92,9 @@ void clean_database_fixture::validate_database()
     for( const account_object& account : idx )
     {
       int64_t max_rc = account.get_maximum_rc().value;
-      FC_ASSERT( max_rc == account.last_max_rc,
+      FC_ASSERT( max_rc == account.get_last_max_rc(),
         "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", max_rc )( "b", db->head_block_num() ) );
+        ( "a", account.get_name() )( "old", account.get_last_max_rc() )( "new", max_rc )( "b", db->head_block_num() ) );
     }
   }
 }

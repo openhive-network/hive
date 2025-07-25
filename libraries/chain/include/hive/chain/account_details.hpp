@@ -3,6 +3,7 @@
 #include <hive/protocol/asset.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/manabar.hpp>
 
 namespace hive { namespace chain { namespace account_details {
 
@@ -53,6 +54,47 @@ namespace hive { namespace chain { namespace account_details {
     }
   };
 
+  struct manabars_rc
+  {
+    util::manabar     voting_manabar;
+    util::manabar     downvote_manabar;
+    util::manabar     rc_manabar;
+
+    share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
+    share_type        delegated_rc; ///< RC delegated out to other accounts
+    share_type        received_rc; ///< RC delegated to this account
+    share_type        last_max_rc; ///< (for bug catching with RC code, can be removed once RC becomes part of consensus)
+
+    manabars_rc(){}
+    manabars_rc( const time_point_sec& _creation_time, bool _fill_mana, int64_t _rc_adjustment, share_type effective_vesting_shares )
+      : rc_adjustment( _rc_adjustment )
+    {
+      /*
+        Explanation:
+          _creation_time = time is retrieved from a head block
+      */
+      voting_manabar.last_update_time = _creation_time.sec_since_epoch();
+      downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
+      if( _fill_mana )
+        voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
+      if( rc_adjustment.value )
+      {
+        rc_manabar.last_update_time = _creation_time.sec_since_epoch();
+        auto max_rc = get_maximum_rc( effective_vesting_shares ).value;
+        rc_manabar.current_mana = max_rc;
+        last_max_rc = max_rc;
+      }
+    }
+
+    share_type get_maximum_rc( share_type effective_vesting_shares, bool only_delegable = false ) const
+    {
+      share_type total = effective_vesting_shares - delegated_rc;
+      if( only_delegable == false )
+        total += rc_adjustment + received_rc;
+      return total;
+    }
+  };
+
 }}}
 
 FC_REFLECT( hive::chain::account_details::recovery,
@@ -68,4 +110,12 @@ FC_REFLECT( hive::chain::account_details::assets,
             (received_vesting_shares)(vesting_withdraw_rate)
             (curation_rewards)(posting_rewards)
             (withdrawn)(to_withdraw)
+          )
+
+FC_REFLECT( hive::chain::account_details::manabars_rc,
+            (voting_manabar)
+            (downvote_manabar)
+            (rc_manabar)
+            (rc_adjustment)(delegated_rc)
+            (received_rc)(last_max_rc)
           )

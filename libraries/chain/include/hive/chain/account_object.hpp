@@ -11,7 +11,6 @@
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/shared_authority.hpp>
-#include <hive/chain/util/manabar.hpp>
 
 #include <hive/chain/util/delayed_voting_processor.hpp>
 
@@ -63,7 +62,7 @@ namespace hive { namespace chain {
 
     private:
 
-      account_details::assets   assets;
+      account_details::assets assets;
 
     public:
 
@@ -119,6 +118,39 @@ namespace hive { namespace chain {
       const VEST_asset& get_to_withdraw() const { return assets.to_withdraw; }
       const void set_to_withdraw( const VEST_asset& value ) { assets.to_withdraw = value; }
 
+    private:
+
+      account_details::manabars_rc mrc;
+
+    public:
+
+      share_type  get_rc_adjustment() const { return mrc.rc_adjustment; }
+      void set_rc_adjustment( const share_type& value ) { mrc.rc_adjustment = value; }
+
+      share_type  get_delegated_rc() const { return mrc.delegated_rc; }
+      void set_delegated_rc( const share_type& value ) { mrc.delegated_rc = value; }
+
+      share_type  get_received_rc() const { return mrc.received_rc; }
+      void set_received_rc( const share_type& value ) { mrc.received_rc = value; }
+
+      share_type  get_last_max_rc() const { return mrc.last_max_rc; }
+      void set_last_max_rc( const share_type& value ) { mrc.last_max_rc = value; }
+
+      //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
+      share_type get_maximum_rc( bool only_delegable = false ) const
+      {
+        return mrc.get_maximum_rc( get_effective_vesting_shares(), only_delegable );
+      }
+
+      util::manabar& get_rc_manabar() { return mrc.rc_manabar; };
+      const util::manabar& get_rc_manabar() const { return mrc.rc_manabar; };
+
+      util::manabar& get_voting_manabar() { return mrc.voting_manabar; };
+      const util::manabar& get_voting_manabar() const { return mrc.voting_manabar; };
+
+      util::manabar& get_downvote_manabar() { return mrc.downvote_manabar; };
+      const util::manabar& get_downvote_manabar() const { return mrc.downvote_manabar; };
+
     public:
       //constructor for creation of regular accounts
       template< typename Allocator >
@@ -130,25 +162,12 @@ namespace hive { namespace chain {
       : id( _id ),
         recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
         assets( incoming_delegation ),
-        name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
+        mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
+
+        name( _name ), created( _creation_time ),
+        block_created( _block_creation_time )/*_block_creation_time = time from a current block*/,
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
-        /*
-          Explanation:
-            _creation_time = time is retrieved from a head block
-            _block_creation_time = time from a current block
-        */
-        voting_manabar.last_update_time = _creation_time.sec_since_epoch();
-        downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
-        if( _fill_mana )
-          voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
-        if( rc_adjustment.value )
-        {
-          rc_manabar.last_update_time = _creation_time.sec_since_epoch();
-          auto max_rc = get_maximum_rc().value;
-          rc_manabar.current_mana = max_rc;
-          last_max_rc = max_rc;
-        }
       }
 
       //minimal constructor used for creation of accounts at genesis and in tests
@@ -176,21 +195,6 @@ namespace hive { namespace chain {
           total -= get_next_vesting_withdrawal();
         return total;
       }
-
-      //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
-      share_type get_maximum_rc( bool only_delegable = false ) const
-      {
-        share_type total = get_effective_vesting_shares() - delegated_rc;
-        if( only_delegable == false )
-          total += rc_adjustment + received_rc;
-        return total;
-      }
-      //RC compensation for account creation fee
-      share_type get_rc_adjustment() const { return rc_adjustment; }
-      //RC that were delegated to other accounts
-      share_type get_delegated_rc() const { return delegated_rc; }
-      //RC that were borrowed from other accounts
-      share_type get_received_rc() const { return received_rc; }
 
       //gives name of the account
       const account_name_type& get_name() const { return name; }
@@ -224,15 +228,6 @@ namespace hive { namespace chain {
     public:
       uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
       uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
-
-      util::manabar     voting_manabar;
-      util::manabar     downvote_manabar;
-      util::manabar     rc_manabar;
-
-      share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
-      share_type        delegated_rc; ///< RC delegated out to other accounts
-      share_type        received_rc; ///< RC delegated to this account
-      share_type        last_max_rc; ///< (for bug catching with RC code, can be removed once RC becomes part of consensus)
 
       share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
@@ -768,16 +763,11 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::account_object,
           (id)
-          (recovery)(assets)
+          (recovery)(assets)(mrc)
           (proxy)
           (name)
           (hbd_seconds)
           (savings_hbd_seconds)
-          (voting_manabar)
-          (downvote_manabar)
-          (rc_manabar)
-          (rc_adjustment)(delegated_rc)
-          (received_rc)(last_max_rc)
           (pending_claimed_accounts)(sum_delayed_votes)
           (hbd_seconds_last_update)(hbd_last_interest_payment)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
           (created)(block_created)(last_account_update)(last_post)(last_root_post)

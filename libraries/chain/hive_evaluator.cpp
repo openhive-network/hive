@@ -1607,11 +1607,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   int64_t current_power = 0;
   {
-    int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
+    int64_t elapsed_seconds = _now.sec_since_epoch() - voter.get_voting_manabar().last_update_time;
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
-    current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
+    current_power = std::min( int64_t(voter.get_voting_manabar().current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
     FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
   }
   int64_t abs_weight = abs(o.weight);
@@ -1665,9 +1665,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    a.voting_manabar.current_mana = current_power - used_power; // always nonnegative
+    a.get_voting_manabar().current_mana = current_power - used_power; // always nonnegative
     a.last_vote_time = _now;
-    a.voting_manabar.last_update_time = _now.sec_since_epoch();
+    a.get_voting_manabar().last_update_time = _now.sec_since_epoch();
   } );
 
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
@@ -1940,20 +1940,20 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
-      used_mana = ( std::max( ( ( uint128_t( voter.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter.voting_manabar.current_mana ) )
+      used_mana = ( std::max( ( ( uint128_t( voter.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
     else
     {
-      used_mana = ( std::max( ( uint128_t( voter.downvote_manabar.current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter.voting_manabar.current_mana ) )
+      used_mana = ( std::max( ( uint128_t( voter.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
   }
   else
   {
-    used_mana = ( uint128_t( voter.voting_manabar.current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+    used_mana = ( uint128_t( voter.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
 
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
@@ -1965,16 +1965,16 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
     // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
-    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
+    FC_ASSERT( voter.get_voting_manabar().current_mana + voter.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
       "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter.get_voting_manabar().current_mana )( "d", voter.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
     // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
-    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
+    FC_ASSERT( voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
       "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
   int64_t abs_rshares = fc::uint128_to_int64(used_mana);
@@ -1993,7 +1993,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
-      if( fc::uint128_to_int64(used_mana) > a.downvote_manabar.current_mana )
+      if( fc::uint128_to_int64(used_mana) > a.get_downvote_manabar().current_mana )
       {
         /* used mana is always less than downvote_mana + voting_mana because the amount used
           * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
@@ -2001,18 +2001,18 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           * is strictly smaller than voting_mana. This is the same reason why a check is not
           * required when using voting mana on its own as an upvote.
           */
-        auto remainder = fc::uint128_to_int64(used_mana) - a.downvote_manabar.current_mana;
-        a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
-        a.voting_manabar.use_mana( remainder );
+        auto remainder = fc::uint128_to_int64(used_mana) - a.get_downvote_manabar().current_mana;
+        a.get_downvote_manabar().use_mana( a.get_downvote_manabar().current_mana );
+        a.get_voting_manabar().use_mana( remainder );
       }
       else
       {
-        a.downvote_manabar.use_mana( fc::uint128_to_int64(used_mana) );
+        a.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
       }
     }
     else
     {
-      a.voting_manabar.use_mana( fc::uint128_to_int64(used_mana) );
+      a.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
     }
 
     a.last_vote_time = _now;
@@ -3104,19 +3104,19 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       util::update_manabar( gpo, a );
     } );
 
-    available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
+    available_shares = asset( delegator.get_voting_manabar().current_mana, VESTS_SYMBOL );
     if( gpo.downvote_pool_percent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
         available_downvote_shares = asset(
-          fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
+          fc::uint128_to_int64( ( uint128_t( delegator.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
           + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ), VESTS_SYMBOL );
       }
       else
       {
         available_downvote_shares = asset(
-          ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
+          ( delegator.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
           + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1, VESTS_SYMBOL );
       }
     }
@@ -3179,15 +3179,15 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( op.vesting_shares.amount.value );
+        a.get_voting_manabar().use_mana( op.vesting_shares.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
-          a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+          a.get_downvote_manabar().use_mana( op.vesting_shares.amount.value );
         }
       }
     } );
@@ -3221,15 +3221,15 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( delta.amount.value );
+        a.get_voting_manabar().use_mana( delta.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
-          a.downvote_manabar.use_mana( delta.amount.value );
+          a.get_downvote_manabar().use_mana( delta.amount.value );
         }
       }
     } );
@@ -3278,17 +3278,17 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( delta.amount.value );
+        a.get_voting_manabar().use_mana( delta.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
           {
-            a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+            a.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
           }
           else
           {
-            a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+            a.get_downvote_manabar().use_mana( op.vesting_shares.amount.value );
           }
         }
       }
