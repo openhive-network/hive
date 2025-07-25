@@ -417,7 +417,7 @@ void database_fixture::issue_funds(
         else if( amount.symbol == HBD_SYMBOL )
         {
           a.set_hbd_balance( a.get_hbd_balance() + HBD_asset( amount ) );
-          a.hbd_seconds_last_update = db.head_block_time();
+          a.set_hbd_seconds_last_update( db.head_block_time() );
         }
       });
 

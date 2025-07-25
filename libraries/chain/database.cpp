@@ -1851,7 +1851,7 @@ void database::clear_account( const account_object& account )
       //FC_ASSERT( a.get_delegated_vesting() == freed_delegations, "Inconsistent amount of delegations" );
       a.set_delegated_vesting( VEST_asset( 0 ) );
       a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
-      a.next_vesting_withdrawal = fc::time_point_sec::maximum();
+      a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
       a.set_to_withdraw( VEST_asset( 0 ) );
       a.set_withdrawn( VEST_asset( 0 ) );
 
@@ -2250,11 +2250,11 @@ void database::process_vesting_withdrawals()
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( current != widx.end() && current->next_vesting_withdrawal <= now )
+  while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
     const auto& from_account = *current; ++current; ++count;
 
-    share_type to_withdraw = from_account.get_next_vesting_withdrawal();
+    share_type to_withdraw = from_account.get_active_next_vesting_withdrawal();
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.get_vesting_withdraw_rate().amount )
       to_withdraw = from_account.get_to_withdraw().amount % from_account.get_vesting_withdraw_rate().amount;
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
@@ -2390,13 +2390,13 @@ void database::process_vesting_withdrawals()
       if( a.get_total_vesting_withdrawal() <= 0 || a.get_vesting().amount == 0 )
       {
         a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
-        a.next_vesting_withdrawal = fc::time_point_sec::maximum();
+        a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
         a.set_to_withdraw( VEST_asset( 0 ) );
         a.set_withdrawn( VEST_asset( 0 ) );
       }
       else
       {
-        a.next_vesting_withdrawal += fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+        a.set_next_vesting_withdrawal( a.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       }
     });
 
@@ -5522,20 +5522,20 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
       case HIVE_ASSET_NUM_HBD:
       {
         /// Starting from HF 25 HBD interest will be paid only from saving balance.
-        if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
+        if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.get_hbd_seconds_last_update() != head_block_time() )
         {
-          acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
-          acnt.hbd_seconds_last_update = head_block_time();
-          if( acnt.hbd_seconds > 0 &&
-              (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+          acnt.set_hbd_seconds( acnt.get_hbd_seconds() + fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.get_hbd_seconds_last_update()).to_seconds() );
+          acnt.set_hbd_seconds_last_update( head_block_time() );
+          if( acnt.get_hbd_seconds() > 0 &&
+              (acnt.get_hbd_seconds_last_update() - acnt.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
           {
-            auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
+            auto interest = acnt.get_hbd_seconds() / HIVE_SECONDS_PER_YEAR;
             interest *= get_dynamic_global_properties().get_hbd_interest_rate();
             interest /= HIVE_100_PERCENT;
             asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
             acnt.set_hbd_balance( acnt.get_hbd_balance() + HBD_asset( interest_paid ) );
-            acnt.hbd_seconds = 0;
-            acnt.hbd_last_interest_payment = head_block_time();
+            acnt.set_hbd_seconds( 0 );
+            acnt.set_hbd_last_interest_payment( head_block_time() );
 
             if(interest > 0)
               push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
@@ -5668,21 +5668,21 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
         }
         break;
       case HIVE_ASSET_NUM_HBD:
-        if( a.savings_hbd_seconds_last_update != head_block_time() )
+        if( a.get_savings_hbd_seconds_last_update() != head_block_time() )
         {
-          acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
-          acnt.savings_hbd_seconds_last_update = head_block_time();
+          acnt.set_savings_hbd_seconds( acnt.get_savings_hbd_seconds() + fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.get_savings_hbd_seconds_last_update()).to_seconds() );
+          acnt.set_savings_hbd_seconds_last_update( head_block_time() );
 
-          if( acnt.savings_hbd_seconds > 0 &&
-              (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+          if( acnt.get_savings_hbd_seconds() > 0 &&
+              (acnt.get_savings_hbd_seconds_last_update() - acnt.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
           {
-            auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
+            auto interest = acnt.get_savings_hbd_seconds() / HIVE_SECONDS_PER_YEAR;
             interest *= get_dynamic_global_properties().get_hbd_interest_rate();
             interest /= HIVE_100_PERCENT;
             asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
             acnt.set_hbd_savings( acnt.get_hbd_savings() + interest_paid );
-            acnt.savings_hbd_seconds = 0;
-            acnt.savings_hbd_last_interest_payment = head_block_time();
+            acnt.set_savings_hbd_seconds( 0 );
+            acnt.set_savings_hbd_last_interest_payment( head_block_time() );
 
             if(interest > 0)
               push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );

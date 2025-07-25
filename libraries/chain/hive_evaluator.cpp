@@ -677,7 +677,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     if( o.memo_key != public_key_type() )
         acc.memo_key = o.memo_key;
 
-    acc.last_account_update = _db.head_block_time();
+    acc.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -745,7 +745,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     if( o.memo_key && *o.memo_key != public_key_type() )
         acc.memo_key = *o.memo_key;
 
-    acc.last_account_update = _db.head_block_time();
+    acc.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -954,27 +954,27 @@ void comment_evaluator::do_apply( const comment_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_0_20__2019 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.get_last_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
     else
     {
-      FC_ASSERT( ( _now - auth.last_post ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.last_post) );
+      FC_ASSERT( ( _now - auth.get_last_post() ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.get_last_post()) );
     }
 
     uint16_t reward_weight = HIVE_100_PERCENT;
@@ -982,7 +982,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && !parent )
     {
-      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.last_root_post.sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
+      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.get_last_root_post().sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
       uint32_t old_weight = uint32_t( ( post_bandwidth * ( HIVE_POST_AVERAGE_WINDOW - post_delta_time ) ) / HIVE_POST_AVERAGE_WINDOW );
       post_bandwidth = ( old_weight + HIVE_100_PERCENT );
       reward_weight = uint16_t( std::min( ( HIVE_POST_WEIGHT_CONSTANT * HIVE_100_PERCENT ) / ( post_bandwidth * post_bandwidth ), uint64_t( HIVE_100_PERCENT ) ) );
@@ -992,11 +992,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       if( !parent )
       {
-        a.last_root_post = _now;
+        a.set_last_root_post( _now );
         a.post_bandwidth = uint32_t( post_bandwidth );
       }
-      a.last_post = _now;
-      a.last_post_edit = _now;
+      a.set_last_post( _now );
+      a.set_last_post_edit( _now );
       a.post_count++;
     });
 
@@ -1042,7 +1042,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
-      FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
+      FC_ASSERT( _now - auth.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
     }
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
@@ -1070,7 +1070,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.modify( auth, [&]( account_object& a )
     {
-      a.last_post_edit = _now;
+      a.set_last_post_edit( _now );
     });
 
   } // end EDIT case
@@ -1355,7 +1355,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     _db.modify( account, [&]( account_object& a )
     {
       a.set_vesting_withdraw_rate( asset( 0, VESTS_SYMBOL ) );
-      a.next_vesting_withdrawal = time_point_sec::maximum();
+      a.set_next_vesting_withdrawal( time_point_sec::maximum() );
       a.set_to_withdraw( asset( 0, VESTS_SYMBOL ) );
       a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
     } );
@@ -1388,7 +1388,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
         FC_ASSERT( account.get_vesting_withdraw_rate() != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
       a.set_vesting_withdraw_rate( new_vesting_withdraw_rate );
-      a.next_vesting_withdrawal = now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+      a.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       a.set_to_withdraw( o.vesting_shares );
       a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
     } );
@@ -1666,7 +1666,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   _db.modify( voter, [&]( account_object& a )
   {
     a.get_voting_manabar().current_mana = current_power - used_power; // always nonnegative
-    a.last_vote_time = _now;
+    a.set_last_vote_time( _now );
     a.get_voting_manabar().last_update_time = _now.sec_since_epoch();
   } );
 
@@ -1899,7 +1899,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   auto _now = _db.head_block_time();
   FC_ASSERT( _now < comment_cashout->get_cashout_time(), "Comment is actively being rewarded. Cannot vote on comment." );
   if( !_db.has_hardfork( HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN ) )
-    FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
+    FC_ASSERT( ( _now - voter.get_last_vote_time() ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
@@ -2015,7 +2015,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       a.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
     }
 
-    a.last_vote_time = _now;
+    a.set_last_vote_time( _now );
   } );
 
   /// this is the rshares voting for or against the post
@@ -2303,7 +2303,7 @@ void pow_apply( database& db, Operation o )
 #endif
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
-    FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
+    FC_ASSERT( worker_account.get_last_account_update() < db.head_block_time(), "Worker account must not have updated their account this block." );
 
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
@@ -3129,7 +3129,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     available_shares.amount = std::min( available_shares.amount, max_mana - delegator.get_received_vesting().amount );
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.get_received_vesting().amount );
 
-    if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
+    if( delegator.get_next_vesting_withdrawal() < fc::time_point_sec::maximum()
       && delegator.get_total_vesting_withdrawal() > delegator.get_vesting_withdraw_rate().amount )
     {
       /*
@@ -3139,7 +3139,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       skip that step when power down is in last week, because then whole power down (subtracting) equals
       current week's power down (adding).
       */
-      auto weekly_withdraw = delegator.get_next_vesting_withdrawal();
+      auto weekly_withdraw = delegator.get_active_next_vesting_withdrawal();
       auto remaining_withdraw = delegator.get_total_vesting_withdrawal();
       available_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
       available_downvote_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );

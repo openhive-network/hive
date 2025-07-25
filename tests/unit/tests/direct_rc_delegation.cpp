@@ -1332,7 +1332,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     power_down.account = "delegator1";
     power_down.vesting_shares = asset( full_vest, VESTS_SYMBOL );
     push_transaction( power_down, delegator1_private_key );
-    int64_t undelegated = db->get_account( "delegator1" ).get_next_vesting_withdrawal().value;
+    int64_t undelegated = db->get_account( "delegator1" ).get_active_next_vesting_withdrawal().value;
     rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_post_key );
     generate_block();
     //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed

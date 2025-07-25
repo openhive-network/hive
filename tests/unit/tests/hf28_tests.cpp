@@ -1510,8 +1510,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     int start_block = db->head_block_num();
     withdraw_vesting( "bob", get_vesting( "bob" ), bob_private_key );
     withdraw_vesting( "gil", get_vesting( "gil" ), gil_private_key );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
 
     generate_blocks( week_blocks );
     BOOST_CHECK_EQUAL( start_block + week_blocks, db->head_block_num() );
@@ -1545,8 +1545,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     // down rate was not multiplied but recalculated, disturbing the flow
     bob_rate = bob_amount * split / 104;
     gil_rate = gil_amount * split / 104;
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
 
     BOOST_CHECK_EQUAL( bob_vests % bob_rate, 0 );
     BOOST_CHECK_EQUAL( gil_vests - 102 * gil_rate, 769270 );
@@ -1569,9 +1569,9 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     }
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, 0 );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, 0 );
     // officially whole remainder of gil's power down is for next week, but that's not the case prior HF28
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 );
 
     BOOST_TEST_MESSAGE( "Bob finished power down, but not gil" );
     gil_rate = 40;
@@ -1588,19 +1588,19 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
       BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
     }
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30*40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 - 30*40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30*40 );
 
     BOOST_TEST_MESSAGE( "Activate fix" );
     inject_hardfork( HIVE_HARDFORK_1_28 );
 
     BOOST_TEST_MESSAGE( "Check innediately after HF28 - nothing changed yet for gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30 * 40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 - 30 * 40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30 * 40 );
 
     generate_blocks( week_blocks );
     BOOST_TEST_MESSAGE( "Check week after activation of HF28 - should fix power down on gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 0 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 0 );
 
     validate_database();
   }

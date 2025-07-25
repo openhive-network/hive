@@ -95,6 +95,26 @@ namespace hive { namespace chain { namespace account_details {
     }
   };
 
+  struct time
+  {
+    time(){}
+
+    uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
+    uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
+
+    time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+    time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
+    time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+    time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
+
+    time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
+    time_point_sec    last_post; //(we could probably remove limit on posting replies)
+    time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
+    time_point_sec    last_post_edit; //(we could probably remove limit on post edits)
+    time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
+    time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+  };
+
 }}}
 
 FC_REFLECT( hive::chain::account_details::recovery,
@@ -118,4 +138,12 @@ FC_REFLECT( hive::chain::account_details::manabars_rc,
             (rc_manabar)
             (rc_adjustment)(delegated_rc)
             (received_rc)(last_max_rc)
+          )
+
+FC_REFLECT( hive::chain::account_details::time,
+            (hbd_seconds)
+            (savings_hbd_seconds)
+            (hbd_seconds_last_update)(hbd_last_interest_payment)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
+            (last_account_update)(last_post)(last_root_post)
+            (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
           )

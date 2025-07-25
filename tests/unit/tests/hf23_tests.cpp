@@ -1216,7 +1216,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
-    auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
+    auto start_time = db->get_account( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
     BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
     BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );

@@ -151,6 +151,58 @@ namespace hive { namespace chain {
       util::manabar& get_downvote_manabar() { return mrc.downvote_manabar; };
       const util::manabar& get_downvote_manabar() const { return mrc.downvote_manabar; };
 
+    private:
+
+      account_details::time time;
+
+    public:
+
+      uint128_t get_hbd_seconds() const { return time.hbd_seconds; }
+      void set_hbd_seconds( const uint128_t& value ) { time.hbd_seconds = value; }
+
+      uint128_t get_savings_hbd_seconds() const { return time.savings_hbd_seconds; }
+      void set_savings_hbd_seconds( const uint128_t& value ) { time.savings_hbd_seconds = value; }
+
+      time_point_sec get_hbd_seconds_last_update() const { return time.hbd_seconds_last_update; }
+      void set_hbd_seconds_last_update( const time_point_sec& value ) { time.hbd_seconds_last_update = value; }
+
+      time_point_sec get_hbd_last_interest_payment() const { return time.hbd_last_interest_payment; }
+      void set_hbd_last_interest_payment( const time_point_sec& value ) { time.hbd_last_interest_payment = value; }
+
+      time_point_sec get_savings_hbd_seconds_last_update() const { return time.savings_hbd_seconds_last_update; }
+      void set_savings_hbd_seconds_last_update( const time_point_sec& value ) { time.savings_hbd_seconds_last_update = value; }
+
+      time_point_sec get_savings_hbd_last_interest_payment() const { return time.savings_hbd_last_interest_payment; }
+      void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { time.savings_hbd_last_interest_payment = value; }
+
+      time_point_sec get_last_account_update() const { return time.last_account_update; }
+      void set_last_account_update( const time_point_sec& value ) { time.last_account_update = value; }
+
+      time_point_sec get_last_post() const { return time.last_post; }
+      void set_last_post( const time_point_sec& value ) { time.last_post = value; }
+
+      time_point_sec get_last_root_post() const { return time.last_root_post; }
+      void set_last_root_post( const time_point_sec& value ) { time.last_root_post = value; }
+
+      time_point_sec get_last_post_edit() const { return time.last_post_edit; }
+      void set_last_post_edit( const time_point_sec& value ) { time.last_post_edit = value; }
+
+      time_point_sec get_last_vote_time() const { return time.last_vote_time; }
+      void set_last_vote_time( const time_point_sec& value ) { time.last_vote_time = value; }
+
+      //tells if account has active power down
+      bool has_active_power_down() const { return time.next_vesting_withdrawal != fc::time_point_sec::maximum(); }
+      //value of active step of pending power down (or zero)
+      share_type get_active_next_vesting_withdrawal() const
+      {
+        if( has_active_power_down() )
+          return std::min( get_vesting_withdraw_rate().amount, get_total_vesting_withdrawal() );
+        else
+          return 0;
+      }
+      time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
+      void set_next_vesting_withdrawal( const time_point_sec& value ) { time.next_vesting_withdrawal = value; }
+
     public:
       //constructor for creation of regular accounts
       template< typename Allocator >
@@ -163,6 +215,7 @@ namespace hive { namespace chain {
         recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
         assets( incoming_delegation ),
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
+        time(),
 
         name( _name ), created( _creation_time ),
         block_created( _block_creation_time )/*_block_creation_time = time from a current block*/,
@@ -177,22 +230,12 @@ namespace hive { namespace chain {
         : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
       {}
 
-      //tells if account has active power down
-      bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
-      //value of active step of pending power down (or zero)
-      share_type get_next_vesting_withdrawal() const
-      {
-        if( has_active_power_down() )
-          return std::min( get_vesting_withdraw_rate().amount, get_total_vesting_withdrawal() );
-        else
-          return 0;
-      }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
         share_type total = get_vesting().amount - get_delegated_vesting().amount + get_received_vesting().amount;
-        if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
-          total -= get_next_vesting_withdrawal();
+        if( excludeWeeklyPowerDown && time.next_vesting_withdrawal != fc::time_point_sec::maximum() )
+          total -= get_active_next_vesting_withdrawal();
         return total;
       }
 
@@ -226,27 +269,14 @@ namespace hive { namespace chain {
       account_name_type name;
 
     public:
-      uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
-      uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
-
       share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
       ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
 
-      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
-      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
     private:
       time_point_sec    created; //(not read by consensus code)
       time_point_sec    block_created;
     public:
-      time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
-      time_point_sec    last_post; //(we could probably remove limit on posting replies)
-      time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
-      time_point_sec    last_post_edit; //(we could probably remove limit on post edits)
-      time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
-      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     private:
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
@@ -610,7 +640,7 @@ namespace hive { namespace chain {
       >,
       ordered_unique< tag< by_next_vesting_withdrawal >,
         composite_key< account_object,
-          member< account_object, time_point_sec, &account_object::next_vesting_withdrawal >,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_next_vesting_withdrawal >,
           const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
         > /// composite key by_next_vesting_withdrawal
       >,
@@ -763,15 +793,12 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::account_object,
           (id)
-          (recovery)(assets)(mrc)
+          (recovery)(assets)(mrc)(time)
           (proxy)
           (name)
-          (hbd_seconds)
-          (savings_hbd_seconds)
           (pending_claimed_accounts)(sum_delayed_votes)
-          (hbd_seconds_last_update)(hbd_last_interest_payment)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
-          (created)(block_created)(last_account_update)(last_post)(last_root_post)
-          (last_post_edit)(last_vote_time)(next_vesting_withdrawal)(governance_vote_expiration_ts)
+          (created)(block_created)
+          (governance_vote_expiration_ts)
           (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote)(mined)
           (memo_key)

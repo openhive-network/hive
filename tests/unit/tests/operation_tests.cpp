@@ -778,7 +778,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), alice_id ) );
     int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
-    BOOST_REQUIRE( _alice.last_vote_time == db->head_block_time() );
+    BOOST_REQUIRE( _alice.get_last_vote_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == ( old_mana - _alice.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( itr != vote_idx.end() );
@@ -839,7 +839,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Test nested voting on nested comments" );
 
-    int64_t regenerated_power = ( HIVE_100_PERCENT * ( db->head_block_time() - _alice.last_vote_time ).to_seconds() ) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
+    int64_t regenerated_power = ( HIVE_100_PERCENT * ( db->head_block_time() - _alice.get_last_vote_time() ).to_seconds() ) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
     int64_t used_power = ( get_voting_power( _alice ) + regenerated_power + max_vote_denom - 1 ) / max_vote_denom;
 
     vote( "sam", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
@@ -1676,7 +1676,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 2 ) ).value + 1 );
     BOOST_REQUIRE( alice.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test changing vesting withdrawal" );
@@ -1690,7 +1690,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
     BOOST_REQUIRE( alice.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing more vests than available" );
@@ -1704,7 +1704,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
-    BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing 0 to reset vesting withdraw" );
@@ -1718,7 +1718,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == 0 );
     BOOST_REQUIRE( alice.get_to_withdraw().amount.value == 0 );
-    BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
 
 
     BOOST_TEST_MESSAGE( "--- Test cancelling a withdraw when below the account creation fee" );
