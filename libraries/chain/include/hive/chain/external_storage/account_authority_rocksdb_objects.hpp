@@ -40,7 +40,6 @@ class volatile_account_authority_object : public object< volatile_account_author
 typedef oid_ref< volatile_account_authority_object > volatile_account_authority_id_type;
 
 struct by_block;
-struct by_permlink;
 struct by_name;
 
 typedef multi_index_container<

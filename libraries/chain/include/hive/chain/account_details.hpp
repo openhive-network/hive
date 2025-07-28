@@ -123,15 +123,13 @@ namespace hive { namespace chain { namespace account_details {
 
   struct misc
   {
-    template< typename Allocator >
-    misc( allocator< Allocator > a ):delayed_votes( a ) {}
+    misc(){}
 
-    template< typename Allocator >
-    misc( allocator< Allocator > a, const account_name_type& _name, const time_point_sec& _creation_time, const time_point_sec& _block_creation_time,
+    misc( const account_name_type& _name, const time_point_sec& _creation_time, const time_point_sec& _block_creation_time,
           bool _mined, const public_key_type& _memo_key )
           : name( _name ), created( _creation_time ),
             block_created( _block_creation_time )/*_block_creation_time = time from a current block*/,
-            mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
+            mined( _mined ), memo_key( _memo_key )
     {
     }
 
@@ -164,12 +162,25 @@ namespace hive { namespace chain { namespace account_details {
     public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
 
     fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
+  };
+
+  struct shared_delayed_votes
+  {
+    template< typename Allocator >
+    shared_delayed_votes( allocator< Allocator > a ): delayed_votes( a ) {}
 
     /*
       Holds sum of VESTS per day.
       VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
     */
     t_delayed_votes   delayed_votes;
+
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+      return size;
+    }
   };
 
 }}}
@@ -215,5 +226,8 @@ FC_REFLECT( hive::chain::account_details::misc,
           (savings_withdraw_requests)(can_vote)(mined)
           (memo_key)
           (proxied_vsf_votes)
+        )
+
+FC_REFLECT( hive::chain::account_details::shared_delayed_votes,
           (delayed_votes)
         )

@@ -241,8 +241,6 @@ namespace hive { namespace chain {
       public_key_type get_memo_key() const { return misc.memo_key; }
       void set_memo_key( const public_key_type& value ) { misc.memo_key = value; }
 
-      account_details::t_delayed_votes& get_delayed_votes() { return misc.delayed_votes; }
-      const account_details::t_delayed_votes& get_delayed_votes() const { return misc.delayed_votes; }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
@@ -274,8 +272,6 @@ namespace hive { namespace chain {
         misc.proxy = new_proxy.get_id();
       }
 
-      //methods
-
       time_point_sec get_governance_vote_expiration_ts() const
       {
         return misc.governance_vote_expiration_ts;
@@ -294,17 +290,6 @@ namespace hive { namespace chain {
           const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
           misc.governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(misc.governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
         }
-      }
-
-      bool has_delayed_votes() const { return !misc.delayed_votes.empty(); }
-
-      // start time of oldest delayed vote bucket (the one closest to activation)
-      time_point_sec get_oldest_delayed_vote_time() const
-      {
-        if( has_delayed_votes() )
-          return ( misc.delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
       }
 
       // governance vote power of this account does not include "delayed votes"
@@ -335,6 +320,26 @@ namespace hive { namespace chain {
       void set_name( const account_name_type& new_name ) { misc.name = new_name; }
 #endif
 
+    private:
+
+      account_details::shared_delayed_votes shared_delayed_votes;
+
+    public:
+
+      account_details::t_delayed_votes& get_delayed_votes() { return shared_delayed_votes.delayed_votes; }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return shared_delayed_votes.delayed_votes; }
+
+      bool has_delayed_votes() const { return !shared_delayed_votes.delayed_votes.empty(); }
+
+      // start time of oldest delayed vote bucket (the one closest to activation)
+      time_point_sec get_oldest_delayed_vote_time() const
+      {
+        if( has_delayed_votes() )
+          return ( shared_delayed_votes.delayed_votes.begin() )->time;
+        else
+          return time_point_sec::maximum();
+      }
+
     public:
       //constructor for creation of regular accounts
       template< typename Allocator >
@@ -348,7 +353,8 @@ namespace hive { namespace chain {
         assets( incoming_delegation ),
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
         time(),
-        misc( a, _name, _creation_time, _block_creation_time, _mined, _memo_key )
+        misc( _name, _creation_time, _block_creation_time, _mined, _memo_key ),
+        shared_delayed_votes( a )
       {
       }
 
@@ -356,7 +362,8 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), misc( a, _name, _creation_time, _creation_time, true/*mined*/, _memo_key )
+        : id( _id ), misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
+          shared_delayed_votes( a )
       {}
 
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
@@ -365,12 +372,10 @@ namespace hive { namespace chain {
 
       size_t get_dynamic_alloc() const
       {
-        size_t size = 0;
-        size += misc.delayed_votes.capacity() * sizeof( decltype( misc.delayed_votes )::value_type );
-        return size;
+        return shared_delayed_votes.get_dynamic_alloc();
       }
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (misc));
+    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (shared_delayed_votes));
   };
 
   class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
@@ -788,7 +793,7 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::account_object,
           (id)
-          (recovery)(assets)(mrc)(time)
+          (recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
