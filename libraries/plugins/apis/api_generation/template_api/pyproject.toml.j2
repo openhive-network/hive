@@ -27,7 +27,7 @@ source = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
-beekeepy="{{ versions.beekeepy }}"
+beekeepy="{{ api_generation_pyproject.tool.poetry.dependencies.beekeepy }}"
 
 [tool.poetry-dynamic-versioning]
 enable = true

@@ -70,7 +70,7 @@ def create_api_directory_structure(
 
 def create_pyproject_content_for_api_package(
     api_name: str,
-    shared_versions_path: Path,
+    api_generation_pyproject_path: Path,
     template_directory: Path,
 ) -> str:
     """
@@ -78,18 +78,19 @@ def create_pyproject_content_for_api_package(
 
     Args:
         api_name: The name of the API for which to create the pyproject.toml content.
-        shared_versions_path: The path to the shared versions file.
+        api_generation_pyproject_path: The path to the pyproject.toml of the api_generation package.
+                                       Beekeepy version is read from this file.
         template_directory: The directory containing the template files for the API.
 
     Returns:
         The content of the pyproject.toml file as a string.
     """
-    versions = toml.load(shared_versions_path)
+    api_generation_pyproject = toml.load(api_generation_pyproject_path)
 
     env = Environment(loader=FileSystemLoader(template_directory))
     template = env.get_template("pyproject.toml.j2")
 
-    return template.render(api_name=api_name, versions=versions)
+    return template.render(api_name=api_name, api_generation_pyproject=api_generation_pyproject)
 
 
 if __name__ == "__main__":
@@ -116,9 +117,9 @@ if __name__ == "__main__":
     )
     generate_client(api, api_descriptor, base_directory)
 
-    shared_versions = base_directory / "shared_versions.toml"
+    pyproject_path = base_directory / "api_generation" /"pyproject.toml"
     pyproject_content = create_pyproject_content_for_api_package(
-        api, shared_versions, template_api_path
+        api, pyproject_path, template_api_path
     )
 
     api_pyproject_path = base_directory / f"{api}" / "pyproject.toml"
