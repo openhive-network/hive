@@ -2,6 +2,7 @@
 
 #include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/account_authority_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 
 #include <hive/chain/external_storage/accounts_handler.hpp>
 #include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
