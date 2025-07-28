@@ -150,7 +150,7 @@ class witness_plugin_impl
           "Detected private posting key in memo field. You should change your posting keys." );
     }
 
-    const auto& memo_key = account.memo_key;
+    const auto& memo_key = account.get_memo_key();
     for( auto& key : keys )
       HIVE_ASSERT( memo_key != key,  plugin_exception,
         "Detected private memo key in memo field. You should change your memo key." );

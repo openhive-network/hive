@@ -675,7 +675,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   _db.modify( account, [&]( account_object& acc )
   {
     if( o.memo_key != public_key_type() )
-        acc.memo_key = o.memo_key;
+        acc.set_memo_key( o.memo_key );
 
     acc.set_last_account_update( _db.head_block_time() );
   });
@@ -743,7 +743,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   _db.modify( account, [&]( account_object& acc )
   {
     if( o.memo_key && *o.memo_key != public_key_type() )
-        acc.memo_key = *o.memo_key;
+        acc.set_memo_key( *o.memo_key );
 
     acc.set_last_account_update( _db.head_block_time() );
   });
@@ -978,7 +978,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     }
 
     uint16_t reward_weight = HIVE_100_PERCENT;
-    uint64_t post_bandwidth = auth.post_bandwidth;
+    uint64_t post_bandwidth = auth.get_post_bandwidth();
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && !parent )
     {
@@ -993,11 +993,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( !parent )
       {
         a.set_last_root_post( _now );
-        a.post_bandwidth = uint32_t( post_bandwidth );
+        a.set_post_bandwidth( uint32_t( post_bandwidth ) );
       }
       a.set_last_post( _now );
       a.set_last_post_edit( _now );
-      a.post_count++;
+      a.set_post_count( a.get_post_count() + 1 );
     });
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -1087,7 +1087,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
 
     FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
     FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
-    FC_ASSERT( from_account.pending_escrow_transfers < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
+    FC_ASSERT( from_account.get_pending_escrow_transfers() < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
 
     asset hive_spent = o.hive_amount;
     asset hbd_spent = o.hbd_amount;
@@ -1102,7 +1102,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     _db.create<escrow_object>( o.from, o.to, o.agent, o.hive_amount, o.hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
     _db.modify( from_account, []( account_object& a )
     {
-      a.pending_escrow_transfers++;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() + 1 );
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
@@ -1157,7 +1157,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
       _db.modify( _db.get_account( escrow.from ), []( account_object& a )
       {
-        a.pending_escrow_transfers--;
+        a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
       } );
       _db.remove( escrow );
     }
@@ -1249,7 +1249,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     {
       _db.modify( from_account, []( account_object& a )
       {
-        a.pending_escrow_transfers--;
+        a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
       } );
       _db.remove( e );
     }
@@ -1414,7 +1414,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
   if( itr == wd_idx.end() )
   {
     FC_ASSERT( o.percent != 0, "Cannot create a 0% destination." );
-    FC_ASSERT( from_account.withdraw_routes < HIVE_MAX_WITHDRAW_ROUTES, "Account already has the maximum number of routes." );
+    FC_ASSERT( from_account.get_withdraw_routes() < HIVE_MAX_WITHDRAW_ROUTES, "Account already has the maximum number of routes." );
 
     _db.create< withdraw_vesting_route_object >( [&]( withdraw_vesting_route_object& wvdo )
     {
@@ -1426,7 +1426,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
     _db.modify( from_account, [&]( account_object& a )
     {
-      a.withdraw_routes++;
+      a.set_withdraw_routes( a.get_withdraw_routes() + 1 );
     });
   }
   else if( o.percent == 0 )
@@ -1435,7 +1435,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
     _db.modify( from_account, [&]( account_object& a )
     {
-      a.withdraw_routes--;
+      a.set_withdraw_routes( a.get_withdraw_routes() - 1 );
     });
   }
   else
@@ -1466,7 +1466,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
+  FC_ASSERT( account.can_vote(), "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   _db.nullify_proxied_witness_votes( account );
@@ -1503,7 +1503,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
     delta[0] = account.get_direct_governance_vote_power();
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i+1] = account.proxied_vsf_votes[i];
+      delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account.has_proxy(), "Proxy must change." );
@@ -1521,7 +1521,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 {
   const auto& voter = _db.get_account( o.account );
   FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
-  FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
+  FC_ASSERT( voter.can_vote(), "Account has declined its voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
@@ -1534,7 +1534,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     if ( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
     {
-      FC_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." ); // TODO: Remove after hardfork 2
+      FC_ASSERT( voter.get_witnesses_voted_for() < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." ); // TODO: Remove after hardfork 2
 
       _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
           v.witness = witness.owner;
@@ -1560,7 +1560,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     }
     _db.modify( voter, [&]( account_object& a ) {
-      a.witnesses_voted_for++;
+      a.set_witnesses_voted_for( a.get_witnesses_voted_for() + 1 );
     });
 
   } else {
@@ -1577,7 +1577,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
       });
     }
     _db.modify( voter, [&]( account_object& a ) {
-      a.witnesses_voted_for--;
+      a.set_witnesses_voted_for( a.get_witnesses_voted_for() - 1 );
     });
     _db.remove( *itr );
   }
@@ -1590,7 +1590,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter = _db.get_account( o.voter );
 
-  FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
+  FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -1884,7 +1884,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& voter   = _db.get_account( o.voter );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
+  FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -2654,7 +2654,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   _db.modify( creator, [&]( account_object& a )
   {
     a.set_balance( a.get_balance() - o.fee );
-    a.pending_claimed_accounts++;
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
   });
 }
 
@@ -2665,7 +2665,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& creator = _db.get_account( o.creator );
   const auto& props = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( creator.pending_claimed_accounts > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
+  FC_ASSERT( creator.get_pending_claimed_accounts() > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
 
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
@@ -2673,7 +2673,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.pending_claimed_accounts--;
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() - 1 );
   });
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -2851,7 +2851,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
   const auto& from = _db.get_account( op.from );
   _db.get_account(op.to); // Verify to account exists
 
-  FC_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
+  FC_ASSERT( from.get_savings_withdraw_requests() < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
@@ -2864,7 +2864,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   _db.modify( from, [&]( account_object& a )
   {
-    a.savings_withdraw_requests++;
+    a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() + 1 );
   });
 }
 
@@ -2877,7 +2877,7 @@ void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_fro
   const auto& from = _db.get_account( op.from );
   _db.modify( from, [&]( account_object& a )
   {
-    a.savings_withdraw_requests--;
+    a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
   });
 }
 
@@ -2888,7 +2888,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
   const auto& account = _db.get_account( o.account );
 
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-    FC_ASSERT( account.can_vote, "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
+    FC_ASSERT( account.can_vote(), "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
   auto itr = request_idx.find( account.get_name() );
@@ -3341,7 +3341,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
   if( itr == rt_idx.end() )
   {
-    FC_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
+    FC_ASSERT( from_account.get_open_recurrent_transfers() < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesn't exist
     FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount" );
     const auto& recurrent_transfer = _db.create< recurrent_transfer_object >( _db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id );
@@ -3350,7 +3350,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
     _db.modify(from_account, [](account_object& a )
     {
-      a.open_recurrent_transfers++;
+      a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() + 1 );
     } );
   }
   else if( op.amount.amount == 0 )
@@ -3358,8 +3358,8 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.remove( *itr );
     _db.modify( from_account, [&](account_object& a )
     {
-      FC_ASSERT( a.open_recurrent_transfers > 0 );
-      a.open_recurrent_transfers--;
+      FC_ASSERT( a.get_open_recurrent_transfers() > 0 );
+      a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
     } );
   }
   else

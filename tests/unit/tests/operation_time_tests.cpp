@@ -3007,12 +3007,12 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
+    BOOST_CHECK( db->get_account( "alice" ).get_pending_claimed_accounts() == 0 );
     BOOST_CHECK( db->_pending_tx.size() == 0 );
 
     // Pushes successfully
     push_transaction( tx, alice_private_key );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK( db->get_account( "alice" ).get_pending_claimed_accounts() == 1 );
     BOOST_CHECK( db->_pending_tx.size() == 1 );
 
     do
@@ -3022,14 +3022,14 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       // The transaction fails to be included in new block (due to witness::schedule not being elected),
       // but it is successfully reapplied as pending
       BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 0u );
-      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+      BOOST_CHECK( db->get_account( "alice" ).get_pending_claimed_accounts() == 1 );
       BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
     BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 1u );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK( db->get_account( "alice" ).get_pending_claimed_accounts() == 1 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
     while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare )
@@ -3048,7 +3048,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       push_transaction( tx, alice_private_key );
       expiration += fc::seconds(3);
     }
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == n+2 );
+    BOOST_CHECK( db->get_account( "alice" ).get_pending_claimed_accounts() == n+2 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
     BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), n );
@@ -3068,7 +3068,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
 
     issue_funds( "alice", ASSET("100.000 TESTS") );
     issue_funds( "alice", ASSET("100.000 TBD") );
@@ -3086,7 +3086,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "100.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 1 );
     validate_database();
 
     generate_block();
@@ -3104,7 +3104,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "90.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
     BOOST_REQUIRE( recurrent_transfer == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
 
     BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its expiration" );
 
@@ -3116,7 +3116,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "90.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
     BOOST_REQUIRE( recurrent_transfer_post_expiration == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
 
     validate_database();
  }
@@ -3132,7 +3132,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
     ACTORS( (alice)(bob) )
     generate_block();
 
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
 
     issue_funds( "alice", ASSET("5.000 TESTS") );
     issue_funds( "alice", ASSET("100.000 TBD") );
@@ -3143,7 +3143,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 1 );
     validate_database();
 
     generate_block();
@@ -3161,7 +3161,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( recurrent_transfer == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
 
     BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its deletion" );
 
@@ -3174,7 +3174,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( recurrent_transfer_post_deletion == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_open_recurrent_transfers() == 0 );
     validate_database();
  }
  FC_LOG_AND_RETHROW()

@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
 
     uint32_t old_size = ao.size< account_index >();
 
-    ao.modify( obj0, [&]( account_object& obj ){ obj.post_count = 1; } );
+    ao.modify( obj0, [&]( account_object& obj ){ obj.set_post_count( 1 ); } );
     ao.modify( obj0, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
 
     /*
@@ -1618,17 +1618,17 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 0 );
 
     // increase claimed tokens when undo stack is empty
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 0 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 0 );
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( alice_account, [&]( account_object& a )
       {
-        ++a.pending_claimed_accounts;
+        a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
 
     db->clear_pending();
     revision = db->revision();
@@ -1638,17 +1638,17 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 1 );
 
     // increase claimed tokens when undo stack has block session
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( alice_account, [&]( account_object& a )
       {
-        ++a.pending_claimed_accounts;
+        a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 2 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 2 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 2 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 2 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) ); // this makes sure there is pending session open - normally
       // it could happen that it is open when there are some reapplied transactions, but not in unit tests
@@ -1664,13 +1664,13 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     {
       db.modify( alice_account, [&]( account_object& a )
       {
-        ++a.pending_claimed_accounts;
+        a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 3 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 3 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) );
@@ -1686,14 +1686,14 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     {
       db.modify( alice_account, [&]( account_object& a )
       {
-        ++a.pending_claimed_accounts;
+        a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
     HIVE_REQUIRE_THROW( transfer( "alice", "bob", ASSET( "1.000 TESTS" ), "", alice_private_key ), fc::exception );
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) );
@@ -1709,14 +1709,14 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     {
       db.modify( alice_account, [&]( account_object& a )
       {
-        ++a.pending_claimed_accounts;
+        a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
       FC_ASSERT( false );
     } ), fc::exception );
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
     BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
   }
   FC_LOG_AND_RETHROW()

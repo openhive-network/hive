@@ -599,14 +599,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc4");
       BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc1");
 
-      BOOST_REQUIRE(db->get_account( "acc1" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc2" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc3" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc4" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc5" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc6" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc7" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc8" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_witnesses_voted_for() == 0);
 
       time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
       BOOST_REQUIRE(first_expiring_ts == fc::time_point_sec::maximum());

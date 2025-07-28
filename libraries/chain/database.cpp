@@ -1326,7 +1326,7 @@ void database::adjust_proxied_witness_votes( const account_object& a,
     {
       for( int i = HIVE_MAX_PROXY_RECURSION_DEPTH - depth - 1; i >= 0; --i )
       {
-        a.proxied_vsf_votes[i+depth] += delta[i];
+        a.get_proxied_vsf_votes()[i+depth] += delta[i];
       }
     } );
 
@@ -1353,7 +1353,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 
     modify( proxy, [&]( account_object& a )
     {
-      a.proxied_vsf_votes[depth] += delta;
+      a.get_proxied_vsf_votes()[depth] += delta;
     } );
 
     adjust_proxied_witness_votes( proxy, delta, depth + 1 );
@@ -1369,7 +1369,7 @@ void database::nullify_proxied_witness_votes( const account_object& a )
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
   delta[ 0 ] = -a.get_direct_governance_vote_power();
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-    delta[ i + 1 ] = -a.proxied_vsf_votes[ i ];
+    delta[ i + 1 ] = -a.get_proxied_vsf_votes()[ i ];
   adjust_proxied_witness_votes( a, delta );
 }
 
@@ -1425,7 +1425,7 @@ void database::clear_witness_votes( const account_object& a )
   if( has_hardfork( HIVE_HARDFORK_0_6__104 ) )
     modify( a, [&](account_object& acc )
     {
-      acc.witnesses_voted_for = 0;
+      acc.set_witnesses_voted_for( 0 );
     });
 }
 
@@ -1509,8 +1509,8 @@ void database::clear_null_account_balance()
     modify( null_account, [&]( account_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
-      a.sum_delayed_votes = 0;
-      a.delayed_votes.clear();
+      a.set_sum_delayed_votes( 0 );
+      a.get_delayed_votes().clear();
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc.update_account_after_vest_change( null_account, _now );
@@ -1623,8 +1623,8 @@ void database::consolidate_treasury_balance()
     modify( old_treasury_account, [&]( account_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
-      a.sum_delayed_votes = 0;
-      a.delayed_votes.clear();
+      a.set_sum_delayed_votes( 0 );
+      a.get_delayed_votes().clear();
     } );
   }
 
@@ -1697,7 +1697,7 @@ void database::lock_account( const account_object& account )
   modify( account, []( account_object& a )
   {
     a.set_recovery_account( a.get_id() );
-    a.memo_key = public_key_type();
+    a.set_memo_key( public_key_type() );
   } );
 
   auto rec_req = find< account_recovery_request_object, by_account >( account.get_name() );
@@ -1857,8 +1857,8 @@ void database::clear_account( const account_object& account )
 
       if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
-        a.delayed_votes.clear();
-        a.sum_delayed_votes = 0;
+        a.get_delayed_votes().clear();
+        a.set_sum_delayed_votes( 0 );
       }
 
       rc.update_account_after_vest_change( account, now, true, true );
@@ -1886,7 +1886,7 @@ void database::clear_account( const account_object& account )
 
     modify( account, []( account_object& a )
     {
-      a.pending_escrow_transfers--;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
     } );
 
     remove( escrow );
@@ -1934,7 +1934,7 @@ void database::clear_account( const account_object& account )
     adjust_balance( account, withdrawal.amount );
     modify( account, []( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     } );
 
     remove( withdrawal );
@@ -1950,7 +1950,7 @@ void database::clear_account( const account_object& account )
     adjust_balance( account, withdrawal.amount );
     modify( get_account( withdrawal.from ), []( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     } );
 
     remove( withdrawal );
@@ -2135,8 +2135,8 @@ void database::process_recurrent_transfers()
       remove( current_recurrent_transfer );
       modify(from_account, [&](account_object& a )
       {
-        FC_ASSERT( a.open_recurrent_transfers > 0 );
-        a.open_recurrent_transfers--;
+        FC_ASSERT( a.get_open_recurrent_transfers() > 0 );
+        a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
       });
     }
 
@@ -2168,7 +2168,7 @@ void database::remove_proposal_votes_for_accounts_without_voting_rights()
   for( auto& voter : voters )
   {
     const auto& account = get_account( voter );
-    if( !account.can_vote )
+    if( !account.can_vote() )
       accounts.push_back( account.get_name() );
   }
 
@@ -2978,7 +2978,7 @@ void database::process_savings_withdraws()
 
     modify( get_account( itr->from ), [&]( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     });
 
     push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
@@ -3344,7 +3344,7 @@ void database::expire_escrow_ratification()
 
     modify( get_account( old_escrow.from ), []( account_object& a )
     {
-      a.pending_escrow_transfers--;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
     } );
 
     remove( old_escrow );
@@ -3379,7 +3379,7 @@ void database::process_decline_voting_rights()
 
       modify( account, [&]( account_object& a )
       {
-        a.can_vote = false;
+        a.set_can_vote( false );
         a.clear_proxy();
       });
 
@@ -6509,13 +6509,13 @@ void database::validate_invariants()const
       total_vsf_votes += ( !itr->has_proxy() ?
                       itr->get_governance_vote_power() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
-                          itr->proxied_vsf_votes[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
+                          itr->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
                           itr->get_direct_governance_vote_power() ) );
-      total_delayed_votes += itr->sum_delayed_votes;
+      total_delayed_votes += itr->get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
-      for( auto& dv : itr->delayed_votes )
+      for( auto& dv : itr->get_delayed_votes() )
         sum_delayed_votes += dv.val;
-      FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
+      FC_ASSERT( sum_delayed_votes == itr->get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->get_sum_delayed_votes()) );
       FC_ASSERT( sum_delayed_votes.value <= itr->get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->get_vesting().amount)("account",itr->get_name()) );
       ++account_no;
     }
@@ -6778,7 +6778,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         //TODO: fix after HF28 - see HIVE_HARDFORK_1_28_FIX_POWER_DOWN_CANCEL
 
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-          a.proxied_vsf_votes[i] *= magnitude;
+          a.get_proxied_vsf_votes()[i] *= magnitude;
       } );
       if (old_vesting_shares != new_vesting_shares)
         push_virtual_operation( vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
@@ -6862,11 +6862,11 @@ void database::retally_witness_vote_counts( bool force )
         ++wit_itr;
       }
     }
-    if( a.witnesses_voted_for != witnesses_voted_for )
+    if( a.get_witnesses_voted_for() != witnesses_voted_for )
     {
       modify( a, [&]( account_object& account )
       {
-        account.witnesses_voted_for = witnesses_voted_for;
+        account.set_witnesses_voted_for( witnesses_voted_for );
       } );
     }
   }

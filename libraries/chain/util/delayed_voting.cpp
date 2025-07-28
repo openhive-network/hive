@@ -7,18 +7,18 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
 {
   db.modify( account, [&]( account_object& a )
   {
-    delayed_voting_processor::add( a.delayed_votes, a.sum_delayed_votes, head_time, val );
+    delayed_voting_processor::add( a.get_delayed_votes(), a.get_sum_delayed_votes(), head_time, val );
   } );
 }
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
 {
-  if( account.sum_delayed_votes == 0 )
+  if( account.get_sum_delayed_votes() == 0 )
     return;
 
   db.modify( account, [&]( account_object& a )
   {
-    delayed_voting_processor::erase( a.delayed_votes, a.sum_delayed_votes, val );
+    delayed_voting_processor::erase( a.get_delayed_votes(), a.get_sum_delayed_votes(), val );
   } );
 }
 
@@ -62,10 +62,10 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
     else
     {
       const ushare_type abs_val{ static_cast< ushare_type >( -item.val.value ) };
-      if( abs_val >= item.account->sum_delayed_votes )
+      if( abs_val >= item.account->get_sum_delayed_votes() )
       {
-        res = abs_val - item.account->sum_delayed_votes;
-        erase_delayed_value( *item.account, item.account->sum_delayed_votes );
+        res = abs_val - item.account->get_sum_delayed_votes();
+        erase_delayed_value( *item.account, item.account->get_sum_delayed_votes() );
       }
       else
         erase_delayed_value( *item.account, abs_val );
@@ -87,7 +87,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
-    const ushare_type _val{ current->delayed_votes.begin()->val };
+    const ushare_type _val{ current->get_delayed_votes().begin()->val };
 
     //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", current->delayed_votes.begin()->time.to_iso_string() ) );
 
@@ -108,7 +108,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
     */
     db.modify( *current, [&]( account_object& a )
     {
-      delayed_voting_processor::erase_front( a.delayed_votes, a.sum_delayed_votes );
+      delayed_voting_processor::erase_front( a.get_delayed_votes(), a.get_sum_delayed_votes() );
     } );
 
     current = idx.begin();

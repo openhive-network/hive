@@ -4,6 +4,7 @@
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/util/manabar.hpp>
+#include <hive/chain/util/delayed_voting_processor.hpp>
 
 namespace hive { namespace chain { namespace account_details {
 
@@ -11,6 +12,11 @@ namespace hive { namespace chain { namespace account_details {
   using hive::protocol::HIVE_asset;
   using hive::protocol::VEST_asset;
   using hive::protocol::asset;
+  using hive::protocol::public_key_type;
+
+  using chainbase::t_vector;
+
+  using t_delayed_votes = t_vector< delayed_votes_data >;
 
   struct recovery
   {
@@ -115,6 +121,57 @@ namespace hive { namespace chain { namespace account_details {
     time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
   };
 
+  struct misc
+  {
+    template< typename Allocator >
+    misc( allocator< Allocator > a ):delayed_votes( a ) {}
+
+    template< typename Allocator >
+    misc( allocator< Allocator > a, const account_name_type& _name, const time_point_sec& _creation_time, const time_point_sec& _block_creation_time,
+          bool _mined, const public_key_type& _memo_key )
+          : name( _name ), created( _creation_time ),
+            block_created( _block_creation_time )/*_block_creation_time = time from a current block*/,
+            mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
+    {
+    }
+
+    account_id_type   proxy;
+
+    account_name_type name;
+
+    share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
+
+    ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
+
+    time_point_sec    created; //(not read by consensus code)
+    time_point_sec    block_created;
+
+    time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
+
+    uint32_t          post_count = 0; //(not read by consensus code)
+    uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
+
+    uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
+    uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
+    uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
+    uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
+
+    uint8_t           savings_withdraw_requests = 0;
+    bool              can_vote = true;
+
+    bool              mined = true; //(not read by consensus code)
+
+    public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
+
+    fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
+
+    /*
+      Holds sum of VESTS per day.
+      VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
+    */
+    t_delayed_votes   delayed_votes;
+  };
+
 }}}
 
 FC_REFLECT( hive::chain::account_details::recovery,
@@ -147,3 +204,16 @@ FC_REFLECT( hive::chain::account_details::time,
             (last_account_update)(last_post)(last_root_post)
             (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
           )
+
+FC_REFLECT( hive::chain::account_details::misc,
+          (proxy)
+          (name)
+          (pending_claimed_accounts)(sum_delayed_votes)
+          (created)(block_created)
+          (governance_vote_expiration_ts)
+          (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
+          (savings_withdraw_requests)(can_vote)(mined)
+          (memo_key)
+          (proxied_vsf_votes)
+          (delayed_votes)
+        )

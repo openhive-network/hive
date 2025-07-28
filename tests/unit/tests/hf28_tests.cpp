@@ -384,7 +384,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         auto& _account = executor->db->get_account( "alice0" );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
@@ -406,14 +406,14 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         auto& _account = executor->db->get_account( "alice1" );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
         auto& _account = executor->db->get_account( "alice2" );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
@@ -461,14 +461,14 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         auto& _account = executor->db->get_account( "alice4" );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
         auto& _account = executor->db->get_account( "alice5" );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
@@ -557,14 +557,14 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
         auto& _account = executor->db->get_account( _actors[0].name );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
       {
         auto& _account = executor->db->get_account( _actors[2].name );
         executor->db->modify( _account, [&]( account_object& account )
         {
-          account.can_vote = false;
+          account.set_can_vote( false );
         } );
       }
 

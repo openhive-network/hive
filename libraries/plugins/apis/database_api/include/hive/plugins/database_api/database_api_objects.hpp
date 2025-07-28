@@ -482,15 +482,15 @@ struct api_account_object
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
     id( a.get_id() ),
     name( a.get_name() ),
-    memo_key( a.memo_key ),
+    memo_key( a.get_memo_key() ),
     proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.get_last_account_update() ),
     created( a.get_block_creation_time() ),
     mined( a.was_mined() ),
     reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.get_block_last_account_recovery_time() ),
-    post_count( a.post_count ),
-    can_vote( a.can_vote ),
+    post_count( a.get_post_count() ),
+    can_vote( a.can_vote() ),
     voting_manabar( a.get_voting_manabar() ),
     downvote_manabar( a.get_downvote_manabar() ),
     balance( a.get_balance() ),
@@ -503,7 +503,7 @@ struct api_account_object
     savings_hbd_seconds( a.get_savings_hbd_seconds() ),
     savings_hbd_seconds_last_update( a.get_savings_hbd_seconds_last_update() ),
     savings_hbd_last_interest_payment( a.get_savings_hbd_last_interest_payment() ),
-    savings_withdraw_requests( a.savings_withdraw_requests ),
+    savings_withdraw_requests( a.get_savings_withdraw_requests() ),
     reward_hbd_balance( a.get_hbd_rewards() ),
     reward_hive_balance( a.get_rewards() ),
     reward_vesting_balance( a.get_vest_rewards() ),
@@ -517,16 +517,16 @@ struct api_account_object
     next_vesting_withdrawal( a.get_next_vesting_withdrawal() ),
     withdrawn( a.get_withdrawn().amount ),
     to_withdraw( a.get_to_withdraw().amount ),
-    withdraw_routes( a.withdraw_routes ),
-    pending_transfers( a.pending_escrow_transfers ),
-    witnesses_voted_for( a.witnesses_voted_for ),
+    withdraw_routes( a.get_withdraw_routes() ),
+    pending_transfers( a.get_pending_escrow_transfers() ),
+    witnesses_voted_for( a.get_witnesses_voted_for() ),
     last_post( a.get_last_post() ),
     last_root_post( a.get_last_root_post() ),
     last_post_edit( a.get_last_post_edit() ),
     last_vote_time( a.get_last_vote_time() ),
-    post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts ),
-    open_recurrent_transfers( a.open_recurrent_transfers ),
+    post_bandwidth( a.get_post_bandwidth() ),
+    pending_claimed_accounts( a.get_pending_claimed_accounts() ),
+    open_recurrent_transfers( a.get_open_recurrent_transfers() ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
     if( a.has_proxy() )
@@ -534,10 +534,10 @@ struct api_account_object
     if( a.has_recovery_account() )
       recovery_account = db.get_account( a.get_recovery_account() ).get_name();
 
-    size_t n = a.proxied_vsf_votes.size();
+    size_t n = a.get_proxied_vsf_votes().size();
     proxied_vsf_votes.reserve( n );
     for( size_t i=0; i<n; i++ )
-      proxied_vsf_votes.push_back( a.proxied_vsf_votes[i] );
+      proxied_vsf_votes.push_back( a.get_proxied_vsf_votes()[i] );
 
     auto auth = db.get_accounts_handler().get_account_authority( name );
     owner = authority( auth->owner );
@@ -561,7 +561,7 @@ struct api_account_object
 #endif
 
     if( delayed_votes_active )
-      delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
+      delayed_votes = vector< delayed_votes_data >{ a.get_delayed_votes().begin(), a.get_delayed_votes().end() };
 
     post_voting_power = VEST_asset(a.get_effective_vesting_shares());
   }

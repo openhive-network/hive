@@ -12,13 +12,8 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/shared_authority.hpp>
 
-#include <hive/chain/util/delayed_voting_processor.hpp>
-
-#include <numeric>
-
 namespace hive { namespace chain {
 
-  using chainbase::t_vector;
   using hive::protocol::authority;
 
   class account_object : public object< account_object_type, account_object, std::true_type >
@@ -203,6 +198,143 @@ namespace hive { namespace chain {
       time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
       void set_next_vesting_withdrawal( const time_point_sec& value ) { time.next_vesting_withdrawal = value; }
 
+    private:
+
+      account_details::misc misc;
+
+    public:
+
+      bool can_vote() const { return misc.can_vote; }
+      void set_can_vote( const bool& value ) { misc.can_vote = value; }
+
+      uint16_t get_witnesses_voted_for() const { return misc.witnesses_voted_for; }
+      void set_witnesses_voted_for( const uint16_t& value ) { misc.witnesses_voted_for = value; }
+
+      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() { return misc.proxied_vsf_votes; }
+      const fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() const { return misc.proxied_vsf_votes; }
+
+      ushare_type get_sum_delayed_votes() const { return misc.sum_delayed_votes; }
+      ushare_type& get_sum_delayed_votes() { return misc.sum_delayed_votes; }
+      void set_sum_delayed_votes( const ushare_type& value ) { misc.sum_delayed_votes = value; }
+
+      uint8_t get_savings_withdraw_requests() const { return misc.savings_withdraw_requests; }
+      void set_savings_withdraw_requests( const uint8_t& value ) { misc.savings_withdraw_requests = value; }
+
+      uint16_t get_pending_escrow_transfers() const { return misc.pending_escrow_transfers; }
+      void set_pending_escrow_transfers( const uint16_t& value ) { misc.pending_escrow_transfers = value; }
+
+      uint32_t get_post_bandwidth() const { return misc.post_bandwidth; }
+      void set_post_bandwidth( const uint32_t& value ) { misc.post_bandwidth = value; }
+
+      share_type get_pending_claimed_accounts() const { return misc.pending_claimed_accounts; }
+      void set_pending_claimed_accounts( const share_type& value ) { misc.pending_claimed_accounts = value; }
+
+      uint16_t get_open_recurrent_transfers() const { return misc.open_recurrent_transfers; }
+      void set_open_recurrent_transfers( const uint16_t& value ) { misc.open_recurrent_transfers = value; }
+
+      uint32_t get_post_count() const { return misc.post_count; }
+      void set_post_count( const uint32_t& value ) { misc.post_count = value; }
+
+      uint16_t get_withdraw_routes() const { return misc.withdraw_routes; }
+      void set_withdraw_routes( const uint16_t& value ) { misc.withdraw_routes = value; }
+
+      public_key_type get_memo_key() const { return misc.memo_key; }
+      void set_memo_key( const public_key_type& value ) { misc.memo_key = value; }
+
+      account_details::t_delayed_votes& get_delayed_votes() { return misc.delayed_votes; }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return misc.delayed_votes; }
+      //effective balance of VESTS including delegations and optionally excluding active step of pending power down
+      share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
+      {
+        share_type total = get_vesting().amount - get_delegated_vesting().amount + get_received_vesting().amount;
+        if( excludeWeeklyPowerDown && time.next_vesting_withdrawal != fc::time_point_sec::maximum() )
+          total -= get_active_next_vesting_withdrawal();
+        return total;
+      }
+
+      //gives name of the account
+      const account_name_type& get_name() const { return misc.name; }
+      //account creation time
+      time_point_sec get_creation_time() const { return misc.created; }
+      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
+      //account creation time according to a block
+      time_point_sec get_block_creation_time() const { return misc.block_created; }
+      bool was_mined() const { return misc.mined; }
+
+      //tells if account has some other account casting governance votes in its name
+      bool has_proxy() const { return misc.proxy != account_id_type(); }
+      //account's proxy (if any)
+      account_id_type get_proxy() const { return misc.proxy; }
+      //sets proxy to neutral (account will vote for itself)
+      void clear_proxy() { misc.proxy = account_id_type(); }
+      //sets proxy to given account
+      void set_proxy(const account_object& new_proxy)
+      {
+        FC_ASSERT( &new_proxy != this );
+        misc.proxy = new_proxy.get_id();
+      }
+
+      //methods
+
+      time_point_sec get_governance_vote_expiration_ts() const
+      {
+        return misc.governance_vote_expiration_ts;
+      }
+
+      void set_governance_vote_expired()
+      {
+        misc.governance_vote_expiration_ts = time_point_sec::maximum();
+      }
+
+      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
+      {
+        misc.governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+        if (misc.governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
+        {
+          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
+          misc.governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(misc.governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
+        }
+      }
+
+      bool has_delayed_votes() const { return !misc.delayed_votes.empty(); }
+
+      // start time of oldest delayed vote bucket (the one closest to activation)
+      time_point_sec get_oldest_delayed_vote_time() const
+      {
+        if( has_delayed_votes() )
+          return ( misc.delayed_votes.begin() )->time;
+        else
+          return time_point_sec::maximum();
+      }
+
+      // governance vote power of this account does not include "delayed votes"
+      share_type get_direct_governance_vote_power() const
+      {
+        FC_ASSERT( misc.sum_delayed_votes.value <= get_vesting().amount, "",
+                ( "sum_delayed_votes",     misc.sum_delayed_votes )
+                ( "vesting_shares.amount", get_vesting().amount )
+                ( "account",               misc.name ) );
+  
+        return asset( get_vesting().amount - misc.sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+      }
+
+      /// This function should be used only when the account votes for a witness directly
+      share_type get_governance_vote_power() const
+      {
+        return std::accumulate( misc.proxied_vsf_votes.begin(), misc.proxied_vsf_votes.end(),
+          get_direct_governance_vote_power() );
+      }
+      share_type proxied_vsf_votes_total() const
+      {
+        return std::accumulate( misc.proxied_vsf_votes.begin(), misc.proxied_vsf_votes.end(),
+          share_type() );
+      }
+
+#ifdef IS_TEST_NET
+      //ABW: it is needed for some low level tests (they would need to be rewritten)
+      void set_name( const account_name_type& new_name ) { misc.name = new_name; }
+#endif
+
     public:
       //constructor for creation of regular accounts
       template< typename Allocator >
@@ -216,10 +348,7 @@ namespace hive { namespace chain {
         assets( incoming_delegation ),
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
         time(),
-
-        name( _name ), created( _creation_time ),
-        block_created( _block_creation_time )/*_block_creation_time = time from a current block*/,
-        mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
+        misc( a, _name, _creation_time, _block_creation_time, _mined, _memo_key )
       {
       }
 
@@ -227,155 +356,21 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
+        : id( _id ), misc( a, _name, _creation_time, _creation_time, true/*mined*/, _memo_key )
       {}
-
-      //effective balance of VESTS including delegations and optionally excluding active step of pending power down
-      share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
-      {
-        share_type total = get_vesting().amount - get_delegated_vesting().amount + get_received_vesting().amount;
-        if( excludeWeeklyPowerDown && time.next_vesting_withdrawal != fc::time_point_sec::maximum() )
-          total -= get_active_next_vesting_withdrawal();
-        return total;
-      }
-
-      //gives name of the account
-      const account_name_type& get_name() const { return name; }
-      //account creation time
-      time_point_sec get_creation_time() const { return created; }
-      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
-      //account creation time according to a block
-      time_point_sec get_block_creation_time() const { return block_created; }
-      bool was_mined() const { return mined; }
-
-      //tells if account has some other account casting governance votes in its name
-      bool has_proxy() const { return proxy != account_id_type(); }
-      //account's proxy (if any)
-      account_id_type get_proxy() const { return proxy; }
-      //sets proxy to neutral (account will vote for itself)
-      void clear_proxy() { proxy = account_id_type(); }
-      //sets proxy to given account
-      void set_proxy(const account_object& new_proxy)
-      {
-        FC_ASSERT( &new_proxy != this );
-        proxy = new_proxy.get_id();
-      }
 
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
-    private:
-      account_id_type   proxy;
-
-      account_name_type name;
-
     public:
-      share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
-
-      ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
-
-    private:
-      time_point_sec    created; //(not read by consensus code)
-      time_point_sec    block_created;
-    public:
-
-    private:
-      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
-
-    public:
-      uint32_t          post_count = 0; //(not read by consensus code)
-      uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
-
-      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
-      uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
-      uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
-      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
-
-      uint8_t           savings_withdraw_requests = 0;
-      bool              can_vote = true;
-    private:
-      bool              mined = true; //(not read by consensus code)
-
-    public:
-      public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
-
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
-
-      using t_delayed_votes = t_vector< delayed_votes_data >;
-      /*
-        Holds sum of VESTS per day.
-        VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
-      */
-      t_delayed_votes   delayed_votes;
-
-      //methods
-
-      time_point_sec get_governance_vote_expiration_ts() const
-      {
-        return governance_vote_expiration_ts;
-      }
-
-      void set_governance_vote_expired()
-      {
-        governance_vote_expiration_ts = time_point_sec::maximum();
-      }
-
-      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
-      {
-        governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-        if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
-        {
-          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
-          governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
-        }
-      }
-
-      bool has_delayed_votes() const { return !delayed_votes.empty(); }
-
-      // start time of oldest delayed vote bucket (the one closest to activation)
-      time_point_sec get_oldest_delayed_vote_time() const
-      {
-        if( has_delayed_votes() )
-          return ( delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
-      }
-
-      // governance vote power of this account does not include "delayed votes"
-      share_type get_direct_governance_vote_power() const
-      {
-        FC_ASSERT( sum_delayed_votes.value <= get_vesting().amount, "",
-                ( "sum_delayed_votes",     sum_delayed_votes )
-                ( "vesting_shares.amount", get_vesting().amount )
-                ( "account",               name ) );
-  
-        return asset( get_vesting().amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
-      }
-
-      /// This function should be used only when the account votes for a witness directly
-      share_type get_governance_vote_power() const
-      {
-        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
-          get_direct_governance_vote_power() );
-      }
-      share_type proxied_vsf_votes_total() const
-      {
-        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
-          share_type() );
-      }
-
-#ifdef IS_TEST_NET
-      //ABW: it is needed for some low level tests (they would need to be rewritten)
-      void set_name( const account_name_type& new_name ) { name = new_name; }
-#endif
 
       size_t get_dynamic_alloc() const
       {
         size_t size = 0;
-        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+        size += misc.delayed_votes.capacity() * sizeof( decltype( misc.delayed_votes )::value_type );
         return size;
       }
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
+    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (misc));
   };
 
   class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
@@ -794,16 +789,6 @@ namespace hive { namespace chain {
 FC_REFLECT( hive::chain::account_object,
           (id)
           (recovery)(assets)(mrc)(time)
-          (proxy)
-          (name)
-          (pending_claimed_accounts)(sum_delayed_votes)
-          (created)(block_created)
-          (governance_vote_expiration_ts)
-          (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
-          (savings_withdraw_requests)(can_vote)(mined)
-          (memo_key)
-          (proxied_vsf_votes)
-          (delayed_votes)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
