@@ -18,10 +18,31 @@ class accounts_handler : public external_storage_snapshot
 
     virtual void on_irreversible_block( uint32_t block_num ) = 0;
 
+    void create( const account_metadata_object& obj )
+    {
+      create_volatile_account_metadata( obj );
+    }
+
+    void create( const account_authority_object& obj )
+    {
+      create_volatile_account_authority( obj );
+    }
+
+    void create( const account_object& obj )
+    {
+
+    }
+
+    template<typename Object_Type>
+    void create( const Object_Type& obj )
+    {
+      //nothing to do
+    }
+
     virtual void create_volatile_account_metadata( const account_metadata_object& obj ) = 0;
     virtual account_metadata get_account_metadata( const std::string& account_name ) const = 0;
 
-    virtual void create_volatile_account_authority( const account_authority_object& obj, bool init_genesis = false ) = 0;
+    virtual void create_volatile_account_authority( const account_authority_object& obj ) = 0;
     virtual account_authority get_account_authority( const std::string& account_name ) const = 0;
 
     virtual void open() = 0;

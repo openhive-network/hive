@@ -251,9 +251,11 @@ account_metadata rocksdb_account_archive::get_account_metadata( const std::strin
   return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
 }
 
-void rocksdb_account_archive::create_volatile_account_authority( const account_authority_object& obj, bool init_genesis )
+void rocksdb_account_archive::create_volatile_account_authority( const account_authority_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
+
+  auto _found_dgpo = db.find< dynamic_global_property_object >();
 
   const auto& _volatile_idx = db.get_index<volatile_account_authority_index, by_name>();
   auto _found = _volatile_idx.find( obj.account );
@@ -268,7 +270,7 @@ void rocksdb_account_archive::create_volatile_account_authority( const account_a
       o.previous_owner_update = obj.previous_owner_update;
       o.last_owner_update     = obj.last_owner_update;
 
-      o.block_number          = init_genesis ? 0 : db.head_block_num();
+      o.block_number          = _found_dgpo ? _found_dgpo->head_block_number : 0;
     } );
   }
   else
@@ -285,7 +287,7 @@ void rocksdb_account_archive::create_volatile_account_authority( const account_a
       o.previous_owner_update = obj.previous_owner_update;
       o.last_owner_update     = obj.last_owner_update;
 
-      o.block_number          = init_genesis ? 0 : db.head_block_num();
+      o.block_number          = _found_dgpo ? _found_dgpo->head_block_number : 0;
     });
   }
 

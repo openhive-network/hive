@@ -866,6 +866,14 @@ namespace chain {
         return *_accounts_handler.get();
       }
 
+      template<typename ObjectType, typename ... Args>
+      const ObjectType& create( Args&&... args )
+      {
+        const ObjectType& _result = chainbase::database::create<ObjectType>( args... );
+        get_accounts_handler().create( _result );
+        return _result;
+      }
+
     private:
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
