@@ -43,10 +43,10 @@ class rocksdb_account_archive : public accounts_handler
     std::shared_ptr<SHM_Object_Type> create_from_volatile_object( const Volatile_Object_Type& obj ) const;
 
     template<typename SHM_Object_Type, typename SHM_Object_Index>
-    std::shared_ptr<SHM_Object_Type> get_object_impl( const std::string& account_name, ColumnTypes column_type ) const;
+    std::shared_ptr<SHM_Object_Type> get_object_impl( const account_name_type& account_name, ColumnTypes column_type ) const;
 
     template<typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-    Object_Type get_object( const std::string& account_name, ColumnTypes column_type ) const;
+    Object_Type get_object( const account_name_type& account_name, ColumnTypes column_type ) const;
 
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
     bool on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type );
@@ -60,10 +60,12 @@ class rocksdb_account_archive : public accounts_handler
     void on_irreversible_block( uint32_t block_num ) override;
 
     void create_volatile_account_metadata( const account_metadata_object& obj ) override;
-    account_metadata get_account_metadata( const std::string& account_name ) const override;
+    account_metadata get_account_metadata( const account_name_type& account_name ) const override;
+    void modify_account_metadata( const account_name_type& account_name, std::function<void(account_metadata_object&)> modifier ) override;
 
     void create_volatile_account_authority( const account_authority_object& obj ) override;
-    account_authority get_account_authority( const std::string& account_name ) const override;
+    account_authority get_account_authority( const account_name_type& account_name ) const override;
+    void modify_account_authority( const account_name_type& account_name, std::function<void(account_authority_object&)> modifier ) override;
 
     void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;

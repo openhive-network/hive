@@ -302,10 +302,6 @@ namespace chain {
 
       const hardfork_property_object&        get_hardfork_property_object()const;
 
-      void update_account_metadata( const std::string& account_name, std::function<void(account_metadata_object&)> modifier );
-      void update_account_authority( account_authority& obj, std::function<void(account_authority_object&)> modifier );
-      void update_account_authority( const std::string& account_name, std::function<void(account_authority_object&)> modifier );
-
     private:
 
       const comment_object&                  get_comment_for_payout_time( const comment_object& comment )const;
@@ -872,6 +868,18 @@ namespace chain {
         const ObjectType& _result = chainbase::database::create<ObjectType>( args... );
         get_accounts_handler().create( _result );
         return _result;
+      }
+
+      template<typename ObjectType, typename Modifier>
+      void modify( const ObjectType& obj, Modifier&& m )
+      {
+        chainbase::database::modify( obj, m );
+      }
+
+      template<typename ObjectType, typename Modifier>
+      void modify( const account_name_type& account_name, Modifier&& m )
+      {
+        get_accounts_handler().modify<ObjectType>( account_name, m );
       }
 
     private:

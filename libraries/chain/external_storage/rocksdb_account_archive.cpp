@@ -100,7 +100,7 @@ std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_v
 }
 
 template<typename SHM_Object_Type, typename SHM_Object_Index>
-std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const std::string& account_name, ColumnTypes column_type ) const
+std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const account_name_type& account_name, ColumnTypes column_type ) const
 {
   info_by_name_slice_t _key( account_name_type( account_name ).data );
 
@@ -173,7 +173,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 }
 
 template<typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-Object_Type rocksdb_account_archive::get_object( const std::string& account_name, ColumnTypes column_type ) const
+Object_Type rocksdb_account_archive::get_object( const account_name_type& account_name, ColumnTypes column_type ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -246,9 +246,28 @@ void rocksdb_account_archive::create_volatile_account_metadata( const account_me
   ++stats.account_cashout_processing.count;
 }
 
-account_metadata rocksdb_account_archive::get_account_metadata( const std::string& account_name ) const
+account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
 {
   return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
+}
+
+void rocksdb_account_archive::modify_account_metadata( const account_name_type& account_name, std::function<void(account_metadata_object&)> modifier )
+{
+  account_metadata _obj = get_account_metadata( account_name );
+
+  if( _obj.is_shm() )
+  {
+    db.modify( *_obj, [&]( account_metadata_object& meta )
+    {
+      modifier( meta );
+    });
+  }
+  else
+  {
+    modifier( *_obj );
+  }
+
+  create_volatile_account_metadata( *_obj );
 }
 
 void rocksdb_account_archive::create_volatile_account_authority( const account_authority_object& obj )
@@ -295,9 +314,28 @@ void rocksdb_account_archive::create_volatile_account_authority( const account_a
   ++stats.account_cashout_processing.count;
 }
 
-account_authority rocksdb_account_archive::get_account_authority( const std::string& account_name ) const
+account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
 {
   return get_object<volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY );
+}
+
+void rocksdb_account_archive::modify_account_authority( const account_name_type& account_name, std::function<void(account_authority_object&)> modifier )
+{
+  account_authority _obj = get_account_authority( account_name );
+
+  if( _obj.is_shm() )
+  {
+    db.modify( *_obj, [&]( account_authority_object& meta )
+    {
+      modifier( meta );
+    });
+  }
+  else
+  {
+    modifier( *_obj );
+  }
+
+  create_volatile_account_authority( *_obj );
 }
 
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )

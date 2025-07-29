@@ -576,50 +576,6 @@ const hardfork_property_object& database::get_hardfork_property_object()const
   return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::update_account_metadata( const std::string& account_name, std::function<void(account_metadata_object&)> modifier )
-{
-#ifdef COLLECT_ACCOUNT_METADATA
-  account_metadata _account_metadata = get_accounts_handler().get_account_metadata( account_name );
-
-  if( _account_metadata.is_shm() )
-  {
-    modify( *_account_metadata, [&]( account_metadata_object& meta )
-    {
-      modifier( meta );
-    });
-  }
-  else
-  {
-    modifier( *_account_metadata );
-  }
-
-  get_accounts_handler().create_volatile_account_metadata( *_account_metadata );
-#endif
-}
-
-void database::update_account_authority( account_authority& obj, std::function<void(account_authority_object&)> modifier )
-{
-  if( obj.is_shm() )
-  {
-    modify( *obj, [&]( account_authority_object& meta )
-    {
-      modifier( meta );
-    });
-  }
-  else
-  {
-    modifier( *obj );
-  }
-
-  get_accounts_handler().create_volatile_account_authority( *obj );
-}
-
-void database::update_account_authority( const std::string& account_name, std::function<void(account_authority_object&)> modifier )
-{
-  account_authority _account_authority = get_accounts_handler().get_account_authority( account_name );
-  update_account_authority( _account_authority, modifier );
-}
-
 const comment_object& database::get_comment_for_payout_time( const comment_object& comment )const
 {
   if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.is_root() )
@@ -1679,7 +1635,7 @@ void database::lock_account( const account_object& account )
   }
   else
   {
-    auto _modifier = [&]( account_authority_object& auth )
+    modify<account_authority_object>( account.get_name(), []( account_authority_object& auth )
     {
       auth.owner.weight_threshold = 1;
       auth.owner.clear();
@@ -1689,8 +1645,7 @@ void database::lock_account( const account_object& account )
 
       auth.posting.weight_threshold = 1;
       auth.posting.clear();
-    };
-    update_account_authority( account.get_name(), _modifier );
+    } );
   }
 
   modify( account, []( account_object& a )
@@ -2228,13 +2183,12 @@ void database::update_owner_authority( const account_object& account, const auth
     create< owner_authority_history_object >( account, get_accounts_handler().get_account_authority( account.get_name() )->owner, head_block_time() );
   }
 
-  auto _modifier = [&]( account_authority_object& auth )
+  modify<account_authority_object>( account.get_name(), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
     auth.previous_owner_update = auth.last_owner_update;
     auth.last_owner_update = head_block_time();
-  };
-  update_account_authority( account.get_name(), _modifier );
+  });
 }
 
 void database::process_vesting_withdrawals()
@@ -6034,12 +5988,11 @@ void database::apply_hardfork( uint32_t hardfork )
 
           update_owner_authority( *account, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
 
-          auto _modifier = [&]( account_authority_object& auth )
+          modify<account_authority_object>( account->get_name(), [&]( account_authority_object& auth )
           {
             auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
             auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
-          };
-          update_account_authority( account->get_name(), _modifier );
+          });
         }
       }
       break;
