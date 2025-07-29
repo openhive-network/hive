@@ -7,7 +7,11 @@ BASE_DIR="${SCRIPTPATH}"
 
 API_GENERATION_PACKAGE_DIR="${BASE_DIR}/api_generation"
 
-API_LIST=("database_api" "block_api" "rc_api" "network_broadcast_api" "account_by_key_api")
+if [ "$#" -gt 0 ]; then
+  API_LIST=("$@")
+else
+  API_LIST=("database_api" "block_api" "rc_api" "network_broadcast_api" "account_by_key_api")
+fi
 
 for d in "${API_LIST[@]}"; do
   echo "Processing API: $d"
