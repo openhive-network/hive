@@ -213,7 +213,7 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
   }
 }
 
-void rocksdb_account_archive::create_volatile_account_metadata( const account_metadata_object& obj )
+void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -267,10 +267,10 @@ void rocksdb_account_archive::modify_account_metadata( const account_name_type& 
     modifier( *_obj );
   }
 
-  create_volatile_account_metadata( *_obj );
+  create_or_update_volatile( *_obj );
 }
 
-void rocksdb_account_archive::create_volatile_account_authority( const account_authority_object& obj )
+void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -335,7 +335,7 @@ void rocksdb_account_archive::modify_account_authority( const account_name_type&
     modifier( *_obj );
   }
 
-  create_volatile_account_authority( *_obj );
+  create_or_update_volatile( *_obj );
 }
 
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )

@@ -59,11 +59,11 @@ class rocksdb_account_archive : public accounts_handler
 
     void on_irreversible_block( uint32_t block_num ) override;
 
-    void create_volatile_account_metadata( const account_metadata_object& obj ) override;
+    void create_or_update_volatile( const account_metadata_object& obj ) override;
     account_metadata get_account_metadata( const account_name_type& account_name ) const override;
     void modify_account_metadata( const account_name_type& account_name, std::function<void(account_metadata_object&)> modifier ) override;
 
-    void create_volatile_account_authority( const account_authority_object& obj ) override;
+    void create_or_update_volatile( const account_authority_object& obj ) override;
     account_authority get_account_authority( const account_name_type& account_name ) const override;
     void modify_account_authority( const account_name_type& account_name, std::function<void(account_authority_object&)> modifier ) override;
 

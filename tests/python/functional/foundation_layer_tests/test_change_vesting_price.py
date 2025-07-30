@@ -19,7 +19,7 @@ def test_change_vesting_price(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet.api.transfer_to_vesting("alice", "alice", tt.Asset.Test(1))
 
     assert (
-        node.api.condenser.get_accounts(["alice"])[0].get_vesting_shares() == tt.Asset.Vest(vest_per_hive_ratio).as_legacy()
+        node.api.condenser.get_accounts(["alice"])[0].vesting_shares == tt.Asset.Vest(vest_per_hive_ratio).as_legacy()
     )
 
 
