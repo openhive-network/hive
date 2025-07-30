@@ -15,8 +15,8 @@ struct executor_interface
   virtual void create_or_update_volatile( const account_metadata_object& obj ) = 0;
   virtual void create_or_update_volatile( const account_authority_object& obj ) = 0;
 
-  virtual void modify_account_metadata( const account_name_type& account_name, std::function<void(account_metadata_object&)> modifier ) = 0;
-  virtual void modify_account_authority( const account_name_type& account_name, std::function<void(account_authority_object&)> modifier ) = 0;
+  virtual void modify_object( const account_name_type& account_name, std::function<void(account_metadata_object&)>&& modifier ) = 0;
+  virtual void modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier ) = 0;
 };
 
 namespace
@@ -41,7 +41,7 @@ namespace
     template<typename Modifier>
     void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
     {
-      exec.modify_account_metadata( account_name, std::function<void(account_metadata_object&)>( m ) );
+      exec.modify_object( account_name, std::function<void(account_metadata_object&)>( m ) );
     }
   };
 
@@ -56,7 +56,7 @@ namespace
     template<typename Modifier>
     void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
     {
-      exec.modify_account_authority( account_name, std::function<void(account_authority_object&)>( m ) );
+      exec.modify_object( account_name, std::function<void(account_authority_object&)>( m ) );
     }
   };
 }

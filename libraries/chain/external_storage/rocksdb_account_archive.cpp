@@ -213,6 +213,24 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
   }
 }
 
+template<typename Object_Type, typename SHM_Object_Type>
+void rocksdb_account_archive::modify( Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
+{
+  if( obj.is_shm() )
+  {
+    db.modify( *obj, [&]( SHM_Object_Type& meta )
+    {
+      modifier( meta );
+    });
+  }
+  else
+  {
+    modifier( *obj );
+  }
+
+  create_or_update_volatile( *obj );
+}
+
 void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
@@ -251,23 +269,10 @@ account_metadata rocksdb_account_archive::get_account_metadata( const account_na
   return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
 }
 
-void rocksdb_account_archive::modify_account_metadata( const account_name_type& account_name, std::function<void(account_metadata_object&)> modifier )
+void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_metadata_object&)>&& modifier )
 {
   account_metadata _obj = get_account_metadata( account_name );
-
-  if( _obj.is_shm() )
-  {
-    db.modify( *_obj, [&]( account_metadata_object& meta )
-    {
-      modifier( meta );
-    });
-  }
-  else
-  {
-    modifier( *_obj );
-  }
-
-  create_or_update_volatile( *_obj );
+  modify( _obj, modifier );
 }
 
 void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
@@ -319,23 +324,10 @@ account_authority rocksdb_account_archive::get_account_authority( const account_
   return get_object<volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY );
 }
 
-void rocksdb_account_archive::modify_account_authority( const account_name_type& account_name, std::function<void(account_authority_object&)> modifier )
+void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier )
 {
   account_authority _obj = get_account_authority( account_name );
-
-  if( _obj.is_shm() )
-  {
-    db.modify( *_obj, [&]( account_authority_object& meta )
-    {
-      modifier( meta );
-    });
-  }
-  else
-  {
-    modifier( *_obj );
-  }
-
-  create_or_update_volatile( *_obj );
+  modify( _obj, modifier );
 }
 
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
