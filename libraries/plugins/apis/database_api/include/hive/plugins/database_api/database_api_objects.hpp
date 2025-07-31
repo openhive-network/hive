@@ -539,7 +539,7 @@ struct api_account_object
     for( size_t i=0; i<n; i++ )
       proxied_vsf_votes.push_back( a.get_proxied_vsf_votes()[i] );
 
-    auto auth = db.get_accounts_handler().get_account_authority( name );
+    auto auth = db.get_account_authority( name );
     owner = authority( auth->owner );
     active = authority( auth->active );
     posting = authority( auth->posting );

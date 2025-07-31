@@ -262,6 +262,8 @@ namespace chain {
       /// Returns true for any account name that was ever a treasury account
       bool                   is_treasury( const account_name_type& name )const;
 
+      account_authority get_account_authority( const account_name_type& account_name )const;
+
       const account_object&  get_account(  const account_id_type      id )const;
       const account_object*  find_account( const account_id_type&     id )const;
 

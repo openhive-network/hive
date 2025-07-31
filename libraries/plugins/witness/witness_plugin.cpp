@@ -172,7 +172,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                *_db.get_accounts_handler().get_account_authority( o.from ) );
+                *_db.get_account_authority( o.from ) );
     }
 
     void operator()( const transfer_to_savings_operation& o )const
@@ -180,7 +180,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                *_db.get_accounts_handler().get_account_authority( o.from ) );
+                *_db.get_account_authority( o.from ) );
     }
 
     void operator()( const transfer_from_savings_operation& o )const
@@ -188,7 +188,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
                 _db.get< chain::account_object, chain::by_name >( o.from ),
-                *_db.get_accounts_handler().get_account_authority( o.from ) );
+                *_db.get_account_authority( o.from ) );
     }
 
     void operator()( const recurrent_transfer_operation& o )const
@@ -196,7 +196,7 @@ class witness_plugin_impl
       if( o.memo.length() > 0 )
         check_memo( o.memo,
           _db.get< chain::account_object, chain::by_name >( o.from ),
-          *_db.get_accounts_handler().get_account_authority( o.from ) );
+          *_db.get_account_authority( o.from ) );
     }
   };
 

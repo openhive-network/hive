@@ -597,7 +597,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     o.posting->validate();
 
   const auto& account = _db.get_account( o.account );
-  const auto account_auth = _db.get_accounts_handler().get_account_authority( o.account );
+  const auto account_auth = _db.get_account_authority( o.account );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
@@ -710,7 +710,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     o.posting->validate();
 
   const auto& account = _db.get_account( o.account );
-  auto account_auth = _db.get_accounts_handler().get_account_authority( o.account );
+  auto account_auth = _db.get_account_authority( o.account );
 
   if( o.owner )
     validate_auth_size( *o.owner );
@@ -2284,7 +2284,7 @@ void pow_apply( database& db, Operation o )
 
   const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
-  auto worker_auth = db.get_accounts_handler().get_account_authority( o.get_worker_account() );
+  auto worker_auth = db.get_account_authority( o.get_worker_account() );
   FC_ASSERT( worker_auth->active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth->active) );
   FC_ASSERT( worker_auth->active.key_auths.size() == 1, "Miners may only have one key authority." );
   FC_ASSERT( worker_auth->active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );

@@ -407,6 +407,11 @@ bool database::is_treasury( const account_name_type& name )const
   return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OBSOLETE_TREASURY_ACCOUNT );
 }
 
+account_authority database::get_account_authority( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_account_authority( account_name );
+}
+
 const account_object& database::get_account( const account_id_type id )const
 { try {
   const auto* _account = find_account( id );
@@ -1622,7 +1627,7 @@ void database::consolidate_treasury_balance()
 
 void database::lock_account( const account_object& account )
 {
-  auto account_auth = get_accounts_handler().get_account_authority( account.get_name());
+  auto account_auth = get_account_authority( account.get_name());
   if( !account_auth )
   {
     create< account_authority_object >( [&]( account_authority_object& auth )
@@ -2180,7 +2185,7 @@ void database::update_owner_authority( const account_object& account, const auth
 {
   if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
-    create< owner_authority_history_object >( account, get_accounts_handler().get_account_authority( account.get_name() )->owner, head_block_time() );
+    create< owner_authority_history_object >( account, get_account_authority( account.get_name() )->owner, head_block_time() );
   }
 
   modify<account_authority_object>( account.get_name(), [&]( account_authority_object& auth )
@@ -4424,9 +4429,9 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
   {
-    auto get_active  =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->active; };
-    auto get_owner   =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->owner;  };
-    auto get_posting =    [&]( const string& name ) { return get_accounts_handler().get_account_authority( name )->posting;  };
+    auto get_active  =    [&]( const string& name ) { return get_account_authority( name )->active; };
+    auto get_owner   =    [&]( const string& name ) { return get_account_authority( name )->owner;  };
+    auto get_posting =    [&]( const string& name ) { return get_account_authority( name )->posting;  };
     auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
 
     try
