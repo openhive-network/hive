@@ -1,200 +1,260 @@
+#include "fc/optional.hpp"
+#include "fc/reflect/reflect.hpp"
+#include "fc/string.hpp"
+#include <algorithm>
 #include <appbase/options_dumper.hpp>
+#include <appbase/swagger_schema.hpp>
 
 #include <boost/any.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <cstdint>
+#include <fc/exception/exception.hpp>
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/variant_object.hpp>
-#include <fc/exception/exception.hpp>
 
+#include <sstream>
+#include <utility>
 #include <vector>
-
 
 namespace appbase {
 
-template<typename T>
-fc::variant get_default_value(const boost::any& default_value )
-{
-  if( default_value.empty() )
-    return fc::variant( std::string() );
+swagger_schema::TypeDescription
+try_handle_type(const boost::program_options::option_description &option,
+                const boost::program_options::typed_value_base *typed) {
+  const std::set<std::string> _fixed_names_for_path{};
+  /*
+      "wallet-dir",
+      "log-json-rpc",
+      "data-dir",
+      "config",
+      "account-history-rocksdb-path",
+      "shared-file-dir",
+      "comments-rocksdb-path",
+      "pacemaker-source",
+      "snapshot-root-dir"};
+  */
+  const auto path_regex = R"(^(.+)\/([^\/]+)$)";
+  const auto &name = option.long_name();
+  const auto &description = option.description();
 
-  return boost::lexical_cast<std::string>( boost::any_cast<T>( default_value ) );
-}
-
-template<>
-fc::variant get_default_value<bool>(const boost::any& default_value )
-{
-  if( default_value.empty() )
-    return fc::variant( std::string() );
-
-  std::ostringstream _ss;
-  _ss << std::boolalpha << boost::any_cast<bool>( default_value );
-
-  return _ss.str();
-}
-
-template<>
-fc::variant get_default_value<std::vector<std::string>>(const boost::any& default_value )
-{
-  if( default_value.empty() )
-    return fc::variant( std::vector<std::string>() );
-
-  std::vector<std::string> _v;
-  for (const auto& item : boost::any_cast<std::vector<std::string>>( default_value ) ) 
-    _v.emplace_back( boost::lexical_cast<std::string>( item ) );
-
-  return fc::variant( std::move( _v ) );
-}
-
-template<typename T>
-void handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed, const std::string& type_name, const std::optional<uint32_t>& fields_count = std::nullopt )
-{
-  auto* _typed = dynamic_cast<const boost::program_options::typed_value<T>*>( typed );
-  assert( _typed );
-
-  fc::variant _def_value;
-  boost::any _def_value_any;
-  _typed->apply_default( _def_value_any );
-
-  val_info.required       = _typed->is_required();
-  val_info.multitoken     = _typed->max_tokens() > 1;
-  val_info.composed       = _typed->is_composing();
-  val_info.value_type     = type_name;
-  val_info.default_value  = get_default_value<T>( _def_value_any );
-  val_info.fields_count   = fields_count;
-}
-
-void try_handle_type( const std::string& name, options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed )
-{
-  if( typed->value_type() == typeid(bool) )
-    handle_type<bool>( val_info, typed, "bool" );
-  else if( typed->value_type() == typeid(int8_t) )
-    handle_type<int8_t>( val_info, typed, "byte" );
-  else if( typed->value_type() == typeid(int16_t) )
-    handle_type<int16_t>( val_info, typed, "short" );
-  else if( typed->value_type() == typeid(int32_t) )
-    handle_type<int32_t>( val_info, typed, "int" );
-  else if( typed->value_type() == typeid(int64_t) )
-    handle_type<int64_t>( val_info, typed, "long" );
-  else if( typed->value_type() == typeid(uint8_t) )
-    handle_type<uint8_t>( val_info, typed, "ubyte" );
-  else if( typed->value_type() == typeid(uint16_t) )
-    handle_type<uint16_t>( val_info, typed, "ushort" );
-  else if( typed->value_type() == typeid(uint32_t) )
-    handle_type<uint32_t>( val_info, typed, "uint" );
-  else if( typed->value_type() == typeid(uint64_t) )
-    handle_type<uint64_t>( val_info, typed, "ulong" );
-  else if( typed->value_type() == typeid(std::string) )
-  {
-    /*
-      Explanation:
-        https://stackoverflow.com/questions/68716288/q-boost-program-options-using-stdfilesystempath-as-option-fails-when-the-gi
-
-      The option `wallet-dir` can't have `boost::filesystem::path` type, but finally we want to represent `wallet-dir` like a path.
-      Below code is a workaround of presented problem.
-    */
-    const std::set<std::string> _fixed_names = { "wallet-dir", "log-json-rpc" };
-    auto _found = _fixed_names.find( name );
-    handle_type<std::string>( val_info, typed, _found != _fixed_names.end() ? "path" : "string" );
+  boost::any value;
+  bool is_default_available = option.semantic()->apply_default(value);
+  if (typed->value_type() == typeid(bool)) {
+    return swagger_schema::TypeDescription::boolean_type(
+        name, description, boost::any_cast<bool>(value));
+  } else if (typed->value_type() == typeid(int8_t))
+    return swagger_schema::TypeDescription::integer_type<uint8_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<int8_t>(value)
+                              : fc::optional<int8_t>()));
+  else if (typed->value_type() == typeid(int16_t))
+    return swagger_schema::TypeDescription::integer_type<int16_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<int16_t>(value)
+                              : fc::optional<int16_t>()));
+  else if (typed->value_type() == typeid(int32_t))
+    return swagger_schema::TypeDescription::integer_type<int32_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<int32_t>(value)
+                              : fc::optional<int32_t>()));
+  else if (typed->value_type() == typeid(int64_t))
+    return swagger_schema::TypeDescription::integer_type<int64_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<int64_t>(value)
+                              : fc::optional<int64_t>()));
+  else if (typed->value_type() == typeid(uint8_t))
+    return swagger_schema::TypeDescription::integer_type<uint8_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<uint8_t>(value)
+                              : fc::optional<uint8_t>()));
+  else if (typed->value_type() == typeid(uint16_t))
+    return swagger_schema::TypeDescription::integer_type<uint16_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<uint16_t>(value)
+                              : fc::optional<uint16_t>()));
+  else if (typed->value_type() == typeid(uint32_t))
+    return swagger_schema::TypeDescription::integer_type<uint32_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<uint32_t>(value)
+                              : fc::optional<uint32_t>()));
+  else if (typed->value_type() == typeid(uint64_t))
+    return swagger_schema::TypeDescription::integer_type<uint64_t>(
+        name, description,
+        (is_default_available ? boost::any_cast<uint64_t>(value)
+                              : fc::optional<uint64_t>()));
+  else if (typed->value_type() == typeid(std::vector<std::string>))
+    return swagger_schema::TypeDescription::array_type(
+        swagger_schema::Type::string, name, description, "value");
+  else {
+    return swagger_schema::TypeDescription::string_type(
+        name, description, "value", path_regex,
+        (is_default_available
+             ? fc::optional<fc::string>(boost::any_cast<fc::string>(value))
+             : fc::optional<fc::string>()));
   }
-  else if( typed->value_type() == typeid(fc::string) )
-    handle_type<fc::string>( val_info, typed, "string" );
-  else if( typed->value_type() == typeid(boost::filesystem::path) )
-    handle_type<boost::filesystem::path>( val_info, typed, "path" );
-  else if( typed->value_type() == typeid(std::vector<std::string>) )
-  {
-    //Below parameter should be logically treated as a pair of values.
-    const std::string _fixed_name = "export-keys-wallet";
-    handle_type<std::vector<std::string>>( val_info, typed, "string_array", name == _fixed_name ? 2  : 1 );
-  }
-  else
-    val_info.value_type = "unknown";
+  FC_ASSERT(false, "Unknown type for option: ${name} (${type})",
+            ("name", name)("type", typed->value_type().name()));
 }
 
-options_dumper::options_dumper(std::initializer_list<entry_t> entries) 
-  : option_groups( std::move(entries) ) {}
+options_dumper::options_dumper(std::initializer_list<entry_t> entries)
+    : option_groups(std::move(entries)) {}
 
-std::optional<options_dumper::value_info> options_dumper::get_value_info( const std::string& name, const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const
-{
-  if( !semantic )
-    return std::nullopt;
+swagger_schema::TypeDescription
+get_value_info(const boost::program_options::option_description &option) {
+  const auto semantic = option.semantic();
+  const std::string &name = option.long_name();
 
-  auto* _typed = dynamic_cast<const boost::program_options::typed_value_base*>( semantic.get() );
-  if( !_typed )
-    return std::nullopt;
+  if (!semantic)
+    return swagger_schema::TypeDescription::string_type(
+        name, option.description(), "value");
 
-  value_info _info;
-  try_handle_type( name, _info, _typed );
+  auto *_typed = dynamic_cast<const boost::program_options::typed_value_base *>(
+      semantic.get());
+  if (!_typed)
+    return swagger_schema::TypeDescription::string_type(
+        name, option.description(), "value");
 
-  return _info;
+  return try_handle_type(option, _typed);
 }
 
-options_dumper::option_entry options_dumper::serialize_option( const boost::program_options::option_description& option ) const
-{
-  return
-    {
-      option.long_name(),
-      option.description(),
-      get_value_info( option.long_name(), option.semantic() ),
-    } ;
+swagger_schema::Members::value_type
+serialize_option(const boost::program_options::option_description &option) {
+  return std::make_pair(option.long_name(), get_value_info(option));
 }
 
-std::string options_dumper::dump_to_string() const
-{
-  using _items_type = std::map<std::string, option_entry>;
+std::string options_dumper::dump_to_string() const {
+  auto arguments_in = option_groups.find("command_line");
+  auto config_in = option_groups.find("config_file");
 
-  std::map<std::string, _items_type> processed_option_groups;
+  FC_ASSERT(arguments_in != option_groups.end(),
+            "Command line options group is not found");
+  FC_ASSERT(config_in != option_groups.end(),
+            "Config file options group is not found");
 
-  std::map<std::string, size_t> _names;
+  swagger_schema::OpenAPI schema{};
 
-  for( const auto& group : option_groups )
-  {
-    _items_type _entries;
+  swagger_schema::Members &config_out =
+      schema.components.schemas.config.properties;
+  swagger_schema::Members &arguments_out =
+      schema.components.schemas.arguments.properties;
 
-    for( const auto& option : group.second.options() ) 
-    {
-      auto _status = _names.insert( std::make_pair( option->long_name(), 1 ) );
-      if( !_status.second )
-        ++_status.first->second;
-      _entries.emplace( std::make_pair(option->long_name(), serialize_option( *option ) ) );
-    }
+  using fixed_options_t =
+      std::pair<options_group_t::const_iterator, swagger_schema::Members &>;
+  const std::list<fixed_options_t> _fixed_options = {
+      {config_in, config_out}, {arguments_in, arguments_out}};
 
-    processed_option_groups.emplace( std::make_pair( group.first, _entries ) );
+  for (const fixed_options_t &group : _fixed_options)
+    for (const auto &option : group.first->second.options())
+      group.second.emplace(serialize_option(*option));
+
+  schema.components.schemas.fill_common();
+  return fc::json::to_pretty_string(schema);
+}
+
+namespace swagger_schema {
+
+void ComponentsSchemas::fill_common() {
+  // Fill common properties with intersection of arguments and config properties
+  this->arguments.required.reserve(this->arguments.properties.size());
+  for (auto &arg : this->arguments.properties) {
+    this->arguments.required.emplace_back(arg.first);
+    arg.second.generate_example_for_arguments();
   }
 
-  const std::string _common = "common";
+  this->config.required.reserve(this->arguments.properties.size());
+  for (auto &cfg : this->config.properties) {
+    this->config.required.emplace_back(cfg.first);
+    cfg.second.generate_example_for_config();
+  }
+  return;
 
-  std::map<std::string, std::vector<option_entry>> _result;
+  std::set_intersection(
+      this->arguments.properties.begin(), this->arguments.properties.end(),
+      this->config.properties.begin(), this->config.properties.end(),
+      std::inserter(this->common.properties, this->common.properties.begin()),
+      [](const auto &a, const auto &b) { return a.first < b.first; });
 
-  const auto _nr_groups = processed_option_groups.size();
-  for( auto& name : _names )
-  {
-    bool _saved = false;
-    for( auto& group : processed_option_groups )
-    {
-      auto _found = group.second.find( name.first );
+  // Remove common properties from arguments and config
+  for (auto &common_property : this->common.properties) {
+    this->arguments.properties.erase(common_property.first);
+    this->config.properties.erase(common_property.first);
 
-      if( name.second == _nr_groups )
-      {
-        FC_ASSERT( _found != group.second.end() );
-        if( !_saved )
-          _result[ _common ].emplace_back( _found->second );
-        _saved = true;
-      }
-      else
-      {
-        if( _found != group.second.end() )
-          _result[ group.first ].emplace_back( _found->second );
-      }
-    }
+    common_property.second.generate_example_for_both();
   }
 
-  return fc::json::to_pretty_string( _result );
+  for (auto &argument_property : this->arguments.properties) {
+    if (this->common.properties.find(argument_property.first) !=
+        this->common.properties.end())
+      this->common.properties.at(argument_property.first)
+          .generate_example_for_arguments();
+  }
+
+  for (auto &config_property : this->config.properties) {
+    if (this->common.properties.find(config_property.first) !=
+        this->common.properties.end())
+      this->common.properties.at(config_property.first)
+          .generate_example_for_config();
+  }
 }
 
-};
+void TypeDescription::generate_example_for_config() {
+  const auto config_entry = this->example_name + " = ";
+  std::stringstream ss;
 
-FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(value));
-FC_REFLECT(appbase::options_dumper::value_info, (required)(multitoken)(composed)(value_type)(default_value)(fields_count));
+  if (this->type == Type::array) {
+    for (int i = 0; i < 2; ++i)
+      ss << config_entry << this->example_value << i << std::endl;
+  } else {
+    ss << config_entry << this->example_value << std::endl;
+  }
+
+  this->example = ss.str();
+}
+
+void TypeDescription::generate_example_for_arguments() {
+  auto argument_name = "--" + this->example_name + " ";
+  std::stringstream ss;
+
+  if (this->type == Type::array) {
+    for (int i = 0; i < 2; ++i)
+      ss << argument_name << this->example_value << i << " " << std::endl;
+  } else {
+    ss << argument_name << this->example_value << std::endl;
+  }
+
+  this->example = ss.str();
+}
+
+void TypeDescription::generate_example_for_both() {
+  std::stringstream ss;
+  ss << "Config usage:" << std::endl;
+  ;
+  generate_example_for_config();
+  ss << this->example << std::endl << std::endl;
+  ss << "Command line usage:" << std::endl;
+  generate_example_for_arguments();
+  ss << this->example << std::endl;
+  this->example = ss.str();
+}
+
+} // namespace swagger_schema
+
+}; // namespace appbase
+
+FC_REFLECT_ENUM(appbase::swagger_schema::Type,
+                (string)(integer)(boolean)(object)(array))
+FC_REFLECT(appbase::swagger_schema::ArrayItemsDescription, (type))
+FC_REFLECT(
+    appbase::swagger_schema::TypeDescription,
+    (type)(description)(default_value)(example)(format)(items)(minimum)(maximum)(pattern))
+FC_REFLECT(appbase::swagger_schema::StructDefinition,
+           (type)(properties)(required))
+FC_REFLECT(appbase::swagger_schema::ComponentsSchemas,
+           (common)(arguments)(config))
+FC_REFLECT(appbase::swagger_schema::Components, (schemas))
+FC_REFLECT(appbase::swagger_schema::Info, (title)(description)(version))
+FC_REFLECT(appbase::swagger_schema::OpenAPI, (openapi)(info)(components))

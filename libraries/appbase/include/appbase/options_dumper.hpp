@@ -3,8 +3,6 @@
 #include <fc/variant.hpp>
 
 #include <initializer_list>
-#include <optional>
-#include <unordered_map>
 
 namespace appbase {
 
@@ -15,28 +13,11 @@ namespace appbase {
 
       using bpo     = boost::program_options::options_description;
       using entry_t = std::pair<const std::string, bpo>;
-
-      struct value_info {
-        bool        required    = false;
-        bool        multitoken  = false;
-        bool        composed    = false;
-        std::string value_type;
-        fc::variant default_value;
-        std::optional<uint32_t> fields_count;
-      };
-
-      struct option_entry {
-        std::string               name;
-        std::string               description;
-        std::optional<value_info> value;
-      };
+      using options_group_t = std::map<std::string, bpo>;
 
     private:
 
-      std::map<std::string, bpo> option_groups;
-
-      std::optional<value_info> get_value_info( const std::string& name, const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const;
-      option_entry serialize_option( const boost::program_options::option_description& option ) const;
+      options_group_t option_groups;
 
     public:
 
