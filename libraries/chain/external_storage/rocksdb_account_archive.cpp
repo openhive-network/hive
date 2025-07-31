@@ -17,6 +17,48 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
+namespace
+{
+  template<typename Volatile_Object_Type, typename SHM_Object_Type>
+  struct processor
+  {
+    void assign( Volatile_Object_Type& dest, const SHM_Object_Type& src, uint32_t block_num ){}
+  };
+
+  template<>
+  struct processor<volatile_account_metadata_object, account_metadata_object>
+  {
+    void assign( volatile_account_metadata_object& dest, const account_metadata_object& src, uint32_t block_num )
+    {
+      dest.account_metadata_id   = src.get_id();
+      dest.account               = src.account;
+      dest.json_metadata         = src.json_metadata;
+      dest.posting_json_metadata = src.posting_json_metadata;
+
+      dest.block_number          = block_num;
+    }
+  };
+
+  template<>
+  struct processor<volatile_account_authority_object, account_authority_object>
+  {
+    void assign( volatile_account_authority_object& dest, const account_authority_object& src, uint32_t block_num )
+    {
+      dest.account_authority_id  = src.get_id();
+      dest.account               = src.account;
+
+      dest.owner                 = src.owner;
+      dest.active                = src.active;
+      dest.posting               = src.posting;
+
+      dest.previous_owner_update = src.previous_owner_update;
+      dest.last_owner_update     = src.last_owner_update;
+
+      dest.block_number          = block_num;
+    }
+  };
+}
+
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
@@ -32,6 +74,12 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
 rocksdb_account_archive::~rocksdb_account_archive()
 {
   close();
+}
+
+uint32_t rocksdb_account_archive::get_block_num() const
+{
+  auto _found_dgpo = db.find< dynamic_global_property_object >();
+  return _found_dgpo ? _found_dgpo->head_block_number : 0;
 }
 
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
@@ -241,22 +289,14 @@ void rocksdb_account_archive::create_or_update_volatile( const account_metadata_
   {
     db.modify<volatile_account_metadata_object>( *_found, [&]( volatile_account_metadata_object& o )
     {
-      o.json_metadata         = obj.json_metadata;
-      o.posting_json_metadata = obj.posting_json_metadata;
-
-      o.block_number          = db.head_block_num();
+      processor<volatile_account_metadata_object, account_metadata_object>().assign( o, obj, get_block_num() );
     } );
   }
   else
   {
     db.create<volatile_account_metadata_object>( [&]( volatile_account_metadata_object& o )
     {
-      o.account_metadata_id   = obj.get_id();
-      o.account               = obj.account;
-      o.json_metadata         = obj.json_metadata;
-      o.posting_json_metadata = obj.posting_json_metadata;
-
-      o.block_number          = db.head_block_num();
+      processor<volatile_account_metadata_object, account_metadata_object>().assign( o, obj, get_block_num() );
     });
   }
 
@@ -279,39 +319,20 @@ void rocksdb_account_archive::create_or_update_volatile( const account_authority
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  auto _found_dgpo = db.find< dynamic_global_property_object >();
-
   const auto& _volatile_idx = db.get_index<volatile_account_authority_index, by_name>();
   auto _found = _volatile_idx.find( obj.account );
   if( _found != _volatile_idx.end() )
   {
     db.modify<volatile_account_authority_object>( *_found, [&]( volatile_account_authority_object& o )
     {
-      o.owner                 = obj.owner;
-      o.active                = obj.active;
-      o.posting               = obj.posting;
-
-      o.previous_owner_update = obj.previous_owner_update;
-      o.last_owner_update     = obj.last_owner_update;
-
-      o.block_number          = _found_dgpo ? _found_dgpo->head_block_number : 0;
+      processor<volatile_account_authority_object, account_authority_object>().assign( o, obj, get_block_num() );
     } );
   }
   else
   {
     db.create< volatile_account_authority_object >( [&]( volatile_account_authority_object& o )
     {
-      o.account_authority_id  = obj.get_id();
-      o.account               = obj.account;
-
-      o.owner                 = obj.owner;
-      o.active                = obj.active;
-      o.posting               = obj.posting;
-
-      o.previous_owner_update = obj.previous_owner_update;
-      o.last_owner_update     = obj.last_owner_update;
-
-      o.block_number          = _found_dgpo ? _found_dgpo->head_block_number : 0;
+      processor<volatile_account_authority_object, account_authority_object>().assign( o, obj, get_block_num() );
     });
   }
 

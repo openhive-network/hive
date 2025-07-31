@@ -30,6 +30,8 @@ class rocksdb_account_archive : public accounts_handler
     bool destroy_database_on_startup = false;
     bool destroy_database_on_shutdown = false;
 
+    uint32_t get_block_num() const;
+
     template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
     void move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type );
 
