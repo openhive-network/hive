@@ -266,9 +266,9 @@ void rocksdb_account_archive::modify( Object_Type& obj, std::function<void(SHM_O
 {
   if( obj.is_shm() )
   {
-    db.modify( *obj, [&]( SHM_Object_Type& meta )
+    db.modify( *obj, [&]( SHM_Object_Type& _obj )
     {
-      modifier( meta );
+      modifier( _obj );
     });
   }
   else
@@ -279,29 +279,35 @@ void rocksdb_account_archive::modify( Object_Type& obj, std::function<void(SHM_O
   create_or_update_volatile( *obj );
 }
 
-void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
+void rocksdb_account_archive::create_or_update_volatile_impl( const SHM_Object_Type& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  const auto& _volatile_idx = db.get_index<volatile_account_metadata_index, by_name>();
+  const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
   auto _found = _volatile_idx.find( obj.account );
   if( _found != _volatile_idx.end() )
   {
-    db.modify<volatile_account_metadata_object>( *_found, [&]( volatile_account_metadata_object& o )
+    db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
     {
-      processor<volatile_account_metadata_object, account_metadata_object>().assign( o, obj, get_block_num() );
+      processor<Volatile_Object_Type, SHM_Object_Type>().assign( o, obj, get_block_num() );
     } );
   }
   else
   {
-    db.create<volatile_account_metadata_object>( [&]( volatile_account_metadata_object& o )
+    db.create<Volatile_Object_Type>( [&]( Volatile_Object_Type& o )
     {
-      processor<volatile_account_metadata_object, account_metadata_object>().assign( o, obj, get_block_num() );
+      processor<Volatile_Object_Type, SHM_Object_Type>().assign( o, obj, get_block_num() );
     });
   }
 
   stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.account_cashout_processing.count;
+}
+
+void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
+{
+  create_or_update_volatile_impl<volatile_account_metadata_index, volatile_account_metadata_object>( obj );
 }
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
@@ -317,27 +323,7 @@ void rocksdb_account_archive::modify_object( const account_name_type& account_na
 
 void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  const auto& _volatile_idx = db.get_index<volatile_account_authority_index, by_name>();
-  auto _found = _volatile_idx.find( obj.account );
-  if( _found != _volatile_idx.end() )
-  {
-    db.modify<volatile_account_authority_object>( *_found, [&]( volatile_account_authority_object& o )
-    {
-      processor<volatile_account_authority_object, account_authority_object>().assign( o, obj, get_block_num() );
-    } );
-  }
-  else
-  {
-    db.create< volatile_account_authority_object >( [&]( volatile_account_authority_object& o )
-    {
-      processor<volatile_account_authority_object, account_authority_object>().assign( o, obj, get_block_num() );
-    });
-  }
-
-  stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  ++stats.account_cashout_processing.count;
+  create_or_update_volatile_impl<volatile_account_authority_index, volatile_account_authority_object>( obj );
 }
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const

@@ -56,6 +56,9 @@ class rocksdb_account_archive : public accounts_handler
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
     bool on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type );
 
+    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
+    void create_or_update_volatile_impl( const SHM_Object_Type& obj );
+
   public:
 
     rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
