@@ -27,7 +27,8 @@ public:
   operator bool() const { return ptr != nullptr; }
 };
 
-using account_metadata = account_item<account_metadata_object>;
+using account_metadata  = account_item<account_metadata_object>;
 using account_authority = account_item<account_authority_object>;
+using account           = account_item<account_object>;
 
 } } // hive::chain

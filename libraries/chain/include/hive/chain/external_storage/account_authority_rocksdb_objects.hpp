@@ -24,6 +24,8 @@ class volatile_account_authority_object : public object< volatile_account_author
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_authority_object, (owner)(active)(posting) )
 
+    const account_name_type& get_name() const { return account; }
+
     account_authority_id_type account_authority_id;
     account_name_type         account;
 

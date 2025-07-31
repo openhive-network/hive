@@ -24,6 +24,8 @@ class volatile_account_metadata_object : public object< volatile_account_metadat
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_metadata_object, (json_metadata)(posting_json_metadata) )
 
+    const account_name_type& get_name() const { return account; }
+
     account_metadata_id_type  account_metadata_id;
     account_name_type         account;
     shared_string             json_metadata;

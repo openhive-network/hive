@@ -1,20 +1,20 @@
 #pragma once
 
-#include "hive/chain/account_details.hpp"
+#include <hive/chain/account_details.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/account_object.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#ifndef HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID
-#define HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID 24
+#ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
+#define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 24
 #endif
 
 namespace hive { namespace chain {
 
 enum account_rocksdb_object_types
 {
-  volatile_account_object_type = ( HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID << 8 )
+  volatile_account_object_type = ( HIVE_ACCOUNT_ROCKSDB_SPACE_ID << 8 )
 };
 
 class volatile_account_object : public object< volatile_account_object_type, volatile_account_object >
@@ -24,6 +24,8 @@ class volatile_account_object : public object< volatile_account_object_type, vol
   public:
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_object, (shared_delayed_votes) )
+
+    const account_name_type& get_name() const { return misc.name; }
 
     account_id_type                         account_id;
 
@@ -35,8 +37,6 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     account_details::shared_delayed_votes   shared_delayed_votes;
 
     uint32_t                                block_number = 0;
-
-    const account_name_type& get_name() const { return misc.name; }
 };
 
 typedef oid_ref< volatile_account_object > volatile_account_id_type;
@@ -65,8 +65,6 @@ typedef multi_index_container<
     multi_index_allocator< volatile_account_object >
   > volatile_account_index;
 
-using t_rocksdb_delayed_votes = std::vector< delayed_votes_data >;
-
 class rocksdb_account_object
 {
   public:
@@ -75,7 +73,7 @@ class rocksdb_account_object
 
   rocksdb_account_object( const volatile_account_object& obj )
   {
-    account_id  = obj.account_id;
+    id          = obj.account_id;
 
     recovery    = obj.recovery;
     assets      = obj.assets;
@@ -90,7 +88,7 @@ class rocksdb_account_object
     }
   }
 
-  account_id_type                         account_id;
+  account_id_type                         id;
 
   account_details::recovery               recovery;
   account_details::assets                 assets;
@@ -98,7 +96,7 @@ class rocksdb_account_object
   account_details::time                   time;
   account_details::misc                   misc;
 
-  t_rocksdb_delayed_votes                 delayed_votes;
+  std::vector< delayed_votes_data >       delayed_votes;
 };
 
 } } // hive::chain
@@ -106,4 +104,4 @@ class rocksdb_account_object
 FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)(block_number) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::volatile_account_index )
 
-FC_REFLECT( hive::chain::rocksdb_account_object, (account_id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )
+FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )

@@ -1735,9 +1735,9 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
     args.available_keys,
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).active  ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).owner   ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).posting ); },
     [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     HIVE_MAX_SIG_CHECK_DEPTH );
 
@@ -1754,21 +1754,21 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
     flat_set< public_key_type >(),
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).active;
+      const auto& auth = _db.get< chain::account_authority_object, chain::by_name >( account_name ).active;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
     },
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner;
+      const auto& auth = _db.get< chain::account_authority_object, chain::by_name >( account_name ).owner;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
     },
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting;
+      const auto& auth = _db.get< chain::account_authority_object, chain::by_name >( account_name ).posting;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
@@ -1789,9 +1789,9 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
-    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).active  ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).owner   ); },
+    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).posting ); },
     [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
@@ -1824,9 +1824,9 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     required_authorities,
     args.signers,
-    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active ); },
-    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner ); },
-    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).active ); },
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).owner ); },
+    [&]( string account_name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( account_name ).posting ); },
     [&]( string witness_name ) { return _db.get_witness( witness_name ).signing_key; } );
 
   return verify_account_authority_return( { ok } );
@@ -1855,9 +1855,9 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       { args },
       sig_keys,
-      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
-      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
-      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
+      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( name ).owner ); },
+      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( name ).active ); },
+      [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_name >( name ).posting ); },
       [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
       HIVE_MAX_SIG_CHECK_DEPTH );
   }

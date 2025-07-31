@@ -14,9 +14,11 @@ struct executor_interface
 {
   virtual void create_or_update_volatile( const account_metadata_object& obj ) = 0;
   virtual void create_or_update_volatile( const account_authority_object& obj ) = 0;
+  virtual void create_or_update_volatile( const account_object& obj ) = 0;
 
   virtual void modify_object( const account_name_type& account_name, std::function<void(account_metadata_object&)>&& modifier ) = 0;
   virtual void modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier ) = 0;
+  virtual void modify_object( const account_name_type& account_name, std::function<void(account_object&)>&& modifier ) = 0;
 };
 
 namespace
@@ -59,6 +61,21 @@ namespace
       exec.modify_object( account_name, std::function<void(account_authority_object&)>( m ) );
     }
   };
+
+  template<>
+  struct executor<account_object>
+  {
+    void create( const account_object& obj, executor_interface& exec )
+    {
+      exec.create_or_update_volatile( obj );
+    }
+
+    template<typename Modifier>
+    void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
+    {
+      exec.modify_object( account_name, std::function<void(account_object&)>( m ) );
+    }
+  };
 }
 
 class accounts_handler : public executor_interface, public external_storage_snapshot
@@ -83,6 +100,7 @@ class accounts_handler : public executor_interface, public external_storage_snap
 
     virtual account_metadata get_account_metadata( const account_name_type& account_name ) const = 0;
     virtual account_authority get_account_authority( const account_name_type& account_name ) const = 0;
+    virtual account get_account( const account_name_type& account_name ) const = 0;
 
     virtual void open() = 0;
     virtual void close() = 0;

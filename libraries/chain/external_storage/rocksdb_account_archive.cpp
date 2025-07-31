@@ -57,6 +57,24 @@ namespace
       dest.block_number          = block_num;
     }
   };
+
+  template<>
+  struct processor<volatile_account_object, account_object>
+  {
+    void assign( volatile_account_object& dest, const account_object& src, uint32_t block_num )
+    {
+      dest.account_id  = src.get_id();
+
+      dest.recovery             = src.get_recovery();
+      dest.assets               = src.get_assets();
+      dest.mrc                  = src.get_mrc();
+      dest.time                 = src.get_time();
+      dest.misc                 = src.get_misc();
+      dest.shared_delayed_votes = src.get_shared_delayed_votes();
+
+      dest.block_number         = block_num;
+    }
+  };
 }
 
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
@@ -67,6 +85,8 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_account_metadata_index );
   HIVE_ADD_PLUGIN_INDEX( db, volatile_account_authority_index );
+  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_index );
+
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
 }
@@ -85,7 +105,7 @@ uint32_t rocksdb_account_archive::get_block_num() const
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
 void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
 {
-  info_by_name_slice_t _key( volatile_object.account.data );
+  info_by_name_slice_t _key( volatile_object.get_name().data );
 
   RocksDB_Object_Type _obj( volatile_object );
 
@@ -130,6 +150,24 @@ std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_b
 }
 
 template<>
+std::shared_ptr<account_object> rocksdb_account_archive::create_from_buffer<account_object, account_index>( const PinnableSlice& buffer ) const
+{
+  rocksdb_account_object _obj;
+
+  load( _obj, buffer.data(), buffer.size() );
+
+  return std::shared_ptr<account_object>( new account_object(
+                                                      get_allocator<account_object, account_index>(),
+                                                    _obj.id,
+                                                    _obj.recovery,
+                                                    _obj.assets,
+                                                    _obj.mrc,
+                                                    _obj.time,
+                                                    _obj.misc,
+                                                    _obj.delayed_votes) );
+}
+
+template<>
 std::shared_ptr<account_metadata_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_metadata_object, account_metadata_object, account_metadata_index>( const volatile_account_metadata_object& obj ) const
 {
   return std::shared_ptr<account_metadata_object>( new account_metadata_object(
@@ -145,6 +183,19 @@ std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_v
                                                     obj.account_authority_id, obj.account,
                                                  obj.owner, obj.active, obj.posting,
                                  obj.previous_owner_update, obj.last_owner_update) );
+}
+
+template<>
+std::shared_ptr<account_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_object, account_object, account_index>( const volatile_account_object& obj ) const
+{
+  return std::shared_ptr<account_object>( new account_object(
+                                                    obj.account_id,
+                                                    obj.recovery,
+                                                    obj.assets,
+                                                    obj.mrc,
+                                                    obj.time,
+                                                    obj.misc,
+                                                    obj.shared_delayed_votes) );
 }
 
 template<typename SHM_Object_Type, typename SHM_Object_Index>
@@ -191,7 +242,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, Co
     if( !_do_flush )
       _do_flush = true;
 
-    const auto* _shm_object = db.find< SHM_Object_Type, by_account >( _current.account );
+    const auto* _shm_object = db.find< SHM_Object_Type, by_name >( _current.get_name() );
     if( _shm_object )
       db.remove( *_shm_object );
 
@@ -213,8 +264,9 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
   bool _do_flush_meta = on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num, ColumnTypes::ACCOUNT_METADATA );
   bool _do_flush_authority = on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num, ColumnTypes::ACCOUNT_AUTHORITY );
+  bool _do_flush_account = on_irreversible_block_impl<volatile_account_index, volatile_account_object, account_object, rocksdb_account_object>( block_num, ColumnTypes::ACCOUNT );
 
-  if( _do_flush_meta || _do_flush_authority )
+  if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {
     provider->flush();
   }
@@ -225,7 +277,7 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  const auto* _found = db.find<SHM_Object_Type, by_account>( account_name );
+  const auto* _found = db.find<SHM_Object_Type, by_name>( account_name );
   if( _found )
   {
     stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -285,7 +337,7 @@ void rocksdb_account_archive::create_or_update_volatile_impl( const SHM_Object_T
   auto time_start = std::chrono::high_resolution_clock::now();
 
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
-  auto _found = _volatile_idx.find( obj.account );
+  auto _found = _volatile_idx.find( obj.get_name() );
   if( _found != _volatile_idx.end() )
   {
     db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
@@ -305,6 +357,7 @@ void rocksdb_account_archive::create_or_update_volatile_impl( const SHM_Object_T
   ++stats.account_cashout_processing.count;
 }
 
+//==========================================account_metadata_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
 {
   create_or_update_volatile_impl<volatile_account_metadata_index, volatile_account_metadata_object>( obj );
@@ -321,6 +374,7 @@ void rocksdb_account_archive::modify_object( const account_name_type& account_na
   modify( _obj, modifier );
 }
 
+//==========================================account_authority_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
 {
   create_or_update_volatile_impl<volatile_account_authority_index, volatile_account_authority_object>( obj );
@@ -337,6 +391,23 @@ void rocksdb_account_archive::modify_object( const account_name_type& account_na
   modify( _obj, modifier );
 }
 
+//==========================================account_object==========================================
+void rocksdb_account_archive::create_or_update_volatile( const account_object& obj )
+{
+  create_or_update_volatile_impl<volatile_account_index, volatile_account_object>( obj );
+}
+
+account rocksdb_account_archive::get_account( const account_name_type& account_name ) const
+{
+  return get_object<volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, ColumnTypes::ACCOUNT );
+}
+
+void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_object&)>&& modifier )
+{
+  account _obj = get_account( account_name );
+  modify( _obj, modifier );
+}
+
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   snapshot->save_snapshot( note );
@@ -349,19 +420,16 @@ void rocksdb_account_archive::load_snapshot( const hive::chain::load_snapshot_su
 
 void rocksdb_account_archive::open()
 {
-  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->init( destroy_database_on_startup );
 }
 
 void rocksdb_account_archive::close()
 {
-  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->shutdownDb( destroy_database_on_shutdown );
 }
 
 void rocksdb_account_archive::wipe()
 {
-  // volatile_account_metadata_index is registered in database, so it is handled automatically
   provider->wipeDb();
 }
 
@@ -369,3 +437,4 @@ void rocksdb_account_archive::wipe()
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_metadata_index )
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_authority_index )
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_index )

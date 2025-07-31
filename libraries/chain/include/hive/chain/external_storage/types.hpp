@@ -34,7 +34,8 @@ enum ColumnTypes
 {
   COMMENT = 0,
   ACCOUNT_METADATA,
-  ACCOUNT_AUTHORITY
+  ACCOUNT_AUTHORITY,
+  ACCOUNT
 };
 
 enum Columns

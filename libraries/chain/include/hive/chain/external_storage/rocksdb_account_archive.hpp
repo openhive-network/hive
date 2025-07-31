@@ -75,6 +75,10 @@ class rocksdb_account_archive : public accounts_handler
     account_authority get_account_authority( const account_name_type& account_name ) const override;
     void modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier ) override;
 
+    void create_or_update_volatile( const account_object& obj ) override;
+    account get_account( const account_name_type& account_name ) const override;
+    void modify_object( const account_name_type& account_name, std::function<void(account_object&)>&& modifier ) override;
+
     void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;
 

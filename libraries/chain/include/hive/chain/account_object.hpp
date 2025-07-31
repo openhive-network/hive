@@ -26,6 +26,8 @@ namespace hive { namespace chain {
 
     public:
 
+      const account_details::recovery& get_recovery() const { return recovery; }
+
       //tells if account has some designated account that can initiate recovery (if not, top witness can)
       bool has_recovery_account() const { return recovery.recovery_account != account_id_type(); }
 
@@ -60,6 +62,8 @@ namespace hive { namespace chain {
       account_details::assets assets;
 
     public:
+
+      const account_details::assets& get_assets() const { return assets; }
 
       //liquid HIVE balance
       const HIVE_asset& get_balance() const { return assets.balance; }
@@ -119,6 +123,8 @@ namespace hive { namespace chain {
 
     public:
 
+      const account_details::manabars_rc& get_mrc() const { return mrc; }
+
       share_type  get_rc_adjustment() const { return mrc.rc_adjustment; }
       void set_rc_adjustment( const share_type& value ) { mrc.rc_adjustment = value; }
 
@@ -151,6 +157,8 @@ namespace hive { namespace chain {
       account_details::time time;
 
     public:
+
+      const account_details::time& get_time() const { return time; }
 
       uint128_t get_hbd_seconds() const { return time.hbd_seconds; }
       void set_hbd_seconds( const uint128_t& value ) { time.hbd_seconds = value; }
@@ -203,6 +211,8 @@ namespace hive { namespace chain {
       account_details::misc misc;
 
     public:
+
+      const account_details::misc& get_misc() const { return misc; }
 
       bool can_vote() const { return misc.can_vote; }
       void set_can_vote( const bool& value ) { misc.can_vote = value; }
@@ -326,6 +336,8 @@ namespace hive { namespace chain {
 
     public:
 
+      const account_details::shared_delayed_votes& get_shared_delayed_votes() const { return shared_delayed_votes; }
+
       account_details::t_delayed_votes& get_delayed_votes() { return shared_delayed_votes.delayed_votes; }
       const account_details::t_delayed_votes& get_delayed_votes() const { return shared_delayed_votes.delayed_votes; }
 
@@ -366,7 +378,32 @@ namespace hive { namespace chain {
           shared_delayed_votes( a )
       {}
 
-      //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
+      template< typename Allocator >
+      account_object( allocator< Allocator > a, uint64_t _id,
+                      account_details::recovery _recovery,
+                      account_details::assets _assets,
+                      account_details::manabars_rc _mrc,
+                      account_details::time _time,
+                      account_details::misc _misc,
+                      std::vector< delayed_votes_data > _delayed_votes )
+        : id( _id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), shared_delayed_votes( a )
+      {
+        shared_delayed_votes.delayed_votes.resize( _delayed_votes.size() );
+        for( auto& item : _delayed_votes )
+        {
+          shared_delayed_votes.delayed_votes.push_back( item );
+        }
+      }
+
+      account_object( uint64_t _id,
+                      account_details::recovery _recovery,
+                      account_details::assets _assets,
+                      account_details::manabars_rc _mrc,
+                      account_details::time _time,
+                      account_details::misc _misc,
+                      account_details::shared_delayed_votes _delayed_votes )
+        : id( _id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), shared_delayed_votes( _delayed_votes )
+      {}
 
     public:
 
@@ -398,6 +435,8 @@ namespace hive { namespace chain {
       account_name_type account;
       shared_string     json_metadata;
       shared_string     posting_json_metadata;
+
+      const account_name_type& get_name() const { return account; }
 
       size_t get_dynamic_alloc() const
       {
@@ -440,6 +479,8 @@ namespace hive { namespace chain {
 
       time_point_sec    previous_owner_update;
       time_point_sec    last_owner_update;
+
+      const account_name_type& get_name() const { return account; }
 
       size_t get_dynamic_alloc() const
       {
@@ -660,18 +701,18 @@ namespace hive { namespace chain {
     multi_index_allocator< account_object >
   > account_index;
 
-  struct by_account {};
-
   typedef multi_index_container <
     account_metadata_object,
     indexed_by<
       ordered_unique< tag< by_id >,
         const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
-      ordered_unique< tag< by_account >,
-        member< account_metadata_object, account_name_type, &account_metadata_object::account > >
+      ordered_unique< tag< by_name >,
+        const_mem_fun< account_metadata_object, const account_name_type&, &account_metadata_object::get_name > >
     >,
     multi_index_allocator< account_metadata_object >
   > account_metadata_index;
+
+  struct by_account {};
 
   typedef multi_index_container <
     owner_authority_history_object,
@@ -695,9 +736,9 @@ namespace hive { namespace chain {
     indexed_by <
       ordered_unique< tag< by_id >,
         const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id > >,
-      ordered_unique< tag< by_account >,
+      ordered_unique< tag< by_name >,
         composite_key< account_authority_object,
-          member< account_authority_object, account_name_type, &account_authority_object::account >,
+          const_mem_fun< account_authority_object, const account_name_type&, &account_authority_object::get_name >,
           const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
         >,
         composite_key_compare< std::less< account_name_type >, std::less< account_authority_id_type > >
