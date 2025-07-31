@@ -273,7 +273,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 }
 
 template<typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-Object_Type rocksdb_account_archive::get_object( const account_name_type& account_name, ColumnTypes column_type ) const
+Object_Type rocksdb_account_archive::get_object( const account_name_type& account_name, ColumnTypes column_type, bool is_required ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -306,7 +306,7 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
       {
         stats.account_not_found.time_ns += time;
         ++stats.account_not_found.count;
-        FC_ASSERT( false, "Account data not found" );
+        FC_ASSERT( !is_required, "Account data not found" );
       }
       return Object_Type( _external_found );
     }
@@ -365,7 +365,7 @@ void rocksdb_account_archive::create_or_update_volatile( const account_metadata_
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
 {
-  return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA );
+  return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_metadata_object&)>&& modifier )
@@ -382,7 +382,7 @@ void rocksdb_account_archive::create_or_update_volatile( const account_authority
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
 {
-  return get_object<volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY );
+  return get_object<volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier )
@@ -397,14 +397,14 @@ void rocksdb_account_archive::create_or_update_volatile( const account_object& o
   create_or_update_volatile_impl<volatile_account_index, volatile_account_object>( obj );
 }
 
-account rocksdb_account_archive::get_account( const account_name_type& account_name ) const
+account rocksdb_account_archive::get_account( const account_name_type& account_name, bool account_is_required ) const
 {
-  return get_object<volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, ColumnTypes::ACCOUNT );
+  return get_object<volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, ColumnTypes::ACCOUNT, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_name_type& account_name, std::function<void(account_object&)>&& modifier )
 {
-  account _obj = get_account( account_name );
+  account _obj = get_account( account_name, true/*account_is_required*/ );
   modify( _obj, modifier );
 }
 

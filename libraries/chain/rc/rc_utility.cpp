@@ -41,9 +41,9 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   }
 
   auto now = gpo.time;
-  const account_object& from_account = _db.get_account( op.from );
-  _db.rc.regenerate_rc_mana( from_account, now );
-  FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
+  auto from_account = _db.get_account( op.from );
+  _db.rc.regenerate_rc_mana( *from_account, now );
+  FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( *from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
@@ -51,17 +51,17 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
   for (const account_name_type& to:op.delegatees)
   {
-    const account_object& to_account = _db.get_account( to );
-    _db.rc.regenerate_rc_mana( to_account, now );
+    auto to_account = _db.get_account( to );
+    _db.rc.regenerate_rc_mana( *to_account, now );
 
     const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
-      boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
+      boost::make_tuple( from_account->get_id(), to_account->get_id() ) );
 
     int64_t delta = op.max_rc;
     if( delegation == nullptr ) // delegation is being created
     {
       FC_ASSERT( op.max_rc != 0, "Cannot delegate 0 if you are creating new rc delegation" );
-      _db.create<rc_direct_delegation_object>( from_account, to_account, op.max_rc );
+      _db.create<rc_direct_delegation_object>( *from_account, *to_account, op.max_rc );
     }
     else // delegation is being increased, decreased or deleted
     {
@@ -83,16 +83,16 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    _db.rc.update_account_after_rc_delegation( to_account, now, delta );
+    _db.rc.update_account_after_rc_delegation( *to_account, now, delta );
     delta_total += delta;
   }
 
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
-  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( true ).value, from_account.get_rc_manabar().current_mana );
+  int64_t from_delegable_rc = std::min( from_account->get_maximum_rc( true ).value, from_account->get_rc_manabar().current_mana );
   // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT( from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ( "a", op.from )( "h", from_delegable_rc )( "n", delta_total ) );
 
-  _db.modify< account_object >( from_account, [&]( account_object& acc )
+  _db.modify< account_object >( *from_account, [&]( account_object& acc )
   {
     // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
     if( delta_total > 0 )
@@ -475,20 +475,20 @@ bool resource_credits::use_account_rcs( int64_t rc )
     return false;
   }
 
-  const account_object& account = db.get_account( account_name );
+  auto account = db.get_account( account_name );
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
 
   util::manabar_params mbparams;
-  auto max_mana = account.get_maximum_rc().value;
+  auto max_mana = account->get_maximum_rc().value;
   mbparams.max_mana = max_mana;
   tx_info.max = max_mana;
-  tx_info.rc = account.get_rc_manabar().current_mana; // initialize before regen in case of exception
+  tx_info.rc = account->get_rc_manabar().current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
   bool is_privileged = false;
 
   try
   {
-    db.modify( account, [&]( account_object& acc )
+    db.modify( *account, [&]( account_object& acc )
     {
       acc.get_rc_manabar().regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
       tx_info.rc = acc.get_rc_manabar().current_mana; // update after regeneration

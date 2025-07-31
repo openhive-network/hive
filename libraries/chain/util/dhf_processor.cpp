@@ -96,9 +96,9 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     const auto& _voter = db.get_account( found->voter );
 
     //If _voter has set proxy, then his votes aren't taken into consideration
-    if( !_voter.has_proxy() )
+    if( !_voter->has_proxy() )
     {
-      auto sum = _voter.get_governance_vote_power();
+      auto sum = _voter->get_governance_vote_power();
       ret += sum.value;
     }
 
@@ -136,9 +136,9 @@ void dhf_processor::sort_by_votes( t_proposals& proposals )
 
 asset dhf_processor::get_treasury_fund()
 {
-  auto& treasury_account = db.get_treasury();
+  auto treasury_account = db.get_treasury();
 
-  return treasury_account.get_hbd_balance();
+  return treasury_account->get_hbd_balance();
 }
 
 asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
@@ -174,8 +174,8 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
-    db.adjust_balance( treasury_account, -payment );
-    db.adjust_balance( receiver_account, payment );
+    db.adjust_balance( *treasury_account, -payment );
+    db.adjust_balance( *receiver_account, payment );
   };
 
   for( auto& item : proposals )
@@ -334,11 +334,11 @@ void dhf_processor::convert_funds( const block_notification& note )
     _dgpo.next_daily_maintenance_time = block_ts + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
-  const auto &treasury_account = db.get_treasury();
-  if (treasury_account.get_balance().amount == 0)
+  const auto treasury_account = db.get_treasury();
+  if (treasury_account->get_balance().amount == 0)
     return;
 
-  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account->get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )
@@ -349,13 +349,13 @@ void dhf_processor::convert_funds( const block_notification& note )
   if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
 
-  db.adjust_balance( treasury_account, -to_convert );
-  db.adjust_balance( treasury_account, converted_hbd );
+  db.adjust_balance( *treasury_account, -to_convert );
+  db.adjust_balance( *treasury_account, converted_hbd );
 
   db.adjust_supply( -to_convert );
   db.adjust_supply( converted_hbd );
 
-  operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
+  operation vop = dhf_conversion_operation( treasury_account->get_name(), to_convert, converted_hbd );
   db.push_virtual_operation( vop );
 }
 

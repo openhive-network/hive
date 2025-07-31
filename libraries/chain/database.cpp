@@ -414,7 +414,7 @@ account_authority database::get_account_authority( const account_name_type& acco
 
 const account_object& database::get_account( const account_id_type id )const
 { try {
-  const auto* _account = find_account( id );
+  const auto _account = find_account( id );
   FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
   return *_account;
 } FC_CAPTURE_AND_RETHROW( (id) ) }
@@ -424,16 +424,14 @@ const account_object* database::find_account( const account_id_type& id )const
   return find< account_object, by_id >( id );
 }
 
-const account_object& database::get_account( const account_name_type& name )const
-{ try {
-  const auto* _account = find_account( name );
-  FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
-  return *_account;
-} FC_CAPTURE_AND_RETHROW( (name) ) }
-
-const account_object* database::find_account( const account_name_type& name )const
+account database::get_account( const account_name_type& name )const
 {
-  return find< account_object, by_name >( name );
+  return get_accounts_handler().get_account( name, true /*account_is_required*/ );
+}
+
+account database::find_account( const account_name_type& name )const
+{
+  return get_accounts_handler().get_account( name, false /*account_is_required*/ );
 }
 
 const comment_object* database::find_comment( comment_id_type comment_id )const
@@ -448,8 +446,8 @@ comment database::get_comment( const account_id_type& author, const shared_strin
 
 comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  const account_object& _account = get_account( author );
-  return get_comments_handler().get_comment( _account.get_id(), to_string( permlink ), true /*comment_is_required*/ );
+  auto _account = get_account( author );
+  return get_comments_handler().get_comment( _account->get_id(), to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
@@ -459,7 +457,7 @@ comment database::find_comment( const account_id_type& author, const shared_stri
 
 comment database::find_comment( const account_name_type& author, const shared_string& permlink )const
 {
-  const account_object* _account = find_account( author );
+  auto _account = find_account( author );
 
   if( !_account )
     return comment();
@@ -476,8 +474,8 @@ comment database::get_comment( const account_id_type& author, const string& perm
 
 comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
-  const account_object& _account = get_account( author );
-  return get_comments_handler().get_comment( _account.get_id(), permlink, true /*comment_is_required*/ );
+  auto _account = get_account( author );
+  return get_comments_handler().get_comment( _account->get_id(), permlink, true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const string& permlink )const
@@ -487,7 +485,7 @@ comment database::find_comment( const account_id_type& author, const string& per
 
 comment database::find_comment( const account_name_type& author, const string& permlink )const
 {
-  const account_object* _account = find_account( author );
+  auto _account = find_account( author );
 
   if( !_account )
     return comment();
@@ -1416,10 +1414,10 @@ void database::clear_null_account_balance()
 {
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
-  const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
+  auto null_account = get_account( HIVE_NULL_ACCOUNT );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
-  if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+  if( !( collect_account_total_balance( *null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   operation vop_op = clear_null_account_balance_operation();
@@ -1434,70 +1432,70 @@ void database::clear_null_account_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  if( null_account.get_balance().amount > 0 )
+  if( null_account->get_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_account.get_balance() );
+    adjust_balance( *null_account, -null_account->get_balance() );
   }
 
-  if( null_account.get_savings().amount > 0 )
+  if( null_account->get_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_account.get_savings() );
+    adjust_savings_balance( *null_account, -null_account->get_savings() );
   }
 
-  if( null_account.get_hbd_balance().amount > 0 )
+  if( null_account->get_hbd_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_account.get_hbd_balance() );
+    adjust_balance( *null_account, -null_account->get_hbd_balance() );
   }
 
-  if( null_account.get_hbd_savings().amount > 0 )
+  if( null_account->get_hbd_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_account.get_hbd_savings() );
+    adjust_savings_balance( *null_account, -null_account->get_hbd_savings() );
   }
 
-  if( null_account.get_vesting().amount > 0 )
+  if( null_account->get_vesting().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.time;
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= null_account.get_vesting();
+      g.total_vesting_shares -= null_account->get_vesting();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
-    modify( null_account, [&]( account_object& a )
+      rc.regenerate_rc_mana( *null_account, _now ); //we could just always set RC value on 'null' to 0
+    modify( *null_account, [&]( account_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
       a.set_sum_delayed_votes( 0 );
       a.get_delayed_votes().clear();
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.update_account_after_vest_change( null_account, _now );
+      rc.update_account_after_vest_change( *null_account, _now );
   }
 
-  if( null_account.get_rewards().amount > 0 )
+  if( null_account->get_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_rewards() );
+    adjust_reward_balance( *null_account, -null_account->get_rewards() );
   }
 
-  if( null_account.get_hbd_rewards().amount > 0 )
+  if( null_account->get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_hbd_rewards() );
+    adjust_reward_balance( *null_account, -null_account->get_hbd_rewards() );
   }
 
-  if( null_account.get_vest_rewards().amount > 0 )
+  if( null_account->get_vest_rewards().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.pending_rewarded_vesting_shares -= null_account.get_vest_rewards();
-      g.pending_rewarded_vesting_hive -= null_account.get_vest_rewards_as_hive();
+      g.pending_rewarded_vesting_shares -= null_account->get_vest_rewards();
+      g.pending_rewarded_vesting_hive -= null_account->get_vest_rewards_as_hive();
     });
 
-    modify( null_account, [&]( account_object& a )
+    modify( *null_account, [&]( account_object& a )
     {
       a.set_vest_rewards_as_hive( HIVE_asset( 0 ) );
       a.set_vest_rewards( VEST_asset( 0 ) );
@@ -1523,14 +1521,14 @@ void database::consolidate_treasury_balance()
   auto treasury_name = get_treasury_name();
   auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
-  const auto& old_treasury_account = get_account( old_treasury_name );
+  auto old_treasury_account = get_account( old_treasury_name );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
-    !( collect_account_total_balance( old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+    !( collect_account_total_balance( *old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
-  const auto& treasury_account = get_treasury();
+  auto treasury_account = get_treasury();
 
   operation vop_op = consolidate_treasury_balance_operation();
   consolidate_treasury_balance_operation& vop = vop_op.get< consolidate_treasury_balance_operation >();
@@ -1544,44 +1542,44 @@ void database::consolidate_treasury_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  if( old_treasury_account.get_balance().amount > 0 )
+  if( old_treasury_account->get_balance().amount > 0 )
   {
-    adjust_balance( treasury_account, old_treasury_account.get_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_account.get_balance() );
+    adjust_balance( *treasury_account, old_treasury_account->get_balance() );
+    adjust_balance( *old_treasury_account, -old_treasury_account->get_balance() );
   }
 
-  if( old_treasury_account.get_savings().amount > 0 )
+  if( old_treasury_account->get_savings().amount > 0 )
   {
-    adjust_savings_balance( treasury_account, old_treasury_account.get_savings() );
-    adjust_savings_balance( old_treasury_account, -old_treasury_account.get_savings() );
+    adjust_savings_balance( *treasury_account, old_treasury_account->get_savings() );
+    adjust_savings_balance( *old_treasury_account, -old_treasury_account->get_savings() );
   }
 
-  if( old_treasury_account.get_hbd_balance().amount > 0 )
+  if( old_treasury_account->get_hbd_balance().amount > 0 )
   {
-    adjust_balance( treasury_account, old_treasury_account.get_hbd_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_account.get_hbd_balance() );
+    adjust_balance( *treasury_account, old_treasury_account->get_hbd_balance() );
+    adjust_balance( *old_treasury_account, -old_treasury_account->get_hbd_balance() );
   }
 
-  if( old_treasury_account.get_hbd_savings().amount > 0 )
+  if( old_treasury_account->get_hbd_savings().amount > 0 )
   {
-    adjust_savings_balance( treasury_account, old_treasury_account.get_hbd_savings() );
-    adjust_savings_balance( old_treasury_account, -old_treasury_account.get_hbd_savings() );
+    adjust_savings_balance( *treasury_account, old_treasury_account->get_hbd_savings() );
+    adjust_savings_balance( *old_treasury_account, -old_treasury_account->get_hbd_savings() );
   }
 
-  if( old_treasury_account.get_vesting().amount > 0 )
+  if( old_treasury_account->get_vesting().amount > 0 )
   {
     //note that if we wanted to move vests in vested form it would complicate delayed_votes part;
     //not that treasury could gain anything from vests anyway, so it is better to liquify them
-    adjust_balance( treasury_account, vesting_shares_hive_value );
+    adjust_balance( *treasury_account, vesting_shares_hive_value );
 
     const auto& gpo = get_dynamic_global_properties();
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= old_treasury_account.get_vesting();
+      g.total_vesting_shares -= old_treasury_account->get_vesting();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     } );
 
-    modify( old_treasury_account, [&]( account_object& a )
+    modify( *old_treasury_account, [&]( account_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
       a.set_sum_delayed_votes( 0 );
@@ -1589,31 +1587,31 @@ void database::consolidate_treasury_balance()
     } );
   }
 
-  if( old_treasury_account.get_rewards().amount > 0 )
+  if( old_treasury_account->get_rewards().amount > 0 )
   {
-    adjust_reward_balance( treasury_account, old_treasury_account.get_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_rewards() );
+    adjust_reward_balance( *treasury_account, old_treasury_account->get_rewards() );
+    adjust_reward_balance( *old_treasury_account, -old_treasury_account->get_rewards() );
   }
 
-  if( old_treasury_account.get_hbd_rewards().amount > 0 )
+  if( old_treasury_account->get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( treasury_account, old_treasury_account.get_hbd_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_hbd_rewards() );
+    adjust_reward_balance( *treasury_account, old_treasury_account->get_hbd_rewards() );
+    adjust_reward_balance( *old_treasury_account, -old_treasury_account->get_hbd_rewards() );
   }
 
-  if( old_treasury_account.get_vest_rewards().amount > 0 )
+  if( old_treasury_account->get_vest_rewards().amount > 0 )
   {
     //see above handling of regular vests
-    adjust_balance( treasury_account, old_treasury_account.get_vest_rewards_as_hive() );
+    adjust_balance( *treasury_account, old_treasury_account->get_vest_rewards_as_hive() );
 
     const auto& gpo = get_dynamic_global_properties();
     modify( gpo, [ & ]( dynamic_global_property_object& g )
     {
-      g.pending_rewarded_vesting_shares -= old_treasury_account.get_vest_rewards();
-      g.pending_rewarded_vesting_hive -= old_treasury_account.get_vest_rewards_as_hive();
+      g.pending_rewarded_vesting_shares -= old_treasury_account->get_vest_rewards();
+      g.pending_rewarded_vesting_hive -= old_treasury_account->get_vest_rewards_as_hive();
     } );
 
-    modify( old_treasury_account, [&]( account_object& a )
+    modify( *old_treasury_account, [&]( account_object& a )
     {
       a.set_vest_rewards_as_hive( HIVE_asset( 0 ) );
       a.set_vest_rewards( VEST_asset( 0 ) );
@@ -1687,15 +1685,15 @@ void database::restore_accounts( const std::set< std::string >& restored_account
       continue;
     }
 
-    const auto* account_ptr = find_account( name );
-    if( account_ptr == nullptr )
+    auto account_ptr = find_account( name );
+    if( !account_ptr )
     {
       ilog( "The account ${acc} doesn't exist at all, balances can't be restored", ( "acc", name ) );
       continue;
     }
 
-    adjust_balance( treasury_account, -found->second.hbd_balance );
-    adjust_balance( treasury_account, -found->second.balance );
+    adjust_balance( *treasury_account, -found->second.hbd_balance );
+    adjust_balance( *treasury_account, -found->second.balance );
 
     adjust_balance( *account_ptr, found->second.hbd_balance );
     adjust_balance( *account_ptr, found->second.balance );
@@ -1720,8 +1718,8 @@ void database::clear_accounts( const std::set< std::string >& cleared_accounts )
   auto treasury_name = get_treasury_name();
   for( const auto& account_name : cleared_accounts )
   {
-    const auto* account_ptr = find_account( account_name );
-    if( account_ptr == nullptr )
+    auto account_ptr = find_account( account_name );
+    if( !account_ptr )
       continue;
 
     clear_account( *account_ptr );
@@ -1739,7 +1737,7 @@ void database::clear_account( const account_object& account )
   const auto& cprops = get_dynamic_global_properties();
   auto now = cprops.time;
 
-  hardfork_hive_operation vop( account_name, treasury_account.get_name() );
+  hardfork_hive_operation vop( account_name, treasury_account->get_name() );
 
   HIVE_asset total_transferred_hive( 0 );
   HBD_asset total_transferred_hbd( 0 );
@@ -1823,7 +1821,7 @@ void database::clear_account( const account_object& account )
       rc.update_account_after_vest_change( account, now, true, true );
     } );
 
-    adjust_balance( treasury_account, converted_hive );
+    adjust_balance( *treasury_account, converted_hive );
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
       o.total_vesting_fund_hive -= converted_hive;
@@ -1907,7 +1905,7 @@ void database::clear_account( const account_object& account )
     ++withdraw_to_itr;
 
     adjust_balance( account, withdrawal.amount );
-    modify( get_account( withdrawal.from ), []( account_object& a )
+    modify( *get_account( withdrawal.from ), []( account_object& a )
     {
       a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     } );
@@ -1926,29 +1924,29 @@ void database::clear_account( const account_object& account )
   // Remove remaining savings balances
   total_transferred_hive += account.get_savings();
   total_transferred_hbd += account.get_hbd_savings();
-  adjust_balance( treasury_account, account.get_savings() );
+  adjust_balance( *treasury_account, account.get_savings() );
   adjust_savings_balance( account, -account.get_savings() );
-  adjust_balance( treasury_account, account.get_hbd_savings() );
+  adjust_balance( *treasury_account, account.get_hbd_savings() );
   adjust_savings_balance( account, -account.get_hbd_savings() );
 
   // Remove HBD and HIVE balances
   total_transferred_hive += account.get_balance();
   total_transferred_hbd += account.get_hbd_balance();
-  adjust_balance( treasury_account, account.get_balance() );
+  adjust_balance( *treasury_account, account.get_balance() );
   adjust_balance( account, -account.get_balance() );
-  adjust_balance( treasury_account, account.get_hbd_balance() );
+  adjust_balance( *treasury_account, account.get_hbd_balance() );
   adjust_balance( account, -account.get_hbd_balance() );
 
   // Transfer reward balances
   total_transferred_hive += account.get_rewards();
   total_transferred_hbd += account.get_hbd_rewards();
-  adjust_balance( treasury_account, account.get_rewards() );
+  adjust_balance( *treasury_account, account.get_rewards() );
   adjust_reward_balance( account, -account.get_rewards() );
-  adjust_balance( treasury_account, account.get_hbd_rewards() );
+  adjust_balance( *treasury_account, account.get_hbd_rewards() );
   adjust_reward_balance( account, -account.get_hbd_rewards() );
 
   // Convert and transfer vesting rewards
-  adjust_balance( treasury_account, account.get_vest_rewards_as_hive() );
+  adjust_balance( *treasury_account, account.get_vest_rewards_as_hive() );
   total_converted_vests += account.get_vest_rewards();
   total_hive_from_vests += account.get_vest_rewards_as_hive();
 
@@ -2126,9 +2124,9 @@ void database::remove_proposal_votes_for_accounts_without_voting_rights()
 
   for( auto& voter : voters )
   {
-    const auto& account = get_account( voter );
-    if( !account.can_vote() )
-      accounts.push_back( account.get_name() );
+    auto account = get_account( voter );
+    if( !account->can_vote() )
+      accounts.push_back( account->get_name() );
   }
 
   //Lack of voters who declined voting rights.
@@ -2518,7 +2516,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             benefactor_vesting_hive = 0;
             vop.hbd_payout = asset( benefactor_tokens, HIVE_SYMBOL ) * get_feed_history().current_median_history;
             vop.payout_must_be_claimed = false;
-            adjust_balance( get_treasury(), vop.hbd_payout );
+            adjust_balance( *get_treasury(), vop.hbd_payout );
             adjust_supply( asset( -benefactor_tokens, HIVE_SYMBOL ) );
             adjust_supply( vop.hbd_payout );
           }
@@ -2832,7 +2830,7 @@ void database::process_funds()
       FC_ASSERT( median_price.is_null() == false );
 
       const auto& treasury_account = get_treasury();
-      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.get_hbd_balance());
+      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account->get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account->get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.current_supply;
 
       new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
@@ -2888,7 +2886,7 @@ void database::process_funds()
     });
 
     operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
-    create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, HIVE_SYMBOL ), false,
+    create_vesting2( *this, *get_account( cwit.owner ), asset( witness_reward, HIVE_SYMBOL ), false,
       [&]( const asset& vesting_shares )
       {
         vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -2932,9 +2930,9 @@ void database::process_savings_withdraws()
   {
     if( itr->complete > head_block_time() )
       break;
-    adjust_balance( get_account( itr->to ), itr->amount );
+    adjust_balance( *get_account( itr->to ), itr->amount );
 
-    modify( get_account( itr->from ), [&]( account_object& a )
+    modify( *get_account( itr->from ), [&]( account_object& a )
     {
       a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     });
@@ -3008,14 +3006,14 @@ asset database::get_producer_reward()
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
   auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
-  const auto& witness_account = get_account( props.current_witness );
+  auto witness_account = get_account( props.current_witness );
 
   /// pay witness in vesting shares
-  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.get_vesting().amount.value == 0) )
+  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account->get_vesting().amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
-    operation vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
-    create_vesting2( *this, witness_account, pay, false,
+    operation vop = producer_reward_operation( witness_account->get_name(), asset( 0, VESTS_SYMBOL ) );
+    create_vesting2( *this, *witness_account, pay, false,
       [&]( const asset& vesting_shares )
       {
         vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -3025,11 +3023,11 @@ asset database::get_producer_reward()
   }
   else
   {
-    modify( get_account( witness_account.get_name() ), [&]( account_object& a )
+    modify( *get_account( witness_account->get_name() ), [&]( account_object& a )
     {
       a.set_balance( a.get_balance() + pay );
     } );
-    push_virtual_operation( producer_reward_operation( witness_account.get_name(), pay ) );
+    push_virtual_operation( producer_reward_operation( witness_account->get_name(), pay ) );
   }
 
   return pay;
@@ -3266,17 +3264,17 @@ void database::account_recovery_processing()
 
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
-    const auto& account = get_account( change_req->get_account_to_recover() );
+    auto account = get_account( change_req->get_account_to_recover() );
     account_name_type old_recovery_account_name;
-    if( account.has_recovery_account() )
-      old_recovery_account_name = get_account( account.get_recovery_account() ).get_name();
-    const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
-    modify( account, [&]( account_object& a )
+    if( account->has_recovery_account() )
+      old_recovery_account_name = get_account( account->get_recovery_account() ).get_name();
+    auto new_recovery_account = get_account( change_req->get_recovery_account() );
+    modify( *account, [&]( account_object& a )
     {
-      a.set_recovery_account( new_recovery_account.get_id() );
+      a.set_recovery_account( new_recovery_account->get_id() );
     });
 
-    push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
+    push_virtual_operation(changed_recovery_account_operation( account->get_name(), old_recovery_account_name, new_recovery_account->get_name() ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -3300,7 +3298,7 @@ void database::expire_escrow_ratification()
     push_virtual_operation( escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
       old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
 
-    modify( get_account( old_escrow.from ), []( account_object& a )
+    modify( *get_account( old_escrow.from ), []( account_object& a )
     {
       a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
     } );
@@ -3758,7 +3756,7 @@ void database::init_genesis()
       HIVE_asset to_vest( HIVE_INITIAL_VESTING );
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
-      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+      modify( *get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
       {
         a.set_balance( HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest );
         a.set_hbd_balance( HBD_asset( HIVE_HBD_INIT_SUPPLY ) );
@@ -4298,7 +4296,7 @@ try {
           const auto& dgpo = get_dynamic_global_properties();
           auto hbd_supply = dgpo.get_current_hbd_supply();
           if( has_hardfork( HIVE_HARDFORK_1_25_HBD_HARD_CAP ) )
-            hbd_supply -= get_treasury().get_hbd_balance();
+            hbd_supply -= get_treasury()->get_hbd_balance();
           if( hbd_supply.amount > 0 )
           {
             uint16_t limit = HIVE_HBD_HARD_LIMIT_PRE_HF26;
@@ -4885,7 +4883,7 @@ uint16_t database::calculate_HBD_percent()
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     // Removing the hbd in the treasury from the debt ratio calculations
-    hbd_supply -= get_treasury().get_hbd_balance();
+    hbd_supply -= get_treasury()->get_hbd_balance();
     if( hbd_supply.amount < 0 )
       hbd_supply = asset( 0, HBD_SYMBOL );
     virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
@@ -5227,13 +5225,13 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   {
     if( old_order_receives.symbol == HIVE_SYMBOL )
     {
-      adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
-      adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
+      adjust_liquidity_reward( *get_account( old_order.seller ), old_order_receives, false );
+      adjust_liquidity_reward( *get_account( new_order.seller ), -old_order_receives, false );
     }
     else
     {
-      adjust_liquidity_reward( get_account( old_order.seller ), new_order_receives, true );
-      adjust_liquidity_reward( get_account( new_order.seller ), -new_order_receives, true );
+      adjust_liquidity_reward( *get_account( old_order.seller ), new_order_receives, true );
+      adjust_liquidity_reward( *get_account( new_order.seller ), -new_order_receives, true );
     }
   }
 
@@ -5985,8 +5983,8 @@ void database::apply_hardfork( uint32_t hardfork )
       {
         for( const std::string& acc : hardfork9::get_compromised_accounts() )
         {
-          const account_object* account = find_account( acc );
-          if( account == nullptr )
+          auto account = find_account( acc );
+          if( !account )
             continue;
 
           wlog("Setting key: ${k} as an owner authority for account: ${a}", ("k", HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR)("a", acc));
@@ -6275,10 +6273,10 @@ void database::apply_hardfork( uint32_t hardfork )
 
       // Create the treasury account if it does not exist
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
-      if( find_account(treasury_name) == nullptr )
+      if( !find_account(treasury_name) )
         create< account_object >( treasury_name, head_block_time() );
 
-      lock_account( get_treasury() );
+      lock_account( *get_treasury() );
 
       modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
       {
@@ -6380,10 +6378,10 @@ void database::apply_hardfork( uint32_t hardfork )
   {
     const auto treasury_name = get_treasury_name();
 
-    if( find_account(treasury_name) == nullptr )
+    if( !find_account(treasury_name) )
       create< account_object >( treasury_name, head_block_time() );
 
-    lock_account( get_treasury() );
+    lock_account( *get_treasury() );
     //the following routine can only be called effectively after hardfork was marked as applied
     //we could wait for regular call in _apply_block(), however it could hinder future changes, most notably use of treasury in future
     //hardfork code with assumption of nonzero balance

@@ -94,9 +94,9 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
   {
     for( const account_name_type& a : args.accounts )
     {
-      const account_object* rc_account = _db.find_account( a );
+      auto rc_account = _db.find_account( a );
 
-      if( rc_account != nullptr )
+      if( rc_account )
       {
         result.rc_accounts.emplace_back( *rc_account, _db );
       }

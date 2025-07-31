@@ -521,8 +521,8 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
       account_id_type proxy_id;
       if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
       {
-        const auto* proxy = _db.find_account( key.first );
-        FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
+        auto proxy = _db.find_account( key.first );
+        FC_ASSERT( proxy, "Given proxy account does not exist." );
         proxy_id = proxy->get_id();
       }
       iterate_results< chain::account_index, chain::by_proxy >(
@@ -940,13 +940,13 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
     case( by_delegation ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
-      const auto* delegator = _db.find_account( key.first );
-      FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+      auto delegator = _db.find_account( key.first );
+      FC_ASSERT( delegator, "Given account does not exist." );
       account_id_type delegatee_id;
       if( key.second != "" )
       {
-        const auto* delegatee = _db.find_account( key.second );
-        FC_ASSERT( delegatee != nullptr, "Given account does not exist." );
+        auto delegatee = _db.find_account( key.second );
+        FC_ASSERT( delegatee, "Given account does not exist." );
         delegatee_id = delegatee->get_id();
       }
       iterate_results< chain::vesting_delegation_index, chain::by_delegation >(
@@ -968,8 +968,8 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 {
   find_vesting_delegations_return result;
   const auto& delegation_idx = _db.get_index< chain::vesting_delegation_index, chain::by_delegation >();
-  const auto* delegator = _db.find_account( args.account );
-  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  auto delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator, "Given account does not exist." );
   account_id_type delegator_id = delegator->get_id();
   auto itr = delegation_idx.lower_bound( delegator_id );
 
@@ -1013,8 +1013,8 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
       account_id_type delegator_id;
       if( delegator_name != "" )
       {
-        const auto* delegator = _db.find_account( delegator_name );
-        FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+        auto delegator = _db.find_account( delegator_name );
+        FC_ASSERT( delegator, "Given account does not exist." );
         delegator_id = delegator->get_id();
       }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_account_expiration >(
@@ -1036,8 +1036,8 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 {
   find_vesting_delegation_expirations_return result;
   const auto& del_exp_idx = _db.get_index< chain::vesting_delegation_expiration_index, chain::by_account_expiration >();
-  const auto* delegator = _db.find_account( args.account );
-  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  auto delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator, "Given account does not exist." );
   account_id_type delegator_id = delegator->get_id();
   auto itr = del_exp_idx.lower_bound( delegator_id );
 
@@ -1079,8 +1079,8 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
       account_id_type owner_id;
       if( key.first != "" )
       {
-        const auto* owner = _db.find_account( key.first );
-        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        auto owner = _db.find_account( key.first );
+        FC_ASSERT( owner, "Given account does not exist." );
         owner_id = owner->get_id();
       }
       iterate_results< chain::convert_request_index, chain::by_owner >(
@@ -1102,8 +1102,8 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
   find_hbd_conversion_requests_return result;
 
-  const auto* owner = _db.find_account( args.account );
-  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  auto owner = _db.find_account( args.account );
+  FC_ASSERT( owner, "Given account does not exist." );
   account_id_type owner_id = owner->get_id();
 
   const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
@@ -1146,8 +1146,8 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
       account_id_type owner_id;
       if( key.first != "" )
       {
-        const auto* owner = _db.find_account( key.first );
-        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        auto owner = _db.find_account( key.first );
+        FC_ASSERT( owner, "Given account does not exist." );
         owner_id = owner->get_id();
       }
       iterate_results< chain::collateralized_convert_request_index, chain::by_owner >(
@@ -1169,8 +1169,8 @@ DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
 {
   find_collateralized_conversion_requests_return result;
 
-  const auto* owner = _db.find_account( args.account );
-  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  auto owner = _db.find_account( args.account );
+  FC_ASSERT( owner, "Given account does not exist." );
   account_id_type owner_id = owner->get_id();
 
   const auto& convert_idx = _db.get_index< chain::collateralized_convert_request_index, chain::by_owner >();
@@ -1699,8 +1699,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
   find_recurrent_transfers_return result;
 
-  const auto* from_account = _db.find_account( args.from );
-  FC_ASSERT( from_account != nullptr, "Given 'from' account does not exist." );
+  auto from_account = _db.find_account( args.from );
+  FC_ASSERT( from_account, "Given 'from' account does not exist." );
   auto from_account_id = from_account->get_id();
 
   const auto &idx = _db.get_index<chain::recurrent_transfer_index, chain::by_from_id>();
