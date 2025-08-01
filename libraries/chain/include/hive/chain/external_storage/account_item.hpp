@@ -22,8 +22,6 @@ public:
   const Item& operator*() const { return *ptr; }
   Item& operator*() { return const_cast<Item&>( *ptr ); }
 
-  bool is_shm() const { return external == nullptr; }
-
   operator bool() const { return ptr != nullptr; }
 };
 

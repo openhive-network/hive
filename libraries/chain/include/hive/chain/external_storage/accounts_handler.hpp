@@ -16,9 +16,9 @@ struct executor_interface
   virtual void create_or_update_volatile( const account_authority_object& obj ) = 0;
   virtual void create_or_update_volatile( const account_object& obj ) = 0;
 
-  virtual void modify_object( const account_name_type& account_name, std::function<void(account_metadata_object&)>&& modifier ) = 0;
-  virtual void modify_object( const account_name_type& account_name, std::function<void(account_authority_object&)>&& modifier ) = 0;
-  virtual void modify_object( const account_name_type& account_name, std::function<void(account_object&)>&& modifier ) = 0;
+  virtual void modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier ) = 0;
+  virtual void modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier ) = 0;
+  virtual void modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier ) = 0;
 };
 
 namespace
@@ -29,7 +29,7 @@ namespace
     void create( const ObjectType& obj, executor_interface& exec ) {}
 
     template<typename Modifier>
-    void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec ) {}
+    bool modify( const ObjectType& obj, Modifier&& m, executor_interface& exec ) { return false; }
   };
 
   template<>
@@ -41,9 +41,10 @@ namespace
     }
 
     template<typename Modifier>
-    void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
+    bool modify( const account_metadata_object& obj, Modifier&& m, executor_interface& exec )
     {
-      exec.modify_object( account_name, std::function<void(account_metadata_object&)>( m ) );
+      exec.modify_object( obj, std::function<void(account_metadata_object&)>( m ) );
+      return true;
     }
   };
 
@@ -56,9 +57,10 @@ namespace
     }
 
     template<typename Modifier>
-    void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
+    bool modify( const account_authority_object& obj, Modifier&& m, executor_interface& exec )
     {
-      exec.modify_object( account_name, std::function<void(account_authority_object&)>( m ) );
+      exec.modify_object( obj, std::function<void(account_authority_object&)>( m ) );
+      return true;
     }
   };
 
@@ -71,9 +73,10 @@ namespace
     }
 
     template<typename Modifier>
-    void modify( const account_name_type& account_name, Modifier&& m, executor_interface& exec )
+    bool modify( const account_object& obj, Modifier&& m, executor_interface& exec )
     {
-      exec.modify_object( account_name, std::function<void(account_object&)>( m ) );
+      exec.modify_object( obj, std::function<void(account_object&)>( m ) );
+      return true;
     }
   };
 }
@@ -93,9 +96,9 @@ class accounts_handler : public executor_interface, public external_storage_snap
     }
 
     template<typename ObjectType, typename Modifier>
-    void modify( const account_name_type& account_name, Modifier&& m )
+    bool modify( const ObjectType& obj, Modifier&& m )
     {
-      executor<ObjectType>().template modify<Modifier>( account_name, m, *this );
+      return executor<ObjectType>().template modify<Modifier>( obj, m, *this );
     }
 
     virtual account_metadata get_account_metadata( const account_name_type& account_name ) const = 0;

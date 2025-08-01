@@ -681,7 +681,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
   {
-    _db.modify<account_metadata_object>( account->get_name(), [&]( account_metadata_object& meta )
+    _db.modify<account_metadata_object>( *_db.get_account_metadata( account->get_name() ), [&]( account_metadata_object& meta )
     {
       from_string( meta.json_metadata, o.json_metadata );
       if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
@@ -694,7 +694,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( *_auth_active || *_auth_posting )
   {
-    _db.modify<account_authority_object>( account->get_name(), [&]( account_authority_object& auth)
+    _db.modify<account_authority_object>( *account_auth, [&]( account_authority_object& auth)
     {
       if( *_auth_active )  auth.active  = **_auth_active;
       if( *_auth_posting ) auth.posting = **_auth_posting;
@@ -746,7 +746,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
   {
-    _db.modify<account_metadata_object>( account->get_name(), [&]( account_metadata_object& meta )
+    _db.modify<account_metadata_object>( *_db.get_account_metadata( account->get_name() ), [&]( account_metadata_object& meta )
     {
       if ( o.json_metadata.size() > 0 )
         from_string( meta.json_metadata, o.json_metadata );
@@ -759,7 +759,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.active || o.posting )
   {
-    _db.modify<account_authority_object>( o.account, [&]( account_authority_object& auth)
+    _db.modify<account_authority_object>( *account_auth, [&]( account_authority_object& auth)
     {
       if( o.active )  auth.active  = *o.active;
       if( o.posting ) auth.posting = *o.posting;

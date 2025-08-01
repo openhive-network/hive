@@ -412,6 +412,11 @@ account_authority database::get_account_authority( const account_name_type& acco
   return get_accounts_handler().get_account_authority( account_name );
 }
 
+account_metadata database::get_account_metadata( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_account_metadata( account_name );
+}
+
 const account_object& database::get_account( const account_id_type id )const
 { try {
   const auto _account = find_account( id );
@@ -1638,7 +1643,7 @@ void database::lock_account( const account_object& account )
   }
   else
   {
-    modify<account_authority_object>( account.get_name(), []( account_authority_object& auth )
+    modify<account_authority_object>( *account_auth, []( account_authority_object& auth )
     {
       auth.owner.weight_threshold = 1;
       auth.owner.clear();
@@ -2186,7 +2191,7 @@ void database::update_owner_authority( const account_object& account, const auth
     create< owner_authority_history_object >( account, get_account_authority( account.get_name() )->owner, head_block_time() );
   }
 
-  modify<account_authority_object>( account.get_name(), [&]( account_authority_object& auth )
+  modify<account_authority_object>( *get_account_authority( account.get_name() ), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
     auth.previous_owner_update = auth.last_owner_update;
@@ -5991,7 +5996,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
           update_owner_authority( *account, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
 
-          modify<account_authority_object>( account->get_name(), [&]( account_authority_object& auth )
+          modify<account_authority_object>( *get_account_authority( account->get_name() ), [&]( account_authority_object& auth )
           {
             auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
             auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
