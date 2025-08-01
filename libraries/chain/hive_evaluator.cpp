@@ -358,7 +358,7 @@ const account_object& create_account( database& db, const account_name_type& nam
     rc_adjustment_from_fee = ( fee_for_rc_adjustment * dgpo.get_vesting_share_price() ).amount.value;
   }
 
-  FC_ASSERT( db.find_account( name ), "Account ${name} already exists.", ( name ) );
+  FC_ASSERT( !db.find_account( name ), "Account ${name} already exists.", ( name ) );
   return db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account,
     !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
 }
@@ -2255,10 +2255,9 @@ void pow_apply( database& db, Operation o )
     }
   }
 
-  const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
+  auto account = db.find_account( o.get_worker_account() );
 
-  auto itr = accounts_by_name.find(o.get_worker_account());
-  if(itr == accounts_by_name.end())
+  if( !account )
   {
     const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, db.get_current_timestamp(),
       true /*mined*/, asset( 0, HIVE_SYMBOL ) );
@@ -2396,9 +2395,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     p.num_pow_witnesses++;
   });
 
-  const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
-  auto itr = accounts_by_name.find( worker_account );
-  if(itr == accounts_by_name.end())
+  auto account = db.find_account( worker_account );
+  if( !account )
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
