@@ -422,6 +422,11 @@ account rocksdb_account_archive::get_account( const account_name_type& account_n
   return get_object<volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, ColumnTypes::ACCOUNT, account_is_required );
 }
 
+account rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
+{
+
+}
+
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
 {
   modify( obj, modifier );
