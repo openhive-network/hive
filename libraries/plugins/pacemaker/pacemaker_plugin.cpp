@@ -195,7 +195,7 @@ void pacemaker_plugin::set_program_options(
   boost::program_options::options_description& cfg )
 {
   cfg.add_options()
-    ( "pacemaker-source", bpo::value<bfs::path>(), "path to block_log file - source of block emissions" )
+    ( "pacemaker-source", bpo::value<string>(), "path to block_log file - source of block emissions" )
     ( "pacemaker-min-offset", bpo::value<int>()->default_value( -300 ), "minimum time of emission offset from block timestamp in milliseconds, default -300ms" )
     ( "pacemaker-max-offset", bpo::value<int>()->default_value( 20000 ), "maximum time of emission offset from block timestamp in milliseconds, default 20000ms (when exceeded, node will be stopped)" )
     ;
@@ -211,7 +211,7 @@ void pacemaker_plugin::plugin_initialize( const boost::program_options::variable
   my = std::make_unique< detail::pacemaker_plugin_impl >( get_app().get_io_service(), get_app() );
 
   FC_ASSERT( options.count( "pacemaker-source" ) == 1, "Missing or redundant option pacemaker-source - path pointing to source of block emissions" );
-  auto sp = options.at( "pacemaker-source" ).as<bfs::path>();
+  bfs::path sp = options.at( "pacemaker-source" ).as<string>();
   fc::path sourcePath;
   if( sp.is_relative() )
     sourcePath = get_app().data_dir() / sp;

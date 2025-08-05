@@ -917,7 +917,7 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
   bfs::path snapshotPath;
 
   if(options.count("snapshot-root-dir"))
-    snapshotPath = options.at("snapshot-root-dir").as<bfs::path>();
+    snapshotPath = options.at("snapshot-root-dir").as<string>();
 
   if(snapshotPath.is_absolute() == false)
     {
@@ -1720,7 +1720,7 @@ void state_snapshot_plugin::set_program_options(
   boost::program_options::options_description& cfg)
   {
   cfg.add_options()
-    ("snapshot-root-dir", bpo::value<bfs::path>()->default_value("snapshot"),
+    ("snapshot-root-dir", bpo::value<string>()->default_value("snapshot"),
       "The location (root-dir) of the snapshot storage, to save/read portable state dumps")
     ;
   command_line_options.add_options()

@@ -1458,7 +1458,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
 
   cfg.add_options()
-      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
+      ("shared-file-dir", bpo::value<string>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("24G"), "Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
@@ -1500,7 +1500,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
-      ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
+      ("comments-rocksdb-path", bpo::value<string>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1529,7 +1529,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   if( options.count("shared-file-dir") )
   {
-    auto sfd = options.at("shared-file-dir").as<bfs::path>();
+    bfs::path sfd = options.at("shared-file-dir").as<string>();
     if(sfd.is_relative())
       my->shared_memory_dir = get_app().data_dir() / sfd;
     else
@@ -1540,7 +1540,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   if( options.count( "comments-rocksdb-path" ) )
   {
-    auto crp = options.at( "comments-rocksdb-path" ).as<bfs::path>();
+    bfs::path crp = options.at( "comments-rocksdb-path" ).as<string>();
     if( crp.is_relative() )
       my->comments_storage_path = my->shared_memory_dir / crp;
     else

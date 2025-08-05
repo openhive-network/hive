@@ -1397,7 +1397,7 @@ void account_history_rocksdb_plugin::set_program_options(
   boost::program_options::options_description &cfg)
 {
   cfg.add_options()
-    ("account-history-rocksdb-path", bpo::value<bfs::path>()->default_value("blockchain/account-history-rocksdb-storage"),
+    ("account-history-rocksdb-path", bpo::value<string>()->default_value("blockchain/account-history-rocksdb-storage"),
       "The location of the rocksdb database for account history. By default it is $DATA_DIR/blockchain/account-history-rocksdb-storage")
     ("account-history-rocksdb-track-account-range", boost::program_options::value< std::vector<std::string> >()->composing()->multitoken(), "Defines a range of accounts to track as a json pair [\"from\",\"to\"] [from,to] Can be specified multiple times.")
     ("account-history-rocksdb-whitelist-ops", boost::program_options::value< std::vector<std::string> >()->composing(), "Defines a list of operations which will be explicitly logged.")
@@ -1419,7 +1419,7 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
   bfs::path dbPath;
 
   if(options.count("account-history-rocksdb-path"))
-    dbPath = options.at("account-history-rocksdb-path").as<bfs::path>();
+    dbPath = options.at("account-history-rocksdb-path").as<string>();
 
   if(dbPath.is_absolute() == false)
   {

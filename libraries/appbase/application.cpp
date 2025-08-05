@@ -1,6 +1,7 @@
 #include <appbase/application.hpp>
 #include <appbase/options_dumper.hpp>
 
+#include <boost/filesystem/path.hpp>
 #include <hive/utilities/logging_config.hpp>
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/options_description_ex.hpp>
@@ -155,8 +156,8 @@ void application::set_program_options()
 #if BOOST_VERSION >= 106800
       ("generate-completions", "Generate bash auto-complete script (try: eval \"$(hived --generate-completions)\")")
 #endif
-      ("data-dir,d", bpo::value<bfs::path>()->value_name("dir"), data_dir_ss.str().c_str() )
-      ("config,c", bpo::value<bfs::path>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir")
+      ("data-dir,d", bpo::value<string>()->value_name("dir"), data_dir_ss.str().c_str() )
+      ("config,c", bpo::value<string>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir")
       ("dump-options", "Dump information about all supported command line and config options in JSON format and exit");
 
   my->_cfg_options.add(app_cfg_opts);
@@ -222,7 +223,7 @@ initialization_result application::initialize_impl( int argc, char** argv,
     bfs::path data_dir;
     if( my->_args.count("data-dir") )
     {
-      data_dir = my->_args["data-dir"].as<bfs::path>();
+      data_dir = my->_args["data-dir"].as<string>();
       if( data_dir.is_relative() )
         data_dir = bfs::current_path() / data_dir;
     }
@@ -252,7 +253,7 @@ initialization_result application::initialize_impl( int argc, char** argv,
 
     bfs::path config_file_name = data_dir / "config.ini";
     if( my->_args.count( "config" ) ) {
-      config_file_name = my->_args["config"].as<bfs::path>();
+      config_file_name = my->_args["config"].as<string>();
       if( config_file_name.is_relative() )
         config_file_name = data_dir / config_file_name;
     }

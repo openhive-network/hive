@@ -578,7 +578,16 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
-  fc::load_value_set<hive::protocol::account_name_type>( options, "witness", my->_witnesses );
+  // fc::load_value_set<hive::protocol::account_name_type>( options, "witness", my->_witnesses );
+
+  if(options.count("witness"))
+  {
+    const std::vector<std::string> witness_names = options["witness"].as<std::vector<std::string>>();
+    for (const std::string& witness_name : witness_names )
+    {
+      my->_witnesses.insert( chain::account_name_type{witness_name} );
+    }
+  }
 
   if( options.count("private-key") )
   {
