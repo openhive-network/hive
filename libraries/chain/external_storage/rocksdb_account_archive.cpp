@@ -75,6 +75,44 @@ namespace
       dest.block_number         = block_num;
     }
   };
+
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename Slice_Type, typename Key_Type>
+struct transporter_impl
+{
+  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, const Key_Type& key, uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
+  {
+    Slice_Type _key( key );
+
+    RocksDB_Object_Type _obj( volatile_object );
+
+    auto _serialize_buffer = dump( _obj );
+    Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
+
+    provider->save( column_type, _key, _value );
+  }
+};
+
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
+struct transporter
+{
+  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
+  {
+    FC_ASSERT( column_types.size() );
+    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, info_by_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
+  }
+};
+
+template<>
+struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id>
+{
+  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
+  {
+    FC_ASSERT( column_types.size() == 2 );
+    transporter_impl<volatile_account_object, rocksdb_account_object, info_by_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, by_block_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, block_num, volatile_object, column_types[1] );
+  }
+};
+
 }
 
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
@@ -100,19 +138,6 @@ uint32_t rocksdb_account_archive::get_block_num() const
 {
   auto _found_dgpo = db.find< dynamic_global_property_object >();
   return _found_dgpo ? _found_dgpo->head_block_number : 0;
-}
-
-template<typename Volatile_Object_Type, typename RocksDB_Object_Type>
-void rocksdb_account_archive::move_to_external_storage_impl( uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
-{
-  info_by_name_slice_t _key( volatile_object.get_name().data );
-
-  RocksDB_Object_Type _obj( volatile_object );
-
-  auto _serialize_buffer = dump( _obj );
-  Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
-
-  provider->save( column_type, _key, _value );
 }
 
 template<typename SHM_Object_Type, typename SHM_Object_Index>
@@ -213,8 +238,8 @@ std::shared_ptr<SHM_Object_Type> rocksdb_account_archive::get_object_impl( const
   return create_from_buffer<SHM_Object_Type, SHM_Object_Index>( _buffer );
 }
 
-template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type>
-bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, ColumnTypes column_type )
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type>
+bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
@@ -237,7 +262,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, Co
     const auto& _current = *_itr;
     ++_itr;
 
-    move_to_external_storage_impl<Volatile_Object_Type, RocksDB_Object_Type>( block_num, _current, column_type );
+    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2>::move_to_external_storage( provider, block_num, _current, column_types );
 
     if( !_do_flush )
       _do_flush = true;
@@ -262,9 +287,17 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
 
-  bool _do_flush_meta = on_irreversible_block_impl<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>( block_num, ColumnTypes::ACCOUNT_METADATA );
-  bool _do_flush_authority = on_irreversible_block_impl<volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>( block_num, ColumnTypes::ACCOUNT_AUTHORITY );
-  bool _do_flush_account = on_irreversible_block_impl<volatile_account_index, volatile_account_object, account_object, rocksdb_account_object>( block_num, ColumnTypes::ACCOUNT );
+  bool _do_flush_meta = on_irreversible_block_impl<
+                          volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>
+                          ( block_num, { ColumnTypes::ACCOUNT_METADATA } );
+
+  bool _do_flush_authority = on_irreversible_block_impl<
+                          volatile_account_authority_index, volatile_account_authority_object, account_authority_object, rocksdb_account_authority_object>
+                          ( block_num, { ColumnTypes::ACCOUNT_AUTHORITY } );
+
+  bool _do_flush_account = on_irreversible_block_impl
+                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id>
+                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
 
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {

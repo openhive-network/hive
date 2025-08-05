@@ -99,9 +99,26 @@ class rocksdb_account_object
   std::vector< delayed_votes_data >       delayed_votes;
 };
 
+class rocksdb_account_object_by_id
+{
+  public:
+
+  rocksdb_account_object_by_id(){}
+
+  rocksdb_account_object_by_id( const volatile_account_object& obj )
+  {
+    id   = obj.account_id;
+    name = obj.get_name();
+  }
+
+  account_id_type   id;
+  account_name_type name;
+};
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)(block_number) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::volatile_account_index )
 
 FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )
+FC_REFLECT( hive::chain::rocksdb_account_object_by_id, (id)(name) )

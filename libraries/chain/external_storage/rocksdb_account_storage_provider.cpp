@@ -34,6 +34,12 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
     byTxIdColumn.options.comparator = by_Hash_Comparator();
   }
 
+  {
+    columnDefs.emplace_back("account_by_id", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_id_Comparator();
+  }
+
   return columnDefs;
 }
 
