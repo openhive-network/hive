@@ -20,15 +20,15 @@ namespace hive { namespace chain {
 namespace
 {
   template<typename Volatile_Object_Type, typename SHM_Object_Type>
-  struct processor
+  struct creator
   {
-    void assign( Volatile_Object_Type& dest, const SHM_Object_Type& src, uint32_t block_num ){}
+    static void assign( Volatile_Object_Type& dest, const SHM_Object_Type& src, uint32_t block_num ){}
   };
 
   template<>
-  struct processor<volatile_account_metadata_object, account_metadata_object>
+  struct creator<volatile_account_metadata_object, account_metadata_object>
   {
-    void assign( volatile_account_metadata_object& dest, const account_metadata_object& src, uint32_t block_num )
+    static void assign( volatile_account_metadata_object& dest, const account_metadata_object& src, uint32_t block_num )
     {
       dest.account_metadata_id   = src.get_id();
       dest.account               = src.account;
@@ -40,9 +40,9 @@ namespace
   };
 
   template<>
-  struct processor<volatile_account_authority_object, account_authority_object>
+  struct creator<volatile_account_authority_object, account_authority_object>
   {
-    void assign( volatile_account_authority_object& dest, const account_authority_object& src, uint32_t block_num )
+    static void assign( volatile_account_authority_object& dest, const account_authority_object& src, uint32_t block_num )
     {
       dest.account_authority_id  = src.get_id();
       dest.account               = src.account;
@@ -59,9 +59,9 @@ namespace
   };
 
   template<>
-  struct processor<volatile_account_object, account_object>
+  struct creator<volatile_account_object, account_object>
   {
-    void assign( volatile_account_object& dest, const account_object& src, uint32_t block_num )
+    static void assign( volatile_account_object& dest, const account_object& src, uint32_t block_num )
     {
       dest.account_id  = src.get_id();
 
@@ -364,14 +364,14 @@ void rocksdb_account_archive::create_or_update_volatile_impl( const SHM_Object_T
   {
     db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
     {
-      processor<Volatile_Object_Type, SHM_Object_Type>().assign( o, obj, get_block_num() );
+      creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num() );
     } );
   }
   else
   {
     db.create<Volatile_Object_Type>( [&]( Volatile_Object_Type& o )
     {
-      processor<Volatile_Object_Type, SHM_Object_Type>().assign( o, obj, get_block_num() );
+      creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num() );
     });
   }
 
