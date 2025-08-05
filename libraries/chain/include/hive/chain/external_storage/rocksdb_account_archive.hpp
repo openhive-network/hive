@@ -32,12 +32,6 @@ class rocksdb_account_archive : public accounts_handler
 
     uint32_t get_block_num() const;
 
-    template<typename SHM_Object_Type, typename SHM_Object_Index>
-    auto get_allocator() const;
-
-    template<typename SHM_Object_Type, typename SHM_Object_Index>
-    std::shared_ptr<SHM_Object_Type> create_from_buffer( const PinnableSlice& buffer ) const;
-
     template<typename Volatile_Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
     std::shared_ptr<SHM_Object_Type> create_from_volatile_object( const Volatile_Object_Type& obj ) const;
 
