@@ -35,7 +35,7 @@ class rocksdb_account_archive : public accounts_handler
     template<typename Volatile_Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
     std::shared_ptr<SHM_Object_Type> create_from_volatile_object( const Volatile_Object_Type& obj ) const;
 
-    template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
+    template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Volatile_Sub_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index, typename SHM_Object_Sub_Index>
     Object_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
 
     template<typename SHM_Object_Type>
