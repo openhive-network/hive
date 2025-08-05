@@ -43,12 +43,19 @@ typedef oid_ref< volatile_account_object > volatile_account_id_type;
 
 struct by_block;
 struct by_name;
+struct by_account_id;
 
 typedef multi_index_container<
     volatile_account_object,
     indexed_by<
       ordered_unique< tag< by_id >,
         const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id > >,
+      ordered_unique< tag< by_account_id >,
+        composite_key< volatile_account_object,
+          member< volatile_account_object, account_id_type, &volatile_account_object::account_id>,
+          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
+        >
+      >,
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_object,
           member< volatile_account_object, uint32_t, &volatile_account_object::block_number>,
