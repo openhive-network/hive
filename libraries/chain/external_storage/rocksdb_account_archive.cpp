@@ -141,11 +141,12 @@ struct rocksdb_reader
 template<>
 struct rocksdb_reader<account_metadata_object, account_metadata_index>
 {
-  static std::shared_ptr<account_metadata_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, ColumnTypes column_type )
+  static std::shared_ptr<account_metadata_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read( provider, account_name, column_type, _buffer ) )
+    FC_ASSERT( column_types.size() );
+    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read( provider, account_name, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
     rocksdb_account_metadata_object _obj;
@@ -161,11 +162,12 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index>
 template<>
 struct rocksdb_reader<account_authority_object, account_authority_index>
 {
-  static std::shared_ptr<account_authority_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, ColumnTypes column_type )
+  static std::shared_ptr<account_authority_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read( provider, account_name, column_type, _buffer ) )
+    FC_ASSERT( column_types.size() );
+    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read( provider, account_name, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
     rocksdb_account_authority_object _obj;
@@ -183,11 +185,12 @@ struct rocksdb_reader<account_authority_object, account_authority_index>
 template<>
 struct rocksdb_reader<account_object, account_index>
 {
-  static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, ColumnTypes column_type )
+  static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& account_name, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_impl<account_object, account_index>::read( provider, account_name, column_type, _buffer ) )
+    FC_ASSERT( column_types.size() );
+    if( !rocksdb_reader_impl<account_object, account_index>::read( provider, account_name, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
@@ -331,12 +334,12 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   }
 }
 
-template<typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
-Object_Type rocksdb_account_archive::get_object( const account_name_type& account_name, ColumnTypes column_type, bool is_required ) const
+template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
+Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  const auto* _found = db.find<SHM_Object_Type, by_name>( account_name );
+  const auto* _found = db.find<SHM_Object_Type, by_name>( key );
   if( _found )
   {
     stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -346,7 +349,7 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
   else
   {
     const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
-    auto _volatile_found = _volatile_idx.find( account_name );
+    auto _volatile_found = _volatile_idx.find( key );
     if( _volatile_found != _volatile_idx.end() )
     {
       const auto _external_found = create_from_volatile_object<Volatile_Object_Type, SHM_Object_Type, SHM_Object_Index>( *_volatile_found );
@@ -354,7 +357,7 @@ Object_Type rocksdb_account_archive::get_object( const account_name_type& accoun
     }
     else
     {
-      const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index>::read( db, provider, account_name, column_type );
+      const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index>::read( db, provider, key, column_types );
       uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
       if( _external_found )
       {
@@ -413,7 +416,7 @@ void rocksdb_account_archive::create_or_update_volatile( const account_metadata_
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
 {
-  return get_object<volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, ColumnTypes::ACCOUNT_METADATA, true/*is_required*/ );
+  return get_object<account_name_type, volatile_account_metadata_object, volatile_account_metadata_index, account_metadata, account_metadata_object, account_metadata_index>( account_name, { ColumnTypes::ACCOUNT_METADATA }, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier )
@@ -429,7 +432,7 @@ void rocksdb_account_archive::create_or_update_volatile( const account_authority
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
 {
-  return get_object<volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, ColumnTypes::ACCOUNT_AUTHORITY, true/*is_required*/ );
+  return get_object<account_name_type, volatile_account_authority_object, volatile_account_authority_index, account_authority, account_authority_object, account_authority_index>( account_name, { ColumnTypes::ACCOUNT_AUTHORITY }, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier )
@@ -445,12 +448,12 @@ void rocksdb_account_archive::create_or_update_volatile( const account_object& o
 
 account rocksdb_account_archive::get_account( const account_name_type& account_name, bool account_is_required ) const
 {
-  return get_object<volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, ColumnTypes::ACCOUNT, account_is_required );
+  return get_object<account_name_type, volatile_account_object, volatile_account_index, account, account_object, account_index>( account_name, { ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 account rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
 {
-
+  //return get_object<account_id_type, volatile_account_object, volatile_account_index, account, account_object, account_index>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
