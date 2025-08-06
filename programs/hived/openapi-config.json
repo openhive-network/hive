@@ -1,0 +1,766 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Config and Options description",
+    "description": "Description of the API",
+    "version": "0.0.0"
+  },
+  "components": {
+    "schemas": {
+      "config": {
+        "type": "object",
+        "properties": {
+          "account_history_rocksdb_blacklist_ops": {
+            "type": "array",
+            "description": "Defines a list of operations which will be explicitly ignored.",
+            "example": "account-history-rocksdb-blacklist-ops = value0\naccount-history-rocksdb-blacklist-ops = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "account_history_rocksdb_path": {
+            "type": "string",
+            "description": "The location of the rocksdb database for account history. By default it is $DATA_DIR/blockchain/account-history-rocksdb-storage",
+            "example": "account-history-rocksdb-path = value\n",
+            "default": "blockchain/account-history-rocksdb-storage"
+          },
+          "account_history_rocksdb_track_account_range": {
+            "type": "array",
+            "description": "Defines a range of accounts to track as a json pair [\"from\",\"to\"] [from,to] Can be specified multiple times.",
+            "example": "account-history-rocksdb-track-account-range = value0\naccount-history-rocksdb-track-account-range = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "account_history_rocksdb_whitelist_ops": {
+            "type": "array",
+            "description": "Defines a list of operations which will be explicitly logged.",
+            "example": "account-history-rocksdb-whitelist-ops = value0\naccount-history-rocksdb-whitelist-ops = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "alternate_chain_spec": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Filepath for the alternate chain specification in JSON format",
+            "example": "alternate-chain-spec = value\n",
+            "default": null
+          },
+          "backtrace": {
+            "type": "string",
+            "description": "Whether to print backtrace on SIGSEGV",
+            "example": "backtrace = value\n",
+            "default": "yes"
+          },
+          "block_data_export_file": {
+            "type": "string",
+            "description": "Where to export data (NONE to discard)",
+            "example": "block-data-export-file = value\n",
+            "default": "NONE"
+          },
+          "block_data_skip_empty": {
+            "type": "boolean",
+            "description": "Skip producing when no factory is registered",
+            "example": "block-data-skip-empty = \n",
+            "default": false
+          },
+          "block_log_compression_level": {
+            "type": "integer",
+            "description": "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)",
+            "example": "block-log-compression-level = 1\n",
+            "minimum": -2147483648,
+            "maximum": 2147483647,
+            "default": 15
+          },
+          "block_log_info_print_file": {
+            "type": "string",
+            "description": "Where to print (filename or special sink ILOG, STDOUT, STDERR)",
+            "example": "block-log-info-print-file = value\n",
+            "default": "ILOG"
+          },
+          "block_log_info_print_interval_seconds": {
+            "type": "integer",
+            "description": "How often to print out block_log_info (default 1 day)",
+            "example": "block-log-info-print-interval-seconds = 1\n",
+            "minimum": -2147483648,
+            "maximum": 2147483647,
+            "default": 86400
+          },
+          "block_log_info_print_irreversible": {
+            "type": "boolean",
+            "description": "Whether to defer printing until block is irreversible",
+            "example": "block-log-info-print-irreversible = \n",
+            "default": true
+          },
+          "block_log_split": {
+            "type": "integer",
+            "description": "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999.",
+            "example": "block-log-split = 1\n",
+            "minimum": -2147483648,
+            "maximum": 2147483647,
+            "default": 9999
+          },
+          "block_stats_report_output": {
+            "type": "string",
+            "description": "Where to put block stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG.",
+            "example": "block-stats-report-output = value\n",
+            "default": "ILOG"
+          },
+          "block_stats_report_type": {
+            "type": "string",
+            "description": "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes).",
+            "example": "block-stats-report-type = value\n",
+            "default": "FULL"
+          },
+          "blockchain_thread_pool_size": {
+            "type": "integer",
+            "description": "Number of worker threads used to pre-validate transactions and blocks",
+            "example": "blockchain-thread-pool-size = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 8
+          },
+          "cashout_logging_ending_block": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Ending block for comment cashout log",
+            "example": "cashout-logging-ending-block = 1\n",
+            "minimum": 0,
+            "maximum": 18446744073709551615,
+            "default": null
+          },
+          "cashout_logging_log_path_dir": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path to log file",
+            "example": "cashout-logging-log-path-dir = value\n",
+            "default": null
+          },
+          "cashout_logging_starting_block": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Starting block for comment cashout log",
+            "example": "cashout-logging-starting-block = 1\n",
+            "minimum": 0,
+            "maximum": 18446744073709551615,
+            "default": null
+          },
+          "checkpoint": {
+            "type": "array",
+            "description": "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.",
+            "example": "checkpoint = value0\ncheckpoint = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "colony_article": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Size and frequency parameters of article transactions.",
+            "example": "colony-article = value\n",
+            "default": null
+          },
+          "colony_custom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Size and frequency parameters of custom_json transactions. If no other transaction type is requested, minimal custom jsons will be produced.",
+            "example": "colony-custom = value\n",
+            "default": null
+          },
+          "colony_max_concurrency": {
+            "type": "integer",
+            "description": "Number of transactions per thread that can be sent to queue with no wait. 0 means auto adjust. Default is 1000",
+            "example": "colony-max-concurrency = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 1000
+          },
+          "colony_no_broadcast": {
+            "type": "boolean",
+            "description": "Disables broadcasting of produced transactions - only local witness will include them in block.",
+            "example": "colony-no-broadcast = \n",
+            "default": false
+          },
+          "colony_reply": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Size and frequency parameters of reply transactions.",
+            "example": "colony-reply = value\n",
+            "default": null
+          },
+          "colony_sign_with": {
+            "type": "array",
+            "description": "WIF PRIVATE KEY to be used to sign each transaction.",
+            "example": "colony-sign-with = value0\ncolony-sign-with = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "colony_start_at_block": {
+            "type": "integer",
+            "description": "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed).",
+            "example": "colony-start-at-block = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 0
+          },
+          "colony_threads": {
+            "type": "integer",
+            "description": "Number of worker threads. Default is 2",
+            "example": "colony-threads = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 2
+          },
+          "colony_transactions_per_block": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Max number of transactions produced per block. When not set it will be sum of weights of individual types.",
+            "example": "colony-transactions-per-block = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": null
+          },
+          "colony_transfer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Size and frequency parameters of transfer transactions.",
+            "example": "colony-transfer = value\n",
+            "default": null
+          },
+          "colony_vote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Size and frequency parameters of vote transactions.",
+            "example": "colony-vote = value\n",
+            "default": null
+          },
+          "colony_wait_for_work": {
+            "type": "integer",
+            "description": "Time (in milliseconds) to wait before checking if there is more work to do. 0 will just yield() the thread. Default is 50",
+            "example": "colony-wait-for-work = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 50
+          },
+          "comment_archive": {
+            "type": "string",
+            "description": "Type of comment archive to use: NONE means comments won't be archived, MEMORY keeps archived comments in memory, ROCKSDB stores them in RocksDB. Default: ROCKSDB",
+            "example": "comment-archive = value\n",
+            "default": "ROCKSDB"
+          },
+          "debug_node_edit_script": {
+            "type": "array",
+            "description": "Database edits to apply on startup (may specify multiple times)",
+            "example": "debug-node-edit-script = value0\ndebug-node-edit-script = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "enable_block_log_auto_fixing": {
+            "type": "boolean",
+            "description": "If enabled, corrupted block_log will try to fix itself automatically.",
+            "example": "enable-block-log-auto-fixing = \n",
+            "default": true
+          },
+          "enable_block_log_compression": {
+            "type": "boolean",
+            "description": "Compress blocks using zstd as they're added to the block log",
+            "example": "enable-block-log-compression = \n",
+            "default": true
+          },
+          "enable_stale_production": {
+            "type": "boolean",
+            "description": "Enable block production, even if the chain is stale.",
+            "example": "enable-stale-production = \n",
+            "default": false
+          },
+          "flush_state_interval": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "flush shared memory changes to disk every N blocks",
+            "example": "flush-state-interval = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": null
+          },
+          "log_appender": {
+            "type": "array",
+            "description": "Appender definition JSON. Obligatory attributes:\n\"appender\" - name of appender\n\"stream\" - target stream, mutually exclusive with \"file\"\n\"file\" - target filename (including path), mutually exclusive with \"stream\"\nOptional attributes:\n\"time_format\" - see time_format enum values (default: \"iso_8601_seconds\")\nOptional attributes (applicable to file appender only):\n\"delta_times\" - whether times should be printed as deltas since previous message (default: false)\n\"flush\" - whether each log write should end with flush (default: true)\n\"truncate\" - whether to truncate the log file at startup (default: true)\n\"rotate\" - whether the log files should be rotated (default: true)\n\"rotation_interval\" - seconds between file rotation (default: 3600)\n\"rotation_limit\" - seconds before rotated file is removed (default: 86400)",
+            "example": "log-appender = value0\nlog-appender = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "log_console_appender": {
+            "type": "array",
+            "description": "",
+            "example": "log-console-appender = value0\nlog-console-appender = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "log_file_appender": {
+            "type": "array",
+            "description": "",
+            "example": "log-file-appender = value0\nlog-file-appender = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "log_json_rpc": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "json-rpc log directory name.",
+            "example": "log-json-rpc = value\n",
+            "default": null
+          },
+          "log_logger": {
+            "type": "array",
+            "description": "Logger definition JSON:\n\"name\" - name of logger\n\"level\" - level of reporting, see log_level enum values\n\"appenders\" - list of designated appenders",
+            "example": "log-logger = value0\nlog-logger = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "market_history_bucket_size": {
+            "type": "string",
+            "description": "Track market history by grouping orders into buckets of equal size measured in seconds specified as a JSON array of numbers",
+            "example": "market-history-bucket-size = value\n",
+            "default": "[15,60,300,3600,86400]"
+          },
+          "market_history_buckets_per_size": {
+            "type": "integer",
+            "description": "How far back in time to track history for each bucket size, measured in the number of buckets (default: 5760)",
+            "example": "market-history-buckets-per-size = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 5760
+          },
+          "max_mempool_size": {
+            "type": "string",
+            "description": "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool.",
+            "example": "max-mempool-size = value\n",
+            "default": "100M"
+          },
+          "notifications_endpoint": {
+            "type": "array",
+            "description": "list of addresses, that will receive notification about in-chain events",
+            "example": "notifications-endpoint = value0\nnotifications-endpoint = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "p2p_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The local IP address and port to listen for incoming connections.",
+            "example": "p2p-endpoint = value\n",
+            "default": null
+          },
+          "p2p_max_connections": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Maxmimum number of incoming connections on P2P endpoint.",
+            "example": "p2p-max-connections = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": null
+          },
+          "p2p_parameters": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "P2P network parameters. (Default: {\"listen_endpoint\":\"0.0.0.0:0\",\"accept_incoming_connections\":true,\"wait_if_endpoint_is_busy\":true,\"private_key\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"desired_number_of_connections\":20,\"maximum_number_of_connections\":200,\"peer_connection_retry_timeout\":30,\"peer_inactivity_timeout\":5,\"peer_advertising_disabled\":false,\"maximum_number_of_blocks_to_handle_at_one_time\":200,\"maximum_number_of_sync_blocks_to_prefetch\":20000,\"maximum_blocks_per_peer_during_syncing\":200,\"active_ignored_request_timeout_microseconds\":6000000} )",
+            "example": "p2p-parameters = value\n",
+            "default": null
+          },
+          "p2p_seed_node": {
+            "type": "array",
+            "description": "The IP address and port of a remote peer to sync with.",
+            "example": "p2p-seed-node = value0\np2p-seed-node = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "pacemaker_max_offset": {
+            "type": "integer",
+            "description": "maximum time of emission offset from block timestamp in milliseconds, default 20000ms (when exceeded, node will be stopped)",
+            "example": "pacemaker-max-offset = 1\n",
+            "minimum": -2147483648,
+            "maximum": 2147483647,
+            "default": 20000
+          },
+          "pacemaker_min_offset": {
+            "type": "integer",
+            "description": "minimum time of emission offset from block timestamp in milliseconds, default -300ms",
+            "example": "pacemaker-min-offset = 1\n",
+            "minimum": -2147483648,
+            "maximum": 2147483647,
+            "default": -300
+          },
+          "pacemaker_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "path to block_log file - source of block emissions",
+            "example": "pacemaker-source = value\n",
+            "default": null
+          },
+          "plugin": {
+            "type": "array",
+            "description": "Plugin(s) to enable, may be specified multiple times",
+            "example": "plugin = value0\nplugin = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "private_key": {
+            "type": "array",
+            "description": "WIF PRIVATE KEY to be used by one or more witnesses or miners",
+            "example": "private-key = value0\nprivate-key = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "queen_block_size": {
+            "type": "integer",
+            "description": "Size of blocks expected to be filled (or max allowed by witnesses). Default value 0 means max blocks.",
+            "example": "queen-block-size = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 0
+          },
+          "queen_tx_count": {
+            "type": "integer",
+            "description": "Number of transactions in block. Default value 0 means no limit.",
+            "example": "queen-tx-count = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 0
+          },
+          "rc_flood_level": {
+            "type": "integer",
+            "description": "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).",
+            "example": "rc-flood-level = 1\n",
+            "minimum": 0,
+            "maximum": 65535,
+            "default": 20
+          },
+          "rc_flood_surcharge": {
+            "type": "integer",
+            "description": "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).",
+            "example": "rc-flood-surcharge = 1\n",
+            "minimum": 0,
+            "maximum": 65535,
+            "default": 10000
+          },
+          "rc_stats_report_output": {
+            "type": "string",
+            "description": "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG.",
+            "example": "rc-stats-report-output = value\n",
+            "default": "ILOG"
+          },
+          "rc_stats_report_type": {
+            "type": "string",
+            "description": "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR.",
+            "example": "rc-stats-report-type = value\n",
+            "default": "REGULAR"
+          },
+          "required_participation": {
+            "type": "integer",
+            "description": "Percent of witnesses (0-99) that must be participating in order to produce blocks",
+            "example": "required-participation = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 33
+          },
+          "shared_file_dir": {
+            "type": "string",
+            "description": "the location of the chain shared memory files (absolute path or relative to application data dir)",
+            "example": "shared-file-dir = value\n",
+            "default": "blockchain"
+          },
+          "shared_file_full_threshold": {
+            "type": "integer",
+            "description": "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%).",
+            "example": "shared-file-full-threshold = 1\n",
+            "minimum": 0,
+            "maximum": 65535,
+            "default": 0
+          },
+          "shared_file_scale_rate": {
+            "type": "integer",
+            "description": "A 2 precision percentage (0-10000) that defines how quickly to scale the shared memory file. When autoscaling occurs the file's size will be increased by this percent. Setting this to 0 disables autoscaling. Recommended value is between 1000-2000 (10-20%)",
+            "example": "shared-file-scale-rate = 1\n",
+            "minimum": 0,
+            "maximum": 65535,
+            "default": 0
+          },
+          "shared_file_size": {
+            "type": "string",
+            "description": "Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.",
+            "example": "shared-file-size = value\n",
+            "default": "24G"
+          },
+          "snapshot_root_dir": {
+            "type": "string",
+            "description": "The location (root-dir) of the snapshot storage, to save/read portable state dumps",
+            "example": "snapshot-root-dir = value\n",
+            "default": "snapshot"
+          },
+          "statsd_batchsize": {
+            "type": "integer",
+            "description": "Size to batch statsd messages.",
+            "example": "statsd-batchsize = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 1
+          },
+          "statsd_blacklist": {
+            "type": "array",
+            "description": "Blacklist of statistics to capture.",
+            "example": "statsd-blacklist = value0\nstatsd-blacklist = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "statsd_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Endpoint to send statsd messages to.",
+            "example": "statsd-endpoint = value\n",
+            "default": null
+          },
+          "statsd_whitelist": {
+            "type": "array",
+            "description": "Whitelist of statistics to capture.",
+            "example": "statsd-whitelist = value0\nstatsd-whitelist = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "transaction_status_block_depth": {
+            "type": "integer",
+            "description": "Defines the number of blocks from the head block that transaction statuses will be tracked.",
+            "example": "transaction-status-block-depth = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 64000
+          },
+          "webserver_http_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local http endpoint for webserver requests.",
+            "example": "webserver-http-endpoint = value\n",
+            "default": null
+          },
+          "webserver_https_certificate_file_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "File name with a server's certificate.",
+            "example": "webserver-https-certificate-file-name = value\n",
+            "default": null
+          },
+          "webserver_https_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local https endpoint for webserver requests.",
+            "example": "webserver-https-endpoint = value\n",
+            "default": null
+          },
+          "webserver_https_key_file_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "File name with a server's private key.",
+            "example": "webserver-https-key-file-name = value\n",
+            "default": null
+          },
+          "webserver_thread_pool_size": {
+            "type": "integer",
+            "description": "Number of threads used to handle queries. Default: 32.",
+            "example": "webserver-thread-pool-size = 1\n",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 32
+          },
+          "webserver_unix_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local unix http endpoint for webserver requests.",
+            "example": "webserver-unix-endpoint = value\n",
+            "default": null
+          },
+          "webserver_ws_deflate": {
+            "type": "boolean",
+            "description": "Enable the RFC-7692 permessage-deflate extension for the WebSocket server (only used if the client requests it).  This may save bandwidth at the expense of CPU",
+            "example": "webserver-ws-deflate = \n",
+            "default": false
+          },
+          "webserver_ws_endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local websocket endpoint for webserver requests.",
+            "example": "webserver-ws-endpoint = value\n",
+            "default": null
+          },
+          "witness": {
+            "type": "array",
+            "description": "name of witness controlled by this node (e.g. initwitness )",
+            "example": "witness = value0\nwitness = value1\n",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          }
+        },
+        "required": [
+          "account-history-rocksdb-blacklist-ops",
+          "account-history-rocksdb-path",
+          "account-history-rocksdb-track-account-range",
+          "account-history-rocksdb-whitelist-ops",
+          "alternate-chain-spec",
+          "backtrace",
+          "block-data-export-file",
+          "block-data-skip-empty",
+          "block-log-compression-level",
+          "block-log-info-print-file",
+          "block-log-info-print-interval-seconds",
+          "block-log-info-print-irreversible",
+          "block-log-split",
+          "block-stats-report-output",
+          "block-stats-report-type",
+          "blockchain-thread-pool-size",
+          "cashout-logging-ending-block",
+          "cashout-logging-log-path-dir",
+          "cashout-logging-starting-block",
+          "checkpoint",
+          "colony-article",
+          "colony-custom",
+          "colony-max-concurrency",
+          "colony-no-broadcast",
+          "colony-reply",
+          "colony-sign-with",
+          "colony-start-at-block",
+          "colony-threads",
+          "colony-transactions-per-block",
+          "colony-transfer",
+          "colony-vote",
+          "colony-wait-for-work",
+          "comment-archive",
+          "debug-node-edit-script",
+          "enable-block-log-auto-fixing",
+          "enable-block-log-compression",
+          "enable-stale-production",
+          "flush-state-interval",
+          "log-appender",
+          "log-console-appender",
+          "log-file-appender",
+          "log-json-rpc",
+          "log-logger",
+          "market-history-bucket-size",
+          "market-history-buckets-per-size",
+          "max-mempool-size",
+          "notifications-endpoint",
+          "p2p-endpoint",
+          "p2p-max-connections",
+          "p2p-parameters",
+          "p2p-seed-node",
+          "pacemaker-max-offset",
+          "pacemaker-min-offset",
+          "pacemaker-source",
+          "plugin",
+          "private-key",
+          "queen-block-size",
+          "queen-tx-count",
+          "rc-flood-level",
+          "rc-flood-surcharge",
+          "rc-stats-report-output",
+          "rc-stats-report-type",
+          "required-participation",
+          "shared-file-dir",
+          "shared-file-full-threshold",
+          "shared-file-scale-rate",
+          "shared-file-size",
+          "snapshot-root-dir",
+          "statsd-batchsize",
+          "statsd-blacklist",
+          "statsd-endpoint",
+          "statsd-whitelist",
+          "transaction-status-block-depth",
+          "webserver-http-endpoint",
+          "webserver-https-certificate-file-name",
+          "webserver-https-endpoint",
+          "webserver-https-key-file-name",
+          "webserver-thread-pool-size",
+          "webserver-unix-endpoint",
+          "webserver-ws-deflate",
+          "webserver-ws-endpoint",
+          "witness"
+        ]
+      }
+    }
+  },
+  "paths": {}
+}
