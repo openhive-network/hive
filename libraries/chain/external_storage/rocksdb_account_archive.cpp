@@ -147,7 +147,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
     rocksdb_account_metadata_object _obj;
@@ -168,7 +168,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
     rocksdb_account_authority_object _obj;
@@ -191,7 +191,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
@@ -215,14 +215,27 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
 {
   static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
   {
-    PinnableSlice _buffer;
+    account_name_type _name;
 
     FC_ASSERT( column_types.size() == 2 );
-    if( !rocksdb_reader_impl<account_object, account_index>::read<by_block_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+
+    {
+      PinnableSlice _buffer;
+
+      if( !rocksdb_reader_impl<account_object, account_index>::read<by_block_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+        return std::shared_ptr<account_object>();
+
+      rocksdb_account_object_by_id _obj;
+      load( _obj, _buffer.data(), _buffer.size() );
+      _name = _obj.name;
+    }
+
+    PinnableSlice _buffer;
+
+    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
-
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_object>( new account_object(
@@ -450,6 +463,7 @@ void rocksdb_account_archive::modify_object( const account_metadata_object& obj,
 {
   modify( obj, modifier );
 }
+//==========================================account_metadata_object==========================================
 
 //==========================================account_authority_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
@@ -466,6 +480,7 @@ void rocksdb_account_archive::modify_object( const account_authority_object& obj
 {
   modify( obj, modifier );
 }
+//==========================================account_authority_object==========================================
 
 //==========================================account_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_object& obj )
@@ -480,13 +495,14 @@ account rocksdb_account_archive::get_account( const account_name_type& account_n
 
 account rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
 {
-  //return get_object<account_id_type, volatile_account_object, volatile_account_index, by_account_id, account, account_object, account_index, by_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
+  return get_object<account_id_type, volatile_account_object, volatile_account_index, by_account_id, account, account_object, account_index, by_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
 {
   modify( obj, modifier );
 }
+//==========================================account_object==========================================
 
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
