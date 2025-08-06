@@ -1208,6 +1208,7 @@ generate_python_api_clients:
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+  needs: []
   script:
     - $API_GENERATION_DIR/generate_api_packages.sh
   artifacts:
@@ -1218,6 +1219,23 @@ generate_python_api_clients:
       - "${API_GENERATION_DIR}/block_api"
       - "${API_GENERATION_DIR}/network_broadcast_api"
       - "${API_GENERATION_DIR}/account_by_key_api"
+  stage: build
+  tags:
+    - public-runner-docker
+
+generate_python_config_and_arguments:
+  extends: .project_develop_configuration_template
+  needs: []
+  variables:
+    API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
+    PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+    HIVED_INPUT_DIR: "${CI_PROJECT_DIR}/programs/hived/generate_inputs"
+  script:
+    - $HIVED_INPUT_DIR/generate_hived_inputs.bash
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${HIVED_INPUT_DIR}/hived_inputs"
   stage: build
   tags:
     - public-runner-docker
@@ -1327,6 +1345,37 @@ deploy_account_by_key_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+build_hived_inputs:
+  extends: .build_wheel_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/programs/hived/generate_inputs/hived_inputs"
+    DIST_DIR: "${PYPROJECT_DIR}/dist"
+  stage: build
+  needs:
+    - job: generate_python_config_and_arguments
+      artifacts: true
+  tags:
+    - public-runner-docker
+  artifacts:
+    paths:
+      - "${PYPROJECT_DIR}/dist"
+      - "${PYPROJECT_DIR}/pyproject.toml"
+      - "${PYPROJECT_DIR}/hived_inputs"
+      - "build_wheel.env"
+
+deploy_hived_inputs_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/programs/hived/generate_inputs/hived_inputs"
+  needs:
+    - job: build_hived_inputs
+      artifacts: true
+  tags:
+    - public-runner-docker
+  when: on_success
+
 
 generate_testing_block_logs:
   stage: build
