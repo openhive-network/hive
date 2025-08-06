@@ -111,8 +111,8 @@ struct api_vesting_delegation_object
 {
   api_vesting_delegation_object( const vesting_delegation_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( db.get_account( o.get_delegator() ).get_name() ),
-    delegatee( db.get_account( o.get_delegatee() ).get_name() ),
+    delegator( db.get_account( o.get_delegator() )->get_name() ),
+    delegatee( db.get_account( o.get_delegatee() )->get_name() ),
     vesting_shares( o.get_vesting() ),
     min_delegation_time( o.get_min_delegation_time() )
   {}
@@ -128,7 +128,7 @@ struct api_vesting_delegation_expiration_object
 {
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    delegator( db.get_account( o.get_delegator() )->get_name() ),
     vesting_shares( o.get_vesting() ),
     expiration( o.get_expiration_time() )
   {}
@@ -144,7 +144,7 @@ struct api_convert_request_object
   api_convert_request_object() {}
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
-    owner( db.get_account( o.get_owner() ).get_name() ),
+    owner( db.get_account( o.get_owner() )->get_name() ),
     requestid( o.get_request_id() ),
     amount( o.get_convert_amount() ),
     conversion_date( o.get_conversion_date() )
@@ -162,7 +162,7 @@ struct api_collateralized_convert_request_object
   api_collateralized_convert_request_object() {}
   api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
     id( o.get_id() ),
-    owner( db.get_account( o.get_owner() ).get_name() ),
+    owner( db.get_account( o.get_owner() )->get_name() ),
     requestid( o.get_request_id() ),
     collateral_amount( o.get_collateral_amount() ),
     converted_amount( o.get_converted_amount() ),
@@ -392,7 +392,7 @@ struct api_comment_object
 
       for( auto& route : cc->get_beneficiaries() )
       {
-        beneficiaries.emplace_back( db.get_account( route.account_id ).get_name(), route.weight );
+        beneficiaries.emplace_back( db.get_account( route.account_id )->get_name(), route.weight );
       }
 
     }
@@ -461,7 +461,7 @@ struct api_comment_vote_object
     voter = db.get( cv.get_voter() ).get_name();
     const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
     assert( cc != nullptr ); //votes should not exist after cashout
-    author = db.get_account( cc->get_author_id() ).get_name();
+    author = db.get_account( cc->get_author_id() )->get_name();
     permlink = to_string( cc->get_permlink() );
   }
 
@@ -530,9 +530,9 @@ struct api_account_object
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
     if( a.has_proxy() )
-      proxy = db.get_account( a.get_proxy() ).get_name();
+      proxy = db.get_account( a.get_proxy() )->get_name();
     if( a.has_recovery_account() )
-      recovery_account = db.get_account( a.get_recovery_account() ).get_name();
+      recovery_account = db.get_account( a.get_recovery_account() )->get_name();
 
     size_t n = a.get_proxied_vsf_votes().size();
     proxied_vsf_votes.reserve( n );

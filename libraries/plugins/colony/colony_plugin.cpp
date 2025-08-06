@@ -670,7 +670,7 @@ void colony_plugin_impl::start( uint32_t block_num )
     for( const auto& comment : comments )
     {
       auto& comment_data = _comments[ _last_comment ];
-      comment_data.first = _db.get_account( comment.get_author_id() ).get_name();
+      comment_data.first = _db.get_account( comment.get_author_id() )->get_name();
       comment_data.second = comment.get_permlink();
       ++_last_comment;
       if( _last_comment >= COLONY_COMMENT_BUFFER )

@@ -657,10 +657,10 @@ void resource_credits::remove_delegations( int64_t& delegation_overflow, account
         break;
     }
 
-    const auto& to_account = db.get_account( to_id );
+    auto to_account = db.get_account( to_id );
     //since to_account was not originally expected to be affected by operation that is being
     //processed, we need to regenerate its mana before rc delegation is modified
-    update_account_after_rc_delegation( to_account, now, -delta_rc, true );
+    update_account_after_rc_delegation( *to_account, now, -delta_rc, true );
 
     delegation_overflow -= delta_rc;
   }

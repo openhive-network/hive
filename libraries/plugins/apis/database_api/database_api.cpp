@@ -1708,8 +1708,8 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
 
   while (itr != idx.end() && itr->from_id == from_account_id && result.recurrent_transfers.size() <= DATABASE_API_SINGLE_QUERY_LIMIT)
   {
-    const auto& to_account = _db.get_account( itr->to_id );
-    result.recurrent_transfers.emplace_back( *itr, from_account->get_name(), to_account.get_name() );
+    auto to_account = _db.get_account( itr->to_id );
+    result.recurrent_transfers.emplace_back( *itr, from_account->get_name(), to_account->get_name() );
     ++itr;
   }
 

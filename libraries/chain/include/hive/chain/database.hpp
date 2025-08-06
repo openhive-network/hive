@@ -265,8 +265,8 @@ namespace chain {
       account_authority get_account_authority( const account_name_type& account_name )const;
       account_metadata get_account_metadata( const account_name_type& account_name )const;
 
-      const account_object&  get_account(  const account_id_type      id )const;
-      const account_object*  find_account( const account_id_type&     id )const;
+      account get_account(  const account_id_type      id )const;
+      account find_account( const account_id_type&     id )const;
 
       account get_account(  const account_name_type& name )const;
       account find_account( const account_name_type& name )const;

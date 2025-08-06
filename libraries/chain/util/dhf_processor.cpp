@@ -93,7 +93,7 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
 
   while( found != pvidx.end() && found->proposal_id == pid )
   {
-    const auto& _voter = db.get_account( found->voter );
+    auto _voter = db.get_account( found->voter );
 
     //If _voter has set proxy, then his votes aren't taken into consideration
     if( !_voter->has_proxy() )
@@ -168,7 +168,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
 
   auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
   {
-    const auto& receiver_account = db.get_account( _item.receiver );
+    auto receiver_account = db.get_account( _item.receiver );
 
     operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment );
     /// Push vop to be recorded by other parts (like AH plugin etc.)

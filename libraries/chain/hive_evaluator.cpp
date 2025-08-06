@@ -1473,9 +1473,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     const account_object* cprox = &(*new_proxy);
     while( cprox->has_proxy() )
     {
-      const account_object& next_proxy = _db.get_account( cprox->get_proxy() );
-      FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
-      cprox = &next_proxy;
+      auto next_proxy = _db.get_account( cprox->get_proxy() );
+      FC_ASSERT( proxy_chain.insert( next_proxy->get_id() ).second, "This proxy would create a proxy loop." );
+      cprox = &(*next_proxy);
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
     }
 
@@ -1485,7 +1485,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.modify( *account, [&]( account_object& a ) {
       if( account->has_proxy() )
       {
-        _db.push_virtual_operation( proxy_cleared_operation( account->get_name(), _db.get_account( account->get_proxy() ).get_name()) );
+        _db.push_virtual_operation( proxy_cleared_operation( account->get_name(), _db.get_account( account->get_proxy() )->get_name()) );
       }
 
       a.set_proxy( *new_proxy );
@@ -1500,7 +1500,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account->has_proxy(), "Proxy must change." );
 
-    _db.push_virtual_operation( proxy_cleared_operation( account->get_name(), _db.get_account( account->get_proxy() ).get_name()) );
+    _db.push_virtual_operation( proxy_cleared_operation( account->get_name(), _db.get_account( account->get_proxy() )->get_name()) );
 
     _db.modify( *account, [&]( account_object& a ) {
       a.clear_proxy();
@@ -2694,8 +2694,8 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 
   if ( account_to_recover->has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
-    const auto& recovery_account = _db.get_account( account_to_recover->get_recovery_account() );
-    FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
+    auto recovery_account = _db.get_account( account_to_recover->get_recovery_account() );
+    FC_ASSERT( recovery_account->get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
   }
@@ -2792,7 +2792,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
 {
   auto new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
     //ABW: can't clear existing recovery agent to set it to top voted witness
-  const auto account_to_recover = _db.get_account( o.account_to_recover );
+  auto account_to_recover = _db.get_account( o.account_to_recover );
 
   const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
@@ -2916,7 +2916,7 @@ void set_reset_account_evaluator::do_apply( const set_reset_account_operation& o
   FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
   //related to reset_account_operation
 /*
-  const auto acnt = _db.get_account( op.account );
+  auto acnt = _db.get_account( op.account );
   _db.get_account( op.reset_account );
 
   FC_ASSERT( acnt.reset_account == op.current_reset_account, "Current reset account does not match reset account on account." );
