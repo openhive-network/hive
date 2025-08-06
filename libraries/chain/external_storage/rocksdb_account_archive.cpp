@@ -124,29 +124,30 @@ struct rocksdb_reader_impl
     return chainbase::get_allocator_helper_t<SHM_Object_Type>::get_generic_allocator( _allocator );
   }
 
-  static bool read( const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, ColumnTypes column_type, PinnableSlice& buffer )
+  template<typename Slice_Type, typename Key_Type>
+  static bool read( const rocksdb_account_storage_provider::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
   {
-    info_by_name_slice_t _key( account_name_type( key ).data );
+    Slice_Type _key( key );
 
     return provider->read( column_type, _key, buffer );
   }
 
 };
 
-template<typename SHM_Object_Type, typename SHM_Object_Index>
+template<typename SHM_Object_Type, typename SHM_Object_Index, typename Key_Type>
 struct rocksdb_reader
 {
 };
 
 template<>
-struct rocksdb_reader<account_metadata_object, account_metadata_index>
+struct rocksdb_reader<account_metadata_object, account_metadata_index, account_name_type>
 {
   static std::shared_ptr<account_metadata_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read( provider, key, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
     rocksdb_account_metadata_object _obj;
@@ -160,14 +161,14 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index>
 };
 
 template<>
-struct rocksdb_reader<account_authority_object, account_authority_index>
+struct rocksdb_reader<account_authority_object, account_authority_index, account_name_type>
 {
   static std::shared_ptr<account_authority_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read( provider, key, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
     rocksdb_account_authority_object _obj;
@@ -183,14 +184,14 @@ struct rocksdb_reader<account_authority_object, account_authority_index>
 };
 
 template<>
-struct rocksdb_reader<account_object, account_index>
+struct rocksdb_reader<account_object, account_index, account_name_type>
 {
   static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_object, account_index>::read( provider, key, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, account_name_type( key ).data, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
@@ -209,6 +210,32 @@ struct rocksdb_reader<account_object, account_index>
   }
 };
 
+template<>
+struct rocksdb_reader<account_object, account_index, account_id_type>
+{
+  static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
+  {
+    PinnableSlice _buffer;
+
+    FC_ASSERT( column_types.size() == 2 );
+    if( !rocksdb_reader_impl<account_object, account_index>::read<by_block_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+      return std::shared_ptr<account_object>();
+
+    rocksdb_account_object _obj;
+
+    load( _obj, _buffer.data(), _buffer.size() );
+
+    return std::shared_ptr<account_object>( new account_object(
+                                                        rocksdb_reader_impl<account_object, account_index>::get_allocator( db ),
+                                                      _obj.id,
+                                                      _obj.recovery,
+                                                      _obj.assets,
+                                                      _obj.mrc,
+                                                      _obj.time,
+                                                      _obj.misc,
+                                                      _obj.delayed_votes) );
+  }
+};
 }
 
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
@@ -357,7 +384,7 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
     }
     else
     {
-      const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index>::read( db, provider, key, column_types );
+      const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index, Key_Type>::read( db, provider, key, column_types );
       uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
       if( _external_found )
       {
