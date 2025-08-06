@@ -2257,15 +2257,15 @@ void database::process_vesting_withdrawals()
 
           if( to_deposit > 0 )
           {
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
+            auto to_account = get_account( itr->to_account );
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-            operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(), vests, routed );
+            operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account->get_name(), vests, routed );
 
             pre_push_virtual_operation( vop );
 
-            modify( to_account, [&]( account_object& a )
+            modify( *to_account, [&]( account_object& a )
             {
               if( auto_vest_mode )
               {
@@ -2282,21 +2282,21 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc.update_account_after_vest_change( to_account, now );
+                rc.update_account_after_vest_change( *to_account, now );
 
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
                 FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
                 dv->add_votes( _votes_update_data_items,
-                          to_account.get_id() == from_account.get_id()/*withdraw_executor*/,
+                          to_account->get_id() == from_account.get_id()/*withdraw_executor*/,
                           routed.amount.value/*val*/,
-                          to_account/*account*/
+                          *to_account/*account*/
                         );
               }
               else
               {
-                adjust_proxied_witness_votes( to_account, to_deposit );
+                adjust_proxied_witness_votes( *to_account, to_deposit );
               }
             }
             else
@@ -3324,19 +3324,19 @@ void database::process_decline_voting_rights()
 
   while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
   {
-    const auto& account = get< account_object, by_name >( itr->account );
+    auto account = get_account( itr->account );
 
-    if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( *account, proposal_votes, *this, obj_perf ) )
     {
-      nullify_proxied_witness_votes( account );
-      clear_witness_votes( account );
+      nullify_proxied_witness_votes( *account );
+      clear_witness_votes( *account );
 
-      if( account.has_proxy() )
-        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() )->get_name()) );
+      if( account->has_proxy() )
+        push_virtual_operation( proxy_cleared_operation( account->get_name(), get_account( account->get_proxy() )->get_name()) );
 
       push_virtual_operation( declined_voting_rights_operation( itr->account ) );
 
-      modify( account, [&]( account_object& a )
+      modify( *account, [&]( account_object& a )
       {
         a.set_can_vote( false );
         a.clear_proxy();
@@ -3349,7 +3349,7 @@ void database::process_decline_voting_rights()
     else
     {
       ilog("Threshold exceeded while deleting proposal votes for account ${account}.",
-        ("account", account.get_name())); // to be continued in next block
+        ("account", account->get_name())); // to be continued in next block
       break;
     }
   }

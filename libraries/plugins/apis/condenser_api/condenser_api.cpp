@@ -427,7 +427,7 @@ namespace detail
 
     for( auto& name : account_names )
     {
-      auto itr = _db.find< account_object, by_name >( name );
+      auto itr = _db.find_account( name );
 
       if( itr )
       {

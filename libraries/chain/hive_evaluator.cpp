@@ -432,7 +432,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
   {
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
+    _db.adjust_balance( *_db.get_account( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -538,7 +538,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
   {
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
+    _db.adjust_balance( *_db.get_account( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -868,8 +868,8 @@ struct comment_options_extension_visitor
     {
       for( auto& b : cpb.beneficiaries )
       {
-        auto acc = _db.find< account_object, by_name >( b.account );
-        FC_ASSERT( acc != nullptr, "Beneficiary \"${a}\" must exist.", ("a", b.account) );
+        auto acc = _db.find_account( b.account );
+        FC_ASSERT( acc, "Beneficiary \"${a}\" must exist.", ("a", b.account) );
         c.add_beneficiary( *acc, b.weight );
       }
     });
