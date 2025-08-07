@@ -745,11 +745,21 @@ void pow2::create(const block_id_type & prev, const account_name_type & account_
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
-  void recurrent_transfer_operation::recurrent_transfer_extension_visitor::operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
+  struct recurrent_transfer_extension_visitor
   {
-    was_pair_id = true;
-    pair_id = recurrent_transfer_pair_id.pair_id;
-  }
+    uint8_t pair_id = 0; // default recurrent transfer id is 0
+    bool was_pair_id = false;
+
+    typedef void result_type;
+
+    void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
+    {
+      was_pair_id = true;
+      pair_id = recurrent_transfer_pair_id.pair_id;
+    }
+
+    void operator()( const hive::void_t& ) {}
+  };
 
   uint8_t recurrent_transfer_operation::get_pair_id( const recurrent_transfer_extensions_type& _extensions, bool* explicitValue ) const
   {
