@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from beekeepy.handle.remote import AbstractAsyncApi
-from schemas.apis.api_client_generator.json_rpc import generate_api_client
+from api_client_generator.json_rpc import generate_api_client
 
 if TYPE_CHECKING:
     from api_generation.common import AvailableApis

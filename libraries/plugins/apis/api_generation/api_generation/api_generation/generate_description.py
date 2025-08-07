@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from api_generation.common import available_apis
-from schemas.apis.api_client_generator.json_rpc import generate_api_description
+from api_client_generator.json_rpc import generate_api_description
 
 if TYPE_CHECKING:
     from api_generation.common import AvailableApis
