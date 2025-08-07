@@ -1075,18 +1075,6 @@ namespace hive { namespace protocol {
     */
   struct recurrent_transfer_operation : public base_operation
   {
-    private:
-      struct recurrent_transfer_extension_visitor
-      {
-        uint8_t pair_id = 0; // default recurrent transfer id is 0
-        bool was_pair_id = false;
-
-        typedef void result_type;
-
-        void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id );
-        void operator()( const hive::void_t& ) {}
-      };
-
     public:
 
       account_name_type from;
