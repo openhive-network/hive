@@ -26,6 +26,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_object, (shared_delayed_votes) )
 
     const account_name_type& get_name() const { return misc.name; }
+    time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
 
     account_id_type                         account_id;
 
@@ -44,6 +45,7 @@ typedef oid_ref< volatile_account_object > volatile_account_id_type;
 struct by_block;
 struct by_name;
 struct by_account_id;
+struct by_next_vesting_withdrawal;
 
 typedef multi_index_container<
     volatile_account_object,
@@ -55,6 +57,12 @@ typedef multi_index_container<
           member< volatile_account_object, account_id_type, &volatile_account_object::account_id>,
           const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
         >
+      >,
+      ordered_unique< tag< by_next_vesting_withdrawal >,
+        composite_key< volatile_account_object,
+          const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_next_vesting_withdrawal >,
+          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
+        > /// composite key by_next_vesting_withdrawal
       >,
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_object,
@@ -122,6 +130,22 @@ class rocksdb_account_object_by_id
   account_name_type name;
 };
 
+class rocksdb_account_object_by_next_vesting_withdrawal
+{
+  public:
+
+  rocksdb_account_object_by_next_vesting_withdrawal(){}
+
+  rocksdb_account_object_by_next_vesting_withdrawal( const volatile_account_object& obj )
+  {
+    next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+    name                    = obj.get_name();
+  }
+
+  time_point_sec    next_vesting_withdrawal;
+  account_name_type name;
+};
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)(block_number) )
@@ -129,3 +153,4 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::vol
 
 FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_id, (id)(name) )
+FC_REFLECT( hive::chain::rocksdb_account_object_by_next_vesting_withdrawal, (next_vesting_withdrawal)(name) )

@@ -41,7 +41,7 @@ class rocksdb_account_archive : public accounts_handler
     template<typename SHM_Object_Type>
     void modify( const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier );
 
-    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
+    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
     bool on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types );
 
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>

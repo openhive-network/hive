@@ -92,7 +92,7 @@ struct transporter_impl
   }
 };
 
-template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
 struct transporter
 {
   static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
@@ -103,13 +103,14 @@ struct transporter
 };
 
 template<>
-struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id>
+struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
 {
   static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
-    FC_ASSERT( column_types.size() == 2 );
+    FC_ASSERT( column_types.size() == 3 );
     transporter_impl<volatile_account_object, rocksdb_account_object, info_by_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_id, by_block_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, block_num, volatile_object, column_types[1] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, by_block_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), block_num, volatile_object, column_types[2] );
   }
 };
 
@@ -307,7 +308,7 @@ std::shared_ptr<account_object> rocksdb_account_archive::create_from_volatile_ob
                                                     obj.shared_delayed_votes) );
 }
 
-template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type>
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type, typename RocksDB_Object_Type3 = RocksDB_Object_Type>
 bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
@@ -331,7 +332,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     const auto& _current = *_itr;
     ++_itr;
 
-    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2>::move_to_external_storage( provider, block_num, _current, column_types );
+    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3>::move_to_external_storage( provider, block_num, _current, column_types );
 
     if( !_do_flush )
       _do_flush = true;
@@ -365,8 +366,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
                           ( block_num, { ColumnTypes::ACCOUNT_AUTHORITY } );
 
   bool _do_flush_account = on_irreversible_block_impl
-                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id>
-                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
+                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
+                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL } );
 
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {
