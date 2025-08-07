@@ -3,6 +3,7 @@
 
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
 #include <hive/chain/external_storage/account_item.hpp>
+#include <hive/chain/external_storage/account_iterator.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 
@@ -83,7 +84,17 @@ namespace
 
 class accounts_handler : public executor_interface, public external_storage_snapshot
 {
+  protected:
+
+    virtual const chainbase::database& get_db() const = 0;
+
   public:
+
+    template<typename ByIndex>
+    std::shared_ptr<account_iterator<ByIndex>> get_iterator()
+    {
+      return std::make_shared<account_iterator<ByIndex>>( get_db() );
+    }
 
     using ptr = std::shared_ptr<accounts_handler>;
 

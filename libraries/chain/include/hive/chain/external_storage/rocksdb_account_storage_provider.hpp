@@ -2,8 +2,6 @@
 
 #include <hive/chain/external_storage/rocksdb_base_storage_provider.hpp>
 
-#include <hive/chain/database.hpp>
-
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 

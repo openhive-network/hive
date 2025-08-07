@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/database.hpp>
+#include <appbase/application.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
 #include <rocksdb/options.h>

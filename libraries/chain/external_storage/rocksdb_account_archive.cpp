@@ -271,6 +271,11 @@ rocksdb_account_archive::~rocksdb_account_archive()
   close();
 }
 
+const chainbase::database& rocksdb_account_archive::get_db() const
+{
+  return db;
+}
+
 uint32_t rocksdb_account_archive::get_block_num() const
 {
   auto _found_dgpo = db.find< dynamic_global_property_object >();

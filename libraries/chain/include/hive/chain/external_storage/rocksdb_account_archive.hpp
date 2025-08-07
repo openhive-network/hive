@@ -14,6 +14,10 @@ namespace bfs = boost::filesystem;
 
 class rocksdb_account_archive : public accounts_handler
 {
+  protected:
+
+    const chainbase::database& get_db() const override;
+
   private:
 
 #ifdef IS_TEST_NET

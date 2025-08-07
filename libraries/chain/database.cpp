@@ -2199,6 +2199,14 @@ void database::update_owner_authority( const account_object& account, const auth
 
 void database::process_vesting_withdrawals()
 {
+  //======================for template test!!!!!!!
+  auto idx = get_accounts_handler().get_iterator<by_next_vesting_withdrawal>();
+  idx->begin();
+  idx->get();
+  idx->next();
+  idx->end();
+  //======================for template test!!!!!!!
+
   const auto& widx = get_index< account_index, by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
   auto current = widx.begin();
