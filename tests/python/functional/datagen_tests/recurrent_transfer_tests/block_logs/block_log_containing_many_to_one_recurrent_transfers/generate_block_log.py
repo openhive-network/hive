@@ -24,6 +24,11 @@ MAX_WORKERS: Final[int] = os.cpu_count()
 RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
 SINGLE_TRANSFER_AMOUNT: Final[AssetHive] = AssetHive(amount=1)
 
+
+"""
+Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
+This makes the schemas module run much faster, but it can only be used in a few specific cases.
+"""
 set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
