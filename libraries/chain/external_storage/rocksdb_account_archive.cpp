@@ -98,7 +98,7 @@ struct transporter
   static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() );
-    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, info_by_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
+    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
   }
 };
 
@@ -108,9 +108,9 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
   static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 3 );
-    transporter_impl<volatile_account_object, rocksdb_account_object, info_by_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, by_block_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, block_num, volatile_object, column_types[1] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, by_block_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), block_num, volatile_object, column_types[2] );
+    transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, block_num, volatile_object, column_types[1] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), block_num, volatile_object, column_types[2] );
   }
 };
 
@@ -148,7 +148,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
     rocksdb_account_metadata_object _obj;
@@ -169,7 +169,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
     rocksdb_account_authority_object _obj;
@@ -192,7 +192,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_impl<account_object, account_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
@@ -223,7 +223,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
     {
       PinnableSlice _buffer;
 
-      if( !rocksdb_reader_impl<account_object, account_index>::read<by_block_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+      if( !rocksdb_reader_impl<account_object, account_index>::read<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
         return std::shared_ptr<account_object>();
 
       rocksdb_account_object_by_id _obj;
@@ -233,7 +233,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
 
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_impl<account_object, account_index>::read<info_by_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
+    if( !rocksdb_reader_impl<account_object, account_index>::read<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
