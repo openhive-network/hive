@@ -29,6 +29,11 @@ ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count()
 TIME_MULTIPLIER: Final[int] = 4
 
+
+"""
+Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
+This makes the schemas module run much faster, but it can only be used in a few specific cases.
+"""
 set_policies(DisableSwapTypesPolicy(disabled=True))
 
 

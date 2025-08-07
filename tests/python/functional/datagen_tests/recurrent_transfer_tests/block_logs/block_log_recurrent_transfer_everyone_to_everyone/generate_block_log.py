@@ -31,6 +31,11 @@ INIT_SUPPLY: Final[int] = 400_000_000_000
 INITIAL_VESTING: Final[int] = 50_000_000_000
 HBD_INIT_SUPPLY: Final[int] = 30_000_000_000
 
+
+"""
+Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
+This makes the schemas module run much faster, but it can only be used in a few specific cases.
+"""
 set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
