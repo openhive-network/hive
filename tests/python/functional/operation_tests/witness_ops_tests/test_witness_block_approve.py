@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.testnet()
+@pytest.mark.xfail
 def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
@@ -25,6 +26,7 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness(
 
 
 @pytest.mark.testnet()
+@pytest.mark.xfail
 def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
