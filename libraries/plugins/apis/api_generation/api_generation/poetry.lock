@@ -223,13 +223,13 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev413+0bc0d4b"
+version = "0.0.1.dev414+2be9929"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev413+0bc0d4b-py3-none-any.whl", hash = "sha256:f9a17976648a43accc91b345fb46989feb93b376616f59dc9808198001d62e47"},
+    {file = "beekeepy-0.0.1.dev414+2be9929-py3-none-any.whl", hash = "sha256:1d823e1ed7caeb27b080cdcb3885b1665e3d74034f2db20b737461d6bcabe4d6"},
 ]
 
 [package.dependencies]
@@ -239,7 +239,7 @@ loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
-schemas = "0.0.1.dev424+eeb5c94"
+schemas = "0.0.1.dev426+0dea163"
 
 [package.source]
 type = "legacy"
@@ -1504,13 +1504,13 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev424+eeb5c94"
+version = "0.0.1.dev426+0dea163"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "schemas-0.0.1.dev424+eeb5c94-py3-none-any.whl", hash = "sha256:eaa87991fbec3878d1f3fbba1cf9562995364b80530787d1eb7598ad62bdea72"},
+    {file = "schemas-0.0.1.dev426+0dea163-py3-none-any.whl", hash = "sha256:783301368543c6643b71fcb449060ce1c489a15a140e894e37c1d60e59f6399a"},
 ]
 
 [package.dependencies]
@@ -1755,4 +1755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "3347c44cc3bc76944e55390edf8c99dd1a3b67750466c7e1d7d781944ec17993"
+content-hash = "19083576850b349edc73791f70b4f9dab80e43ad4e6f6ea4300da600b1d4967f"
