@@ -10,9 +10,10 @@ import test_tools as tt
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import WitnessAccount
 
+INCORRECT_VALUE_OF_BLOCK_ID: str = "00000002bf0d7eb1cb0b3218d6d13f605f60d987"
+
 
 @pytest.mark.testnet()
-@pytest.mark.xfail
 def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
@@ -20,13 +21,12 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness(
     alice.check_if_account_has_witness_role(expected_witness_role=False)
 
     with pytest.raises(ErrorInResponseError) as error:
-        alice.witness_block_approve(block_id="100")
+        alice.witness_block_approve(block_id=INCORRECT_VALUE_OF_BLOCK_ID)
     assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()
 
 
 @pytest.mark.testnet()
-@pytest.mark.xfail
 def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
@@ -39,6 +39,6 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     alice.rc_manabar.update()
     wallet.api.use_authority("active", "alice")
     with pytest.raises(ErrorInResponseError) as error:
-        alice.witness_block_approve(block_id="100")
+        alice.witness_block_approve(block_id=INCORRECT_VALUE_OF_BLOCK_ID)
     assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()
