@@ -115,9 +115,9 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
 };
 
 
-template<typename SHM_Object_Type, typename SHM_Object_Index>
-struct rocksdb_reader_impl
+struct rocksdb_reader_helper
 {
+  template<typename SHM_Object_Type, typename SHM_Object_Index>
   static auto get_allocator( database& db )
   {
     auto& _indices = db.get_index<SHM_Object_Index>().indices();
@@ -148,7 +148,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_metadata_object, account_metadata_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
     rocksdb_account_metadata_object _obj;
@@ -156,7 +156,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
-                                                        rocksdb_reader_impl<account_metadata_object, account_metadata_index>::get_allocator( db ),
+                                                        rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
                                                         _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
   }
 };
@@ -169,7 +169,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_authority_object, account_authority_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
     rocksdb_account_authority_object _obj;
@@ -177,7 +177,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_authority_object>( new account_authority_object(
-                                                        rocksdb_reader_impl<account_authority_object, account_authority_index>::get_allocator( db ),
+                                                        rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                       _obj.id, _obj.account,
                                                   _obj.owner, _obj.active, _obj.posting,
                                   _obj.previous_owner_update, _obj.last_owner_update) );
@@ -192,7 +192,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() );
-    if( !rocksdb_reader_impl<account_object, account_index>::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
@@ -200,7 +200,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_object>( new account_object(
-                                                        rocksdb_reader_impl<account_object, account_index>::get_allocator( db ),
+                                                        rocksdb_reader_helper::get_allocator<account_object, account_index>( db ),
                                                       _obj.id,
                                                       _obj.recovery,
                                                       _obj.assets,
@@ -223,7 +223,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
     {
       PinnableSlice _buffer;
 
-      if( !rocksdb_reader_impl<account_object, account_index>::read<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+      if( !rocksdb_reader_helper::read<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
         return std::shared_ptr<account_object>();
 
       rocksdb_account_object_by_id _obj;
@@ -233,14 +233,14 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
 
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_impl<account_object, account_index>::read<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
+    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
       return std::shared_ptr<account_object>();
 
     rocksdb_account_object _obj;
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_object>( new account_object(
-                                                        rocksdb_reader_impl<account_object, account_index>::get_allocator( db ),
+                                                        rocksdb_reader_helper::get_allocator<account_object, account_index>( db ),
                                                       _obj.id,
                                                       _obj.recovery,
                                                       _obj.assets,
@@ -281,7 +281,7 @@ template<>
 std::shared_ptr<account_metadata_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_metadata_object, account_metadata_object, account_metadata_index>( const volatile_account_metadata_object& obj ) const
 {
   return std::shared_ptr<account_metadata_object>( new account_metadata_object(
-                                                      rocksdb_reader_impl<account_metadata_object, account_metadata_index>::get_allocator( db ),
+                                                      rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
                                                       obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ) );
 }
 
@@ -289,7 +289,7 @@ template<>
 std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_authority_object, account_authority_object, account_authority_index>( const volatile_account_authority_object& obj ) const
 {
   return std::shared_ptr<account_authority_object>( new account_authority_object(
-                                                      rocksdb_reader_impl<account_authority_object, account_authority_index>::get_allocator( db ),
+                                                      rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                     obj.account_authority_id, obj.account,
                                                  obj.owner, obj.active, obj.posting,
                                  obj.previous_owner_update, obj.last_owner_update) );
