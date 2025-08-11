@@ -2,7 +2,6 @@
 
 #include <hive/protocol/asset.hpp>
 
-#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/delayed_voting_processor.hpp>
 

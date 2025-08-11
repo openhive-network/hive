@@ -1,10 +1,7 @@
 #pragma once
 
-#include <hive/chain/account_details.hpp>
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/account_object.hpp>
-
-#include <hive/chain/util/type_registrar_definition.hpp>
+#include <hive/chain/account_details.hpp>
 
 #ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
 #define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 24
@@ -38,6 +35,9 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     account_details::shared_delayed_votes   shared_delayed_votes;
 
     uint32_t                                block_number = 0;
+
+    std::shared_ptr<account_object> read() const;
+
 };
 
 typedef oid_ref< volatile_account_object > volatile_account_id_type;

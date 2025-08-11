@@ -2,10 +2,7 @@
 #pragma once
 
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
-#include <hive/chain/external_storage/account_item.hpp>
 #include <hive/chain/external_storage/account_iterator.hpp>
-
-#include <hive/chain/hive_object_types.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 

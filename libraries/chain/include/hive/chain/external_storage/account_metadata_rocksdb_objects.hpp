@@ -1,9 +1,6 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/account_object.hpp>
-
-#include <hive/chain/util/type_registrar_definition.hpp>
 
 #ifndef HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID
 #define HIVE_ACCOUNT_METADATA_ROCKSDB_SPACE_ID 22

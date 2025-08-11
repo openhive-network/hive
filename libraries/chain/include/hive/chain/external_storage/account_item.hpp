@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/account_object.hpp>
 
 namespace hive { namespace chain {

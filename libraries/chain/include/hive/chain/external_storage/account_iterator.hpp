@@ -1,8 +1,8 @@
 #pragma once
 
-#include <chainbase/chainbase.hpp>
-#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/account_item.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
+
 //#include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
 
 namespace hive { namespace chain {
@@ -13,6 +13,8 @@ class account_iterator
   private:
 
     enum { shm_storage, volatile_storage } last;
+
+    const chainbase::database& db;
 
     using index_t = decltype( std::declval<chainbase::generic_index<account_index>>().indicies().template get<ByIndex>() );
     using volatile_index_t = decltype( std::declval<chainbase::generic_index<volatile_account_index>>().indicies().template get<ByIndex>() );
@@ -46,6 +48,7 @@ template<typename ByIndex>
 account_iterator<ByIndex>::account_iterator( const chainbase::database& db/*, rocksdb_account_storage_provider::ptr provider*/ )
                                                 : //provider( provider ),
                                                   last( shm_storage ),
+                                                  db( db ),
                                                   index( db.get_index< account_index, ByIndex >() ),
                                                   volatile_index( db.get_index< volatile_account_index, ByIndex >() )
 {
@@ -93,8 +96,7 @@ account account_iterator<ByIndex>::get()
   }
   else
   {
-    //return account( *volatile_it );
-    return account();
+    return account( volatile_it->read() );
   }
 }
 

@@ -1,8 +1,5 @@
 #include <chainbase/chainbase.hpp>
 
-#include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/index.hpp>
-
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/chain/external_storage/rocksdb_account_archive.hpp>
@@ -10,6 +7,10 @@
 #include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_snapshot.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
+
+#include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/account_authority_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 
 namespace hive { namespace chain {
 
@@ -138,6 +139,10 @@ struct rocksdb_reader_helper
 template<typename SHM_Object_Type, typename SHM_Object_Index, typename Key_Type>
 struct rocksdb_reader
 {
+  static std::shared_ptr<SHM_Object_Type> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const Key_Type& key, const std::vector<ColumnTypes>& column_types )
+  {
+    return std::shared_ptr<SHM_Object_Type>();
+  }
 };
 
 template<>
@@ -254,6 +259,10 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
 template<typename Volatile_Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
 struct volatile_reader
 {
+  static std::shared_ptr<SHM_Object_Type> read( const Volatile_Object_Type& obj, chainbase::database& db )
+  {
+    return std::shared_ptr<SHM_Object_Type>();
+  }
 };
 
 
@@ -286,14 +295,7 @@ struct volatile_reader<volatile_account_object, account_object, account_index>
 {
   static std::shared_ptr<account_object> read( const volatile_account_object& obj, chainbase::database& db )
   {
-    return std::shared_ptr<account_object>( new account_object(
-                                                      obj.account_id,
-                                                      obj.recovery,
-                                                      obj.assets,
-                                                      obj.mrc,
-                                                      obj.time,
-                                                      obj.misc,
-                                                      obj.shared_delayed_votes) );
+    return obj.read();
   }
 };
 
@@ -305,10 +307,6 @@ rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path&
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
 {
-  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_metadata_index );
-  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_authority_index );
-  HIVE_ADD_PLUGIN_INDEX( db, volatile_account_index );
-
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
 }
@@ -552,7 +550,3 @@ void rocksdb_account_archive::wipe()
 }
 
 } }
-
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_metadata_index )
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_authority_index )
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_account_index )

@@ -2,8 +2,6 @@
 
 #include <hive/chain/external_storage/types.hpp>
 
-#include<hive/chain/database.hpp>
-
 #include<memory>
 
 #include <rocksdb/db.h>
