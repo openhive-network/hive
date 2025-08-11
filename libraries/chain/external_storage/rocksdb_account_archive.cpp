@@ -250,6 +250,53 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
                                                       _obj.delayed_votes) );
   }
 };
+
+template<typename Volatile_Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
+struct volatile_reader
+{
+};
+
+
+template<>
+struct volatile_reader<volatile_account_metadata_object, account_metadata_object, account_metadata_index>
+{
+  static std::shared_ptr<account_metadata_object> read( const volatile_account_metadata_object& obj, database& db )
+  {
+    return std::shared_ptr<account_metadata_object>( new account_metadata_object(
+                                                        rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
+                                                        obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ) );
+  }
+};
+
+template<>
+struct volatile_reader<volatile_account_authority_object, account_authority_object, account_authority_index>
+{
+  static std::shared_ptr<account_authority_object> read( const volatile_account_authority_object& obj, database& db )
+  {
+    return std::shared_ptr<account_authority_object>( new account_authority_object(
+                                                        rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
+                                                        obj.account_authority_id, obj.account,
+                                                        obj.owner, obj.active, obj.posting,
+                                                        obj.previous_owner_update, obj.last_owner_update) );
+  }
+};
+
+template<>
+struct volatile_reader<volatile_account_object, account_object, account_index>
+{
+  static std::shared_ptr<account_object> read( const volatile_account_object& obj, database& db )
+  {
+    return std::shared_ptr<account_object>( new account_object(
+                                                      obj.account_id,
+                                                      obj.recovery,
+                                                      obj.assets,
+                                                      obj.mrc,
+                                                      obj.time,
+                                                      obj.misc,
+                                                      obj.shared_delayed_votes) );
+  }
+};
+
 }
 
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
@@ -280,37 +327,6 @@ uint32_t rocksdb_account_archive::get_block_num() const
 {
   auto _found_dgpo = db.find< dynamic_global_property_object >();
   return _found_dgpo ? _found_dgpo->head_block_number : 0;
-}
-
-template<>
-std::shared_ptr<account_metadata_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_metadata_object, account_metadata_object, account_metadata_index>( const volatile_account_metadata_object& obj ) const
-{
-  return std::shared_ptr<account_metadata_object>( new account_metadata_object(
-                                                      rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
-                                                      obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ) );
-}
-
-template<>
-std::shared_ptr<account_authority_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_authority_object, account_authority_object, account_authority_index>( const volatile_account_authority_object& obj ) const
-{
-  return std::shared_ptr<account_authority_object>( new account_authority_object(
-                                                      rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
-                                                    obj.account_authority_id, obj.account,
-                                                 obj.owner, obj.active, obj.posting,
-                                 obj.previous_owner_update, obj.last_owner_update) );
-}
-
-template<>
-std::shared_ptr<account_object> rocksdb_account_archive::create_from_volatile_object<volatile_account_object, account_object, account_index>( const volatile_account_object& obj ) const
-{
-  return std::shared_ptr<account_object>( new account_object(
-                                                    obj.account_id,
-                                                    obj.recovery,
-                                                    obj.assets,
-                                                    obj.mrc,
-                                                    obj.time,
-                                                    obj.misc,
-                                                    obj.shared_delayed_votes) );
 }
 
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type, typename RocksDB_Object_Type3 = RocksDB_Object_Type>
@@ -398,7 +414,7 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
     auto _volatile_found = _volatile_idx.find( key );
     if( _volatile_found != _volatile_idx.end() )
     {
-      const auto _external_found = create_from_volatile_object<Volatile_Object_Type, SHM_Object_Type, SHM_Object_Index>( *_volatile_found );
+      const auto _external_found = volatile_reader<Volatile_Object_Type, SHM_Object_Type, SHM_Object_Index>::read( *_volatile_found, db );
       return Object_Type( _external_found );
     }
     else
