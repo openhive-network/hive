@@ -29,14 +29,21 @@ class external_snapshot_storage_provider
     virtual void wipeDb() = 0;
 };
 
-class external_comment_storage_provider: public external_snapshot_storage_provider
+
+class external_storage_reader_writer
 {
   public:
 
-    using ptr = std::shared_ptr<external_comment_storage_provider>;
+    using ptr = std::shared_ptr<external_storage_reader_writer>;
 
     virtual void save( ColumnTypes column_type, const Slice& key, const Slice& value ) = 0;
     virtual bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) = 0;
+};
+
+class external_storage_provider: public external_storage_reader_writer, public external_snapshot_storage_provider
+{
+  public:
+
     virtual void flush() = 0;
 
     virtual void update_lib( uint32_t ) = 0;

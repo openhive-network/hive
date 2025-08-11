@@ -79,7 +79,7 @@ namespace
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename Slice_Type, typename Key_Type>
 struct transporter_impl
 {
-  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, const Key_Type& key, uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
   {
     Slice_Type _key( key );
 
@@ -95,7 +95,7 @@ struct transporter_impl
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
 struct transporter
 {
-  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() );
     transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
@@ -105,7 +105,7 @@ struct transporter
 template<>
 struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
 {
-  static void move_to_external_storage( rocksdb_account_storage_provider::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 3 );
     transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
@@ -126,7 +126,7 @@ struct rocksdb_reader_helper
   }
 
   template<typename Slice_Type, typename Key_Type>
-  static bool read( const rocksdb_account_storage_provider::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
+  static bool read( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
   {
     Slice_Type _key( key );
 
@@ -143,7 +143,7 @@ struct rocksdb_reader
 template<>
 struct rocksdb_reader<account_metadata_object, account_metadata_index, account_name_type>
 {
-  static std::shared_ptr<account_metadata_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_metadata_object> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -164,7 +164,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
 template<>
 struct rocksdb_reader<account_authority_object, account_authority_index, account_name_type>
 {
-  static std::shared_ptr<account_authority_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_authority_object> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -187,7 +187,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
 template<>
 struct rocksdb_reader<account_object, account_index, account_name_type>
 {
-  static std::shared_ptr<account_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_object> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -214,7 +214,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
 template<>
 struct rocksdb_reader<account_object, account_index, account_id_type>
 {
-  static std::shared_ptr<account_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_object> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
   {
     account_name_type _name;
 
