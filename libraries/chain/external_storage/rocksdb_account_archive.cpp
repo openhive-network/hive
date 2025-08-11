@@ -118,7 +118,7 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
 struct rocksdb_reader_helper
 {
   template<typename SHM_Object_Type, typename SHM_Object_Index>
-  static auto get_allocator( database& db )
+  static auto get_allocator( chainbase::database& db )
   {
     auto& _indices = db.get_index<SHM_Object_Index>().indices();
     auto _allocator = _indices.get_allocator();
@@ -143,7 +143,7 @@ struct rocksdb_reader
 template<>
 struct rocksdb_reader<account_metadata_object, account_metadata_index, account_name_type>
 {
-  static std::shared_ptr<account_metadata_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_metadata_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -164,7 +164,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
 template<>
 struct rocksdb_reader<account_authority_object, account_authority_index, account_name_type>
 {
-  static std::shared_ptr<account_authority_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_authority_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -187,7 +187,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
 template<>
 struct rocksdb_reader<account_object, account_index, account_name_type>
 {
-  static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -214,7 +214,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
 template<>
 struct rocksdb_reader<account_object, account_index, account_id_type>
 {
-  static std::shared_ptr<account_object> read( database& db, const rocksdb_account_storage_provider::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
+  static std::shared_ptr<account_object> read( chainbase::database& db, const rocksdb_account_storage_provider::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
   {
     account_name_type _name;
 
@@ -260,7 +260,7 @@ struct volatile_reader
 template<>
 struct volatile_reader<volatile_account_metadata_object, account_metadata_object, account_metadata_index>
 {
-  static std::shared_ptr<account_metadata_object> read( const volatile_account_metadata_object& obj, database& db )
+  static std::shared_ptr<account_metadata_object> read( const volatile_account_metadata_object& obj, chainbase::database& db )
   {
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
                                                         rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
@@ -271,7 +271,7 @@ struct volatile_reader<volatile_account_metadata_object, account_metadata_object
 template<>
 struct volatile_reader<volatile_account_authority_object, account_authority_object, account_authority_index>
 {
-  static std::shared_ptr<account_authority_object> read( const volatile_account_authority_object& obj, database& db )
+  static std::shared_ptr<account_authority_object> read( const volatile_account_authority_object& obj, chainbase::database& db )
   {
     return std::shared_ptr<account_authority_object>( new account_authority_object(
                                                         rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
@@ -284,7 +284,7 @@ struct volatile_reader<volatile_account_authority_object, account_authority_obje
 template<>
 struct volatile_reader<volatile_account_object, account_object, account_index>
 {
-  static std::shared_ptr<account_object> read( const volatile_account_object& obj, database& db )
+  static std::shared_ptr<account_object> read( const volatile_account_object& obj, chainbase::database& db )
   {
     return std::shared_ptr<account_object>( new account_object(
                                                       obj.account_id,

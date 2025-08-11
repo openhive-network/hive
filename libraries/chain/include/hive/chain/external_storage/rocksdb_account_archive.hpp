@@ -26,7 +26,7 @@ class rocksdb_account_archive : public accounts_handler
     const size_t volatile_objects_limit = 1'000;
 #endif
 
-    database& db;
+    chainbase::database& db;
 
     rocksdb_account_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
