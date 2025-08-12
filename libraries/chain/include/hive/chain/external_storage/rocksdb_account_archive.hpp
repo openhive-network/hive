@@ -15,6 +15,7 @@ class rocksdb_account_archive : public accounts_handler
   protected:
 
     const chainbase::database& get_db() const override;
+    rocksdb_account_column_family_iterator_provider::ptr get_rocksdb_account_column_family_iterator_provider() override;
 
   private:
 

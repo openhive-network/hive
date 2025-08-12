@@ -94,7 +94,7 @@ add_library( hive_chain
              external_storage/rocksdb_snapshot.cpp
              external_storage/types.cpp
              external_storage/account_rocksdb_objects.cpp
-
+             external_storage/rocksdb_column_family_iterator.cpp
              ${HEADERS}
            )
 

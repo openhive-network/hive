@@ -321,6 +321,11 @@ const chainbase::database& rocksdb_account_archive::get_db() const
   return db;
 }
 
+rocksdb_account_column_family_iterator_provider::ptr rocksdb_account_archive::get_rocksdb_account_column_family_iterator_provider()
+{
+  return provider;
+}
+
 uint32_t rocksdb_account_archive::get_block_num() const
 {
   auto _found_dgpo = db.find< dynamic_global_property_object >();

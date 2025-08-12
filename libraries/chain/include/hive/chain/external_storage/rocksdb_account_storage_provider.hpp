@@ -14,7 +14,7 @@
 
 namespace hive { namespace chain {
 
-class rocksdb_account_storage_provider: public rocksdb_account_iterator_provider, public rocksdb_base_storage_provider
+class rocksdb_account_storage_provider: public rocksdb_account_column_family_iterator_provider, public rocksdb_base_storage_provider
 {
   private:
 
@@ -30,7 +30,7 @@ class rocksdb_account_storage_provider: public rocksdb_account_iterator_provider
     void save( ColumnTypes column_type, const Slice& key, const Slice& value ) override;
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
 
-    rocksdb_account_iterator_provider::ptr get_iterator() override;
+    std::unique_ptr<::rocksdb::Iterator> create_column_family_iterator( ColumnTypes column_type ) override;
 };
 
 }}

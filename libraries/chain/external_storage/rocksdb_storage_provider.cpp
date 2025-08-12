@@ -224,7 +224,7 @@ void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
 
 void rocksdb_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
 {
-  auto s = getWriteBuffer().Put( _columnHandles[column_type], key, value );
+  auto s = getWriteBuffer().Put( getColumnHandle(column_type), key, value );
   checkStatus(s);
 }
 
@@ -232,13 +232,19 @@ bool rocksdb_storage_provider::read( ColumnTypes column_type, const Slice& key, 
 {
   ReadOptions rOptions;
 
-  ::rocksdb::Status s = getStorage()->Get( rOptions, _columnHandles[column_type], key, &value );
+  ::rocksdb::Status s = getStorage()->Get( rOptions, getColumnHandle(column_type), key, &value );
   return s.ok();
 }
 
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();
+}
+
+ColumnFamilyHandle* rocksdb_storage_provider::getColumnHandle( ColumnTypes column_type )
+{
+  FC_ASSERT( column_type < _columnHandles.size() );
+  return _columnHandles[column_type];
 }
 
 void rocksdb_storage_provider::load_lib()

@@ -1,6 +1,7 @@
 
 #include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
-
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/rocksdb_column_family_iterator.hpp>
 namespace hive { namespace chain {
 
 rocksdb_account_storage_provider::rocksdb_account_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
@@ -59,9 +60,38 @@ bool rocksdb_account_storage_provider::read( ColumnTypes column_type, const Slic
   return rocksdb_storage_provider::read( column_type, key, value );
 }
 
-rocksdb_account_iterator_provider::ptr rocksdb_account_storage_provider::get_iterator()
+namespace
 {
-  return rocksdb_account_iterator_provider::ptr();
+  template< ColumnTypes Column_Type>
+  class rocksdb_reader
+  {
+    public:
+      static account read( const Slice& value )
+      {
+        return account();
+      }
+  };
+
+  template<>
+  class rocksdb_reader<ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL>
+  {
+    public:
+      static account read( const Slice& value )
+      {
+        rocksdb_account_object_by_next_vesting_withdrawal _obj;
+        load( _obj, value.data(), value.size() );
+        return account();
+      }
+  };
+}
+
+std::unique_ptr<::rocksdb::Iterator> rocksdb_account_storage_provider::create_column_family_iterator( ColumnTypes column_type )
+{
+  auto _column_handle = getColumnHandle( column_type );
+  FC_ASSERT( _column_handle );
+
+  rocksdb::ReadOptions read_options;
+  return std::unique_ptr<::rocksdb::Iterator>( getStorage()->NewIterator( read_options, _column_handle ) );
 }
 
 }}

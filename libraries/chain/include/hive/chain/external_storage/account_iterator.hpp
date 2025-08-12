@@ -2,9 +2,8 @@
 
 #include <hive/chain/external_storage/account_item.hpp>
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
-
-//#include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
-
+#include <hive/chain/external_storage/rocksdb_account_iterator.hpp>
+#include <hive/chain/external_storage/rocksdb_iterator_provider.hpp>
 namespace hive { namespace chain {
 
 template<typename ByIndex>
@@ -22,7 +21,7 @@ class account_iterator
     using iterator_t = decltype( std::declval<index_t>().begin() );
     using volatile_iterator_t = decltype( std::declval<volatile_index_t>().begin() );
 
-    //rocksdb_account_storage_provider::ptr provider;
+    rocksdb_account_iterator::ptr rocksdb_iterator;
 
     const index_t& index;
     const volatile_index_t& volatile_index;
@@ -36,7 +35,7 @@ class account_iterator
 
   public:
 
-    account_iterator( const chainbase::database& db/*, rocksdb_account_storage_provider::ptr provider*/ );
+    account_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider );
 
     account begin();
     account get();
@@ -45,10 +44,10 @@ class account_iterator
 };
 
 template<typename ByIndex>
-account_iterator<ByIndex>::account_iterator( const chainbase::database& db/*, rocksdb_account_storage_provider::ptr provider*/ )
-                                                : //provider( provider ),
-                                                  last( shm_storage ),
+account_iterator<ByIndex>::account_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider )
+                                                : last( shm_storage ),
                                                   db( db ),
+                                                  rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider ) ),
                                                   index( db.get_index< account_index, ByIndex >() ),
                                                   volatile_index( db.get_index< volatile_account_index, ByIndex >() )
 {
@@ -124,7 +123,6 @@ template<typename ByIndex>
 std::shared_ptr<account_iterator<ByIndex>> get_iterator()
 {
   return std::shared_ptr<account_iterator<ByIndex>>();
-  //std::make_shared<account_iterator<ByIndex>>(Args &&args...)
 }
 
 }}

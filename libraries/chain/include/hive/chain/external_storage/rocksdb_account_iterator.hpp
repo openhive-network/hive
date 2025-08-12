@@ -17,13 +17,13 @@ class rocksdb_account_iterator
     virtual bool end() = 0;
 };
 
-class rocksdb_account_iterator_provider
+class rocksdb_account_column_family_iterator_provider
 {
   public:
 
-    using ptr = std::shared_ptr<rocksdb_account_iterator>;
+    using ptr = std::shared_ptr<rocksdb_account_column_family_iterator_provider>;
 
-    virtual rocksdb_account_iterator_provider::ptr get_iterator() = 0;
+    virtual std::unique_ptr<::rocksdb::Iterator> create_column_family_iterator( ColumnTypes column_type ) = 0;
 };
 
 }}
