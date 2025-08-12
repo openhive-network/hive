@@ -59,4 +59,9 @@ bool rocksdb_account_storage_provider::read( ColumnTypes column_type, const Slic
   return rocksdb_storage_provider::read( column_type, key, value );
 }
 
+rocksdb_account_iterator_provider::ptr rocksdb_account_storage_provider::get_iterator()
+{
+  return rocksdb_account_iterator_provider::ptr();
+}
+
 }}
