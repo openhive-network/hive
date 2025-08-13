@@ -16,7 +16,7 @@ class rocksdb_column_family_iterator: public rocksdb_account_iterator
 
     rocksdb_column_family_iterator( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider );
 
-    account begin() override;
+    std::shared_ptr<account_object> begin() override;
 
     void next() override;
     bool end() override;
@@ -33,7 +33,7 @@ class rocksdb_column_family_iterator_by_next_vesting_withdrawal: public rocksdb_
   public:
 
     rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider );
-    account get() override;
+    std::shared_ptr<account_object> get() override;
 };
 
 }}

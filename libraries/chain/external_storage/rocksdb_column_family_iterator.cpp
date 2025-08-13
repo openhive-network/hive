@@ -8,7 +8,7 @@ rocksdb_column_family_iterator::rocksdb_column_family_iterator( ColumnTypes _col
   it = _provider->create_column_family_iterator( _column_type );
 }
 
-account rocksdb_column_family_iterator::begin()
+std::shared_ptr<account_object> rocksdb_column_family_iterator::begin()
 {
   it->SeekToFirst();
   return get();
@@ -29,10 +29,10 @@ rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family
 {
 }
 
-account rocksdb_column_family_iterator_by_next_vesting_withdrawal::get()
+std::shared_ptr<account_object> rocksdb_column_family_iterator_by_next_vesting_withdrawal::get()
 {
 //auto _x = rocksdb_reader<ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL>::read( it->value() );
-  return account();
+  return std::shared_ptr<account_object>();
 }
 
 }}

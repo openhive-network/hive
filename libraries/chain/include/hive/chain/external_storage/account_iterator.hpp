@@ -11,7 +11,7 @@ class account_iterator
 {
   private:
 
-    enum { shm_storage, volatile_storage } last;
+    enum { shm_storage, volatile_storage, rocksdb_storage } last;
 
     const chainbase::database& db;
 
@@ -21,17 +21,21 @@ class account_iterator
     using iterator_t = decltype( std::declval<index_t>().begin() );
     using volatile_iterator_t = decltype( std::declval<volatile_index_t>().begin() );
 
-    rocksdb_account_iterator::ptr rocksdb_iterator;
-
     const index_t& index;
     const volatile_index_t& volatile_index;
 
     iterator_t it;
     volatile_iterator_t volatile_it;
+    rocksdb_account_iterator::ptr rocksdb_iterator;
 
-    template<typename Object_Type1, typename Object_Type2>
-    bool cmp( const Object_Type1& a, const Object_Type2& b );
+    std::shared_ptr<account_object> rocksdb_item;
+    std::shared_ptr<account_object> volatile_item;
+
+    bool cmp( const account_object& a, const account_object& b );
     void execute_cmp();
+
+    void update_volatile_item();
+    void update_rocksdb_item();
 
   public:
 
@@ -47,15 +51,28 @@ template<typename ByIndex>
 account_iterator<ByIndex>::account_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider )
                                                 : last( shm_storage ),
                                                   db( db ),
-                                                  rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider ) ),
                                                   index( db.get_index< account_index, ByIndex >() ),
-                                                  volatile_index( db.get_index< volatile_account_index, ByIndex >() )
+                                                  volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
+                                                  rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider ) )
 {
 }
 
 template<typename ByIndex>
-template<typename Object_Type1, typename Object_Type2>
-bool account_iterator<ByIndex>::cmp( const Object_Type1& a, const Object_Type2& b )
+void account_iterator<ByIndex>::update_volatile_item()
+{
+  if( volatile_it != volatile_index.end() )
+    volatile_item = volatile_it->read();
+}
+
+template<typename ByIndex>
+void account_iterator<ByIndex>::update_rocksdb_item()
+{
+  if( !rocksdb_iterator->end() )
+    rocksdb_item = rocksdb_iterator->get();
+}
+
+template<typename ByIndex>
+bool account_iterator<ByIndex>::cmp( const account_object& a, const account_object& b )
 {
   return a.get_next_vesting_withdrawal() < b.get_next_vesting_withdrawal();
 }
@@ -66,13 +83,39 @@ void account_iterator<ByIndex>::execute_cmp()
   if( end() )
     return;
 
-  if( it == index.end() || volatile_it == volatile_index.end() )
+  if( it == index.end() || volatile_it == volatile_index.end() || rocksdb_iterator->end() )
   {
-    last = it == index.end() ? volatile_storage : shm_storage;
-    return;
+    if( it == index.end() )
+    {
+      if( volatile_it == volatile_index.end() || rocksdb_iterator->end() )
+        last = volatile_it == volatile_index.end() ? rocksdb_storage : volatile_storage;
+      else
+        last = cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
+    }
+    else if( volatile_it == volatile_index.end() )
+    {
+      if( it == index.end() || rocksdb_iterator->end() )
+        last = it == index.end() ? rocksdb_storage : shm_storage;
+      else
+        last = cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
+    }
+    else
+    {
+      if( it == index.end() || volatile_it == volatile_index.end() )
+        last = it == index.end() ? volatile_storage : shm_storage;
+      else
+        last = cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
+    }
+  }
+  else
+  {
+    last = cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
+    if( last == shm_storage )
+      last = cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
+    else
+      last = cmp( *it, *volatile_item ) ? volatile_storage : rocksdb_storage;
   }
 
-  last = cmp( *it, *volatile_it ) ? shm_storage : volatile_storage;
 }
 
 template<typename ByIndex>
@@ -80,6 +123,10 @@ account account_iterator<ByIndex>::begin()
 {
   it = index.begin();
   volatile_it = volatile_index.begin();
+  rocksdb_iterator->begin();
+
+  update_volatile_item();
+  update_rocksdb_item();
 
   execute_cmp();
 
@@ -93,9 +140,13 @@ account account_iterator<ByIndex>::get()
   {
     return account( &(*it) );
   }
+  else if( last == volatile_storage )
+  {
+    return account( volatile_item );
+  }
   else
   {
-    return account( volatile_it->read() );
+    return account( rocksdb_item );
   }
 }
 
@@ -106,23 +157,24 @@ void account_iterator<ByIndex>::next()
   {
     ++it;
   }
-  else
+  else if( last == volatile_storage )
   {
     ++volatile_it;
+    update_volatile_item();
   }
+  else
+  {
+    rocksdb_iterator->next();
+    update_rocksdb_item();
+  }
+
   execute_cmp();
 }
 
 template<typename ByIndex>
 bool account_iterator<ByIndex>::end()
 {
-  return it == index.end() && volatile_it == volatile_index.end();
-}
-
-template<typename ByIndex>
-std::shared_ptr<account_iterator<ByIndex>> get_iterator()
-{
-  return std::shared_ptr<account_iterator<ByIndex>>();
+  return it == index.end() && volatile_it == volatile_index.end() && rocksdb_iterator->end();
 }
 
 }}
