@@ -1,4 +1,4 @@
-FROM alpine:latest AS transmogrifier
+FROM alpine:3.22.1 AS transmogrifier
 
 RUN apk add --no-cache jq
 
@@ -7,7 +7,7 @@ COPY openapi.json /openapi.json.orig
 RUN jq -c '.servers=[{url:"/"}]' /openapi.json.orig > /openapi.json
 
 # Start from busybox
-FROM busybox:latest
+FROM busybox:1.37.0
 
 # Set the working directory
 WORKDIR /www
