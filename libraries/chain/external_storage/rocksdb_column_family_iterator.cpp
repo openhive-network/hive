@@ -4,9 +4,9 @@
 
 namespace hive { namespace chain {
 
-rocksdb_column_family_iterator::rocksdb_column_family_iterator( ColumnTypes column_type,
+rocksdb_column_family_iterator::rocksdb_column_family_iterator( const chainbase::database& db, ColumnTypes column_type,
               rocksdb_account_column_family_iterator_provider::ptr& _provider, external_storage_reader_writer::ptr& reader )
-              : reader( reader )
+              : db( db ), reader( reader )
 {
   it = _provider->create_column_family_iterator( column_type );
 }
@@ -28,9 +28,9 @@ bool rocksdb_column_family_iterator::end()
   return !it->Valid();
 }
 
-rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes column_type,
+rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family_iterator_by_next_vesting_withdrawal( const chainbase::database& db, ColumnTypes column_type,
                 rocksdb_account_column_family_iterator_provider::ptr& provider, external_storage_reader_writer::ptr& reader )
-: rocksdb_column_family_iterator( column_type, provider, reader )
+: rocksdb_column_family_iterator( db, column_type, provider, reader )
 {
 }
 
@@ -46,7 +46,7 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator_by_next_vesting_w
   rocksdb_account_object _main_obj;
 
   load( _main_obj, _buffer.data(), _buffer.size() );
-  return std::shared_ptr<account_object>();
+  return _main_obj.build( db );
 }
 
 }}

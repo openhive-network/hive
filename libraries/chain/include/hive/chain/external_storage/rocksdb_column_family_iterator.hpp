@@ -9,13 +9,15 @@ class rocksdb_column_family_iterator: public rocksdb_account_iterator
 {
   protected:
 
+    const chainbase::database& db;
+
     std::unique_ptr<::rocksdb::Iterator> it;
 
     external_storage_reader_writer::ptr& reader;
 
   public:
 
-    rocksdb_column_family_iterator( ColumnTypes _column_type,
+    rocksdb_column_family_iterator( const chainbase::database& db, ColumnTypes _column_type,
                   rocksdb_account_column_family_iterator_provider::ptr& provider, external_storage_reader_writer::ptr& reader );
 
     std::shared_ptr<account_object> begin() override;
@@ -28,7 +30,7 @@ class rocksdb_column_family_iterator_by_next_vesting_withdrawal: public rocksdb_
 {
   public:
 
-    rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes _column_type,
+    rocksdb_column_family_iterator_by_next_vesting_withdrawal( const chainbase::database& db, ColumnTypes _column_type,
                   rocksdb_account_column_family_iterator_provider::ptr& _provider, external_storage_reader_writer::ptr& reader );
 
     std::shared_ptr<account_object> get() override;

@@ -103,7 +103,7 @@ class rocksdb_account_object
     }
   }
 
-  std::shared_ptr<account_object> build( chainbase::database& db )
+  std::shared_ptr<account_object> build( const chainbase::database& db )
   {
     return std::shared_ptr<account_object>( new account_object(
                                                       allocator_helper::get_allocator<account_object, account_index>( db ),

@@ -57,7 +57,7 @@ account_iterator<ByIndex>::account_iterator(  const chainbase::database& db,
                                                 db( db ),
                                                 index( db.get_index< account_index, ByIndex >() ),
                                                 volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
-                                                rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider, reader ) )
+                                                rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( db, provider, reader ) )
 {
 }
 

@@ -7,7 +7,7 @@ namespace hive { namespace chain {
 struct allocator_helper
 {
   template<typename SHM_Object_Type, typename SHM_Object_Index>
-  static auto get_allocator( chainbase::database& db )
+  static auto get_allocator( const chainbase::database& db )
   {
     auto& _indices = db.get_index<SHM_Object_Index>().indices();
     auto _allocator = _indices.get_allocator();
