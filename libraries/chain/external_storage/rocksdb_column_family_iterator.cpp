@@ -11,10 +11,9 @@ rocksdb_column_family_iterator::rocksdb_column_family_iterator( const chainbase:
   it = _provider->create_column_family_iterator( column_type );
 }
 
-std::shared_ptr<account_object> rocksdb_column_family_iterator::begin()
+void rocksdb_column_family_iterator::begin()
 {
   it->SeekToFirst();
-  return get();
 }
 
 void rocksdb_column_family_iterator::next()

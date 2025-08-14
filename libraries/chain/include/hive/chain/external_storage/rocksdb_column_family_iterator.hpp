@@ -20,7 +20,7 @@ class rocksdb_column_family_iterator: public rocksdb_account_iterator
     rocksdb_column_family_iterator( const chainbase::database& db, ColumnTypes _column_type,
                   rocksdb_account_column_family_iterator_provider::ptr& provider, external_storage_reader_writer::ptr& reader );
 
-    std::shared_ptr<account_object> begin() override;
+    void begin() override;
 
     void next() override;
     bool end() override;
