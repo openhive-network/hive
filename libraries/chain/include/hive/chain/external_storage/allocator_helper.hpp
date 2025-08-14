@@ -1,3 +1,5 @@
+#pragma once
+
 #include <chainbase/chainbase.hpp>
 
 namespace hive { namespace chain {

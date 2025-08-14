@@ -1,7 +1,7 @@
 #pragma once
 
-#include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/account_details.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/external_storage/allocator_helper.hpp>
 
 #ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
 #define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 24
@@ -101,6 +101,19 @@ class rocksdb_account_object
     {
       delayed_votes.push_back( item );
     }
+  }
+
+  std::shared_ptr<account_object> build( chainbase::database& db )
+  {
+    return std::shared_ptr<account_object>( new account_object(
+                                                      allocator_helper::get_allocator<account_object, account_index>( db ),
+                                                      id,
+                                                      recovery,
+                                                      assets,
+                                                      mrc,
+                                                      time,
+                                                      misc,
+                                                      delayed_votes) );
   }
 
   account_id_type                         id;

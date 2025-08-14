@@ -197,15 +197,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
 
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return std::shared_ptr<account_object>( new account_object(
-                                                        allocator_helper::get_allocator<account_object, account_index>( db ),
-                                                      _obj.id,
-                                                      _obj.recovery,
-                                                      _obj.assets,
-                                                      _obj.mrc,
-                                                      _obj.time,
-                                                      _obj.misc,
-                                                      _obj.delayed_votes) );
+    return _obj.build( db );
   }
 };
 
@@ -237,15 +229,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
     rocksdb_account_object _obj;
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return std::shared_ptr<account_object>( new account_object(
-                                                        allocator_helper::get_allocator<account_object, account_index>( db ),
-                                                      _obj.id,
-                                                      _obj.recovery,
-                                                      _obj.assets,
-                                                      _obj.mrc,
-                                                      _obj.time,
-                                                      _obj.misc,
-                                                      _obj.delayed_votes) );
+    return _obj.build( db );
   }
 };
 
