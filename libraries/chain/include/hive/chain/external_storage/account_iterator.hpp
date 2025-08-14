@@ -7,6 +7,33 @@
 namespace hive { namespace chain {
 
 template<typename ByIndex>
+class comparator
+{
+  public:
+
+    static bool cmp( const account_object& a, const account_object& b )
+    {
+      return false;
+    }
+
+};
+
+template<>
+class comparator<by_next_vesting_withdrawal>
+{
+  public:
+
+    static bool cmp( const account_object& a, const account_object& b )
+    {
+      if( a.get_next_vesting_withdrawal() == b.get_next_vesting_withdrawal())
+        return a.get_name() < b.get_name();
+      else
+        return a.get_next_vesting_withdrawal() < b.get_next_vesting_withdrawal();
+    }
+
+};
+
+template<typename ByIndex>
 class account_iterator
 {
   private:
@@ -31,7 +58,6 @@ class account_iterator
     std::shared_ptr<account_object> rocksdb_item;
     std::shared_ptr<account_object> volatile_item;
 
-    bool cmp( const account_object& a, const account_object& b );
     void execute_cmp();
 
     void update_volatile_item();
@@ -76,12 +102,6 @@ void account_iterator<ByIndex>::update_rocksdb_item()
 }
 
 template<typename ByIndex>
-bool account_iterator<ByIndex>::cmp( const account_object& a, const account_object& b )
-{
-  return a.get_next_vesting_withdrawal() < b.get_next_vesting_withdrawal();
-}
-
-template<typename ByIndex>
 void account_iterator<ByIndex>::execute_cmp()
 {
   if( end() )
@@ -94,30 +114,30 @@ void account_iterator<ByIndex>::execute_cmp()
       if( volatile_it == volatile_index.end() || rocksdb_iterator->end() )
         last = volatile_it == volatile_index.end() ? rocksdb_storage : volatile_storage;
       else
-        last = cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
+        last = comparator<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
     }
     else if( volatile_it == volatile_index.end() )
     {
       if( it == index.end() || rocksdb_iterator->end() )
         last = it == index.end() ? rocksdb_storage : shm_storage;
       else
-        last = cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
+        last = comparator<ByIndex>::cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
     }
     else
     {
       if( it == index.end() || volatile_it == volatile_index.end() )
         last = it == index.end() ? volatile_storage : shm_storage;
       else
-        last = cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
+        last = comparator<ByIndex>::cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
     }
   }
   else
   {
-    last = cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
+    last = comparator<ByIndex>::cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
     if( last == shm_storage )
-      last = cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
+      last = comparator<ByIndex>::cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
     else
-      last = cmp( *it, *volatile_item ) ? volatile_storage : rocksdb_storage;
+      last = comparator<ByIndex>::cmp( *it, *volatile_item ) ? volatile_storage : rocksdb_storage;
   }
 
 }
