@@ -39,7 +39,9 @@ class account_iterator
 
   public:
 
-    account_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider );
+    account_iterator( const chainbase::database& db,
+                      rocksdb_account_column_family_iterator_provider::ptr provider,
+                      external_storage_reader_writer::ptr reader );
 
     account begin();
     account get();
@@ -48,12 +50,14 @@ class account_iterator
 };
 
 template<typename ByIndex>
-account_iterator<ByIndex>::account_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider )
-                                                : last( shm_storage ),
-                                                  db( db ),
-                                                  index( db.get_index< account_index, ByIndex >() ),
-                                                  volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
-                                                  rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider ) )
+account_iterator<ByIndex>::account_iterator(  const chainbase::database& db,
+                                              rocksdb_account_column_family_iterator_provider::ptr provider,
+                                              external_storage_reader_writer::ptr reader )
+                                              : last( shm_storage ),
+                                                db( db ),
+                                                index( db.get_index< account_index, ByIndex >() ),
+                                                volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
+                                                rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( provider, reader ) )
 {
 }
 

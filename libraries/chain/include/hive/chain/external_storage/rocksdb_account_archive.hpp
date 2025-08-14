@@ -16,6 +16,7 @@ class rocksdb_account_archive : public accounts_handler
 
     const chainbase::database& get_db() const override;
     rocksdb_account_column_family_iterator_provider::ptr get_rocksdb_account_column_family_iterator_provider() override;
+    external_storage_reader_writer::ptr get_external_storage_reader_writer() override;
 
   private:
 

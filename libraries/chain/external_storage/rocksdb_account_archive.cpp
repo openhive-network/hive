@@ -326,6 +326,11 @@ rocksdb_account_column_family_iterator_provider::ptr rocksdb_account_archive::ge
   return provider;
 }
 
+external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storage_reader_writer()
+{
+  return provider;
+}
+
 uint32_t rocksdb_account_archive::get_block_num() const
 {
   auto _found_dgpo = db.find< dynamic_global_property_object >();

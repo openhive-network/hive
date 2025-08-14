@@ -1,20 +1,22 @@
 #pragma once
 
 #include <hive/chain/external_storage/rocksdb_account_iterator.hpp>
+#include <hive/chain/external_storage/external_storage_provider.hpp>
 
 namespace hive { namespace chain {
 
 class rocksdb_column_family_iterator: public rocksdb_account_iterator
 {
-  private:
-
-    ColumnTypes column_type;
+  protected:
 
     std::unique_ptr<::rocksdb::Iterator> it;
 
+    external_storage_reader_writer::ptr& reader;
+
   public:
 
-    rocksdb_column_family_iterator( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider );
+    rocksdb_column_family_iterator( ColumnTypes _column_type,
+                  rocksdb_account_column_family_iterator_provider::ptr& provider, external_storage_reader_writer::ptr& reader );
 
     std::shared_ptr<account_object> begin() override;
 
@@ -24,15 +26,11 @@ class rocksdb_column_family_iterator: public rocksdb_account_iterator
 
 class rocksdb_column_family_iterator_by_next_vesting_withdrawal: public rocksdb_column_family_iterator
 {
-  private:
-
-    ColumnTypes column_type;
-
-    std::unique_ptr<::rocksdb::Iterator> it;
-
   public:
 
-    rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider );
+    rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes _column_type,
+                  rocksdb_account_column_family_iterator_provider::ptr& _provider, external_storage_reader_writer::ptr& reader );
+
     std::shared_ptr<account_object> get() override;
 };
 

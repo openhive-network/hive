@@ -1,11 +1,14 @@
 #include <hive/chain/external_storage/rocksdb_column_family_iterator.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 namespace hive { namespace chain {
 
-rocksdb_column_family_iterator::rocksdb_column_family_iterator( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider )
-: column_type( _column_type )
+rocksdb_column_family_iterator::rocksdb_column_family_iterator( ColumnTypes column_type,
+              rocksdb_account_column_family_iterator_provider::ptr& _provider, external_storage_reader_writer::ptr& reader )
+              : reader( reader )
 {
-  it = _provider->create_column_family_iterator( _column_type );
+  it = _provider->create_column_family_iterator( column_type );
 }
 
 std::shared_ptr<account_object> rocksdb_column_family_iterator::begin()
@@ -16,22 +19,33 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator::begin()
 
 void rocksdb_column_family_iterator::next()
 {
-  it->Next();
+  if( !end() )
+    it->Next();
 }
 
 bool rocksdb_column_family_iterator::end()
 {
-  return it->Valid();
+  return !it->Valid();
 }
 
-rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes _column_type, rocksdb_account_column_family_iterator_provider::ptr& _provider )
-: rocksdb_column_family_iterator( _column_type, _provider ) 
+rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family_iterator_by_next_vesting_withdrawal( ColumnTypes column_type,
+                rocksdb_account_column_family_iterator_provider::ptr& provider, external_storage_reader_writer::ptr& reader )
+: rocksdb_column_family_iterator( column_type, provider, reader )
 {
 }
 
 std::shared_ptr<account_object> rocksdb_column_family_iterator_by_next_vesting_withdrawal::get()
 {
-//auto _x = rocksdb_reader<ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL>::read( it->value() );
+  rocksdb_account_object_by_next_vesting_withdrawal _obj;
+
+  load( _obj, it->value().data(), it->value().size() );
+
+  PinnableSlice _buffer;
+  FC_ASSERT( reader->read( ColumnTypes::ACCOUNT, account_name_slice_t( _obj.name.data ), _buffer ) );
+
+  rocksdb_account_object _main_obj;
+
+  load( _main_obj, _buffer.data(), _buffer.size() );
   return std::shared_ptr<account_object>();
 }
 

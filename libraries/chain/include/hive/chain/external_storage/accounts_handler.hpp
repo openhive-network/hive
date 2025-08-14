@@ -85,13 +85,14 @@ class accounts_handler : public executor_interface, public external_storage_snap
 
     virtual const chainbase::database& get_db() const = 0;
     virtual rocksdb_account_column_family_iterator_provider::ptr get_rocksdb_account_column_family_iterator_provider() = 0;
+    virtual external_storage_reader_writer::ptr get_external_storage_reader_writer() = 0;
 
   public:
 
     template<typename ByIndex>
     std::shared_ptr<account_iterator<ByIndex>> get_iterator()
     {
-      return std::make_shared<account_iterator<ByIndex>>( get_db(), get_rocksdb_account_column_family_iterator_provider() );
+      return std::make_shared<account_iterator<ByIndex>>( get_db(), get_rocksdb_account_column_family_iterator_provider(), get_external_storage_reader_writer() );
     }
 
     using ptr = std::shared_ptr<accounts_handler>;
