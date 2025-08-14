@@ -11,6 +11,7 @@
 #include <hive/chain/external_storage/account_metadata_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/account_authority_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/allocator_helper.hpp>
 
 namespace hive { namespace chain {
 
@@ -118,14 +119,6 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
 
 struct rocksdb_reader_helper
 {
-  template<typename SHM_Object_Type, typename SHM_Object_Index>
-  static auto get_allocator( chainbase::database& db )
-  {
-    auto& _indices = db.get_index<SHM_Object_Index>().indices();
-    auto _allocator = _indices.get_allocator();
-    return chainbase::get_allocator_helper_t<SHM_Object_Type>::get_generic_allocator( _allocator );
-  }
-
   template<typename Slice_Type, typename Key_Type>
   static bool read( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
   {
@@ -161,7 +154,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
-                                                        rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
+                                                        allocator_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
                                                         _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
   }
 };
@@ -182,7 +175,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_authority_object>( new account_authority_object(
-                                                        rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
+                                                        allocator_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                       _obj.id, _obj.account,
                                                   _obj.owner, _obj.active, _obj.posting,
                                   _obj.previous_owner_update, _obj.last_owner_update) );
@@ -205,7 +198,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_object>( new account_object(
-                                                        rocksdb_reader_helper::get_allocator<account_object, account_index>( db ),
+                                                        allocator_helper::get_allocator<account_object, account_index>( db ),
                                                       _obj.id,
                                                       _obj.recovery,
                                                       _obj.assets,
@@ -245,7 +238,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
     load( _obj, _buffer.data(), _buffer.size() );
 
     return std::shared_ptr<account_object>( new account_object(
-                                                        rocksdb_reader_helper::get_allocator<account_object, account_index>( db ),
+                                                        allocator_helper::get_allocator<account_object, account_index>( db ),
                                                       _obj.id,
                                                       _obj.recovery,
                                                       _obj.assets,
@@ -272,7 +265,7 @@ struct volatile_reader<volatile_account_metadata_object, account_metadata_object
   static std::shared_ptr<account_metadata_object> read( const volatile_account_metadata_object& obj, chainbase::database& db )
   {
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
-                                                        rocksdb_reader_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
+                                                        allocator_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
                                                         obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ) );
   }
 };
@@ -283,7 +276,7 @@ struct volatile_reader<volatile_account_authority_object, account_authority_obje
   static std::shared_ptr<account_authority_object> read( const volatile_account_authority_object& obj, chainbase::database& db )
   {
     return std::shared_ptr<account_authority_object>( new account_authority_object(
-                                                        rocksdb_reader_helper::get_allocator<account_authority_object, account_authority_index>( db ),
+                                                        allocator_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                         obj.account_authority_id, obj.account,
                                                         obj.owner, obj.active, obj.posting,
                                                         obj.previous_owner_update, obj.last_owner_update) );
