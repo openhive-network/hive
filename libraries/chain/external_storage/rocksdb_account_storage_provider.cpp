@@ -44,7 +44,7 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
   {
     columnDefs.emplace_back("account_by_next_vesting_withdrawal", ColumnFamilyOptions());
     auto& byTxIdColumn = columnDefs.back();
-    byTxIdColumn.options.comparator = by_id_Comparator();
+    byTxIdColumn.options.comparator = by_time_account_name_pair_Comparator();
   }
 
   return columnDefs;

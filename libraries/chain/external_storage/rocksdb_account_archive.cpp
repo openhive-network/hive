@@ -78,19 +78,17 @@ namespace
     }
   };
 
-template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename Slice_Type, typename Key_Type>
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
 struct transporter_impl
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
   {
-    Slice_Type _key( key );
-
     RocksDB_Object_Type _obj( volatile_object );
 
     auto _serialize_buffer = dump( _obj );
     Slice _value( _serialize_buffer.data(), _serialize_buffer.size() );
 
-    provider->save( column_type, _key, _value );
+    provider->save( column_type, key, _value );
   }
 };
 
@@ -100,7 +98,7 @@ struct transporter
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() );
-    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, volatile_object, column_types[0] );
+    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
   }
 };
 
@@ -110,9 +108,9 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 3 );
-    transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, volatile_object, column_types[0] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, volatile_object, column_types[1] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object, column_types[2] );
+    transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( volatile_object.account_id ), volatile_object, column_types[1] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
   }
 };
 

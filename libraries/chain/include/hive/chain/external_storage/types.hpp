@@ -247,12 +247,17 @@ typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
 typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
 typedef PrimitiveTypeSlice<block_no_tx_in_block_pair> block_no_tx_in_block_slice_t;
 
+typedef std::pair< uint32_t, account_name_type::Storage > time_account_name_pair;
+typedef PrimitiveTypeSlice<time_account_name_pair> time_account_name_pair_slice_t;
+typedef PrimitiveTypeComparatorImpl< time_account_name_pair > time_account_name_pair_ComparatorImpl;
+
 const Comparator* by_Hash_Comparator();
 const Comparator* by_id_Comparator();
 const Comparator* op_by_block_num_Comparator();
 const Comparator* by_account_name_Comparator();
 const Comparator* ah_op_by_id_Comparator();
 const Comparator* by_txId_Comparator();
+const Comparator* by_time_account_name_pair_Comparator();
 
 /** Represents an AH entry in mapped to account name.
   *  Holds additional informations, which are needed to simplify pruning process.
