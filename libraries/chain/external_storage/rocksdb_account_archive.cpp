@@ -81,7 +81,7 @@ namespace
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename Slice_Type, typename Key_Type>
 struct transporter_impl
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, uint32_t block_num, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, const Volatile_Object_Type& volatile_object, ColumnTypes column_type )
   {
     Slice_Type _key( key );
 
@@ -97,22 +97,22 @@ struct transporter_impl
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
 struct transporter
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, uint32_t block_num, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() );
-    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
+    transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, volatile_object, column_types[0] );
   }
 };
 
 template<>
 struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, uint32_t block_num, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
+  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 3 );
-    transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, block_num, volatile_object, column_types[0] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, block_num, volatile_object, column_types[1] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), block_num, volatile_object, column_types[2] );
+    transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t, account_name_type::Storage>::move_to_external_storage( provider, volatile_object.get_name().data, volatile_object, column_types[0] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.account_id, volatile_object, column_types[1] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, uint32_slice_t, uint32_t>::move_to_external_storage( provider, volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object, column_types[2] );
   }
 };
 
@@ -338,7 +338,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     const auto& _current = *_itr;
     ++_itr;
 
-    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3>::move_to_external_storage( provider, block_num, _current, column_types );
+    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3>::move_to_external_storage( provider, _current, column_types );
 
     if( !_do_flush )
       _do_flush = true;
