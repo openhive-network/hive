@@ -61,7 +61,7 @@ typedef multi_index_container<
       ordered_unique< tag< by_next_vesting_withdrawal >,
         composite_key< volatile_account_object,
           const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_next_vesting_withdrawal >,
-          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
+          const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name >
         > /// composite key by_next_vesting_withdrawal
       >,
       ordered_unique< tag< by_block >,

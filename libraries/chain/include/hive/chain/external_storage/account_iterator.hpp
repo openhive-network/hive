@@ -31,6 +31,16 @@ class comparator<by_next_vesting_withdrawal>
         return a.get_next_vesting_withdrawal() < b.get_next_vesting_withdrawal();
     }
 
+    template<typename Iterator_Type, typename Index_Type>
+    static Iterator_Type seek( const account_object& a, const Index_Type& index )
+    {
+      return index.upper_bound( boost::make_tuple( a.get_next_vesting_withdrawal(), a.get_name() ) );
+    }
+
+    static bool equal( const account_object& a, const account_object& b )
+    {
+      return a.get_next_vesting_withdrawal() == b.get_next_vesting_withdrawal() && a.get_name() == b.get_name();
+    }
 };
 
 template<typename ByIndex>
@@ -179,11 +189,20 @@ void account_iterator<ByIndex>::next()
 {
   if( last == shm_storage )
   {
+    volatile_it = comparator<ByIndex>:: template seek<volatile_iterator_t>( *it, volatile_index );
+    if( comparator<ByIndex>::equal( *it, *volatile_item ) )
+      ++volatile_it;
+
     ++it;
   }
   else if( last == volatile_storage )
   {
+    it = comparator<ByIndex>:: template seek<iterator_t>( *volatile_item, index );
+    if( comparator<ByIndex>::equal( *it, *volatile_item ) )
+      ++it;
+
     ++volatile_it;
+
     update_volatile_item();
   }
   else
