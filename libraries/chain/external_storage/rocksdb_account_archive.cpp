@@ -19,8 +19,8 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
-namespace
-{
+hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
+
   template<typename Volatile_Object_Type, typename SHM_Object_Type>
   struct creator
   {
@@ -274,9 +274,47 @@ struct volatile_reader<volatile_account_object, account_object, account_index>
   }
 };
 
-}
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
+struct volatile_supporter
+{
+  static uint32_t get_block_num( const chainbase::database& db )
+  {
+    auto _found_dgpo = db.find< dynamic_global_property_object >();
+    return _found_dgpo ? _found_dgpo->head_block_number : 0;
+  }
 
-hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
+  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj )
+  {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
+    const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
+    auto _found = _volatile_idx.find( obj.get_name() );
+    if( _found != _volatile_idx.end() )
+    {
+      db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
+      {
+        creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num( db ) );
+      } );
+    }
+    else
+    {
+      db.create<Volatile_Object_Type>( [&]( Volatile_Object_Type& o )
+      {
+        creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num( db ) );
+      });
+    }
+
+    accounts_handler::stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_handler::stats.account_cashout_processing.count;
+  }
+
+  static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
+  {
+    modifier( const_cast<SHM_Object_Type&>( obj ) );
+    create_or_update_volatile_impl( db, obj );
+  }
+};
+
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
@@ -304,12 +342,6 @@ rocksdb_account_column_family_iterator_provider::ptr rocksdb_account_archive::ge
 external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storage_reader_writer()
 {
   return provider;
-}
-
-uint32_t rocksdb_account_archive::get_block_num() const
-{
-  auto _found_dgpo = db.find< dynamic_global_property_object >();
-  return _found_dgpo ? _found_dgpo->head_block_number : 0;
 }
 
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type, typename RocksDB_Object_Type3 = RocksDB_Object_Type>
@@ -420,43 +452,10 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
   }
 }
 
-template<typename SHM_Object_Type>
-void rocksdb_account_archive::modify( const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
-{
-  modifier( const_cast<SHM_Object_Type&>( obj ) );
-  create_or_update_volatile( obj );
-}
-
-template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
-void rocksdb_account_archive::create_or_update_volatile_impl( const SHM_Object_Type& obj )
-{
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
-  auto _found = _volatile_idx.find( obj.get_name() );
-  if( _found != _volatile_idx.end() )
-  {
-    db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
-    {
-      creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num() );
-    } );
-  }
-  else
-  {
-    db.create<Volatile_Object_Type>( [&]( Volatile_Object_Type& o )
-    {
-      creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num() );
-    });
-  }
-
-  stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  ++stats.account_cashout_processing.count;
-}
-
 //==========================================account_metadata_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
 {
-  create_or_update_volatile_impl<volatile_account_metadata_index, volatile_account_metadata_object>( obj );
+  volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::create_or_update_volatile_impl( db, obj );
 }
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
@@ -466,14 +465,14 @@ account_metadata rocksdb_account_archive::get_account_metadata( const account_na
 
 void rocksdb_account_archive::modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier )
 {
-  modify( obj, modifier );
+  volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::modify( db, obj, modifier );
 }
 //==========================================account_metadata_object==========================================
 
 //==========================================account_authority_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
 {
-  create_or_update_volatile_impl<volatile_account_authority_index, volatile_account_authority_object>( obj );
+  volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::create_or_update_volatile_impl( db, obj );
 }
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
@@ -483,14 +482,14 @@ account_authority rocksdb_account_archive::get_account_authority( const account_
 
 void rocksdb_account_archive::modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier )
 {
-  modify( obj, modifier );
+  volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::modify( db, obj, modifier );
 }
 //==========================================account_authority_object==========================================
 
 //==========================================account_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_object& obj )
 {
-  create_or_update_volatile_impl<volatile_account_index, volatile_account_object>( obj );
+  volatile_supporter<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
 }
 
 account rocksdb_account_archive::get_account( const account_name_type& account_name, bool account_is_required ) const
@@ -505,7 +504,7 @@ account rocksdb_account_archive::get_account( const account_id_type& account_id,
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
 {
-  modify( obj, modifier );
+  volatile_supporter<volatile_account_index, volatile_account_object, account_object>::modify( db, obj, modifier );
 }
 //==========================================account_object==========================================
 

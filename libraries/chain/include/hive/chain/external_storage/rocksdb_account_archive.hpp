@@ -34,19 +34,11 @@ class rocksdb_account_archive : public accounts_handler
     bool destroy_database_on_startup = false;
     bool destroy_database_on_shutdown = false;
 
-    uint32_t get_block_num() const;
-
     template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Volatile_Sub_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index, typename SHM_Object_Sub_Index>
     Object_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
 
-    template<typename SHM_Object_Type>
-    void modify( const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier );
-
     template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
     bool on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types );
-
-    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
-    void create_or_update_volatile_impl( const SHM_Object_Type& obj );
 
   public:
 
