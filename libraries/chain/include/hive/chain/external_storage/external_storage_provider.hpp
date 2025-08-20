@@ -36,6 +36,7 @@ class external_storage_reader_writer
 
     virtual void save( ColumnTypes column_type, const Slice& key, const Slice& value ) = 0;
     virtual bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) = 0;
+    virtual void remove( ColumnTypes column_type, const Slice& key ) = 0;
 };
 
 class external_storage_provider: public external_storage_reader_writer, public external_snapshot_storage_provider

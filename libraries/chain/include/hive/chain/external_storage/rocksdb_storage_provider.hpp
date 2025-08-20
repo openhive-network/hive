@@ -118,6 +118,7 @@ class rocksdb_storage_provider
 
     void save( ColumnTypes column_type, const Slice& key, const Slice& value );
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
+    void remove( ColumnTypes column_type, const Slice& key );
 
   public:
 

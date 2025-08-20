@@ -29,6 +29,7 @@ class rocksdb_account_storage_provider: public rocksdb_account_column_family_ite
 
     void save( ColumnTypes column_type, const Slice& key, const Slice& value ) override;
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
+    void remove( ColumnTypes column_type, const Slice& key ) override;
 
     std::unique_ptr<::rocksdb::Iterator> create_column_family_iterator( ColumnTypes column_type ) override;
 };

@@ -60,6 +60,11 @@ bool rocksdb_account_storage_provider::read( ColumnTypes column_type, const Slic
   return rocksdb_storage_provider::read( column_type, key, value );
 }
 
+void rocksdb_account_storage_provider::remove( ColumnTypes column_type, const Slice& key )
+{
+  rocksdb_storage_provider::remove( column_type, key );
+}
+
 namespace
 {
   template< ColumnTypes Column_Type>

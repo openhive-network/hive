@@ -236,6 +236,12 @@ bool rocksdb_storage_provider::read( ColumnTypes column_type, const Slice& key, 
   return s.ok();
 }
 
+void rocksdb_storage_provider::remove( ColumnTypes column_type, const Slice& key )
+{
+  auto s = getWriteBuffer().Delete( getColumnHandle(column_type), key );
+  checkStatus(s);
+}
+
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();
