@@ -275,7 +275,7 @@ struct volatile_reader<volatile_account_object, account_object, account_index>
 };
 
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
-struct volatile_supporter
+struct volatile_supporter_impl
 {
   static uint32_t get_block_num( const chainbase::database& db )
   {
@@ -283,7 +283,7 @@ struct volatile_supporter
     return _found_dgpo ? _found_dgpo->head_block_number : 0;
   }
 
-  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj )
+  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj, const std::function<void(Volatile_Object_Type& o)>& func = nullptr )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -294,6 +294,8 @@ struct volatile_supporter
       db.modify<Volatile_Object_Type>( *_found, [&]( Volatile_Object_Type& o )
       {
         creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num( db ) );
+        if( func )
+          func( o );
       } );
     }
     else
@@ -315,6 +317,59 @@ struct volatile_supporter
   }
 };
 
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type>
+struct volatile_supporter
+{
+  static uint32_t get_block_num( const chainbase::database& db )
+  {
+    return volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::get_block_num( db );
+  }
+
+  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj )
+  {
+    volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::create_or_update_volatile_impl( db, obj );
+  }
+
+  static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
+  {
+    volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::modify( db, obj, modifier );
+  }
+};
+
+template<>
+struct volatile_supporter<volatile_account_index, volatile_account_object, account_object>
+{
+  static uint32_t get_block_num( const chainbase::database& db )
+  {
+    return volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::get_block_num( db );
+  }
+
+  static void create_or_update_volatile_impl( chainbase::database& db, const account_object& obj )
+  {
+    volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+  }
+
+  static void modify( chainbase::database& db, const account_object& obj, std::function<void(account_object&)> modifier )
+  {
+    auto _old_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+    modifier( const_cast<account_object&>( obj ) );
+    auto _new_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+
+    if( _new_next_vesting_withdrawal != _old_next_vesting_withdrawal )
+    {
+      auto _func = [&_old_next_vesting_withdrawal]( volatile_account_object& obj )
+      {
+        obj.set_old_next_vesting_withdrawal( _old_next_vesting_withdrawal );
+      };
+
+       volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj, _func );
+    }
+    else
+    {
+      volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+    }
+  }
+};
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
