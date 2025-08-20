@@ -90,6 +90,11 @@ struct transporter_impl
 
     provider->save( column_type, key, _value );
   }
+
+  static void remove_from_external_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, ColumnTypes column_type )
+  {
+    provider->remove( column_type, key );
+  }
 };
 
 template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
@@ -111,6 +116,10 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
     transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( volatile_object.account_id ), volatile_object, column_types[1] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
+
+    //remove old record only when exists
+    if( volatile_object.get_old_next_vesting_withdrawal() )
+      transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_old_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
   }
 };
 
