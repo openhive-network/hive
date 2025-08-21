@@ -6447,6 +6447,10 @@ components:
         - requestid
     hbd_exchange_rate:
       $ref: '#/components/schemas/base_and_quote'
+    hive_int:
+      oneOf:
+        - type: string
+        - type: integer
     is_known_transaction:
       type: object
       properties:
