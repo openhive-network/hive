@@ -4024,14 +4024,10 @@
             "auth_with_weight": {
                 "type": "array",
                 "items": {
-                    "allOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ]
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "integer" }
+                  ]
                 },
                 "minItems": 2,
                 "maxItems": 2
