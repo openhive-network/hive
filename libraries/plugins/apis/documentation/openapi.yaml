@@ -3593,35 +3593,35 @@ components:
           format: date-time
           description: >-
             The time of the previous owner update made by the account.
-          curation_rewards:
+        curation_rewards:
+          type: integer
+          description: Total curation rewards accumulated by the account.
+        delayed_votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/delayed_votes'
+          description: Array of delayed votes.
+        governance_vote_expiration_ts:
+          type: string
+          format: date-time
+          description: Timestamp when governance votes expire.
+        is_smt:
+          type: boolean
+          description: Indicates if the account is an SMT.
+        open_recurrent_transfers:
+          type: integer
+          description: Number of open recurrent transfers.
+        posting_rewards:
+          type: integer
+          description: Total posting rewards accumulated by the account.
+        proxied_vsf_votes:
+          type: array
+          items:
             type: integer
-            description: Total curation rewards accumulated by the account.
-          delayed_votes:
-            type: array
-            items:
-              $ref: '#/components/schemas/delayed_votes'
-            description: Array of delayed votes.
-          governance_vote_expiration_ts:
-            type: string
-            format: date-time
-            description: Timestamp when governance votes expire.
-          is_smt:
-            type: boolean
-            description: Indicates if the account is an SMT.
-          open_recurrent_transfers:
-            type: integer
-            description: Number of open recurrent transfers.
-          posting_rewards:
-            type: integer
-            description: Total posting rewards accumulated by the account.
-          proxied_vsf_votes:
-            type: array
-            items:
-              type: integer
-            description: Proxy votes levels.
-          witnesses_voted_for:
-            type: integer
-            description: Number of witnesses voted for by the account.
+          description: Proxy votes levels.
+        witnesses_voted_for:
+          type: integer
+          description: Number of witnesses voted for by the account.
       required:
         - id
         - name
