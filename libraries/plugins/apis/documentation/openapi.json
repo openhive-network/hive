@@ -3674,7 +3674,7 @@
                         "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                     },
                     "hbd_seconds": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The number of seconds the HIVE backed dollar balance has been held."
                     },
                     "hbd_seconds_last_update": {
@@ -3692,7 +3692,7 @@
                         "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                     },
                     "savings_hbd_seconds": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The number of seconds the savings HIVE backed dollar balance has been held."
                     },
                     "savings_hbd_seconds_last_update": {
@@ -3751,11 +3751,11 @@
                         "description": "The time of the next vesting withdrawal."
                     },
                     "withdrawn": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The total vesting shares already withdrawn from active withdrawals."
                     },
                     "to_withdraw": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The remaining total vesting shares needed to complete withdrawals."
                     },
                     "withdraw_routes": {
@@ -3767,7 +3767,7 @@
                         "description": "The number of pending transfers for the account."
                     },
                     "pending_claimed_accounts": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The number of pending claimed accounts for the account."
                     },
                     "post_bandwidth": {
@@ -3806,46 +3806,46 @@
                     "previous_owner_update": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "The time of the previous owner update made by the account.",
-                        "curation_rewards": {
-                            "type": "integer",
-                            "description": "Total curation rewards accumulated by the account."
+                        "description": "The time of the previous owner update made by the account."
+                    },
+                    "curation_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total curation rewards accumulated by the account."
+                    },
+                    "delayed_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/delayed_votes"
                         },
-                        "delayed_votes": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/delayed_votes"
-                            },
-                            "description": "Array of delayed votes."
+                        "description": "Array of delayed votes."
+                    },
+                    "governance_vote_expiration_ts": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp when governance votes expire."
+                    },
+                    "is_smt": {
+                        "type": "boolean",
+                        "description": "Indicates if the account is an SMT."
+                    },
+                    "open_recurrent_transfers": {
+                        "type": "integer",
+                        "description": "Number of open recurrent transfers."
+                    },
+                    "posting_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total posting rewards accumulated by the account."
+                    },
+                    "proxied_vsf_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/hive_int"
                         },
-                        "governance_vote_expiration_ts": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Timestamp when governance votes expire."
-                        },
-                        "is_smt": {
-                            "type": "boolean",
-                            "description": "Indicates if the account is an SMT."
-                        },
-                        "open_recurrent_transfers": {
-                            "type": "integer",
-                            "description": "Number of open recurrent transfers."
-                        },
-                        "posting_rewards": {
-                            "type": "integer",
-                            "description": "Total posting rewards accumulated by the account."
-                        },
-                        "proxied_vsf_votes": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            },
-                            "description": "Proxy votes levels."
-                        },
-                        "witnesses_voted_for": {
-                            "type": "integer",
-                            "description": "Number of witnesses voted for by the account."
-                        }
+                        "description": "Proxy votes levels."
+                    },
+                    "witnesses_voted_for": {
+                        "type": "integer",
+                        "description": "Number of witnesses voted for by the account."
                     }
                 },
                 "required": [
@@ -4024,7 +4024,7 @@
             "auth_with_weight": {
                 "type": "array",
                 "items": {
-                    "anyOf": [
+                    "allOf": [
                         {
                             "type": "string"
                         },
@@ -4040,7 +4040,7 @@
                 "type": "object",
                 "properties": {
                     "amount": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "nai": {
                         "type": "string"
@@ -4100,12 +4100,12 @@
                         "description": "The date when the order was created."
                     },
                     "hbd": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 26344,
                         "description": "The amount of HBD in the order."
                     },
                     "hive": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 97538,
                         "description": "The amount of HIVE in the order."
                     },
@@ -4258,7 +4258,7 @@
                 "type": "object",
                 "properties": {
                     "total_vote_weight": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 22841196
                     },
                     "total_payout_value": {
@@ -4271,23 +4271,23 @@
                         "$ref": "#/components/schemas/balance"
                     },
                     "author_rewards": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0
                     },
                     "children_abs_rshares": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "606511906476641"
                     },
                     "net_rshares": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "571577939879762"
                     },
                     "abs_rshares": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "594467432989642"
                     },
                     "vote_rshares": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "583007369825359"
                     },
                     "net_votes": {
@@ -4361,7 +4361,7 @@
                 "type": "object",
                 "properties": {
                     "abs_rshares": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "allow_curation_rewards": {
                         "type": "boolean"
@@ -4376,7 +4376,7 @@
                         "type": "string"
                     },
                     "author_rewards": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "beneficiaries": {
                         "$ref": "#/components/schemas/beneficiaries"
@@ -4395,7 +4395,7 @@
                         "type": "integer"
                     },
                     "children_abs_rshares": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "created": {
                         "type": "string",
@@ -4429,7 +4429,7 @@
                         "format": "date-time"
                     },
                     "net_rshares": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "net_votes": {
                         "type": "integer"
@@ -4462,10 +4462,10 @@
                         "$ref": "#/components/schemas/balance"
                     },
                     "total_vote_weight": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "vote_rshares": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     }
                 },
                 "required": [
@@ -5052,7 +5052,7 @@
                     "proposal_ids": {
                         "type": "array",
                         "items": {
-                            "type": "integer"
+                            "$ref": "#/components/schemas/hive_int"
                         },
                         "example": [
                             0
@@ -6792,7 +6792,7 @@
                 "type": "object",
                 "properties": {
                     "available_account_subsidies": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Number of available account creation subsidies, representing how many new accounts can be created with existing budget."
                     },
                     "content_reward_percent": {
@@ -6800,7 +6800,7 @@
                         "description": "Percentage of the total reward pool allocated to content creators based on voting."
                     },
                     "current_aslot": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The current \"average slot\" number, an indicator of the current position in the consensus schedule."
                     },
                     "current_hbd_supply": {
@@ -6832,7 +6832,7 @@
                         "description": "The percentage (basis points) of the total voting power allocated to the downvote pool."
                     },
                     "early_voting_seconds": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Duration in seconds during which early votes are accepted before the official voting period."
                     },
                     "hbd_interest_rate": {
@@ -6893,7 +6893,7 @@
                         "description": "The maximum size (in bytes) allowed for a single block."
                     },
                     "mid_voting_seconds": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Duration (in seconds) of mid-phase voting window for proposals."
                     },
                     "min_recurrent_transfers_recurrence": {
@@ -6931,11 +6931,11 @@
                         "description": "Percentage of the total reward fund allocated for governance proposals, incentive programs, or development funding."
                     },
                     "recent_slots_filled": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "String representing the high-water mark of recent slots filled, typically a large number indicating network activity."
                     },
                     "reverse_auction_seconds": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Duration in seconds allocated to reverse auction procedures, possibly for resource allocation."
                     },
                     "time": {
@@ -6944,7 +6944,7 @@
                         "description": "The current blockchain timestamp."
                     },
                     "total_pow": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily."
                     },
                     "total_reward_fund_hive": {
@@ -6952,7 +6952,7 @@
                         "description": "The total reward fund HIVE."
                     },
                     "total_reward_shares2": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "String representing reward shares (possibly an internal accounting value)."
                     },
                     "total_vesting_fund_hive": {
@@ -7324,7 +7324,7 @@
                         ]
                     },
                     "current_virtual_time": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "965626696637118176548648739"
                     },
                     "elected_weight": {
@@ -7359,7 +7359,7 @@
                         "$ref": "#/components/schemas/witness_props"
                     },
                     "min_witness_account_subsidy_decay": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0
                     },
                     "miner_weight": {
@@ -7439,6 +7439,16 @@
             },
             "hbd_exchange_rate": {
                 "$ref": "#/components/schemas/base_and_quote"
+            },
+            "hive_int": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "integer"
+                    }
+                ]
             },
             "is_known_transaction": {
                 "type": "object",
@@ -7859,7 +7869,7 @@
                         "description": "The ID of the order."
                     },
                     "for_sale": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0,
                         "description": "The amount of the asset for sale."
                     },
@@ -7991,7 +8001,7 @@
                         "description": "The permlink of the proposal."
                     },
                     "total_votes": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "77351826710",
                         "description": "The total vests voted on the proposal."
                     },
@@ -8030,9 +8040,19 @@
                         "$ref": "#/components/schemas/balance"
                     },
                     "max_rc": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "0",
                         "description": "The maximum resource credits available for the account."
+                    },
+                    "delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits delegated to other accounts."
+                    },
+                    "received_delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits received from other accounts."
                     }
                 },
                 "required": [
@@ -8111,7 +8131,7 @@
                         "description": "The author reward curve."
                     },
                     "content_constant": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "2000000000000",
                         "description": "The content constant."
                     },
@@ -8142,7 +8162,7 @@
                         "example": 5000
                     },
                     "recent_claims": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "711345102753889024"
                     },
                     "reward_balance": {
@@ -8276,7 +8296,7 @@
                         "example": "all"
                     },
                     "last_id": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0,
                         "description": "The last ID of the proposal to start from."
                     }
@@ -8588,12 +8608,12 @@
                         "description": "The permlink of the post that was voted on."
                     },
                     "weight": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "0",
                         "description": "The weight of the vote."
                     },
                     "rshares": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0,
                         "description": "The number of rshares voted."
                     },
@@ -8630,7 +8650,7 @@
                 "type": "object",
                 "properties": {
                     "current_mana": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "last_update_time": {
                         "type": "integer"
@@ -8680,7 +8700,7 @@
                 "type": "object",
                 "properties": {
                     "available_witness_account_subsidies": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The number of available witness account subsidies."
                     },
                     "created": {
@@ -8706,11 +8726,11 @@
                         "description": "Witness's identification number."
                     },
                     "last_aslot": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The last aslot of the witness."
                     },
                     "last_confirmed_block_num": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The last confirmed block number of the witness."
                     },
                     "last_hbd_exchange_update": {
@@ -8727,7 +8747,7 @@
                         "description": "Witness name."
                     },
                     "pow_worker": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "The proof-of-work worker of the witness."
                     },
                     "props": {
@@ -8749,16 +8769,16 @@
                         "type": "string"
                     },
                     "virtual_last_update": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "virtual_position": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "virtual_scheduled_time": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/hive_int"
                     },
                     "votes": {
-                        "type": "integer"
+                        "$ref": "#/components/schemas/hive_int"
                     }
                 },
                 "required": [
