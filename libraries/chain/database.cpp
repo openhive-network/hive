@@ -2199,9 +2199,9 @@ void database::update_owner_authority( const account_object& account, const auth
 
 void database::process_vesting_withdrawals()
 {
-  auto widx = get_accounts_handler().get_iterator<by_next_vesting_withdrawal>();
+  const auto& widx = get_index< account_index, by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
-  auto current = widx->begin();
+  auto current = widx.begin();
 
   const auto& cprops = get_dynamic_global_properties();
   auto now = cprops.time;
@@ -2209,12 +2209,9 @@ void database::process_vesting_withdrawals()
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( !widx->end() && current->get_next_vesting_withdrawal() <= now )
+  while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto& from_account = *current;
-    widx->next();
-    current = widx->get();
-    ++count;
+    const auto& from_account = *current; ++current; ++count;
 
     share_type to_withdraw = from_account.get_active_next_vesting_withdrawal();
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.get_vesting_withdraw_rate().amount )

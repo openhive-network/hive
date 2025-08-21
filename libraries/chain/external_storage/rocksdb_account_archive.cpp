@@ -119,7 +119,9 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
 
     //remove old record only when exists
     if( volatile_object.get_old_next_vesting_withdrawal() )
+    {
       transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_old_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
+    }
   }
 };
 
