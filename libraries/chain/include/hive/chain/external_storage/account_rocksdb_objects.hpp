@@ -31,6 +31,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
         old_next_vesting_withdrawal = val;
     }
     std::optional<time_point_sec> get_old_next_vesting_withdrawal() const { return old_next_vesting_withdrawal; }
+    time_point_sec get_oldest_delayed_vote_time() const { return shared_delayed_votes.get_oldest_delayed_vote_time(); }
 
     account_id_type                         account_id;
 
@@ -167,6 +168,23 @@ class rocksdb_account_object_by_next_vesting_withdrawal
   account_name_type name;
 };
 
+class rocksdb_account_object_by_delayed_voting
+{
+  public:
+
+  rocksdb_account_object_by_delayed_voting(){}
+
+  rocksdb_account_object_by_delayed_voting( const volatile_account_object& obj )
+  {
+    oldest_delayed_vote_time  = obj.get_oldest_delayed_vote_time();
+    name                      = obj.get_name();
+  }
+
+  time_point_sec    oldest_delayed_vote_time;
+  account_id_type   id;
+  account_name_type name;
+};
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)(old_next_vesting_withdrawal)(block_number) )
@@ -175,3 +193,4 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::vol
 FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_id, (id)(name) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_next_vesting_withdrawal, (next_vesting_withdrawal)(name) )
+FC_REFLECT( hive::chain::rocksdb_account_object_by_delayed_voting, (oldest_delayed_vote_time)(id)(name) )

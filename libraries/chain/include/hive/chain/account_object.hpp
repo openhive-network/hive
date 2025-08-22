@@ -341,16 +341,10 @@ namespace hive { namespace chain {
       account_details::t_delayed_votes& get_delayed_votes() { return shared_delayed_votes.delayed_votes; }
       const account_details::t_delayed_votes& get_delayed_votes() const { return shared_delayed_votes.delayed_votes; }
 
-      bool has_delayed_votes() const { return !shared_delayed_votes.delayed_votes.empty(); }
+      bool has_delayed_votes() const { return shared_delayed_votes.has_delayed_votes(); }
 
       // start time of oldest delayed vote bucket (the one closest to activation)
-      time_point_sec get_oldest_delayed_vote_time() const
-      {
-        if( has_delayed_votes() )
-          return ( shared_delayed_votes.delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
-      }
+      time_point_sec get_oldest_delayed_vote_time() const { return shared_delayed_votes.get_oldest_delayed_vote_time(); }
 
     public:
       //constructor for creation of regular accounts

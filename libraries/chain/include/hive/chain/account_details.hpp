@@ -174,6 +174,17 @@ namespace hive { namespace chain { namespace account_details {
     */
     t_delayed_votes   delayed_votes;
 
+    bool has_delayed_votes() const { return !delayed_votes.empty(); }
+
+    // start time of oldest delayed vote bucket (the one closest to activation)
+    time_point_sec get_oldest_delayed_vote_time() const
+    {
+      if( has_delayed_votes() )
+        return ( delayed_votes.begin() )->time;
+      else
+        return time_point_sec::maximum();
+    }
+
     size_t get_dynamic_alloc() const
     {
       size_t size = 0;
