@@ -4563,7 +4563,7 @@
                         "description": "The time when the vote was delayed."
                     },
                     "val": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": "11550765516955",
                         "description": "The value of the delayed vote, represented as a string."
                     }
