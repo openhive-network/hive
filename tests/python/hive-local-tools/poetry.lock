@@ -325,13 +325,13 @@ markers = {main = "sys_platform == \"win32\"", black = "platform_system == \"Win
 
 [[package]]
 name = "database-api"
-version = "1.27.11rc6.dev374+5ef1748ae"
+version = "1.27.12rc2.dev3+01f511404"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "database_api-1.27.11rc6.dev374+5ef1748ae-py3-none-any.whl", hash = "sha256:eb94950f4ca4851b72689514ad75ff3a1c2f4a2fffde9cf10e289d7280f0908b"},
+    {file = "database_api-1.27.12rc2.dev3+01f511404-py3-none-any.whl", hash = "sha256:0130d07f40e390cf9a9e1215bf6f639f43a3447d0e47fc94e4c97705a0fd130c"},
 ]
 
 [package.dependencies]
@@ -893,13 +893,13 @@ files = [
 
 [[package]]
 name = "network-broadcast-api"
-version = "1.27.11rc6.dev374+5ef1748ae"
+version = "1.27.12rc2.dev3+01f511404"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "network_broadcast_api-1.27.11rc6.dev374+5ef1748ae-py3-none-any.whl", hash = "sha256:546f2e234c4c78aac1fe03f448234d5b7a89e982bb3c360c501d2efe47506d29"},
+    {file = "network_broadcast_api-1.27.12rc2.dev3+01f511404-py3-none-any.whl", hash = "sha256:5c7f12777f53b788da51c5343108491efcf497f6f430fe3d86ecb5dd7102d136"},
 ]
 
 [package.dependencies]
@@ -1875,7 +1875,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev848+12896494"
+wax = "0.3.10.dev849+95186050"
 
 [package.source]
 type = "directory"
@@ -1993,20 +1993,20 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev848+12896494"
+version = "0.3.10.dev849+95186050"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev848+12896494-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:39482947d22bdabb9a99bba97725d4b69d5142b1123d8318a75c9dae053c1328"},
+    {file = "wax-0.3.10.dev849+95186050-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:1bc7b15c058bd8a7c20e5104f2cb8174ffaafc36917f1e08997a7936d2ff348b"},
 ]
 
 [package.dependencies]
-database-api = "1.27.11rc6.dev374+5ef1748ae"
+database-api = "1.27.12rc2.dev3+01f511404"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
-network-broadcast-api = "1.27.11rc6.dev374+5ef1748ae"
+network-broadcast-api = "1.27.12rc2.dev3+01f511404"
 protobuf = "4.24.4"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
