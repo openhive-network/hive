@@ -118,6 +118,290 @@
                 }
             }
         },
+        "account_history_api.enum_virtual_ops": {
+            "post": {
+                "tags": [
+                    "account_history_api"
+                ],
+                "summary": "Allows specifying a range of blocks to retrieve virtual operations for.",
+                "description": "Parameters:\n\n- `block_range_begin`: An integer representing the starting block number (inclusive) for the search.\n\n- `block_range_end`: An integer representing the last block number (exclusive) for the search.\n\n- `include_reversible`: A boolean (optional). If set to true, operations from reversible blocks will be included if `block_num` points to such a block.\n\n- `group_by_block`: A boolean (optional). Determines whether to group results by block.\n\n- `operation_begin`: An integer (optional). The starting virtual operation in the given block (inclusive).\n\n- `limit`: An integer (optional). Specifies the maximum number of operations to retrieve.\n\n- `filter`: An integer (optional). A bitwise filter that determines which operations to match. Use the following values for filtering:\n  - `fill_convert_request_operation` = 0x000001\n  - `author_reward_operation` = 0x000002\n  - `curation_reward_operation` = 0x000004\n  - `comment_reward_operation` = 0x000008\n  - `liquidity_reward_operation` = 0x000010\n  - `interest_operation` = 0x000020\n  - `fill_vesting_withdraw_operation` = 0x000040\n  - `fill_order_operation` = 0x000080\n  - `shutdown_witness_operation` = 0x000100\n  - `fill_transfer_from_savings_operation` = 0x000200\n  - `hardfork_operation` = 0x000400\n  - `comment_payout_update_operation` = 0x000800\n  - `return_vesting_delegation_operation` = 0x001000\n  - `comment_benefactor_reward_operation` = 0x002000\n  - `producer_reward_operation` = 0x004000\n  - `clear_null_account_balance_operation` = 0x008000\n  - `proposal_pay_operation` = 0x010000\n  - `sps_fund_operation` = 0x020000\n  - `hardfork_hive_operation` = 0x040000\n  - `hardfork_hive_restore_operation` = 0x080000\n  - `delayed_voting_operation` = 0x100000\n  - `consolidate_treasury_balance_operation` = 0x200000\n  - `effective_comment_vote_operation` = 0x400000\n  - `ineffective_delete_comment_operation` = 0x800000\n  - `sps_convert_operation` = 0x1000000\n  - `dhf_funding_operation` = 0x0020000\n  - `dhf_conversion_operation` = 0x1000000\n  - `expired_account_notification_operation` = 0x2000000\n  - `changed_recovery_account_operation` = 0x4000000\n  - `transfer_to_vesting_completed_operation` = 0x8000000\n  - `pow_reward_operation` = 0x10000000\n  - `vesting_shares_split_operation` = 0x20000000\n  - `account_created_operation` = 0x40000000\n  - `fill_collateralized_convert_request_operation` = 0x80000000\n  - `system_warning_operation` = 0x100000000\n  - `fill_recurrent_transfer_operation` = 0x200000000\n  - `failed_recurrent_transfer_operation` = 0x400000000\n  - `limit_order_cancelled_operation` = 0x800000000\n  - `producer_missed_operation` = 0x1000000000\n  - `proposal_fee_operation` = 0x2000000000\n  - `collateralized_convert_immediate_conversion_operation` = 0x4000000000\n  - `escrow_approved_operation` = 0x8000000000\n  - `escrow_rejected_operation` = 0x10000000000\n  - `proxy_cleared_operation` = 0x20000000000\n",
+                "operationId": "enum_virtual_ops",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/enum_virtual_ops"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/enum_virtual_ops_response"
+                                },
+                                "example": {
+                                    "next_block_range_begin": 90000000,
+                                    "next_operation_begin": "14187667172",
+                                    "ops": [],
+                                    "ops_by_block": [
+                                        {
+                                            "block": 90000000,
+                                            "irreversible": true,
+                                            "ops": [
+                                                {
+                                                    "block": 90000000,
+                                                    "op": {
+                                                        "type": "effective_comment_vote_operation",
+                                                        "value": {
+                                                            "author": "name0",
+                                                            "pending_payout": {
+                                                                "amount": "4617",
+                                                                "nai": "@@000000013",
+                                                                "precision": 3
+                                                            },
+                                                            "permlink": "cite-de-l-espace-exterior",
+                                                            "rshares": 1719370020,
+                                                            "total_vote_weight": "15643776445465",
+                                                            "voter": "bernardino",
+                                                            "weight": 1719370020
+                                                        }
+                                                    },
+                                                    "op_in_trx": 1,
+                                                    "operation_id": "14187667170",
+                                                    "timestamp": "2024-10-21T21:53:45",
+                                                    "trx_id": "807a5694a79e2e76fd4961d61fbbfc32cfc0aae5",
+                                                    "trx_in_block": 0,
+                                                    "virtual_op": true
+                                                }
+                                            ],
+                                            "timestamp": "2024-10-21T21:53:45"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "account_history_api.get_account_history": {
+            "post": {
+                "tags": [
+                    "account_history_api"
+                ],
+                "summary": "Returns a history of all operations for a given account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\n- `start`: An integer indicating the starting point for the query. Use `-1` for reverse history or any positive number for a specific starting point.\n\n- `limit`: An integer up to 1000 specifying the maximum number of results to return.\n\n- `include_reversible`: A boolean (optional) that, if set to true, includes operations from reversible blocks.\n\n- `operation_filter_low`: An integer (optional) used to filter the first 64 operations based on a bitwise mask.\n\n- `operation_filter_high`: An integer (optional) used to filter higher-numbered operations with a 128-bit bitmask composed of {operation_filter_high, operation_filter_low}.\n\nIf `operation_filter_low` or `operation_filter_high` are set, the response will only include operations matching the bitwise filter.\n\nExamples:\n\n- **`account = \"hiveio\"`**, **`start = 1000`**, **`limit = 1000`**: Queries the latest items in history for the account \"hiveio\", with up to 1,000 results.\n\n- **`account = \"alice\"`**, **`start = -1`**, **`limit = 1000`**: Queries the oldest items in history for the account \"alice\", with up to 1,000 results.\n\n- **`account = \"bob\"`**, **`start = -1`**, **`limit = 1000`**, **`include_reversible = true`**, **`operation_filter_low = 1`**: Queries only vote operations for \"bob\" from the oldest item, up to 1,000 results.\n\n- **`account = \"charlie\"`**, **`start = -1`**, **`limit = 1000`**, **`include_reversible = true`**, **`operation_filter_low = 262144`**: Queries only custom JSON operations for \"charlie\" from the oldest item, up to 1,000 results.\n\n- **`account = \"emma\"`**, **`start = -1`**, **`limit = 1000`**, **`include_reversible = true`**, **`operation_filter_low = 0`**, **`operation_filter_high = 1`**: Queries only proposal payments to \"emma\" from the oldest item, up to 1,000 results.\n",
+                "operationId": "get_account_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_history_response"
+                                },
+                                "example": {
+                                    "history": [
+                                        [
+                                            1000,
+                                            {
+                                                "block": 41745898,
+                                                "op": {
+                                                    "type": "effective_comment_vote_operation",
+                                                    "value": {
+                                                        "author": "hiveio",
+                                                        "pending_payout": {
+                                                            "amount": "150705",
+                                                            "nai": "@@000000013",
+                                                            "precision": 3
+                                                        },
+                                                        "permlink": "announcing-the-launch-of-hive-blockchain",
+                                                        "rshares": 56243682705,
+                                                        "total_vote_weight": 21629700,
+                                                        "voter": "lecumberre",
+                                                        "weight": 835
+                                                    }
+                                                },
+                                                "op_in_trx": 1,
+                                                "operation_id": 0,
+                                                "timestamp": "2020-03-18T01:11:51",
+                                                "trx_id": "7a31d99559a3d93526bd1a05fd9fa0f55b1ebcb8",
+                                                "trx_in_block": 13,
+                                                "virtual_op": true
+                                            }
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "account_history_api.get_ops_in_block": {
+            "post": {
+                "tags": [
+                    "account_history_api"
+                ],
+                "summary": "Returns all operations contained in a block.",
+                "description": "Parameter:\n\n- `block_num`: An integer representing the specific block number to retrieve operations for.\n\n- `only_virtual`: A boolean indicating whether to include only virtual operations.\n\n- `include_reversible`: A boolean (optional) that, if set to true, includes operations from reversible blocks if `block_num` points to such a block.\n",
+                "operationId": "get_ops_in_block",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_ops_in_block"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_ops_in_block_response"
+                                },
+                                "example": {
+                                    "ops": [
+                                        {
+                                            "block": 1,
+                                            "op": {
+                                                "type": "account_created_operation",
+                                                "value": {
+                                                    "creator": "miners",
+                                                    "initial_delegation": {
+                                                        "amount": "0",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    },
+                                                    "initial_vesting_shares": {
+                                                        "amount": "0",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    },
+                                                    "new_account_name": "miners"
+                                                }
+                                            },
+                                            "op_in_trx": 1,
+                                            "operation_id": 0,
+                                            "timestamp": "2016-03-24T16:05:00",
+                                            "trx_id": "0000000000000000000000000000000000000000",
+                                            "trx_in_block": 4294967295,
+                                            "virtual_op": true
+                                        },
+                                        {
+                                            "block": 1,
+                                            "op": {
+                                                "type": "producer_reward_operation",
+                                                "value": {
+                                                    "producer": "initminer",
+                                                    "vesting_shares": {
+                                                        "amount": "1000000",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    }
+                                                }
+                                            },
+                                            "op_in_trx": 1,
+                                            "operation_id": 0,
+                                            "timestamp": "2016-03-24T16:05:00",
+                                            "trx_id": "0000000000000000000000000000000000000000",
+                                            "trx_in_block": 4294967295,
+                                            "virtual_op": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "account_history_api.get_transaction": {
+            "post": {
+                "tags": [
+                    "account_history_api"
+                ],
+                "summary": "Returns the details of a transaction based on a transaction ID, including signatures, operations, and the block number it was included in.",
+                "description": "Parameters:\n\n- `id`: A string representing the transaction ID (`trx_id`) of the expected transaction.\n\n- `include_reversible`: A boolean (optional) that, if set to true, includes operations from reversible blocks if the transaction's block number points to such a block.\n",
+                "operationId": "get_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_transaction_response"
+                                },
+                                "example": {
+                                    "block_num": 21401130,
+                                    "expiration": "2018-04-09T00:29:06",
+                                    "extensions": [],
+                                    "operations": [
+                                        {
+                                            "type": "claim_reward_balance_operation",
+                                            "value": {
+                                                "account": "social",
+                                                "reward_hbd": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                },
+                                                "reward_hive": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "reward_vests": {
+                                                    "amount": "1",
+                                                    "nai": "@@000000037",
+                                                    "precision": 6
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "ref_block_num": 36374,
+                                    "ref_block_prefix": 3218139339,
+                                    "signatures": [
+                                        "1b01bdbb0c0d43db821c09ae8a82881c1ce3ba0eca35f23bc06541eca05560742f210a21243e20d04d5c88cb977abf2d75cc088db0fff2ca9fdf2cba753cf69844"
+                                    ],
+                                    "transaction_id": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                                    "transaction_num": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "block_api.get_block": {
             "post": {
                 "tags": [
@@ -4573,6 +4857,83 @@
                     "val"
                 ]
             },
+            "enum_virtual_ops": {
+                "type": "object",
+                "properties": {
+                    "block_range_begin": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "The first block number to include."
+                    },
+                    "block_range_end": {
+                        "type": "integer",
+                        "example": 2,
+                        "description": "The last block number to include."
+                    },
+                    "include_reversible": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether to include reversible blocks."
+                    },
+                    "group_by_block": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Whether to group operations by block."
+                    },
+                    "operation_begin": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 0,
+                        "description": "The operation id to start from."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The maximum number of records to return."
+                    },
+                    "filter": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1,
+                        "description": "The filter to apply to the operations."
+                    }
+                },
+                "required": [
+                    "block_range_begin",
+                    "block_range_end"
+                ]
+            },
+            "enum_virtual_ops_response": {
+                "type": "object",
+                "properties": {
+                    "next_block_range_begin": {
+                        "type": "integer",
+                        "example": 90000000,
+                        "description": "The next block range starting block."
+                    },
+                    "next_operation_begin": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The next operation id to query."
+                    },
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/operation_object"
+                        }
+                    },
+                    "ops_by_block": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ops_by_block_object"
+                        }
+                    }
+                },
+                "required": [
+                    "next_block_range_begin",
+                    "next_operation_begin",
+                    "ops",
+                    "ops_by_block"
+                ]
+            },
             "escrow": {
                 "type": "object",
                 "properties": {
@@ -5411,6 +5772,60 @@
                 },
                 "required": [
                     "cashout_infos"
+                ]
+            },
+            "get_account_history": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the account to query."
+                    },
+                    "start": {
+                        "type": "integer",
+                        "example": "-1",
+                        "description": "The starting point for the history query, -1 for reverse history or any positive numeric."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 1000,
+                        "description": "The maximum number of operations to return."
+                    },
+                    "include_reversible": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether to include reversible operations in the response."
+                    },
+                    "operation_filter_low": {
+                        "type": "integer",
+                        "example": 4294967295,
+                        "description": "The lower bound for filtering operations by type."
+                    },
+                    "operation_filter_high": {
+                        "type": "integer",
+                        "example": 4294968295,
+                        "description": "The upper bound for filtering operations by type."
+                    }
+                },
+                "required": [
+                    "account",
+                    "start",
+                    "limit"
+                ]
+            },
+            "get_account_history_response": {
+                "type": "object",
+                "properties": {
+                    "history": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/account_history_array"
+                        }
+                    }
+                },
+                "required": [
+                    "history"
                 ]
             },
             "get_active_witnesses_response": {
@@ -7135,6 +7550,44 @@
                     "accounts"
                 ]
             },
+            "get_ops_in_block": {
+                "type": "object",
+                "properties": {
+                    "block_num": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The block number to retrieve operations from."
+                    },
+                    "only_virtual": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "If true, only virtual operations will be returned."
+                    },
+                    "include_reversible": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "If true, reversible operations will be included in the response."
+                    }
+                },
+                "required": [
+                    "block_num",
+                    "only_virtual"
+                ]
+            },
+            "get_ops_in_block_response": {
+                "type": "object",
+                "properties": {
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/operation_object"
+                        }
+                    }
+                },
+                "required": [
+                    "ops"
+                ]
+            },
             "get_order_book": {
                 "type": "object",
                 "properties": {
@@ -7235,6 +7688,27 @@
                 "required": [
                     "funds"
                 ]
+            },
+            "get_transaction": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                        "description": "The ID of the transaction to retrieve."
+                    },
+                    "include_reversible": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether to include reversible blocks."
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            },
+            "get_transaction_response": {
+                "$ref": "#/components/schemas/transaction_account_history"
             },
             "get_transaction_hex": {
                 "type": "object",
@@ -8380,6 +8854,64 @@
                     "signatures"
                 ]
             },
+            "transaction_account_history": {
+                "type": "object",
+                "properties": {
+                    "ref_block_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "ref_block_prefix": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "expiration": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    },
+                    "operations": {
+                        "$ref": "#/components/schemas/array_of_operations",
+                        "example": []
+                    },
+                    "extensions": {
+                        "$ref": "#/components/schemas/extensions",
+                        "example": []
+                    },
+                    "signatures": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": []
+                    },
+                    "block_num": {
+                        "type": "integer",
+                        "example": 21401130
+                    },
+                    "transaction_id": {
+                        "type": "string",
+                        "example": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                        "description": "The ID of the transaction."
+                    },
+                    "transaction_num": {
+                        "type": "integer",
+                        "example": 25,
+                        "description": "The transaction number in the block."
+                    }
+                },
+                "required": [
+                    "ref_block_num",
+                    "ref_block_prefix",
+                    "expiration",
+                    "operations",
+                    "extensions",
+                    "signatures",
+                    "block_num",
+                    "transaction_id",
+                    "transaction_num"
+                ]
+            },
             "verify_account_authority": {
                 "type": "object",
                 "properties": {
@@ -8578,6 +9110,85 @@
                     "delegator",
                     "vesting_shares",
                     "expiration"
+                ]
+            },
+            "operation_object": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number in which the operation was included."
+                    },
+                    "op": {
+                        "$ref": "#/components/schemas/operation_body",
+                        "description": "Body of the operation."
+                    },
+                    "op_in_trx": {
+                        "type": "integer",
+                        "description": "The index of the operation in the transaction."
+                    },
+                    "operation_id": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The unique ID of the operation."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp when the operation was executed."
+                    },
+                    "trx_id": {
+                        "type": "string",
+                        "description": "The ID of the transaction that contains the operation."
+                    },
+                    "trx_in_block": {
+                        "type": "integer",
+                        "description": "The index of the transaction in the block."
+                    },
+                    "virtual_op": {
+                        "type": "boolean",
+                        "description": "Indicates whether the operation is a virtual operation."
+                    }
+                },
+                "required": [
+                    "block",
+                    "op",
+                    "op_in_trx",
+                    "operation_id",
+                    "timestamp",
+                    "trx_id",
+                    "trx_in_block",
+                    "virtual_op"
+                ]
+            },
+            "ops_by_block_object": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number."
+                    },
+                    "irreversible": {
+                        "type": "boolean",
+                        "description": "Indicates whether the block is irreversible."
+                    },
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/operation_object"
+                        },
+                        "description": "An array of operation objects included in the block."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp of the block."
+                    }
+                },
+                "required": [
+                    "block",
+                    "irreversible",
+                    "ops",
+                    "timestamp"
                 ]
             },
             "vote": {
