@@ -22,6 +22,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
 
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_object, (shared_delayed_votes) )
 
+    const account_id_type& get_account_id() const { return account_id; }
     const account_name_type& get_name() const { return misc.name; }
     time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
 
@@ -55,6 +56,7 @@ struct by_block;
 struct by_name;
 struct by_account_id;
 struct by_next_vesting_withdrawal;
+struct by_delayed_voting;
 
 typedef multi_index_container<
     volatile_account_object,
@@ -62,27 +64,29 @@ typedef multi_index_container<
       ordered_unique< tag< by_id >,
         const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id > >,
       ordered_unique< tag< by_account_id >,
-        composite_key< volatile_account_object,
-          member< volatile_account_object, account_id_type, &volatile_account_object::account_id>,
-          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
-        >
-      >,
+        const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id > >,
       ordered_unique< tag< by_next_vesting_withdrawal >,
         composite_key< volatile_account_object,
           const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_next_vesting_withdrawal >,
           const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name >
         > /// composite key by_next_vesting_withdrawal
       >,
+      ordered_unique< tag< by_delayed_voting >,
+        composite_key< volatile_account_object,
+          const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_oldest_delayed_vote_time >,
+          const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
+        >
+      >,
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_object,
           member< volatile_account_object, uint32_t, &volatile_account_object::block_number>,
-          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
+          const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
         >
       >,
       ordered_unique< tag< by_name >,
         composite_key< volatile_account_object,
           const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name >,
-          const_mem_fun< volatile_account_object, volatile_account_object::id_type, &volatile_account_object::get_id >
+          const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
         >
       >
     >,
