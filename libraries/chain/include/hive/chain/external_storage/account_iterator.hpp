@@ -93,12 +93,14 @@ class account_iterator
 
     using index_t = decltype( std::declval<chainbase::generic_index<account_index>>().indicies().template get<ByIndex>() );
     using volatile_index_t = decltype( std::declval<chainbase::generic_index<volatile_account_index>>().indicies().template get<ByIndex>() );
+    using helper_index_t = decltype( std::declval<chainbase::generic_index<volatile_account_index>>().indicies().template get<by_name>() );
 
     using iterator_t = decltype( std::declval<index_t>().begin() );
     using volatile_iterator_t = decltype( std::declval<volatile_index_t>().begin() );
 
     const index_t& index;
     const volatile_index_t& volatile_index;
+    const helper_index_t& helper_index;
 
     iterator_t it;
     volatile_iterator_t volatile_it;
@@ -111,6 +113,9 @@ class account_iterator
 
     void update_volatile_item();
     void update_rocksdb_item();
+
+    template<bool IS_BEGIN>
+    void move_rocksdb_iterator();
 
   public:
 
@@ -132,6 +137,7 @@ account_iterator<ByIndex>::account_iterator(  const chainbase::database& db,
                                                 db( db ),
                                                 index( db.get_index< account_index, ByIndex >() ),
                                                 volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
+                                                helper_index( db.get_index< volatile_account_index, by_name >() ),
                                                 rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( db, provider, reader ) )
 {
 }
@@ -148,6 +154,31 @@ void account_iterator<ByIndex>::update_rocksdb_item()
 {
   if( !rocksdb_iterator->end() )
     rocksdb_item = rocksdb_iterator->get();
+}
+
+template<typename ByIndex>
+template<bool IS_BEGIN>
+void account_iterator<ByIndex>::move_rocksdb_iterator()
+{
+  if( IS_BEGIN )
+    rocksdb_iterator->begin();
+  else
+    rocksdb_iterator->next();
+
+  update_rocksdb_item();
+
+  while( !rocksdb_iterator->end() )
+  {
+    auto _found = helper_index.find( rocksdb_item->get_name() );
+    if( _found != helper_index.end() && _found->get_old_next_vesting_withdrawal() )
+    {
+      LOG1("SKIP", (*rocksdb_item));
+      rocksdb_iterator->next();
+      update_rocksdb_item();
+    }
+    else
+      break;
+  }
 }
 
 template<typename ByIndex>
@@ -223,11 +254,11 @@ template<typename ByIndex>
 account account_iterator<ByIndex>::begin()
 {
   it = index.begin();
-  volatile_it = volatile_index.begin();
-  rocksdb_iterator->begin();
 
+  volatile_it = volatile_index.begin();
   update_volatile_item();
-  update_rocksdb_item();
+
+  move_rocksdb_iterator<true>();
 
   execute_cmp();
 
@@ -286,8 +317,7 @@ void account_iterator<ByIndex>::next()
     LOG2("MOVE RB", helper<ByIndex>::equal( obj, *rocksdb_item ), obj, (*rocksdb_item) )
     if( helper<ByIndex>::equal( obj, *rocksdb_item ) )
     {
-      rocksdb_iterator->next();
-      update_rocksdb_item();
+      move_rocksdb_iterator<false>();
     }
   };
 
@@ -314,8 +344,7 @@ void account_iterator<ByIndex>::next()
     _move_shm_iterator( *rocksdb_item );
     _move_volatile_iterator( *rocksdb_item );
 
-    rocksdb_iterator->next();
-    update_rocksdb_item();
+    move_rocksdb_iterator<false>();
   }
 
   execute_cmp();
