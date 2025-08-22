@@ -237,7 +237,10 @@ account account_iterator<ByIndex>::begin()
 template<typename ByIndex>
 account account_iterator<ByIndex>::get()
 {
-  FC_ASSERT( last != none, "Iterator error." );
+  if( last == none )
+  {
+    return account();
+  }
 
   if( last == shm_storage )
   {
