@@ -1218,6 +1218,8 @@ generate_python_api_clients:
       - "${API_GENERATION_DIR}/block_api"
       - "${API_GENERATION_DIR}/network_broadcast_api"
       - "${API_GENERATION_DIR}/account_by_key_api"
+      - "${API_GENERATION_DIR}/bridge"
+      - "${API_GENERATION_DIR}/account_history_api"
   stage: build
   tags:
     - public-runner-docker
@@ -1323,6 +1325,40 @@ deploy_account_by_key_api_wheel_to_gitlab:
     PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
   needs:
     - job: build_account_by_key_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+  when: on_success
+
+build_bridge_wheel:
+  extends: .build_python_api_client_wheel
+  variables:
+    API_NAME: "bridge"
+
+deploy_account_bridge_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/bridge"
+  needs:
+    - job: build_bridge_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+  when: on_success
+
+build_account_history_api_wheel:
+  extends: .build_python_api_client_wheel
+  variables:
+    API_NAME: "account_history_api"
+
+deploy_account_history_api_wheel_to_gitlab:
+  stage: deploy
+  extends: .deploy_wheel_to_gitlab_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_history_api"
+  needs:
+    - job: build_account_history_api_wheel
       artifacts: true
   tags:
     - public-runner-docker

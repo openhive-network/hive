@@ -81,6 +81,8 @@ libraries/plugins/apis/api_generation/database_api/
 libraries/plugins/apis/api_generation/rc_api/
 libraries/plugins/apis/api_generation/block_api/
 libraries/plugins/apis/api_generation/network_broadcast_api/
+libraries/plugins/apis/api_generation/bridge/
+libraries/plugins/apis/api_generation/account_history_api/
 
 programs/build_helpers/hive_build_helpers/__pycache__/
 programs/util/dump_hive_schema
