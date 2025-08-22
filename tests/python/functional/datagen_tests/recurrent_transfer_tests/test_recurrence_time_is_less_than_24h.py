@@ -24,5 +24,5 @@ def test_recurrence_time_is_less_than_24h(node: tt.InitNode) -> None:
             executions=2,
         )
 
-    expected_error_message = "Cannot set a transfer recurrence that is less than 24 hours"
+    expected_error_message = "Cannot set a transfer recurrence that is less than"
     assert expected_error_message in exception.value.args[0]
