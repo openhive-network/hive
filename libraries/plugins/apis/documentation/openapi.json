@@ -524,6 +524,469 @@
                 }
             }
         },
+        "bridge.account_notifications": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Account notifications.",
+                "description": "Supported values for the `type` parameter:\n\n- `new_community`: A new community was created.\n- `set_role`: A mod or admin adds a role to an account.\n- `set_props`: Properties are set for a community.\n- `set_label`: A title, badge, or label has been set for an account.\n- `mute_post`: A post has been muted, with a reason.\n- `unmute_post`: A post has been unmuted, with a reason.\n- `pin_post`: A post has been pinned.\n- `unpin_post`: A post has been unpinned.\n- `flag_post`: A post has been flagged by a member, with a reason.\n- `error`: Provides feedback to developers for operations that cannot be interpreted.\n- `subscribe`: An account has subscribed to a community.\n- `reply`: A post has been replied to.\n- `reblog`: A post has been reblogged (shared again).\n- `follow`: An account has followed another account.\n- `mention`: An author mentions an account.\n- `vote`: A voter votes for an author.\n\n*Note:* The score value associated with each operation is based on the originating account rank.\n",
+                "operationId": "account_notifications",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/account_notifications"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account_notifications_response"
+                                },
+                                "example": [
+                                    {
+                                        "date": "2025-08-04T03:32:51",
+                                        "id": 9024595,
+                                        "msg": "@beggars mentioned you and 1 others",
+                                        "score": 61,
+                                        "type": "mention",
+                                        "url": "@beggars/beeline-wallet-cli-mega-updates-plugin-system-themes-and-more"
+                                    },
+                                    {
+                                        "date": "2025-08-02T12:07:48",
+                                        "id": 8905222,
+                                        "msg": "@beggars mentioned you and 9 others",
+                                        "score": 61,
+                                        "type": "mention",
+                                        "url": "@beggars/introducing-beeline-an-open-source-terminal-wallet-for-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.does_user_follow_any_lists": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Checks if a given observer follows any blacklists or mute lists.",
+                "operationId": "does_user_follow_any_lists",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/does_user_follow_any_lists"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/does_user_follow_any_lists_response"
+                                },
+                                "example": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_account_posts": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists posts related to a given account.",
+                "description": "Parameters:\n\n- `sort`: A string indicating the type of posts to retrieve. Supported values:\n  - `blog`: Top posts authored by the specified account (excluding community posts unless reblogged), plus reblogs ranked by creation or reblog time.\n  - `feed`: Top posts from blogs of accounts followed by the specified account, ranked by creation or reblog time, not older than the last month.\n  - `posts`: Posts authored by the specified account, sorted by newest first.\n  - `replies`: Replies authored by the specified account, sorted by newest first.\n  - `payout`: All posts authored by the specified account that have not yet been cashed out.\n\n- `account`: The account name (string) to retrieve related posts for; must be a valid account.\n\n- `start_author`: The author account name to start from when paginating; optional and used together with `start_permlink`.\n\n- `start_permlink`: The permlink of the post corresponding to `start_author`, used as a paging mechanism; optional.\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `observer`: (Optional) For `blog`, `feed`, and `replies` sorts, this parameter is ignored. Otherwise, when provided, it must point to a valid account used to populate blacklist stats and mark posts from blacklisted authors. Currently, this parameter is ignored.\n",
+                "operationId": "get_account_posts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_posts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_posts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_payout_value": "109.585 HBD",
+                                        "author_reputation": 74.28,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "blacklists": [],
+                                        "body": "",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "app": "hiveblog/0.1",
+                                            "format": "markdown",
+                                            "image": [
+                                                "https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png",
+                                                "https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png",
+                                                "https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png",
+                                                "https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png"
+                                            ],
+                                            "links": [
+                                                "https://hivewhale.com/"
+                                            ],
+                                            "tags": [
+                                                "hive5",
+                                                "hive",
+                                                "anniversary"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "payout": 218.988,
+                                        "payout_at": "2025-03-27T16:39:33",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "reblogs": 134,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 1,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 1475
+                                        },
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "updated": "2025-03-20T16:39:33",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_community": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Get community details.",
+                "description": "Parameters:\n\n- `name`: The community category name (string) to retrieve details for.\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
+                "operationId": "get_community",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_community"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_community_response"
+                                },
+                                "example": {
+                                    "about": "",
+                                    "avatar_url": "",
+                                    "context": {
+                                        "role": "guest",
+                                        "subscribed": false,
+                                        "title": ""
+                                    },
+                                    "created_at": "2019-10-27 08:28:51",
+                                    "description": "",
+                                    "flag_text": "",
+                                    "id": 1332099,
+                                    "is_nsfw": false,
+                                    "lang": "en",
+                                    "name": "hive-123456",
+                                    "num_authors": 0,
+                                    "num_pending": 0,
+                                    "settings": {},
+                                    "subscribers": 49,
+                                    "sum_pending": 0,
+                                    "team": [
+                                        [
+                                            "hive-123456",
+                                            "owner",
+                                            ""
+                                        ],
+                                        [
+                                            "nftimo",
+                                            "admin",
+                                            ""
+                                        ],
+                                        [
+                                            "inji",
+                                            "admin",
+                                            ""
+                                        ],
+                                        [
+                                            "therealwolf",
+                                            "admin",
+                                            ""
+                                        ]
+                                    ],
+                                    "title": "inji",
+                                    "type_id": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_community_context": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gets the role, subscription status, and title for a given account in a given community.",
+                "operationId": "get_community_context",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_community_context"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_community_context_response"
+                                },
+                                "example": {
+                                    "role": "admin",
+                                    "subscribed": true,
+                                    "title": "Witness: @therealwolf"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_discussion": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives a flattened discussion tree starting at given post.",
+                "operationId": "get_discussion",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_discussion"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_discussion_response"
+                                },
+                                "example": {
+                                    "steevc/re-hiveio-qoimw3": {
+                                        "active_votes": [
+                                            {
+                                                "rshares": 66800471918,
+                                                "voter": "blockchainyouth"
+                                            },
+                                            {
+                                                "rshares": 86075046512,
+                                                "voter": "antisocialist"
+                                            },
+                                            {
+                                                "rshares": 30283066226,
+                                                "voter": "montycashmusic"
+                                            }
+                                        ],
+                                        "author": "steevc",
+                                        "author_payout_value": "0.026 HBD",
+                                        "author_reputation": 79.63,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "Technically Hive seems to be a good place. We have lots of cool projects going on that can make it more usable. We just need more people using it. That could mean a real marketing drive. I see Justin is buying mentions from some big Twitter users, but we can be more organic and real. \n\nHive five!",
+                                        "category": "hiveecosystem",
+                                        "children": 0,
+                                        "created": "2021-02-14T11:07:15",
+                                        "curator_payout_value": "0.025 HBD",
+                                        "depth": 1,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "app": "peakd/2021.01.3",
+                                            "tags": [
+                                                "hiveecosystem"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 183158584656,
+                                        "parent_author": "hiveio",
+                                        "parent_permlink": "around-the-hive-reflections",
+                                        "payout": 0.051,
+                                        "payout_at": "2021-02-21T11:07:15",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "re-hiveio-qoimw3",
+                                        "post_id": 101869017,
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 3
+                                        },
+                                        "title": "RE: Around the Hive: Reflections",
+                                        "updated": "2021-02-14T11:07:15",
+                                        "url": "/hiveecosystem/@hiveio/around-the-hive-reflections#@steevc/re-hiveio-qoimw3"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_follow_list": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Returns blacklisted/muted accounts or list of blacklists/mute lists followed by a given observer.",
+                "description": "Parameters:\n\n- `observer`: A valid account name (string) to act as an observer.\n\n- `follow_type`: A string indicating the type of follow-related list to retrieve. Supported values:\n  - `follow_blacklist`: Accounts that are on the observer's follow blacklist.\n  - `follow_muted`: Accounts that are on the observer's follow mute list.\n  - `blacklisted`: Accounts that are directly blacklisted by the observer.\n  - `muted`: Accounts that are directly muted by the observer.\n",
+                "operationId": "get_follow_list",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_follow_list"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_follow_list_response"
+                                },
+                                "example": [
+                                    {
+                                        "blacklist_description": "",
+                                        "muted_list_description": "Phishing accounts",
+                                        "name": "hive.blog"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_payout_stats": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists communities ordered by payout with stats (total payout, number of posts and authors).",
+                "description": "Parameters:\n\n- `limit`: An integer specifying the maximum number of results to retrieve. If omitted, the server defaults to 250. This parameter is optional.\n",
+                "operationId": "get_payout_stats",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_payout_stats"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_payout_stats_response"
+                                },
+                                "example": {
+                                    "blogs": 31613.378,
+                                    "items": [
+                                        [
+                                            "@hbd.funder",
+                                            "@hbd.funder",
+                                            19175.395,
+                                            77,
+                                            null
+                                        ]
+                                    ],
+                                    "total": 91599.777
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "database_api.find_account_recovery_requests": {
             "post": {
                 "tags": [
@@ -4197,6 +4660,46 @@
                     "witnesses_voted_for"
                 ]
             },
+            "account_history_array": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "$ref": "#/components/schemas/operation_object"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2
+            },
+            "account_notifications": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account to which the notification is sent."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The maximum number of notifications to return."
+                    }
+                },
+                "required": [
+                    "account",
+                    "limit"
+                ]
+            },
+            "account_notifications_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/notification_object"
+                }
+            },
             "account_recovery": {
                 "type": "object",
                 "properties": {
@@ -4274,6 +4777,23 @@
                     "resource_unit"
                 ]
             },
+            "active_votes_object": {
+                "type": "object",
+                "properties": {
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The number of rshares associated with the vote."
+                    },
+                    "voter": {
+                        "type": "string",
+                        "description": "The name of the voter."
+                    }
+                },
+                "required": [
+                    "rshares",
+                    "voter"
+                ]
+            },
             "array_of_operations": {
                 "type": "array",
                 "items": {
@@ -4308,10 +4828,14 @@
             "auth_with_weight": {
                 "type": "array",
                 "items": {
-                  "oneOf": [
-                    { "type": "string" },
-                    { "type": "integer" }
-                  ]
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
                 },
                 "minItems": 2,
                 "maxItems": 2
@@ -4659,7 +5183,10 @@
                         "$ref": "#/components/schemas/hive_int"
                     },
                     "beneficiaries": {
-                        "$ref": "#/components/schemas/beneficiaries"
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beneficiaries"
+                        }
                     },
                     "body": {
                         "type": "string"
@@ -4691,7 +5218,7 @@
                         "type": "integer"
                     },
                     "json_metadata": {
-                        "type": "string"
+                        "type": "object"
                     },
                     "last_payout": {
                         "type": "string",
@@ -4811,6 +5338,26 @@
                     "permlink"
                 ]
             },
+            "context_object": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "example": "owner",
+                        "description": "The role of the account in the context of the post."
+                    },
+                    "subscribed": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the account is subscribed to the post."
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Test Post",
+                        "description": "The title of the post to get context for."
+                    }
+                }
+            },
             "decline_voting_rights": {
                 "type": "object",
                 "properties": {
@@ -4856,6 +5403,23 @@
                     "time",
                     "val"
                 ]
+            },
+            "does_user_follow_any_lists": {
+                "type": "object",
+                "properties": {
+                    "observer": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the observer."
+                    }
+                },
+                "required": [
+                    "observer"
+                ]
+            },
+            "does_user_follow_any_lists_response": {
+                "type": "boolean",
+                "description": "Indicates whether the user follows any lists."
             },
             "enum_virtual_ops": {
                 "type": "object",
@@ -5828,6 +6392,51 @@
                     "history"
                 ]
             },
+            "get_account_posts": {
+                "type": "object",
+                "properties": {
+                    "sort": {
+                        "type": "string",
+                        "example": "blog",
+                        "description": "The sorting method for the posts, e.g., \"blog\", \"feed\", \"posts\"."
+                    },
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account to query."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The author to start from, used for pagination."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The permlink to start from, used for pagination."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The maximum number of posts to return."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The observer account to use for the query."
+                    }
+                },
+                "required": [
+                    "sort",
+                    "account"
+                ]
+            },
+            "get_account_posts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_object"
+                }
+            },
             "get_active_witnesses_response": {
                 "type": "object",
                 "properties": {
@@ -5846,6 +6455,147 @@
                 "required": [
                     "witnesses"
                 ]
+            },
+            "get_community": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "The name of the community to query."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The observer account to use for the query."
+                    }
+                },
+                "required": [
+                    "name",
+                    "observer"
+                ]
+            },
+            "get_community_response": {
+                "type": "object",
+                "properties": {
+                    "about": {
+                        "type": "string",
+                        "description": "A brief description of the community."
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "description": "The URL of the community's avatar image."
+                    },
+                    "context": {
+                        "$ref": "#/components/schemas/context_object",
+                        "description": "The context of the community, including role and subscription status."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date and time when the community was created."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A detailed description of the community."
+                    },
+                    "flag_text": {
+                        "type": "string",
+                        "description": "Text to display when the community is flagged."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "The unique identifier of the community."
+                    },
+                    "is_nsfw": {
+                        "type": "boolean",
+                        "description": "Indicates if the community is marked as NSFW (Not Safe For Work)."
+                    },
+                    "lang": {
+                        "type": "string",
+                        "description": "The language code of the community, e.g., \"en\" for English."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the community."
+                    },
+                    "num_authors": {
+                        "type": "integer",
+                        "description": "The number of authors in the community."
+                    },
+                    "num_pending": {
+                        "type": "integer",
+                        "description": "The number of pending members in the community."
+                    },
+                    "settings": {
+                        "type": "object",
+                        "description": "The settings of the community, including moderation and posting rules."
+                    },
+                    "subscribers": {
+                        "type": "integer",
+                        "description": "The number of subscribers to the community."
+                    },
+                    "sum_pending": {
+                        "type": "integer",
+                        "description": "The total pending amount in the community."
+                    },
+                    "team": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/team_array"
+                        }
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the community."
+                    },
+                    "type_id": {
+                        "type": "integer",
+                        "description": "The type ID of the community, indicating its category or classification."
+                    }
+                },
+                "required": [
+                    "about",
+                    "avatar_url",
+                    "context",
+                    "created_at",
+                    "description",
+                    "flag_text",
+                    "id",
+                    "is_nsfw",
+                    "lang",
+                    "name",
+                    "num_authors",
+                    "num_pending",
+                    "settings",
+                    "subscribers",
+                    "sum_pending",
+                    "team",
+                    "title",
+                    "type_id"
+                ]
+            },
+            "get_community_context": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "The name of the community to get context for."
+                    },
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The account to use for the query."
+                    }
+                },
+                "required": [
+                    "name",
+                    "account"
+                ]
+            },
+            "get_community_context_response": {
+                "$ref": "#/components/schemas/context_object"
             },
             "get_config_response": {
                 "type": "object",
@@ -7199,6 +7949,31 @@
                     "quote"
                 ]
             },
+            "get_discussion": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "description": "The author of the discussion."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "description": "The unique identifier for the discussion, typically a permalink."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "description": "The observer's account name, used to track who is viewing the discussion."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink",
+                    "observer"
+                ]
+            },
+            "get_discussion_response": {
+                "type": "object"
+            },
             "get_dynamic_global_properties_response": {
                 "type": "object",
                 "properties": {
@@ -7476,6 +8251,48 @@
                     "price_history"
                 ]
             },
+            "get_follow_list": {
+                "type": "object",
+                "properties": {
+                    "observer": {
+                        "type": "string",
+                        "description": "The account observing the follow list."
+                    },
+                    "follow_type": {
+                        "type": "string",
+                        "description": "The type of follow list to retrieve."
+                    }
+                },
+                "required": [
+                    "observer",
+                    "follow_type"
+                ]
+            },
+            "get_follow_list_response": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The name of the account being followed."
+                        },
+                        "blacklist_description": {
+                            "type": "string",
+                            "description": "Description of the blacklist, if applicable."
+                        },
+                        "muted_list_description": {
+                            "type": "string",
+                            "description": "Description of the muted list, if applicable."
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "blacklist_description",
+                        "muted_list_description"
+                    ]
+                }
+            },
             "get_hardfork_properties_response": {
                 "type": "object",
                 "properties": {
@@ -7637,6 +8454,42 @@
                 "required": [
                     "asks",
                     "bids"
+                ]
+            },
+            "get_payout_stats": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "example": 250,
+                        "description": "The maximum number of payout stats to return."
+                    }
+                }
+            },
+            "get_payout_stats_response": {
+                "type": "object",
+                "properties": {
+                    "blogs": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 31613.378
+                    },
+                    "total": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 91599.777
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/items_array"
+                        }
+                    }
+                },
+                "required": [
+                    "blogs",
+                    "total",
+                    "items"
                 ]
             },
             "get_potential_signatures": {
@@ -7943,6 +8796,28 @@
                 "required": [
                     "is_known"
                 ]
+            },
+            "items_array": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": [
+                                "integer",
+                                "‘null'"
+                            ]
+                        },
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    ]
+                },
+                "minItems": 5,
+                "maxItems": 5
             },
             "list_account_recovery_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -8293,9 +9168,46 @@
                     "decimals"
                 ]
             },
+            "notification_object": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date when the notification was created."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "The unique identifier for the notification."
+                    },
+                    "msg": {
+                        "type": "string",
+                        "description": "The message content of the notification."
+                    },
+                    "score": {
+                        "type": "integer",
+                        "description": "The score associated with the notification."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of notification (e.g., mention, reply)."
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "The URL associated with the notification."
+                    }
+                },
+                "required": [
+                    "date",
+                    "id",
+                    "msg",
+                    "score",
+                    "type",
+                    "url"
+                ]
+            },
             "operation_body": {
                 "type": "object",
-                "x-sql-datatype": "JSON",
                 "properties": {
                     "type": {
                         "type": "string"
@@ -8396,6 +9308,245 @@
                     "id",
                     "last_valid_time",
                     "previous_owner_authority"
+                ]
+            },
+            "post_object": {
+                "type": "object",
+                "properties": {
+                    "post_id": {
+                        "type": "integer",
+                        "example": 123456789,
+                        "description": "The unique identifier for the post."
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account that created the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "my-first-post",
+                        "description": "The permanent link to the post."
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The category under which the post is classified."
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "My First Post",
+                        "description": "The title of the post."
+                    },
+                    "body": {
+                        "type": "string",
+                        "example": "This is the content of my first post.",
+                        "description": "The body content of the post."
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T11:40:09",
+                        "description": "The date and time when the post was created."
+                    },
+                    "updated": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T12:00:00",
+                        "description": "The date and time when the post was last updated."
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The depth of the post in the comment hierarchy."
+                    },
+                    "children": {
+                        "type": "integer",
+                        "example": 5,
+                        "description": "The number of direct replies (children) to the post."
+                    },
+                    "net_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1000,
+                        "description": "The net rshares (relative shares) of the post, indicating its popularity."
+                    },
+                    "is_paidout": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the post has been paid out."
+                    },
+                    "payout_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20T00:00:00",
+                        "description": "The date and time when the payout for the post will occur."
+                    },
+                    "replies": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "reply1",
+                            "reply2"
+                        ],
+                        "description": "An array of replies to the post."
+                    },
+                    "reblogs": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The number of times the post has been reblogged."
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://hive.blog/@alice/my-first-post",
+                        "description": "The URL of the post."
+                    },
+                    "beneficiaries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beneficiaries"
+                        },
+                        "description": "An array of beneficiary objects associated with the post."
+                    },
+                    "max_accepted_payout": {
+                        "type": "string",
+                        "example": "1000.000 HIVE",
+                        "description": "The maximum accepted payout for the post."
+                    },
+                    "percent_hbd": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The percentage of the payout that will be in HBD (Hive Backed Dollars)."
+                    },
+                    "json_metadata": {
+                        "type": "object",
+                        "example": {
+                            "tags": [
+                                "hive",
+                                "blockchain"
+                            ],
+                            "app": "hive/0.1"
+                        },
+                        "description": "JSON metadata associated with the post, containing additional information like tags and application used."
+                    },
+                    "stats": {
+                        "$ref": "#/components/schemas/stats_object",
+                        "description": "Statistics object containing various metrics related to the post."
+                    },
+                    "payout": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 5000.75,
+                        "description": "The payout amount for the post, in HIVE."
+                    },
+                    "author_reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 69.25,
+                        "description": "The reputation score of the author, indicating their standing in the Hive community."
+                    },
+                    "active_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/active_votes_object"
+                        },
+                        "description": "An array of active votes on the post, containing information about the voters and their vote weight."
+                    },
+                    "blacklists": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "blacklist1",
+                            "blacklist2"
+                        ],
+                        "description": "An array of blacklists associated with the post, indicating accounts that have blacklisted it."
+                    },
+                    "reblogged_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bob",
+                            "charlie"
+                        ],
+                        "description": "An array of accounts that have reblogged the post."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-101145",
+                        "description": "The community to which the post belongs, if applicable."
+                    },
+                    "community_title": {
+                        "type": "string",
+                        "example": "Hive Community",
+                        "description": "The title of the community associated with the post."
+                    },
+                    "author_title": {
+                        "type": "string",
+                        "example": "Blockchain Enthusiast",
+                        "description": "The title of the author, if applicable."
+                    },
+                    "author_role": {
+                        "type": "string",
+                        "example": "content_creator",
+                        "description": "The role of the author in the Hive ecosystem."
+                    },
+                    "curator_payout_value": {
+                        "type": "string",
+                        "example": "50.000 HIVE",
+                        "description": "The value of the curator payout for the post."
+                    },
+                    "author_payout_value": {
+                        "type": "string",
+                        "example": "950.000 HIVE",
+                        "description": "The value of the author payout for the post."
+                    },
+                    "pending_payout_value": {
+                        "type": "string",
+                        "example": "1000.000 HIVE",
+                        "description": "The pending payout value for the post, which is the total payout that has not yet been processed."
+                    },
+                    "parent_author": {
+                        "type": "string",
+                        "example": "parent_author_name",
+                        "description": "The author of the parent post, if this post is a reply."
+                    },
+                    "parent_permlink": {
+                        "type": "string",
+                        "example": "parent-permlink",
+                        "description": "The permlink of the parent post, if this post is a reply."
+                    }
+                },
+                "required": [
+                    "post_id",
+                    "author",
+                    "permlink",
+                    "category",
+                    "title",
+                    "body",
+                    "created",
+                    "updated",
+                    "depth",
+                    "children",
+                    "net_rshares",
+                    "is_paidout",
+                    "payout_at",
+                    "replies",
+                    "reblogs",
+                    "url",
+                    "beneficiaries",
+                    "max_accepted_payout",
+                    "percent_hbd",
+                    "json_metadata",
+                    "stats",
+                    "payout",
+                    "author_reputation",
+                    "active_votes",
+                    "blacklists"
                 ]
             },
             "post_voting_power": {
@@ -8812,6 +9963,62 @@
                     "order_direction",
                     "status"
                 ]
+            },
+            "stats_object": {
+                "type": "object",
+                "properties": {
+                    "hide": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the post is hidden."
+                    },
+                    "gray": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the post is grayed out."
+                    },
+                    "total_votes": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The total number of votes on the post."
+                    },
+                    "flag_weight": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 10,
+                        "description": "The weight of the flag on the post."
+                    },
+                    "muted_reasons": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ],
+                        "description": "An array of reasons for muting the post, represented as integers."
+                    },
+                    "is_pinned": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the post is pinned."
+                    }
+                },
+                "required": [
+                    "hide",
+                    "gray",
+                    "total_votes",
+                    "flag_weight"
+                ]
+            },
+            "team_array": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 3,
+                "maxItems": 3
             },
             "transaction": {
                 "type": "object",
