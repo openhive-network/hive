@@ -151,3 +151,4 @@ venv
 # Other
 block_log.env
 new-openapi.json
+libraries/plugins/apis/documentation/openapi.yaml
