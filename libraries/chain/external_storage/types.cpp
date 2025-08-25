@@ -44,6 +44,12 @@ const Comparator* by_time_account_name_pair_Comparator()
   return &c;
 }
 
+const Comparator* by_time_account_id_pair_Comparator()
+{
+  static time_account_id_pair_ComparatorImpl c;
+  return &c;
+}
+
 bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
 {
   auto fi = _ahInfoCache.find(name);

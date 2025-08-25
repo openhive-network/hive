@@ -37,7 +37,8 @@ enum ColumnTypes
   ACCOUNT_AUTHORITY,
   ACCOUNT,
   ACCOUNT_BY_ID,
-  ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL
+  ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL,
+  ACCOUNT_BY_DELAYED_VOTING
 };
 
 enum Columns
@@ -251,6 +252,10 @@ typedef std::pair< uint32_t, account_name_type::Storage > time_account_name_pair
 typedef PrimitiveTypeSlice<time_account_name_pair> time_account_name_pair_slice_t;
 typedef PrimitiveTypeComparatorImpl< time_account_name_pair > time_account_name_pair_ComparatorImpl;
 
+typedef std::pair< uint32_t, uint32_t > time_account_id_pair;
+typedef PrimitiveTypeSlice<time_account_id_pair> time_account_id_pair_slice_t;
+typedef PrimitiveTypeComparatorImpl< time_account_id_pair > time_account_id_pair_ComparatorImpl;
+
 const Comparator* by_Hash_Comparator();
 const Comparator* by_id_Comparator();
 const Comparator* op_by_block_num_Comparator();
@@ -258,6 +263,7 @@ const Comparator* by_account_name_Comparator();
 const Comparator* ah_op_by_id_Comparator();
 const Comparator* by_txId_Comparator();
 const Comparator* by_time_account_name_pair_Comparator();
+const Comparator* by_time_account_id_pair_Comparator();
 
 /** Represents an AH entry in mapped to account name.
   *  Holds additional informations, which are needed to simplify pruning process.

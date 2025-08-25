@@ -2199,6 +2199,50 @@ void database::update_owner_authority( const account_object& account, const auth
 
 void database::process_vesting_withdrawals()
 {
+  //==================for tests========================
+  {
+    if( head_block_num() == 377804 )
+    { 
+      ilog( "start-by_delayed_voting");
+      auto _widx = get_accounts_handler().get_iterator<by_delayed_voting>();
+      auto _current = _widx->begin();
+      while( !_widx->end() )
+      {
+        const auto& _obj = *_current;
+        ilog( "xxxx: ${name} num: ${num} time: ${time}",
+            ("name", _obj.get_name())
+            ("num", head_block_num())
+            ("time", _obj.get_oldest_delayed_vote_time())
+            );
+        _widx->next();
+        _current = _widx->get();
+      }
+      ilog( "end-by_delayed_voting");
+    }
+  }
+  //==================for tests========================
+  {
+    if( head_block_num() == 377804 )
+    { 
+      ilog( "start-by_next_vesting_withdrawal");
+      auto _widx = get_accounts_handler().get_iterator<by_next_vesting_withdrawal>();
+      auto _current = _widx->begin();
+      while( !_widx->end() )
+      {
+        const auto& _obj = *_current;
+        ilog( "xxxx: ${name} num: ${num} time: ${time}",
+            ("name", _obj.get_name())
+            ("num", head_block_num())
+            ("time", _obj.get_next_vesting_withdrawal())
+            );
+        _widx->next();
+        _current = _widx->get();
+      }
+      ilog( "end-by_next_vesting_withdrawal");
+    }
+  }
+  //==================for tests========================
+
   const auto& widx = get_index< account_index, by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
   auto current = widx.begin();

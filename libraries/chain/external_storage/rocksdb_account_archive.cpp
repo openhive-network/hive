@@ -24,7 +24,6 @@ hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::s
   template<typename Volatile_Object_Type, typename SHM_Object_Type>
   struct creator
   {
-    static void assign( Volatile_Object_Type& dest, const SHM_Object_Type& src, uint32_t block_num ){}
   };
 
   template<>
@@ -97,7 +96,7 @@ struct transporter_impl
   }
 };
 
-template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3, typename RocksDB_Object_Type4>
 struct transporter
 {
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
@@ -108,19 +107,28 @@ struct transporter
 };
 
 template<>
-struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
+struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting>
 {
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
-    FC_ASSERT( column_types.size() == 3 );
+    FC_ASSERT( column_types.size() == 4 );
     transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( volatile_object.account_id ), volatile_object, column_types[1] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[3] );
 
-    //remove old record only when exists
-    if( volatile_object.get_old_next_vesting_withdrawal() )
+    /*
+      Remove old records.
+      We need to have previous values in order to calculate a valid key.
+    */
+    if( volatile_object.get_previous_next_vesting_withdrawal() )
     {
-      transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_old_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
+      transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_previous_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
+    }
+
+    if( volatile_object.get_previous_oldest_delayed_vote_time() )
+    {
+      transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[3] );
     }
   }
 };
@@ -141,10 +149,6 @@ struct rocksdb_reader_helper
 template<typename SHM_Object_Type, typename SHM_Object_Index, typename Key_Type>
 struct rocksdb_reader
 {
-  static std::shared_ptr<SHM_Object_Type> read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const Key_Type& key, const std::vector<ColumnTypes>& column_types )
-  {
-    return std::shared_ptr<SHM_Object_Type>();
-  }
 };
 
 template<>
@@ -245,10 +249,6 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
 template<typename Volatile_Object_Type, typename SHM_Object_Type, typename SHM_Object_Index>
 struct volatile_reader
 {
-  static std::shared_ptr<SHM_Object_Type> read( const Volatile_Object_Type& obj, chainbase::database& db )
-  {
-    return std::shared_ptr<SHM_Object_Type>();
-  }
 };
 
 
@@ -362,15 +362,26 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
 
   static void modify( chainbase::database& db, const account_object& obj, std::function<void(account_object&)> modifier )
   {
-    auto _old_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
-    modifier( const_cast<account_object&>( obj ) );
-    auto _new_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+    auto _previous_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+    auto _previous_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
 
-    if( _new_next_vesting_withdrawal != _old_next_vesting_withdrawal )
+    modifier( const_cast<account_object&>( obj ) );
+
+    auto _new_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+    auto _new_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
+
+    if(
+        _new_next_vesting_withdrawal != _previous_next_vesting_withdrawal ||
+        _previous_oldest_delayed_vote_time != _new_oldest_delayed_vote_time
+      )
     {
-      auto _func = [&_old_next_vesting_withdrawal]( volatile_account_object& obj )
+      auto _func = [&]( volatile_account_object& obj )
       {
-        obj.set_old_next_vesting_withdrawal( _old_next_vesting_withdrawal );
+        if( _new_next_vesting_withdrawal != _previous_next_vesting_withdrawal )
+          obj.set_previous_next_vesting_withdrawal( _previous_next_vesting_withdrawal );
+
+        if( _previous_oldest_delayed_vote_time != _new_oldest_delayed_vote_time )
+          obj.set_previous_oldest_delayed_vote_time( _previous_oldest_delayed_vote_time );
       };
 
        volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj, _func );
@@ -410,7 +421,11 @@ external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storag
   return provider;
 }
 
-template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2 = RocksDB_Object_Type, typename RocksDB_Object_Type3 = RocksDB_Object_Type>
+template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type,
+        typename RocksDB_Object_Type,
+        typename RocksDB_Object_Type2 = RocksDB_Object_Type,
+        typename RocksDB_Object_Type3 = RocksDB_Object_Type,
+        typename RocksDB_Object_Type4 = RocksDB_Object_Type>
 bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
@@ -434,7 +449,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     const auto& _current = *_itr;
     ++_itr;
 
-    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3>::move_to_external_storage( provider, _current, column_types );
+    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4>::move_to_external_storage( provider, _current, column_types );
 
     if( !_do_flush )
       _do_flush = true;
@@ -468,8 +483,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
                           ( block_num, { ColumnTypes::ACCOUNT_AUTHORITY } );
 
   bool _do_flush_account = on_irreversible_block_impl
-                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal>
-                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL } );
+                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting>
+                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL, ColumnTypes::ACCOUNT_BY_DELAYED_VOTING } );
 
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {

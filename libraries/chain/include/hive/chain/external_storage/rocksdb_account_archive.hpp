@@ -37,7 +37,8 @@ class rocksdb_account_archive : public accounts_handler
     template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Volatile_Sub_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index, typename SHM_Object_Sub_Index>
     Object_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
 
-    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3>
+    template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type,
+            typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3, typename RocksDB_Object_Type4>
     bool on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types );
 
   public:

@@ -47,6 +47,12 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
     byTxIdColumn.options.comparator = by_time_account_name_pair_Comparator();
   }
 
+  {
+    columnDefs.emplace_back("account_by_delayed_voting", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_time_account_id_pair_Comparator();
+  }
+
   return columnDefs;
 }
 
@@ -63,31 +69,6 @@ bool rocksdb_account_storage_provider::read( ColumnTypes column_type, const Slic
 void rocksdb_account_storage_provider::remove( ColumnTypes column_type, const Slice& key )
 {
   rocksdb_storage_provider::remove( column_type, key );
-}
-
-namespace
-{
-  template< ColumnTypes Column_Type>
-  class rocksdb_reader
-  {
-    public:
-      static account read( const Slice& value )
-      {
-        return account();
-      }
-  };
-
-  template<>
-  class rocksdb_reader<ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL>
-  {
-    public:
-      static account read( const Slice& value )
-      {
-        rocksdb_account_object_by_next_vesting_withdrawal _obj;
-        load( _obj, value.data(), value.size() );
-        return account();
-      }
-  };
 }
 
 std::unique_ptr<::rocksdb::Iterator> rocksdb_account_storage_provider::create_column_family_iterator( ColumnTypes column_type )

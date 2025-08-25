@@ -24,15 +24,23 @@ class volatile_account_object : public object< volatile_account_object_type, vol
 
     const account_id_type& get_account_id() const { return account_id; }
     const account_name_type& get_name() const { return misc.name; }
-    time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
 
-    void set_old_next_vesting_withdrawal( const time_point_sec& val )
-    {
-      if( !old_next_vesting_withdrawal )
-        old_next_vesting_withdrawal = val;
-    }
-    std::optional<time_point_sec> get_old_next_vesting_withdrawal() const { return old_next_vesting_withdrawal; }
+    time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
     time_point_sec get_oldest_delayed_vote_time() const { return shared_delayed_votes.get_oldest_delayed_vote_time(); }
+
+    void set_previous_next_vesting_withdrawal( const time_point_sec& val )
+    {
+      if( !previous_next_vesting_withdrawal )
+        previous_next_vesting_withdrawal = val;
+    }
+    std::optional<time_point_sec> get_previous_next_vesting_withdrawal() const { return previous_next_vesting_withdrawal; }
+
+    void set_previous_oldest_delayed_vote_time( const time_point_sec& val )
+    {
+      if( !previous_oldest_delayed_vote_time )
+        previous_oldest_delayed_vote_time = val;
+    }
+    std::optional<time_point_sec> get_previous_oldest_delayed_vote_time() const { return previous_oldest_delayed_vote_time; }
 
     account_id_type                         account_id;
 
@@ -43,7 +51,9 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     account_details::misc                   misc;
     account_details::shared_delayed_votes   shared_delayed_votes;
 
-    std::optional<time_point_sec>           old_next_vesting_withdrawal;
+    std::optional<time_point_sec>           previous_next_vesting_withdrawal;
+    std::optional<time_point_sec>           previous_oldest_delayed_vote_time;
+
     uint32_t                                block_number = 0;
 
     std::shared_ptr<account_object> read() const;
@@ -69,7 +79,7 @@ typedef multi_index_container<
         composite_key< volatile_account_object,
           const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_next_vesting_withdrawal >,
           const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name >
-        > /// composite key by_next_vesting_withdrawal
+        >
       >,
       ordered_unique< tag< by_delayed_voting >,
         composite_key< volatile_account_object,
@@ -191,7 +201,10 @@ class rocksdb_account_object_by_delayed_voting
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)(old_next_vesting_withdrawal)(block_number) )
+FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)
+(previous_next_vesting_withdrawal)(previous_oldest_delayed_vote_time)
+(block_number) )
+
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::volatile_account_index )
 
 FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )

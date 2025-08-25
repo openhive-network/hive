@@ -70,7 +70,7 @@ class helper<by_next_vesting_withdrawal>
 
     static bool cmp( const account_object& a, const account_object& b )
     {
-      if( a.get_next_vesting_withdrawal() == b.get_next_vesting_withdrawal())
+      if( a.get_next_vesting_withdrawal() == b.get_next_vesting_withdrawal() )
         return a.get_name() < b.get_name();
       else
         return a.get_next_vesting_withdrawal() < b.get_next_vesting_withdrawal();
@@ -79,6 +79,35 @@ class helper<by_next_vesting_withdrawal>
     static bool equal( const account_object& a, const account_object& b )
     {
       return a.get_next_vesting_withdrawal() == b.get_next_vesting_withdrawal() && a.get_name() == b.get_name();
+    }
+
+    static bool is_obsolete_value( const volatile_account_object& obj )
+    {
+      return obj.get_previous_next_vesting_withdrawal().has_value();
+    }
+};
+
+template<>
+class helper<by_delayed_voting>
+{
+  public:
+
+    static bool cmp( const account_object& a, const account_object& b )
+    {
+      if( a.get_oldest_delayed_vote_time() == b.get_oldest_delayed_vote_time() )
+        return a.get_id() < b.get_id();
+      else
+        return a.get_oldest_delayed_vote_time() < b.get_oldest_delayed_vote_time();
+    }
+
+    static bool equal( const account_object& a, const account_object& b )
+    {
+      return a.get_oldest_delayed_vote_time() == b.get_oldest_delayed_vote_time() && a.get_id() == b.get_id();
+    }
+
+    static bool is_obsolete_value( const volatile_account_object& obj )
+    {
+      return obj.get_previous_oldest_delayed_vote_time().has_value();
     }
 };
 
@@ -170,7 +199,7 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
   while( !rocksdb_iterator->end() )
   {
     auto _found = helper_index.find( rocksdb_item->get_name() );
-    if( _found != helper_index.end() && _found->get_old_next_vesting_withdrawal() )
+    if( _found != helper_index.end() && helper<ByIndex>::is_obsolete_value( *_found ) )
     {
       LOG1("SKIP", (*rocksdb_item));
       rocksdb_iterator->next();
