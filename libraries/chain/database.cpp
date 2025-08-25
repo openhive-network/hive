@@ -2203,6 +2203,27 @@ void database::process_vesting_withdrawals()
   {
     if( head_block_num() == 377804 )
     { 
+      ilog( "start-by_governance_vote_expiration_ts");
+      auto _widx = get_accounts_handler().get_iterator<by_governance_vote_expiration_ts>();
+      auto _current = _widx->begin();
+      while( !_widx->end() )
+      {
+        const auto& _obj = *_current;
+        ilog( "xxxx: ${name} num: ${num} time: ${time}",
+            ("name", _obj.get_name())
+            ("num", head_block_num())
+            ("time", _obj.get_governance_vote_expiration_ts())
+            );
+        _widx->next();
+        _current = _widx->get();
+      }
+      ilog( "end-by_governance_vote_expiration_ts");
+    }
+  }
+  //==================for tests========================
+  {
+    if( head_block_num() == 377804 )
+    { 
       ilog( "start-by_delayed_voting");
       auto _widx = get_accounts_handler().get_iterator<by_delayed_voting>();
       auto _current = _widx->begin();

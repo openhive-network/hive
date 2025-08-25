@@ -96,7 +96,7 @@ struct transporter_impl
   }
 };
 
-template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3, typename RocksDB_Object_Type4>
+template<typename Volatile_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2, typename RocksDB_Object_Type3, typename RocksDB_Object_Type4, typename RocksDB_Object_Type5>
 struct transporter
 {
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
@@ -107,15 +107,16 @@ struct transporter
 };
 
 template<>
-struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting>
+struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting, rocksdb_account_object_by_governance_vote_expiration_ts>
 {
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const volatile_account_object& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
-    FC_ASSERT( column_types.size() == 4 );
+    FC_ASSERT( column_types.size() == 5 );
     transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( volatile_object.account_id ), volatile_object, column_types[1] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[3] );
+    transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_governance_vote_expiration_ts().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[4] );
 
     /*
       Remove old records.
@@ -128,7 +129,12 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
 
     if( volatile_object.get_previous_oldest_delayed_vote_time() )
     {
-      transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[3] );
+      transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_oldest_delayed_vote_time()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[3] );
+    }
+
+    if( volatile_object.get_previous_governance_vote_expiration_ts() )
+    {
+      transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_governance_vote_expiration_ts()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[4] );
     }
   }
 };
@@ -314,6 +320,8 @@ struct volatile_supporter_impl
       db.create<Volatile_Object_Type>( [&]( Volatile_Object_Type& o )
       {
         creator<Volatile_Object_Type, SHM_Object_Type>::assign( o, obj, get_block_num( db ) );
+        if( func )
+          func( o );
       });
     }
 
@@ -364,15 +372,18 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
   {
     auto _previous_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
     auto _previous_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
+    auto _previous_governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
 
     modifier( const_cast<account_object&>( obj ) );
 
     auto _new_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
     auto _new_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
+    auto _new_governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
 
     if(
         _new_next_vesting_withdrawal != _previous_next_vesting_withdrawal ||
-        _previous_oldest_delayed_vote_time != _new_oldest_delayed_vote_time
+        _previous_oldest_delayed_vote_time != _new_oldest_delayed_vote_time ||
+        _previous_governance_vote_expiration_ts != _new_governance_vote_expiration_ts
       )
     {
       auto _func = [&]( volatile_account_object& obj )
@@ -382,6 +393,9 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
 
         if( _previous_oldest_delayed_vote_time != _new_oldest_delayed_vote_time )
           obj.set_previous_oldest_delayed_vote_time( _previous_oldest_delayed_vote_time );
+
+        if( _previous_governance_vote_expiration_ts != _new_governance_vote_expiration_ts )
+          obj.set_previous_governance_vote_expiration_ts( _previous_governance_vote_expiration_ts );
       };
 
        volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj, _func );
@@ -425,7 +439,8 @@ template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename S
         typename RocksDB_Object_Type,
         typename RocksDB_Object_Type2 = RocksDB_Object_Type,
         typename RocksDB_Object_Type3 = RocksDB_Object_Type,
-        typename RocksDB_Object_Type4 = RocksDB_Object_Type>
+        typename RocksDB_Object_Type4 = RocksDB_Object_Type,
+        typename RocksDB_Object_Type5 = RocksDB_Object_Type>
 bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
@@ -449,7 +464,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     const auto& _current = *_itr;
     ++_itr;
 
-    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4>::move_to_external_storage( provider, _current, column_types );
+    transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4, RocksDB_Object_Type5>::move_to_external_storage( provider, _current, column_types );
 
     if( !_do_flush )
       _do_flush = true;
@@ -483,8 +498,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
                           ( block_num, { ColumnTypes::ACCOUNT_AUTHORITY } );
 
   bool _do_flush_account = on_irreversible_block_impl
-                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting>
-                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL, ColumnTypes::ACCOUNT_BY_DELAYED_VOTING } );
+                          <volatile_account_index, volatile_account_object, account_object, rocksdb_account_object, rocksdb_account_object_by_id, rocksdb_account_object_by_next_vesting_withdrawal, rocksdb_account_object_by_delayed_voting, rocksdb_account_object_by_governance_vote_expiration_ts>
+                          ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT_BY_NEXT_VESTING_WITHDRAWAL, ColumnTypes::ACCOUNT_BY_DELAYED_VOTING, ACCOUNT_BY_GOVERNANCE_VOTE_EXPIRATION_TS } );
 
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {

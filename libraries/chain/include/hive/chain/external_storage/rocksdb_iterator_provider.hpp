@@ -34,4 +34,16 @@ class rocksdb_iterator_provider<by_delayed_voting>
 
 };
 
+template<>
+class rocksdb_iterator_provider<by_governance_vote_expiration_ts>
+{
+  public:
+
+    static rocksdb_account_iterator::ptr get_iterator( const chainbase::database& db, rocksdb_account_column_family_iterator_provider::ptr provider, external_storage_reader_writer::ptr reader )
+    {
+      return std::make_shared<rocksdb_column_family_iterator_by_governance_vote_expiration_ts>( db, ColumnTypes::ACCOUNT_BY_GOVERNANCE_VOTE_EXPIRATION_TS, provider, reader );
+    }
+
+};
+
 }}

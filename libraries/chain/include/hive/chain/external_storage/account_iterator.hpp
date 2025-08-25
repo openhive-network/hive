@@ -6,58 +6,6 @@
 #include <hive/chain/external_storage/rocksdb_iterator_provider.hpp>
 namespace hive { namespace chain {
 
-//#define LOG_DEBUG
-
-#ifdef LOG_DEBUG
-
-#define LOG0(message) \
-{ \
-  ilog( "${m}",("m", message)); \
-}
-
-#define LOG1(message, a) \
-{ \
-  ilog( "${m} [${name} ${time}]",("m", message)("name", a.get_name())("time", a.get_next_vesting_withdrawal())); \
-}
-
-#define LOG2(message, val, a, b) \
-{ \
-  ilog( "${m} ${val} [${name} ${time}] [${name2} ${time2}]", \
-  ("m", message) \
-  ("name", a.get_name())("time", a.get_next_vesting_withdrawal()) \
-  ("name2", b.get_name())("time2", b.get_next_vesting_withdrawal()) \
-  ("val", val) \
-  ); \
-}
-
-#define LOG3(message, a, b, val) \
-{ \
-  ilog( "${m} ${val} [${name} ${time}] [${name2} ${time2}]", \
-  ("m", message) \
-  ("name", a.get_name())("time", a.get_next_vesting_withdrawal()) \
-  ("name2", b.get_name())("time2", b.get_next_vesting_withdrawal()) \
-  ("val", val) \
-  ); \
-}
-
-#define LOG4(message, val) \
-{ \
-    ilog( "${m} ${val}", \
-    ("m", message) \
-    ("val", val) \
-    ); \
-}
-
-#else
-
-#define LOG0(message)
-#define LOG1(message, a)
-#define LOG2(message, val, a, b)
-#define LOG3(message, a, b, val)
-#define LOG4(message, val)
-
-#endif
-
 template<typename ByIndex>
 class helper
 {
@@ -85,6 +33,11 @@ class helper<by_next_vesting_withdrawal>
     {
       return obj.get_previous_next_vesting_withdrawal().has_value();
     }
+
+    static time_point_sec get_time( const account_object& a )
+    {
+      return a.get_next_vesting_withdrawal();
+    }
 };
 
 template<>
@@ -109,7 +62,93 @@ class helper<by_delayed_voting>
     {
       return obj.get_previous_oldest_delayed_vote_time().has_value();
     }
+
+    static time_point_sec get_time( const account_object& a )
+    {
+      return a.get_oldest_delayed_vote_time();
+    }
 };
+
+template<>
+class helper<by_governance_vote_expiration_ts>
+{
+  public:
+
+    static bool cmp( const account_object& a, const account_object& b )
+    {
+      if( a.get_governance_vote_expiration_ts() == b.get_governance_vote_expiration_ts() )
+        return a.get_id() < b.get_id();
+      else
+        return a.get_governance_vote_expiration_ts() < b.get_governance_vote_expiration_ts();
+    }
+
+    static bool equal( const account_object& a, const account_object& b )
+    {
+      return a.get_governance_vote_expiration_ts() == b.get_governance_vote_expiration_ts() && a.get_id() == b.get_id();
+    }
+
+    static bool is_obsolete_value( const volatile_account_object& obj )
+    {
+      return obj.get_previous_governance_vote_expiration_ts().has_value();
+    }
+
+    static time_point_sec get_time( const account_object& a )
+    {
+      return a.get_governance_vote_expiration_ts();
+    }
+};
+
+//#define LOG_DEBUG
+
+#ifdef LOG_DEBUG
+
+#define LOG0(message) \
+{ \
+  ilog( "${m}",("m", message)); \
+}
+
+#define LOG1(message, a) \
+{ \
+  ilog( "${m} [${name} ${time}]",("m", message)("name", a.get_name())("time", helper<ByIndex>::get_time(a))); \
+}
+
+#define LOG2(message, val, a, b) \
+{ \
+  ilog( "${m} ${val} [${name} ${time}] [${name2} ${time2}]", \
+  ("m", message) \
+  ("name", a.get_name())("time", helper<ByIndex>::get_time(a)) \
+  ("name2", b.get_name())("time2", helper<ByIndex>::get_time(b)) \
+  ("val", (uint32_t)val) \
+  ); \
+}
+
+#define LOG3(message, a, b, val) \
+{ \
+  ilog( "${m} ${val} [${name} ${time}] [${name2} ${time2}]", \
+  ("m", message) \
+  ("name", a.get_name())("time", helper<ByIndex>::get_time(a)) \
+  ("name2", b.get_name())("time2", helper<ByIndex>::get_time(b)) \
+  ("val", (uint32_t)val) \
+  ); \
+}
+
+#define LOG4(message, val) \
+{ \
+    ilog( "${m} ${val}", \
+    ("m", message) \
+    ("val", (uint32_t)val) \
+    ); \
+}
+
+#else
+
+#define LOG0(message)
+#define LOG1(message, a)
+#define LOG2(message, val, a, b)
+#define LOG3(message, a, b, val)
+#define LOG4(message, val)
+
+#endif
 
 template<typename ByIndex>
 class account_iterator
@@ -273,7 +312,7 @@ void account_iterator<ByIndex>::execute_cmp()
     else
     {
       last = helper<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
-      LOG3( "cmp-i", (*it), (*rocksdb_item), last )
+      LOG3( "cmp-i", (*volatile_item), (*rocksdb_item), last )
     }
   }
 

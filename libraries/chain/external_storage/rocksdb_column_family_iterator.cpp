@@ -65,7 +65,6 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator_by_next_vesting_w
   return rocksdb_column_family_iterator::get_account( _message, _obj.name );
 }
 
-
 rocksdb_column_family_iterator_by_delayed_voting::rocksdb_column_family_iterator_by_delayed_voting( const chainbase::database& db, ColumnTypes column_type,
                 rocksdb_account_column_family_iterator_provider::ptr provider, external_storage_reader_writer::ptr reader )
 : rocksdb_column_family_iterator( db, column_type, provider, reader )
@@ -79,6 +78,22 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator_by_delayed_voting
   load( _obj, it->value().data(), it->value().size() );
 
   static const std::string _message = "rocksdb_account_object_by_delayed_voting";
+  return rocksdb_column_family_iterator::get_account( _message, _obj.name );
+}
+
+rocksdb_column_family_iterator_by_governance_vote_expiration_ts::rocksdb_column_family_iterator_by_governance_vote_expiration_ts( const chainbase::database& db, ColumnTypes column_type,
+                rocksdb_account_column_family_iterator_provider::ptr provider, external_storage_reader_writer::ptr reader )
+: rocksdb_column_family_iterator( db, column_type, provider, reader )
+{
+}
+
+std::shared_ptr<account_object> rocksdb_column_family_iterator_by_governance_vote_expiration_ts::get()
+{
+  rocksdb_account_object_by_governance_vote_expiration_ts _obj;
+
+  load( _obj, it->value().data(), it->value().size() );
+
+  static const std::string _message = "rocksdb_account_object_by_governance_vote_expiration_ts";
   return rocksdb_column_family_iterator::get_account( _message, _obj.name );
 }
 

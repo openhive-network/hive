@@ -43,7 +43,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     }
     std::optional<time_point_sec> get_previous_oldest_delayed_vote_time() const { return previous_oldest_delayed_vote_time; }
 
-    void set_governance_vote_expiration_ts( const time_point_sec& val )
+    void set_previous_governance_vote_expiration_ts( const time_point_sec& val )
     {
       if( !previous_governance_vote_expiration_ts )
         previous_governance_vote_expiration_ts = val;

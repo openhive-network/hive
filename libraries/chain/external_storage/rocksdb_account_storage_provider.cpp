@@ -53,6 +53,12 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
     byTxIdColumn.options.comparator = by_time_account_id_pair_Comparator();
   }
 
+  {
+    columnDefs.emplace_back("account_by_governance_vote_expiration_ts", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_time_account_id_pair_Comparator();
+  }
+
   return columnDefs;
 }
 
