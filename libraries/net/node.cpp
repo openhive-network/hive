@@ -609,6 +609,9 @@ namespace graphene { namespace net {
       appbase::application& theApp;
       hive::chain::blockchain_worker_thread_pool& _thread_pool;
 
+      uint32_t _highest_block_number_given_by_blockchain_item_ids_inventory = 0;
+      bool _ignore_item_ids_inventory_message = false;
+
       node_impl(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool);
       virtual ~node_impl();
       void save_active_peers_to_peer_database();
@@ -2725,6 +2728,23 @@ namespace graphene { namespace net {
             }
           }
         }
+
+        if (!blockchain_item_ids_inventory_message_received.item_hashes_available.empty() &&
+            (blockchain_item_ids_inventory_message_received.item_type == block_message_type || blockchain_item_ids_inventory_message_received.item_type == compressed_block_message_type))
+        {
+          const auto& last_id = blockchain_item_ids_inventory_message_received.item_hashes_available.back();
+          const uint32_t highest_block_number = _delegate->get_block_number(last_id);
+          if (highest_block_number > _highest_block_number_given_by_blockchain_item_ids_inventory) {
+            _highest_block_number_given_by_blockchain_item_ids_inventory = highest_block_number;
+            const auto& current_head_block_id = _delegate->get_head_block_id();
+            if (current_head_block_id != last_id) {
+              _ignore_item_ids_inventory_message = true;
+              dlog( "Received a higher blockchain item: ${last_id} which points for block num: ${highest_block_number} from ${peer_endpoint} which is not our current head block and looks like we gonna do some syncing. Started to ignore item_ids_inventory_message",
+               ( last_id ) (highest_block_number)( "peer_endpoint", originating_peer->get_remote_endpoint() ));
+            }
+          }
+        }
+        
         originating_peer->item_ids_requested_from_peer.reset();
 
         // if exceptions are throw after clearing the item_ids_requested_from_peer (above),
@@ -3096,6 +3116,13 @@ namespace graphene { namespace net {
         return;
       }
 
+      if (_ignore_item_ids_inventory_message)
+      {
+        wlog("received inventory of items of type: ${type} from peer ${endpoint}, but ignore_item_ids_inventory_message is set. Ignoring message",
+             ("type", item_ids_inventory_message_received.item_type)("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
+
       // expire old inventory so we'll be making decisions our about whether to fetch blocks below based only on recent inventory
       originating_peer->clear_old_inventory();
 
@@ -3370,6 +3397,12 @@ namespace graphene { namespace net {
       std::map<peer_connection_ptr, std::pair<std::string, fc::oexception>> peers_to_disconnect; // map peer -> pair<reason_string, exception>
       if (client_accepted_block)
       {
+        if (block_number >= _highest_block_number_given_by_blockchain_item_ids_inventory)
+        {
+          dlog("sync: client accepted block ${block_number} which was highest block number given by blockchain item ids inventory. Expecting normal blocks now, no longer ingoring item_ids_inventory messages",
+             (block_number));
+          _ignore_item_ids_inventory_message = false;
+        }
         --_total_number_of_unfetched_items;
         dlog("sync: client accepted the block, we now have only ${count} items left to fetch before we're in sync",
              ("count", _total_number_of_unfetched_items));
