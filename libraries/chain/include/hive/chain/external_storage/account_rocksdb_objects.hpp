@@ -27,6 +27,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
 
     time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
     time_point_sec get_oldest_delayed_vote_time() const { return shared_delayed_votes.get_oldest_delayed_vote_time(); }
+    time_point_sec get_governance_vote_expiration_ts() const { return misc.governance_vote_expiration_ts; }
 
     void set_previous_next_vesting_withdrawal( const time_point_sec& val )
     {
@@ -42,6 +43,13 @@ class volatile_account_object : public object< volatile_account_object_type, vol
     }
     std::optional<time_point_sec> get_previous_oldest_delayed_vote_time() const { return previous_oldest_delayed_vote_time; }
 
+    void set_governance_vote_expiration_ts( const time_point_sec& val )
+    {
+      if( !previous_governance_vote_expiration_ts )
+        previous_governance_vote_expiration_ts = val;
+    }
+    std::optional<time_point_sec> get_previous_governance_vote_expiration_ts() const { return previous_governance_vote_expiration_ts; }
+
     account_id_type                         account_id;
 
     account_details::recovery               recovery;
@@ -53,6 +61,7 @@ class volatile_account_object : public object< volatile_account_object_type, vol
 
     std::optional<time_point_sec>           previous_next_vesting_withdrawal;
     std::optional<time_point_sec>           previous_oldest_delayed_vote_time;
+    std::optional<time_point_sec>           previous_governance_vote_expiration_ts;
 
     uint32_t                                block_number = 0;
 
@@ -84,6 +93,12 @@ typedef multi_index_container<
       ordered_unique< tag< by_delayed_voting >,
         composite_key< volatile_account_object,
           const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_oldest_delayed_vote_time >,
+          const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
+        >
+      >,
+      ordered_unique< tag< by_governance_vote_expiration_ts >,
+        composite_key< volatile_account_object,
+          const_mem_fun< volatile_account_object, time_point_sec, &volatile_account_object::get_governance_vote_expiration_ts >,
           const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
         >
       >,
@@ -199,10 +214,27 @@ class rocksdb_account_object_by_delayed_voting
   account_name_type name;
 };
 
+class rocksdb_account_object_by_governance_vote_expiration_ts
+{
+  public:
+
+  rocksdb_account_object_by_governance_vote_expiration_ts(){}
+
+  rocksdb_account_object_by_governance_vote_expiration_ts( const volatile_account_object& obj )
+  {
+    governance_vote_expiration_ts  = obj.get_governance_vote_expiration_ts();
+    name                      = obj.get_name();
+  }
+
+  time_point_sec    governance_vote_expiration_ts;
+  account_id_type   id;
+  account_name_type name;
+};
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::volatile_account_object, (id)(account_id)(recovery)(assets)(mrc)(time)(misc)(shared_delayed_votes)
-(previous_next_vesting_withdrawal)(previous_oldest_delayed_vote_time)
+(previous_next_vesting_withdrawal)(previous_oldest_delayed_vote_time)(previous_governance_vote_expiration_ts)
 (block_number) )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::volatile_account_object, hive::chain::volatile_account_index )
@@ -211,3 +243,4 @@ FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(tim
 FC_REFLECT( hive::chain::rocksdb_account_object_by_id, (id)(name) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_next_vesting_withdrawal, (next_vesting_withdrawal)(name) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_delayed_voting, (oldest_delayed_vote_time)(id)(name) )
+FC_REFLECT( hive::chain::rocksdb_account_object_by_governance_vote_expiration_ts, (governance_vote_expiration_ts)(id)(name) )
