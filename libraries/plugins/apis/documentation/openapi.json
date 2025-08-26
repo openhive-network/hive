@@ -987,6 +987,600 @@
                 }
             }
         },
+        "bridge.get_post": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives single selected post.",
+                "description": "Parameters:\n\n- `author`: A valid account name (string).\n\n- `permlink`: A valid permlink (string).\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
+                "operationId": "get_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_post_response"
+                                },
+                                "example": {
+                                    "steevc/re-hiveio-qoimw3": {
+                                        "active_votes": [
+                                            {
+                                                "rshares": 66800471918,
+                                                "voter": "blockchainyouth"
+                                            },
+                                            {
+                                                "rshares": 86075046512,
+                                                "voter": "antisocialist"
+                                            },
+                                            {
+                                                "rshares": 30283066226,
+                                                "voter": "montycashmusic"
+                                            }
+                                        ],
+                                        "author": "steevc",
+                                        "author_payout_value": "0.026 HBD",
+                                        "author_reputation": 79.63,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "Technically Hive seems to be a good place. We have lots of cool projects going on that can make it more usable. We just need more people using it. That could mean a real marketing drive. I see Justin is buying mentions from some big Twitter users, but we can be more organic and real. \n\nHive five!",
+                                        "category": "hiveecosystem",
+                                        "children": 0,
+                                        "created": "2021-02-14T11:07:15",
+                                        "curator_payout_value": "0.025 HBD",
+                                        "depth": 1,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "app": "peakd/2021.01.3",
+                                            "tags": [
+                                                "hiveecosystem"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 183158584656,
+                                        "parent_author": "hiveio",
+                                        "parent_permlink": "around-the-hive-reflections",
+                                        "payout": 0.051,
+                                        "payout_at": "2021-02-21T11:07:15",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "re-hiveio-qoimw3",
+                                        "post_id": 101869017,
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 3
+                                        },
+                                        "title": "RE: Around the Hive: Reflections",
+                                        "updated": "2021-02-14T11:07:15",
+                                        "url": "/hiveecosystem/@hiveio/around-the-hive-reflections#@steevc/re-hiveio-qoimw3"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_post_header": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives very basic information on given post.",
+                "description": "Parameters:\n\n- `author`: A valid account name (string).\n\n- `permlink`: A valid permlink (string).\n",
+                "operationId": "get_post_header",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_post_header"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_post_header_response"
+                                },
+                                "example": {
+                                    "author": "hiveio",
+                                    "category": "hiveecosystem",
+                                    "depth": 0,
+                                    "permlink": "around-the-hive-reflections"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_profile": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gets profile.",
+                "description": "Parameters:\n\n- `account`: A valid account name (string).\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
+                "operationId": "get_profile",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_profile"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_profile_response"
+                                },
+                                "example": {
+                                    "active": "2016-04-29T22:28:00",
+                                    "blacklists": [],
+                                    "context": {
+                                        "followed": false,
+                                        "muted": false
+                                    },
+                                    "created": "2016-03-25T15:09:27",
+                                    "id": 241,
+                                    "metadata": {
+                                        "profile": {
+                                            "about": "",
+                                            "blacklist_description": "",
+                                            "cover_image": "",
+                                            "location": "",
+                                            "muted_list_description": "",
+                                            "name": "",
+                                            "profile_image": "",
+                                            "website": ""
+                                        }
+                                    },
+                                    "name": "alice",
+                                    "post_count": 0,
+                                    "reputation": 25,
+                                    "stats": {
+                                        "followers": 431,
+                                        "following": 0,
+                                        "rank": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_ranked_posts": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Get ranked posts.",
+                "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `tag`: A string representing any valid tag.\n\n- `observer`: A string representing any valid account or an empty string.\n",
+                "operationId": "get_ranked_posts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_ranked_posts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_ranked_posts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_payout_value": "109.585 HBD",
+                                        "author_reputation": 74.28,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "blacklists": [],
+                                        "body": "",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "app": "hiveblog/0.1",
+                                            "format": "markdown",
+                                            "image": [
+                                                "https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png",
+                                                "https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png",
+                                                "https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png",
+                                                "https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png"
+                                            ],
+                                            "links": [
+                                                "https://hivewhale.com/"
+                                            ],
+                                            "tags": [
+                                                "hive5",
+                                                "hive",
+                                                "anniversary"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "payout": 218.988,
+                                        "payout_at": "2025-03-27T16:39:33",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "reblogs": 134,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 1,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 1475
+                                        },
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "updated": "2025-03-20T16:39:33",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_relationship_between_accounts": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Tells what relations connect given accounts from the perspective of first account.",
+                "operationId": "get_relationship_between_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_relationship_between_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_relationship_between_accounts_response"
+                                },
+                                "example": {
+                                    "blacklists": false,
+                                    "follows": false,
+                                    "follows_blacklists": false,
+                                    "follows_muted": false,
+                                    "ignores": false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.list_all_subscriptions": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "List all subscriptions, titles, and roles to a community for an account.",
+                "description": "Parameters:\n\n- `account`: A string representing a valid account name.\n",
+                "operationId": "list_all_subscriptions",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/list_all_subscriptions"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_all_subscriptions_response"
+                                },
+                                "example": [
+                                    [
+                                    "hive-139531",
+                                    "HiveDevs",
+                                    "admin",
+                                    "Wizard"
+                                    ],
+                                    [
+                                    "hive-102930",
+                                    "Hive Improvement",
+                                    "mod",
+                                    ""
+                                    ],
+                                    [
+                                    "hive-160391",
+                                    "Blockchain Wizardry",
+                                    "mod",
+                                    "Wizard"
+                                    ],
+                                    [
+                                    "hive-104647",
+                                    "Steemfest 4",
+                                    "mod",
+                                    "Blockchain Wizard"
+                                    ],
+                                    [
+                                    "hive-106258",
+                                    "HiveFest",
+                                    "guest",
+                                    ""
+                                    ],
+                                    [
+                                    "hive-196387",
+                                    "StemSocial",
+                                    "guest",
+                                    ""
+                                    ],
+                                    [
+                                    "hive-148309",
+                                    "BuzzParty Meet Hive!",
+                                    "guest",
+                                    ""
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.list_communities": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gets community.",
+                "description": "Parameters:\n\n- `last`: A string representing the name of the community for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed communities; default is 100. This parameter is optional.\n\n- `query`: A string to filter communities based on title and about fields. This parameter is optional.\n\n- `sort`: A string to define the sorting method. Optional with default:\n  - `rank`: sort by community rank\n  - `new`: sort by newest communities\n  - `subs`: sort by subscriptions\n\n- `observer`: A valid account name (string). This parameter is optional.\n",
+                "operationId": "list_communities",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/list_communities"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_communities_response"
+                                },
+                                "example": [
+                                    {
+                                        "about": "HIVE Version of /r/wallstreetbets",
+                                        "admins": [
+                                            "jeffjagoe"
+                                        ],
+                                        "avatar_url": "",
+                                        "context": {},
+                                        "created_at": "2021-01-27 22:30:54",
+                                        "id": 1432837,
+                                        "is_nsfw": false,
+                                        "lang": "en",
+                                        "name": "hive-108729",
+                                        "num_authors": 0,
+                                        "num_pending": 0,
+                                        "subscribers": 42,
+                                        "sum_pending": 0,
+                                        "title": "Wall Street Bets",
+                                        "type_id": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.list_community_roles": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "List community roles and labels for each account in the community.",
+                "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string representing the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed subscribers; default is 100. This parameter is optional.\n",
+                "operationId": "list_community_roles",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/list_community_roles"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_community_roles_response"
+                                },
+                                "example": [
+                                    [
+                                    "hive-123456",
+                                    "owner",
+                                    ""
+                                    ],
+                                    [
+                                    "inji",
+                                    "admin",
+                                    ""
+                                    ],
+                                    [
+                                    "nftimo",
+                                    "admin",
+                                    ""
+                                    ],
+                                    [
+                                    "therealwolf",
+                                    "admin",
+                                    ""
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.list_pop_communities": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gets a list of popular communities.",
+                "description": "Parameters:\n\n- `limit`: An integer to limit the number of listed communities; default is 25. This parameter is optional.\n",
+                "operationId": "list_pop_communities",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/list_pop_communities"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_pop_communities_response"
+                                },
+                                "example": [
+                                    [
+                                    "hive-167922",
+                                    "LeoFinance"
+                                    ],
+                                    [
+                                    "hive-125125",
+                                    "Ecency"
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.list_subscribers": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gets a list of subscribers for a given community.",
+                "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string indicating the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed subscribers; defaults to 100 if omitted. This parameter is optional.\n",
+                "operationId": "list_subscribers",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/list_subscribers"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_subscribers_response"
+                                },
+                                "example": [
+                                    [
+                                    "abdex9",
+                                    "guest",
+                                    null,
+                                    "2020-02-09T18:24:57"
+                                    ],
+                                    [
+                                    "abdoulhameed",
+                                    "guest",
+                                    null,
+                                    "2021-04-03T18:30:18"
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "database_api.find_account_recovery_requests": {
             "post": {
                 "tags": [
@@ -5338,6 +5932,74 @@
                     "permlink"
                 ]
             },
+            "community_object": {
+                "type": "object",
+                "properties": {
+                    "about": {
+                        "type": "string",
+                        "example": "HIVE Version of /r/wallstreetbets"
+                    },
+                    "admins": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://example.com/avatar.jpg"
+                    },
+                    "context": {
+                        "$ref": "#/components/schemas/context_object"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2021-01-27T22:30:54Z"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 1432837
+                    },
+                    "is_nsfw": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "lang": {
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "hive-108729"
+                    },
+                    "num_authors": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "num_pending": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "subscribers": {
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "sum_pending": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Wall Street Bets"
+                    },
+                    "type_id": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                }
+            },
             "context_object": {
                 "type": "object",
                 "properties": {
@@ -8492,6 +9154,83 @@
                     "items"
                 ]
             },
+            "get_post": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The author of the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hive-12345",
+                        "description": "The unique identifier for the post."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "gtg",
+                        "description": "The observer of the post."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "get_post_response": {
+                "$ref": "#/components/schemas/post_object"
+            },
+            "get_post_header": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The author of the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hive-12345",
+                        "description": "The unique identifier for the post."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "get_post_header_response": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The author of the post."
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "hiveecosystem",
+                        "description": "The unique identifier for the post."
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The depth of the post in the discussion thread."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hive-12345",
+                        "description": "The unique identifier for the post."
+                    }
+                },
+                "required": [
+                    "author",
+                    "category",
+                    "depth",
+                    "permlink"
+                ]
+            },
             "get_potential_signatures": {
                 "type": "object",
                 "properties": {
@@ -8515,6 +9254,201 @@
                 },
                 "required": [
                     "keys"
+                ]
+            },
+            "get_profile": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the account."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the observer."
+                    }
+                },
+                "required": [
+                    "account",
+                    "observer"
+                ]
+            },
+            "get_profile_response": {
+                "type": "object",
+                "properties": {
+                    "active": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-04-29T22:28:00",
+                        "description": "The author's last active time."
+                    },
+                    "blacklists": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "blacklist1",
+                            "blacklist2"
+                        ],
+                        "description": "An array of blacklists associated with the post, indicating accounts that have blacklisted it."
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-03-25T15:09:27",
+                        "description": "The author's account creation time."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 241,
+                        "description": "The unique identifier for the author."
+                    },
+                    "metadata": {
+                        "type": "object"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the author."
+                    },
+                    "post_count": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The total number of posts made by the author."
+                    },
+                    "reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 25.75,
+                        "description": "The reputation score of the author."
+                    },
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "followers": {
+                                "type": "integer",
+                                "example": 431,
+                                "description": "The number of followers the author has."
+                            },
+                            "following": {
+                                "type": "integer",
+                                "example": 0,
+                                "description": "The number of accounts the author is following."
+                            },
+                            "rank": {
+                                "type": "integer",
+                                "example": 0,
+                                "description": "The author's rank."
+                            }
+                        },
+                        "required": [
+                            "followers",
+                            "following",
+                            "rank"
+                        ]
+                    },
+                    "context": {
+                        "type": "object",
+                        "properties": {
+                            "followed": {
+                                "type": "boolean",
+                                "example": false,
+                                "description": "Indicates if the author is followed."
+                            },
+                            "muted": {
+                                "type": "boolean",
+                                "example": false,
+                                "description": "Indicates if the author is muted."
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "active",
+                    "blacklists",
+                    "created",
+                    "id",
+                    "metadata",
+                    "name",
+                    "post_count",
+                    "reputation",
+                    "stats"
+                ]
+            },
+            "get_ranked_posts": {
+                "type": "object",
+                "properties": {
+                    "sort": {
+                        "type": "string",
+                        "example": "trending",
+                        "description": "The sorting method for the posts (e.g., trending, hot, new)."
+                    },
+                    "tag": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The tag to filter posts by."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "user123",
+                        "description": "The user observing the posts."
+                    }
+                },
+                "required": [
+                    "sort",
+                    "tag",
+                    "observer"
+                ]
+            },
+            "get_ranked_posts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_object"
+                }
+            },
+            "get_relationship_between_accounts": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "example": [
+                    "alice",
+                    "bob"
+                ]
+            },
+            "get_relationship_between_accounts_response": {
+                "type": "object",
+                "properties": {
+                    "blacklists": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "follows": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "follows_blacklists": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "follows_muted": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "ignores": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "blacklists",
+                    "follows",
+                    "follows_blacklists",
+                    "follows_muted",
+                    "ignores"
                 ]
             },
             "get_required_signatures": {
@@ -8804,7 +9738,7 @@
                         {
                             "type": [
                                 "integer",
-                                "‘null'"
+                                "null"
                             ]
                         },
                         {
@@ -8877,6 +9811,25 @@
                     "accounts"
                 ]
             },
+            "list_all_subscriptions": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "Comma-separated list of account names."
+                    }
+                },
+                "required": [
+                    "account"
+                ]
+            },
+            "list_all_subscriptions_response": {
+                "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/subscriptions_array"
+                    }
+            },
             "list_change_recovery_account_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
             },
@@ -8910,6 +9863,71 @@
                 "required": [
                     "requests"
                 ]
+            },
+            "list_communities": {
+                "type": "object",
+                "properties": {
+                    "last": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Name of the last community."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "Limit number of listed communities, default: 100"
+                    },
+                    "query": {
+                        "type": "string",
+                        "example": "developers",
+                        "description": "Filters against title and about community fields."
+                    },
+                    "sort": {
+                        "type": "string",
+                        "default": "rank",
+                        "description": "Sort order for the communities."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "A valid account observing the communities."
+                    }
+                }
+            },
+            "list_communities_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/community_object"
+                }
+            },
+            "list_community_roles": {
+                "type": "object",
+                "properties": {
+                    "last": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Name of the last subscriber."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "Limit number of listed communities, default: 100"
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "community category name."
+                    }
+                },
+                "required": [
+                    "community"
+                ]
+            },
+            "list_community_roles_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/team_array"
+                }
             },
             "list_decline_voting_rights_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -8996,6 +10014,24 @@
                     "owner_auths"
                 ]
             },
+            "list_pop_communities": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "limit"
+                ]
+            },
+            "list_pop_communities_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/pop_communities"
+                }
+            },
             "list_proposal_votes": {
                 "$ref": "#/components/schemas/start_limit_proposals_votes"
             },
@@ -9029,6 +10065,35 @@
                 "required": [
                     "proposals"
                 ]
+            },
+            "list_subscribers": {
+                "type": "object",
+                "properties": {
+                    "last": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Name of the last subscriber."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "Limit number of listed subscribers, default: 100"
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "community category name."
+                    }
+                },
+                "required": [
+                    "community"
+                ]
+            },
+            "list_subscribers_response": {
+                "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/subscriptions_array"
+                    }
             },
             "list_savings_withdrawals": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -9309,6 +10374,14 @@
                     "last_valid_time",
                     "previous_owner_authority"
                 ]
+            },
+            "pop_communities": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 2,
+                "maxItems": 2
             },
             "post_object": {
                 "type": "object",
@@ -10011,6 +11084,18 @@
                     "total_votes",
                     "flag_weight"
                 ]
+            },
+            "subscriptions_array": {
+                "type": "array",
+                "items": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+
+                },
+                "minItems": 4,
+                "maxItems": 4
             },
             "team_array": {
                 "type": "array",
