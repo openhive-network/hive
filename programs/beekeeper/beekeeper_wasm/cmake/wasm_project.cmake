@@ -14,7 +14,7 @@ set(WASM_RUNTIME_COMPONENT_NAME "wasm_runtime_components")
 function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   set(options WASM_USE_FS)
   set(oneValueArgs TARGET_ENVIRONMENT)
-  set(multiValueArgs LINK_LIBRARIES LINK_OPTIONS)
+  set(multiValueArgs COMPILE_DEFINITIONS COMPILE_OPTIONS LINK_LIBRARIES LINK_OPTIONS)
   cmake_parse_arguments(PARSE_ARGV 0 arg
     "${options}" "${oneValueArgs}" "${multiValueArgs}"
   )
@@ -23,13 +23,18 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   TARGET_COMPILE_OPTIONS( CommonBuildOptions INTERFACE
     -Oz
     -fwasm-exceptions
+    -DNDEBUG
+    -v
   )
   TARGET_LINK_OPTIONS( CommonBuildOptions INTERFACE
     -Oz
     -fwasm-exceptions
+    #-sSAFE_HEAP=0 -sSTACK_OVERFLOW_CHECK=0 -sASSERTIONS=0 -DNDEBUG -sMALLOC=emmalloc
+    #-sWASM_LEGACY_EXCEPTIONS=0
     -sEXPORT_EXCEPTION_HANDLING_HELPERS=1
     -sEXCEPTION_STACK_TRACES=1
     -sELIMINATE_DUPLICATE_FUNCTIONS=1
+    -v
   )
 
   set( exec_wasm_name "${wasm_target_basename}.${arg_TARGET_ENVIRONMENT}" )
@@ -40,11 +45,11 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   IF ("${arg_TARGET_ENVIRONMENT}" STREQUAL "web")
     MESSAGE( STATUS "Chosen web target environment")
     SET ( NODE_ENV 0 )
-    SET ( WASM_ENV "web" )
+    SET ( WASM_ENV web )
   ELSE()
     MESSAGE( STATUS "Chosen node target environment")
     SET ( NODE_ENV 1 )
-    SET ( WASM_ENV "node" )
+    SET ( WASM_ENV node )
   ENDIF()
 
   ADD_EXECUTABLE( ${exec_wasm_name} ${SOURCES} )
@@ -57,9 +62,17 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   target_link_options( ${exec_wasm_name} PUBLIC
     -sMODULARIZE=1 -sSINGLE_FILE=0 -sUSE_ES6_IMPORT_META=1
     -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sWASM_ASYNC_COMPILATION=1
-    --minify=0 --emit-symbol-map -sENVIRONMENT="${WASM_ENV}"
+    --minify=0 --emit-symbol-map -sENVIRONMENT=${WASM_ENV}
     --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_common_name}.d.ts"
   )
+
+  if (arg_COMPILE_DEFINITIONS)
+    target_compile_definitions(${exec_wasm_name} PUBLIC ${arg_COMPILE_DEFINITIONS})
+  endif()
+
+  if (arg_COMPILE_OPTIONS)
+    target_compile_options(${exec_wasm_name} PUBLIC ${arg_COMPILE_OPTIONS})
+  endif()
 
   if (arg_LINK_OPTIONS)
     target_link_options( ${exec_wasm_name} PUBLIC ${arg_LINK_OPTIONS})

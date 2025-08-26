@@ -10,7 +10,10 @@ using namespace beekeeper;
 using namespace emscripten;
 
 EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
+#if !defined(__BEEKEEPER_AS_LIBRARY__)
   register_vector<std::string>("StringList");
+#endif // !defined(__BEEKEEPER_AS_LIBRARY__)
+
 
   class_<beekeeper_api>("beekeeper_api")
 
@@ -335,6 +338,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
   close can be called without lock, which is done implicitly, same as unlock an be called without open
 */
 
+#if !defined(__BEEKEEPER_AS_LIBRARY__)
 int main() {
   // Main should not be run during TypeScript generation.
   //abort();
@@ -343,4 +347,4 @@ int main() {
 
   return 0;
 }
-
+#endif // !defined(__BEEKEEPER_AS_LIBRARY__)
