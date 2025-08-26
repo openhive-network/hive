@@ -58,4 +58,14 @@ class rocksdb_column_family_iterator_by_governance_vote_expiration_ts: public ro
     std::shared_ptr<account_object> get() override;
 };
 
+class rocksdb_column_family_iterator_by_name: public rocksdb_column_family_iterator
+{
+  public:
+
+    rocksdb_column_family_iterator_by_name( const chainbase::database& db, ColumnTypes _column_type,
+                  rocksdb_account_column_family_iterator_provider::ptr _provider, external_storage_reader_writer::ptr reader );
+
+    std::shared_ptr<account_object> get() override;
+};
+
 }}

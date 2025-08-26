@@ -98,6 +98,32 @@ class helper<by_governance_vote_expiration_ts>
     }
 };
 
+template<>
+class helper<by_name>
+{
+  public:
+
+    static bool cmp( const account_object& a, const account_object& b )
+    {
+      return a.get_name() < b.get_name();
+    }
+
+    static bool equal( const account_object& a, const account_object& b )
+    {
+      return a.get_name() == b.get_name();
+    }
+
+    static bool is_obsolete_value( const volatile_account_object& obj )
+    {
+      return false;
+    }
+
+    static time_point_sec get_time( const account_object& a )
+    {
+      return time_point_sec();
+    }
+};
+
 //#define LOG_DEBUG
 
 #ifdef LOG_DEBUG

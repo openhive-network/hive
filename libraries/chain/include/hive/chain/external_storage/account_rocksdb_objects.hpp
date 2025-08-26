@@ -109,11 +109,7 @@ typedef multi_index_container<
         >
       >,
       ordered_unique< tag< by_name >,
-        composite_key< volatile_account_object,
-          const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name >,
-          const_mem_fun< volatile_account_object, const account_id_type&, &volatile_account_object::get_account_id >
-        >
-      >
+        const_mem_fun< volatile_account_object, const account_name_type&, &volatile_account_object::get_name > >
     >,
     multi_index_allocator< volatile_account_object >
   > volatile_account_index;

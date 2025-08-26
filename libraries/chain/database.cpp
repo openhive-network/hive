@@ -2203,6 +2203,25 @@ void database::process_vesting_withdrawals()
   {
     if( head_block_num() == 377804 )
     { 
+      ilog( "start-by_name");
+      auto _widx = get_accounts_handler().get_iterator<by_name>();
+      auto _current = _widx->begin();
+      while( !_widx->end() )
+      {
+        const auto& _obj = *_current;
+        ilog( "xxxx: ${name}",
+            ("name", _obj.get_name())
+            );
+        _widx->next();
+        _current = _widx->get();
+      }
+      ilog( "end-by_name");
+    }
+  }
+  //==================for tests========================
+  {
+    if( head_block_num() == 377804 )
+    { 
       ilog( "start-by_governance_vote_expiration_ts");
       auto _widx = get_accounts_handler().get_iterator<by_governance_vote_expiration_ts>();
       auto _current = _widx->begin();
