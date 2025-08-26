@@ -159,18 +159,14 @@ class account_iterator
 
     const chainbase::database& db;
 
-    using index_t = decltype( std::declval<chainbase::generic_index<account_index>>().indicies().template get<ByIndex>() );
     using volatile_index_t = decltype( std::declval<chainbase::generic_index<volatile_account_index>>().indicies().template get<ByIndex>() );
     using helper_index_t = decltype( std::declval<chainbase::generic_index<volatile_account_index>>().indicies().template get<by_name>() );
 
-    using iterator_t = decltype( std::declval<index_t>().begin() );
     using volatile_iterator_t = decltype( std::declval<volatile_index_t>().begin() );
 
-    const index_t& index;
     const volatile_index_t& volatile_index;
     const helper_index_t& helper_index;
 
-    iterator_t it;
     volatile_iterator_t volatile_it;
     rocksdb_account_iterator::ptr rocksdb_iterator;
 
@@ -203,7 +199,6 @@ account_iterator<ByIndex>::account_iterator(  const chainbase::database& db,
                                               external_storage_reader_writer::ptr reader )
                                               : last( none ),
                                                 db( db ),
-                                                index( db.get_index< account_index, ByIndex >() ),
                                                 volatile_index( db.get_index< volatile_account_index, ByIndex >() ),
                                                 helper_index( db.get_index< volatile_account_index, by_name >() ),
                                                 rocksdb_iterator( rocksdb_iterator_provider<ByIndex>::get_iterator( db, provider, reader ) )
@@ -258,62 +253,23 @@ void account_iterator<ByIndex>::execute_cmp()
     return;
   }
 
-  if( it == index.end() || volatile_it == volatile_index.end() || rocksdb_iterator->end() )
+  if( volatile_it == volatile_index.end() || rocksdb_iterator->end() )
   {
-    if( it == index.end() )
+    if( volatile_it == volatile_index.end() )
     {
-      if( volatile_it == volatile_index.end() || rocksdb_iterator->end() )
-      {
-        last = volatile_it == volatile_index.end() ? rocksdb_storage : volatile_storage;
-        LOG4( "cmp-a", last )
-      }
-      else
-      {
-        last = helper<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
-        LOG3( "cmp-b", (*volatile_item), (*rocksdb_item), last )
-      }
-    }
-    else if( volatile_it == volatile_index.end() )
-    {
-      if( it == index.end() || rocksdb_iterator->end() )
-      {
-        last = it == index.end() ? rocksdb_storage : shm_storage;
-        LOG4( "cmp-c", last )
-      }
-      else
-      {
-        last = helper<ByIndex>::cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
-        LOG3( "cmp-d", (*it), (*rocksdb_item), last )
-      }
+      last = rocksdb_storage;
+      LOG4( "cmp-a", last )
     }
     else
     {
-      if( it == index.end() || volatile_it == volatile_index.end() )
-      {
-        last = it == index.end() ? volatile_storage : shm_storage;
-        LOG4( "cmp-e", last )
-      }
-      else
-      {
-        last = helper<ByIndex>::cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
-        LOG3( "cmp-f", (*it), (*volatile_item), last )
-      }
+      last = volatile_storage;
+      LOG4( "cmp-b", last )
     }
   }
   else
   {
-    last = helper<ByIndex>::cmp( *it, *volatile_item ) ? shm_storage : volatile_storage;
-    LOG3( "cmp-g", (*it), (*volatile_item), last )
-    if( last == shm_storage )
-    {
-      last = helper<ByIndex>::cmp( *it, *rocksdb_item ) ? shm_storage : rocksdb_storage;
-      LOG3( "cmp-h", (*it), (*rocksdb_item), last )
-    }
-    else
-    {
-      last = helper<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
-      LOG3( "cmp-i", (*volatile_item), (*rocksdb_item), last )
-    }
+    last = helper<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
+    LOG3( "cmp-c", (*volatile_item), (*rocksdb_item), last )
   }
 
 }
@@ -321,8 +277,6 @@ void account_iterator<ByIndex>::execute_cmp()
 template<typename ByIndex>
 account account_iterator<ByIndex>::begin()
 {
-  it = index.begin();
-
   volatile_it = volatile_index.begin();
   update_volatile_item();
 
@@ -341,12 +295,7 @@ account account_iterator<ByIndex>::get()
     return account();
   }
 
-  if( last == shm_storage )
-  {
-    LOG1("SHM:", (*it))
-    return account( &(*it) );
-  }
-  else if( last == volatile_storage )
+  if( last == volatile_storage )
   {
     LOG1("VOLATILE", (*volatile_item))
     return account( volatile_item );
@@ -362,13 +311,6 @@ template<typename ByIndex>
 void account_iterator<ByIndex>::next()
 {
   FC_ASSERT( last != none, "Iterator error." );
-
-  auto _move_shm_iterator = [this]( const account_object& obj )
-  {
-    LOG2("MOVE SHM", helper<ByIndex>::equal( obj, *it ), obj, (*it) )
-    if( helper<ByIndex>::equal( obj, *it ) )
-      ++it;
-  };
 
   auto _move_volatile_iterator = [this]( const account_object& obj )
   {
@@ -389,18 +331,9 @@ void account_iterator<ByIndex>::next()
     }
   };
 
-  if( last == shm_storage )
-  {
-    LOG0("NEXT SHM")
-    _move_volatile_iterator( *it );
-    _move_rocksdb_iterator( *it );
-
-    ++it;
-  }
-  else if( last == volatile_storage )
+  if( last == volatile_storage )
   {
     LOG0("NEXT VOLATILE")
-    _move_shm_iterator( *volatile_item );
     _move_rocksdb_iterator( *volatile_item );
 
     ++volatile_it;
@@ -409,7 +342,6 @@ void account_iterator<ByIndex>::next()
   else
   {
     LOG0("NEXT RB")
-    _move_shm_iterator( *rocksdb_item );
     _move_volatile_iterator( *rocksdb_item );
 
     move_rocksdb_iterator<false>();
@@ -421,7 +353,7 @@ void account_iterator<ByIndex>::next()
 template<typename ByIndex>
 bool account_iterator<ByIndex>::end()
 {
-  return it == index.end() && volatile_it == volatile_index.end() && rocksdb_iterator->end();
+  return volatile_it == volatile_index.end() && rocksdb_iterator->end();
 }
 
 }}
