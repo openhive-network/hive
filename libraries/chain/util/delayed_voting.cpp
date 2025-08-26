@@ -77,13 +77,13 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
 
 void delayed_voting::run( const fc::time_point_sec& head_time )
 {
-  const auto& idx = db.get_index< account_index, by_delayed_voting >();
-  auto current = idx.begin();
+  const auto idx = db.get_iterator<by_delayed_voting>();
+  auto current = idx->begin();
 
   int count = 0;
   if( db.get_benchmark_dumper().is_enabled() )
     db.get_benchmark_dumper().begin();
-  while( current != idx.end() && current->has_delayed_votes() &&
+  while( !idx->end() && current->has_delayed_votes() &&
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
@@ -111,7 +111,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       delayed_voting_processor::erase_front( a.get_delayed_votes(), a.get_sum_delayed_votes() );
     } );
 
-    current = idx.begin();
+    current = idx->begin();
     ++count;
   }
   if( db.get_benchmark_dumper().is_enabled() && count )

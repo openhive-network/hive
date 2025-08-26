@@ -425,12 +425,12 @@ const chainbase::database& rocksdb_account_archive::get_db() const
   return db;
 }
 
-rocksdb_account_column_family_iterator_provider::ptr rocksdb_account_archive::get_rocksdb_account_column_family_iterator_provider()
+rocksdb_account_column_family_iterator_provider::ptr rocksdb_account_archive::get_rocksdb_account_column_family_iterator_provider() const
 {
   return provider;
 }
 
-external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storage_reader_writer()
+external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storage_reader_writer() const
 {
   return provider;
 }

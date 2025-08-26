@@ -2199,93 +2199,9 @@ void database::update_owner_authority( const account_object& account, const auth
 
 void database::process_vesting_withdrawals()
 {
-  //==================for tests========================
-  {
-    if( head_block_num() == 377804 )
-    { 
-      ilog( "start-by_name");
-      auto _widx = get_accounts_handler().get_iterator<by_name>();
-      auto _current = _widx->begin();
-      while( !_widx->end() )
-      {
-        const auto& _obj = *_current;
-        ilog( "xxxx: ${name}",
-            ("name", _obj.get_name())
-            );
-        _widx->next();
-        _current = _widx->get();
-      }
-      ilog( "end-by_name");
-    }
-  }
-  //==================for tests========================
-  {
-    if( head_block_num() == 377804 )
-    { 
-      ilog( "start-by_governance_vote_expiration_ts");
-      auto _widx = get_accounts_handler().get_iterator<by_governance_vote_expiration_ts>();
-      auto _current = _widx->begin();
-      while( !_widx->end() )
-      {
-        const auto& _obj = *_current;
-        ilog( "xxxx: ${name} num: ${num} time: ${time}",
-            ("name", _obj.get_name())
-            ("num", head_block_num())
-            ("time", _obj.get_governance_vote_expiration_ts())
-            );
-        _widx->next();
-        _current = _widx->get();
-      }
-      ilog( "end-by_governance_vote_expiration_ts");
-    }
-  }
-  //==================for tests========================
-  {
-    if( head_block_num() == 377804 )
-    { 
-      ilog( "start-by_delayed_voting");
-      auto _widx = get_accounts_handler().get_iterator<by_delayed_voting>();
-      auto _current = _widx->begin();
-      while( !_widx->end() )
-      {
-        const auto& _obj = *_current;
-        ilog( "xxxx: ${name} num: ${num} time: ${time}",
-            ("name", _obj.get_name())
-            ("num", head_block_num())
-            ("time", _obj.get_oldest_delayed_vote_time())
-            );
-        _widx->next();
-        _current = _widx->get();
-      }
-      ilog( "end-by_delayed_voting");
-    }
-  }
-  //==================for tests========================
-  {
-    if( head_block_num() == 377804 )
-    { 
-      ilog( "start-by_next_vesting_withdrawal");
-      auto _widx = get_accounts_handler().get_iterator<by_next_vesting_withdrawal>();
-      auto _current = _widx->begin();
-      while( !_widx->end() )
-      {
-        const auto& _obj = *_current;
-        ilog( "xxxx: ${name} num: ${num} time: ${time}",
-            ("name", _obj.get_name())
-            ("num", head_block_num())
-            ("time", _obj.get_next_vesting_withdrawal())
-            );
-        _widx->next();
-        _current = _widx->get();
-      }
-      ilog( "end-by_next_vesting_withdrawal");
-    }
-  }
-  //==================for tests========================
-
-  const auto& widx = get_index< account_index, by_next_vesting_withdrawal >();
+  const auto widx = get_iterator< by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
-  auto current = widx.begin();
+  auto current = widx->begin();
 
   const auto& cprops = get_dynamic_global_properties();
   auto now = cprops.time;
@@ -2293,9 +2209,12 @@ void database::process_vesting_withdrawals()
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
+  while( !widx->end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto& from_account = *current; ++current; ++count;
+    const auto& from_account = *current;
+    widx->next();
+    current = widx->get();
+    ++count;
 
     share_type to_withdraw = from_account.get_active_next_vesting_withdrawal();
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.get_vesting_withdraw_rate().amount )
@@ -4291,15 +4210,16 @@ void database::process_genesis_accounts()
   // create virtual operations for accounts created in genesis
   const int32_t trx_in_block_prev{ _current_trx_in_block };
   _current_trx_in_block = -1;
-  const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
-  std::for_each(
-      account_idx.begin()
-    , account_idx.end()
-    , [&]( const account_object& obj ){
+
+  auto _func = [&]( const account_object& obj ){
         push_virtual_operation(
           account_created_operation( obj.get_name(), obj.get_name(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
-      }
-  );
+      };
+
+  auto account_idx = get_iterator<by_name>();
+  for( auto _current = account_idx->begin(); !account_idx->end(); account_idx->next(), _current = account_idx->get() )
+    _func( *_current );
+
   _current_trx_in_block = trx_in_block_prev;
 }
 
@@ -6331,10 +6251,10 @@ void database::apply_hardfork( uint32_t hardfork )
         create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
         create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
 
-        const auto& idx = get_index< account_index, by_id >();
-        for( auto it = idx.begin(); it != idx.end(); ++it )
+        auto idx = get_iterator<by_name>();
+        for( auto current = idx->begin(); !idx->end(); idx->next(), current = idx->get() )
         {
-          modify( *it, [&]( account_object& account )
+          modify( *current, [&]( account_object& account )
           {
             account.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             account.get_rc_manabar().last_update_time = now.sec_since_epoch();
@@ -6502,7 +6422,6 @@ void database::validate_invariants()const
 {
   try
   {
-    const auto& account_idx = get_index< account_index, by_name >();
     asset total_supply = asset( 0, HIVE_SYMBOL );
     asset total_hbd = asset( 0, HBD_SYMBOL );
     asset total_vesting = asset( 0, VESTS_SYMBOL );
@@ -6530,7 +6449,8 @@ void database::validate_invariants()const
       ++witness_no;
     }
 
-    for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+    auto account_idx = get_iterator<by_name>();
+    for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
     {
       total_supply += itr->get_balance();
       total_supply += itr->get_savings();
@@ -6790,11 +6710,12 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
-    for( const auto& account : get_index< account_index, by_id >() )
+    const auto account_idx = get_iterator<by_name>();
+    for( auto account = account_idx->begin(); !account_idx->end(); account_idx->next(), account = account_idx->get() )
     {
-      asset old_vesting_shares = account.get_vesting();
+      asset old_vesting_shares = account->get_vesting();
       asset new_vesting_shares = old_vesting_shares;
-      modify( account, [&]( account_object& a )
+      modify( *account, [&]( account_object& a )
       {
         a.set_vesting( a.get_vesting() * magnitude );
         new_vesting_shares = a.get_vesting();
@@ -6816,7 +6737,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
           a.get_proxied_vsf_votes()[i] *= magnitude;
       } );
       if (old_vesting_shares != new_vesting_shares)
-        push_virtual_operation( vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
+        push_virtual_operation( vesting_shares_split_operation(account->get_name(), old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
@@ -6859,10 +6780,9 @@ void database::retally_witness_votes()
     } );
   }
 
-  const auto& account_idx = get_index< account_index >().indices();
-
   // Apply all existing votes by account
-  for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+  auto account_idx = get_iterator<by_name>();
+  for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
   {
     if( itr->has_proxy() ) continue;
 
@@ -6880,10 +6800,9 @@ void database::retally_witness_votes()
 
 void database::retally_witness_vote_counts( bool force )
 {
-  const auto& account_idx = get_index< account_index >().indices();
-
   // Check all existing votes by account
-  for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+  auto account_idx = get_iterator<by_name>();
+  for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
   {
     const auto& a = *itr;
     uint16_t witnesses_voted_for = 0;
@@ -6912,8 +6831,8 @@ void database::remove_expired_governance_votes()
   if (!has_hardfork(HIVE_HARDFORK_1_25))
     return;
 
-  const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
-  auto acc_it = accounts.begin();
+  auto accounts = get_iterator<by_governance_vote_expiration_ts>();
+  auto acc_it = accounts->begin();
   time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
   time_point_sec now = head_block_time();
 
@@ -6923,10 +6842,11 @@ void database::remove_expired_governance_votes()
   const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
   remove_guard obj_perf( get_remove_threshold() );
 
-  while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
+  while( !accounts->end() && acc_it->get_governance_vote_expiration_ts() <= now )
   {
     const auto& account = *acc_it;
-    ++acc_it;
+    accounts->next();
+    acc_it = accounts->get();
 
     if( dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {

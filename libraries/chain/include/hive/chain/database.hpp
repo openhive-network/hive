@@ -880,6 +880,12 @@ namespace chain {
           chainbase::database::modify( obj, m );
       }
 
+      template<typename ByIndex>
+      std::shared_ptr<account_iterator<ByIndex>> get_iterator() const
+      {
+        return get_accounts_handler().get_iterator<ByIndex>();
+      }
+
     private:
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
