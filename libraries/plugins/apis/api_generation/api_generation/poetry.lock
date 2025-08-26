@@ -223,13 +223,13 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev414+2be9929"
+version = "0.0.1.dev416+4c7ac75"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev414+2be9929-py3-none-any.whl", hash = "sha256:1d823e1ed7caeb27b080cdcb3885b1665e3d74034f2db20b737461d6bcabe4d6"},
+    {file = "beekeepy-0.0.1.dev416+4c7ac75-py3-none-any.whl", hash = "sha256:b10f8b07bbdfe7c4a3b0bb9d457b9b09be85079cc94d446bf66792c9da862210"},
 ]
 
 [package.dependencies]
@@ -1755,4 +1755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "19083576850b349edc73791f70b4f9dab80e43ad4e6f6ea4300da600b1d4967f"
+content-hash = "301b0293057a7e8414d3dbb6b86c4a28ff01c01b2b6c5c9f74dbe824dd46fc84"
