@@ -8,6 +8,7 @@ import sys
 import toml
 import importlib.util
 
+from api_generation.common import apis_to_skip
 from api_generation.generate_description import generate_description
 from api_generation.generate_client import generate_client
 
@@ -101,6 +102,10 @@ if __name__ == "__main__":
 
     api = sys.argv[1]
     base_directory = Path(sys.argv[2])
+
+    if api in apis_to_skip:
+        print(f"Skipping generation for API: {api} as it is in the skip list.")
+        sys.exit(0)
 
     template_api_path = base_directory / "template_api"
     create_api_directory_structure(api, base_directory, template_api_path)

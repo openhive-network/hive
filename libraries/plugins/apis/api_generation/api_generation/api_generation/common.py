@@ -12,3 +12,4 @@ available_apis: Final[list[AvailableApis]] = [
     "account_history_api",
     "bridge",
 ]
+apis_to_skip: Final[list[str]] = ["bridge"]
