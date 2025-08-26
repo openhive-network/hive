@@ -340,9 +340,9 @@ void account_iterator<ByIndex>::next()
 
   auto _move_volatile_iterator = [this]( const account_object& obj )
   {
-    LOG2("MOVE VOLATILE", helper<ByIndex>::equal( obj, *volatile_item ), obj, (*volatile_item) )
-    if( helper<ByIndex>::equal( obj, *volatile_item ) )
+    if(  volatile_it != volatile_index.end() && helper<ByIndex>::equal( obj, *volatile_item ) )
     {
+      LOG2("MOVE VOLATILE", helper<ByIndex>::equal( obj, *volatile_item ), obj, (*volatile_item) )
       ++volatile_it;
       update_volatile_item();
     }
@@ -350,9 +350,9 @@ void account_iterator<ByIndex>::next()
 
   auto _move_rocksdb_iterator = [this]( const account_object& obj )
   {
-    LOG2("MOVE RB", helper<ByIndex>::equal( obj, *rocksdb_item ), obj, (*rocksdb_item) )
-    if( helper<ByIndex>::equal( obj, *rocksdb_item ) )
+    if( !rocksdb_iterator->end() && helper<ByIndex>::equal( obj, *rocksdb_item ) )
     {
+      LOG2("MOVE RB", helper<ByIndex>::equal( obj, *rocksdb_item ), obj, (*rocksdb_item) )
       move_rocksdb_iterator<false>();
     }
   };
