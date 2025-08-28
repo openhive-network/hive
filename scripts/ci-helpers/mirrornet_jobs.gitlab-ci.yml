@@ -11,7 +11,7 @@ variables:
 
 include:
   # needed to point TEST_IMAGE_TAG
-  - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
+  - local: '/scripts/ci-helpers/ci_image_tag_vars.yml'
 
 .mirrornet-job_base:
   stage: deploy

@@ -1,7 +1,6 @@
-variables:
-  # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-2023-10-04
-  TEST_IMAGE_TAG: "@sha256:50bcbfe37fc031a902071ceaf586aff4554b15aa84e33b8bd84c31ad2386a26f"
+include:
+  # needed to point TEST_IMAGE_TAG
+  - local: '/scripts/ci-helpers/ci_image_tag_vars.yml'
 
 .extended_block_log_creation:
   extends: .docker_image_builder_job
