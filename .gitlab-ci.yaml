@@ -27,6 +27,8 @@ variables:
 
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
+  # needed to point TEST_IMAGE_TAG
+  - local: '/scripts/ci-helpers/ci_image_tag_vars.yml'
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
