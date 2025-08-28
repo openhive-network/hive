@@ -2,7 +2,7 @@ include:
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
 
 variables:
-  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 92500000
+  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 97000000
 
 block-conversion:
   extends: .block-conversion-job-template
@@ -17,5 +17,7 @@ mirrornet-replay:
   when: manual
   needs:
     - job: block-conversion
+    - job: generate_mirrornet_config_ini
+
   variables:
     NUMBER_OF_BLOCKS: ${TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS}

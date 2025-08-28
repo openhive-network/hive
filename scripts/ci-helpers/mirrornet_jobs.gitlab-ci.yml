@@ -9,14 +9,24 @@ variables:
   SHARED_FILE_SIZE_FULL_THRESHOLD: 9500
   SHARED_FILE_SCALE_RATE: 1000
 
-.mirrornet-job:
+include:
+  # needed to point TEST_IMAGE_TAG
+  - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
+
+.mirrornet-job_base:
+  stage: deploy
   timeout: 2 weeks
-  image: 
-    name: $MIRRORNET_IMAGE
-    entrypoint: [""]
   resource_group: mirrornet-job
   tags:
     - mirrornet-runner
+
+.mirrornet-job:
+  extends: .mirrornet-job_base
+  image: 
+    name: $MIRRORNET_IMAGE
+    entrypoint: [""]
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
 
 .block-conversion-job-template:
   extends: .mirrornet-job
@@ -55,17 +65,33 @@ variables:
     when: always
     expire_in: 1 week
 
+generate_mirrornet_config_ini:
+  extends: .mirrornet-job_base
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  variables:
+    OUTPUT_FILE_DIR: "hive-home"
+  when: manual
+  needs: []
+  script:
+    - |
+      mkdir -vp "${OUTPUT_FILE_DIR}"
+      scripts/ci-helpers/generate-file-from-template.py \
+        --input-file contrib/config_mirrornet.ini.template \
+        --output-file "${OUTPUT_FILE_DIR}/config.ini"
+
+  artifacts:
+    paths:
+      - "${OUTPUT_FILE_DIR}"
+
 .replay-template:
   extends: .mirrornet-job
+
   variables:
     NUMBER_OF_BLOCKS: 5000000
 
   script:
     - |
-      mkdir -p "hive-home/blockchain"
-      scripts/ci-helpers/generate-file-from-template.py \
-        --input-file contrib/config_mirrornet.ini.template \
-        --output-file hive-home/config.ini
+      mkdir -vp "hive-home/blockchain"
       ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log hive-home/blockchain/block_log
       ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log.artifacts hive-home/blockchain/block_log.artifacts
       cd hive-home
