@@ -7805,7 +7805,7 @@
             "condenser_get_collateralized_conversion_requests_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/collateralized_conversion_requests"
+                    "$ref": "#/components/schemas/collateralized_conversion_requests_condenser"
                 }
             },
             "context_object": {
@@ -8213,6 +8213,49 @@
                     },
                     "converted_amount": {
                         "$ref": "#/components/schemas/balance"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 40790
+                    },
+                    "owner": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the account that owns the request."
+                    },
+                    "requestid": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "The ID of the request."
+                    }
+                },
+                "required": [
+                    "collateral_amount",
+                    "conversion_date",
+                    "converted_amount",
+                    "id",
+                    "owner",
+                    "requestid"
+                ]
+            },
+            "collateralized_conversion_requests_condenser": {
+                "type": "object",
+                "properties": {
+                    "collateral_amount": {
+                        "type": "string",
+                        "example": "100.000 HIVE",
+                        "description": "The amount of collateral provided for the conversion."
+                    },
+                    "conversion_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-05-22T03:29:51",
+                        "description": "The date when the conversion will take place."
+                    },
+                    "converted_amount": {
+                        "type": "string",
+                        "example": "100.000 HIVE",
+                        "description": "The amount of HIVE that will be converted."
                     },
                     "id": {
                         "type": "integer",
