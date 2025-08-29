@@ -143,7 +143,6 @@ namespace detail
         (get_blog)
         (get_account_reputations)
         (get_reblogged_by)
-        (get_blog_authors)
         (get_ticker)
         (get_volume)
         (get_order_book)
@@ -1089,11 +1088,6 @@ namespace detail
     FC_ASSERT( false, "Supported by hivemind" );
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_blog_authors )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_ticker )
   {
     CHECK_ARG_SIZE( 0 )
@@ -1504,7 +1498,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_blog)
   (get_account_reputations)
   (get_reblogged_by)
-  (get_blog_authors)
   (get_ticker)
   (get_volume)
   (get_order_book)
