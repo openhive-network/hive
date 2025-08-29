@@ -1089,11 +1089,6 @@ namespace detail
     FC_ASSERT( false, "Supported by hivemind" );
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_blog_authors )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_ticker )
   {
     CHECK_ARG_SIZE( 0 )
