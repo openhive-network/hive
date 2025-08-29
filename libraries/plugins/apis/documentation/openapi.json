@@ -1338,46 +1338,46 @@
                                 },
                                 "example": [
                                     [
-                                    "hive-139531",
-                                    "HiveDevs",
-                                    "admin",
-                                    "Wizard"
+                                        "hive-139531",
+                                        "HiveDevs",
+                                        "admin",
+                                        "Wizard"
                                     ],
                                     [
-                                    "hive-102930",
-                                    "Hive Improvement",
-                                    "mod",
-                                    ""
+                                        "hive-102930",
+                                        "Hive Improvement",
+                                        "mod",
+                                        ""
                                     ],
                                     [
-                                    "hive-160391",
-                                    "Blockchain Wizardry",
-                                    "mod",
-                                    "Wizard"
+                                        "hive-160391",
+                                        "Blockchain Wizardry",
+                                        "mod",
+                                        "Wizard"
                                     ],
                                     [
-                                    "hive-104647",
-                                    "Steemfest 4",
-                                    "mod",
-                                    "Blockchain Wizard"
+                                        "hive-104647",
+                                        "Steemfest 4",
+                                        "mod",
+                                        "Blockchain Wizard"
                                     ],
                                     [
-                                    "hive-106258",
-                                    "HiveFest",
-                                    "guest",
-                                    ""
+                                        "hive-106258",
+                                        "HiveFest",
+                                        "guest",
+                                        ""
                                     ],
                                     [
-                                    "hive-196387",
-                                    "StemSocial",
-                                    "guest",
-                                    ""
+                                        "hive-196387",
+                                        "StemSocial",
+                                        "guest",
+                                        ""
                                     ],
                                     [
-                                    "hive-148309",
-                                    "BuzzParty Meet Hive!",
-                                    "guest",
-                                    ""
+                                        "hive-148309",
+                                        "BuzzParty Meet Hive!",
+                                        "guest",
+                                        ""
                                     ]
                                 ]
                             }
@@ -1467,24 +1467,24 @@
                                 },
                                 "example": [
                                     [
-                                    "hive-123456",
-                                    "owner",
-                                    ""
+                                        "hive-123456",
+                                        "owner",
+                                        ""
                                     ],
                                     [
-                                    "inji",
-                                    "admin",
-                                    ""
+                                        "inji",
+                                        "admin",
+                                        ""
                                     ],
                                     [
-                                    "nftimo",
-                                    "admin",
-                                    ""
+                                        "nftimo",
+                                        "admin",
+                                        ""
                                     ],
                                     [
-                                    "therealwolf",
-                                    "admin",
-                                    ""
+                                        "therealwolf",
+                                        "admin",
+                                        ""
                                     ]
                                 ]
                             }
@@ -1521,12 +1521,12 @@
                                 },
                                 "example": [
                                     [
-                                    "hive-167922",
-                                    "LeoFinance"
+                                        "hive-167922",
+                                        "LeoFinance"
                                     ],
                                     [
-                                    "hive-125125",
-                                    "Ecency"
+                                        "hive-125125",
+                                        "Ecency"
                                     ]
                                 ]
                             }
@@ -1563,18 +1563,939 @@
                                 },
                                 "example": [
                                     [
-                                    "abdex9",
-                                    "guest",
-                                    null,
-                                    "2020-02-09T18:24:57"
+                                        "abdex9",
+                                        "guest",
+                                        null,
+                                        "2020-02-09T18:24:57"
                                     ],
                                     [
-                                    "abdoulhameed",
-                                    "guest",
-                                    null,
-                                    "2021-04-03T18:30:18"
+                                        "abdoulhameed",
+                                        "guest",
+                                        null,
+                                        "2021-04-03T18:30:18"
                                     ]
                                 ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.broadcast_transaction": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Used to broadcast a transaction.",
+                "operationId": "condenser_broadcast_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_broadcast_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_broadcast_transaction_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.broadcast_transaction_synchronous": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Used to broadcast a transaction and waits for it to be processed synchronously.",
+                "operationId": "condenser_broadcast_transaction_synchronous",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_broadcast_transaction_synchronous"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_broadcast_transaction_synchronous_response"
+                                },
+                                "example": {
+                                    "id": "0000000000000000000000000000000000000000",
+                                    "block_num": 0,
+                                    "trx_num": 0,
+                                    "expired": false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.find_proposals": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Finds proposals by proposal.id (not proposal.proposal_id).",
+                "operationId": "condenser_find_proposals",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_find_proposals"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_find_proposals_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 0,
+                                        "proposal_id": "139924505899904",
+                                        "creator": "alice",
+                                        "receiver": "bob",
+                                        "start_date": "2019-07-01T00:00:00",
+                                        "end_date": "2019-08-01T23:59:59",
+                                        "daily_pay": "4800.000 HBD",
+                                        "subject": "My Proposal",
+                                        "permlink": "creator-proposal-permlink",
+                                        "total_votes": "77351826710",
+                                        "status": "active"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.find_rc_accounts": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the available resource credits of accounts.",
+                "operationId": "condenser_find_rc_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_find_rc_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_find_rc_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "account": "alice",
+                                        "delegated_rc": 0,
+                                        "max_rc": 135630143570,
+                                        "max_rc_creation_adjustment": "2020.748973 VESTS",
+                                        "rc_manabar": {
+                                            "current_mana": 135375191366,
+                                            "last_update_time": 1550731380
+                                        },
+                                        "received_delegated_rc": 0
+                                    },
+                                    {
+                                        "account": "demo",
+                                        "delegated_rc": 0,
+                                        "max_rc": 50966868081,
+                                        "max_rc_creation_adjustment": "2020.748973 VESTS",
+                                        "rc_manabar": {
+                                            "current_mana": 50966868081,
+                                            "last_update_time": 1715912571
+                                        },
+                                        "received_delegated_rc": 6000000000
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.find_recurrent_transfers": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Finds transfers of any liquid asset every fixed amount of time from one account to another.",
+                "operationId": "condenser_find_recurrent_transfers",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_find_recurrent_transfers"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_find_recurrent_transfers_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 3,
+                                        "trigger_date": "2021-07-02T18:11:51",
+                                        "from": "alice",
+                                        "to": "bob",
+                                        "amount": "10.000 HIVE",
+                                        "memo": "Payroll",
+                                        "recurrence": 26,
+                                        "consecutive_failures": 0,
+                                        "remaining_executions": 3
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_account_count": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the number of accounts.",
+                "operationId": "condenser_get_account_count",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_account_count"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_account_count_response"
+                                },
+                                "example": 0
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_account_history": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a history of all operations for a given account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\n- `start`: An integer indicating the starting point for the query. Use `-1` for reverse history or any positive number for a specific starting point.\n\n- `limit`: An integer up to 1000 specifying the maximum number of results to return.\n\n- `operation_filter_low`: An integer (optional) used to filter the first 64 operations based on a bitwise mask.\n\n- `operation_filter_high`: An integer (optional) used to filter higher-numbered operations with a 128-bit bitmask composed of {operation_filter_high, operation_filter_low}.\n\nIf either `operation_filter_low` or `operation_filter_high` are set, the response will include only these operations matching the bitwise filter.\n\nExamples:\n\n- `account = \"hiveio\"`, `start = 1000`, `limit = 1000`: Queries the latest items in history for the account \"hiveio\", with up to 1,000 results.\n\n- `account = \"alice\"`, `start = -1`, `limit = 1000`: Queries the oldest items in history for the account \"alice\", with up to 1,000 results.\n\n- `account = \"bob\"`, `start = -1`, `limit = 1000`, `operation_filter_low = 1`: Queries only vote operations for \"bob\" from the oldest item, up to 1,000 results.\n\n- `account = \"charlie\"`, `start = -1`, `limit = 1000`, `operation_filter_low = 262144`: Queries only custom JSON operations for \"charlie\" from the oldest item, up to 1,000 results.\n\n- `account = \"emma\"`, `start = -1`, `limit = 1000`, `operation_filter_low = 0`, `operation_filter_high = 1`: Queries only proposal payments for \"emma\" from the oldest item, up to 1,000 results.\n",
+                "operationId": "condenser_get_account_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_account_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_account_history_response"
+                                },
+                                "example": [
+                                    [
+                                        65968,
+                                        {
+                                            "block": 98382584,
+                                            "op": [
+                                                "comment",
+                                                {
+                                                    "author": "bitjoe369",
+                                                    "body": "Two thumbs Up!!\n\n<iframe src=\"https://giphy.com/embed/Y2hpIZ2apuMdtIHLuQ\" width=\"384\" height=\"480\" style=\"\" frameBorder=\"0\" class=\"giphy-embed\" allowFullScreen></iframe><p><a href=\"https://giphy.com/gifs/mercedesamgf1-f1-formula-1-one-Y2hpIZ2apuMdtIHLuQ\">via GIPHY</a></p>\n",
+                                                    "json_metadata": "{\"tags\":[\"hive5\"],\"app\":\"peakd/2025.8.2\",\"image\":[],\"users\":[]}",
+                                                    "parent_author": "hiveio",
+                                                    "parent_permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                                    "permlink": "re-hiveio-t0q2px",
+                                                    "title": ""
+                                                }
+                                            ],
+                                            "op_in_trx": 0,
+                                            "timestamp": "2025-08-09T10:34:18",
+                                            "trx_id": "504a547a8c7b041053d60561aec09ea8c6baa6f0",
+                                            "trx_in_block": 24,
+                                            "virtual_op": false
+                                        }
+                                    ],
+                                    [
+                                        65969,
+                                        {
+                                            "block": 98546170,
+                                            "op": [
+                                                "vote",
+                                                {
+                                                    "author": "hiveio",
+                                                    "permlink": "hive-at-wrc-the-croatia-rally-is-on",
+                                                    "voter": "ninangxss",
+                                                    "weight": 1000
+                                                }
+                                            ],
+                                            "op_in_trx": 0,
+                                            "timestamp": "2025-08-15T03:02:09",
+                                            "trx_id": "477b6992ff34595cec1618b631ca61984e1d19ad",
+                                            "trx_in_block": 15,
+                                            "virtual_op": false
+                                        }
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_account_reputations": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a list of account reputations.",
+                "description": "Parameters:\n\n- `account_lower_bound`: A string representing the starting account name (lower bound) for the query.\n\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to return.\n\nExamples:\n\n- `account_lower_bound = \"hiveio\"`, `limit = 1` — queries accounts starting with \"hiveio\", returning only one result.\n\n- `account_lower_bound = \"a\"`, `limit = 10` — queries accounts starting with \"a\", returning up to 10 results.\n",
+                "operationId": "condenser_get_account_reputations",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_account_reputations"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_account_reputations_response"
+                                },
+                                "example": [
+                                    {
+                                        "account": "hiveio",
+                                        "reputation": 298927146213106
+                                    },
+                                    {
+                                        "account": "hiveiohive",
+                                        "reputation": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_accounts": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns accounts, queried by name.",
+                "description": "Parameters:\n\n- `account`: An array of strings representing account names to query.\n\n- `delayed_votes_active`: A boolean indicating whether to include only accounts with active delayed votes.\n\nExamples:\n\n- `account = [\"hiveio\"]`, `delayed_votes_active = true` — queries for account named \"hiveio\".\n\n- `account = [\"hiveio\", \"alice\"]`, `delayed_votes_active = false` — queries for accounts \"hiveio\" and \"alice\" with delayed votes hidden.",
+                "operationId": "condenser_get_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active": {
+                                            "account_auths": [
+                                                [
+                                                    "pettycash",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "balance": "283.441 HIVE",
+                                        "can_vote": true,
+                                        "comment_count": 0,
+                                        "created": "2020-03-06T12:22:51",
+                                        "curation_rewards": 20,
+                                        "delayed_votes": [],
+                                        "delegated_vesting_shares": "0.000000 VESTS",
+                                        "downvote_manabar": {
+                                            "current_mana": 78641578712,
+                                            "last_update_time": 1754586540
+                                        },
+                                        "governance_vote_expiration_ts": "2026-05-11T00:45:09",
+                                        "guest_bloggers": [],
+                                        "hbd_balance": "50.418 HBD",
+                                        "hbd_last_interest_payment": "2020-10-21T02:45:12",
+                                        "hbd_seconds": "0",
+                                        "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                        "id": 1370484,
+                                        "json_metadata": "",
+                                        "last_account_recovery": "1970-01-01T00:00:00",
+                                        "last_account_update": "2021-11-09T21:56:27",
+                                        "last_owner_update": "1970-01-01T00:00:00",
+                                        "last_post": "2025-03-20T16:39:33",
+                                        "last_root_post": "2025-03-20T16:39:33",
+                                        "last_vote_time": "2025-01-01T06:03:33",
+                                        "lifetime_vote_count": 0,
+                                        "market_history": [],
+                                        "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
+                                        "mined": false,
+                                        "name": "hiveio",
+                                        "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                                        "open_recurrent_transfers": 0,
+                                        "other_history": [],
+                                        "owner": {
+                                            "account_auths": [],
+                                            "key_auths": [
+                                                [
+                                                    "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "pending_claimed_accounts": 0,
+                                        "pending_transfers": 0,
+                                        "post_bandwidth": 0,
+                                        "post_count": 80,
+                                        "post_history": [],
+                                        "post_voting_power": "314566.314850 VESTS",
+                                        "posting": {
+                                            "account_auths": [
+                                                [
+                                                    "threespeak",
+                                                    1
+                                                ],
+                                                [
+                                                    "vimm.app",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                        "posting_rewards": 1919844,
+                                        "previous_owner_update": "1970-01-01T00:00:00",
+                                        "proxied_vsf_votes": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "proxy": "",
+                                        "received_vesting_shares": "0.000000 VESTS",
+                                        "recovery_account": "steempeak",
+                                        "reputation": 0,
+                                        "reset_account": "null",
+                                        "reward_hbd_balance": "0.000 HBD",
+                                        "reward_hive_balance": "0.000 HIVE",
+                                        "reward_vesting_balance": "0.000000 VESTS",
+                                        "reward_vesting_hive": "0.000 HIVE",
+                                        "savings_balance": "0.000 HIVE",
+                                        "savings_hbd_balance": "0.000 HBD",
+                                        "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                        "savings_hbd_seconds": "0",
+                                        "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                        "savings_withdraw_requests": 0,
+                                        "tags_usage": [],
+                                        "to_withdraw": 0,
+                                        "transfer_history": [],
+                                        "vesting_balance": "0.000 HIVE",
+                                        "vesting_shares": "314566.314850 VESTS",
+                                        "vesting_withdraw_rate": "0.000000 VESTS",
+                                        "vote_history": [],
+                                        "voting_manabar": {
+                                            "current_mana": 314566314850,
+                                            "last_update_time": 1754586540
+                                        },
+                                        "voting_power": 0,
+                                        "withdraw_routes": 0,
+                                        "withdrawn": 0,
+                                        "witness_votes": [],
+                                        "witnesses_voted_for": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_active_votes": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns all votes for the given post.",
+                "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries votes for content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries votes for content with the slug @alice/a-post-by-alice.",
+                "operationId": "condenser_get_active_votes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_active_votes"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_active_votes_response"
+                                },
+                                "example": [
+                                    {
+                                        "percent": 10000,
+                                        "reputation": 17822269400,
+                                        "rshares": 1126185066,
+                                        "time": "2021-02-14T08:19:45",
+                                        "voter": "competeapp",
+                                        "weight": 66
+                                    },
+                                    {
+                                        "percent": 5000,
+                                        "reputation": 5480133697709,
+                                        "rshares": 3501783600,
+                                        "time": "2021-02-14T15:14:57",
+                                        "voter": "angatt",
+                                        "weight": 226
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_active_witnesses": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the list of active witnesses.",
+                "operationId": "condenser_get_active_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_active_witnesses"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_active_witnesses_response"
+                                },
+                                "example": [
+                                    "therealwolf",
+                                    "good-karma",
+                                    "guiltyparties",
+                                    "quochuy",
+                                    "blocktrades",
+                                    "yabapmatt",
+                                    "themarkymark",
+                                    "stoodkev",
+                                    "hivecuba",
+                                    "ausbitbank",
+                                    "threespeak",
+                                    "roelandp",
+                                    "arcange",
+                                    "smooth.witness",
+                                    "gtg",
+                                    "abit",
+                                    "steempeak",
+                                    "pharesim",
+                                    "emrebeyler",
+                                    "deathwing",
+                                    "ocd-witness"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_block": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a block.",
+                "description": "Parameters:\n\n- `block_num`: An integer representing the block number to query.\n\nExamples:\n\n- `block_num = 1` — queries the very first block.\n\n- `block_num = 8675309` — queries block number 8,675,309.\n\n- `block_num = 62396745` — queries block number 62,396,745.\n",
+                "operationId": "condenser_get_block",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_block"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_block_response"
+                                },
+                                "example": {
+                                    "previous": "0000000000000000000000000000000000000000",
+                                    "timestamp": "2016-03-24T16:05:00",
+                                    "witness": "initminer",
+                                    "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                                    "extensions": [],
+                                    "witness_signature": "204f8ad56a8f5cf722a02b035a61b500aa59b9519b2c33c77a80c0a714680a5a5a7a340d909d19996613c5e4ae92146b9add8a7a663eef37d837ef881477313043",
+                                    "transactions": [],
+                                    "block_id": "0000000109833ce528d5bbfb3f6225b39ee10086",
+                                    "signing_key": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
+                                    "transaction_ids": []
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_block_header": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a block header.",
+                "description": "Parameters:\n\n- `block_num`: An integer representing the block number to query.\n\nExamples:\n\n- `block_num = 1` — queries the block header for the very first block.\n\n- `block_num = 8675309` — queries the block header for block number 8,675,309.\n\n- `block_num = 62396745` — queries the block header for block number 62,396,745.\n",
+                "operationId": "condenser_get_block_header",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_block_header"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_block_header_response"
+                                },
+                                "example": {
+                                    "extensions": [],
+                                    "previous": "0000270f17162d089d8cbf634b7ce434df782c9c",
+                                    "timestamp": "2016-03-25T00:34:48",
+                                    "transaction_merkle_root": "340b3605652c91cd41456656c1915a7b5b46dffa",
+                                    "witness": "itsascam"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_blog": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the list of blog entries for an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query the blog for.\n\n- `start_entry_id`: An integer representing the starting entry ID for querying the blog.\n\n- `limit`: An integer up to 500 specifying the maximum number of blog entries to return.\n\nExamples:\n\n- `account = \"hiveio\"`, `start_entry_id = 0`, `limit = 1` — queries the blog for the account named \"hiveio\", returning up to one result.\n\n- `account = \"alice\"`, `start_entry_id = 0`, `limit = 50` — queries the blog for the account named \"alice\", returning up to 50 results.\n",
+                "operationId": "condenser_get_blog",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_blog"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_blog_response"
+                                },
+                                "example": [
+                                    {
+                                        "blog": "hiveio",
+                                        "comment": {
+                                            "active_votes": [
+                                                {
+                                                    "percent": "10000",
+                                                    "reputation": 31197627261276,
+                                                    "rshares": 13081280967,
+                                                    "voter": "ferbu"
+                                                },
+                                                {
+                                                    "percent": "4950",
+                                                    "reputation": 355586177992570,
+                                                    "rshares": 9795724243,
+                                                    "voter": "josdelmi"
+                                                },
+                                                {
+                                                    "percent": "10000",
+                                                    "reputation": 48120095142290,
+                                                    "rshares": 4859584947,
+                                                    "voter": "elentogether"
+                                                },
+                                                {
+                                                    "percent": "10000",
+                                                    "reputation": 807234681729,
+                                                    "rshares": 649620066,
+                                                    "voter": "knightmarey"
+                                                }
+                                            ],
+                                            "author": "hiveio",
+                                            "author_reputation": 298927146213106,
+                                            "beneficiaries": [
+                                                {
+                                                    "account": "pettycash",
+                                                    "weight": 10000
+                                                }
+                                            ],
+                                            "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                            "body_length": 6976,
+                                            "cashout_time": "1969-12-31T23:59:59",
+                                            "category": "hive5",
+                                            "children": 184,
+                                            "created": "2025-03-20T16:39:33",
+                                            "curator_payout_value": "109.403 HBD",
+                                            "depth": 0,
+                                            "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                            "last_payout": "2025-03-27T16:39:33",
+                                            "last_update": "2025-03-20T16:39:33",
+                                            "max_accepted_payout": "1000000.000 HBD",
+                                            "net_rshares": 623550720229968,
+                                            "parent_author": "",
+                                            "parent_permlink": "hive5",
+                                            "pending_payout_value": "0.000 HBD",
+                                            "percent_hbd": 10000,
+                                            "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                            "post_id": 141560746,
+                                            "replies": [],
+                                            "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                            "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                            "total_payout_value": "109.585 HBD",
+                                            "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                        },
+                                        "entry_id": 74,
+                                        "reblogged_on": "1970-01-01T00:00:00"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_blog_entries": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a list of blog entries for an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query the blog entries for.\n\n- `start_entry_id`: An integer representing the starting entry ID for querying the blog entries.\n\n- `limit`: An integer up to 500 specifying the maximum number of blog entries to return.\n\nExamples:\n\n- `account = \"hiveio\"`, `start_entry_id = 0`, `limit = 1` — queries the blog entries for the account named \"hiveio\", returning up to one result.\n\n- `account = \"alice\"`, `start_entry_id = 0`, `limit = 50` — queries the blog entries for the account named \"alice\", returning up to 50 results.\n",
+                "operationId": "condenser_get_blog_entries",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_blog_entries"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_blog_entries_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "hiveio",
+                                        "blog": "hiveio",
+                                        "entry_id": 74,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "reblogged_on": "1970-01-01T00:00:00"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_chain_properties": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the chain properties.",
+                "operationId": "condenser_get_chain_properties",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_chain_properties"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_chain_properties_response"
+                                },
+                                "example": {
+                                    "account_creation_fee": "3.000 HIVE",
+                                    "account_subsidy_budget": 797,
+                                    "account_subsidy_decay": 347321,
+                                    "hbd_interest_rate": 1500,
+                                    "maximum_block_size": 65536
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_collateralized_conversion_requests": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns objects corresponding with collateralized_convert operations.",
+                "operationId": "condenser_get_collateralized_conversion_requests",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_collateralized_conversion_requests"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_collateralized_conversion_requests_response"
+                                },
+                                "example": []
                             }
                         }
                     }
@@ -5254,6 +6175,344 @@
                     "witnesses_voted_for"
                 ]
             },
+            "account_condenser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Account's identification number."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Account's name."
+                    },
+                    "owner": {
+                        "$ref": "#/components/schemas/auths",
+                        "description": "Owner authority of the account."
+                    },
+                    "active": {
+                        "$ref": "#/components/schemas/auths",
+                        "description": "Active authority of the account."
+                    },
+                    "posting": {
+                        "$ref": "#/components/schemas/auths",
+                        "description": "Posting authority of the account."
+                    },
+                    "memo_key": {
+                        "type": "string",
+                        "description": "The public key used to encrypt the memo."
+                    },
+                    "json_metadata": {
+                        "type": "string",
+                        "description": "Parameter encompasses personalized profile information.  It is a JSON object that can contain any data."
+                    },
+                    "posting_json_metadata": {
+                        "type": "string",
+                        "description": "Parameter encompasses personalized profile information.  It is a JSON object that can contain any data."
+                    },
+                    "proxy": {
+                        "type": "string",
+                        "description": "An account to which the account has designated as its proxy.  The proxy can vote on behalf of the account."
+                    },
+                    "last_owner_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the last owner update was performed. "
+                    },
+                    "last_account_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the last account update was performed. "
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date of account creation. "
+                    },
+                    "mined": {
+                        "type": "boolean",
+                        "description": "Information whether made a prove of work.  It is true if the account was created by mining."
+                    },
+                    "recovery_account": {
+                        "type": "string",
+                        "description": "An account to which the account has designated as its recovery account.  The recovery account can help recover the account if it is lost."
+                    },
+                    "reset_account": {
+                        "type": "string",
+                        "description": "deprecated parameter"
+                    },
+                    "comment_count": {
+                        "type": "integer",
+                        "description": "The number of comments made by the account."
+                    },
+                    "lifetime_vote_count": {
+                        "type": "integer",
+                        "description": "The number of votes made by the account."
+                    },
+                    "can_vote": {
+                        "type": "boolean",
+                        "description": "Information whether the account can vote or not.  It is true if the account can vote."
+                    },
+                    "voting_manabar": {
+                        "$ref": "#/components/schemas/voting_manabar",
+                        "description": "The voting mana bar of the account.  It indicates the amount of voting power available to the account."
+                    },
+                    "downvote_manabar": {
+                        "$ref": "#/components/schemas/voting_manabar",
+                        "description": "The downvote mana bar of the account.  It indicates the amount of downvoting power available to the account."
+                    },
+                    "balance": {
+                        "type": "string",
+                        "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "savings_balance": {
+                        "type": "string",
+                        "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "hbd_balance": {
+                        "type": "string",
+                        "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "hbd_seconds": {
+                        "type": "string",
+                        "description": "The number of seconds the HIVE backed dollar balance has been held."
+                    },
+                    "hbd_seconds_last_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the HIVE backed dollar seconds were last updated."
+                    },
+                    "hbd_last_interest_payment": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the last interest payment was made on the HIVE backed dollar balance."
+                    },
+                    "savings_hbd_balance": {
+                        "type": "string",
+                        "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "savings_hbd_seconds": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The number of seconds the savings HIVE backed dollar balance has been held."
+                    },
+                    "savings_hbd_seconds_last_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the savings HIVE backed dollar seconds were last updated."
+                    },
+                    "savings_hbd_last_interest_payment": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the last interest payment was made on the savings HIVE backed dollar balance"
+                    },
+                    "savings_withdraw_requests": {
+                        "type": "integer",
+                        "description": "The number of savings withdraw requests made by the account."
+                    },
+                    "reward_hbd_balance": {
+                        "type": "string",
+                        "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "reward_hive_balance": {
+                        "type": "string",
+                        "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "reward_vesting_balance": {
+                        "type": "string",
+                        "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "reward_vesting_hive": {
+                        "type": "string",
+                        "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "vesting_shares": {
+                        "type": "string",
+                        "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "delegated_vesting_shares": {
+                        "type": "string",
+                        "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "received_vesting_shares": {
+                        "type": "string",
+                        "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "vesting_withdraw_rate": {
+                        "type": "string",
+                        "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "post_voting_power": {
+                        "type": "string",
+                        "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                    },
+                    "next_vesting_withdrawal": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the next vesting withdrawal."
+                    },
+                    "withdrawn": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The total vesting shares already withdrawn from active withdrawals."
+                    },
+                    "to_withdraw": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The remaining total vesting shares needed to complete withdrawals."
+                    },
+                    "withdraw_routes": {
+                        "type": "integer",
+                        "description": "The number of withdraw routes for the account."
+                    },
+                    "pending_transfers": {
+                        "type": "integer",
+                        "description": "The number of pending transfers for the account."
+                    },
+                    "pending_claimed_accounts": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The number of pending claimed accounts for the account."
+                    },
+                    "post_bandwidth": {
+                        "type": "integer",
+                        "description": "The post bandwidth of the account."
+                    },
+                    "post_count": {
+                        "type": "integer",
+                        "description": "The number of posts made by the account."
+                    },
+                    "last_post": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the last post made by the account."
+                    },
+                    "last_root_post": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the last root post made by the account."
+                    },
+                    "last_post_edit": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the last post edit made by the account."
+                    },
+                    "last_vote_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the last vote made by the account."
+                    },
+                    "last_account_recovery": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the last account recovery made by the account."
+                    },
+                    "previous_owner_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time of the previous owner update made by the account."
+                    },
+                    "curation_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total curation rewards accumulated by the account."
+                    },
+                    "delayed_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/delayed_votes"
+                        },
+                        "description": "Array of delayed votes."
+                    },
+                    "governance_vote_expiration_ts": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp when governance votes expire."
+                    },
+                    "is_smt": {
+                        "type": "boolean",
+                        "description": "Indicates if the account is an SMT."
+                    },
+                    "open_recurrent_transfers": {
+                        "type": "integer",
+                        "description": "Number of open recurrent transfers."
+                    },
+                    "posting_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total posting rewards accumulated by the account."
+                    },
+                    "proxied_vsf_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/hive_int"
+                        },
+                        "description": "Proxy votes levels."
+                    },
+                    "witnesses_voted_for": {
+                        "type": "integer",
+                        "description": "Number of witnesses voted for by the account."
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "owner",
+                    "active",
+                    "posting",
+                    "memo_key",
+                    "json_metadata",
+                    "posting_json_metadata",
+                    "proxy",
+                    "last_owner_update",
+                    "last_account_update",
+                    "created",
+                    "mined",
+                    "recovery_account",
+                    "reset_account",
+                    "comment_count",
+                    "lifetime_vote_count",
+                    "can_vote",
+                    "voting_manabar",
+                    "downvote_manabar",
+                    "balance",
+                    "savings_balance",
+                    "hbd_balance",
+                    "hbd_seconds",
+                    "hbd_seconds_last_update",
+                    "hbd_last_interest_payment",
+                    "savings_hbd_balance",
+                    "savings_hbd_seconds",
+                    "savings_hbd_seconds_last_update",
+                    "savings_hbd_last_interest_payment",
+                    "savings_withdraw_requests",
+                    "reward_hbd_balance",
+                    "reward_hive_balance",
+                    "reward_vesting_balance",
+                    "reward_vesting_hive",
+                    "vesting_shares",
+                    "delegated_vesting_shares",
+                    "received_vesting_shares",
+                    "vesting_withdraw_rate",
+                    "post_voting_power",
+                    "next_vesting_withdrawal",
+                    "withdrawn",
+                    "to_withdraw",
+                    "withdraw_routes",
+                    "pending_transfers",
+                    "pending_claimed_accounts",
+                    "post_bandwidth",
+                    "post_count",
+                    "last_post",
+                    "last_root_post",
+                    "last_post_edit",
+                    "last_vote_time",
+                    "last_account_recovery",
+                    "previous_owner_update",
+                    "curation_rewards",
+                    "delayed_votes",
+                    "governance_vote_expiration_ts",
+                    "is_smt",
+                    "open_recurrent_transfers",
+                    "posting_rewards",
+                    "proxied_vsf_votes",
+                    "witnesses_voted_for"
+                ]
+            },
             "account_history_array": {
                 "type": "array",
                 "items": {
@@ -5263,6 +6522,21 @@
                         },
                         {
                             "$ref": "#/components/schemas/operation_object"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2
+            },
+            "account_history_array_condenser": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "$ref": "#/components/schemas/operation_object_condenser"
                         }
                     ]
                 },
@@ -5323,6 +6597,23 @@
                     "expires",
                     "id",
                     "new_owner_authority"
+                ]
+            },
+            "account_reputation": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
+                    },
+                    "reputation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "account",
+                    "reputation"
                 ]
             },
             "account_subsidy_rd": {
@@ -5386,6 +6677,71 @@
                 "required": [
                     "rshares",
                     "voter"
+                ]
+            },
+            "active_votes_condenser": {
+                "type": "object",
+                "properties": {
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The number of rshares associated with the vote."
+                    },
+                    "voter": {
+                        "type": "string",
+                        "description": "The name of the voter."
+                    },
+                    "percent": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The percentage of the vote."
+                    },
+                    "reputation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The reputation of the voter."
+                    }
+                },
+                "required": [
+                    "rshares",
+                    "voter",
+                    "percent",
+                    "reputation"
+                ]
+            },
+            "active_vote_condenser": {
+                "type": "object",
+                "properties": {
+                    "percent": {
+                        "type": "integer",
+                        "description": "The percentage of the vote."
+                    },
+                    "reputation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The reputation of the voter."
+                    },
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The number of rshares associated with the vote."
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The time when the vote was cast."
+                    },
+                    "voter": {
+                        "type": "string",
+                        "description": "The name of the voter."
+                    },
+                    "weight": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The weight of the vote."
+                    }
+                },
+                "required": [
+                    "percent",
+                    "reputation",
+                    "rshares",
+                    "time",
+                    "voter",
+                    "weight"
                 ]
             },
             "array_of_operations": {
@@ -5596,6 +6952,79 @@
                     "transaction_ids"
                 ]
             },
+            "block_condenser": {
+                "type": "object",
+                "properties": {
+                    "previous": {
+                        "type": "string",
+                        "example": "0000000000000000000000000000000000000000",
+                        "description": "The previous block ID."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-03-24T16:05:00",
+                        "description": "The timestamp of the block."
+                    },
+                    "witness": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The witness who produced the block."
+                    },
+                    "transaction_merkle_root": {
+                        "type": "string",
+                        "example": "0000000000000000000000000000000000000000",
+                        "description": "Single hash representing the combined hashes of all transactions in a block."
+                    },
+                    "extensions": {
+                        "$ref": "#/components/schemas/extensions",
+                        "example": []
+                    },
+                    "witness_signature": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The signature of the witness who produced the block."
+                    },
+                    "transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/operation_body_condenser"
+                        },
+                        "example": [],
+                        "description": "An array of transactions included in the block."
+                    },
+                    "block_id": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The ID of the block."
+                    },
+                    "signing_key": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The key used to sign the block."
+                    },
+                    "transaction_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [],
+                        "description": "An array of transaction IDs included in the block."
+                    }
+                },
+                "required": [
+                    "previous",
+                    "timestamp",
+                    "witness",
+                    "transaction_merkle_root",
+                    "extensions",
+                    "witness_signature",
+                    "transactions",
+                    "block_id",
+                    "signing_key",
+                    "transaction_ids"
+                ]
+            },
             "block_header": {
                 "type": "object",
                 "properties": {
@@ -5631,6 +7060,71 @@
                     "witness",
                     "transaction_merkle_root",
                     "extensions"
+                ]
+            },
+            "blog_condenser": {
+                "type": "object",
+                "properties": {
+                    "blog": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "Account name of an author"
+                    },
+                    "comment": {
+                        "$ref": "#/components/schemas/post_condenser",
+                        "description": "Comment object"
+                    },
+                    "entry_id": {
+                        "type": "integer",
+                        "example": 74,
+                        "description": "The ID of the entry"
+                    },
+                    "reblogged_on": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00",
+                        "description": "The date and time when the entry was reblogged"
+                    }
+                },
+                "required": [
+                    "blog",
+                    "comment",
+                    "entry_id",
+                    "reblogged_on"
+                ]
+            },
+            "blog_entries_object": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio"
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "permlink-12345"
+                    },
+                    "blog": {
+                        "type": "string",
+                        "example": "hiveio"
+                    },
+                    "reblog_on": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00",
+                        "description": "The date and time when the entry was reblogged"
+                    },
+                    "entry_id": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink",
+                    "entry_id",
+                    "reblog_on",
+                    "blog"
                 ]
             },
             "broadcast_transaction": {
@@ -5998,6 +7492,320 @@
                         "type": "integer",
                         "example": 1
                     }
+                }
+            },
+            "condenser_broadcast_transaction": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/transaction"
+                }
+            },
+            "condenser_broadcast_transaction_response": {
+                "type": "object"
+            },
+            "condenser_broadcast_transaction_synchronous": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/transaction"
+                }
+            },
+            "condenser_broadcast_transaction_synchronous_response": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "0000000000000000000000000000000000000000"
+                    },
+                    "block_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "trx_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "expired": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "rc_cost": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The resource credit cost of the transaction."
+                    }
+                },
+                "required": [
+                    "id",
+                    "block_num",
+                    "trx_num",
+                    "expired"
+                ]
+            },
+            "condenser_find_proposals": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                }
+            },
+            "condenser_find_proposals_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/proposals_condenser"
+                }
+            },
+            "condenser_find_rc_accounts": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "example": "alice"
+                    }
+                }
+            },
+            "condenser_find_rc_accounts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/rc_account_object_condenser"
+                }
+            },
+            "condenser_find_recurrent_transfers": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            },
+            "condenser_find_recurrent_transfers_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/recurrent_transfer_condenser"
+                }
+            },
+            "condenser_get_account_count": {
+                "type": "array",
+                "example": []
+            },
+            "condenser_get_account_count_response": {
+                "type": "integer",
+                "example": 123456
+            },
+            "condenser_get_account_history": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 3,
+                "maxItems": 5,
+                "example": [
+                    "hiveio",
+                    -1,
+                    1000,
+                    0,
+                    1
+                ]
+            },
+            "condenser_get_account_history_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_history_array_condenser"
+                }
+            },
+            "condenser_get_account_reputations": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 0,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    10
+                ]
+            },
+            "condenser_get_account_reputations_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_reputation"
+                }
+            },
+            "condenser_get_accounts": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            },
+            "condenser_get_accounts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_condenser"
+                }
+            },
+            "condenser_get_active_votes": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    "around-the-hive-reflections"
+                ]
+            },
+            "condenser_get_active_votes_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/active_vote_condenser"
+                }
+            },
+            "condenser_get_active_witnesses": {
+                "type": "array",
+                "example": []
+            },
+            "condenser_get_active_witnesses_response": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "condenser_get_block": {
+                "type": "array",
+                "items": {
+                    "type": "integer",
+                    "example": 1
+                }
+            },
+            "condenser_get_block_response": {
+                "$ref": "#/components/schemas/block_condenser"
+            },
+            "condenser_get_block_header": {
+                "type": "array",
+                "items": {
+                    "type": "integer",
+                    "example": 1
+                }
+            },
+            "condenser_get_block_header_response": {
+                "$ref": "#/components/schemas/block_header"
+            },
+            "condenser_get_blog": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 3,
+                "maxItems": 3,
+                "example": [
+                    "hiveio",
+                    0,
+                    50
+                ]
+            },
+            "condenser_get_blog_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/blog_condenser"
+                }
+            },
+            "condenser_get_blog_entries": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 3,
+                "maxItems": 3,
+                "example": [
+                    "hiveio",
+                    0,
+                    50
+                ]
+            },
+            "condenser_get_blog_entries_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/blog_entries_object"
+                }
+            },
+            "condenser_get_chain_properties": {
+                "type": "array",
+                "example": []
+            },
+            "condenser_get_chain_properties_response": {
+                "type": "object",
+                "properties": {
+                    "account_creation_fee": {
+                        "type": "string",
+                        "example": "0.100 HIVE"
+                    },
+                    "maximum_block_size": {
+                        "type": "integer",
+                        "example": 131072
+                    },
+                    "hbd_interest_rate": {
+                        "type": "integer",
+                        "example": 1000
+                    },
+                    "account_subsidy_budget": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "account_subsidy_decay": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "account_creation_fee",
+                    "maximum_block_size",
+                    "hbd_interest_rate",
+                    "account_subsidy_budget",
+                    "account_subsidy_decay"
+                ]
+            },
+            "condenser_get_collateralized_conversion_requests": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            },
+            "condenser_get_collateralized_conversion_requests_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/collateralized_conversion_requests"
                 }
             },
             "context_object": {
@@ -6391,7 +8199,7 @@
                     "requests"
                 ]
             },
-            "find_collateralized_conversion": {
+            "collateralized_conversion_requests": {
                 "type": "object",
                 "properties": {
                     "collateral_amount": {
@@ -6449,7 +8257,7 @@
                     "requests": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/find_collateralized_conversion"
+                            "$ref": "#/components/schemas/collateralized_conversion_requests"
                         }
                     }
                 },
@@ -9826,9 +11634,9 @@
             },
             "list_all_subscriptions_response": {
                 "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/subscriptions_array"
-                    }
+                "items": {
+                    "$ref": "#/components/schemas/subscriptions_array"
+                }
             },
             "list_change_recovery_account_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -9856,7 +11664,7 @@
                     "requests": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/find_collateralized_conversion"
+                            "$ref": "#/components/schemas/collateralized_conversion_requests"
                         }
                     }
                 },
@@ -10091,9 +11899,9 @@
             },
             "list_subscribers_response": {
                 "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/subscriptions_array"
-                    }
+                "items": {
+                    "$ref": "#/components/schemas/subscriptions_array"
+                }
             },
             "list_savings_withdrawals": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -10285,6 +12093,21 @@
                     "type",
                     "value"
                 ]
+            },
+            "operation_body_condenser": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2
             },
             "orders": {
                 "type": "object",
@@ -10570,17 +12393,17 @@
                     },
                     "curator_payout_value": {
                         "type": "string",
-                        "example": "50.000 HIVE",
+                        "example": "50.000 HBD",
                         "description": "The value of the curator payout for the post."
                     },
                     "author_payout_value": {
                         "type": "string",
-                        "example": "950.000 HIVE",
+                        "example": "950.000 HBD",
                         "description": "The value of the author payout for the post."
                     },
                     "pending_payout_value": {
                         "type": "string",
-                        "example": "1000.000 HIVE",
+                        "example": "1000.000 HBD",
                         "description": "The pending payout value for the post, which is the total payout that has not yet been processed."
                     },
                     "parent_author": {
@@ -10620,6 +12443,282 @@
                     "author_reputation",
                     "active_votes",
                     "blacklists"
+                ]
+            },
+            "post_condenser": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the author of the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The unique identifier for the post."
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The category of the post."
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Welcome to Hive",
+                        "description": "The title of the post."
+                    },
+                    "body": {
+                        "type": "string",
+                        "example": "Welcome to Hive",
+                        "description": "The body content of the post."
+                    },
+                    "json_metadata": {
+                        "type": "object",
+                        "example": {
+                            "tags": [
+                                "hive",
+                                "blockchain"
+                            ],
+                            "app": "hive/0.1"
+                        },
+                        "description": "JSON metadata associated with the post, containing additional information like tags and application used."
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20T00:00:00",
+                        "description": "The date and time when the post was created."
+                    },
+                    "last_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20T00:00:00",
+                        "description": "The date and time when the post was last updated."
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "The depth of the post in the comment tree."
+                    },
+                    "children": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "The number of children comments for the post."
+                    },
+                    "curator_payout_value": {
+                        "type": "string",
+                        "example": "50.000 HIVE",
+                        "description": "The value of the curator payout for the post."
+                    },
+                    "replies": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "reply1",
+                            "reply2"
+                        ],
+                        "description": "An array of replies to the post."
+                    },
+                    "body_length": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "The length of the post body content."
+                    },
+                    "author_reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 69.25,
+                        "description": "The reputation score of the author, indicating their standing in the Hive community."
+                    },
+                    "parent_author": {
+                        "type": "string",
+                        "example": "parent_author_name",
+                        "description": "The author of the parent post, if this post is a reply."
+                    },
+                    "parent_permlink": {
+                        "type": "string",
+                        "example": "parent-permlink",
+                        "description": "The permlink of the parent post, if this post is a reply."
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://hive.blog/@alice/my-first-post",
+                        "description": "The URL of the post."
+                    },
+                    "root_title": {
+                        "type": "string",
+                        "example": "My First Post",
+                        "description": "The title of the root post."
+                    },
+                    "beneficiaries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beneficiaries"
+                        },
+                        "description": "An array of beneficiary objects associated with the post."
+                    },
+                    "max_accepted_payout": {
+                        "type": "string",
+                        "example": "1000.000 HIVE",
+                        "description": "The maximum accepted payout for the post."
+                    },
+                    "percent_hbd": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The percentage of the payout that will be in HBD (Hive Backed Dollars)."
+                    },
+                    "active_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/active_votes_condenser"
+                        },
+                        "description": "An array of active votes on the post, containing information about the voters and their vote weight."
+                    },
+                    "last_payout": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T11:40:09",
+                        "description": "The date and time when the post was last paid out."
+                    },
+                    "cashout_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T12:00:00",
+                        "description": "The date and time when the post is scheduled to be paid out."
+                    },
+                    "pending_payout_value": {
+                        "type": "string",
+                        "example": "1000.000 HBD",
+                        "description": "The pending payout value for the post, which is the total payout that has not yet been processed."
+                    },
+                    "total_payout_value": {
+                        "type": "string",
+                        "example": "950.000 HBD",
+                        "description": "The total payout value for the post, which is the sum of all payouts that have been processed."
+                    },
+                    "reblogged_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bob",
+                            "charlie"
+                        ],
+                        "description": "An array of accounts that have reblogged the post."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Unique identifier for the resource; appears only when post_id is absent."
+                    },
+                    "post_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Unique identifier for a post; appears only when id is absent."
+                    },
+                    "author_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000,
+                        "description": "The total rewards earned by the author for the post."
+                    },
+                    "max_cashout_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T12:00:00",
+                        "description": "The date and time when the post is scheduled to be paid out."
+                    },
+                    "reward_weight": {
+                        "type": "integer",
+                        "example": 1000,
+                        "description": "The weight of the post in the reward distribution."
+                    },
+                    "root_author": {
+                        "type": "string",
+                        "example": "root_author_name",
+                        "description": "The author of the root post, if this post is a reply."
+                    },
+                    "root_permlink": {
+                        "type": "string",
+                        "example": "root-permlink",
+                        "description": "The permlink of the root post, if this post is a reply."
+                    },
+                    "allow_replies": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether replies are allowed for this post."
+                    },
+                    "allow_votes": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether votes are allowed for this post."
+                    },
+                    "allow_curation_rewards": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether curation rewards are allowed for this post."
+                    },
+                    "net_votes": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000,
+                        "description": "The net votes (upvotes - downvotes) for the post."
+                    },
+                    "children_abs_rshares": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "total_pending_payout_value": {
+                        "type": "string",
+                        "example": "100.000 HIVE",
+                        "description": "The total pending payout value for the post."
+                    },
+                    "total_vote_weight": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "vote_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "net_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "abs_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink",
+                    "category",
+                    "title",
+                    "body",
+                    "json_metadata",
+                    "created",
+                    "last_update",
+                    "depth",
+                    "children",
+                    "curator_payout_value",
+                    "replies",
+                    "body_length",
+                    "author_reputation",
+                    "parent_author",
+                    "parent_permlink",
+                    "url",
+                    "root_title",
+                    "beneficiaries",
+                    "max_accepted_payout",
+                    "percent_hbd",
+                    "active_votes",
+                    "last_payout",
+                    "cashout_time",
+                    "pending_payout_value",
+                    "total_payout_value"
                 ]
             },
             "post_voting_power": {
@@ -10719,6 +12818,79 @@
                     "status"
                 ]
             },
+            "proposals_condenser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 12345
+                    },
+                    "proposal_id": {
+                        "type": "string",
+                        "example": "139925218365120"
+                    },
+                    "creator": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account that created the proposal."
+                    },
+                    "receiver": {
+                        "type": "string",
+                        "example": "bob",
+                        "description": "The name of the account that will benefit from the proposal."
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2019-07-01T00:00:00",
+                        "description": "The start date of the proposal."
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2019-08-01T23:59:59",
+                        "description": "The end date of the proposal."
+                    },
+                    "daily_pay": {
+                        "type": "string",
+                        "example": "4800.000 HBD",
+                        "description": "The daily pay amount of the proposal."
+                    },
+                    "subject": {
+                        "type": "string",
+                        "example": "My Proposal",
+                        "description": "The subject of the proposal."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "creator-proposal-permlink",
+                        "description": "The permlink of the proposal."
+                    },
+                    "total_votes": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "77351826710",
+                        "description": "The total vests voted on the proposal."
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "active",
+                        "description": "The status of the proposal."
+                    }
+                },
+                "required": [
+                    "id",
+                    "proposal_id",
+                    "creator",
+                    "receiver",
+                    "start_date",
+                    "end_date",
+                    "daily_pay",
+                    "subject",
+                    "permlink",
+                    "total_votes",
+                    "status"
+                ]
+            },
             "rc_account_object": {
                 "type": "object",
                 "properties": {
@@ -10732,6 +12904,45 @@
                     },
                     "max_rc_creation_adjustment": {
                         "$ref": "#/components/schemas/balance"
+                    },
+                    "max_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The maximum resource credits available for the account."
+                    },
+                    "delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits delegated to other accounts."
+                    },
+                    "received_delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits received from other accounts."
+                    }
+                },
+                "required": [
+                    "account",
+                    "rc_manabar",
+                    "max_rc_creation_adjustment",
+                    "max_rc"
+                ]
+            },
+            "rc_account_object_condenser": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The name of the account."
+                    },
+                    "rc_manabar": {
+                        "$ref": "#/components/schemas/voting_manabar"
+                    },
+                    "max_rc_creation_adjustment": {
+                        "type": "string",
+                        "example": "2020.748973 VESTS",
+                        "description": "The maximum resource credits creation adjustment."
                     },
                     "max_rc": {
                         "$ref": "#/components/schemas/hive_int",
@@ -10781,6 +12992,67 @@
                     },
                     "amount": {
                         "$ref": "#/components/schemas/balance",
+                        "description": "The amount of the transfer."
+                    },
+                    "memo": {
+                        "type": "string",
+                        "example": "Payroll",
+                        "description": "The memo message."
+                    },
+                    "recurrence": {
+                        "type": "integer",
+                        "example": 26,
+                        "description": "The recurrence period of the transfer in hours."
+                    },
+                    "consecutive_failures": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The number of consecutive failures of the transfer."
+                    },
+                    "remaining_executions": {
+                        "type": "integer",
+                        "example": 3,
+                        "description": "The number of remaining executions of the transfer."
+                    }
+                },
+                "required": [
+                    "id",
+                    "trigger_date",
+                    "from",
+                    "to",
+                    "amount",
+                    "memo",
+                    "recurrence",
+                    "consecutive_failures",
+                    "remaining_executions"
+                ]
+            },
+            "recurrent_transfer_condenser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 12345
+                    },
+                    "trigger_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-05-06T13:36:45",
+                        "description": "The date when the transfer will be triggered."
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account that created the transfer."
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "bob",
+                        "description": "The name of the account that will receive the transfer."
+                    },
+                    "amount": {
+                        "type": "string",
+                        "example": "2020.748 HIVE",
                         "description": "The amount of the transfer."
                     },
                     "memo": {
@@ -11092,7 +13364,6 @@
                         "string",
                         "null"
                     ]
-
                 },
                 "minItems": 4,
                 "maxItems": 4
@@ -11446,6 +13717,49 @@
                     "op",
                     "op_in_trx",
                     "operation_id",
+                    "timestamp",
+                    "trx_id",
+                    "trx_in_block",
+                    "virtual_op"
+                ]
+            },
+            "operation_object_condenser": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number in which the operation was included."
+                    },
+                    "op": {
+                        "$ref": "#/components/schemas/operation_body_condenser",
+                        "description": "Body of the operation."
+                    },
+                    "op_in_trx": {
+                        "type": "integer",
+                        "description": "The index of the operation in the transaction."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp when the operation was executed."
+                    },
+                    "trx_id": {
+                        "type": "string",
+                        "description": "The ID of the transaction that contains the operation."
+                    },
+                    "trx_in_block": {
+                        "type": "integer",
+                        "description": "The index of the transaction in the block."
+                    },
+                    "virtual_op": {
+                        "type": "boolean",
+                        "description": "Indicates whether the operation is a virtual operation."
+                    }
+                },
+                "required": [
+                    "block",
+                    "op",
+                    "op_in_trx",
                     "timestamp",
                     "trx_id",
                     "trx_in_block",
