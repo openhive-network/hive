@@ -6521,7 +6521,7 @@
                             "type": "integer"
                         },
                         {
-                            "$ref": "#/components/schemas/operation_object"
+                            "$ref": "#/components/schemas/operation"
                         }
                     ]
                 },
@@ -6536,7 +6536,7 @@
                             "type": "integer"
                         },
                         {
-                            "$ref": "#/components/schemas/operation_object_condenser"
+                            "$ref": "#/components/schemas/operation_condenser"
                         }
                     ]
                 },
@@ -6565,7 +6565,7 @@
             "account_notifications_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/notification_object"
+                    "$ref": "#/components/schemas/notification"
                 }
             },
             "account_recovery": {
@@ -6662,7 +6662,7 @@
                     "resource_unit"
                 ]
             },
-            "active_votes_object": {
+            "active_votes": {
                 "type": "object",
                 "properties": {
                     "rshares": {
@@ -7093,7 +7093,7 @@
                     "reblogged_on"
                 ]
             },
-            "blog_entries_object": {
+            "blog_entries": {
                 "type": "object",
                 "properties": {
                     "author": {
@@ -7141,6 +7141,37 @@
                 "required": [
                     "trx",
                     "max_block_age"
+                ]
+            },
+            "broadcast_transaction_synchronous": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "0000000000000000000000000000000000000000"
+                    },
+                    "block_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "trx_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "expired": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "rc_cost": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The resource credit cost of the transaction."
+                    }
+                },
+                "required": [
+                    "id",
+                    "block_num",
+                    "trx_num",
+                    "expired"
                 ]
             },
             "broadcast_transaction_response": {
@@ -7247,6 +7278,38 @@
                     "allow_replies",
                     "allow_votes",
                     "allow_curation_rewards"
+                ]
+            },
+            "chain_properties": {
+                "type": "object",
+                "properties": {
+                    "account_creation_fee": {
+                        "type": "string",
+                        "example": "0.100 HIVE"
+                    },
+                    "maximum_block_size": {
+                        "type": "integer",
+                        "example": 131072
+                    },
+                    "hbd_interest_rate": {
+                        "type": "integer",
+                        "example": 1000
+                    },
+                    "account_subsidy_budget": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "account_subsidy_decay": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "account_creation_fee",
+                    "maximum_block_size",
+                    "hbd_interest_rate",
+                    "account_subsidy_budget",
+                    "account_subsidy_decay"
                 ]
             },
             "comment": {
@@ -7426,7 +7489,7 @@
                     "permlink"
                 ]
             },
-            "community_object": {
+            "community": {
                 "type": "object",
                 "properties": {
                     "about": {
@@ -7445,7 +7508,7 @@
                         "example": "https://example.com/avatar.jpg"
                     },
                     "context": {
-                        "$ref": "#/components/schemas/context_object"
+                        "$ref": "#/components/schemas/context"
                     },
                     "created_at": {
                         "type": "string",
@@ -7492,7 +7555,124 @@
                         "type": "integer",
                         "example": 1
                     }
-                }
+                },
+                "required": [
+                    "about",
+                    "admins",
+                    "avatar_url",
+                    "context",
+                    "created_at",
+                    "id",
+                    "is_nsfw",
+                    "lang",
+                    "name",
+                    "num_authors",
+                    "num_pending",
+                    "subscribers",
+                    "sum_pending",
+                    "title",
+                    "type_id"
+                ]
+            },
+            "community_extended": {
+                "type": "object",
+                "properties": {
+                    "about": {
+                        "type": "string",
+                        "description": "A brief description of the community."
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "description": "The URL of the community's avatar image."
+                    },
+                    "context": {
+                        "$ref": "#/components/schemas/context",
+                        "description": "The context of the community, including role and subscription status."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date and time when the community was created."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A detailed description of the community."
+                    },
+                    "flag_text": {
+                        "type": "string",
+                        "description": "Text to display when the community is flagged."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "The unique identifier of the community."
+                    },
+                    "is_nsfw": {
+                        "type": "boolean",
+                        "description": "Indicates if the community is marked as NSFW (Not Safe For Work)."
+                    },
+                    "lang": {
+                        "type": "string",
+                        "description": "The language code of the community, e.g., \"en\" for English."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the community."
+                    },
+                    "num_authors": {
+                        "type": "integer",
+                        "description": "The number of authors in the community."
+                    },
+                    "num_pending": {
+                        "type": "integer",
+                        "description": "The number of pending members in the community."
+                    },
+                    "settings": {
+                        "type": "object",
+                        "description": "The settings of the community, including moderation and posting rules."
+                    },
+                    "subscribers": {
+                        "type": "integer",
+                        "description": "The number of subscribers to the community."
+                    },
+                    "sum_pending": {
+                        "type": "integer",
+                        "description": "The total pending amount in the community."
+                    },
+                    "team": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/team_array"
+                        }
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the community."
+                    },
+                    "type_id": {
+                        "type": "integer",
+                        "description": "The type ID of the community, indicating its category or classification."
+                    }
+                },
+                "required": [
+                    "about",
+                    "avatar_url",
+                    "context",
+                    "created_at",
+                    "description",
+                    "flag_text",
+                    "id",
+                    "is_nsfw",
+                    "lang",
+                    "name",
+                    "num_authors",
+                    "num_pending",
+                    "settings",
+                    "subscribers",
+                    "sum_pending",
+                    "team",
+                    "title",
+                    "type_id"
+                ]
             },
             "condenser_broadcast_transaction": {
                 "type": "array",
@@ -7510,35 +7690,7 @@
                 }
             },
             "condenser_broadcast_transaction_synchronous_response": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "example": "0000000000000000000000000000000000000000"
-                    },
-                    "block_num": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "trx_num": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "expired": {
-                        "type": "boolean",
-                        "example": false
-                    },
-                    "rc_cost": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The resource credit cost of the transaction."
-                    }
-                },
-                "required": [
-                    "id",
-                    "block_num",
-                    "trx_num",
-                    "expired"
-                ]
+                "$ref": "#/components/schemas/broadcast_transaction_synchronous"
             },
             "condenser_find_proposals": {
                 "type": "array",
@@ -7569,7 +7721,7 @@
             "condenser_find_rc_accounts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/rc_account_object_condenser"
+                    "$ref": "#/components/schemas/rc_account_condenser"
                 }
             },
             "condenser_find_recurrent_transfers": {
@@ -7756,7 +7908,7 @@
             "condenser_get_blog_entries_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/blog_entries_object"
+                    "$ref": "#/components/schemas/blog_entries"
                 }
             },
             "condenser_get_chain_properties": {
@@ -7764,36 +7916,7 @@
                 "example": []
             },
             "condenser_get_chain_properties_response": {
-                "type": "object",
-                "properties": {
-                    "account_creation_fee": {
-                        "type": "string",
-                        "example": "0.100 HIVE"
-                    },
-                    "maximum_block_size": {
-                        "type": "integer",
-                        "example": 131072
-                    },
-                    "hbd_interest_rate": {
-                        "type": "integer",
-                        "example": 1000
-                    },
-                    "account_subsidy_budget": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "account_subsidy_decay": {
-                        "type": "integer",
-                        "example": 0
-                    }
-                },
-                "required": [
-                    "account_creation_fee",
-                    "maximum_block_size",
-                    "hbd_interest_rate",
-                    "account_subsidy_budget",
-                    "account_subsidy_decay"
-                ]
+                "$ref": "#/components/schemas/chain_properties"
             },
             "condenser_get_collateralized_conversion_requests": {
                 "type": "array",
@@ -7808,7 +7931,7 @@
                     "$ref": "#/components/schemas/collateralized_conversion_requests_condenser"
                 }
             },
-            "context_object": {
+            "context": {
                 "type": "object",
                 "properties": {
                     "role": {
@@ -7951,13 +8074,13 @@
                     "ops": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/operation_object"
+                            "$ref": "#/components/schemas/operation"
                         }
                     },
                     "ops_by_block": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/ops_by_block_object"
+                            "$ref": "#/components/schemas/ops_by_block"
                         }
                     }
                 },
@@ -8199,6 +8322,28 @@
                     "requests"
                 ]
             },
+            "follow": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the account being followed."
+                    },
+                    "blacklist_description": {
+                        "type": "string",
+                        "description": "Description of the blacklist, if applicable."
+                    },
+                    "muted_list_description": {
+                        "type": "string",
+                        "description": "Description of the muted list, if applicable."
+                    }
+                },
+                "required": [
+                    "name",
+                    "blacklist_description",
+                    "muted_list_description"
+                ]
+            },
             "collateralized_conversion_requests": {
                 "type": "object",
                 "properties": {
@@ -8279,6 +8424,47 @@
                     "id",
                     "owner",
                     "requestid"
+                ]
+            },
+            "feed_history": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The ID of the feed history."
+                    },
+                    "current_max_history": {
+                        "$ref": "#/components/schemas/base_and_quote",
+                        "description": "The current maximum history of the feed."
+                    },
+                    "current_median_history": {
+                        "$ref": "#/components/schemas/base_and_quote",
+                        "description": "The current median history of the feed."
+                    },
+                    "current_min_history": {
+                        "$ref": "#/components/schemas/base_and_quote",
+                        "description": "The current minimum history of the feed."
+                    },
+                    "market_median_history": {
+                        "$ref": "#/components/schemas/base_and_quote",
+                        "description": "The market median history of the feed."
+                    },
+                    "price_history": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/base_and_quote"
+                        },
+                        "description": "An array of price history objects."
+                    }
+                },
+                "required": [
+                    "id",
+                    "current_max_history",
+                    "current_median_history",
+                    "current_min_history",
+                    "market_median_history",
+                    "price_history"
                 ]
             },
             "find_collateralized_conversion_requests": {
@@ -8536,7 +8722,7 @@
                     "rc_accounts": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/rc_account_object"
+                            "$ref": "#/components/schemas/rc_account"
                         }
                     }
                 },
@@ -8947,7 +9133,7 @@
             "get_account_posts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/post_object"
+                    "$ref": "#/components/schemas/post"
                 }
             },
             "get_active_witnesses_response": {
@@ -8989,104 +9175,7 @@
                 ]
             },
             "get_community_response": {
-                "type": "object",
-                "properties": {
-                    "about": {
-                        "type": "string",
-                        "description": "A brief description of the community."
-                    },
-                    "avatar_url": {
-                        "type": "string",
-                        "description": "The URL of the community's avatar image."
-                    },
-                    "context": {
-                        "$ref": "#/components/schemas/context_object",
-                        "description": "The context of the community, including role and subscription status."
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date and time when the community was created."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "A detailed description of the community."
-                    },
-                    "flag_text": {
-                        "type": "string",
-                        "description": "Text to display when the community is flagged."
-                    },
-                    "id": {
-                        "type": "integer",
-                        "description": "The unique identifier of the community."
-                    },
-                    "is_nsfw": {
-                        "type": "boolean",
-                        "description": "Indicates if the community is marked as NSFW (Not Safe For Work)."
-                    },
-                    "lang": {
-                        "type": "string",
-                        "description": "The language code of the community, e.g., \"en\" for English."
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "The name of the community."
-                    },
-                    "num_authors": {
-                        "type": "integer",
-                        "description": "The number of authors in the community."
-                    },
-                    "num_pending": {
-                        "type": "integer",
-                        "description": "The number of pending members in the community."
-                    },
-                    "settings": {
-                        "type": "object",
-                        "description": "The settings of the community, including moderation and posting rules."
-                    },
-                    "subscribers": {
-                        "type": "integer",
-                        "description": "The number of subscribers to the community."
-                    },
-                    "sum_pending": {
-                        "type": "integer",
-                        "description": "The total pending amount in the community."
-                    },
-                    "team": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/team_array"
-                        }
-                    },
-                    "title": {
-                        "type": "string",
-                        "description": "The title of the community."
-                    },
-                    "type_id": {
-                        "type": "integer",
-                        "description": "The type ID of the community, indicating its category or classification."
-                    }
-                },
-                "required": [
-                    "about",
-                    "avatar_url",
-                    "context",
-                    "created_at",
-                    "description",
-                    "flag_text",
-                    "id",
-                    "is_nsfw",
-                    "lang",
-                    "name",
-                    "num_authors",
-                    "num_pending",
-                    "settings",
-                    "subscribers",
-                    "sum_pending",
-                    "team",
-                    "title",
-                    "type_id"
-                ]
+                "$ref": "#/components/schemas/community_extended"
             },
             "get_community_context": {
                 "type": "object",
@@ -9108,7 +9197,7 @@
                 ]
             },
             "get_community_context_response": {
-                "$ref": "#/components/schemas/context_object"
+                "$ref": "#/components/schemas/context"
             },
             "get_config_response": {
                 "type": "object",
@@ -10724,45 +10813,7 @@
                 ]
             },
             "get_feed_history_response": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The ID of the feed history."
-                    },
-                    "current_max_history": {
-                        "$ref": "#/components/schemas/base_and_quote",
-                        "description": "The current maximum history of the feed."
-                    },
-                    "current_median_history": {
-                        "$ref": "#/components/schemas/base_and_quote",
-                        "description": "The current median history of the feed."
-                    },
-                    "current_min_history": {
-                        "$ref": "#/components/schemas/base_and_quote",
-                        "description": "The current minimum history of the feed."
-                    },
-                    "market_median_history": {
-                        "$ref": "#/components/schemas/base_and_quote",
-                        "description": "The market median history of the feed."
-                    },
-                    "price_history": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/base_and_quote"
-                        },
-                        "description": "An array of price history objects."
-                    }
-                },
-                "required": [
-                    "id",
-                    "current_max_history",
-                    "current_median_history",
-                    "current_min_history",
-                    "market_median_history",
-                    "price_history"
-                ]
+                "$ref": "#/components/schemas/feed_history"
             },
             "get_follow_list": {
                 "type": "object",
@@ -10784,26 +10835,7 @@
             "get_follow_list_response": {
                 "type": "array",
                 "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "The name of the account being followed."
-                        },
-                        "blacklist_description": {
-                            "type": "string",
-                            "description": "Description of the blacklist, if applicable."
-                        },
-                        "muted_list_description": {
-                            "type": "string",
-                            "description": "Description of the muted list, if applicable."
-                        }
-                    },
-                    "required": [
-                        "name",
-                        "blacklist_description",
-                        "muted_list_description"
-                    ]
+                    "$ref": "#/components/schemas/follow"
                 }
             },
             "get_hardfork_properties_response": {
@@ -10910,7 +10942,7 @@
                     "ops": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/operation_object"
+                            "$ref": "#/components/schemas/operation"
                         }
                     }
                 },
@@ -11030,7 +11062,7 @@
                 ]
             },
             "get_post_response": {
-                "$ref": "#/components/schemas/post_object"
+                "$ref": "#/components/schemas/post"
             },
             "get_post_header": {
                 "type": "object",
@@ -11052,35 +11084,7 @@
                 ]
             },
             "get_post_header_response": {
-                "type": "object",
-                "properties": {
-                    "author": {
-                        "type": "string",
-                        "example": "hiveio",
-                        "description": "The author of the post."
-                    },
-                    "category": {
-                        "type": "string",
-                        "example": "hiveecosystem",
-                        "description": "The unique identifier for the post."
-                    },
-                    "depth": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The depth of the post in the discussion thread."
-                    },
-                    "permlink": {
-                        "type": "string",
-                        "example": "hive-12345",
-                        "description": "The unique identifier for the post."
-                    }
-                },
-                "required": [
-                    "author",
-                    "category",
-                    "depth",
-                    "permlink"
-                ]
+                "$ref": "#/components/schemas/post_header"
             },
             "get_potential_signatures": {
                 "type": "object",
@@ -11127,107 +11131,7 @@
                 ]
             },
             "get_profile_response": {
-                "type": "object",
-                "properties": {
-                    "active": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2016-04-29T22:28:00",
-                        "description": "The author's last active time."
-                    },
-                    "blacklists": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [
-                            "blacklist1",
-                            "blacklist2"
-                        ],
-                        "description": "An array of blacklists associated with the post, indicating accounts that have blacklisted it."
-                    },
-                    "created": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2016-03-25T15:09:27",
-                        "description": "The author's account creation time."
-                    },
-                    "id": {
-                        "type": "integer",
-                        "example": 241,
-                        "description": "The unique identifier for the author."
-                    },
-                    "metadata": {
-                        "type": "object"
-                    },
-                    "name": {
-                        "type": "string",
-                        "example": "alice",
-                        "description": "The name of the author."
-                    },
-                    "post_count": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The total number of posts made by the author."
-                    },
-                    "reputation": {
-                        "type": "number",
-                        "format": "double",
-                        "example": 25.75,
-                        "description": "The reputation score of the author."
-                    },
-                    "stats": {
-                        "type": "object",
-                        "properties": {
-                            "followers": {
-                                "type": "integer",
-                                "example": 431,
-                                "description": "The number of followers the author has."
-                            },
-                            "following": {
-                                "type": "integer",
-                                "example": 0,
-                                "description": "The number of accounts the author is following."
-                            },
-                            "rank": {
-                                "type": "integer",
-                                "example": 0,
-                                "description": "The author's rank."
-                            }
-                        },
-                        "required": [
-                            "followers",
-                            "following",
-                            "rank"
-                        ]
-                    },
-                    "context": {
-                        "type": "object",
-                        "properties": {
-                            "followed": {
-                                "type": "boolean",
-                                "example": false,
-                                "description": "Indicates if the author is followed."
-                            },
-                            "muted": {
-                                "type": "boolean",
-                                "example": false,
-                                "description": "Indicates if the author is muted."
-                            }
-                        }
-                    }
-                },
-                "required": [
-                    "active",
-                    "blacklists",
-                    "created",
-                    "id",
-                    "metadata",
-                    "name",
-                    "post_count",
-                    "reputation",
-                    "stats"
-                ]
+                "$ref": "#/components/schemas/profile"
             },
             "get_ranked_posts": {
                 "type": "object",
@@ -11257,7 +11161,7 @@
             "get_ranked_posts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/post_object"
+                    "$ref": "#/components/schemas/post"
                 }
             },
             "get_relationship_between_accounts": {
@@ -11413,104 +11317,7 @@
                 ]
             },
             "get_witness_schedule_response": {
-                "type": "object",
-                "properties": {
-                    "account_subsidy_rd": {
-                        "$ref": "#/components/schemas/account_subsidy_rd"
-                    },
-                    "account_subsidy_witness_rd": {
-                        "$ref": "#/components/schemas/account_subsidy_rd"
-                    },
-                    "current_shuffled_witnesses": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [
-                            "witness1",
-                            "witness2"
-                        ]
-                    },
-                    "current_virtual_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "965626696637118176548648739"
-                    },
-                    "elected_weight": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "hardfork_required_witnesses": {
-                        "type": "integer",
-                        "example": 17
-                    },
-                    "id": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "majority_version": {
-                        "type": "string",
-                        "example": "1.27.3"
-                    },
-                    "max_miner_witnesses": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "max_runner_witnesses": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "max_voted_witnesses": {
-                        "type": "integer",
-                        "example": 20
-                    },
-                    "median_props": {
-                        "$ref": "#/components/schemas/witness_props"
-                    },
-                    "min_witness_account_subsidy_decay": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 0
-                    },
-                    "miner_weight": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "next_shuffle_block_num": {
-                        "type": "integer",
-                        "example": 96113997
-                    },
-                    "num_scheduled_witnesses": {
-                        "type": "integer",
-                        "example": 21
-                    },
-                    "timeshare_weight": {
-                        "type": "integer",
-                        "example": 5
-                    },
-                    "witness_pay_normalization_factor": {
-                        "type": "integer",
-                        "example": 25
-                    }
-                },
-                "required": [
-                    "account_subsidy_rd",
-                    "account_subsidy_witness_rd",
-                    "current_shuffled_witnesses",
-                    "current_virtual_time",
-                    "elected_weight",
-                    "hardfork_required_witnesses",
-                    "id",
-                    "majority_version",
-                    "max_miner_witnesses",
-                    "max_runner_witnesses",
-                    "max_voted_witnesses",
-                    "median_props",
-                    "min_witness_account_subsidy_decay",
-                    "miner_weight",
-                    "next_shuffle_block_num",
-                    "num_scheduled_witnesses",
-                    "timeshare_weight",
-                    "witness_pay_normalization_factor"
-                ]
+                "$ref": "#/components/schemas/witness_schedule"
             },
             "hbd_conversion": {
                 "type": "object",
@@ -11748,7 +11555,7 @@
             "list_communities_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/community_object"
+                    "$ref": "#/components/schemas/community"
                 }
             },
             "list_community_roles": {
@@ -12084,7 +11891,7 @@
                     "decimals"
                 ]
             },
-            "notification_object": {
+            "notification": {
                 "type": "object",
                 "properties": {
                     "date": {
@@ -12151,6 +11958,128 @@
                 },
                 "minItems": 2,
                 "maxItems": 2
+            },
+            "operation": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number in which the operation was included."
+                    },
+                    "op": {
+                        "$ref": "#/components/schemas/operation_body",
+                        "description": "Body of the operation."
+                    },
+                    "op_in_trx": {
+                        "type": "integer",
+                        "description": "The index of the operation in the transaction."
+                    },
+                    "operation_id": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The unique ID of the operation."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp when the operation was executed."
+                    },
+                    "trx_id": {
+                        "type": "string",
+                        "description": "The ID of the transaction that contains the operation."
+                    },
+                    "trx_in_block": {
+                        "type": "integer",
+                        "description": "The index of the transaction in the block."
+                    },
+                    "virtual_op": {
+                        "type": "boolean",
+                        "description": "Indicates whether the operation is a virtual operation."
+                    }
+                },
+                "required": [
+                    "block",
+                    "op",
+                    "op_in_trx",
+                    "operation_id",
+                    "timestamp",
+                    "trx_id",
+                    "trx_in_block",
+                    "virtual_op"
+                ]
+            },
+            "operation_condenser": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number in which the operation was included."
+                    },
+                    "op": {
+                        "$ref": "#/components/schemas/operation_body_condenser",
+                        "description": "Body of the operation."
+                    },
+                    "op_in_trx": {
+                        "type": "integer",
+                        "description": "The index of the operation in the transaction."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp when the operation was executed."
+                    },
+                    "trx_id": {
+                        "type": "string",
+                        "description": "The ID of the transaction that contains the operation."
+                    },
+                    "trx_in_block": {
+                        "type": "integer",
+                        "description": "The index of the transaction in the block."
+                    },
+                    "virtual_op": {
+                        "type": "boolean",
+                        "description": "Indicates whether the operation is a virtual operation."
+                    }
+                },
+                "required": [
+                    "block",
+                    "op",
+                    "op_in_trx",
+                    "timestamp",
+                    "trx_id",
+                    "trx_in_block",
+                    "virtual_op"
+                ]
+            },
+            "ops_by_block": {
+                "type": "object",
+                "properties": {
+                    "block": {
+                        "type": "integer",
+                        "description": "The block number."
+                    },
+                    "irreversible": {
+                        "type": "boolean",
+                        "description": "Indicates whether the block is irreversible."
+                    },
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/operation"
+                        },
+                        "description": "An array of operation objects included in the block."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp of the block."
+                    }
+                },
+                "required": [
+                    "block",
+                    "irreversible",
+                    "ops",
+                    "timestamp"
+                ]
             },
             "orders": {
                 "type": "object",
@@ -12249,7 +12178,38 @@
                 "minItems": 2,
                 "maxItems": 2
             },
-            "post_object": {
+            "post_header": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The author of the post."
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "hiveecosystem",
+                        "description": "The unique identifier for the post."
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The depth of the post in the discussion thread."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hive-12345",
+                        "description": "The unique identifier for the post."
+                    }
+                },
+                "required": [
+                    "author",
+                    "category",
+                    "depth",
+                    "permlink"
+                ]
+            },
+            "post": {
                 "type": "object",
                 "properties": {
                     "post_id": {
@@ -12370,7 +12330,7 @@
                         "description": "JSON metadata associated with the post, containing additional information like tags and application used."
                     },
                     "stats": {
-                        "$ref": "#/components/schemas/stats_object",
+                        "$ref": "#/components/schemas/stats",
                         "description": "Statistics object containing various metrics related to the post."
                     },
                     "payout": {
@@ -12388,7 +12348,7 @@
                     "active_votes": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/active_votes_object"
+                            "$ref": "#/components/schemas/active_votes"
                         },
                         "description": "An array of active votes on the post, containing information about the voters and their vote weight."
                     },
@@ -12767,6 +12727,109 @@
             "post_voting_power": {
                 "$ref": "#/components/schemas/balance"
             },
+            "profile": {
+                "type": "object",
+                "properties": {
+                    "active": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-04-29T22:28:00",
+                        "description": "The author's last active time."
+                    },
+                    "blacklists": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "blacklist1",
+                            "blacklist2"
+                        ],
+                        "description": "An array of blacklists associated with the post, indicating accounts that have blacklisted it."
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-03-25T15:09:27",
+                        "description": "The author's account creation time."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 241,
+                        "description": "The unique identifier for the author."
+                    },
+                    "metadata": {
+                        "type": "object"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the author."
+                    },
+                    "post_count": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The total number of posts made by the author."
+                    },
+                    "reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 25.75,
+                        "description": "The reputation score of the author."
+                    },
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "followers": {
+                                "type": "integer",
+                                "example": 431,
+                                "description": "The number of followers the author has."
+                            },
+                            "following": {
+                                "type": "integer",
+                                "example": 0,
+                                "description": "The number of accounts the author is following."
+                            },
+                            "rank": {
+                                "type": "integer",
+                                "example": 0,
+                                "description": "The author's rank."
+                            }
+                        },
+                        "required": [
+                            "followers",
+                            "following",
+                            "rank"
+                        ]
+                    },
+                    "context": {
+                        "type": "object",
+                        "properties": {
+                            "followed": {
+                                "type": "boolean",
+                                "example": false,
+                                "description": "Indicates if the author is followed."
+                            },
+                            "muted": {
+                                "type": "boolean",
+                                "example": false,
+                                "description": "Indicates if the author is muted."
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "active",
+                    "blacklists",
+                    "created",
+                    "id",
+                    "metadata",
+                    "name",
+                    "post_count",
+                    "reputation",
+                    "stats"
+                ]
+            },
             "proposal_vote": {
                 "type": "object",
                 "properties": {
@@ -12934,7 +12997,7 @@
                     "status"
                 ]
             },
-            "rc_account_object": {
+            "rc_account": {
                 "type": "object",
                 "properties": {
                     "account": {
@@ -12971,7 +13034,7 @@
                     "max_rc"
                 ]
             },
-            "rc_account_object_condenser": {
+            "rc_account_condenser": {
                 "type": "object",
                 "properties": {
                     "account": {
@@ -13352,7 +13415,7 @@
                     "status"
                 ]
             },
-            "stats_object": {
+            "stats": {
                 "type": "object",
                 "properties": {
                     "hide": {
@@ -13718,128 +13781,6 @@
                     "expiration"
                 ]
             },
-            "operation_object": {
-                "type": "object",
-                "properties": {
-                    "block": {
-                        "type": "integer",
-                        "description": "The block number in which the operation was included."
-                    },
-                    "op": {
-                        "$ref": "#/components/schemas/operation_body",
-                        "description": "Body of the operation."
-                    },
-                    "op_in_trx": {
-                        "type": "integer",
-                        "description": "The index of the operation in the transaction."
-                    },
-                    "operation_id": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The unique ID of the operation."
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The timestamp when the operation was executed."
-                    },
-                    "trx_id": {
-                        "type": "string",
-                        "description": "The ID of the transaction that contains the operation."
-                    },
-                    "trx_in_block": {
-                        "type": "integer",
-                        "description": "The index of the transaction in the block."
-                    },
-                    "virtual_op": {
-                        "type": "boolean",
-                        "description": "Indicates whether the operation is a virtual operation."
-                    }
-                },
-                "required": [
-                    "block",
-                    "op",
-                    "op_in_trx",
-                    "operation_id",
-                    "timestamp",
-                    "trx_id",
-                    "trx_in_block",
-                    "virtual_op"
-                ]
-            },
-            "operation_object_condenser": {
-                "type": "object",
-                "properties": {
-                    "block": {
-                        "type": "integer",
-                        "description": "The block number in which the operation was included."
-                    },
-                    "op": {
-                        "$ref": "#/components/schemas/operation_body_condenser",
-                        "description": "Body of the operation."
-                    },
-                    "op_in_trx": {
-                        "type": "integer",
-                        "description": "The index of the operation in the transaction."
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The timestamp when the operation was executed."
-                    },
-                    "trx_id": {
-                        "type": "string",
-                        "description": "The ID of the transaction that contains the operation."
-                    },
-                    "trx_in_block": {
-                        "type": "integer",
-                        "description": "The index of the transaction in the block."
-                    },
-                    "virtual_op": {
-                        "type": "boolean",
-                        "description": "Indicates whether the operation is a virtual operation."
-                    }
-                },
-                "required": [
-                    "block",
-                    "op",
-                    "op_in_trx",
-                    "timestamp",
-                    "trx_id",
-                    "trx_in_block",
-                    "virtual_op"
-                ]
-            },
-            "ops_by_block_object": {
-                "type": "object",
-                "properties": {
-                    "block": {
-                        "type": "integer",
-                        "description": "The block number."
-                    },
-                    "irreversible": {
-                        "type": "boolean",
-                        "description": "Indicates whether the block is irreversible."
-                    },
-                    "ops": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/operation_object"
-                        },
-                        "description": "An array of operation objects included in the block."
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The timestamp of the block."
-                    }
-                },
-                "required": [
-                    "block",
-                    "irreversible",
-                    "ops",
-                    "timestamp"
-                ]
-            },
             "vote": {
                 "type": "object",
                 "properties": {
@@ -14091,6 +14032,106 @@
                     "account_subsidy_decay",
                     "hbd_interest_rate",
                     "maximum_block_size"
+                ]
+            },
+            "witness_schedule": {
+                "type": "object",
+                "properties": {
+                    "account_subsidy_rd": {
+                        "$ref": "#/components/schemas/account_subsidy_rd"
+                    },
+                    "account_subsidy_witness_rd": {
+                        "$ref": "#/components/schemas/account_subsidy_rd"
+                    },
+                    "current_shuffled_witnesses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "witness1",
+                            "witness2"
+                        ]
+                    },
+                    "current_virtual_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "965626696637118176548648739"
+                    },
+                    "elected_weight": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "hardfork_required_witnesses": {
+                        "type": "integer",
+                        "example": 17
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "majority_version": {
+                        "type": "string",
+                        "example": "1.27.3"
+                    },
+                    "max_miner_witnesses": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "max_runner_witnesses": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "max_voted_witnesses": {
+                        "type": "integer",
+                        "example": 20
+                    },
+                    "median_props": {
+                        "$ref": "#/components/schemas/witness_props"
+                    },
+                    "min_witness_account_subsidy_decay": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 0
+                    },
+                    "miner_weight": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "next_shuffle_block_num": {
+                        "type": "integer",
+                        "example": 96113997
+                    },
+                    "num_scheduled_witnesses": {
+                        "type": "integer",
+                        "example": 21
+                    },
+                    "timeshare_weight": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "witness_pay_normalization_factor": {
+                        "type": "integer",
+                        "example": 25
+                    }
+                },
+                "required": [
+                    "account_subsidy_rd",
+                    "account_subsidy_witness_rd",
+                    "current_shuffled_witnesses",
+                    "current_virtual_time",
+                    "elected_weight",
+                    "hardfork_required_witnesses",
+                    "id",
+                    "majority_version",
+                    "max_miner_witnesses",
+                    "max_runner_witnesses",
+                    "max_voted_witnesses",
+                    "median_props",
+                    "min_witness_account_subsidy_decay",
+                    "miner_weight",
+                    "next_shuffle_block_num",
+                    "num_scheduled_witnesses",
+                    "timeshare_weight",
+                    "witness_pay_normalization_factor"
                 ]
             },
             "witness_vote": {
