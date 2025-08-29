@@ -951,7 +951,6 @@ DEFINE_API_ARGS( get_blog_entries,                       vector< variant >,   no
 DEFINE_API_ARGS( get_blog,                               vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_account_reputations,                vector< variant >,   vector< reputation::account_reputation > )
 DEFINE_API_ARGS( get_reblogged_by,                       vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_blog_authors,                       vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_ticker,                             vector< variant >,   ticker )
 DEFINE_API_ARGS( get_volume,                             vector< variant >,   volume )
 DEFINE_API_ARGS( get_order_book,                         vector< variant >,   order_book )
@@ -1053,7 +1052,6 @@ public:
     (get_blog)
     (get_account_reputations)
     (get_reblogged_by)
-    (get_blog_authors)
     (get_ticker)
     (get_volume)
     (get_order_book)
