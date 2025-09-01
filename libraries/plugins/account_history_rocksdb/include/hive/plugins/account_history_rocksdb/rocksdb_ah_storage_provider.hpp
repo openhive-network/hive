@@ -36,6 +36,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void afterFlushWriteBuffer() override;
 
   public:
+    using ptr = std::shared_ptr<rocksdb_ah_storage_provider>;
 
     rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_ah_storage_provider() override{}
