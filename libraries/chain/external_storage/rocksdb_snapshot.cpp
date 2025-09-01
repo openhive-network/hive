@@ -88,14 +88,14 @@ void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplemen
 
   _provider->shutdownDb( true );
 
-  ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
+  ilog("Starting restore of ${_name} backup into storage location: ${p}.", (_name)("p", _storagePath.string()));
 
   bfs::path walDir(_storagePath);
   walDir /= "WAL";
   status = backupEngine->RestoreDBFromLatestBackup(_storagePath.string(), walDir.string());
   checkStatus(status);
 
-  ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
+  ilog("Restoring ${_name} backup from the location: `${p}' finished", (_name)("p", pathString));
 
   _provider->openDb( false );
 }
