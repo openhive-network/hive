@@ -106,12 +106,6 @@ typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
 class AComparator : public Comparator
 {
   public:
-    virtual const char* Name() const override final
-    {
-      static const std::string name = boost::core::demangle(typeid(this).name());
-      return name.c_str();
-    }
-
     virtual void FindShortestSeparator(std::string* start, const Slice& limit) const override final
     {
       /// Nothing to do.
@@ -130,6 +124,12 @@ template <typename T>
 class PrimitiveTypeComparatorImpl final : public AComparator
 {
   public:
+    virtual const char* Name() const override
+    {
+      static const std::string name = boost::core::demangle( typeid( this ).name() );
+      return name.c_str();
+    }
+
     virtual int Compare(const Slice& a, const Slice& b) const override
     {
       if(a.size() != sizeof(T) || b.size() != sizeof(T))
@@ -170,6 +170,12 @@ class PrimitiveTypeComparatorImpl final : public AComparator
 class HashComparator final : public AComparator
 {
   public:
+    virtual const char* Name() const override
+    {
+      static const std::string name = boost::core::demangle( typeid( this ).name() );
+      return name.c_str();
+    }
+
     virtual int Compare(const Slice& a, const Slice& b) const override
     {
       /// Nothing more to do. Just compare buffers holding 20Bytes hash
