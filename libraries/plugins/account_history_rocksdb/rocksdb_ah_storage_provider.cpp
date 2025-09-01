@@ -113,9 +113,9 @@ std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()
   return rocksdb_storage_provider::getStorage();
 }
 
-void rocksdb_ah_storage_provider::openDb( bool cleanDatabase )
+void rocksdb_ah_storage_provider::openDb( uint32_t expected_lib, bool cleanDatabase )
 {
-  rocksdb_storage_provider::openDb( cleanDatabase );
+  rocksdb_storage_provider::openDb( expected_lib, cleanDatabase );
 }
 
 void rocksdb_ah_storage_provider::shutdownDb( bool removeDB )

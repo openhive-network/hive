@@ -97,7 +97,7 @@ void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplemen
 
   ilog("Restoring ${_name} backup from the location: `${p}' finished", (_name)("p", pathString));
 
-  _provider->openDb( false );
+  _provider->openDb( _mainDb.get_last_irreversible_block_num(), false );
 }
 
 }}

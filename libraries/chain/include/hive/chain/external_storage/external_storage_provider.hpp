@@ -24,7 +24,7 @@ class external_snapshot_storage_provider
 
     virtual std::unique_ptr<DB>& getStorage() = 0;
 
-    virtual void openDb( bool cleanDatabase ) = 0;
+    virtual void openDb( uint32_t expected_lib, bool cleanDatabase ) = 0;
     virtual void shutdownDb( bool removeDB = false ) = 0;
     virtual void wipeDb() = 0;
 };
