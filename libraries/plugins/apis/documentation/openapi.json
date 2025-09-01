@@ -6311,7 +6311,7 @@
     },
     "components": {
         "schemas": {
-            "account": {
+            "account_template": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -6397,18 +6397,6 @@
                         "$ref": "#/components/schemas/voting_manabar",
                         "description": "The downvote mana bar of the account.  It indicates the amount of downvoting power available to the account."
                     },
-                    "balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "savings_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "hbd_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
                     "hbd_seconds": {
                         "$ref": "#/components/schemas/hive_int",
                         "description": "The number of seconds the HIVE backed dollar balance has been held."
@@ -6422,10 +6410,6 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "The time when the last interest payment was made on the HIVE backed dollar balance."
-                    },
-                    "savings_hbd_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                     },
                     "savings_hbd_seconds": {
                         "$ref": "#/components/schemas/hive_int",
@@ -6444,42 +6428,6 @@
                     "savings_withdraw_requests": {
                         "type": "integer",
                         "description": "The number of savings withdraw requests made by the account."
-                    },
-                    "reward_hbd_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_hive_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_vesting_balance": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_vesting_hive": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "vesting_shares": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "delegated_vesting_shares": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "received_vesting_shares": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "vesting_withdraw_rate": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "post_voting_power": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                     },
                     "next_vesting_withdrawal": {
                         "type": "string",
@@ -6605,26 +6553,13 @@
                     "can_vote",
                     "voting_manabar",
                     "downvote_manabar",
-                    "balance",
-                    "savings_balance",
-                    "hbd_balance",
                     "hbd_seconds",
                     "hbd_seconds_last_update",
                     "hbd_last_interest_payment",
-                    "savings_hbd_balance",
                     "savings_hbd_seconds",
                     "savings_hbd_seconds_last_update",
                     "savings_hbd_last_interest_payment",
                     "savings_withdraw_requests",
-                    "reward_hbd_balance",
-                    "reward_hive_balance",
-                    "reward_vesting_balance",
-                    "reward_vesting_hive",
-                    "vesting_shares",
-                    "delegated_vesting_shares",
-                    "received_vesting_shares",
-                    "vesting_withdraw_rate",
-                    "post_voting_power",
                     "next_vesting_withdrawal",
                     "withdrawn",
                     "to_withdraw",
@@ -6649,342 +6584,162 @@
                     "witnesses_voted_for"
                 ]
             },
-            "account_condenser": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "description": "Account's identification number."
+            "account_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/account_template"
                     },
-                    "name": {
-                        "type": "string",
-                        "description": "Account's name."
-                    },
-                    "owner": {
-                        "$ref": "#/components/schemas/auths",
-                        "description": "Owner authority of the account."
-                    },
-                    "active": {
-                        "$ref": "#/components/schemas/auths",
-                        "description": "Active authority of the account."
-                    },
-                    "posting": {
-                        "$ref": "#/components/schemas/auths",
-                        "description": "Posting authority of the account."
-                    },
-                    "memo_key": {
-                        "type": "string",
-                        "description": "The public key used to encrypt the memo."
-                    },
-                    "json_metadata": {
-                        "type": "string",
-                        "description": "Parameter encompasses personalized profile information.  It is a JSON object that can contain any data."
-                    },
-                    "posting_json_metadata": {
-                        "type": "string",
-                        "description": "Parameter encompasses personalized profile information.  It is a JSON object that can contain any data."
-                    },
-                    "proxy": {
-                        "type": "string",
-                        "description": "An account to which the account has designated as its proxy.  The proxy can vote on behalf of the account."
-                    },
-                    "last_owner_update": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the last owner update was performed. "
-                    },
-                    "last_account_update": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the last account update was performed. "
-                    },
-                    "created": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date of account creation. "
-                    },
-                    "mined": {
-                        "type": "boolean",
-                        "description": "Information whether made a prove of work.  It is true if the account was created by mining."
-                    },
-                    "recovery_account": {
-                        "type": "string",
-                        "description": "An account to which the account has designated as its recovery account.  The recovery account can help recover the account if it is lost."
-                    },
-                    "reset_account": {
-                        "type": "string",
-                        "description": "deprecated parameter"
-                    },
-                    "comment_count": {
-                        "type": "integer",
-                        "description": "The number of comments made by the account."
-                    },
-                    "lifetime_vote_count": {
-                        "type": "integer",
-                        "description": "The number of votes made by the account."
-                    },
-                    "can_vote": {
-                        "type": "boolean",
-                        "description": "Information whether the account can vote or not.  It is true if the account can vote."
-                    },
-                    "voting_manabar": {
-                        "$ref": "#/components/schemas/voting_manabar",
-                        "description": "The voting mana bar of the account.  It indicates the amount of voting power available to the account."
-                    },
-                    "downvote_manabar": {
-                        "$ref": "#/components/schemas/voting_manabar",
-                        "description": "The downvote mana bar of the account.  It indicates the amount of downvoting power available to the account."
-                    },
-                    "balance": {
-                        "type": "string",
-                        "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "savings_balance": {
-                        "type": "string",
-                        "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "hbd_balance": {
-                        "type": "string",
-                        "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "hbd_seconds": {
-                        "type": "string",
-                        "description": "The number of seconds the HIVE backed dollar balance has been held."
-                    },
-                    "hbd_seconds_last_update": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the HIVE backed dollar seconds were last updated."
-                    },
-                    "hbd_last_interest_payment": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the last interest payment was made on the HIVE backed dollar balance."
-                    },
-                    "savings_hbd_balance": {
-                        "type": "string",
-                        "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "savings_hbd_seconds": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The number of seconds the savings HIVE backed dollar balance has been held."
-                    },
-                    "savings_hbd_seconds_last_update": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the savings HIVE backed dollar seconds were last updated."
-                    },
-                    "savings_hbd_last_interest_payment": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time when the last interest payment was made on the savings HIVE backed dollar balance"
-                    },
-                    "savings_withdraw_requests": {
-                        "type": "integer",
-                        "description": "The number of savings withdraw requests made by the account."
-                    },
-                    "reward_hbd_balance": {
-                        "type": "string",
-                        "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_hive_balance": {
-                        "type": "string",
-                        "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_vesting_balance": {
-                        "type": "string",
-                        "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "reward_vesting_hive": {
-                        "type": "string",
-                        "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "vesting_shares": {
-                        "type": "string",
-                        "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "delegated_vesting_shares": {
-                        "type": "string",
-                        "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "received_vesting_shares": {
-                        "type": "string",
-                        "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "vesting_withdraw_rate": {
-                        "type": "string",
-                        "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "post_voting_power": {
-                        "type": "string",
-                        "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
-                    },
-                    "next_vesting_withdrawal": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the next vesting withdrawal."
-                    },
-                    "withdrawn": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The total vesting shares already withdrawn from active withdrawals."
-                    },
-                    "to_withdraw": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The remaining total vesting shares needed to complete withdrawals."
-                    },
-                    "withdraw_routes": {
-                        "type": "integer",
-                        "description": "The number of withdraw routes for the account."
-                    },
-                    "pending_transfers": {
-                        "type": "integer",
-                        "description": "The number of pending transfers for the account."
-                    },
-                    "pending_claimed_accounts": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The number of pending claimed accounts for the account."
-                    },
-                    "post_bandwidth": {
-                        "type": "integer",
-                        "description": "The post bandwidth of the account."
-                    },
-                    "post_count": {
-                        "type": "integer",
-                        "description": "The number of posts made by the account."
-                    },
-                    "last_post": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the last post made by the account."
-                    },
-                    "last_root_post": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the last root post made by the account."
-                    },
-                    "last_post_edit": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the last post edit made by the account."
-                    },
-                    "last_vote_time": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the last vote made by the account."
-                    },
-                    "last_account_recovery": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the last account recovery made by the account."
-                    },
-                    "previous_owner_update": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The time of the previous owner update made by the account."
-                    },
-                    "curation_rewards": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Total curation rewards accumulated by the account."
-                    },
-                    "delayed_votes": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/delayed_votes"
+                    {
+                        "type": "object",
+                        "properties": {
+                            "balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "hbd_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_hbd_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hbd_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hive_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_balance": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_hive": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_shares": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "delegated_vesting_shares": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "received_vesting_shares": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_withdraw_rate": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "post_voting_power": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                            }
                         },
-                        "description": "Array of delayed votes."
-                    },
-                    "governance_vote_expiration_ts": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Timestamp when governance votes expire."
-                    },
-                    "is_smt": {
-                        "type": "boolean",
-                        "description": "Indicates if the account is an SMT."
-                    },
-                    "open_recurrent_transfers": {
-                        "type": "integer",
-                        "description": "Number of open recurrent transfers."
-                    },
-                    "posting_rewards": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Total posting rewards accumulated by the account."
-                    },
-                    "proxied_vsf_votes": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/hive_int"
-                        },
-                        "description": "Proxy votes levels."
-                    },
-                    "witnesses_voted_for": {
-                        "type": "integer",
-                        "description": "Number of witnesses voted for by the account."
+                        "required": [
+                            "balance",
+                            "savings_balance",
+                            "hbd_balance",
+                            "savings_hbd_balance",
+                            "reward_hbd_balance",
+                            "reward_hive_balance",
+                            "reward_vesting_balance",
+                            "reward_vesting_hive",
+                            "vesting_shares",
+                            "delegated_vesting_shares",
+                            "received_vesting_shares",
+                            "vesting_withdraw_rate",
+                            "post_voting_power"
+                        ]
                     }
-                },
-                "required": [
-                    "id",
-                    "name",
-                    "owner",
-                    "active",
-                    "posting",
-                    "memo_key",
-                    "json_metadata",
-                    "posting_json_metadata",
-                    "proxy",
-                    "last_owner_update",
-                    "last_account_update",
-                    "created",
-                    "mined",
-                    "recovery_account",
-                    "reset_account",
-                    "comment_count",
-                    "lifetime_vote_count",
-                    "can_vote",
-                    "voting_manabar",
-                    "downvote_manabar",
-                    "balance",
-                    "savings_balance",
-                    "hbd_balance",
-                    "hbd_seconds",
-                    "hbd_seconds_last_update",
-                    "hbd_last_interest_payment",
-                    "savings_hbd_balance",
-                    "savings_hbd_seconds",
-                    "savings_hbd_seconds_last_update",
-                    "savings_hbd_last_interest_payment",
-                    "savings_withdraw_requests",
-                    "reward_hbd_balance",
-                    "reward_hive_balance",
-                    "reward_vesting_balance",
-                    "reward_vesting_hive",
-                    "vesting_shares",
-                    "delegated_vesting_shares",
-                    "received_vesting_shares",
-                    "vesting_withdraw_rate",
-                    "post_voting_power",
-                    "next_vesting_withdrawal",
-                    "withdrawn",
-                    "to_withdraw",
-                    "withdraw_routes",
-                    "pending_transfers",
-                    "pending_claimed_accounts",
-                    "post_bandwidth",
-                    "post_count",
-                    "last_post",
-                    "last_root_post",
-                    "last_post_edit",
-                    "last_vote_time",
-                    "last_account_recovery",
-                    "previous_owner_update",
-                    "curation_rewards",
-                    "delayed_votes",
-                    "governance_vote_expiration_ts",
-                    "is_smt",
-                    "open_recurrent_transfers",
-                    "posting_rewards",
-                    "proxied_vsf_votes",
-                    "witnesses_voted_for"
+                ]
+            },
+            "account_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/account_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "balance": {
+                                "type": "string",
+                                "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_balance": {
+                                "type": "string",
+                                "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "hbd_balance": {
+                                "type": "string",
+                                "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_hbd_balance": {
+                                "type": "string",
+                                "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hbd_balance": {
+                                "type": "string",
+                                "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hive_balance": {
+                                "type": "string",
+                                "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_balance": {
+                                "type": "string",
+                                "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_hive": {
+                                "type": "string",
+                                "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_shares": {
+                                "type": "string",
+                                "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "delegated_vesting_shares": {
+                                "type": "string",
+                                "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "received_vesting_shares": {
+                                "type": "string",
+                                "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_withdraw_rate": {
+                                "type": "string",
+                                "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "post_voting_power": {
+                                "type": "string",
+                                "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                            }
+                        },
+                        "required": [
+                            "balance",
+                            "savings_balance",
+                            "hbd_balance",
+                            "savings_hbd_balance",
+                            "reward_hbd_balance",
+                            "reward_hive_balance",
+                            "reward_vesting_balance",
+                            "reward_vesting_hive",
+                            "vesting_shares",
+                            "delegated_vesting_shares",
+                            "received_vesting_shares",
+                            "vesting_withdraw_rate",
+                            "post_voting_power"
+                        ]
+                    }
                 ]
             },
             "account_history_array": {
@@ -6995,14 +6750,14 @@
                             "type": "integer"
                         },
                         {
-                            "$ref": "#/components/schemas/operation"
+                            "$ref": "#/components/schemas/operation_default"
                         }
                     ]
                 },
                 "minItems": 2,
                 "maxItems": 2
             },
-            "account_history_array_condenser": {
+            "account_history_array_condenser_api": {
                 "type": "array",
                 "items": {
                     "oneOf": [
@@ -7010,7 +6765,7 @@
                             "type": "integer"
                         },
                         {
-                            "$ref": "#/components/schemas/operation_condenser"
+                            "$ref": "#/components/schemas/operation_condenser_api"
                         }
                     ]
                 },
@@ -7443,7 +7198,7 @@
                     "real_price"
                 ]
             },
-            "block": {
+            "block_template": {
                 "type": "object",
                 "properties": {
                     "previous": {
@@ -7476,14 +7231,6 @@
                         "example": "",
                         "description": "The signature of the witness who produced the block."
                     },
-                    "transactions": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/operation_body"
-                        },
-                        "example": [],
-                        "description": "An array of transactions included in the block."
-                    },
                     "block_id": {
                         "type": "string",
                         "example": "",
@@ -7510,83 +7257,55 @@
                     "transaction_merkle_root",
                     "extensions",
                     "witness_signature",
-                    "transactions",
                     "block_id",
                     "signing_key",
                     "transaction_ids"
                 ]
             },
-            "block_condenser": {
-                "type": "object",
-                "properties": {
-                    "previous": {
-                        "type": "string",
-                        "example": "0000000000000000000000000000000000000000",
-                        "description": "The previous block ID."
+            "block_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/block_template"
                     },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2016-03-24T16:05:00",
-                        "description": "The timestamp of the block."
-                    },
-                    "witness": {
-                        "type": "string",
-                        "example": "",
-                        "description": "The witness who produced the block."
-                    },
-                    "transaction_merkle_root": {
-                        "type": "string",
-                        "example": "0000000000000000000000000000000000000000",
-                        "description": "Single hash representing the combined hashes of all transactions in a block."
-                    },
-                    "extensions": {
-                        "$ref": "#/components/schemas/extensions",
-                        "example": []
-                    },
-                    "witness_signature": {
-                        "type": "string",
-                        "example": "",
-                        "description": "The signature of the witness who produced the block."
-                    },
-                    "transactions": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/operation_body_condenser"
+                    {
+                        "type": "object",
+                        "properties": {
+                            "transactions": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/operation_body"
+                                },
+                                "example": [],
+                                "description": "An array of transactions included in the block."
+                            }
                         },
-                        "example": [],
-                        "description": "An array of transactions included in the block."
-                    },
-                    "block_id": {
-                        "type": "string",
-                        "example": "",
-                        "description": "The ID of the block."
-                    },
-                    "signing_key": {
-                        "type": "string",
-                        "example": "",
-                        "description": "The key used to sign the block."
-                    },
-                    "transaction_ids": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [],
-                        "description": "An array of transaction IDs included in the block."
+                        "required": [
+                            "transactions"
+                        ]
                     }
-                },
-                "required": [
-                    "previous",
-                    "timestamp",
-                    "witness",
-                    "transaction_merkle_root",
-                    "extensions",
-                    "witness_signature",
-                    "transactions",
-                    "block_id",
-                    "signing_key",
-                    "transaction_ids"
+                ]
+            },
+            "block_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/block_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "transactions": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/operation_body_condenser_api"
+                                },
+                                "example": [],
+                                "description": "An array of transactions included in the block."
+                            }
+                        },
+                        "required": [
+                            "transactions"
+                        ]
+                    }
                 ]
             },
             "block_header": {
@@ -7626,7 +7345,7 @@
                     "extensions"
                 ]
             },
-            "blog_condenser": {
+            "blog_condenser_api": {
                 "type": "object",
                 "properties": {
                     "blog": {
@@ -8269,7 +7988,7 @@
             "condenser_find_proposals_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/proposals_condenser"
+                    "$ref": "#/components/schemas/proposals_condenser_api"
                 }
             },
             "condenser_find_rc_accounts": {
@@ -8285,7 +8004,7 @@
             "condenser_find_rc_accounts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/rc_account_condenser"
+                    "$ref": "#/components/schemas/rc_account_condenser_api"
                 }
             },
             "condenser_find_recurrent_transfers": {
@@ -8298,7 +8017,7 @@
             "condenser_find_recurrent_transfers_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/recurrent_transfer_condenser"
+                    "$ref": "#/components/schemas/recurrent_transfer_condenser_api"
                 }
             },
             "condenser_get_account_count": {
@@ -8334,7 +8053,7 @@
             "condenser_get_account_history_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/account_history_array_condenser"
+                    "$ref": "#/components/schemas/account_history_array_condenser_api"
                 }
             },
             "condenser_get_account_reputations": {
@@ -8372,7 +8091,7 @@
             "condenser_get_accounts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/account_condenser"
+                    "$ref": "#/components/schemas/account_condenser_api"
                 }
             },
             "condenser_get_active_votes": {
@@ -8411,7 +8130,7 @@
                 }
             },
             "condenser_get_block_response": {
-                "$ref": "#/components/schemas/block_condenser"
+                "$ref": "#/components/schemas/block_condenser_api"
             },
             "condenser_get_block_header": {
                 "type": "array",
@@ -8446,7 +8165,7 @@
             "condenser_get_blog_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/blog_condenser"
+                    "$ref": "#/components/schemas/blog_condenser_api"
                 }
             },
             "condenser_get_blog_entries": {
@@ -8492,7 +8211,7 @@
             "condenser_get_collateralized_conversion_requests_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/collateralized_conversion_requests_condenser"
+                    "$ref": "#/components/schemas/collateralized_conversion_requests_condenser_api"
                 }
             },
             "condenser_get_comment_discussions_by_payout": {
@@ -8542,1341 +8261,77 @@
                 "example": []
             },
             "condenser_get_config_response": {
-                "type": "object",
-                "properties": {
-                    "USE_ALTERNATE_CHAIN_ID": {
-                        "type": "boolean",
-                        "description": "Indicates if the node is using an alternate chain ID."
-                    },
-                    "HIVE_INIT_PRIVATE_KEY": {
-                        "type": "string",
-                        "description": "The initial private key for the blockchain."
-                    },
-                    "HIVE_INITIAL_VESTING": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The initial vesting amount for HIVE."
-                    },
-                    "HIVE_INITIAL_VESTING_PRICE": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The initial vesting price for HIVE."
-                    },
-                    "HIVE_ENABLE_SMT": {
-                        "type": "boolean",
-                        "description": "Flag to enable SMT (Simple Mining Token)."
-                    },
-                    "IS_TEST_NET": {
-                        "type": "boolean",
-                        "description": "Indicates if the node is running on a testnet."
-                    },
-                    "SMT_MAX_VOTABLE_ASSETS": {
-                        "type": "integer",
-                        "description": "Max SMT assets that can be voted per post."
-                    },
-                    "SMT_VESTING_WITHDRAW_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "SMT vesting withdrawal interval in seconds."
-                    },
-                    "SMT_UPVOTE_LOCKOUT": {
-                        "type": "integer",
-                        "description": "Lockout period for SMT upvotes in seconds."
-                    },
-                    "SMT_EMISSION_MIN_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "Minimum interval between SMT emissions."
-                    },
-                    "SMT_EMIT_INDEFINITELY": {
-                        "type": "integer",
-                        "description": "Value for indefinite SMT emission."
-                    },
-                    "SMT_MAX_NOMINAL_VOTES_PER_DAY": {
-                        "type": "integer",
-                        "description": "Max nominal SMT votes per day."
-                    },
-                    "SMT_MAX_VOTES_PER_REGENERATION": {
-                        "type": "integer",
-                        "description": "Max SMT votes per regeneration period."
-                    },
-                    "SMT_DEFAULT_VOTES_PER_REGEN_PERIOD": {
-                        "type": "integer",
-                        "description": "Default SMT votes per regeneration period."
-                    },
-                    "SMT_DEFAULT_PERCENT_CURATION_REWARDS": {
-                        "type": "integer",
-                        "description": "Default curation rewards percent for SMT."
-                    },
-                    "SMT_INITIAL_VESTING_PER_UNIT": {
-                        "type": "integer",
-                        "description": "Initial vesting per unit for SMT."
-                    },
-                    "SMT_BALLAST_SUPPLY_PERCENT": {
-                        "type": "integer",
-                        "description": "Ballast supply percent for SMT."
-                    },
-                    "SMT_MAX_ICO_TIERS": {
-                        "type": "integer",
-                        "description": "Max ICO tiers for SMT."
-                    },
-                    "HBD_SYMBOL": {
-                        "type": "string",
-                        "description": "HBD asset symbol and precision."
-                    },
-                    "HIVE_INITIAL_VOTE_POWER_RATE": {
-                        "type": "integer",
-                        "description": "Initial vote power regeneration rate."
-                    },
-                    "HIVE_REDUCED_VOTE_POWER_RATE": {
-                        "type": "integer",
-                        "description": "Reduced vote power regeneration rate."
-                    },
-                    "HIVE_100_PERCENT": {
-                        "type": "integer",
-                        "description": "Constant for 100 percent (basis points)."
-                    },
-                    "HIVE_1_PERCENT": {
-                        "type": "integer",
-                        "description": "Constant for 1 percent (basis points)."
-                    },
-                    "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD": {
-                        "type": "integer",
-                        "description": "Expiration period for account recovery requests."
-                    },
-                    "HIVE_ACTIVE_CHALLENGE_COOLDOWN": {
-                        "type": "string",
-                        "description": "Cooldown period for active authority challenge (in microseconds)."
-                    },
-                    "HIVE_ACTIVE_CHALLENGE_FEE": {
-                        "type": "string",
-                        "description": "Fee for challenging active authority."
-                    },
-                    "HIVE_ADDRESS_PREFIX": {
-                        "type": "string",
-                        "description": "Address prefix for public keys."
-                    },
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "APR multiplier per block."
-                    },
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "APR multiplier per hour."
-                    },
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_ROUND": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "APR multiplier per round."
-                    },
-                    "HIVE_APR_PERCENT_SHIFT_PER_BLOCK": {
-                        "type": "integer",
-                        "description": "APR shift per block."
-                    },
-                    "HIVE_APR_PERCENT_SHIFT_PER_HOUR": {
-                        "type": "integer",
-                        "description": "APR shift per hour."
-                    },
-                    "HIVE_APR_PERCENT_SHIFT_PER_ROUND": {
-                        "type": "integer",
-                        "description": "APR shift per round."
-                    },
-                    "HIVE_BANDWIDTH_AVERAGE_WINDOW_SECONDS": {
-                        "type": "integer",
-                        "description": "Bandwidth averaging window in seconds."
-                    },
-                    "HIVE_BANDWIDTH_PRECISION": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Bandwidth precision constant."
-                    },
-                    "HIVE_BENEFICIARY_LIMIT": {
-                        "type": "integer",
-                        "description": "Max number of beneficiaries per post."
-                    },
-                    "HIVE_BLOCKCHAIN_PRECISION": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Blockchain asset precision."
-                    },
-                    "HIVE_BLOCKCHAIN_PRECISION_DIGITS": {
-                        "type": "integer",
-                        "description": "Number of precision digits for assets."
-                    },
-                    "HIVE_BLOCKCHAIN_HARDFORK_VERSION": {
-                        "type": "string",
-                        "description": "Current hardfork version."
-                    },
-                    "HIVE_BLOCKCHAIN_VERSION": {
-                        "type": "string",
-                        "description": "Current blockchain version."
-                    },
-                    "HIVE_BLOCK_INTERVAL": {
-                        "type": "integer",
-                        "description": "Block interval in seconds."
-                    },
-                    "HIVE_BLOCKS_PER_DAY": {
-                        "type": "integer",
-                        "description": "Number of blocks per day."
-                    },
-                    "HIVE_BLOCKS_PER_HOUR": {
-                        "type": "integer",
-                        "description": "Number of blocks per hour."
-                    },
-                    "HIVE_BLOCKS_PER_YEAR": {
-                        "type": "integer",
-                        "description": "Number of blocks per year."
-                    },
-                    "HIVE_CASHOUT_WINDOW_SECONDS": {
-                        "type": "integer",
-                        "description": "Cashout window for posts in seconds."
-                    },
-                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12": {
-                        "type": "integer",
-                        "description": "Pre-HF12 cashout window in seconds."
-                    },
-                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17": {
-                        "type": "integer",
-                        "description": "Pre-HF17 cashout window in seconds."
-                    },
-                    "HIVE_CHAIN_ID": {
-                        "type": "string",
-                        "description": "Unique chain identifier."
-                    },
-                    "HIVE_COMMENT_REWARD_FUND_NAME": {
-                        "type": "string",
-                        "description": "Name of the comment reward fund."
-                    },
-                    "HIVE_COMMENT_TITLE_LIMIT": {
-                        "type": "integer",
-                        "description": "Max length of comment title."
-                    },
-                    "HIVE_CONTENT_APR_PERCENT": {
-                        "type": "integer",
-                        "description": "Content reward APR percent."
-                    },
-                    "HIVE_CONTENT_CONSTANT_HF0": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Content constant for HF0."
-                    },
-                    "HIVE_CONTENT_CONSTANT_HF21": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Content constant for HF21."
-                    },
-                    "HIVE_CONTENT_REWARD_PERCENT_HF16": {
-                        "type": "integer",
-                        "description": "Content reward percent for HF16."
-                    },
-                    "HIVE_CONTENT_REWARD_PERCENT_HF21": {
-                        "type": "integer",
-                        "description": "Content reward percent for HF21."
-                    },
-                    "HIVE_CONVERSION_DELAY": {
-                        "type": "string",
-                        "description": "Conversion delay for HBD to HIVE (in microseconds)."
-                    },
-                    "HIVE_CONVERSION_DELAY_PRE_HF_16": {
-                        "type": "string",
-                        "description": "Pre-HF16 conversion delay (in microseconds)."
-                    },
-                    "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": {
-                        "type": "integer",
-                        "description": "Ratio for account creation delegation."
-                    },
-                    "HIVE_CREATE_ACCOUNT_DELEGATION_TIME": {
-                        "type": "string",
-                        "description": "Delegation time for account creation (in microseconds)."
-                    },
-                    "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER": {
-                        "type": "integer",
-                        "description": "Modifier for creating account with HIVE."
-                    },
-                    "HIVE_CURATE_APR_PERCENT": {
-                        "type": "integer",
-                        "description": "Curation reward APR percent."
-                    },
-                    "HIVE_CUSTOM_OP_DATA_MAX_LENGTH": {
-                        "type": "integer",
-                        "description": "Max length for custom operation data."
-                    },
-                    "HIVE_CUSTOM_OP_ID_MAX_LENGTH": {
-                        "type": "integer",
-                        "description": "Max length for custom operation ID."
-                    },
-                    "HIVE_DEFAULT_HBD_INTEREST_RATE": {
-                        "type": "integer",
-                        "description": "Default HBD interest rate (basis points)."
-                    },
-                    "HIVE_DOWNVOTE_POOL_PERCENT_HF21": {
-                        "type": "integer",
-                        "description": "Downvote pool percent for HF21."
-                    },
-                    "HIVE_EQUIHASH_K": {
-                        "type": "integer",
-                        "description": "Equihash parameter K (PoW)."
-                    },
-                    "HIVE_EQUIHASH_N": {
-                        "type": "integer",
-                        "description": "Equihash parameter N (PoW)."
-                    },
-                    "HIVE_FEED_HISTORY_WINDOW": {
-                        "type": "integer",
-                        "description": "Feed history window size."
-                    },
-                    "HIVE_FEED_HISTORY_WINDOW_PRE_HF_16": {
-                        "type": "integer",
-                        "description": "Pre-HF16 feed history window size."
-                    },
-                    "HIVE_FEED_INTERVAL_BLOCKS": {
-                        "type": "integer",
-                        "description": "Number of blocks between feed updates."
-                    },
-                    "HIVE_GENESIS_TIME": {
-                        "type": "string",
-                        "description": "Genesis time of the blockchain."
-                    },
-                    "HIVE_HARDFORK_REQUIRED_WITNESSES": {
-                        "type": "integer",
-                        "description": "Number of witnesses required for hardfork."
-                    },
-                    "HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Recent claims constant for HF21."
-                    },
-                    "HIVE_INFLATION_NARROWING_PERIOD": {
-                        "type": "integer",
-                        "description": "Period for narrowing inflation."
-                    },
-                    "HIVE_INFLATION_RATE_START_PERCENT": {
-                        "type": "integer",
-                        "description": "Starting inflation rate percent."
-                    },
-                    "HIVE_INFLATION_RATE_STOP_PERCENT": {
-                        "type": "integer",
-                        "description": "Stopping inflation rate percent."
-                    },
-                    "HIVE_INIT_MINER_NAME": {
-                        "type": "string",
-                        "description": "Name of the initial miner."
-                    },
-                    "HIVE_INIT_PUBLIC_KEY_STR": {
-                        "type": "string",
-                        "description": "Initial public key string."
-                    },
-                    "HIVE_INIT_SUPPLY": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Initial HIVE supply."
-                    },
-                    "HIVE_HBD_INIT_SUPPLY": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Initial HBD supply."
-                    },
-                    "HIVE_INIT_TIME": {
-                        "type": "string",
-                        "description": "Blockchain initial time."
-                    },
-                    "HIVE_IRREVERSIBLE_THRESHOLD": {
-                        "type": "integer",
-                        "description": "Threshold for irreversible blocks (basis points)."
-                    },
-                    "HIVE_LIQUIDITY_APR_PERCENT": {
-                        "type": "integer",
-                        "description": "Liquidity reward APR percent."
-                    },
-                    "HIVE_LIQUIDITY_REWARD_BLOCKS": {
-                        "type": "integer",
-                        "description": "Blocks between liquidity rewards."
-                    },
-                    "HIVE_LIQUIDITY_REWARD_PERIOD_SEC": {
-                        "type": "integer",
-                        "description": "Liquidity reward period in seconds."
-                    },
-                    "HIVE_LIQUIDITY_TIMEOUT_SEC": {
-                        "type": "string",
-                        "description": "Liquidity timeout in microseconds."
-                    },
-                    "HIVE_MAX_ACCOUNT_CREATION_FEE": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Max account creation fee."
-                    },
-                    "HIVE_MAX_ACCOUNT_NAME_LENGTH": {
-                        "type": "integer",
-                        "description": "Max account name length."
-                    },
-                    "HIVE_MAX_ACCOUNT_WITNESS_VOTES": {
-                        "type": "integer",
-                        "description": "Max witness votes per account."
-                    },
-                    "HIVE_MAX_ASSET_WHITELIST_AUTHORITIES": {
-                        "type": "integer",
-                        "description": "Max asset whitelist authorities."
-                    },
-                    "HIVE_MAX_AUTHORITY_MEMBERSHIP": {
-                        "type": "integer",
-                        "description": "Max authority membership."
-                    },
-                    "HIVE_MAX_BLOCK_SIZE": {
-                        "type": "integer",
-                        "description": "Maximum block size in bytes."
-                    },
-                    "HIVE_SOFT_MAX_BLOCK_SIZE": {
-                        "type": "integer",
-                        "description": "Soft maximum block size in bytes."
-                    },
-                    "HIVE_MAX_CASHOUT_WINDOW_SECONDS": {
-                        "type": "integer",
-                        "description": "Max cashout window in seconds."
-                    },
-                    "HIVE_MAX_COMMENT_DEPTH": {
-                        "type": "integer",
-                        "description": "Max comment depth."
-                    },
-                    "HIVE_MAX_COMMENT_DEPTH_PRE_HF17": {
-                        "type": "integer",
-                        "description": "Pre-HF17 max comment depth."
-                    },
-                    "HIVE_MAX_FEED_AGE_SECONDS": {
-                        "type": "integer",
-                        "description": "Max feed age in seconds."
-                    },
-                    "HIVE_MAX_INSTANCE_ID": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Max instance ID."
-                    },
-                    "HIVE_MAX_MEMO_SIZE": {
-                        "type": "integer",
-                        "description": "Max memo size in bytes."
-                    },
-                    "HIVE_MAX_WITNESSES": {
-                        "type": "integer",
-                        "description": "Max number of witnesses."
-                    },
-                    "HIVE_MAX_MINER_WITNESSES_HF0": {
-                        "type": "integer",
-                        "description": "Max miner witnesses for HF0."
-                    },
-                    "HIVE_MAX_MINER_WITNESSES_HF17": {
-                        "type": "integer",
-                        "description": "Max miner witnesses for HF17."
-                    },
-                    "HIVE_MAX_PERMLINK_LENGTH": {
-                        "type": "integer",
-                        "description": "Max permlink length."
-                    },
-                    "HIVE_MAX_PROXY_RECURSION_DEPTH": {
-                        "type": "integer",
-                        "description": "Max proxy recursion depth."
-                    },
-                    "HIVE_MAX_RATION_DECAY_RATE": {
-                        "type": "integer",
-                        "description": "Max ration decay rate."
-                    },
-                    "HIVE_MAX_RESERVE_RATIO": {
-                        "type": "integer",
-                        "description": "Max reserve ratio."
-                    },
-                    "HIVE_MAX_RUNNER_WITNESSES_HF0": {
-                        "type": "integer",
-                        "description": "Max runner witnesses for HF0."
-                    },
-                    "HIVE_MAX_RUNNER_WITNESSES_HF17": {
-                        "type": "integer",
-                        "description": "Max runner witnesses for HF17."
-                    },
-                    "HIVE_MAX_SATOSHIS": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Max satoshis (smallest divisible unit)."
-                    },
-                    "HIVE_MAX_SHARE_SUPPLY": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Max share supply."
-                    },
-                    "HIVE_MAX_SIG_CHECK_DEPTH": {
-                        "type": "integer",
-                        "description": "Max signature check depth."
-                    },
-                    "HIVE_MAX_SIG_CHECK_ACCOUNTS": {
-                        "type": "integer",
-                        "description": "Max signature check accounts."
-                    },
-                    "HIVE_MAX_TIME_UNTIL_EXPIRATION": {
-                        "type": "integer",
-                        "description": "Max time until transaction expiration (seconds)."
-                    },
-                    "HIVE_MAX_TRANSACTION_SIZE": {
-                        "type": "integer",
-                        "description": "Max transaction size in bytes."
-                    },
-                    "HIVE_MAX_UNDO_HISTORY": {
-                        "type": "integer",
-                        "description": "Max undo history length."
-                    },
-                    "HIVE_MAX_URL_LENGTH": {
-                        "type": "integer",
-                        "description": "Max URL length."
-                    },
-                    "HIVE_MAX_VOTE_CHANGES": {
-                        "type": "integer",
-                        "description": "Max vote changes allowed."
-                    },
-                    "HIVE_MAX_VOTED_WITNESSES_HF0": {
-                        "type": "integer",
-                        "description": "Max voted witnesses for HF0."
-                    },
-                    "HIVE_MAX_VOTED_WITNESSES_HF17": {
-                        "type": "integer",
-                        "description": "Max voted witnesses for HF17."
-                    },
-                    "HIVE_MAX_WITHDRAW_ROUTES": {
-                        "type": "integer",
-                        "description": "Max withdraw vesting routes."
-                    },
-                    "HIVE_MAX_WITNESS_URL_LENGTH": {
-                        "type": "integer",
-                        "description": "Max witness URL length."
-                    },
-                    "HIVE_MIN_ACCOUNT_CREATION_FEE": {
-                        "type": "integer",
-                        "description": "Minimum account creation fee."
-                    },
-                    "HIVE_MIN_ACCOUNT_NAME_LENGTH": {
-                        "type": "integer",
-                        "description": "Minimum account name length."
-                    },
-                    "HIVE_MIN_BLOCK_SIZE_LIMIT": {
-                        "type": "integer",
-                        "description": "Minimum block size limit."
-                    },
-                    "HIVE_MIN_BLOCK_SIZE": {
-                        "type": "integer",
-                        "description": "Minimum block size."
-                    },
-                    "HIVE_MIN_CONTENT_REWARD": {
-                        "type": "string",
-                        "description": "Minimum content reward."
-                    },
-                    "HIVE_MIN_CURATE_REWARD": {
-                        "type": "string",
-                        "description": "Minimum curation reward."
-                    },
-                    "HIVE_MIN_PERMLINK_LENGTH": {
-                        "type": "integer",
-                        "description": "Minimum permlink length."
-                    },
-                    "HIVE_MIN_REPLY_INTERVAL": {
-                        "type": "integer",
-                        "description": "Minimum reply interval (microseconds)."
-                    },
-                    "HIVE_MIN_REPLY_INTERVAL_HF20": {
-                        "type": "integer",
-                        "description": "Minimum reply interval for HF20 (microseconds)."
-                    },
-                    "HIVE_MIN_ROOT_COMMENT_INTERVAL": {
-                        "type": "integer",
-                        "description": "Minimum root comment interval (microseconds)."
-                    },
-                    "HIVE_MIN_COMMENT_EDIT_INTERVAL": {
-                        "type": "integer",
-                        "description": "Minimum comment edit interval (microseconds)."
-                    },
-                    "HIVE_MIN_VOTE_INTERVAL_SEC": {
-                        "type": "integer",
-                        "description": "Minimum vote interval in seconds."
-                    },
-                    "HIVE_MINER_ACCOUNT": {
-                        "type": "string",
-                        "description": "Name of the miner account."
-                    },
-                    "HIVE_MINER_PAY_PERCENT": {
-                        "type": "integer",
-                        "description": "Miner pay percent."
-                    },
-                    "HIVE_MIN_FEEDS": {
-                        "type": "integer",
-                        "description": "Minimum number of feeds."
-                    },
-                    "HIVE_MINING_REWARD": {
-                        "type": "string",
-                        "description": "Minimum mining reward."
-                    },
-                    "HIVE_MINING_TIME": {
-                        "type": "string",
-                        "description": "Mining start time."
-                    },
-                    "HIVE_MIN_LIQUIDITY_REWARD": {
-                        "type": "string",
-                        "description": "Minimum liquidity reward."
-                    },
-                    "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC": {
-                        "type": "integer",
-                        "description": "Minimum liquidity reward period (microseconds)."
-                    },
-                    "HIVE_MIN_PAYOUT_HBD": {
-                        "type": "string",
-                        "description": "Minimum HBD payout."
-                    },
-                    "HIVE_MIN_POW_REWARD": {
-                        "type": "string",
-                        "description": "Minimum proof-of-work reward."
-                    },
-                    "HIVE_MIN_PRODUCER_REWARD": {
-                        "type": "string",
-                        "description": "Minimum producer reward."
-                    },
-                    "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT": {
-                        "type": "integer",
-                        "description": "Minimum transaction expiration limit (seconds)."
-                    },
-                    "HIVE_MIN_TRANSACTION_SIZE_LIMIT": {
-                        "type": "integer",
-                        "description": "Minimum transaction size limit (bytes)."
-                    },
-                    "HIVE_MIN_UNDO_HISTORY": {
-                        "type": "integer",
-                        "description": "Minimum undo history length."
-                    },
-                    "HIVE_NULL_ACCOUNT": {
-                        "type": "string",
-                        "description": "Null account name."
-                    },
-                    "HIVE_NUM_INIT_MINERS": {
-                        "type": "integer",
-                        "description": "Number of initial miners."
-                    },
-                    "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM": {
-                        "type": "integer",
-                        "description": "Block number when owner auth history tracking starts."
-                    },
-                    "HIVE_OWNER_AUTH_RECOVERY_PERIOD": {
-                        "type": "integer",
-                        "description": "Owner auth recovery period (microseconds)."
-                    },
-                    "HIVE_OWNER_CHALLENGE_COOLDOWN": {
-                        "type": "string",
-                        "description": "Owner challenge cooldown (microseconds)."
-                    },
-                    "HIVE_OWNER_CHALLENGE_FEE": {
-                        "type": "string",
-                        "description": "Owner challenge fee."
-                    },
-                    "HIVE_OWNER_UPDATE_LIMIT": {
-                        "type": "integer",
-                        "description": "Owner update limit."
-                    },
-                    "HIVE_POST_AVERAGE_WINDOW": {
-                        "type": "integer",
-                        "description": "Post average window (seconds)."
-                    },
-                    "HIVE_POST_REWARD_FUND_NAME": {
-                        "type": "string",
-                        "description": "Name of the post reward fund."
-                    },
-                    "HIVE_POST_WEIGHT_CONSTANT": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Post weight constant."
-                    },
-                    "HIVE_POW_APR_PERCENT": {
-                        "type": "integer",
-                        "description": "Proof-of-work APR percent."
-                    },
-                    "HIVE_PRODUCER_APR_PERCENT": {
-                        "type": "integer",
-                        "description": "Producer APR percent."
-                    },
-                    "HIVE_PROXY_TO_SELF_ACCOUNT": {
-                        "type": "string",
-                        "description": "Proxy to self account name."
-                    },
-                    "HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC": {
-                        "type": "integer",
-                        "description": "HBD interest compound interval (seconds)."
-                    },
-                    "HIVE_SECONDS_PER_YEAR": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Number of seconds per year."
-                    },
-                    "HIVE_PROPOSAL_FUND_PERCENT_HF0": {
-                        "type": "integer",
-                        "description": "Proposal fund percent for HF0."
-                    },
-                    "HIVE_PROPOSAL_FUND_PERCENT_HF21": {
-                        "type": "integer",
-                        "description": "Proposal fund percent for HF21."
-                    },
-                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF19": {
-                        "type": "string",
-                        "description": "Recent rshares decay time for HF19 (microseconds)."
-                    },
-                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF17": {
-                        "type": "string",
-                        "description": "Recent rshares decay time for HF17 (microseconds)."
-                    },
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6": {
-                        "type": "integer",
-                        "description": "Reverse auction window for HF6 (seconds)."
-                    },
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20": {
-                        "type": "integer",
-                        "description": "Reverse auction window for HF20 (seconds)."
-                    },
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21": {
-                        "type": "integer",
-                        "description": "Reverse auction window for HF21 (seconds)."
-                    },
-                    "HIVE_ROOT_POST_PARENT": {
-                        "type": "string",
-                        "description": "Root post parent account."
-                    },
-                    "HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT": {
-                        "type": "integer",
-                        "description": "Savings withdraw request limit."
-                    },
-                    "HIVE_SAVINGS_WITHDRAW_TIME": {
-                        "type": "string",
-                        "description": "Savings withdraw time (microseconds)."
-                    },
-                    "HIVE_HBD_START_PERCENT_HF14": {
-                        "type": "integer",
-                        "description": "HBD start percent for HF14."
-                    },
-                    "HIVE_HBD_START_PERCENT_HF20": {
-                        "type": "integer",
-                        "description": "HBD start percent for HF20."
-                    },
-                    "HIVE_HBD_STOP_PERCENT_HF14": {
-                        "type": "integer",
-                        "description": "HBD stop percent for HF14."
-                    },
-                    "HIVE_HBD_STOP_PERCENT_HF20": {
-                        "type": "integer",
-                        "description": "HBD stop percent for HF20."
-                    },
-                    "HIVE_SECOND_CASHOUT_WINDOW": {
-                        "type": "integer",
-                        "description": "Second cashout window (seconds)."
-                    },
-                    "HIVE_SOFT_MAX_COMMENT_DEPTH": {
-                        "type": "integer",
-                        "description": "Soft max comment depth."
-                    },
-                    "HIVE_START_MINER_VOTING_BLOCK": {
-                        "type": "integer",
-                        "description": "Block number when miner voting starts."
-                    },
-                    "HIVE_START_VESTING_BLOCK": {
-                        "type": "integer",
-                        "description": "Block number when vesting starts."
-                    },
-                    "HIVE_TEMP_ACCOUNT": {
-                        "type": "string",
-                        "description": "Temporary account name."
-                    },
-                    "HIVE_UPVOTE_LOCKOUT_HF7": {
-                        "type": "integer",
-                        "description": "Upvote lockout for HF7 (microseconds)."
-                    },
-                    "HIVE_UPVOTE_LOCKOUT_HF17": {
-                        "type": "integer",
-                        "description": "Upvote lockout for HF17 (microseconds)."
-                    },
-                    "HIVE_UPVOTE_LOCKOUT_SECONDS": {
-                        "type": "integer",
-                        "description": "Upvote lockout in seconds."
-                    },
-                    "HIVE_VESTING_FUND_PERCENT_HF16": {
-                        "type": "integer",
-                        "description": "Vesting fund percent for HF16."
-                    },
-                    "HIVE_VESTING_WITHDRAW_INTERVALS": {
-                        "type": "integer",
-                        "description": "Vesting withdraw intervals."
-                    },
-                    "HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16": {
-                        "type": "integer",
-                        "description": "Vesting withdraw intervals pre HF16."
-                    },
-                    "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "Vesting withdraw interval in seconds."
-                    },
-                    "HIVE_VOTE_DUST_THRESHOLD": {
-                        "type": "integer",
-                        "description": "Vote dust threshold."
-                    },
-                    "HIVE_VOTING_MANA_REGENERATION_SECONDS": {
-                        "type": "integer",
-                        "description": "Voting mana regeneration in seconds."
-                    },
-                    "HIVE_SYMBOL": {
-                        "type": "string",
-                        "description": "HIVE asset symbol and precision."
-                    },
-                    "VESTS_SYMBOL": {
-                        "type": "string",
-                        "description": "VESTS asset symbol and precision."
-                    },
-                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Virtual schedule lap length."
-                    },
-                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Virtual schedule lap length 2."
-                    },
-                    "HIVE_VOTES_PER_PERIOD_SMT_HF": {
-                        "type": "integer",
-                        "description": "Votes per period for SMT HF."
-                    },
-                    "HIVE_MAX_LIMIT_ORDER_EXPIRATION": {
-                        "type": "integer",
-                        "description": "Max limit order expiration (seconds)."
-                    },
-                    "HIVE_DELEGATION_RETURN_PERIOD_HF0": {
-                        "type": "integer",
-                        "description": "Delegation return period for HF0 (seconds)."
-                    },
-                    "HIVE_DELEGATION_RETURN_PERIOD_HF20": {
-                        "type": "integer",
-                        "description": "Delegation return period for HF20 (seconds)."
-                    },
-                    "HIVE_RD_MIN_DECAY_BITS": {
-                        "type": "integer",
-                        "description": "Resource dynamics min decay bits."
-                    },
-                    "HIVE_RD_MAX_DECAY_BITS": {
-                        "type": "integer",
-                        "description": "Resource dynamics max decay bits."
-                    },
-                    "HIVE_RD_DECAY_DENOM_SHIFT": {
-                        "type": "integer",
-                        "description": "Resource dynamics decay denom shift."
-                    },
-                    "HIVE_RD_MAX_POOL_BITS": {
-                        "type": "integer",
-                        "description": "Resource dynamics max pool bits."
-                    },
-                    "HIVE_RD_MAX_BUDGET_1": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Resource dynamics max budget 1."
-                    },
-                    "HIVE_RD_MAX_BUDGET_2": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Resource dynamics max budget 2."
-                    },
-                    "HIVE_RD_MAX_BUDGET_3": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "Resource dynamics max budget 3."
-                    },
-                    "HIVE_RD_MAX_BUDGET": {
-                        "type": "integer",
-                        "description": "Resource dynamics max budget."
-                    },
-                    "HIVE_RD_MIN_DECAY": {
-                        "type": "integer",
-                        "description": "Resource dynamics min decay."
-                    },
-                    "HIVE_RD_MIN_BUDGET": {
-                        "type": "integer",
-                        "description": "Resource dynamics min budget."
-                    },
-                    "HIVE_RD_MAX_DECAY": {
-                        "type": "integer",
-                        "description": "Resource dynamics max decay."
-                    },
-                    "HIVE_ACCOUNT_SUBSIDY_PRECISION": {
-                        "type": "integer",
-                        "description": "Account subsidy precision."
-                    },
-                    "HIVE_WITNESS_SUBSIDY_BUDGET_PERCENT": {
-                        "type": "integer",
-                        "description": "Witness subsidy budget percent."
-                    },
-                    "HIVE_WITNESS_SUBSIDY_DECAY_PERCENT": {
-                        "type": "integer",
-                        "description": "Witness subsidy decay percent."
-                    },
-                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY": {
-                        "type": "integer",
-                        "description": "Default account subsidy decay."
-                    },
-                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET": {
-                        "type": "integer",
-                        "description": "Default account subsidy budget."
-                    },
-                    "HIVE_DECAY_BACKSTOP_PERCENT": {
-                        "type": "integer",
-                        "description": "Decay backstop percent."
-                    },
-                    "HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT": {
-                        "type": "integer",
-                        "description": "Block generation postponed transaction limit."
-                    },
-                    "HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT": {
-                        "type": "integer",
-                        "description": "Pending transaction execution limit."
-                    },
-                    "HIVE_TREASURY_ACCOUNT": {
-                        "type": "string",
-                        "description": "Treasury account name."
-                    },
-                    "HIVE_TREASURY_FEE": {
-                        "type": "integer",
-                        "description": "Treasury fee."
-                    },
-                    "HIVE_PROPOSAL_MAINTENANCE_PERIOD": {
-                        "type": "integer",
-                        "description": "Proposal maintenance period (seconds)."
-                    },
-                    "HIVE_PROPOSAL_MAINTENANCE_CLEANUP": {
-                        "type": "integer",
-                        "description": "Proposal maintenance cleanup (seconds)."
-                    },
-                    "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH": {
-                        "type": "integer",
-                        "description": "Proposal subject max length."
-                    },
-                    "HIVE_PROPOSAL_MAX_IDS_NUMBER": {
-                        "type": "integer",
-                        "description": "Proposal max IDs number."
-                    },
-                    "HIVE_NETWORK_TYPE": {
-                        "type": "string",
-                        "description": "Network type (mainnet, testnet, etc)."
-                    },
-                    "HIVE_DB_FORMAT_VERSION": {
-                        "type": "string",
-                        "description": "Database format version."
-                    },
-                    "HIVE_1_BASIS_POINT": {
-                        "type": "integer",
-                        "description": "One basis point in HIVE."
-                    },
-                    "HIVE_COLLATERALIZED_CONVERSION_DELAY": {
-                        "type": "integer",
-                        "description": "Delay for collateralized conversion (in microseconds)."
-                    },
-                    "HIVE_COLLATERALIZED_CONVERSION_FEE": {
-                        "type": "integer",
-                        "description": "Fee for collateralized conversion (in basis points)."
-                    },
-                    "HIVE_CONVERSION_COLLATERAL_RATIO": {
-                        "type": "integer",
-                        "description": "Collateral ratio for conversion."
-                    },
-                    "HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD": {
-                        "type": "integer",
-                        "description": "Daily proposal maintenance period (seconds)."
-                    },
-                    "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
-                        "type": "string",
-                        "description": "Default public key string for HF9 compromised accounts."
-                    },
-                    "HIVE_DELAYED_VOTING_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "Delayed voting interval in seconds."
-                    },
-                    "HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "Total delayed voting interval in seconds."
-                    },
-                    "HIVE_EARLY_VOTING_SECONDS_HF25": {
-                        "type": "integer",
-                        "description": "Early voting period for HF25 in seconds."
-                    },
-                    "HIVE_GLOBAL_REMOVE_THRESHOLD": {
-                        "type": "integer",
-                        "description": "Global threshold for account removal (basis points)."
-                    },
-                    "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD": {
-                        "type": "integer",
-                        "description": "Governance vote expiration period (in microseconds)."
-                    },
-                    "HIVE_HBD_HARD_LIMIT": {
-                        "type": "integer",
-                        "description": "Hard limit for HBD supply."
-                    },
-                    "HIVE_HBD_HARD_LIMIT_PRE_HF26": {
-                        "type": "integer",
-                        "description": "Pre-HF26 hard limit for HBD supply."
-                    },
-                    "HIVE_HBD_START_PERCENT_HF26": {
-                        "type": "integer",
-                        "description": "HBD start percent for HF26."
-                    },
-                    "HIVE_HBD_STOP_PERCENT_HF26": {
-                        "type": "integer",
-                        "description": "HBD stop percent for HF26."
-                    },
-                    "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
-                        "type": "string",
-                        "description": "Public key string for HF9 compromised accounts."
-                    },
-                    "HIVE_INIT_PUBLIC_KEY": {
-                        "type": "string",
-                        "description": "Public key for the initial account."
-                    },
-                    "HIVE_MAX_COMMENT_BENEFICIARIES": {
-                        "type": "integer",
-                        "description": "Maximum number of beneficiaries for a comment."
-                    },
-                    "HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES": {
-                        "type": "integer",
-                        "description": "Maximum consecutive failures for recurrent transfers."
-                    },
-                    "HIVE_MAX_OPEN_RECURRENT_TRANSFERS": {
-                        "type": "integer",
-                        "description": "Maximum number of open recurrent transfers."
-                    },
-                    "HIVE_MAX_PENDING_TRANSFERS": {
-                        "type": "integer",
-                        "description": "Maximum number of pending transfers."
-                    },
-                    "HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK": {
-                        "type": "integer",
-                        "description": "Maximum number of recurrent transfers allowed per block."
-                    },
-                    "HIVE_MAX_RECURRENT_TRANSFER_END_DATE": {
-                        "type": "integer",
-                        "description": "Maximum end date for recurrent transfers in days."
-                    },
-                    "HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION": {
-                        "type": "integer",
-                        "description": "Maximum time until signature expiration in seconds."
-                    },
-                    "HIVE_MID_VOTING_SECONDS_HF25": {
-                        "type": "integer",
-                        "description": "Mid-voting period for HF25 in seconds."
-                    },
-                    "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE": {
-                        "type": "integer",
-                        "description": "Minimum recurrence period for recurrent transfers in hours."
-                    },
-                    "HIVE_ONE_DAY_SECONDS": {
-                        "type": "integer",
-                        "description": "Number of seconds in one day."
-                    },
-                    "HIVE_PROPOSAL_CONVERSION_RATE": {
-                        "type": "integer",
-                        "description": "Conversion rate for proposals."
-                    },
-                    "HIVE_PROPOSAL_FEE_INCREASE_AMOUNT": {
-                        "type": "integer",
-                        "description": "Amount by which proposal fees increase."
-                    },
-                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS": {
-                        "type": "integer",
-                        "description": "Number of days over which proposal fees increase."
-                    },
-                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC": {
-                        "type": "integer",
-                        "description": "Number of seconds for proposal fee increase period."
-                    },
-                    "HIVE_RC_BUCKET_TIME_LENGTH": {
-                        "type": "integer",
-                        "description": "Length of the resource credit bucket time in seconds."
-                    },
-                    "HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT": {
-                        "type": "integer",
-                        "description": "Historical adjustment for account creation in resource credits."
-                    },
-                    "HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP": {
-                        "type": "integer",
-                        "description": "Maximum number of accounts per delegation operation."
-                    },
-                    "HIVE_RC_REGEN_TIME": {
-                        "type": "integer",
-                        "description": "Resource credit regeneration time in seconds."
-                    },
-                    "HIVE_RC_STATS_REPORT_FREQUENCY": {
-                        "type": "integer",
-                        "description": "Frequency of resource credit stats reports in seconds."
-                    },
-                    "HIVE_RC_WINDOW_BUCKET_COUNT": {
-                        "type": "integer",
-                        "description": "Number of buckets in the resource credit window."
-                    },
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25": {
-                        "type": "integer",
-                        "description": "Reverse auction window for HF25 in seconds."
-                    },
-                    "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS": {
-                        "type": "integer",
-                        "description": "Margin for block stats to be considered up-to-date."
-                    },
-                    "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM": {
-                        "type": "integer",
-                        "description": "Margin for fast confirmation to be considered up-to-date."
-                    },
-                    "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS": {
-                        "type": "integer",
-                        "description": "Margin for pending transactions to be considered up-to-date."
-                    },
-                    "HIVE_WITNESS_SHUTDOWN_THRESHOLD": {
-                        "type": "integer",
-                        "description": "Threshold for witness shutdown in seconds."
-                    },
-                    "NEW_HIVE_TREASURY_ACCOUNT": {
-                        "type": "string",
-                        "description": "New treasury account name."
-                    },
-                    "OBSOLETE_TREASURY_ACCOUNT": {
-                        "type": "string",
-                        "description": "Obsolete treasury account name."
-                    },
-                    "OLD_CHAIN_ID": {
-                        "type": "string",
-                        "description": "Old chain ID for compatibility."
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/config_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "HIVE_SYMBOL": {
+                                "type": "string",
+                                "description": "HIVE asset symbol and precision."
+                            },
+                            "VESTS_SYMBOL": {
+                                "type": "string",
+                                "description": "VESTS asset symbol and precision."
+                            },
+                            "HBD_SYMBOL": {
+                                "type": "string",
+                                "description": "HBD asset symbol and precision."
+                            },
+                            "HIVE_ACTIVE_CHALLENGE_FEE": {
+                                "type": "string",
+                                "description": "Fee for challenging active authority."
+                            },
+                            "HIVE_MIN_CONTENT_REWARD": {
+                                "type": "string",
+                                "description": "Minimum content reward."
+                            },
+                            "HIVE_MIN_CURATE_REWARD": {
+                                "type": "string",
+                                "description": "Minimum curation reward."
+                            },
+                            "HIVE_MINING_REWARD": {
+                                "type": "string",
+                                "description": "Minimum mining reward."
+                            },
+                            "HIVE_MIN_LIQUIDITY_REWARD": {
+                                "type": "string",
+                                "description": "Minimum liquidity reward."
+                            },
+                            "HIVE_MIN_PAYOUT_HBD": {
+                                "type": "string",
+                                "description": "Minimum HBD payout."
+                            },
+                            "HIVE_MIN_POW_REWARD": {
+                                "type": "string",
+                                "description": "Minimum proof-of-work reward."
+                            },
+                            "HIVE_MIN_PRODUCER_REWARD": {
+                                "type": "string",
+                                "description": "Minimum producer reward."
+                            },
+                            "HIVE_OWNER_CHALLENGE_FEE": {
+                                "type": "string",
+                                "description": "Owner challenge fee."
+                            }
+                        },
+                        "required": [
+                            "HIVE_SYMBOL",
+                            "VESTS_SYMBOL",
+                            "HBD_SYMBOL",
+                            "HIVE_ACTIVE_CHALLENGE_FEE",
+                            "HIVE_MIN_CONTENT_REWARD",
+                            "HIVE_MIN_CURATE_REWARD",
+                            "HIVE_MINING_REWARD",
+                            "HIVE_MIN_LIQUIDITY_REWARD",
+                            "HIVE_MIN_PAYOUT_HBD",
+                            "HIVE_MIN_POW_REWARD",
+                            "HIVE_MIN_PRODUCER_REWARD",
+                            "HIVE_OWNER_CHALLENGE_FEE"
+                        ]
                     }
-                },
-                "required": [
-                    "TESTNET_BLOCK_LIMIT",
-                    "SMT_INITIAL_VESTING_PER_UNIT",
-                    "SMT_BALLAST_SUPPLY_PERCENT",
-                    "SMT_MAX_ICO_TIERS",
-                    "HBD_SYMBOL",
-                    "HIVE_INITIAL_VOTE_POWER_RATE",
-                    "HIVE_REDUCED_VOTE_POWER_RATE",
-                    "HIVE_100_PERCENT",
-                    "HIVE_1_PERCENT",
-                    "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD",
-                    "HIVE_ACTIVE_CHALLENGE_COOLDOWN",
-                    "HIVE_ACTIVE_CHALLENGE_FEE",
-                    "HIVE_ADDRESS_PREFIX",
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK",
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR",
-                    "HIVE_APR_PERCENT_MULTIPLY_PER_ROUND",
-                    "HIVE_APR_PERCENT_SHIFT_PER_BLOCK",
-                    "HIVE_APR_PERCENT_SHIFT_PER_HOUR",
-                    "HIVE_APR_PERCENT_SHIFT_PER_ROUND",
-                    "HIVE_BANDWIDTH_AVERAGE_WINDOW_SECONDS",
-                    "HIVE_BANDWIDTH_PRECISION",
-                    "HIVE_BENEFICIARY_LIMIT",
-                    "HIVE_BLOCKCHAIN_PRECISION",
-                    "HIVE_BLOCKCHAIN_PRECISION_DIGITS",
-                    "HIVE_BLOCKCHAIN_HARDFORK_VERSION",
-                    "HIVE_BLOCKCHAIN_VERSION",
-                    "HIVE_BLOCK_INTERVAL",
-                    "HIVE_BLOCKS_PER_DAY",
-                    "HIVE_BLOCKS_PER_HOUR",
-                    "HIVE_BLOCKS_PER_YEAR",
-                    "HIVE_CASHOUT_WINDOW_SECONDS",
-                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12",
-                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17",
-                    "HIVE_CHAIN_ID",
-                    "HIVE_COMMENT_REWARD_FUND_NAME",
-                    "HIVE_COMMENT_TITLE_LIMIT",
-                    "HIVE_CONTENT_APR_PERCENT",
-                    "HIVE_CONTENT_CONSTANT_HF0",
-                    "HIVE_CONTENT_CONSTANT_HF21",
-                    "HIVE_CONTENT_REWARD_PERCENT_HF16",
-                    "HIVE_CONTENT_REWARD_PERCENT_HF21",
-                    "HIVE_CONVERSION_DELAY",
-                    "HIVE_CONVERSION_DELAY_PRE_HF_16",
-                    "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO",
-                    "HIVE_CREATE_ACCOUNT_DELEGATION_TIME",
-                    "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER",
-                    "HIVE_CURATE_APR_PERCENT",
-                    "HIVE_CUSTOM_OP_DATA_MAX_LENGTH",
-                    "HIVE_CUSTOM_OP_ID_MAX_LENGTH",
-                    "HIVE_DEFAULT_HBD_INTEREST_RATE",
-                    "HIVE_DOWNVOTE_POOL_PERCENT_HF21",
-                    "HIVE_EQUIHASH_K",
-                    "HIVE_EQUIHASH_N",
-                    "HIVE_FEED_HISTORY_WINDOW",
-                    "HIVE_FEED_HISTORY_WINDOW_PRE_HF_16",
-                    "HIVE_FEED_INTERVAL_BLOCKS",
-                    "HIVE_GENESIS_TIME",
-                    "HIVE_HARDFORK_REQUIRED_WITNESSES",
-                    "HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS",
-                    "HIVE_INFLATION_NARROWING_PERIOD",
-                    "HIVE_INFLATION_RATE_START_PERCENT",
-                    "HIVE_INFLATION_RATE_STOP_PERCENT",
-                    "HIVE_INIT_MINER_NAME",
-                    "HIVE_INIT_PUBLIC_KEY_STR",
-                    "HIVE_INIT_SUPPLY",
-                    "HIVE_HBD_INIT_SUPPLY",
-                    "HIVE_INIT_TIME",
-                    "HIVE_IRREVERSIBLE_THRESHOLD",
-                    "HIVE_LIQUIDITY_APR_PERCENT",
-                    "HIVE_LIQUIDITY_REWARD_BLOCKS",
-                    "HIVE_LIQUIDITY_REWARD_PERIOD_SEC",
-                    "HIVE_LIQUIDITY_TIMEOUT_SEC",
-                    "HIVE_MAX_ACCOUNT_CREATION_FEE",
-                    "HIVE_MAX_ACCOUNT_NAME_LENGTH",
-                    "HIVE_MAX_ACCOUNT_WITNESS_VOTES",
-                    "HIVE_MAX_ASSET_WHITELIST_AUTHORITIES",
-                    "HIVE_MAX_AUTHORITY_MEMBERSHIP",
-                    "HIVE_MAX_BLOCK_SIZE",
-                    "HIVE_SOFT_MAX_BLOCK_SIZE",
-                    "HIVE_MAX_CASHOUT_WINDOW_SECONDS",
-                    "HIVE_MAX_COMMENT_DEPTH",
-                    "HIVE_MAX_COMMENT_DEPTH_PRE_HF17",
-                    "HIVE_MAX_FEED_AGE_SECONDS",
-                    "HIVE_MAX_INSTANCE_ID",
-                    "HIVE_MAX_MEMO_SIZE",
-                    "HIVE_MAX_WITNESSES",
-                    "HIVE_MAX_MINER_WITNESSES_HF0",
-                    "HIVE_MAX_MINER_WITNESSES_HF17",
-                    "HIVE_MAX_PERMLINK_LENGTH",
-                    "HIVE_MAX_PROXY_RECURSION_DEPTH",
-                    "HIVE_MAX_RATION_DECAY_RATE",
-                    "HIVE_MAX_RESERVE_RATIO",
-                    "HIVE_MAX_RUNNER_WITNESSES_HF0",
-                    "HIVE_MAX_RUNNER_WITNESSES_HF17",
-                    "HIVE_MAX_SATOSHIS",
-                    "HIVE_MAX_SHARE_SUPPLY",
-                    "HIVE_MAX_SIG_CHECK_DEPTH",
-                    "HIVE_MAX_SIG_CHECK_ACCOUNTS",
-                    "HIVE_MAX_TIME_UNTIL_EXPIRATION",
-                    "HIVE_MAX_TRANSACTION_SIZE",
-                    "HIVE_MAX_UNDO_HISTORY",
-                    "HIVE_MAX_URL_LENGTH",
-                    "HIVE_MAX_VOTE_CHANGES",
-                    "HIVE_MAX_VOTED_WITNESSES_HF0",
-                    "HIVE_MAX_VOTED_WITNESSES_HF17",
-                    "HIVE_MAX_WITHDRAW_ROUTES",
-                    "HIVE_MAX_WITNESS_URL_LENGTH",
-                    "HIVE_MIN_ACCOUNT_CREATION_FEE",
-                    "HIVE_MIN_ACCOUNT_NAME_LENGTH",
-                    "HIVE_MIN_BLOCK_SIZE_LIMIT",
-                    "HIVE_MIN_BLOCK_SIZE",
-                    "HIVE_MIN_CONTENT_REWARD",
-                    "HIVE_MIN_CURATE_REWARD",
-                    "HIVE_MIN_PERMLINK_LENGTH",
-                    "HIVE_MIN_REPLY_INTERVAL",
-                    "HIVE_MIN_REPLY_INTERVAL_HF20",
-                    "HIVE_MIN_ROOT_COMMENT_INTERVAL",
-                    "HIVE_MIN_COMMENT_EDIT_INTERVAL",
-                    "HIVE_MIN_VOTE_INTERVAL_SEC",
-                    "HIVE_MINER_ACCOUNT",
-                    "HIVE_MINER_PAY_PERCENT",
-                    "HIVE_MIN_FEEDS",
-                    "HIVE_MINING_REWARD",
-                    "HIVE_MINING_TIME",
-                    "HIVE_MIN_LIQUIDITY_REWARD",
-                    "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC",
-                    "HIVE_MIN_PAYOUT_HBD",
-                    "HIVE_MIN_POW_REWARD",
-                    "HIVE_MIN_PRODUCER_REWARD",
-                    "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT",
-                    "HIVE_MIN_TRANSACTION_SIZE_LIMIT",
-                    "HIVE_MIN_UNDO_HISTORY",
-                    "HIVE_NULL_ACCOUNT",
-                    "HIVE_NUM_INIT_MINERS",
-                    "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM",
-                    "HIVE_OWNER_AUTH_RECOVERY_PERIOD",
-                    "HIVE_OWNER_CHALLENGE_COOLDOWN",
-                    "HIVE_OWNER_CHALLENGE_FEE",
-                    "HIVE_OWNER_UPDATE_LIMIT",
-                    "HIVE_POST_AVERAGE_WINDOW",
-                    "HIVE_POST_REWARD_FUND_NAME",
-                    "HIVE_POST_WEIGHT_CONSTANT",
-                    "HIVE_POW_APR_PERCENT",
-                    "HIVE_PRODUCER_APR_PERCENT",
-                    "HIVE_PROXY_TO_SELF_ACCOUNT",
-                    "HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC",
-                    "HIVE_SECONDS_PER_YEAR",
-                    "HIVE_PROPOSAL_FUND_PERCENT_HF0",
-                    "HIVE_PROPOSAL_FUND_PERCENT_HF21",
-                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF19",
-                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF17",
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6",
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20",
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21",
-                    "HIVE_ROOT_POST_PARENT",
-                    "HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT",
-                    "HIVE_SAVINGS_WITHDRAW_TIME",
-                    "HIVE_HBD_START_PERCENT_HF14",
-                    "HIVE_HBD_START_PERCENT_HF20",
-                    "HIVE_HBD_STOP_PERCENT_HF14",
-                    "HIVE_HBD_STOP_PERCENT_HF20",
-                    "HIVE_SECOND_CASHOUT_WINDOW",
-                    "HIVE_SOFT_MAX_COMMENT_DEPTH",
-                    "HIVE_START_MINER_VOTING_BLOCK",
-                    "HIVE_START_VESTING_BLOCK",
-                    "HIVE_TEMP_ACCOUNT",
-                    "HIVE_UPVOTE_LOCKOUT_HF7",
-                    "HIVE_UPVOTE_LOCKOUT_HF17",
-                    "HIVE_UPVOTE_LOCKOUT_SECONDS",
-                    "HIVE_VESTING_FUND_PERCENT_HF16",
-                    "HIVE_VESTING_WITHDRAW_INTERVALS",
-                    "HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16",
-                    "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS",
-                    "HIVE_VOTE_DUST_THRESHOLD",
-                    "HIVE_VOTING_MANA_REGENERATION_SECONDS",
-                    "HIVE_SYMBOL",
-                    "VESTS_SYMBOL",
-                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH",
-                    "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2",
-                    "HIVE_VOTES_PER_PERIOD_SMT_HF",
-                    "HIVE_MAX_LIMIT_ORDER_EXPIRATION",
-                    "HIVE_DELEGATION_RETURN_PERIOD_HF0",
-                    "HIVE_DELEGATION_RETURN_PERIOD_HF20",
-                    "HIVE_RD_MIN_DECAY_BITS",
-                    "HIVE_RD_MAX_DECAY_BITS",
-                    "HIVE_RD_DECAY_DENOM_SHIFT",
-                    "HIVE_RD_MAX_POOL_BITS",
-                    "HIVE_RD_MAX_BUDGET_1",
-                    "HIVE_RD_MAX_BUDGET_2",
-                    "HIVE_RD_MAX_BUDGET_3",
-                    "HIVE_RD_MAX_BUDGET",
-                    "HIVE_RD_MIN_DECAY",
-                    "HIVE_RD_MIN_BUDGET",
-                    "HIVE_RD_MAX_DECAY",
-                    "HIVE_ACCOUNT_SUBSIDY_PRECISION",
-                    "HIVE_WITNESS_SUBSIDY_BUDGET_PERCENT",
-                    "HIVE_WITNESS_SUBSIDY_DECAY_PERCENT",
-                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY",
-                    "HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET",
-                    "HIVE_DECAY_BACKSTOP_PERCENT",
-                    "HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT",
-                    "HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT",
-                    "HIVE_TREASURY_ACCOUNT",
-                    "HIVE_TREASURY_FEE",
-                    "HIVE_PROPOSAL_MAINTENANCE_PERIOD",
-                    "HIVE_PROPOSAL_MAINTENANCE_CLEANUP",
-                    "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH",
-                    "HIVE_PROPOSAL_MAX_IDS_NUMBER",
-                    "HIVE_NETWORK_TYPE",
-                    "HIVE_DB_FORMAT_VERSION",
-                    "HIVE_1_BASIS_POINT",
-                    "HIVE_COLLATERALIZED_CONVERSION_DELAY",
-                    "HIVE_COLLATERALIZED_CONVERSION_FEE",
-                    "HIVE_CONVERSION_COLLATERAL_RATIO",
-                    "HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD",
-                    "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR",
-                    "HIVE_DELAYED_VOTING_INTERVAL_SECONDS",
-                    "HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS",
-                    "HIVE_EARLY_VOTING_SECONDS_HF25",
-                    "HIVE_GLOBAL_REMOVE_THRESHOLD",
-                    "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD",
-                    "HIVE_HBD_HARD_LIMIT",
-                    "HIVE_HBD_HARD_LIMIT_PRE_HF26",
-                    "HIVE_HBD_START_PERCENT_HF26",
-                    "HIVE_HBD_STOP_PERCENT_HF26",
-                    "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR",
-                    "HIVE_INIT_PUBLIC_KEY",
-                    "HIVE_MAX_COMMENT_BENEFICIARIES",
-                    "HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES",
-                    "HIVE_MAX_OPEN_RECURRENT_TRANSFERS",
-                    "HIVE_MAX_PENDING_TRANSFERS",
-                    "HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK",
-                    "HIVE_MAX_RECURRENT_TRANSFER_END_DATE",
-                    "HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION",
-                    "HIVE_MID_VOTING_SECONDS_HF25",
-                    "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE",
-                    "HIVE_ONE_DAY_SECONDS",
-                    "HIVE_PROPOSAL_CONVERSION_RATE",
-                    "HIVE_PROPOSAL_FEE_INCREASE_AMOUNT",
-                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS",
-                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC",
-                    "HIVE_RC_BUCKET_TIME_LENGTH",
-                    "HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT",
-                    "HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP",
-                    "HIVE_RC_REGEN_TIME",
-                    "HIVE_RC_STATS_REPORT_FREQUENCY",
-                    "HIVE_RC_WINDOW_BUCKET_COUNT",
-                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25",
-                    "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS",
-                    "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM",
-                    "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS",
-                    "HIVE_WITNESS_SHUTDOWN_THRESHOLD",
-                    "NEW_HIVE_TREASURY_ACCOUNT",
-                    "OBSOLETE_TREASURY_ACCOUNT",
-                    "OLD_CHAIN_ID"
                 ]
             },
             "condenser_get_content": {
@@ -10037,7 +8492,7 @@
                     "ops": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/operation"
+                            "$ref": "#/components/schemas/operation_default"
                         }
                     },
                     "ops_by_block": {
@@ -10183,7 +8638,7 @@
                     "accounts": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/account"
+                            "$ref": "#/components/schemas/account_default"
                         }
                     }
                 },
@@ -10307,20 +8762,14 @@
                     "muted_list_description"
                 ]
             },
-            "collateralized_conversion_requests": {
+            "collateralized_conversion_requests_template": {
                 "type": "object",
                 "properties": {
-                    "collateral_amount": {
-                        "$ref": "#/components/schemas/balance"
-                    },
                     "conversion_date": {
                         "type": "string",
                         "format": "date-time",
                         "example": "2025-05-22T03:29:51",
                         "description": "The date when the conversion will take place."
-                    },
-                    "converted_amount": {
-                        "$ref": "#/components/schemas/balance"
                     },
                     "id": {
                         "type": "integer",
@@ -10338,55 +8787,54 @@
                     }
                 },
                 "required": [
-                    "collateral_amount",
                     "conversion_date",
-                    "converted_amount",
                     "id",
                     "owner",
                     "requestid"
                 ]
             },
-            "collateralized_conversion_requests_condenser": {
-                "type": "object",
-                "properties": {
-                    "collateral_amount": {
-                        "type": "string",
-                        "example": "100.000 HIVE",
-                        "description": "The amount of collateral provided for the conversion."
+            "collateralized_conversion_requests_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/collateralized_conversion_requests_template"
                     },
-                    "conversion_date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2025-05-22T03:29:51",
-                        "description": "The date when the conversion will take place."
-                    },
-                    "converted_amount": {
-                        "type": "string",
-                        "example": "100.000 HIVE",
-                        "description": "The amount of HIVE that will be converted."
-                    },
-                    "id": {
-                        "type": "integer",
-                        "example": 40790
-                    },
-                    "owner": {
-                        "type": "string",
-                        "example": "hiveio",
-                        "description": "The name of the account that owns the request."
-                    },
-                    "requestid": {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "The ID of the request."
+                    {
+                        "type": "object",
+                        "properties": {
+                            "collateral_amount": {
+                                "$ref": "#/components/schemas/balance"
+                            },
+                            "converted_amount": {
+                                "$ref": "#/components/schemas/balance"
+                            }
+                        },
+                        "required": [
+                            "collateral_amount",
+                            "converted_amount"
+                        ]
                     }
-                },
-                "required": [
-                    "collateral_amount",
-                    "conversion_date",
-                    "converted_amount",
-                    "id",
-                    "owner",
-                    "requestid"
+                ]
+            },
+            "collateralized_conversion_requests_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/collateralized_conversion_requests_template"
+                    },
+                    {
+                      "type": "object",
+                        "properties": {
+                            "collateral_amount": {
+                                "type": "string"
+                            },
+                            "converted_amount": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "collateral_amount",
+                            "converted_amount"
+                        ]
+                    }
                 ]
             },
             "feed_history": {
@@ -10449,7 +8897,7 @@
                     "requests": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/collateralized_conversion_requests"
+                            "$ref": "#/components/schemas/collateralized_conversion_requests_default"
                         }
                     }
                 },
@@ -10653,7 +9101,7 @@
                     "proposals": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/proposals"
+                            "$ref": "#/components/schemas/proposals_default"
                         }
                     }
                 },
@@ -10685,7 +9133,7 @@
                     "rc_accounts": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/rc_account"
+                            "$ref": "#/components/schemas/rc_account_default"
                         }
                     }
                 },
@@ -10947,7 +9395,7 @@
                     "blocks": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/block"
+                            "$ref": "#/components/schemas/block_default"
                         }
                     }
                 },
@@ -10959,7 +9407,7 @@
                 "type": "object",
                 "properties": {
                     "header": {
-                        "$ref": "#/components/schemas/block"
+                        "$ref": "#/components/schemas/block_default"
                     }
                 },
                 "required": [
@@ -11096,7 +9544,7 @@
             "get_account_posts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/post"
+                    "$ref": "#/components/schemas/post_bridge_api"
                 }
             },
             "get_active_witnesses_response": {
@@ -11163,6 +9611,80 @@
                 "$ref": "#/components/schemas/context"
             },
             "get_config_response": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/config_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "HIVE_SYMBOL": {
+                                "$ref": "#/components/schemas/nai_decimal",
+                                "description": "HIVE asset symbol and precision."
+                            },
+                            "VESTS_SYMBOL": {
+                                "$ref": "#/components/schemas/nai_decimal",
+                                "description": "VESTS asset symbol and precision."
+                            },
+                            "HBD_SYMBOL": {
+                                "$ref": "#/components/schemas/nai_decimal",
+                                "description": "HBD asset symbol and precision."
+                            },
+                            "HIVE_ACTIVE_CHALLENGE_FEE": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Fee for challenging active authority."
+                            },
+                            "HIVE_MIN_CONTENT_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum content reward."
+                            },
+                            "HIVE_MIN_CURATE_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum curation reward."
+                            },
+                            "HIVE_MINING_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum mining reward."
+                            },
+                            "HIVE_MIN_LIQUIDITY_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum liquidity reward."
+                            },
+                            "HIVE_MIN_PAYOUT_HBD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum HBD payout."
+                            },
+                            "HIVE_MIN_POW_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum proof-of-work reward."
+                            },
+                            "HIVE_MIN_PRODUCER_REWARD": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Minimum producer reward."
+                            },
+                            "HIVE_OWNER_CHALLENGE_FEE": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "Owner challenge fee."
+                            }
+                        },
+                        "required": [
+                            "HIVE_SYMBOL",
+                            "VESTS_SYMBOL",
+                            "HBD_SYMBOL",
+                            "HIVE_ACTIVE_CHALLENGE_FEE",
+                            "HIVE_MIN_CONTENT_REWARD",
+                            "HIVE_MIN_CURATE_REWARD",
+                            "HIVE_MINING_REWARD",
+                            "HIVE_MIN_LIQUIDITY_REWARD",
+                            "HIVE_MIN_PAYOUT_HBD",
+                            "HIVE_MIN_POW_REWARD",
+                            "HIVE_MIN_PRODUCER_REWARD",
+                            "HIVE_OWNER_CHALLENGE_FEE"
+                        ]
+                    }
+                ]
+            },
+            "config_template": {
                 "type": "object",
                 "properties": {
                     "USE_ALTERNATE_CHAIN_ID": {
@@ -11237,10 +9759,6 @@
                         "type": "integer",
                         "description": "Max ICO tiers for SMT."
                     },
-                    "HBD_SYMBOL": {
-                        "$ref": "#/components/schemas/nai_decimal",
-                        "description": "HBD asset symbol and precision."
-                    },
                     "HIVE_INITIAL_VOTE_POWER_RATE": {
                         "type": "integer",
                         "description": "Initial vote power regeneration rate."
@@ -11264,10 +9782,6 @@
                     "HIVE_ACTIVE_CHALLENGE_COOLDOWN": {
                         "type": "string",
                         "description": "Cooldown period for active authority challenge (in microseconds)."
-                    },
-                    "HIVE_ACTIVE_CHALLENGE_FEE": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Fee for challenging active authority."
                     },
                     "HIVE_ADDRESS_PREFIX": {
                         "type": "string",
@@ -11665,14 +10179,6 @@
                         "type": "integer",
                         "description": "Minimum block size."
                     },
-                    "HIVE_MIN_CONTENT_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum content reward."
-                    },
-                    "HIVE_MIN_CURATE_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum curation reward."
-                    },
                     "HIVE_MIN_PERMLINK_LENGTH": {
                         "type": "integer",
                         "description": "Minimum permlink length."
@@ -11709,33 +10215,13 @@
                         "type": "integer",
                         "description": "Minimum number of feeds."
                     },
-                    "HIVE_MINING_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum mining reward."
-                    },
                     "HIVE_MINING_TIME": {
                         "type": "string",
                         "description": "Mining start time."
                     },
-                    "HIVE_MIN_LIQUIDITY_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum liquidity reward."
-                    },
                     "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC": {
                         "type": "integer",
                         "description": "Minimum liquidity reward period (microseconds)."
-                    },
-                    "HIVE_MIN_PAYOUT_HBD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum HBD payout."
-                    },
-                    "HIVE_MIN_POW_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum proof-of-work reward."
-                    },
-                    "HIVE_MIN_PRODUCER_REWARD": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Minimum producer reward."
                     },
                     "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT": {
                         "type": "integer",
@@ -11768,10 +10254,6 @@
                     "HIVE_OWNER_CHALLENGE_COOLDOWN": {
                         "type": "string",
                         "description": "Owner challenge cooldown (microseconds)."
-                    },
-                    "HIVE_OWNER_CHALLENGE_FEE": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "Owner challenge fee."
                     },
                     "HIVE_OWNER_UPDATE_LIMIT": {
                         "type": "integer",
@@ -11920,14 +10402,6 @@
                     "HIVE_VOTING_MANA_REGENERATION_SECONDS": {
                         "type": "integer",
                         "description": "Voting mana regeneration in seconds."
-                    },
-                    "HIVE_SYMBOL": {
-                        "$ref": "#/components/schemas/nai_decimal",
-                        "description": "HIVE asset symbol and precision."
-                    },
-                    "VESTS_SYMBOL": {
-                        "$ref": "#/components/schemas/nai_decimal",
-                        "description": "VESTS asset symbol and precision."
                     },
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": {
                         "$ref": "#/components/schemas/hive_int",
@@ -12247,14 +10721,12 @@
                     "SMT_INITIAL_VESTING_PER_UNIT",
                     "SMT_BALLAST_SUPPLY_PERCENT",
                     "SMT_MAX_ICO_TIERS",
-                    "HBD_SYMBOL",
                     "HIVE_INITIAL_VOTE_POWER_RATE",
                     "HIVE_REDUCED_VOTE_POWER_RATE",
                     "HIVE_100_PERCENT",
                     "HIVE_1_PERCENT",
                     "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD",
                     "HIVE_ACTIVE_CHALLENGE_COOLDOWN",
-                    "HIVE_ACTIVE_CHALLENGE_FEE",
                     "HIVE_ADDRESS_PREFIX",
                     "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK",
                     "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR",
@@ -12354,8 +10826,6 @@
                     "HIVE_MIN_ACCOUNT_NAME_LENGTH",
                     "HIVE_MIN_BLOCK_SIZE_LIMIT",
                     "HIVE_MIN_BLOCK_SIZE",
-                    "HIVE_MIN_CONTENT_REWARD",
-                    "HIVE_MIN_CURATE_REWARD",
                     "HIVE_MIN_PERMLINK_LENGTH",
                     "HIVE_MIN_REPLY_INTERVAL",
                     "HIVE_MIN_REPLY_INTERVAL_HF20",
@@ -12365,13 +10835,8 @@
                     "HIVE_MINER_ACCOUNT",
                     "HIVE_MINER_PAY_PERCENT",
                     "HIVE_MIN_FEEDS",
-                    "HIVE_MINING_REWARD",
                     "HIVE_MINING_TIME",
-                    "HIVE_MIN_LIQUIDITY_REWARD",
                     "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC",
-                    "HIVE_MIN_PAYOUT_HBD",
-                    "HIVE_MIN_POW_REWARD",
-                    "HIVE_MIN_PRODUCER_REWARD",
                     "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT",
                     "HIVE_MIN_TRANSACTION_SIZE_LIMIT",
                     "HIVE_MIN_UNDO_HISTORY",
@@ -12380,7 +10845,6 @@
                     "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM",
                     "HIVE_OWNER_AUTH_RECOVERY_PERIOD",
                     "HIVE_OWNER_CHALLENGE_COOLDOWN",
-                    "HIVE_OWNER_CHALLENGE_FEE",
                     "HIVE_OWNER_UPDATE_LIMIT",
                     "HIVE_POST_AVERAGE_WINDOW",
                     "HIVE_POST_REWARD_FUND_NAME",
@@ -12418,8 +10882,6 @@
                     "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS",
                     "HIVE_VOTE_DUST_THRESHOLD",
                     "HIVE_VOTING_MANA_REGENERATION_SECONDS",
-                    "HIVE_SYMBOL",
-                    "VESTS_SYMBOL",
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH",
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2",
                     "HIVE_VOTES_PER_PERIOD_SMT_HF",
@@ -12906,7 +11368,7 @@
                     "ops": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/operation"
+                            "$ref": "#/components/schemas/operation_default"
                         }
                     }
                 },
@@ -13026,7 +11488,7 @@
                 ]
             },
             "get_post_response": {
-                "$ref": "#/components/schemas/post"
+                "$ref": "#/components/schemas/post_bridge_api"
             },
             "get_post_header": {
                 "type": "object",
@@ -13125,7 +11587,7 @@
             "get_ranked_posts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/post"
+                    "$ref": "#/components/schemas/post_bridge_api"
                 }
             },
             "get_relationship_between_accounts": {
@@ -13425,7 +11887,7 @@
                     "accounts": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/account"
+                            "$ref": "#/components/schemas/account_default"
                         }
                     }
                 },
@@ -13478,7 +11940,7 @@
                     "requests": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/collateralized_conversion_requests"
+                            "$ref": "#/components/schemas/collateralized_conversion_requests_default"
                         }
                     }
                 },
@@ -13680,7 +12142,7 @@
                     "proposals": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/proposals"
+                            "$ref": "#/components/schemas/proposals_default"
                         }
                     }
                 },
@@ -13908,7 +12370,7 @@
                     "value"
                 ]
             },
-            "operation_body_condenser": {
+            "operation_body_condenser_api": {
                 "type": "array",
                 "items": {
                     "oneOf": [
@@ -13923,24 +12385,16 @@
                 "minItems": 2,
                 "maxItems": 2
             },
-            "operation": {
+            "operation_template": {
                 "type": "object",
                 "properties": {
                     "block": {
                         "type": "integer",
                         "description": "The block number in which the operation was included."
                     },
-                    "op": {
-                        "$ref": "#/components/schemas/operation_body",
-                        "description": "Body of the operation."
-                    },
                     "op_in_trx": {
                         "type": "integer",
                         "description": "The index of the operation in the transaction."
-                    },
-                    "operation_id": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "The unique ID of the operation."
                     },
                     "timestamp": {
                         "type": "string",
@@ -13962,56 +12416,54 @@
                 },
                 "required": [
                     "block",
-                    "op",
                     "op_in_trx",
-                    "operation_id",
                     "timestamp",
                     "trx_id",
                     "trx_in_block",
                     "virtual_op"
                 ]
             },
-            "operation_condenser": {
-                "type": "object",
-                "properties": {
-                    "block": {
-                        "type": "integer",
-                        "description": "The block number in which the operation was included."
+            "operation_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/operation_template"
                     },
-                    "op": {
-                        "$ref": "#/components/schemas/operation_body_condenser",
-                        "description": "Body of the operation."
-                    },
-                    "op_in_trx": {
-                        "type": "integer",
-                        "description": "The index of the operation in the transaction."
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The timestamp when the operation was executed."
-                    },
-                    "trx_id": {
-                        "type": "string",
-                        "description": "The ID of the transaction that contains the operation."
-                    },
-                    "trx_in_block": {
-                        "type": "integer",
-                        "description": "The index of the transaction in the block."
-                    },
-                    "virtual_op": {
-                        "type": "boolean",
-                        "description": "Indicates whether the operation is a virtual operation."
+                    {
+                        "type": "object",
+                        "properties": {
+                            "op": {
+                                "$ref": "#/components/schemas/operation_body",
+                                "description": "Body of the operation."
+                            },
+                            "operation_id": {
+                                "$ref": "#/components/schemas/hive_int",
+                                "description": "The unique ID of the operation."
+                            }
+                        },
+                        "required": [
+                            "op",
+                            "operation_id"
+                        ]
                     }
-                },
-                "required": [
-                    "block",
-                    "op",
-                    "op_in_trx",
-                    "timestamp",
-                    "trx_id",
-                    "trx_in_block",
-                    "virtual_op"
+                ]
+            },
+            "operation_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/operation_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "op": {
+                                "$ref": "#/components/schemas/operation_body_condenser_api",
+                                "description": "Body of the operation."
+                            }
+                        },
+                        "required": [
+                            "op"
+                        ]
+                    }
                 ]
             },
             "ops_by_block": {
@@ -14028,7 +12480,7 @@
                     "ops": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/operation"
+                            "$ref": "#/components/schemas/operation_default"
                         },
                         "description": "An array of operation objects included in the block."
                     },
@@ -14173,7 +12625,7 @@
                     "permlink"
                 ]
             },
-            "post": {
+            "post_bridge_api": {
                 "type": "object",
                 "properties": {
                     "post_id": {
@@ -14819,7 +13271,7 @@
                         "description": "The name of the account that voted on the proposal."
                     },
                     "proposal": {
-                        "$ref": "#/components/schemas/proposals"
+                        "$ref": "#/components/schemas/proposals_default"
                     }
                 },
                 "required": [
@@ -14828,7 +13280,7 @@
                     "proposal"
                 ]
             },
-            "proposals": {
+            "proposals_template": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -14861,10 +13313,6 @@
                         "example": "2019-08-01T23:59:59",
                         "description": "The end date of the proposal."
                     },
-                    "daily_pay": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The daily pay amount of the proposal."
-                    },
                     "subject": {
                         "type": "string",
                         "example": "My Proposal",
@@ -14893,87 +13341,52 @@
                     "receiver",
                     "start_date",
                     "end_date",
-                    "daily_pay",
                     "subject",
                     "permlink",
                     "total_votes",
                     "status"
                 ]
             },
-            "proposals_condenser": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 12345
+            "proposals_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/proposals_template"
                     },
-                    "proposal_id": {
-                        "type": "string",
-                        "example": "139925218365120"
-                    },
-                    "creator": {
-                        "type": "string",
-                        "example": "alice",
-                        "description": "The name of the account that created the proposal."
-                    },
-                    "receiver": {
-                        "type": "string",
-                        "example": "bob",
-                        "description": "The name of the account that will benefit from the proposal."
-                    },
-                    "start_date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2019-07-01T00:00:00",
-                        "description": "The start date of the proposal."
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2019-08-01T23:59:59",
-                        "description": "The end date of the proposal."
-                    },
-                    "daily_pay": {
-                        "type": "string",
-                        "example": "4800.000 HBD",
-                        "description": "The daily pay amount of the proposal."
-                    },
-                    "subject": {
-                        "type": "string",
-                        "example": "My Proposal",
-                        "description": "The subject of the proposal."
-                    },
-                    "permlink": {
-                        "type": "string",
-                        "example": "creator-proposal-permlink",
-                        "description": "The permlink of the proposal."
-                    },
-                    "total_votes": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "77351826710",
-                        "description": "The total vests voted on the proposal."
-                    },
-                    "status": {
-                        "type": "string",
-                        "example": "active",
-                        "description": "The status of the proposal."
+                    {
+                        "type": "object",
+                        "properties": {
+                            "daily_pay": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The daily pay amount of the proposal."
+                            }
+                        },
+                        "required": [
+                            "daily_pay"
+                        ]
                     }
-                },
-                "required": [
-                    "id",
-                    "proposal_id",
-                    "creator",
-                    "receiver",
-                    "start_date",
-                    "end_date",
-                    "daily_pay",
-                    "subject",
-                    "permlink",
-                    "total_votes",
-                    "status"
                 ]
             },
-            "rc_account": {
+            "proposals_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/proposals_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "daily_pay": {
+                                "type": "string",
+                                "example": "4800.000 HBD",
+                                "description": "The daily pay amount of the proposal."
+                            }
+                        },
+                        "required": [
+                            "daily_pay"
+                        ]
+                    }
+                ]
+            },
+            "rc_account_template": {
                 "type": "object",
                 "properties": {
                     "account": {
@@ -14983,9 +13396,6 @@
                     },
                     "rc_manabar": {
                         "$ref": "#/components/schemas/voting_manabar"
-                    },
-                    "max_rc_creation_adjustment": {
-                        "$ref": "#/components/schemas/balance"
                     },
                     "max_rc": {
                         "$ref": "#/components/schemas/hive_int",
@@ -15006,50 +13416,46 @@
                 "required": [
                     "account",
                     "rc_manabar",
-                    "max_rc_creation_adjustment",
                     "max_rc"
                 ]
             },
-            "rc_account_condenser": {
-                "type": "object",
-                "properties": {
-                    "account": {
-                        "type": "string",
-                        "example": "hiveio",
-                        "description": "The name of the account."
+            "rc_account_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/rc_account_template"
                     },
-                    "rc_manabar": {
-                        "$ref": "#/components/schemas/voting_manabar"
-                    },
-                    "max_rc_creation_adjustment": {
-                        "type": "string",
-                        "example": "2020.748973 VESTS",
-                        "description": "The maximum resource credits creation adjustment."
-                    },
-                    "max_rc": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "0",
-                        "description": "The maximum resource credits available for the account."
-                    },
-                    "delegated_rc": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "0",
-                        "description": "The amount of resource credits delegated to other accounts."
-                    },
-                    "received_delegated_rc": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "0",
-                        "description": "The amount of resource credits received from other accounts."
+                    {
+                        "type": "object",
+                        "properties": {
+                            "max_rc_creation_adjustment": {
+                                "$ref": "#/components/schemas/balance"
+                            }
+                        },
+                        "required": [
+                            "max_rc_creation_adjustment"
+                        ]
                     }
-                },
-                "required": [
-                    "account",
-                    "rc_manabar",
-                    "max_rc_creation_adjustment",
-                    "max_rc"
                 ]
             },
-            "recurrent_transfer": {
+            "rc_account_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/rc_account_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "max_rc_creation_adjustment": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "max_rc_creation_adjustment"
+                        ]
+                    }
+                ]
+            },
+            "recurrent_transfer_template": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -15071,10 +13477,6 @@
                         "type": "string",
                         "example": "bob",
                         "description": "The name of the account that will receive the transfer."
-                    },
-                    "amount": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The amount of the transfer."
                     },
                     "memo": {
                         "type": "string",
@@ -15102,72 +13504,48 @@
                     "trigger_date",
                     "from",
                     "to",
-                    "amount",
                     "memo",
                     "recurrence",
                     "consecutive_failures",
                     "remaining_executions"
                 ]
             },
-            "recurrent_transfer_condenser": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 12345
+            "recurrent_transfer_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/recurrent_transfer_template"
                     },
-                    "trigger_date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2025-05-06T13:36:45",
-                        "description": "The date when the transfer will be triggered."
-                    },
-                    "from": {
-                        "type": "string",
-                        "example": "alice",
-                        "description": "The name of the account that created the transfer."
-                    },
-                    "to": {
-                        "type": "string",
-                        "example": "bob",
-                        "description": "The name of the account that will receive the transfer."
-                    },
-                    "amount": {
-                        "type": "string",
-                        "example": "2020.748 HIVE",
-                        "description": "The amount of the transfer."
-                    },
-                    "memo": {
-                        "type": "string",
-                        "example": "Payroll",
-                        "description": "The memo message."
-                    },
-                    "recurrence": {
-                        "type": "integer",
-                        "example": 26,
-                        "description": "The recurrence period of the transfer in hours."
-                    },
-                    "consecutive_failures": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The number of consecutive failures of the transfer."
-                    },
-                    "remaining_executions": {
-                        "type": "integer",
-                        "example": 3,
-                        "description": "The number of remaining executions of the transfer."
+                    {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The amount of the transfer."
+                            }
+                        },
+                        "required": [
+                            "amount"
+                        ]
                     }
-                },
-                "required": [
-                    "id",
-                    "trigger_date",
-                    "from",
-                    "to",
-                    "amount",
-                    "memo",
-                    "recurrence",
-                    "consecutive_failures",
-                    "remaining_executions"
+                ]
+            },
+            "recurrent_transfer_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/recurrent_transfer_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "type": "string",
+                                "description": "The amount of the transfer."
+                            }
+                        },
+                        "required": [
+                            "amount"
+                        ]
+                    }
                 ]
             },
             "reward_funds": {
