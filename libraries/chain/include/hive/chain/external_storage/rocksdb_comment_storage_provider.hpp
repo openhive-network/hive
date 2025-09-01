@@ -48,7 +48,6 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
     void flush() override;
 
     void update_lib( uint32_t ) override;
-    void update_reindex_point( uint32_t ) override;
 };
 
 }}

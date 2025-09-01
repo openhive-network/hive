@@ -40,7 +40,6 @@ class external_comment_storage_provider: public external_snapshot_storage_provid
     virtual void flush() = 0;
 
     virtual void update_lib( uint32_t ) = 0;
-    virtual void update_reindex_point( uint32_t ) = 0;
 };
 
 }}
