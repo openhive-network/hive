@@ -38,7 +38,6 @@ enum CommentsColumns
 enum Columns
 {
   CURRENT_LIB = 1,
-  LAST_REINDEX_POINT = CURRENT_LIB,
   OPERATION_BY_ID,
   OPERATION_BY_BLOCK,
   AH_INFO_BY_NAME,
@@ -100,7 +99,6 @@ typedef PrimitiveTypeSlice< uint32_t > lib_id_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
 
 #define LIB_ID lib_id_slice_t( 0 )
-#define REINDEX_POINT_ID lib_id_slice_t( 1 )
 
 /** Helper base class to cover all common functionality across defined comparators.
   *
