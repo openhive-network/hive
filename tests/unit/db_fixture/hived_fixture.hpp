@@ -21,7 +21,7 @@ namespace hive { namespace chain {
  */
 struct hived_fixture : public database_fixture
 {
-  private:
+private:
   
   /// @brief Allows verification that logging-related configuration is correctly processed.
   fc::optional< fc::logging_config > _logging_config;
@@ -34,7 +34,7 @@ struct hived_fixture : public database_fixture
   /// @brief Where tested "hived" data go. Valid after a call to postponed_init (or set_data_dir).
   fc::path _data_dir;
 
-  public:
+public:
 
   hived_fixture( bool remove_db_files = true, bool disable_p2p = true, fc::path data_dir = fc::path() );
   virtual ~hived_fixture();
@@ -74,11 +74,11 @@ struct hived_fixture : public database_fixture
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
-  private:
-    void postponed_init_impl( bool remove_db_files, config_arg_override_t config_arg_overrides );
-  private:
-    hive::plugins::chain::chain_plugin* _chain = nullptr;
-    const hive::chain::block_read_i* _block_reader = nullptr;
+private:
+  void postponed_init_impl( bool remove_db_files, config_arg_override_t config_arg_overrides );
+private:
+  hive::plugins::chain::chain_plugin* _chain = nullptr;
+  const hive::chain::block_read_i* _block_reader = nullptr;
 };
 
 namespace test
