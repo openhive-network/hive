@@ -64,7 +64,7 @@ hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::s
   {
     static void assign( volatile_account_object& dest, const account_object& src, uint32_t block_num )
     {
-      dest.account_id  = src.get_id();
+      dest.account_id           = src.get_id();
 
       dest.recovery             = src.get_recovery();
       dest.assets               = src.get_assets();

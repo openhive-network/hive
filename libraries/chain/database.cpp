@@ -2207,33 +2207,35 @@ void database::process_vesting_withdrawals()
   auto now = cprops.time;
 
   int count = 0;
+
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
   while( !widx->end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto& from_account = *current;
+    const auto from_account = current;
+
     widx->next();
     current = widx->get();
     ++count;
 
-    share_type to_withdraw = from_account.get_active_next_vesting_withdrawal();
-    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.get_vesting_withdraw_rate().amount )
-      to_withdraw = from_account.get_to_withdraw().amount % from_account.get_vesting_withdraw_rate().amount;
+    share_type to_withdraw = from_account->get_active_next_vesting_withdrawal();
+    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account->get_vesting_withdraw_rate().amount )
+      to_withdraw = from_account->get_to_withdraw().amount % from_account->get_vesting_withdraw_rate().amount;
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
     // the situation was caused by HF1, where vesting_withdraw_rate changed from 9615 before split to 9615.384615
     // (instead of correct 9615.000000); that is the source of nonequivalence between taking all the rest of power down
     // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
     // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
     // occurred
-    if( to_withdraw > from_account.get_vesting().amount )
+    if( to_withdraw > from_account->get_vesting().amount )
     {
       elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
+        ( "s", to_withdraw )( "h", from_account->get_vesting().amount ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
       FC_ASSERT( false, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
+        ( "s", to_withdraw )( "h", from_account->get_vesting().amount ) );
 #endif
-      to_withdraw = from_account.get_vesting().amount;
+      to_withdraw = from_account->get_vesting().amount;
     }
 
     optional< delayed_voting > dv;
@@ -2249,8 +2251,8 @@ void database::process_vesting_withdrawals()
 
     auto process_routing = [ &, this ]( bool auto_vest_mode )
     {
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.get_name(), account_name_type() ) );
-        itr != didx.end() && itr->from_account == from_account.get_name();
+      for( auto itr = didx.upper_bound( boost::make_tuple( from_account->get_name(), account_name_type() ) );
+        itr != didx.end() && itr->from_account == from_account->get_name();
         ++itr )
       {
         if( !( auto_vest_mode ^ itr->auto_vest ) )
@@ -2264,7 +2266,7 @@ void database::process_vesting_withdrawals()
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-            operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account->get_name(), vests, routed );
+            operation vop = fill_vesting_withdraw_operation( from_account->get_name(), to_account->get_name(), vests, routed );
 
             pre_push_virtual_operation( vop );
 
@@ -2292,7 +2294,7 @@ void database::process_vesting_withdrawals()
                 FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
                 dv->add_votes( _votes_update_data_items,
-                          to_account->get_id() == from_account.get_id()/*withdraw_executor*/,
+                          to_account->get_id() == from_account->get_id()/*withdraw_executor*/,
                           routed.amount.value/*val*/,
                           *to_account/*account*/
                         );
@@ -2325,13 +2327,13 @@ void database::process_vesting_withdrawals()
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
     auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-    operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
+    operation vop = fill_vesting_withdraw_operation( from_account->get_name(), from_account->get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)
     pre_push_virtual_operation( vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.regenerate_rc_mana( from_account, now );
+      rc.regenerate_rc_mana( *from_account, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
@@ -2339,11 +2341,11 @@ void database::process_vesting_withdrawals()
       dv->add_votes( _votes_update_data_items,
                 true/*withdraw_executor*/,
                 -to_withdraw.value/*val*/,
-                from_account/*account*/
+                *from_account/*account*/
               );
     }
 
-    modify( from_account, [&]( account_object& a )
+    modify( *from_account, [&]( account_object& a )
     {
       a.set_vesting( a.get_vesting() - asset( to_withdraw, VESTS_SYMBOL ) );
       a.set_balance( a.get_balance() + converted_hive );
@@ -2363,7 +2365,7 @@ void database::process_vesting_withdrawals()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.update_account_after_vest_change( from_account, now, true, true );
+      rc.update_account_after_vest_change( *from_account, now, true, true );
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
@@ -2378,12 +2380,12 @@ void database::process_vesting_withdrawals()
       fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, now );
       FC_ASSERT( leftover.valid(), "Something went wrong" );
       if( leftover.valid() && ( *leftover ) > 0 )
-        adjust_proxied_witness_votes( from_account, -( ( *leftover ).value ) );
+        adjust_proxied_witness_votes( *from_account, -( ( *leftover ).value ) );
     }
     else
     {
       if( to_withdraw > 0 )
-        adjust_proxied_witness_votes( from_account, -to_withdraw );
+        adjust_proxied_witness_votes( *from_account, -to_withdraw );
     }
 
     post_push_virtual_operation( vop );
@@ -6786,13 +6788,11 @@ void database::retally_witness_votes()
   {
     if( itr->has_proxy() ) continue;
 
-    const auto& a = *itr;
-
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
-    auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
-    while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
+    auto wit_itr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
+    while( wit_itr != vidx.end() && wit_itr->account == itr->get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power() );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), itr->get_governance_vote_power() );
       ++wit_itr;
     }
   }
@@ -6804,21 +6804,20 @@ void database::retally_witness_vote_counts( bool force )
   auto account_idx = get_iterator<by_name>();
   for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
   {
-    const auto& a = *itr;
     uint16_t witnesses_voted_for = 0;
-    if( force || a.has_proxy() )
+    if( force || itr->has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-      auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
-      while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
+      auto wit_itr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
+      while( wit_itr != vidx.end() && wit_itr->account == itr->get_name() )
       {
         ++witnesses_voted_for;
         ++wit_itr;
       }
     }
-    if( a.get_witnesses_voted_for() != witnesses_voted_for )
+    if( itr->get_witnesses_voted_for() != witnesses_voted_for )
     {
-      modify( a, [&]( account_object& account )
+      modify( *itr, [&]( account_object& account )
       {
         account.set_witnesses_voted_for( witnesses_voted_for );
       } );
@@ -6844,29 +6843,29 @@ void database::remove_expired_governance_votes()
 
   while( !accounts->end() && acc_it->get_governance_vote_expiration_ts() <= now )
   {
-    const auto& account = *acc_it;
+    const auto account = acc_it;
     accounts->next();
     acc_it = accounts->get();
 
-    if( dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    if( dhf_helper::remove_proposal_votes( *account, proposal_votes, *this, obj_perf ) )
     {
-      nullify_proxied_witness_votes( account );
-      clear_witness_votes( account );
+      nullify_proxied_witness_votes( *account );
+      clear_witness_votes( *account );
 
-      if( account.has_proxy() )
-        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() )->get_name()) );
+      if( account->has_proxy() )
+        push_virtual_operation( proxy_cleared_operation( account->get_name(), get_account( account->get_proxy() )->get_name()) );
 
-      modify( account, [&]( account_object& a )
+      modify( *account, [&]( account_object& a )
       {
         a.clear_proxy();
         a.set_governance_vote_expired();
       } );
-      push_virtual_operation( expired_account_notification_operation( account.get_name() ) );
+      push_virtual_operation( expired_account_notification_operation( account->get_name() ) );
     }
     else
     {
       ilog("Threshold exceeded while processing account ${account} with expired governance vote.",
-        ("account", account.get_name())); // to be continued in next block
+        ("account", account->get_name())); // to be continued in next block
       break;
     }
   }
