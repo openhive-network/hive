@@ -1640,6 +1640,12 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
+  auto last_irr_block = std::get<5>( snapshotManifest );
+
+  _mainDb.set_last_irreversible_block_num( last_irr_block );
+  if( lib )
+    _mainDb.set_last_irreversible_block_data( lib );
+
   plugin_external_data_index& extDataIdx = std::get<1>(snapshotManifest);
   if(extDataIdx.empty())
   {
@@ -1649,12 +1655,6 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   {
     load_snapshot_external_data(extDataIdx);
   }
-
-  auto last_irr_block = std::get<5>(snapshotManifest);
-  
-  _mainDb.set_last_irreversible_block_num(last_irr_block);
-  if(lib)
-    _mainDb.set_last_irreversible_block_data( lib );
 
   auto blockNo = _mainDb.head_block_num();
 
