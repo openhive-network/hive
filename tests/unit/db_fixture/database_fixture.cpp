@@ -99,7 +99,13 @@ fc::path common_init( appbase::application& app, bool remove_db_files, const fc:
   if( remove_db_files )
   {
     fc::remove_all( ( _data_dir_str + "/blockchain" ).c_str() );
-    fc::remove_all( ( _data_dir_str + "/comments_data" ).c_str() );
+    // comments-rocksdb-storage will typically reside as subdirectory of above
+    // unless --shared-file-dir is passed in which case it will be stored there
+    // (unless yet again --comments-rocksdb-path is used); some tests want to
+    // remove blockchain but keep state intact; similar thing with AH RocksDB,
+    // by default under /blockchain/account-history-rocksdb-storage, but when
+    // passed differently, it will be located under --data-dir instead, even
+    // though it serves similar purpose (just something to remember)
   }
 
   app_initializer( app, argc, (char**)argv_ext.data() );
