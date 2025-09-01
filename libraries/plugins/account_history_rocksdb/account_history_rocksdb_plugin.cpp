@@ -520,19 +520,19 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 
     std::vector<rocksdb_operation_object> retVal;
 
-      const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
-      retVal.reserve(volatileIdx.size());
+    const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+    retVal.reserve(volatileIdx.size());
 
-      auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
-      for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
-      {
-        uint64_t opId = opIterator->op_in_trx;
-        opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
+    auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
+    for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
+    {
+      uint64_t opId = opIterator->op_in_trx;
+      opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
 
-        rocksdb_operation_object persistentOp(*opIterator);
-        persistentOp.id = opId;
-        retVal.emplace_back(std::move(persistentOp));
-      }
+      rocksdb_operation_object persistentOp(*opIterator);
+      persistentOp.id = opId;
+      retVal.emplace_back(std::move(persistentOp));
+    }
 
     if(retVal.empty() == false)
     {
