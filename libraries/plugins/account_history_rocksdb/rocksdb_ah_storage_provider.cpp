@@ -45,11 +45,6 @@ WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
   return _writeBuffer;
 }
 
-void rocksdb_ah_storage_provider::update_reindex_point( uint32_t rp )
-{
-  rocksdb_storage_provider::update_reindex_point( rp );
-}
-
 void rocksdb_ah_storage_provider::flushStorage()
 {
   rocksdb_storage_provider::flushStorage();
@@ -79,7 +74,6 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
 
   //see definition of Columns enum
   columnDefs.emplace_back("current_lib", ColumnFamilyOptions());
-  //columnDefs.emplace_back("last_reindex_point", ColumnFamilyOptions() ); reused above as another record
 
   columnDefs.emplace_back("operation_by_id", ColumnFamilyOptions());
   auto& byIdColumn = columnDefs.back();
@@ -137,11 +131,6 @@ void rocksdb_ah_storage_provider::wipeDb()
 const std::atomic_uint& rocksdb_ah_storage_provider::get_cached_irreversible_block() const
 {
   return _cached_irreversible_block;
-}
-
-unsigned int rocksdb_ah_storage_provider::get_cached_reindex_point() const
-{
-  return _cached_reindex_point;
 }
 
 uint64_t rocksdb_ah_storage_provider::get_operationSeqId() const

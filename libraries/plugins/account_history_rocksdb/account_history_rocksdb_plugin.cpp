@@ -508,12 +508,6 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
   return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
     *collectedIrreversibleBlock = _provider->get_cached_irreversible_block();
-    if( *collectedIrreversibleBlock < _provider->get_cached_reindex_point() )
-    {
-      wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
-        ( "a", *collectedIrreversibleBlock )( "b", _provider->get_cached_reindex_point() ) );
-      *collectedIrreversibleBlock = _provider->get_cached_reindex_point();
-    }
 
     if( *blockRangeEnd < *collectedIrreversibleBlock )
       return std::vector<rocksdb_operation_object>();
@@ -1084,9 +1078,9 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   _provider->flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
-  uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
-  _provider->update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
-  _provider->update_reindex_point( note.last_block_number );
+  uint32_t last_irreversible_block_num = _mainDb.get_last_irreversible_block_num();
+  _provider->update_lib( last_irreversible_block_num );
+  FC_ASSERT( last_irreversible_block_num == note.last_block_number, "Last replayed block should be current LIB" );
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
@@ -1214,20 +1208,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  if( block_num <= _provider->get_cached_reindex_point() )
-  {
-    // during reindex all data is pushed directly to storage, however the LIB reflects
-    // state in dgpo; this means there is a small window of inconsistency when data is stored
-    // in permanent storage but LIB would indicate it should be in volatile index
-    wlog( "Incoming LIB value ${l} within reindex range ${r} - that block is already effectively irreversible",
-      ( "l", block_num )( "r", _provider->get_cached_reindex_point() ) );
-  }
-  else
-  {
-    FC_ASSERT( block_num > _provider->get_cached_irreversible_block(), "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
-      ( "nb", block_num )( "ob", static_cast< uint32_t >(_provider->get_cached_irreversible_block()) ) );
-  }
-
   /// Here is made assumption, that thread processing block/transaction and sending this notification ALREADY holds write lock.
   /// Usually this lock is held by chain_plugin::start_write_processing() function (the write_processing thread).
 
@@ -1241,9 +1221,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
 
   auto moveRangeEndI = volatile_idx.upper_bound(block_num);
-  FC_ASSERT( block_num > _provider->get_cached_reindex_point() || moveRangeBeginI == moveRangeEndI,
-    "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
-    ( "b", block_num )( "r", _provider->get_cached_reindex_point() ) );
 
   volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> bool
     {
