@@ -24,7 +24,6 @@ class external_ah_storage_provider: public external_snapshot_storage_provider
     using ptr = std::shared_ptr<external_ah_storage_provider>;
 
     virtual const std::atomic_uint& get_cached_irreversible_block() const = 0;
-    virtual unsigned int get_cached_reindex_point() const = 0;
 
     virtual uint64_t get_operationSeqId() const = 0;
     virtual void set_operationSeqId( uint64_t value ) = 0;
@@ -36,7 +35,6 @@ class external_ah_storage_provider: public external_snapshot_storage_provider
     virtual void set_collectedOps( unsigned int value ) = 0;
 
     virtual void update_lib( uint32_t ) = 0;
-    virtual void update_reindex_point( uint32_t ) = 0;
 
     virtual void flushStorage() = 0;
     virtual void flushWriteBuffer(DB* storage = nullptr) = 0;

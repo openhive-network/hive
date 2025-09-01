@@ -13,7 +13,6 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
   : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
   _cached_irreversible_block.store(0);
-  _cached_reindex_point = 0;
 }
 
 void rocksdb_storage_provider::init( bool destroy_on_startup )
@@ -272,37 +271,6 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
   checkStatus( s );
 }
 
-void rocksdb_storage_provider::load_reindex_point()
-{
-  std::string data;
-  auto s = getStorage()->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
-
-  if( s.code() == ::rocksdb::Status::kNotFound )
-  {
-    ilog( "RocksDB reindex point not present in DB." );
-    update_reindex_point( 0 );
-    return;
-  }
-
-  FC_ASSERT( s.ok() && "Not found reindex", "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
-
-  uint32_t rp = lib_slice_t::unpackSlice(data);
-
-  FC_ASSERT( rp >= _cached_reindex_point,
-    "Inconsistency in reindex point - cached ${c}, stored ${s}",
-    ( "c", _cached_reindex_point )( "s", rp ) );
-  _cached_reindex_point = rp;
-  ilog( "RocksDB reindex point loaded with value ${p}.", ( "p", rp ) );
-}
-
-void rocksdb_storage_provider::update_reindex_point( uint32_t rp )
-{
-  ilog( "RocksDB reindex point set to ${p}.", ( "p", rp ) );
-  _cached_reindex_point = rp;
-  auto s = getWriteBuffer().Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
-  checkStatus( s );
-}
-
 void rocksdb_storage_provider::loadAdditionalData()
 {
   loadSeqIdentifiers(getStorage().get());
@@ -311,19 +279,10 @@ void rocksdb_storage_provider::loadAdditionalData()
   try
   {
     load_lib();
-    try
-    {
-      load_reindex_point();
-    }
-    catch( fc::assert_exception& )
-    {
-      update_reindex_point( 0 );
-    }
   }
   catch( fc::assert_exception& )
   {
     update_lib( 0 );
-    update_reindex_point( 0 );
   }
 }
 

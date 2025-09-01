@@ -47,7 +47,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void wipeDb() override;
 
     const std::atomic_uint& get_cached_irreversible_block() const override;
-    unsigned int get_cached_reindex_point() const override;
 
     uint64_t get_operationSeqId() const override;
     void set_operationSeqId( uint64_t value ) override;
@@ -61,9 +60,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t ) override;
-
-    //stores new value of reindex point in DB and _cached_reindex_point
-    void update_reindex_point( uint32_t ) override;
 
     void flushStorage() override;
 
