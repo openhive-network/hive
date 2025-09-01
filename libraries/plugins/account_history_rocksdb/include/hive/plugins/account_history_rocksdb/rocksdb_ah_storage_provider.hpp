@@ -43,7 +43,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     std::unique_ptr<DB>& getStorage() override;
 
-    void openDb( bool cleanDatabase ) override;
+    void openDb( uint32_t expected_lib, bool cleanDatabase ) override;
     void shutdownDb( bool removeDB = false ) override;
     void wipeDb() override;
 
