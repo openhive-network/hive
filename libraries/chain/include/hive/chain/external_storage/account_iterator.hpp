@@ -150,10 +150,10 @@ class helper<by_name>
 
 #define LOG3(message, a, b, val) \
 { \
-  ilog( "${m} ${val} [${name} ${time}] [${name2} ${time2}]", \
+  ilog( "${m} ${val} [${name} ${time} ${balance}] [${name2} ${time2} ${balance2}]", \
   ("m", message) \
-  ("name", a.get_name())("time", helper<ByIndex>::get_time(a)) \
-  ("name2", b.get_name())("time2", helper<ByIndex>::get_time(b)) \
+  ("name", a.get_name())("time", helper<ByIndex>::get_time(a))("balance", a.get_balance()) \
+  ("name2", b.get_name())("time2", helper<ByIndex>::get_time(b))("balance2", b.get_balance()) \
   ("val", (uint32_t)val) \
   ); \
 }
@@ -204,7 +204,7 @@ class account_iterator
     void update_volatile_item();
     void update_rocksdb_item();
 
-    template<bool IS_BEGIN>
+    template<bool IS_BEGIN, bool UPDATE_ITERATOR>
     void move_rocksdb_iterator();
 
   public:
@@ -246,22 +246,28 @@ void account_iterator<ByIndex>::update_rocksdb_item()
 }
 
 template<typename ByIndex>
-template<bool IS_BEGIN>
+template<bool IS_BEGIN, bool UPDATE_ITERATOR>
 void account_iterator<ByIndex>::move_rocksdb_iterator()
 {
-  if( IS_BEGIN )
-    rocksdb_iterator->begin();
-  else
-    rocksdb_iterator->next();
+  if( UPDATE_ITERATOR )
+  {
+    if( IS_BEGIN )
+      rocksdb_iterator->begin();
+    else
+      rocksdb_iterator->next();
 
-  update_rocksdb_item();
+    update_rocksdb_item();
+  }
 
   while( !rocksdb_iterator->end() )
   {
     auto _found = helper_index.find( rocksdb_item->get_name() );
-    if( _found != helper_index.end() && helper<ByIndex>::is_obsolete_value( *_found ) )
+    if(
+        ( _found != helper_index.end() && helper<ByIndex>::is_obsolete_value( *_found ) ) ||
+        ( volatile_it != volatile_index.end() && helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) )
+      )
     {
-      LOG1("SKIP", (*rocksdb_item));
+      LOG1((helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) ? "SKIP-THE-SAME" : "SKIP-OBSOLETE"), (*rocksdb_item));
       rocksdb_iterator->next();
       update_rocksdb_item();
     }
@@ -306,7 +312,7 @@ account account_iterator<ByIndex>::begin()
   volatile_it = volatile_index.begin();
   update_volatile_item();
 
-  move_rocksdb_iterator<true>();
+  move_rocksdb_iterator<true, true>();
 
   execute_cmp();
 
@@ -338,39 +344,18 @@ void account_iterator<ByIndex>::next()
 {
   FC_ASSERT( last != none, "Iterator error." );
 
-  auto _move_volatile_iterator = [this]( const account_object& obj )
-  {
-    if(  volatile_it != volatile_index.end() && helper<ByIndex>::equal( obj, *volatile_item ) )
-    {
-      LOG2("MOVE VOLATILE", helper<ByIndex>::equal( obj, *volatile_item ), obj, (*volatile_item) )
-      ++volatile_it;
-      update_volatile_item();
-    }
-  };
-
-  auto _move_rocksdb_iterator = [this]( const account_object& obj )
-  {
-    if( !rocksdb_iterator->end() && helper<ByIndex>::equal( obj, *rocksdb_item ) )
-    {
-      LOG2("MOVE RB", helper<ByIndex>::equal( obj, *rocksdb_item ), obj, (*rocksdb_item) )
-      move_rocksdb_iterator<false>();
-    }
-  };
-
   if( last == volatile_storage )
   {
     LOG0("NEXT VOLATILE")
-    _move_rocksdb_iterator( *volatile_item );
-
     ++volatile_it;
     update_volatile_item();
+
+    move_rocksdb_iterator<false, false>();
   }
   else
   {
     LOG0("NEXT RB")
-    _move_volatile_iterator( *rocksdb_item );
-
-    move_rocksdb_iterator<false>();
+    move_rocksdb_iterator<false, true>();
   }
 
   execute_cmp();
