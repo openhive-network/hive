@@ -33,9 +33,9 @@ std::unique_ptr<DB>& rocksdb_comment_storage_provider::getStorage()
   return rocksdb_storage_provider::getStorage();
 }
 
-void rocksdb_comment_storage_provider::openDb( bool cleanDatabase )
+void rocksdb_comment_storage_provider::openDb( uint32_t expected_lib, bool cleanDatabase )
 {
-  rocksdb_storage_provider::openDb( cleanDatabase );
+  rocksdb_storage_provider::openDb( expected_lib, cleanDatabase );
 }
 
 void rocksdb_comment_storage_provider::shutdownDb( bool removeDB )

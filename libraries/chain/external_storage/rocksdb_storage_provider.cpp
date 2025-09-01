@@ -15,16 +15,18 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
   _cached_irreversible_block.store(0);
 }
 
-void rocksdb_storage_provider::init( bool destroy_on_startup )
+void rocksdb_storage_provider::init( uint32_t expected_lib, bool destroy_on_startup )
 {
   if( !bfs::exists(_storagePath ) )
     bfs::create_directories( _storagePath );
 
-  openDb( destroy_on_startup );
+  openDb( expected_lib, destroy_on_startup );
 }
 
-void rocksdb_storage_provider::openDb( bool cleanDatabase )
+void rocksdb_storage_provider::openDb( uint32_t expected_lib, bool cleanDatabase )
 {
+  _cached_irreversible_block.store( expected_lib );
+
   //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
   bfs::create_directories( _blockchainStoragePath );
 
@@ -76,6 +78,7 @@ void rocksdb_storage_provider::shutdownDb( bool removeDB )
     if( removeDB )
       wipeDb();
   }
+  _cached_irreversible_block.store( 0 );
 }
 
 void rocksdb_storage_provider::wipeDb()
@@ -248,6 +251,8 @@ void rocksdb_storage_provider::load_lib()
   if(s.code() == ::rocksdb::Status::kNotFound)
   {
     ilog( "RocksDB LIB not present in DB." );
+    FC_ASSERT( 0 == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}",
+      ( "c", static_cast<uint32_t>( _cached_irreversible_block ) ) );
     update_lib( 0 ); ilog( "RocksDB LIB set to 0." );
     return;
   }
@@ -256,10 +261,8 @@ void rocksdb_storage_provider::load_lib()
 
   uint32_t lib = lib_slice_t::unpackSlice(data);
 
-  FC_ASSERT( lib >= _cached_irreversible_block,
-    "Inconsistency in last irreversible block - cached ${c}, stored ${s}",
+  FC_ASSERT( lib == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}, stored ${s}",
     ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
-  _cached_irreversible_block.store( lib );
   ilog( "RocksDB LIB loaded with value ${l}.", ( "l", lib ) );
 }
 
@@ -274,16 +277,7 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
 void rocksdb_storage_provider::loadAdditionalData()
 {
   loadSeqIdentifiers(getStorage().get());
-  // I do not like using exceptions for control paths, but column definitions are set multiple times
-  // opening the db, so that is not a good place to write the initial lib.
-  try
-  {
-    load_lib();
-  }
-  catch( fc::assert_exception& )
-  {
-    update_lib( 0 );
-  }
+  load_lib();
 }
 
 }}

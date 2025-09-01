@@ -80,7 +80,7 @@ class rocksdb_storage_provider
 
     std::unique_ptr<DB>& getStorage() { return _storage; }
 
-    void openDb( bool cleanDatabase );
+    void openDb( uint32_t expected_lib, bool cleanDatabase );
     void shutdownDb( bool removeDB = false );
     void wipeDb();
 
@@ -97,7 +97,7 @@ class rocksdb_storage_provider
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     virtual ~rocksdb_storage_provider(){}
 
-    void init( bool destroy_on_startup );
+    void init( uint32_t expected_lib, bool destroy_on_startup );
 
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );

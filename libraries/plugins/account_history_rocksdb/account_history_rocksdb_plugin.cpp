@@ -1057,7 +1057,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  _provider->openDb( false );
+  _provider->openDb( _mainDb.get_last_irreversible_block_num(), false );
 
   ilog("Setting write limit to massive level");
 
