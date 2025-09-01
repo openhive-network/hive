@@ -104,7 +104,7 @@ private:
 class account_history_rocksdb_plugin::impl final
 {
 public:
-  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app, bool destroyOnStartup) :
+  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app ) :
     _self(self),
     _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
@@ -113,10 +113,7 @@ public:
     _filter("ah-rb"),
     theApp( app )
   {
-    auto _rasp = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
-    _rasp->init( destroyOnStartup );
-
-    _provider = _rasp;
+    _provider = std::make_shared<rocksdb_ah_storage_provider>( _blockchainStoragePath, _storagePath, theApp );
     _snapshot = std::shared_ptr<rocksdb_snapshot>(
       new rocksdb_snapshot( "Account History RocksDB", "account_history_rocksdb_data", _mainDb, _storagePath, _provider ) );
 
@@ -163,6 +160,11 @@ public:
     }, _self );
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
+  }
+
+  void init( bool destroyOnStartup )
+  {
+    _provider->init( _mainDb.get_last_irreversible_block_num(), destroyOnStartup );
   }
 
   ~impl()
@@ -371,7 +373,7 @@ private:
 
   appbase::application& theApp;
 
-  external_ah_storage_provider::ptr _provider;
+  rocksdb_ah_storage_provider::ptr  _provider;
   external_storage_snapshot::ptr    _snapshot;
 };
 
@@ -1405,12 +1407,13 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
     dbPath = actualPath;
   }
 
-  _my = std::make_unique<impl>( *this, options, dbPath, get_app(), _destroyOnStartup );
+  _my = std::make_unique<impl>( *this, options, dbPath, get_app() );
 }
 
 void account_history_rocksdb_plugin::plugin_startup()
 {
   ilog("Starting up account_history_rocksdb_plugin...");
+  _my->init( _destroyOnStartup );
 }
 
 void account_history_rocksdb_plugin::plugin_shutdown()
