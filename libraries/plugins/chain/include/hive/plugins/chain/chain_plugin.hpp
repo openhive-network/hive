@@ -49,6 +49,7 @@ public:
   virtual ~chain_plugin();
 
   bfs::path state_storage_dir() const;
+  bfs::path comment_storage_dir() const;
 
   static const std::string& name() { static std::string name = HIVE_CHAIN_PLUGIN_NAME; return name; }
 

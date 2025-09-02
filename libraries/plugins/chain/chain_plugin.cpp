@@ -1447,6 +1447,11 @@ bfs::path chain_plugin::state_storage_dir() const
   return my->shared_memory_dir;
 }
 
+bfs::path chain_plugin::comment_storage_dir() const
+{
+  return my->comments_storage_path;
+}
+
 void chain_plugin::set_program_options(options_description& cli, options_description& cfg)
 {
 #ifdef USE_ALTERNATE_CHAIN_ID

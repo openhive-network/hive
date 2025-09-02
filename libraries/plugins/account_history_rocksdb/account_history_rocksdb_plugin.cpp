@@ -200,6 +200,8 @@ public:
 
   void shutdownDb();
 
+  bfs::path get_storage_path() const { return _storagePath; }
+
 private:
 
   uint64_t build_next_operation_id(const rocksdb_operation_object& obj, const hive::protocol::operation& processed_op)
@@ -1450,6 +1452,11 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
   uint32_t* txInBlock) const
 {
   return _my->find_transaction_info(trxId, include_reversible, blockNo, txInBlock);
+}
+
+bfs::path account_history_rocksdb_plugin::storage_dir() const
+{
+  return _my->get_storage_path();
 }
 
 } } }
