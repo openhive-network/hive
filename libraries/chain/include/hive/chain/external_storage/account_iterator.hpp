@@ -259,20 +259,28 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
     update_rocksdb_item();
   }
 
+  bool _was_the_same = false;
   while( !rocksdb_iterator->end() )
   {
-    auto _found = helper_index.find( rocksdb_item->get_name() );
-    if(
-        ( _found != helper_index.end() && helper<ByIndex>::is_obsolete_value( *_found ) ) ||
-        ( volatile_it != volatile_index.end() && helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) )
-      )
+    if( !_was_the_same && volatile_it != volatile_index.end() && helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) )
     {
-      LOG1((helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) ? "SKIP-THE-SAME" : "SKIP-OBSOLETE"), (*rocksdb_item));
+      _was_the_same = true;
+      LOG1("SKIP-THE-SAME", (*rocksdb_item));
       rocksdb_iterator->next();
       update_rocksdb_item();
     }
     else
-      break;
+    {
+      auto _found = helper_index.find( rocksdb_item->get_name() );
+      if( _found != helper_index.end() && helper<ByIndex>::is_obsolete_value( *_found ) )
+      {
+        LOG1("SKIP-OBSOLETE", (*rocksdb_item));
+        rocksdb_iterator->next();
+        update_rocksdb_item();
+      }
+      else
+        break;
+    }
   }
 }
 
