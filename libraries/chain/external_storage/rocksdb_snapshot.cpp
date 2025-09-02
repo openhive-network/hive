@@ -86,7 +86,8 @@ void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplemen
 
   ilog("Attempting to restore ${_name} from backup location: `${p}'", (_name)("p", pathString));
 
-  _provider->shutdownDb( true );
+  _provider->shutdownDb();
+  _provider->wipeDb();
 
   ilog("Starting restore of ${_name} backup into storage location: ${p}.", (_name)("p", _storagePath.string()));
 
@@ -97,7 +98,7 @@ void rocksdb_snapshot::load_snapshot( const hive::chain::load_snapshot_supplemen
 
   ilog("Restoring ${_name} backup from the location: `${p}' finished", (_name)("p", pathString));
 
-  _provider->openDb( _mainDb.get_last_irreversible_block_num(), false );
+  _provider->openDb( _mainDb.get_last_irreversible_block_num() );
 }
 
 }}
