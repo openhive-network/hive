@@ -167,13 +167,13 @@ trio = ["trio (>=0.26.1)"]
 
 [[package]]
 name = "api-client-generator"
-version = "1.3.1.dev16+d620eb1"
+version = "1.3.1.dev18+71eb0ab"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.3.1.dev16+d620eb1-py3-none-any.whl", hash = "sha256:1d08920cd0fd76b943ba69b1cef41d3115f770c091164f5195ced49007140e98"},
+    {file = "api_client_generator-1.3.1.dev18+71eb0ab-py3-none-any.whl", hash = "sha256:cb172fbdac2f86630492f9c9506148a460c3a0e78e8548ad73ab006d6016aaf3"},
 ]
 
 [package.dependencies]
@@ -1755,4 +1755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "6afec0326d885711d4c06d8a25e3b1163f45fc1ba0053f614ffbe674a545ce37"
+content-hash = "aa2b2fc6aadb7062f3c04e5e12091e04c703fc80e74ceb2ef1d3979dbdc0f798"
