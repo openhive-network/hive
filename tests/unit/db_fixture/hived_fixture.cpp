@@ -150,6 +150,9 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
       BOOST_REQUIRE( db );
       db->_log_hardforks = false;
 
+      ah_plugin = app.find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
+      // presence depends on settings
+
       thread_pool = &_chain->get_thread_pool();
       BOOST_REQUIRE( thread_pool );
 
