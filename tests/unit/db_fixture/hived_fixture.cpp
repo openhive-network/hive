@@ -161,24 +161,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
         // Store the structure for further examination (in tests).
         _logging_config = app.load_logging_config();
       }
-/*
-      Those databases will be removed when remove_db_files is set and they are located under
-      /blockchain, otherwise it means test wanted to preserve them (f.e. only remove blockchain,
-      but leave state; general rule is that those have to be preserved/removed along with SHM,
-      and it is up to the test to assure that if it is not using default locations
 
-      ah_plugin_type* ah_plugin = app.find_plugin< ah_plugin_type >();
-      if( ah_plugin != nullptr )
-      {
-        ah_plugin->set_destroy_database_on_startup();
-        ah_plugin->set_destroy_database_on_shutdown();
-      }
-      if( _chain != nullptr )
-      {
-        _chain->set_destroy_database_on_startup();
-        _chain->set_destroy_database_on_shutdown();
-      }
-*/
       app.startup();
     } );
 

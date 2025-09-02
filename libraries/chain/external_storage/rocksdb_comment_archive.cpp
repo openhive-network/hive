@@ -17,9 +17,8 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
-rocksdb_comment_archive::rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path,
-  const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
-  : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
+rocksdb_comment_archive::rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+  : db( db )
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
   provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app );
@@ -189,13 +188,13 @@ void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_su
 void rocksdb_comment_archive::open()
 {
   // volatile_comment_index is registered in database, so it is handled automatically
-  provider->init( db.get_last_irreversible_block_num(), destroy_database_on_startup );
+  provider->init( db.get_last_irreversible_block_num() );
 }
 
 void rocksdb_comment_archive::close()
 {
   // volatile_comment_index is registered in database, so it is handled automatically
-  provider->shutdownDb( destroy_database_on_shutdown );
+  provider->shutdownDb();
 }
 
 void rocksdb_comment_archive::wipe()

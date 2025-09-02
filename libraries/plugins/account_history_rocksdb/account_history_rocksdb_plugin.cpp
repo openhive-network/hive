@@ -162,9 +162,9 @@ public:
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
   }
 
-  void init( bool destroyOnStartup )
+  void init()
   {
-    _provider->init( _mainDb.get_last_irreversible_block_num(), destroyOnStartup );
+    _provider->init( _mainDb.get_last_irreversible_block_num() );
   }
 
   ~impl()
@@ -198,7 +198,7 @@ public:
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
-  void shutdownDb( bool destroyOnShutdown );
+  void shutdownDb();
 
 private:
 
@@ -913,9 +913,9 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   return false;
 }
 
-void account_history_rocksdb_plugin::impl::shutdownDb( bool destroyOnShutdown )
+void account_history_rocksdb_plugin::impl::shutdownDb()
 {
-  _provider->shutdownDb( destroyOnShutdown );
+  _provider->shutdownDb();
 }
 
 void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const account_name_type& name, const rocksdb_operation_object& obj )
@@ -1057,7 +1057,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  _provider->openDb( _mainDb.get_last_irreversible_block_num(), false );
+  _provider->openDb( _mainDb.get_last_irreversible_block_num() );
 
   ilog("Setting write limit to massive level");
 
@@ -1413,13 +1413,13 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 void account_history_rocksdb_plugin::plugin_startup()
 {
   ilog("Starting up account_history_rocksdb_plugin...");
-  _my->init( _destroyOnStartup );
+  _my->init();
 }
 
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
-  _my->shutdownDb(_destroyOnShutdown);
+  _my->shutdownDb();
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,

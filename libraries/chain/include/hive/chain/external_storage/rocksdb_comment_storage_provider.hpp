@@ -39,8 +39,8 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     std::unique_ptr<DB>& getStorage() override;
 
-    void openDb( uint32_t expected_lib, bool cleanDatabase ) override;
-    void shutdownDb( bool removeDB = false ) override;
+    void openDb( uint32_t expected_lib ) override;
+    void shutdownDb() override;
     void wipeDb() override;
 
     void save( const Slice& key, const Slice& value ) override;

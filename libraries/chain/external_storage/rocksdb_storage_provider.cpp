@@ -15,26 +15,23 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
   _cached_irreversible_block.store(0);
 }
 
-void rocksdb_storage_provider::init( uint32_t expected_lib, bool destroy_on_startup )
+void rocksdb_storage_provider::init( uint32_t expected_lib )
 {
   if( !bfs::exists(_storagePath ) )
     bfs::create_directories( _storagePath );
 
-  openDb( expected_lib, destroy_on_startup );
+  openDb( expected_lib );
 }
 
-void rocksdb_storage_provider::openDb( uint32_t expected_lib, bool cleanDatabase )
+void rocksdb_storage_provider::openDb( uint32_t expected_lib )
 {
   _cached_irreversible_block.store( expected_lib );
 
   //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
   bfs::create_directories( _blockchainStoragePath );
 
-  if( cleanDatabase )
-    wipeDb();
-
   auto _result = createDbSchema(_storagePath);
-  if(  !std::get<1>( _result ) )
+  if( !std::get<1>( _result ) )
     return;
 
   auto columnDefs = prepareColumnDefinitions(true);
@@ -66,7 +63,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib, bool cleanDatabase
   }
 }
 
-void rocksdb_storage_provider::shutdownDb( bool removeDB )
+void rocksdb_storage_provider::shutdownDb()
 {
   if(getStorage())
   {
@@ -74,9 +71,6 @@ void rocksdb_storage_provider::shutdownDb( bool removeDB )
     cleanupColumnHandles();
     getStorage()->Close();
     getStorage().reset();
-
-    if( removeDB )
-      wipeDb();
   }
   _cached_irreversible_block.store( 0 );
 }
