@@ -161,8 +161,6 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
-    bool                             destroyDatabaseOnStartup = false;
-    bool                             destroyDatabaseOnShutdown = false;
 
     enum class comment_archive_type
     {
@@ -806,7 +804,7 @@ void chain_plugin_impl::initial_settings()
     ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}",
       ( "csp", comments_storage_path.c_str() ) );
     comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-      comments_storage_path, theApp, destroyDatabaseOnStartup, destroyDatabaseOnShutdown );
+      comments_storage_path, theApp );
     break;
   }
   db.set_comments_handler( comment_archive );
@@ -2154,16 +2152,6 @@ void chain_plugin::finish_request()
 bool chain_plugin::is_finished_write_processing() const
 {
   return my->finish.status.load();
-}
-
-void chain_plugin::set_destroy_database_on_startup( bool set )
-{
-  my->destroyDatabaseOnStartup = set;
-}
-
-void chain_plugin::set_destroy_database_on_shutdown( bool set )
-{
-  my->destroyDatabaseOnShutdown = set;
 }
 
 } } } // namespace hive::plugins::chain

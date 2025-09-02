@@ -24,16 +24,12 @@ class rocksdb_comment_archive : public comments_handler
     rocksdb_comment_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
 
-    bool destroy_database_on_startup = false;
-    bool destroy_database_on_shutdown = false;
-
     void move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object );
     std::shared_ptr<comment_object> get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const;
 
   public:
 
-    rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
-      appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown );
+    rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     virtual ~rocksdb_comment_archive();
 
     void on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
