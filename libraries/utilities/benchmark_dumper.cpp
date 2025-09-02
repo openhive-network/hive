@@ -22,11 +22,22 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
 
 void operator -= ( benchmark_dumper::account_archive_details_t& current, const benchmark_dumper::account_archive_details_t& previous )
 {
-  current.account_created           -= previous.account_created;
-  current.account_modified          -= previous.account_modified;
-  current.account_accessed_by_name  -= previous.account_accessed_by_name;
-  current.account_accessed_by_id    -= previous.account_accessed_by_id;
-  current.account_next              -= previous.account_next;
+  current.account_created               -= previous.account_created;
+  current.account_modified              -= previous.account_modified;
+  current.account_accessed_by_name      -= previous.account_accessed_by_name;
+  current.account_accessed_by_id        -= previous.account_accessed_by_id;
+  current.account_total_next            -= previous.account_total_next;
+  current.account_total_begin           -= previous.account_total_begin;
+  current.account_begin                 -= previous.account_begin;
+  current.account_next_basic            -= previous.account_next_basic;
+  current.account_next_skip_the_same    -= previous.account_next_skip_the_same;
+  current.account_next_skip_obsolete    -= previous.account_next_skip_obsolete;
+  current.account_no_skip_obsolete      -= previous.account_no_skip_obsolete;
+  current.account_create_rocksdb        -= previous.account_create_rocksdb;
+  current.account_create_volatile       -= previous.account_create_volatile;
+  current.account_moved_to_storage      -= previous.account_moved_to_storage;
+  current.account_cmp                   -= previous.account_cmp;
+  current.account_get                   -= previous.account_get;
 }
 
 const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )

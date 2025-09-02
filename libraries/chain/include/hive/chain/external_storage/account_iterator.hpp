@@ -237,15 +237,25 @@ account_iterator<ByIndex>::account_iterator(  const chainbase::database& db,
 template<typename ByIndex>
 void account_iterator<ByIndex>::update_volatile_item()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   if( volatile_it != volatile_index.end() )
     volatile_item = volatile_it->read();
+
+  accounts_stats::stats.account_create_volatile.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_create_volatile.count;
 }
 
 template<typename ByIndex>
 void account_iterator<ByIndex>::update_rocksdb_item()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   if( !rocksdb_iterator->end() )
     rocksdb_item = rocksdb_iterator->get();
+
+  accounts_stats::stats.account_create_rocksdb.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_create_rocksdb.count;
 }
 
 template<typename ByIndex>
@@ -254,10 +264,22 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
 {
   if( UPDATE_ITERATOR )
   {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
     if( IS_BEGIN )
+    {
       rocksdb_iterator->begin();
+
+      accounts_stats::stats.account_begin.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ++accounts_stats::stats.account_begin.count;
+    }
     else
+    {
       rocksdb_iterator->next();
+
+      accounts_stats::stats.account_next_basic.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ++accounts_stats::stats.account_next_basic.count;
+    }
 
     update_rocksdb_item();
   }
@@ -265,11 +287,17 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
   bool _was_the_same = false;
   while( !rocksdb_iterator->end() )
   {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
     if( !_was_the_same && volatile_it != volatile_index.end() && helper<ByIndex>::equal( *rocksdb_item, *volatile_item ) )
     {
       _was_the_same = true;
       LOG1("SKIP-THE-SAME", (*rocksdb_item));
       rocksdb_iterator->next();
+
+      accounts_stats::stats.account_next_skip_the_same.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      ++accounts_stats::stats.account_next_skip_the_same.count;
+
       update_rocksdb_item();
     }
     else
@@ -279,10 +307,18 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
       {
         LOG1("SKIP-OBSOLETE", (*rocksdb_item));
         rocksdb_iterator->next();
+
+        accounts_stats::stats.account_next_skip_obsolete.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+        ++accounts_stats::stats.account_next_skip_obsolete.count;
+
         update_rocksdb_item();
       }
       else
+      {
+        accounts_stats::stats.account_no_skip_obsolete.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+        ++accounts_stats::stats.account_no_skip_obsolete.count;
         break;
+      }
     }
   }
 }
@@ -290,6 +326,14 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
 template<typename ByIndex>
 void account_iterator<ByIndex>::execute_cmp()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_cmp.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_cmp.count;
+  };
+
   if( end() )
   {
     last = none;
@@ -314,7 +358,6 @@ void account_iterator<ByIndex>::execute_cmp()
     last = helper<ByIndex>::cmp( *volatile_item, *rocksdb_item ) ? volatile_storage : rocksdb_storage;
     LOG3( "cmp-c", (*volatile_item), (*rocksdb_item), last )
   }
-
 }
 
 template<typename ByIndex>
@@ -324,8 +367,8 @@ account account_iterator<ByIndex>::begin()
 
   BOOST_SCOPE_EXIT_ALL(&)
   {
-    accounts_stats::stats.account_next.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_next.count;
+    accounts_stats::stats.account_total_begin.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_total_begin.count;
   };
 
   volatile_it = volatile_index.begin();
@@ -341,6 +384,14 @@ account account_iterator<ByIndex>::begin()
 template<typename ByIndex>
 account account_iterator<ByIndex>::get()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_get.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_get.count;
+  };
+
   if( last == none )
   {
     return account();
@@ -365,8 +416,8 @@ void account_iterator<ByIndex>::next()
 
   BOOST_SCOPE_EXIT_ALL(&)
   {
-    accounts_stats::stats.account_next.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_next.count;
+    accounts_stats::stats.account_total_next.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_total_next.count;
   };
 
   FC_ASSERT( last != none, "Iterator error." );

@@ -443,6 +443,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   if( _volatile_idx.size() < volatile_objects_limit )
     return false;
 
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   auto _itr = _volatile_idx.begin();
 
 #ifdef DBG_MOVE_INFO
@@ -450,11 +452,13 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 #endif
 
   bool _do_flush = false;
+  uint32_t _cnt = 0;
 
   while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
   {
     const auto& _current = *_itr;
     ++_itr;
+    ++_cnt;
 
     transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4, RocksDB_Object_Type5>::move_to_external_storage( provider, _current, column_types );
 
@@ -467,6 +471,10 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 
     db.remove( _current );
   }
+
+  accounts_stats::stats.account_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  accounts_stats::stats.account_moved_to_storage.count += _cnt;
+
   return _do_flush;
 }
 
