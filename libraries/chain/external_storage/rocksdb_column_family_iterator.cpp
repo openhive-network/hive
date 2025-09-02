@@ -12,9 +12,9 @@ rocksdb_column_family_iterator::rocksdb_column_family_iterator( const chainbase:
   it = _provider->create_column_family_iterator( column_type );
 }
 
-void rocksdb_column_family_iterator::begin()
+void rocksdb_column_family_iterator::begin( Slice&& slice )
 {
-  it->SeekToFirst();
+  it->Seek( slice );
 }
 
 void rocksdb_column_family_iterator::next()
