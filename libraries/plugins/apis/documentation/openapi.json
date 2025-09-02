@@ -7553,6 +7553,80 @@
                             "post_voting_power": {
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_balance": { 
+                                "type": "string",
+                                "description": "The vesting balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reputation": { 
+                                "$ref": "#/components/schemas/hive_int",
+                                "description": "The reputation of the account."
+                            },
+                            "transfer_history": { 
+                                "$ref": "#/components/schemas/account_history_array_condenser_api",
+                                "description": "Historical transfer operations"
+                            },
+                            "market_history": { 
+                                "$ref": "#/components/schemas/account_history_array_condenser_api",
+                                "description": "Historical market operations"
+                            },
+                            "post_history": { 
+                                "$ref": "#/components/schemas/account_history_array_condenser_api",
+                                "description": "Historical post operations"
+                            },
+                            "vote_history": { 
+                                "$ref": "#/components/schemas/account_history_array_condenser_api",
+                                "description": "Historical vote operations"
+                            },
+                            "other_history": { 
+                                "$ref": "#/components/schemas/account_history_array_condenser_api",
+                                "description": "Historical operations"
+                            },
+                            "tags_usage": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "guest_bloggers": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "open_orders": { 
+                                "$ref": "#/components/schemas/limit_order_array_condenser_api",
+                                "description": "Historical operations"
+                            },
+                            "comments": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "blog": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "feed": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "recent_replies": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "recommended": { 
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
                             }
                         },
                         "required": [
@@ -7568,7 +7642,16 @@
                             "delegated_vesting_shares",
                             "received_vesting_shares",
                             "vesting_withdraw_rate",
-                            "post_voting_power"
+                            "post_voting_power",
+                            "vesting_balance",
+                            "reputation",
+                            "transfer_history",
+                            "market_history",
+                            "post_history",
+                            "vote_history",
+                            "other_history",
+                            "tags_usage",
+                            "guest_bloggers"
                         ]
                     }
                 ]
@@ -10640,7 +10723,7 @@
                     "orders": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/orders"
+                            "$ref": "#/components/schemas/limit_order_default"
                         }
                     }
                 },
@@ -13226,6 +13309,105 @@
                 "minItems": 5,
                 "maxItems": 5
             },
+            "limit_order_template": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 12345
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2019-12-14T04:05:39",
+                        "description": "The date when the order was created."
+                    },
+                    "expiration": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2019-12-15T05:05:21",
+                        "description": "The expiration time of the order."
+                    },
+                    "seller": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The account that created the order."
+                    },
+                    "orderid": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The ID of the order."
+                    },
+                    "for_sale": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 0,
+                        "description": "The amount of the asset for sale."
+                    }
+                },
+                "required": [
+                    "id",
+                    "created",
+                    "expiration",
+                    "seller",
+                    "orderid",
+                    "for_sale"
+                ]
+            },
+            "limit_order_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/limit_order_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "sell_price": {
+                                "$ref": "#/components/schemas/base_and_quote",
+                                "example": 0,
+                                "description": "The amount of the asset for sale."
+                            }
+                        },
+                        "required": [
+                            "sell_price"
+                        ]
+                    }
+                ]
+            },
+            "limit_order_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/limit_order_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "sell_price": {
+                                "$ref": "#/components/schemas/base_and_quote_condenser_api",
+                                "example": 0,
+                                "description": "The amount of the asset for sale."
+                            }
+                        },
+                        "required": [
+                            "sell_price"
+                        ]
+                    }
+                ]
+            },
+            "limit_order_array_condenser_api": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "$ref": "#/components/schemas/limit_order_condenser_api"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2
+            },
             "list_account_recovery_requests": {
                 "$ref": "#/components/schemas/start_limit_order"
             },
@@ -13462,7 +13644,7 @@
                     "orders": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/orders"
+                            "$ref": "#/components/schemas/limit_order_default"
                         }
                     }
                 },
@@ -13957,64 +14139,6 @@
                     "irreversible",
                     "ops",
                     "timestamp"
-                ]
-            },
-            "orders": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 12345
-                    },
-                    "created": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2019-12-14T04:05:39",
-                        "description": "The date when the order was created."
-                    },
-                    "expiration": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2019-12-15T05:05:21",
-                        "description": "The expiration time of the order."
-                    },
-                    "seller": {
-                        "type": "string",
-                        "example": "",
-                        "description": "The account that created the order."
-                    },
-                    "orderid": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The ID of the order."
-                    },
-                    "for_sale": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 0,
-                        "description": "The amount of the asset for sale."
-                    },
-                    "sell_price": {
-                        "type": "object",
-                        "properties": {
-                            "base": {
-                                "$ref": "#/components/schemas/balance",
-                                "description": "The base asset of the order."
-                            },
-                            "quote": {
-                                "$ref": "#/components/schemas/balance",
-                                "description": "The quote asset of the order."
-                            }
-                        }
-                    }
-                },
-                "required": [
-                    "id",
-                    "created",
-                    "expiration",
-                    "seller",
-                    "orderid",
-                    "for_sale",
-                    "sell_price"
                 ]
             },
             "owner_auth_history": {
