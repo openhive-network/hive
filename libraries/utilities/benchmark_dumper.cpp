@@ -22,11 +22,11 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
 
 void operator -= ( benchmark_dumper::account_archive_details_t& current, const benchmark_dumper::account_archive_details_t& previous )
 {
-  current.account_accessed_from_index -= previous.account_accessed_from_index;
-  current.account_accessed_from_archive -= previous.account_accessed_from_archive;
-  current.account_not_found -= previous.account_not_found;
-  current.account_cashout_processing -= previous.account_cashout_processing;
-  current.account_lib_processing -= previous.account_lib_processing;
+  current.account_created           -= previous.account_created;
+  current.account_modified          -= previous.account_modified;
+  current.account_accessed_by_name  -= previous.account_accessed_by_name;
+  current.account_accessed_by_id    -= previous.account_accessed_by_id;
+  current.account_next              -= previous.account_next;
 }
 
 const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )

@@ -4,7 +4,6 @@
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
 #include <hive/chain/external_storage/account_iterator.hpp>
 
-#include <hive/utilities/benchmark_dumper.hpp>
 
 namespace hive { namespace chain {
 
@@ -119,8 +118,6 @@ class accounts_handler : public executor_interface, public external_storage_snap
     virtual void open() = 0;
     virtual void close() = 0;
     virtual void wipe() = 0;
-
-    static hive::utilities::benchmark_dumper::account_archive_details_t stats; // note: times should be measured in nanoseconds
 };
 
 } } // hive::chain

@@ -4,6 +4,9 @@
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/rocksdb_account_iterator.hpp>
 #include <hive/chain/external_storage/rocksdb_iterator_provider.hpp>
+
+#include <boost/scope_exit.hpp>
+
 namespace hive { namespace chain {
 
 template<typename ByIndex>
@@ -317,6 +320,14 @@ void account_iterator<ByIndex>::execute_cmp()
 template<typename ByIndex>
 account account_iterator<ByIndex>::begin()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_next.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_next.count;
+  };
+
   volatile_it = volatile_index.begin();
   update_volatile_item();
 
@@ -350,6 +361,14 @@ account account_iterator<ByIndex>::get()
 template<typename ByIndex>
 void account_iterator<ByIndex>::next()
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_next.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_next.count;
+  };
+
   FC_ASSERT( last != none, "Iterator error." );
 
   if( last == volatile_storage )

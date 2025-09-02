@@ -863,7 +863,7 @@ void chain_plugin_impl::initial_settings()
         info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
     }
     comment_archive_stats = comments_handler::stats;
-    account_archive_stats = accounts_handler::stats;
+    account_archive_stats = accounts_stats::stats;
   };
 
   fc::variant database_config;

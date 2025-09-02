@@ -13,13 +13,13 @@
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/allocator_helper.hpp>
 
+#include <boost/scope_exit.hpp>
+
 namespace hive { namespace chain {
 
 //#define DBG_INFO
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
-
-hive::utilities::benchmark_dumper::account_archive_details_t accounts_handler::stats;
 
   template<typename Volatile_Object_Type, typename SHM_Object_Type>
   struct creator
@@ -302,8 +302,6 @@ struct volatile_supporter_impl
 
   static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj, const std::function<void(Volatile_Object_Type& o)>& func = nullptr )
   {
-    auto time_start = std::chrono::high_resolution_clock::now();
-
     const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
     auto _found = _volatile_idx.find( obj.get_name() );
     if( _found != _volatile_idx.end() )
@@ -324,9 +322,6 @@ struct volatile_supporter_impl
           func( o );
       });
     }
-
-    accounts_handler::stats.account_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_handler::stats.account_cashout_processing.count;
   }
 
   static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
@@ -448,8 +443,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   if( _volatile_idx.size() < volatile_objects_limit )
     return false;
 
-  auto time_start = std::chrono::high_resolution_clock::now();
-
   auto _itr = _volatile_idx.begin();
 
 #ifdef DBG_MOVE_INFO
@@ -458,7 +451,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 
   bool _do_flush = false;
 
-  uint64_t count = 0;
   while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
   {
     const auto& _current = *_itr;
@@ -474,14 +466,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
       db.remove( *_shm_object );
 
     db.remove( _current );
-
-    ++count;
   }
-
-
-  stats.account_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  stats.account_lib_processing.count += count;
-
   return _do_flush;
 }
 
@@ -510,13 +495,9 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Volatile_Sub_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index, typename SHM_Object_Sub_Index>
 Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
   const auto* _found = db.find<SHM_Object_Type, SHM_Object_Sub_Index>( key );
   if( _found )
   {
-    stats.account_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++stats.account_accessed_from_index.count;
     return Object_Type( _found );
   }
   else
@@ -531,16 +512,8 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
     else
     {
       const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index, Key_Type>::read( db, provider, key, column_types );
-      uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-      if( _external_found )
+      if( !_external_found )
       {
-        stats.account_accessed_from_archive.time_ns += time;
-        ++stats.account_accessed_from_archive.count;
-      }
-      else
-      {
-        stats.account_not_found.time_ns += time;
-        ++stats.account_not_found.count;
         FC_ASSERT( !is_required, "Account data not found" );
       }
       return Object_Type( _external_found );
@@ -585,22 +558,48 @@ void rocksdb_account_archive::modify_object( const account_authority_object& obj
 //==========================================account_object==========================================
 void rocksdb_account_archive::create_or_update_volatile( const account_object& obj )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+
+  accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_created.count;
 }
 
 account rocksdb_account_archive::get_account( const account_name_type& account_name, bool account_is_required ) const
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_accessed_by_name.count;
+  };
+
   return get_object<account_name_type, volatile_account_object, volatile_account_index, by_name, account, account_object, account_index, by_name>( account_name, { ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 account rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_accessed_by_id.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_accessed_by_id.count;
+  };
+
   return get_object<account_id_type, volatile_account_object, volatile_account_index, by_account_id, account, account_object, account_index, by_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_index, volatile_account_object, account_object>::modify( db, obj, modifier );
+
+  accounts_stats::stats.account_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_modified.count;
 }
 //==========================================account_object==========================================
 

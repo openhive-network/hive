@@ -36,11 +36,11 @@ public:
 
   struct account_archive_details_t
   {
-    counter_t account_accessed_from_index;
-    counter_t account_accessed_from_archive;
-    counter_t account_not_found;
-    counter_t account_cashout_processing;
-    counter_t account_lib_processing;
+    counter_t account_created;
+    counter_t account_modified;
+    counter_t account_accessed_by_name;
+    counter_t account_accessed_by_id;
+    counter_t account_next;
   };
 
   struct index_memory_details_t
@@ -142,8 +142,9 @@ FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
         (comment_cashout_processing)(comment_lib_processing) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
-        (account_accessed_from_index)(account_accessed_from_archive)(account_not_found)
-        (account_cashout_processing)(account_lib_processing) )
+        (account_created)(account_modified)
+        (account_accessed_by_name)(account_accessed_by_id)
+        (account_next) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)

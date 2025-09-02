@@ -1,13 +1,22 @@
 #pragma once
 
 #include <hive/chain/account_object.hpp>
+
+#include <hive/utilities/benchmark_dumper.hpp>
+
 #include <hive/chain/external_storage/allocator_helper.hpp>
+#include <hive/chain/external_storage/utilities.hpp>
 
 #ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
 #define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 24
 #endif
 
 namespace hive { namespace chain {
+
+struct accounts_stats
+{
+  static hive::utilities::benchmark_dumper::account_archive_details_t stats; // note: times should be measured in nanoseconds
+};
 
 enum account_rocksdb_object_types
 {
