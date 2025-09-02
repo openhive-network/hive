@@ -378,5 +378,70 @@ BOOST_FIXTURE_TEST_CASE( fork_reverts_cashout, empty_fixture )
   fork_reverts_cashout_scanario( "ROCKSDB", true, true, "!comment_is_required" );
 }
 
+BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test what happens when comment archive data is inconsistent with rest of state." );
+    // What happens in the test:
+    // - run a bit
+    // - stop the node and save comment archive aside
+    // - run a bit more
+    // - stop the node
+    // - try to start the node again pointing to previously saved comment archive - failure expected
+    // - try to start the node again pointing to empty directory as comment archive - failure expected
+    // - restart node normally and continue
+
+    configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
+    autoscope( []() { configuration_data.reset_cashout_values(); } );
+
+    fc::path comment_archive_dir;
+    {
+      clean_database_fixture fixture( 512U, fc::optional<uint32_t>(), false ); // don't init AH (there is separate test for that)
+      comment_archive_dir = fixture.get_chain_plugin().comment_storage_dir();
+      fixture.account_create( "alice", fixture.init_account_pub_key );
+      fixture.account_create( "bob", fixture.init_account_pub_key );
+      fixture.post_comment( "alice", "test", "test", "test body", "category", fixture.init_account_priv_key );
+      // first 30 blocks use different LIB mechanics
+      fixture.generate_blocks( 3 * HIVE_MAX_WITNESSES ); // the comment should be archived after that
+    }
+    fc::temp_directory ca_copy_dir( hive::utilities::temp_directory_path() );
+    BOOST_REQUIRE( ca_copy_dir.path().is_absolute() ); // if it wasn't absolute, it would later "try to place itself" inside shm_dir
+    fc::copy( comment_archive_dir, ca_copy_dir.path() );
+    {
+      hived_fixture fixture( false );
+      fixture.postponed_init();
+      // check comment exists
+      fixture.vote( "alice", "test", "bob", HIVE_100_PERCENT, fixture.init_account_priv_key );
+      fixture.generate_block();
+      fixture.post_comment( "bob", "test", "test", "test body", "category", fixture.init_account_priv_key );
+      fixture.generate_blocks( 2 * HIVE_MAX_WITNESSES ); // second comment should also be archived now
+    }
+    // try to open with comment archive copied before - LIB will be inconsistent (and content as well)
+    {
+      hived_fixture fixture( false );
+      HIVE_REQUIRE_ASSERT( fixture.postponed_init( { hived_fixture::config_line_t( { "comments-rocksdb-path", { ca_copy_dir.path().generic_string() }} ) } ),
+        "lib == _cached_irreversible_block" );
+    }
+    // try to open with comment archive in completely new directory - LIB will be fresh 0 so also inconsistent
+    {
+      fc::temp_directory ca_empty_dir( hive::utilities::temp_directory_path() );
+      hived_fixture fixture( false );
+      HIVE_REQUIRE_ASSERT( fixture.postponed_init( { hived_fixture::config_line_t( { "comments-rocksdb-path", { ca_empty_dir.path().generic_string() }} ) } ),
+        "0 == _cached_irreversible_block" );
+    }
+    // restart node with comment archive in normal location and continue (previous tries should not break anything in state)
+    {
+      hived_fixture fixture( false );
+      fixture.postponed_init();
+      // check both comments exist
+      fixture.vote( "bob", "test", "alice", 50 * HIVE_1_PERCENT, fixture.init_account_priv_key );
+      fixture.post_comment_to_comment( "bob", "reply", "reply", "I'm replying", "alice", "test", fixture.init_account_priv_key );
+      fixture.generate_block();
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
