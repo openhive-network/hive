@@ -49,6 +49,7 @@ public:
     std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const;
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const;
 
+  bfs::path storage_dir() const;
 
 private:
   class impl;
