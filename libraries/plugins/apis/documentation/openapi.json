@@ -529,7 +529,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Account notifications.",
+                "summary": "Account notifications. (Supported by Hivemind)",
                 "description": "Supported values for the `type` parameter:\n\n- `new_community`: A new community was created.\n- `set_role`: A mod or admin adds a role to an account.\n- `set_props`: Properties are set for a community.\n- `set_label`: A title, badge, or label has been set for an account.\n- `mute_post`: A post has been muted, with a reason.\n- `unmute_post`: A post has been unmuted, with a reason.\n- `pin_post`: A post has been pinned.\n- `unpin_post`: A post has been unpinned.\n- `flag_post`: A post has been flagged by a member, with a reason.\n- `error`: Provides feedback to developers for operations that cannot be interpreted.\n- `subscribe`: An account has subscribed to a community.\n- `reply`: A post has been replied to.\n- `reblog`: A post has been reblogged (shared again).\n- `follow`: An account has followed another account.\n- `mention`: An author mentions an account.\n- `vote`: A voter votes for an author.\n\n*Note:* The score value associated with each operation is based on the originating account rank.\n",
                 "operationId": "account_notifications",
                 "requestBody": {
@@ -579,7 +579,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Checks if a given observer follows any blacklists or mute lists.",
+                "summary": "Checks if a given observer follows any blacklists or mute lists. (Supported by Hivemind)",
                 "operationId": "does_user_follow_any_lists",
                 "requestBody": {
                     "content": {
@@ -611,7 +611,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Lists posts related to a given account.",
+                "summary": "Lists posts related to a given account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `sort`: A string indicating the type of posts to retrieve. Supported values:\n  - `blog`: Top posts authored by the specified account (excluding community posts unless reblogged), plus reblogs ranked by creation or reblog time.\n  - `feed`: Top posts from blogs of accounts followed by the specified account, ranked by creation or reblog time, not older than the last month.\n  - `posts`: Posts authored by the specified account, sorted by newest first.\n  - `replies`: Replies authored by the specified account, sorted by newest first.\n  - `payout`: All posts authored by the specified account that have not yet been cashed out.\n\n- `account`: The account name (string) to retrieve related posts for; must be a valid account.\n\n- `start_author`: The author account name to start from when paginating; optional and used together with `start_permlink`.\n\n- `start_permlink`: The permlink of the post corresponding to `start_author`, used as a paging mechanism; optional.\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `observer`: (Optional) For `blog`, `feed`, and `replies` sorts, this parameter is ignored. Otherwise, when provided, it must point to a valid account used to populate blacklist stats and mark posts from blacklisted authors. Currently, this parameter is ignored.\n",
                 "operationId": "get_account_posts",
                 "requestBody": {
@@ -707,7 +707,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Get community details.",
+                "summary": "Get community details. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `name`: The community category name (string) to retrieve details for.\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
                 "operationId": "get_community",
                 "requestBody": {
@@ -784,7 +784,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gets the role, subscription status, and title for a given account in a given community.",
+                "summary": "Gets the role, subscription status, and title for a given account in a given community. (Supported by Hivemind)",
                 "operationId": "get_community_context",
                 "requestBody": {
                     "content": {
@@ -820,7 +820,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gives a flattened discussion tree starting at given post.",
+                "summary": "Gives a flattened discussion tree starting at given post. (Supported by Hivemind)",
                 "operationId": "get_discussion",
                 "requestBody": {
                     "content": {
@@ -908,7 +908,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Returns blacklisted/muted accounts or list of blacklists/mute lists followed by a given observer.",
+                "summary": "Returns blacklisted/muted accounts or list of blacklists/mute lists followed by a given observer. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `observer`: A valid account name (string) to act as an observer.\n\n- `follow_type`: A string indicating the type of follow-related list to retrieve. Supported values:\n  - `follow_blacklist`: Accounts that are on the observer's follow blacklist.\n  - `follow_muted`: Accounts that are on the observer's follow mute list.\n  - `blacklisted`: Accounts that are directly blacklisted by the observer.\n  - `muted`: Accounts that are directly muted by the observer.\n",
                 "operationId": "get_follow_list",
                 "requestBody": {
@@ -947,7 +947,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Lists communities ordered by payout with stats (total payout, number of posts and authors).",
+                "summary": "Lists communities ordered by payout with stats (total payout, number of posts and authors). (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `limit`: An integer specifying the maximum number of results to retrieve. If omitted, the server defaults to 250. This parameter is optional.\n",
                 "operationId": "get_payout_stats",
                 "requestBody": {
@@ -992,7 +992,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gives single selected post.",
+                "summary": "Gives single selected post. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `author`: A valid account name (string).\n\n- `permlink`: A valid permlink (string).\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
                 "operationId": "get_post",
                 "requestBody": {
@@ -1081,7 +1081,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gives very basic information on given post.",
+                "summary": "Gives very basic information on given post. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `author`: A valid account name (string).\n\n- `permlink`: A valid permlink (string).\n",
                 "operationId": "get_post_header",
                 "requestBody": {
@@ -1119,7 +1119,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gets profile.",
+                "summary": "Gets profile. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `account`: A valid account name (string).\n\n- `observer`: A valid account name (string) used as an observer. This parameter is optional.\n",
                 "operationId": "get_profile",
                 "requestBody": {
@@ -1181,7 +1181,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Get ranked posts.",
+                "summary": "Get ranked posts. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `tag`: A string representing any valid tag.\n\n- `observer`: A string representing any valid account or an empty string.\n",
                 "operationId": "get_ranked_posts",
                 "requestBody": {
@@ -1277,7 +1277,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Tells what relations connect given accounts from the perspective of first account.",
+                "summary": "Tells what relations connect given accounts from the perspective of first account. (Supported by Hivemind)",
                 "operationId": "get_relationship_between_accounts",
                 "requestBody": {
                     "content": {
@@ -1315,7 +1315,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "List all subscriptions, titles, and roles to a community for an account.",
+                "summary": "List all subscriptions, titles, and roles to a community for an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `account`: A string representing a valid account name.\n",
                 "operationId": "list_all_subscriptions",
                 "requestBody": {
@@ -1391,7 +1391,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gets community.",
+                "summary": "Gets community. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `last`: A string representing the name of the community for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed communities; default is 100. This parameter is optional.\n\n- `query`: A string to filter communities based on title and about fields. This parameter is optional.\n\n- `sort`: A string to define the sorting method. Optional with default:\n  - `rank`: sort by community rank\n  - `new`: sort by newest communities\n  - `subs`: sort by subscriptions\n\n- `observer`: A valid account name (string). This parameter is optional.\n",
                 "operationId": "list_communities",
                 "requestBody": {
@@ -1444,7 +1444,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "List community roles and labels for each account in the community.",
+                "summary": "List community roles and labels for each account in the community. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string representing the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed subscribers; default is 100. This parameter is optional.\n",
                 "operationId": "list_community_roles",
                 "requestBody": {
@@ -1498,7 +1498,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gets a list of popular communities.",
+                "summary": "Gets a list of popular communities. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `limit`: An integer to limit the number of listed communities; default is 25. This parameter is optional.\n",
                 "operationId": "list_pop_communities",
                 "requestBody": {
@@ -1540,7 +1540,7 @@
                 "tags": [
                     "bridge"
                 ],
-                "summary": "Gets a list of subscribers for a given community.",
+                "summary": "Gets a list of subscribers for a given community. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string indicating the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed subscribers; defaults to 100 if omitted. This parameter is optional.\n",
                 "operationId": "list_subscribers",
                 "requestBody": {
@@ -1909,7 +1909,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of account reputations.",
+                "summary": "Returns a list of account reputations. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `account_lower_bound`: A string representing the starting account name (lower bound) for the query.\n\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to return.\n\nExamples:\n\n- `account_lower_bound = \"hiveio\"`, `limit = 1` — queries accounts starting with \"hiveio\", returning only one result.\n\n- `account_lower_bound = \"a\"`, `limit = 10` — queries accounts starting with \"a\", returning up to 10 results.\n",
                 "operationId": "condenser_get_account_reputations",
                 "requestBody": {
@@ -2110,7 +2110,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns all votes for the given post.",
+                "summary": "Returns all votes for the given post. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries votes for content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries votes for content with the slug @alice/a-post-by-alice.",
                 "operationId": "condenser_get_active_votes",
                 "requestBody": {
@@ -2297,7 +2297,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the list of blog entries for an account.",
+                "summary": "Returns the list of blog entries for an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `account`: A string representing the account name to query the blog for.\n\n- `start_entry_id`: An integer representing the starting entry ID for querying the blog.\n\n- `limit`: An integer up to 500 specifying the maximum number of blog entries to return.\n\nExamples:\n\n- `account = \"hiveio\"`, `start_entry_id = 0`, `limit = 1` — queries the blog for the account named \"hiveio\", returning up to one result.\n\n- `account = \"alice\"`, `start_entry_id = 0`, `limit = 50` — queries the blog for the account named \"alice\", returning up to 50 results.\n",
                 "operationId": "condenser_get_blog",
                 "requestBody": {
@@ -2396,7 +2396,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of blog entries for an account.",
+                "summary": "Returns a list of blog entries for an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `account`: A string representing the account name to query the blog entries for.\n\n- `start_entry_id`: An integer representing the starting entry ID for querying the blog entries.\n\n- `limit`: An integer up to 500 specifying the maximum number of blog entries to return.\n\nExamples:\n\n- `account = \"hiveio\"`, `start_entry_id = 0`, `limit = 1` — queries the blog entries for the account named \"hiveio\", returning up to one result.\n\n- `account = \"alice\"`, `start_entry_id = 0`, `limit = 50` — queries the blog entries for the account named \"alice\", returning up to 50 results.\n",
                 "operationId": "condenser_get_blog_entries",
                 "requestBody": {
@@ -2507,13 +2507,13 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of discussions based on payout.",
-                "operationId": "condenser_get_comment_discussions_by_payout",
+                "summary": "Returns a list of discussions based on payout. (Supported by Hivemind)",
+                "operationId": "condenser_get_discussions_by",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_comment_discussions_by_payout"
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
                             }
                         }
                     },
@@ -2525,7 +2525,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/condenser_get_comment_discussions_by_payout_response"
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
                                 },
                                 "example": [
                                     {
@@ -2887,7 +2887,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the content (post or comment).",
+                "summary": "Returns the content (post or comment). (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries content with the slug @alice/a-post-by-alice.\n",
                 "operationId": "condenser_get_content",
                 "requestBody": {
@@ -2981,7 +2981,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of replies.",
+                "summary": "Returns a list of replies. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries content with the slug @alice/a-post-by-alice.\n",
                 "operationId": "condenser_get_content_replies",
                 "requestBody": {
@@ -3153,7 +3153,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of discussions based on blog.",
+                "summary": "Returns a list of discussions based on blog. (Supported by Hivemind)",
                 "operationId": "condenser_get_discussions_by_blog",
                 "requestBody": {
                     "content": {
@@ -3251,7 +3251,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns a list of discussions based on author before date.",
+                "summary": "Returns a list of discussions based on author before date. (Supported by Hivemind)",
                 "operationId": "condenser_get_discussions_by_author_before_date",
                 "requestBody": {
                     "content": {
@@ -3558,7 +3558,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the count of followers/following for an account.",
+                "summary": "Returns the count of followers/following for an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- account: A string representing the account name to query.\n\nExamples:\n- account = \"hiveio\" — Queries the account named hiveio.\n- account = \"alice\" — Queries the account named alice.",
                 "operationId": "condenser_get_follow_count",
                 "requestBody": {
@@ -3595,14 +3595,14 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the list of followers for an account.",
+                "summary": "Returns the list of followers for an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string indicating the account to start from (optional).\n- type: A string specifying the type of data, e.g., 'blog' or 'ignore'.\n- limit: An integer up to 1000 specifying the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "condenser_get_followers",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_followers"
+                                "$ref": "#/components/schemas/condenser_get_followers_and_following"
                             }
                         }
                     },
@@ -3643,14 +3643,14 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the list of accounts that are following an account.",
+                "summary": "Returns the list of accounts that are following an account. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string specifying the account to start from (optional).\n- type: A string indicating the relationship type, e.g., 'blog' for followers or 'ignore' for mutes.\n- limit: An integer up to 1000 defining the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "condenser_get_following",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_following"
+                                "$ref": "#/components/schemas/condenser_get_followers_and_following"
                             }
                         }
                     },
@@ -4121,7 +4121,7 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Search for comments by author/permlink.",
+                "summary": "Search for comments by author/permlink. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `comments`: A string array of pairs author/permlink\n",
                 "operationId": "find_comments",
                 "requestBody": {
@@ -4654,7 +4654,7 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Returns all votes for the given post.",
+                "summary": "Returns all votes for the given post. (Supported by Hivemind)",
                 "description": "Required (non-empty) parameters: author, permlink.\n\n- `author`: A string representing the author of the content. Examples:\n  - `\"hiveio\"` — queries votes for content authored by \"hiveio\".\n  - `\"alice\"` — queries votes for content authored by \"alice\".\n\n- `permlink`: A string representing the permalink of the content. Examples:\n  - `\"announcing-the-launch-of-hive-blockchain\"` — for the post @hiveio/announcing-the-launch-of-hive-blockchain.\n  - `\"a-post-by-alice\"` — for the post @alice/a-post-by-alice.\n",
                 "operationId": "find_votes",
                 "requestBody": {
@@ -6747,7 +6747,7 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Returns all votes, starting with the specified voter and/or author and permlink.",
+                "summary": "Returns all votes, starting with the specified voter and/or author and permlink. (Supported by Hivemind)",
                 "description": "Parameters:\n\n- `start`: An array whose structure depends on the `order` parameter.\n  - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.\n  - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return.\n\n- `order`: A string indicating the sorting method. Possible values:\n  - `by_comment_voter` — order by comment voter.\n  - `by_voter_comment` — order by voter comment.\n\nExamples:\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` — queries the first 10 votes, sorted by comment voter.\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_voter_comment\"` — queries the first 10 votes, sorted by voter comment.\n\n- `start = [\"xeroc\", \"vanteem-config\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` — queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.\n\n- `start = [\"alice\", \"xeroc\", \"vanteem-config\"]`, `limit = 10`, `order = \"by_voter_comment\"` — queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.\n",
                 "operationId": "list_votes",
                 "requestBody": {
@@ -8988,22 +8988,39 @@
                 }
             },
             "condenser_get_account_reputations": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account_lower_bound": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10
+                            }
                         }
-                    ]
-                },
-                "minItems": 0,
-                "maxItems": 2,
-                "example": [
-                    "hiveio",
-                    10
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "minItems": 0,
+                        "maxItems": 2,
+                        "example": [
+                            "hiveio",
+                            10
+                        ]
+                    }
                 ]
             },
             "condenser_get_account_reputations_response": {
@@ -9026,15 +9043,40 @@
                 }
             },
             "condenser_get_active_votes": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
+                        },
+                        "required": [
+                            "account",
+                            "permlink"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 2,
+                        "maxItems": 3,
+                        "example": [
+                            "hiveio",
+                            "around-the-hive-reflections"
+                        ]
+                    }
                 ]
             },
             "condenser_get_active_votes_response": {
@@ -9074,23 +9116,51 @@
                 "$ref": "#/components/schemas/block_header"
             },
             "condenser_get_blog": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "start_entry_id": {
+                                "type": "integer",
+                                "example": 0
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 50
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
                         },
-                        {
-                            "type": "integer"
-                        }
-                    ]
-                },
-                "minItems": 3,
-                "maxItems": 3,
-                "example": [
-                    "hiveio",
-                    0,
-                    50
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "example": [
+                            "hiveio",
+                            0,
+                            50
+                        ]
+                    }
                 ]
             },
             "condenser_get_blog_response": {
@@ -9100,23 +9170,51 @@
                 }
             },
             "condenser_get_blog_entries": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "start_entry_id": {
+                                "type": "integer",
+                                "example": 0
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 50
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
                         },
-                        {
-                            "type": "integer"
-                        }
-                    ]
-                },
-                "minItems": 3,
-                "maxItems": 3,
-                "example": [
-                    "hiveio",
-                    0,
-                    50
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "example": [
+                            "hiveio",
+                            0,
+                            50
+                        ]
+                    }
                 ]
             },
             "condenser_get_blog_entries_response": {
@@ -9145,47 +9243,78 @@
                     "$ref": "#/components/schemas/collateralized_conversion_requests_condenser_api"
                 }
             },
-            "condenser_get_comment_discussions_by_payout": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "start_author": {
-                            "type": "string",
-                            "example": "alice"
+            "condenser_get_discussions_by": {
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "start_author": {
+                                "type": "string",
+                                "example": "alice"
+                            },
+                            "start_permlink": {
+                                "type": "string",
+                                "example": "test-post"
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "tag": {
+                                "type": "string",
+                                "example": "hive"
+                            },
+                            "truncate_body": {
+                                "type": "integer",
+                                "example": 100
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
                         },
-                        "start_permlink": {
-                            "type": "string",
-                            "example": "test-post"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "example": 10
-                        },
-                        "tag": {
-                            "type": "string",
-                            "example": "hive"
-                        },
-                        "truncate_body": {
-                            "type": "integer",
-                            "example": 100
-                        },
-                        "observer": {
-                            "type": "string",
-                            "example": "bob"
+                        "example": {
+                            "tag": "hive",
+                            "limit": 10
                         }
                     },
-                    "example": {
-                        "tag": "hive",
-                        "limit": 10
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "start_author": {
+                                    "type": "string",
+                                    "example": "alice"
+                                },
+                                "start_permlink": {
+                                    "type": "string",
+                                    "example": "test-post"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "example": 10
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "example": "hive"
+                                },
+                                "truncate_body": {
+                                    "type": "integer",
+                                    "example": 100
+                                },
+                                "observer": {
+                                    "type": "string",
+                                    "example": "bob"
+                                }
+                            },
+                            "example": {
+                                "tag": "hive",
+                                "limit": 10
+                            }
+                        }
                     }
-                }
-            },
-            "condenser_get_comment_discussions_by_payout_response": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/post_condenser_api"
-                }
+                ]
             },
             "condenser_get_config": {
                 "type": "array",
@@ -9266,30 +9395,80 @@
                 ]
             },
             "condenser_get_content": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
+                        },
+                        "required": [
+                            "account",
+                            "permlink"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 2,
+                        "maxItems": 3,
+                        "example": [
+                            "hiveio",
+                            "around-the-hive-reflections"
+                        ]
+                    }
                 ]
             },
             "condenser_get_content_response": {
                 "$ref": "#/components/schemas/post_default"
             },
             "condenser_get_content_replies": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
+                        },
+                        "required": [
+                            "account",
+                            "permlink"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 2,
+                        "maxItems": 3,
+                        "example": [
+                            "hiveio",
+                            "around-the-hive-reflections"
+                        ]
+                    }
                 ]
             },
             "condenser_get_content_replies_response": {
@@ -9319,52 +9498,122 @@
                 "$ref": "#/components/schemas/base_and_quote_condenser_api"
             },
             "condenser_get_discussions_by_blog_or_feed": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "tag": {
+                                "type": "string",
+                                "example": "steemit"
+                            },
+                            "start_author": {
+                                "type": "string",
+                                "example": "steem"
+                            },
+                            "start_permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "truncate_body": {
+                                "type": "integer",
+                                "example": 0
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
                         },
-                        {
-                            "type": "integer"
+                        "required": [
+                            "tag"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
                         },
-                        {
-                            "type": "array"
-                        }
-                    ]
-                },
-                "minItems": 1,
-                "maxItems": 7,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections",
-                    "2016-04-19T22:49:43",
-                    10
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "example": [
+                            "steemit",
+                            "steem",
+                            "around-the-hive-reflections",
+                            10
+                        ]
+                    }
                 ]
             },
             "condenser_get_discussions_by_author_before_date": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "start_permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            },
+                            "before_date": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2016-04-19T22:49:43"
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "truncate_body": {
+                                "type": "integer",
+                                "example": 0
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "bob"
+                            }
                         },
-                        {
-                            "type": "integer"
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                }
+                            ]
                         },
-                        {
-                            "type": "string",
-                            "format": "date-time"
-                        }
-                    ]
-                },
-                "minItems": 1,
-                "maxItems": 6,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections",
-                    "2016-04-19T22:49:43",
-                    10
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "example": [
+                            "hiveio",
+                            "around-the-hive-reflections",
+                            "2016-04-19T22:49:43",
+                            10
+                        ]
+                    }
                 ]
             },
             "condenser_get_discussions_by_response": {
@@ -9443,37 +9692,86 @@
                 "$ref": "#/components/schemas/feed_history_condenser_api"
             },
             "condenser_get_follow_count": {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "example": "hiveio"
-                }
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            }
+                        },
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "hiveio"
+                        }
+                    }
+                ]
             },
             "condenser_get_follow_count_response": {
                 "$ref": "#/components/schemas/follow_count"
             },
-            "condenser_get_followers": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
+            "condenser_get_followers_and_following": {
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "start": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "example": null
+                            },
+                            "follow_type": {
+                                "type": "string",
+                                "example": "blog",
+                                "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10,
+                                "description": "Maximum number of results to return"
+                            }
                         },
-                        {
-                            "type": "integer"
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "minItems": 4,
-                "maxItems": 4,
-                "example": [
-                    "hiveio",
-                    null,
-                    "blog",
-                    10
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "example": [
+                            "hiveio",
+                            null,
+                            "blog",
+                            10
+                        ]
+                    }
                 ]
             },
             "condenser_get_followers_response": {
@@ -9481,30 +9779,6 @@
                 "items": {
                     "$ref": "#/components/schemas/follow_condenser_api"
                 }
-            },
-            "condenser_get_following": {
-                "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "minItems": 4,
-                "maxItems": 4,
-                "example": [
-                    "hiveio",
-                    null,
-                    "blog",
-                    10
-                ]
             },
             "condenser_get_following_response": {
                 "type": "array",
@@ -11049,6 +11323,63 @@
                     "account",
                     "follower_count",
                     "following_count"
+                ]
+            },
+            "follow_get_followers_and_following": {
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "start": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "example": null
+                            },
+                            "type": {
+                                "type": "string",
+                                "example": "blog",
+                                "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "example": 10,
+                                "description": "Maximum number of results to return"
+                            }
+                        },
+                        "required": [
+                            "account"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "example": [
+                            "hiveio",
+                            null,
+                            "blog",
+                            10
+                        ]
+                    }
                 ]
             },
             "get_block": {
@@ -13063,13 +13394,39 @@
                 }
             },
             "get_relationship_between_accounts": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "example": [
-                    "alice",
-                    "bob"
+                 "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account1": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "account2": {
+                                "type": "string",
+                                "example": "gtg"
+                            },
+                            "observer": {
+                                "type": "string",
+                                "example": "hiveio"
+                            }
+                        },
+                        "required": [
+                            "account1"
+                        ]
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "maxItems": 3,
+                        "example": [
+                            "alice",
+                            "bob"
+                        ]
+                    }
                 ]
             },
             "get_relationship_between_accounts_response": {
