@@ -164,7 +164,11 @@ public:
 
   void init()
   {
-    _provider->init( _mainDb.get_last_irreversible_block_num() );
+    if( not _initialized )
+    {
+      _initialized = true;
+      _provider->openDb( _mainDb.get_last_irreversible_block_num() );
+    }
   }
 
   ~impl()
@@ -175,6 +179,7 @@ public:
     hive::utilities::disconnect_signal(_on_fail_apply_block_conn);
 
     _provider->shutdownDb();
+    _initialized = false;
   }
 
   void printReport(uint32_t blockNo, const char* detailText) const;
@@ -348,6 +353,13 @@ private:
   bool                             _reindexing = false;
 
   bool                             _prune = false;
+
+  /**
+    * Lazy init flag. The problem is, AH database cannot be opened during plugin_initialize, because LIB
+    * value is not yet available. It cannot be opened during plugin_startup either, because it might already
+    * be opened for replay. But it has to be opened when replay is not executed.
+    */
+  bool                             _initialized = false;
 
   struct saved_balances
   {
@@ -1060,6 +1072,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
   }
 
   _provider->openDb( _mainDb.get_last_irreversible_block_num() );
+  _initialized = true; // prevent reopening of database during plugin_startup
 
   ilog("Setting write limit to massive level");
 

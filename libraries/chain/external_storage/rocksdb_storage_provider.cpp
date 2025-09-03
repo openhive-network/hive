@@ -13,14 +13,8 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
   : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
   _cached_irreversible_block.store(0);
-}
-
-void rocksdb_storage_provider::init( uint32_t expected_lib )
-{
-  if( !bfs::exists(_storagePath ) )
+  if( !bfs::exists( _storagePath ) )
     bfs::create_directories( _storagePath );
-
-  openDb( expected_lib );
 }
 
 void rocksdb_storage_provider::openDb( uint32_t expected_lib )
