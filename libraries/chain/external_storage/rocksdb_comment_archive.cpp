@@ -188,7 +188,7 @@ void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_su
 void rocksdb_comment_archive::open()
 {
   // volatile_comment_index is registered in database, so it is handled automatically
-  provider->init( db.get_last_irreversible_block_num() );
+  provider->openDb( db.get_last_irreversible_block_num() );
 }
 
 void rocksdb_comment_archive::close()
