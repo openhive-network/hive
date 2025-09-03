@@ -41,12 +41,6 @@ class helper<by_next_vesting_withdrawal>
     {
       return a.get_next_vesting_withdrawal();
     }
-
-    static Slice get_first_slice()
-    {
-      auto _slice = time_account_name_pair_slice_t( std::make_pair( fc::time_point_sec::min().sec_since_epoch(), account_name_type("a").data ) );
-      return _slice;
-    }
 };
 
 template<>
@@ -75,12 +69,6 @@ class helper<by_delayed_voting>
     static time_point_sec get_time( const account_object& a )
     {
       return a.get_oldest_delayed_vote_time();
-    }
-
-    static Slice get_first_slice()
-    {
-      auto _slice = time_account_id_pair_slice_t( std::make_pair( fc::time_point_sec::min().sec_since_epoch(), account_object::id_type(0) ) );
-      return _slice;
     }
 };
 
@@ -111,12 +99,6 @@ class helper<by_governance_vote_expiration_ts>
     {
       return a.get_governance_vote_expiration_ts();
     }
-
-    static Slice get_first_slice()
-    {
-      auto _slice = time_account_id_pair_slice_t( std::make_pair( fc::time_point_sec::min().sec_since_epoch(), account_object::id_type(0) ) );
-      return _slice;
-    }
 };
 
 template<>
@@ -142,12 +124,6 @@ class helper<by_name>
     static time_point_sec get_time( const account_object& a )
     {
       return time_point_sec();
-    }
-
-    static Slice get_first_slice()
-    {
-      auto _slice = account_name_slice_t( account_name_type("a").data );
-      return _slice;
     }
 };
 
@@ -292,7 +268,7 @@ void account_iterator<ByIndex>::move_rocksdb_iterator()
 
     if( IS_BEGIN )
     {
-      rocksdb_iterator->begin(  helper<ByIndex>::get_first_slice() );
+      rocksdb_iterator->begin();
 
       accounts_stats::stats.account_begin.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
       ++accounts_stats::stats.account_begin.count;

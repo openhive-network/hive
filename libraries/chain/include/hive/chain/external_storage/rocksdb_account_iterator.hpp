@@ -11,7 +11,7 @@ class rocksdb_account_iterator
 
     using ptr = std::shared_ptr<rocksdb_account_iterator>;
 
-    virtual void begin( Slice&& slice ) = 0;
+    virtual void begin() = 0;
     virtual std::shared_ptr<account_object> get() = 0;
     virtual void next() = 0;
     virtual bool end() = 0;
