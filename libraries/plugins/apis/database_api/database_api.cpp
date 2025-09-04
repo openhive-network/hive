@@ -507,12 +507,12 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
   {
     case( by_name ):
     {
-      iterate_results< chain::account_index, chain::by_name >(
+      iterate_results< chain::tiny_account_index, chain::by_name >(
         args.start.as< protocol::account_name_type >(),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *( db.get_account( a.get_name() ) ), db, args.delayed_votes_active ); },
+        &database_api_impl::filter_default< tiny_account_object > );
       break;
     }
     case( by_proxy ):
@@ -525,23 +525,23 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         FC_ASSERT( proxy, "Given proxy account does not exist." );
         proxy_id = proxy->get_id();
       }
-      iterate_results< chain::account_index, chain::by_proxy >(
+      iterate_results< chain::tiny_account_index, chain::by_proxy >(
         boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *( db.get_account( a.get_name() ) ), db, args.delayed_votes_active ); },
+        &database_api_impl::filter_default< tiny_account_object > );
       break;
     }
     case( by_next_vesting_withdrawal ):
     {
       auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
-      iterate_results< chain::account_index, chain::by_next_vesting_withdrawal >(
+      iterate_results< chain::tiny_account_index, chain::by_next_vesting_withdrawal >(
         boost::make_tuple( key.first, key.second ),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *( db.get_account( a.get_name() ) ), db, args.delayed_votes_active ); },
+        &database_api_impl::filter_default< tiny_account_object > );
       break;
     }
     default:

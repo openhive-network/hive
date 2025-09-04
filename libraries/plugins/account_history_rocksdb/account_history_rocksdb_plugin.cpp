@@ -1278,7 +1278,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   {
     // check the balances of all tracked accounts, emit a line in the CSV file if any have changed
     // since the last block
-    const auto& account_idx = _mainDb.get_index<hive::chain::account_index>().indices().get<hive::chain::by_name>();
+    const auto& account_idx = _mainDb.get_index<hive::chain::tiny_account_index>().indices().get<hive::chain::by_name>();
     for (auto range : _filter.get_tracked_accounts())
     {
       const std::string& lower = range.first;
@@ -1288,73 +1288,73 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
       while (account_iter != account_idx.end() &&
              account_iter->get_name() <= upper)
       {
-        const account_object& account = *account_iter;
+        const auto account = _mainDb.get_account( account_iter->get_name() );
 
-        auto saved_balance_iter = _saved_balances.find(account_iter->get_name());
+        auto saved_balance_iter = _saved_balances.find(account->get_name());
         bool balances_changed = saved_balance_iter == _saved_balances.end();
-        saved_balances& saved_balance_record = _saved_balances[account_iter->get_name()];
+        saved_balances& saved_balance_record = _saved_balances[account->get_name()];
 
-        if (saved_balance_record.hive_balance != account.get_balance())
+        if (saved_balance_record.hive_balance != account->get_balance())
         {
-          saved_balance_record.hive_balance = account.get_balance();
+          saved_balance_record.hive_balance = account->get_balance();
           balances_changed = true;
         }
-        if (saved_balance_record.savings_hive_balance != account.get_savings())
+        if (saved_balance_record.savings_hive_balance != account->get_savings())
         {
-          saved_balance_record.savings_hive_balance = account.get_savings();
+          saved_balance_record.savings_hive_balance = account->get_savings();
           balances_changed = true;
         }
-        if (saved_balance_record.hbd_balance != account.get_hbd_balance())
+        if (saved_balance_record.hbd_balance != account->get_hbd_balance())
         {
-          saved_balance_record.hbd_balance = account.get_hbd_balance();
+          saved_balance_record.hbd_balance = account->get_hbd_balance();
           balances_changed = true;
         }
-        if (saved_balance_record.savings_hbd_balance != account.get_hbd_savings())
+        if (saved_balance_record.savings_hbd_balance != account->get_hbd_savings())
         {
-          saved_balance_record.savings_hbd_balance = account.get_hbd_savings();
-          balances_changed = true;
-        }
-
-        if (saved_balance_record.reward_hbd_balance != account.get_hbd_rewards())
-        {
-          saved_balance_record.reward_hbd_balance = account.get_hbd_rewards();
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_hive_balance != account.get_rewards())
-        {
-          saved_balance_record.reward_hive_balance = account.get_rewards();
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_vesting_balance != account.get_vest_rewards())
-        {
-          saved_balance_record.reward_vesting_balance = account.get_vest_rewards();
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_vesting_hive_balance != account.get_vest_rewards_as_hive())
-        {
-          saved_balance_record.reward_vesting_hive_balance = account.get_vest_rewards_as_hive();
+          saved_balance_record.savings_hbd_balance = account->get_hbd_savings();
           balances_changed = true;
         }
 
-        if (saved_balance_record.vesting_shares != account.get_vesting())
+        if (saved_balance_record.reward_hbd_balance != account->get_hbd_rewards())
         {
-          saved_balance_record.vesting_shares = account.get_vesting();
+          saved_balance_record.reward_hbd_balance = account->get_hbd_rewards();
           balances_changed = true;
         }
-        if (saved_balance_record.delegated_vesting_shares != account.get_delegated_vesting())
+        if (saved_balance_record.reward_hive_balance != account->get_rewards())
         {
-          saved_balance_record.delegated_vesting_shares = account.get_delegated_vesting();
+          saved_balance_record.reward_hive_balance = account->get_rewards();
           balances_changed = true;
         }
-        if (saved_balance_record.received_vesting_shares != account.get_received_vesting())
+        if (saved_balance_record.reward_vesting_balance != account->get_vest_rewards())
         {
-          saved_balance_record.received_vesting_shares = account.get_received_vesting();
+          saved_balance_record.reward_vesting_balance = account->get_vest_rewards();
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_hive_balance != account->get_vest_rewards_as_hive())
+        {
+          saved_balance_record.reward_vesting_hive_balance = account->get_vest_rewards_as_hive();
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.vesting_shares != account->get_vesting())
+        {
+          saved_balance_record.vesting_shares = account->get_vesting();
+          balances_changed = true;
+        }
+        if (saved_balance_record.delegated_vesting_shares != account->get_delegated_vesting())
+        {
+          saved_balance_record.delegated_vesting_shares = account->get_delegated_vesting();
+          balances_changed = true;
+        }
+        if (saved_balance_record.received_vesting_shares != account->get_received_vesting())
+        {
+          saved_balance_record.received_vesting_shares = account->get_received_vesting();
           balances_changed = true;
         }
 
         if (balances_changed)
         {
-          _balance_csv_file << (string)account.get_name() << ","
+          _balance_csv_file << (string)account->get_name() << ","
                             << bn.block_num << ","
                             << bn.get_block_timestamp().to_iso_string() << ","
                             << get_asset_amount(saved_balance_record.hive_balance) << ","
