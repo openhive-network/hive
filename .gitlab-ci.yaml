@@ -137,6 +137,18 @@ beekeeper_tsc_build:
   tags:
     - public-runner-docker
 
+generate-wax-spec:
+  extends: .generate_swagger_package
+  stage: build
+  variables:
+    INPUT_JSON_SWAGGER_FILE: "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/openapi.json"
+    NAMESPACE: "" # Leave empty not to disable generation of nested API structure
+    NPM_PACKAGE_SCOPE: "@hiveio"
+    NPM_PACKAGE_NAME: "wax-api-jsonrpc"
+    API_TYPE: "jsonrpc"
+  tags:
+    - public-runner-docker
+
 generate_beekeeper_docs:
   stage: build
   extends: .npm_based_job_base
@@ -1186,6 +1198,33 @@ deploy_beekeeper_wasm_production_public_npm:
     - job: push_to_wiki
       artifacts: true
 
+  tags:
+    - public-runner-docker
+
+deploy-wax-spec-dev-package:
+  extends: .npm_deploy_package_template
+  stage: publish
+  variables:
+    SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+    NPM_PACKAGE_SCOPE: "@hiveio"
+  needs:
+    - job: generate-wax-spec
+      artifacts: true
+  tags:
+  - public-runner-docker
+
+deploy-wax-spec-production-public-npm:
+  extends: .registry_npmjs_org_deploy_package_template
+  stage: publish
+  variables:
+    NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
+    NPM_PACKAGE_NAME: "wax-api-jsonrpc"
+    SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+  needs:
+    - job: generate-wax-spec
+      artifacts: true
   tags:
     - public-runner-docker
 
