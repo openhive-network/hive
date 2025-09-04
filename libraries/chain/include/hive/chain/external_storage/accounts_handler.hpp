@@ -9,9 +9,9 @@ namespace hive { namespace chain {
 
 struct executor_interface
 {
-  virtual void create_or_update_volatile( const account_metadata_object& obj ) = 0;
-  virtual void create_or_update_volatile( const account_authority_object& obj ) = 0;
-  virtual void create_or_update_volatile( const account_object& obj ) = 0;
+  virtual void create_object( const account_metadata_object& obj ) = 0;
+  virtual void create_object( const account_authority_object& obj ) = 0;
+  virtual void create_object( const account_object& obj ) = 0;
 
   virtual void modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier ) = 0;
   virtual void modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier ) = 0;
@@ -34,7 +34,7 @@ namespace
   {
     void create( const account_metadata_object& obj, executor_interface& exec )
     {
-      exec.create_or_update_volatile( obj );
+      exec.create_object( obj );
     }
 
     template<typename Modifier>
@@ -50,7 +50,7 @@ namespace
   {
     void create( const account_authority_object& obj, executor_interface& exec )
     {
-      exec.create_or_update_volatile( obj );
+      exec.create_object( obj );
     }
 
     template<typename Modifier>
@@ -66,7 +66,7 @@ namespace
   {
     void create( const account_object& obj, executor_interface& exec )
     {
-      exec.create_or_update_volatile( obj );
+      exec.create_object( obj );
     }
 
     template<typename Modifier>

@@ -452,6 +452,11 @@ namespace hive { namespace chain {
       tiny_account_object( allocator< Allocator > a, uint64_t _id, const account_object& obj )
       : id( _id ), shared_delayed_votes( a )
       {
+        modify( obj );
+      }
+
+      void modify( const account_object& obj )
+      {
         account_id                    = obj.get_id();
         name                          = obj.get_name();
         proxy                         = obj.get_proxy();

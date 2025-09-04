@@ -300,7 +300,7 @@ struct volatile_supporter_impl
     return _found_dgpo ? _found_dgpo->head_block_number : 0;
   }
 
-  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj, const std::function<void(Volatile_Object_Type& o)>& func = nullptr )
+  static void create_or_update_volatile( chainbase::database& db, const SHM_Object_Type& obj, const std::function<void(Volatile_Object_Type& o)>& func = nullptr )
   {
     const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_name>();
     auto _found = _volatile_idx.find( obj.get_name() );
@@ -327,7 +327,7 @@ struct volatile_supporter_impl
   static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
   {
     modifier( const_cast<SHM_Object_Type&>( obj ) );
-    create_or_update_volatile_impl( db, obj );
+    create_or_update_volatile( db, obj );
   }
 };
 
@@ -339,9 +339,9 @@ struct volatile_supporter
     return volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::get_block_num( db );
   }
 
-  static void create_or_update_volatile_impl( chainbase::database& db, const SHM_Object_Type& obj )
+  static void create_or_update_volatile( chainbase::database& db, const SHM_Object_Type& obj )
   {
-    volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::create_or_update_volatile_impl( db, obj );
+    volatile_supporter_impl<Volatile_Index_Type, Volatile_Object_Type, SHM_Object_Type>::create_or_update_volatile( db, obj );
   }
 
   static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
@@ -358,9 +358,9 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
     return volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::get_block_num( db );
   }
 
-  static void create_or_update_volatile_impl( chainbase::database& db, const account_object& obj )
+  static void create_or_update_volatile( chainbase::database& db, const account_object& obj )
   {
-    volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+    volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile( db, obj );
   }
 
   static void modify( chainbase::database& db, const account_object& obj, std::function<void(account_object&)> modifier )
@@ -393,11 +393,11 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
           obj.set_previous_governance_vote_expiration_ts( _previous_governance_vote_expiration_ts );
       };
 
-       volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj, _func );
+       volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile( db, obj, _func );
     }
     else
     {
-      volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+      volatile_supporter_impl<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile( db, obj );
     }
   }
 };
@@ -530,9 +530,9 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
 }
 
 //==========================================account_metadata_object==========================================
-void rocksdb_account_archive::create_or_update_volatile( const account_metadata_object& obj )
+void rocksdb_account_archive::create_object( const account_metadata_object& obj )
 {
-  volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::create_or_update_volatile_impl( db, obj );
+  volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::create_or_update_volatile( db, obj );
 }
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
@@ -547,9 +547,9 @@ void rocksdb_account_archive::modify_object( const account_metadata_object& obj,
 //==========================================account_metadata_object==========================================
 
 //==========================================account_authority_object==========================================
-void rocksdb_account_archive::create_or_update_volatile( const account_authority_object& obj )
+void rocksdb_account_archive::create_object( const account_authority_object& obj )
 {
-  volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::create_or_update_volatile_impl( db, obj );
+  volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::create_or_update_volatile( db, obj );
 }
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
@@ -564,11 +564,13 @@ void rocksdb_account_archive::modify_object( const account_authority_object& obj
 //==========================================account_authority_object==========================================
 
 //==========================================account_object==========================================
-void rocksdb_account_archive::create_or_update_volatile( const account_object& obj )
+void rocksdb_account_archive::create_object( const account_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  volatile_supporter<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile_impl( db, obj );
+  volatile_supporter<volatile_account_index, volatile_account_object, account_object>::create_or_update_volatile( db, obj );
+
+  db.create< tiny_account_object >( obj );
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_created.count;
@@ -605,6 +607,15 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
   auto time_start = std::chrono::high_resolution_clock::now();
 
   volatile_supporter<volatile_account_index, volatile_account_object, account_object>::modify( db, obj, modifier );
+
+  const auto& _idx = db.get_index<tiny_account_index, by_name>();
+  auto _found = _idx.find( obj.get_name() );
+  FC_ASSERT( _found != _idx.end() );
+
+  db.modify( *_found, [&]( tiny_account_object& o )
+  {
+    o.modify( obj );
+  } );
 
   accounts_stats::stats.account_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_modified.count;
