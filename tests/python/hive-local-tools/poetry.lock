@@ -185,13 +185,13 @@ tests-no-zope = ["cloudpickle ; platform_python_implementation == \"CPython\"", 
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev419+dff51e3"
+version = "0.0.1.dev421+5e079c1"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev419+dff51e3-py3-none-any.whl", hash = "sha256:f91d97b0b24c0759739682b3244adbae5d767fd4d73b5ab727e9688eb2039222"},
+    {file = "beekeepy-0.0.1.dev421+5e079c1-py3-none-any.whl", hash = "sha256:c496b0c2b598d68424d1811684a9edb95ff9e269bb63e8f9708f4bb821a3ee69"},
 ]
 
 [package.dependencies]
@@ -201,7 +201,7 @@ loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
-schemas = "0.0.1.dev426+0dea163"
+schemas = "0.0.1.dev429+933dde6"
 
 [package.source]
 type = "legacy"
@@ -325,17 +325,17 @@ markers = {main = "sys_platform == \"win32\"", black = "platform_system == \"Win
 
 [[package]]
 name = "database-api"
-version = "1.27.12rc2.dev15+3e3df050d"
+version = "1.27.12rc2.dev16+21660921f"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "database_api-1.27.12rc2.dev15+3e3df050d-py3-none-any.whl", hash = "sha256:d81b0f89c7bfd86ffcb64f1337a6d8cfe5e4734f90ea24ebadec24b1e3cf1b4a"},
+    {file = "database_api-1.27.12rc2.dev16+21660921f-py3-none-any.whl", hash = "sha256:177667c64d16ac8a5592c8c27d911d716980e8801a4f4b05dec99294ec32ba74"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev419+dff51e3"
+beekeepy = "0.0.1.dev421+5e079c1"
 
 [package.source]
 type = "legacy"
@@ -893,17 +893,17 @@ files = [
 
 [[package]]
 name = "network-broadcast-api"
-version = "1.27.12rc2.dev15+3e3df050d"
+version = "1.27.12rc2.dev16+21660921f"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "network_broadcast_api-1.27.12rc2.dev15+3e3df050d-py3-none-any.whl", hash = "sha256:f1d38329473a021a88bd85caa517e5643e9d0ad5a235490858c260360138ceb9"},
+    {file = "network_broadcast_api-1.27.12rc2.dev16+21660921f-py3-none-any.whl", hash = "sha256:5029b410f04468ea8a61726e8b81df6251b4e9fab590c32b3b388b9896a31ae3"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev419+dff51e3"
+beekeepy = "0.0.1.dev421+5e079c1"
 
 [package.source]
 type = "legacy"
@@ -1743,13 +1743,13 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev426+0dea163"
+version = "0.0.1.dev429+933dde6"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "schemas-0.0.1.dev426+0dea163-py3-none-any.whl", hash = "sha256:783301368543c6643b71fcb449060ce1c489a15a140e894e37c1d60e59f6399a"},
+    {file = "schemas-0.0.1.dev429+933dde6-py3-none-any.whl", hash = "sha256:03f1bb06d11f9c4ff03651c2c899484e23c280b9b42e2edf8df9196eb526b5ff"},
 ]
 
 [package.dependencies]
@@ -1875,7 +1875,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev860+c5e9bffa"
+wax = "0.3.10.dev878+16378b27"
 
 [package.source]
 type = "directory"
@@ -1993,20 +1993,20 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev860+c5e9bffa"
+version = "0.3.10.dev878+16378b27"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev860+c5e9bffa-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:78833a1e095b5d8aa8f25aa04e738e1017e3f4b8de04fec2b131d00e2f355691"},
+    {file = "wax-0.3.10.dev878+16378b27-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:d8dc2ef2bc0c6da3623db2fa82e85a82b085da98b1395d39346d6941d813cc48"},
 ]
 
 [package.dependencies]
-database-api = "1.27.12rc2.dev15+3e3df050d"
+database-api = "1.27.12rc2.dev16+21660921f"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
-network-broadcast-api = "1.27.12rc2.dev15+3e3df050d"
+network-broadcast-api = "1.27.12rc2.dev16+21660921f"
 protobuf = "4.24.4"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
