@@ -25,5 +25,5 @@ source = [
 python = "^3.12"
 toml = "0.10.2"
 jinja2 = "3.1.6"
-beekeepy = "0.0.1.dev419+dff51e3" # Please remember that this version is copied to the generated API packages.
+beekeepy = "0.0.1.dev422+15ab8c7" # Please remember that this version is copied to the generated API packages.
 api_client_generator = "1.3.1.dev12+f5aa5c1"
