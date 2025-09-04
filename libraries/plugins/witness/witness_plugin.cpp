@@ -384,20 +384,25 @@ class witness_plugin_impl
 
     block_production_condition result;
     fc::mutable_variant_object capture;
+    bool stop = false;
     try
     {
       result = maybe_produce_block(capture);
     }
     catch( const fc::canceled_exception& )
     {
-      //We're trying to exit. Go ahead and let this one out.
-      throw;
+      //We're trying to exit.
+      result = block_production_condition::exception_producing_block;
+      theApp.generate_interrupt_request();
+      stop = true;
     }
     catch( const chain::unknown_hardfork_exception& e )
     {
       // Hit a hardfork that the current node know nothing about, stop production and inform user
       elog( "${e}\nNode may be out of date...", ( "e", e.to_detail_string() ) );
-      throw;
+      result = block_production_condition::exception_producing_block;
+      theApp.generate_interrupt_request();
+      stop = true;
     }
     catch( const fc::exception& e )
     {
@@ -429,13 +434,12 @@ class witness_plugin_impl
           ( "t", BLOCK_PRODUCING_LAG_TIME ) );
         break;
       case block_production_condition::exception_producing_block:
-        elog( "exception producing block" );
         break;
       case block_production_condition::wait_for_genesis:
         break;
     }
 
-    if( _chain_plugin.is_finished_write_processing() )
+    if( stop || _chain_plugin.is_finished_write_processing() )
       ilog( "ending block_production_loop" );
     else
       schedule_production_loop();
