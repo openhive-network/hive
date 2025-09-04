@@ -413,6 +413,7 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( tiny_account_object );
 
+      account_id_type   account_id;
       account_name_type name;
       account_id_type   proxy;
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum();
@@ -420,6 +421,7 @@ namespace hive { namespace chain {
 
     public:
 
+      const account_id_type& get_account_id() const { return account_id; }
       const account_name_type& get_name() const { return name; }
       account_id_type get_proxy() const { return proxy; }
       time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
@@ -444,6 +446,18 @@ namespace hive { namespace chain {
       size_t get_dynamic_alloc() const
       {
         return shared_delayed_votes.get_dynamic_alloc();
+      }
+
+      template< typename Allocator >
+      tiny_account_object( allocator< Allocator > a, uint64_t _id, const account_object& obj )
+      : id( _id ), shared_delayed_votes( a )
+      {
+        account_id                    = obj.get_id();
+        name                          = obj.get_name();
+        proxy                         = obj.get_proxy();
+        next_vesting_withdrawal       = obj.get_next_vesting_withdrawal();
+        governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
+        shared_delayed_votes          = obj.get_shared_delayed_votes();
       }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (shared_delayed_votes));
@@ -733,13 +747,13 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_delayed_voting >,
         composite_key< tiny_account_object,
           const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_oldest_delayed_vote_time >,
-          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
+          const_mem_fun< tiny_account_object, const account_id_type&, &tiny_account_object::get_account_id >
         >
       >,
       ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< tiny_account_object,
           const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_governance_vote_expiration_ts >,
-          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
+          const_mem_fun< tiny_account_object, const account_id_type&, &tiny_account_object::get_account_id >
         >
       >
     >,
