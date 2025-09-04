@@ -1142,6 +1142,33 @@ comment_cashout_tests:
   tags:
     - public-runner-docker
 
+test-wax-spec-package:
+  extends: .node_based_job_base
+  stage: test
+  variables:
+    WAX_TEST_DIR: "test-wax-spec"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+  script:
+    - mkdir -p "${WAX_TEST_DIR}"
+    - cd "${WAX_TEST_DIR}"
+    - npm init es6
+    - echo "@hiveio:registry=https://gitlab.syncad.com/api/v4/groups/136/-/packages/npm/" >> .npmrc
+    - pnpm add typescript @hiveio/wax @hiveio/wax-api-jsonrpc@file:${PACKAGE_TGZ_PATH} # Install dependencies
+    - |
+      cat <<EOT > "index.ts"
+      import WaxExtendedData from '@hiveio/wax-api-jsonrpc';
+      import { createHiveChain } from '@hiveio/wax';
+      const chainExtended = (await createHiveChain()).extend(WaxExtendedData);
+      console.log(await chainExtended.api.block_api.get_block_range({ starting_block_num: 1, count: 10 }));
+      EOT
+    - pnpm exec tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
+    - node index.js # Test if it runs without errors
+  needs:
+    - job: generate-wax-spec
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 Trigger-full-mirrornet-conversion:
   stage: deploy
 
@@ -1209,6 +1236,7 @@ deploy-wax-spec-dev-package:
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
     NPM_PACKAGE_SCOPE: "@hiveio"
   needs:
+    - job: test-wax-spec-package
     - job: generate-wax-spec
       artifacts: true
   tags:
@@ -1223,6 +1251,8 @@ deploy-wax-spec-production-public-npm:
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
   needs:
+    - job: deploy-wax-spec-dev-package
+    - job: test-wax-spec-package
     - job: generate-wax-spec
       artifacts: true
   tags:
