@@ -8330,6 +8330,18 @@
     },
     "components": {
         "schemas": {
+            "account_optional": {
+                "type": "object",
+                "properties": {
+                    "delayed_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/delayed_votes"
+                        },
+                        "description": "Array of delayed votes."
+                    }
+                }
+            },
             "account_template": {
                 "type": "object",
                 "properties": {
@@ -8515,13 +8527,6 @@
                         "$ref": "#/components/schemas/hive_int",
                         "description": "Total curation rewards accumulated by the account."
                     },
-                    "delayed_votes": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/delayed_votes"
-                        },
-                        "description": "Array of delayed votes."
-                    },
                     "governance_vote_expiration_ts": {
                         "type": "string",
                         "format": "date-time",
@@ -8594,7 +8599,6 @@
                     "last_account_recovery",
                     "previous_owner_update",
                     "curation_rewards",
-                    "delayed_votes",
                     "governance_vote_expiration_ts",
                     "is_smt",
                     "open_recurrent_transfers",
@@ -8679,6 +8683,9 @@
                             "vesting_withdraw_rate",
                             "post_voting_power"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/account_optional"
                     }
                 ]
             },
@@ -8742,78 +8749,44 @@
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                             },
-                            "vesting_balance": { 
+                            "vesting_balance": {
                                 "type": "string",
                                 "description": "The vesting balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
-                            "reputation": { 
+                            "reputation": {
                                 "$ref": "#/components/schemas/hive_int",
                                 "description": "The reputation of the account."
                             },
-                            "transfer_history": { 
+                            "transfer_history": {
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical transfer operations"
                             },
-                            "market_history": { 
+                            "market_history": {
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical market operations"
                             },
-                            "post_history": { 
+                            "post_history": {
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical post operations"
                             },
-                            "vote_history": { 
+                            "vote_history": {
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical vote operations"
                             },
-                            "other_history": { 
+                            "other_history": {
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical operations"
                             },
-                            "tags_usage": { 
+                            "tags_usage": {
                                 "type": "array",
                                 "items": {
                                     "type": "boolean"
                                 }
                             },
-                            "guest_bloggers": { 
+                            "guest_bloggers": {
                                 "type": "array",
                                 "items": {
                                     "type": "boolean"
-                                }
-                            },
-                            "open_orders": { 
-                                "$ref": "#/components/schemas/limit_order_array_condenser_api",
-                                "description": "Historical operations"
-                            },
-                            "comments": { 
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "blog": { 
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "feed": { 
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "recent_replies": { 
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "recommended": { 
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
                                 }
                             }
                         },
@@ -8841,6 +8814,48 @@
                             "tags_usage",
                             "guest_bloggers"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/account_optional"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "open_orders": {
+                                "$ref": "#/components/schemas/limit_order_array_condenser_api",
+                                "description": "Historical operations"
+                            },
+                            "comments": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "blog": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "feed": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "recent_replies": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "recommended": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 ]
             },
@@ -10220,8 +10235,11 @@
             "condenser_get_accounts": {
                 "type": "array",
                 "items": {
-                    "type": "string",
-                    "example": "alice"
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "example": "hiveio"
+                    }
                 }
             },
             "condenser_get_accounts_response": {
@@ -10575,6 +10593,9 @@
                             "HIVE_MIN_PRODUCER_REWARD",
                             "HIVE_OWNER_CHALLENGE_FEE"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/config_optional"
                     }
                 ]
             },
@@ -11297,7 +11318,7 @@
                 "type": "boolean",
                 "description": "Indicates whether the user follows any lists."
             },
-            "dynamic_global_propertieste_template": {
+            "dynamic_global_properties_template": {
                 "type": "object",
                 "properties": {
                     "available_account_subsidies": {
@@ -11486,7 +11507,7 @@
             "dynamic_global_properties_default": {
                 "allOf": [
                     {
-                        "$ref": "#/components/schemas/dynamic_global_propertieste_template"
+                        "$ref": "#/components/schemas/dynamic_global_properties_template"
                     },
                     {
                         "type": "object",
@@ -11544,13 +11565,22 @@
                             "total_vesting_shares",
                             "virtual_supply"
                         ]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "smt_creation_fee": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The fee required to create a Smart Media Token (SMT)."
+                            }
+                        }
                     }
                 ]
             },
             "dynamic_global_properties_condenser_api": {
                 "allOf": [
                     {
-                        "$ref": "#/components/schemas/dynamic_global_propertieste_template"
+                        "$ref": "#/components/schemas/dynamic_global_properties_template"
                     },
                     {
                         "type": "object",
@@ -11608,6 +11638,15 @@
                             "total_vesting_shares",
                             "virtual_supply"
                         ]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "smt_creation_fee": {
+                                "type": "string",
+                                "description": "The fee required to create a Smart Media Token (SMT)."
+                            }
+                        }
                     }
                 ]
             },
@@ -13106,10 +13145,13 @@
                             "HIVE_MIN_PRODUCER_REWARD",
                             "HIVE_OWNER_CHALLENGE_FEE"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/config_optional"
                     }
                 ]
             },
-            "config_template": {
+            "config_optional": {
                 "type": "object",
                 "properties": {
                     "USE_ALTERNATE_CHAIN_ID": {
@@ -13171,7 +13213,12 @@
                     "SMT_DEFAULT_PERCENT_CURATION_REWARDS": {
                         "type": "integer",
                         "description": "Default curation rewards percent for SMT."
-                    },
+                    }
+                }
+            },
+            "config_template": {
+                "type": "object",
+                "properties": {
                     "SMT_INITIAL_VESTING_PER_UNIT": {
                         "type": "integer",
                         "description": "Initial vesting per unit for SMT."
@@ -16311,6 +16358,103 @@
                     "blacklists"
                 ]
             },
+            "post_optional": {
+                "type": "object",
+                "properties": {
+                    "reblogged_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bob",
+                            "charlie"
+                        ],
+                        "description": "An array of accounts that have reblogged the post."
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Unique identifier for the resource; appears only when post_id is absent."
+                    },
+                    "post_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Unique identifier for a post; appears only when id is absent."
+                    },
+                    "author_rewards": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000,
+                        "description": "The total rewards earned by the author for the post."
+                    },
+                    "max_cashout_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T12:00:00",
+                        "description": "The date and time when the post is scheduled to be paid out."
+                    },
+                    "reward_weight": {
+                        "type": "integer",
+                        "example": 1000,
+                        "description": "The weight of the post in the reward distribution."
+                    },
+                    "root_author": {
+                        "type": "string",
+                        "example": "root_author_name",
+                        "description": "The author of the root post, if this post is a reply."
+                    },
+                    "root_permlink": {
+                        "type": "string",
+                        "example": "root-permlink",
+                        "description": "The permlink of the root post, if this post is a reply."
+                    },
+                    "allow_replies": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether replies are allowed for this post."
+                    },
+                    "allow_votes": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether votes are allowed for this post."
+                    },
+                    "allow_curation_rewards": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether curation rewards are allowed for this post."
+                    },
+                    "net_votes": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000,
+                        "description": "The net votes (upvotes - downvotes) for the post."
+                    },
+                    "children_abs_rshares": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "total_pending_payout_value": {
+                        "type": "string",
+                        "example": "100.000 HIVE",
+                        "description": "The total pending payout value for the post."
+                    },
+                    "total_vote_weight": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "vote_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "net_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    },
+                    "abs_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10000
+                    }
+                }
+            },
             "post_template": {
                 "type": "object",
                 "properties": {
@@ -16457,98 +16601,6 @@
                         "type": "string",
                         "example": "950.000 HBD",
                         "description": "The total payout value for the post, which is the sum of all payouts that have been processed."
-                    },
-                    "reblogged_by": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [
-                            "bob",
-                            "charlie"
-                        ],
-                        "description": "An array of accounts that have reblogged the post."
-                    },
-                    "id": {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Unique identifier for the resource; appears only when post_id is absent."
-                    },
-                    "post_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Unique identifier for a post; appears only when id is absent."
-                    },
-                    "author_rewards": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000,
-                        "description": "The total rewards earned by the author for the post."
-                    },
-                    "max_cashout_time": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2024-05-16T12:00:00",
-                        "description": "The date and time when the post is scheduled to be paid out."
-                    },
-                    "reward_weight": {
-                        "type": "integer",
-                        "example": 1000,
-                        "description": "The weight of the post in the reward distribution."
-                    },
-                    "root_author": {
-                        "type": "string",
-                        "example": "root_author_name",
-                        "description": "The author of the root post, if this post is a reply."
-                    },
-                    "root_permlink": {
-                        "type": "string",
-                        "example": "root-permlink",
-                        "description": "The permlink of the root post, if this post is a reply."
-                    },
-                    "allow_replies": {
-                        "type": "boolean",
-                        "example": true,
-                        "description": "Whether replies are allowed for this post."
-                    },
-                    "allow_votes": {
-                        "type": "boolean",
-                        "example": true,
-                        "description": "Whether votes are allowed for this post."
-                    },
-                    "allow_curation_rewards": {
-                        "type": "boolean",
-                        "example": true,
-                        "description": "Whether curation rewards are allowed for this post."
-                    },
-                    "net_votes": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000,
-                        "description": "The net votes (upvotes - downvotes) for the post."
-                    },
-                    "children_abs_rshares": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "total_pending_payout_value": {
-                        "type": "string",
-                        "example": "100.000 HIVE",
-                        "description": "The total pending payout value for the post."
-                    },
-                    "total_vote_weight": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000
-                    },
-                    "vote_rshares": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000
-                    },
-                    "net_rshares": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000
-                    },
-                    "abs_rshares": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 10000
                     }
                 },
                 "required": [
@@ -16586,6 +16638,9 @@
                     },
                     {
                         "$ref": "#/components/schemas/active_votes_default_object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/post_optional"
                     }
                 ]
             },
@@ -16596,6 +16651,9 @@
                     },
                     {
                         "$ref": "#/components/schemas/active_votes_condenser_api_object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/post_optional"
                     }
                 ]
             },
@@ -16873,6 +16931,21 @@
                     }
                 ]
             },
+            "rc_account_optional": {
+                "type": "object",
+                "properties": {
+                    "delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits delegated to other accounts."
+                    },
+                    "received_delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "0",
+                        "description": "The amount of resource credits received from other accounts."
+                    }
+                }
+            },
             "rc_account_template": {
                 "type": "object",
                 "properties": {
@@ -16888,16 +16961,6 @@
                         "$ref": "#/components/schemas/hive_int",
                         "example": "0",
                         "description": "The maximum resource credits available for the account."
-                    },
-                    "delegated_rc": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "0",
-                        "description": "The amount of resource credits delegated to other accounts."
-                    },
-                    "received_delegated_rc": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": "0",
-                        "description": "The amount of resource credits received from other accounts."
                     }
                 },
                 "required": [
@@ -16921,6 +16984,9 @@
                         "required": [
                             "max_rc_creation_adjustment"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/rc_account_optional"
                     }
                 ]
             },
@@ -16939,6 +17005,9 @@
                         "required": [
                             "max_rc_creation_adjustment"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/rc_account_optional"
                     }
                 ]
             },
