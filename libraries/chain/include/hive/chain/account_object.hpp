@@ -409,6 +409,46 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (shared_delayed_votes));
   };
 
+  class tiny_account_object : public object< tiny_account_object_type, tiny_account_object, std::true_type >
+  {
+    CHAINBASE_OBJECT( tiny_account_object );
+
+      account_name_type name;
+      account_id_type   proxy;
+      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum();
+      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
+
+    public:
+
+      const account_name_type& get_name() const { return name; }
+      account_id_type get_proxy() const { return proxy; }
+      time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
+      time_point_sec get_governance_vote_expiration_ts() const { return governance_vote_expiration_ts; }
+
+    private:
+
+      account_details::shared_delayed_votes shared_delayed_votes;
+
+    public:
+
+      const account_details::shared_delayed_votes& get_shared_delayed_votes() const { return shared_delayed_votes; }
+
+      account_details::t_delayed_votes& get_delayed_votes() { return shared_delayed_votes.delayed_votes; }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return shared_delayed_votes.delayed_votes; }
+
+      bool has_delayed_votes() const { return shared_delayed_votes.has_delayed_votes(); }
+
+      // start time of oldest delayed vote bucket (the one closest to activation)
+      time_point_sec get_oldest_delayed_vote_time() const { return shared_delayed_votes.get_oldest_delayed_vote_time(); }
+
+      size_t get_dynamic_alloc() const
+      {
+        return shared_delayed_votes.get_dynamic_alloc();
+      }
+
+    CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (shared_delayed_votes));
+  };
+
   class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_metadata_object );
@@ -666,34 +706,45 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
       ordered_unique< tag< by_name >,
-        const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
-      ordered_unique< tag< by_proxy >,
-        composite_key< account_object,
-          const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,
-          const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
-        > /// composite key by proxy
-      >,
-      ordered_unique< tag< by_next_vesting_withdrawal >,
-        composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_next_vesting_withdrawal >,
-          const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
-        > /// composite key by_next_vesting_withdrawal
-      >,
-      ordered_unique< tag< by_delayed_voting >,
-        composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_oldest_delayed_vote_time >,
-          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
-        >
-      >,
-      ordered_unique< tag< by_governance_vote_expiration_ts >,
-        composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_governance_vote_expiration_ts >,
-          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
-        >
-      >
+        const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >
     >,
     multi_index_allocator< account_object >
   > account_index;
+
+  typedef multi_index_container<
+    tiny_account_object,
+    indexed_by<
+      ordered_unique< tag< by_id >,
+        const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id > >,
+      ordered_unique< tag< by_name >,
+        const_mem_fun< tiny_account_object, const account_name_type&, &tiny_account_object::get_name > >,
+      ordered_unique< tag< by_proxy >,
+        composite_key< tiny_account_object,
+          const_mem_fun< tiny_account_object, account_id_type, &tiny_account_object::get_proxy >,
+          const_mem_fun< tiny_account_object, const account_name_type&, &tiny_account_object::get_name >
+        > /// composite key by proxy
+      >,
+      ordered_unique< tag< by_next_vesting_withdrawal >,
+        composite_key< tiny_account_object,
+          const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_next_vesting_withdrawal >,
+          const_mem_fun< tiny_account_object, const account_name_type&, &tiny_account_object::get_name >
+        > /// composite key by_next_vesting_withdrawal
+      >,
+      ordered_unique< tag< by_delayed_voting >,
+        composite_key< tiny_account_object,
+          const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_oldest_delayed_vote_time >,
+          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_governance_vote_expiration_ts >,
+        composite_key< tiny_account_object,
+          const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_governance_vote_expiration_ts >,
+          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
+        >
+      >
+    >,
+    multi_index_allocator< tiny_account_object >
+  > tiny_account_index;
 
   typedef multi_index_container <
     account_metadata_object,
@@ -832,6 +883,12 @@ FC_REFLECT( hive::chain::account_object,
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
+
+FC_REFLECT( hive::chain::tiny_account_object,
+          (id)(name)(proxy)(next_vesting_withdrawal)(governance_vote_expiration_ts)(shared_delayed_votes)
+        )
+
+CHAINBASE_SET_INDEX_TYPE( hive::chain::tiny_account_object, hive::chain::tiny_account_index )
 
 FC_REFLECT( hive::chain::account_metadata_object,
           (id)(account)(json_metadata)(posting_json_metadata) )
