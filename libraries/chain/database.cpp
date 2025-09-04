@@ -2442,16 +2442,16 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         if( claim > 0 ) // min_amt is non-zero satoshis
         {
           unclaimed_rewards -= claim;
-          const auto& voter = get( item->get_voter() );
-          operation vop = curation_reward_operation( voter.get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-          create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+          const auto voter = get_account( item->get_voter() );
+          operation vop = curation_reward_operation( voter->get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+          create_vesting2( *this, *voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
               vop.get< curation_reward_operation >().reward = reward;
               pre_push_virtual_operation( vop );
             } );
 
-            modify( voter, [&]( account_object& a )
+            modify( *voter, [&]( account_object& a )
             {
               a.set_curation_rewards( a.get_curation_rewards() + HIVE_asset( claim ) );
             });
@@ -3076,7 +3076,7 @@ void database::pay_liquidity_reward()
     if( itr != ridx.end() && itr->volume_weight() > 0 )
     {
       adjust_supply( reward, true );
-      adjust_balance( get(itr->owner), reward );
+      adjust_balance( *get_account(itr->owner), reward );
       modify( *itr, [&]( liquidity_reward_balance_object& obj )
       {
         obj.hive_volume = 0;
@@ -3085,7 +3085,7 @@ void database::pay_liquidity_reward()
         obj.weight      = 0;
       } );
 
-      push_virtual_operation( liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
+      push_virtual_operation( liquidity_reward_operation( get_account(itr->owner)->get_name(), reward ) );
     }
   }
 }
