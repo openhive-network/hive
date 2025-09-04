@@ -77,25 +77,26 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
 
 void delayed_voting::run( const fc::time_point_sec& head_time )
 {
-  const auto idx = db.get_iterator<by_delayed_voting>();
-  auto current = idx->begin();
+  const auto& idx = db.get_index< tiny_account_index, by_delayed_voting >();
+  auto current = idx.begin();
 
   int count = 0;
   if( db.get_benchmark_dumper().is_enabled() )
     db.get_benchmark_dumper().begin();
-  while( !idx->end() && current->has_delayed_votes() &&
+  while( current != idx.end() && current->has_delayed_votes() &&
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
-    const ushare_type _val{ current->get_delayed_votes().begin()->val };
+    auto account = db.get_account( current->get_name() );
+    const ushare_type _val{ account->get_delayed_votes().begin()->val };
 
-    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", current->delayed_votes.begin()->time.to_iso_string() ) );
+    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account->name )( "dv", _val )( "time", account->delayed_votes.begin()->time.to_iso_string() ) );
 
-    operation vop = hive::protocol::delayed_voting_operation( current->get_name(), _val );
+    operation vop = hive::protocol::delayed_voting_operation( account->get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation( vop );
 
-    db.adjust_proxied_witness_votes( *current, _val.value );
+    db.adjust_proxied_witness_votes( *account, _val.value );
 
     /*
       The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
@@ -106,12 +107,12 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       Solution:
         The best solution is to add new record at the back and to remove at the front.
     */
-    db.modify( *current, [&]( account_object& a )
+    db.modify( *account, [&]( account_object& a )
     {
       delayed_voting_processor::erase_front( a.get_delayed_votes(), a.get_sum_delayed_votes() );
     } );
 
-    current = idx->begin();
+    current = idx.begin();
     ++count;
   }
   if( db.get_benchmark_dumper().is_enabled() && count )

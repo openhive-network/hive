@@ -2199,9 +2199,9 @@ void database::update_owner_authority( const account_object& account, const auth
 
 void database::process_vesting_withdrawals()
 {
-  const auto widx = get_iterator< by_next_vesting_withdrawal >();
+  const auto& widx = get_index< tiny_account_index, by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
-  auto current = widx->begin();
+  auto current = widx.begin();
 
   const auto& cprops = get_dynamic_global_properties();
   auto now = cprops.time;
@@ -2210,12 +2210,10 @@ void database::process_vesting_withdrawals()
 
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( !widx->end() && current->get_next_vesting_withdrawal() <= now )
+  while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto from_account = current;
-
-    widx->next();
-    current = widx->get();
+    const auto from_account = get_account( current->get_name() );
+    ++current;
     ++count;
 
     share_type to_withdraw = from_account->get_active_next_vesting_withdrawal();
@@ -6830,8 +6828,8 @@ void database::remove_expired_governance_votes()
   if (!has_hardfork(HIVE_HARDFORK_1_25))
     return;
 
-  auto accounts = get_iterator<by_governance_vote_expiration_ts>();
-  auto acc_it = accounts->begin();
+  const auto& accounts = get_index<tiny_account_index, by_governance_vote_expiration_ts>();
+  auto acc_it = accounts.begin();
   time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
   time_point_sec now = head_block_time();
 
@@ -6841,11 +6839,10 @@ void database::remove_expired_governance_votes()
   const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
   remove_guard obj_perf( get_remove_threshold() );
 
-  while( !accounts->end() && acc_it->get_governance_vote_expiration_ts() <= now )
+  while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
   {
-    const auto account = acc_it;
-    accounts->next();
-    acc_it = accounts->get();
+    const auto account = get_account( acc_it->get_name() );
+    ++acc_it;
 
     if( dhf_helper::remove_proposal_votes( *account, proposal_votes, *this, obj_perf ) )
     {
