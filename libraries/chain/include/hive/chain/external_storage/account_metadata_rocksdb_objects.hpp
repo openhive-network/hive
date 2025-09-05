@@ -22,6 +22,7 @@ class volatile_account_metadata_object : public object< volatile_account_metadat
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_metadata_object, (json_metadata)(posting_json_metadata) )
 
     const account_name_type& get_name() const { return account; }
+    const account_metadata_id_type& get_account_metadata_id() const { return account_metadata_id; }
 
     account_metadata_id_type  account_metadata_id;
     account_name_type         account;
@@ -44,13 +45,13 @@ typedef multi_index_container<
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_metadata_object,
           member< volatile_account_metadata_object, uint32_t, &volatile_account_metadata_object::block_number>,
-          const_mem_fun< volatile_account_metadata_object, volatile_account_metadata_object::id_type, &volatile_account_metadata_object::get_id >
+          const_mem_fun< volatile_account_metadata_object, const account_metadata_id_type&, &volatile_account_metadata_object::get_account_metadata_id >
         >
       >,
       ordered_unique< tag< by_name >,
         composite_key< volatile_account_metadata_object,
           member< volatile_account_metadata_object, account_name_type, &volatile_account_metadata_object::account>,
-          const_mem_fun< volatile_account_metadata_object, volatile_account_metadata_object::id_type, &volatile_account_metadata_object::get_id >
+          const_mem_fun< volatile_account_metadata_object, const account_metadata_id_type&, &volatile_account_metadata_object::get_account_metadata_id >
         >
       >
     >,

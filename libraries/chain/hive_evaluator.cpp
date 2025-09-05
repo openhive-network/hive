@@ -3332,7 +3332,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     FC_ASSERT( recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ),
       "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
 
-    _db.modify(*from_account, [](account_object& a )
+    _db.modify(*from_account, []( account_object& a )
     {
       a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() + 1 );
     } );
@@ -3340,7 +3340,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   else if( op.amount.amount == 0 )
   {
     _db.remove( *itr );
-    _db.modify( *from_account, [&](account_object& a )
+    _db.modify( *from_account, [&]( account_object& a )
     {
       FC_ASSERT( a.get_open_recurrent_transfers() > 0 );
       a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );

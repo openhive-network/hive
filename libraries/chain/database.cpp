@@ -1385,7 +1385,7 @@ void database::clear_witness_votes( const account_object& a )
   }
 
   if( has_hardfork( HIVE_HARDFORK_0_6__104 ) )
-    modify( a, [&](account_object& acc )
+    modify( a, [&]( account_object& acc )
     {
       acc.set_witnesses_voted_for( 0 );
     });
@@ -2093,7 +2093,7 @@ void database::process_recurrent_transfers()
     if (remove_recurrent_transfer)
     {
       remove( current_recurrent_transfer );
-      modify(*from_account, [&](account_object& a )
+      modify(*from_account, [&]( account_object& a )
       {
         FC_ASSERT( a.get_open_recurrent_transfers() > 0 );
         a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
@@ -3667,7 +3667,7 @@ void database::init_genesis()
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >([&](account_authority_object& auth)
+    create< account_authority_object >([&]( account_authority_object& auth )
     {
       auth.account = OBSOLETE_TREASURY_ACCOUNT;
       auth.owner.weight_threshold = 1;
@@ -3675,7 +3675,7 @@ void database::init_genesis()
       auth.posting.weight_threshold = 1;
     } );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >([&](account_authority_object& auth)
+    create< account_authority_object >([&]( account_authority_object& auth )
     {
       auth.account = NEW_HIVE_TREASURY_ACCOUNT;
       auth.owner.weight_threshold = 1;

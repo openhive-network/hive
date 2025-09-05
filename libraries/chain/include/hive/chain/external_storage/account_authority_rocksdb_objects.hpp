@@ -22,6 +22,7 @@ class volatile_account_authority_object : public object< volatile_account_author
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_account_authority_object, (owner)(active)(posting) )
 
     const account_name_type& get_name() const { return account; }
+    const account_authority_id_type& get_account_authority_id() const { return account_authority_id; }
 
     account_authority_id_type account_authority_id;
     account_name_type         account;
@@ -49,13 +50,13 @@ typedef multi_index_container<
       ordered_unique< tag< by_block >,
         composite_key< volatile_account_authority_object,
           member< volatile_account_authority_object, uint32_t, &volatile_account_authority_object::block_number>,
-          const_mem_fun< volatile_account_authority_object, volatile_account_authority_object::id_type, &volatile_account_authority_object::get_id >
+          const_mem_fun< volatile_account_authority_object, const account_authority_id_type&, &volatile_account_authority_object::get_account_authority_id >
         >
       >,
       ordered_unique< tag< by_name >,
         composite_key< volatile_account_authority_object,
           member< volatile_account_authority_object, account_name_type, &volatile_account_authority_object::account>,
-          const_mem_fun< volatile_account_authority_object, volatile_account_authority_object::id_type, &volatile_account_authority_object::get_id >
+          const_mem_fun< volatile_account_authority_object, const account_authority_id_type&, &volatile_account_authority_object::get_account_authority_id >
         >
       >
     >,
