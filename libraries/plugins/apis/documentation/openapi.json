@@ -1964,7 +1964,7 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Finds proposals by proposal.id (not proposal.proposal_id).",
+                "summary": "Finds proposals by `proposal.id` (not `proposal.proposal_id`).",
                 "operationId": "condenser_find_proposals",
                 "requestBody": {
                     "content": {
@@ -4566,6 +4566,258 @@
                 }
             }
         },
+        "condenser_api.get_market_history_buckets": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the bucket seconds being tracked by the plugin.",
+                "operationId": "condenser_get_market_history_buckets",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_market_history_buckets_response"
+                                },
+                                "example": [
+                                    15,
+                                    60,
+                                    300,
+                                    3600,
+                                    86400
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_next_scheduled_hardfork": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the next scheduled hardfork.",
+                "operationId": "condenser_get_next_scheduled_hardfork",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_next_scheduled_hardfork_response"
+                                },
+                                "example": {
+                                    "hf_version": "0.0.0",
+                                    "live_time": "1970-01-01T00:00:00"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_open_orders": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the open orders for an account.",
+                "operationId": "condenser_get_open_orders",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_open_orders"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_open_orders_response"
+                                },
+                                "example": [
+                                    {
+                                        "created": "2025-09-07T16:59:57",
+                                        "expiration": "2025-09-08T16:59:57",
+                                        "for_sale": 43,
+                                        "id": 14149752,
+                                        "orderid": 297016596,
+                                        "real_price": "0.20930232558139536",
+                                        "rewarded": false,
+                                        "sell_price": {
+                                            "base": "0.043 HIVE",
+                                            "quote": "0.009 HBD"
+                                        },
+                                        "seller": "gptbank"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_ops_in_block": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns all operations contained in a block.",
+                "description": "Parameters:\n\n- `block_num`: An integer representing the block number to query.\n- `only_virtual`: A boolean indicating whether to query only virtual operations.\n\nExamples:\n- `block_num = 1`, `only_virtual = false` — Queries the operations in block #1.\n- `block_num = 5443322`, `only_virtual = true` — Queries only the virtual operations in block #5,443,322.",
+                "operationId": "condenser_get_ops_in_block",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_ops_in_block"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_ops_in_block_response"
+                                },
+                                "example": [
+                                    {
+                                        "block": 1,
+                                        "op": [
+                                            "producer_reward",
+                                            {
+                                                "producer": "initminer",
+                                                "vesting_shares": "1.000000 VESTS"
+                                            }
+                                        ],
+                                        "op_in_trx": 1,
+                                        "timestamp": "2016-03-24T16:05:00",
+                                        "trx_id": "0000000000000000000000000000000000000000",
+                                        "trx_in_block": 4294967295,
+                                        "virtual_op": true
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_order_book": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the internal market order book.",
+                "description": "Parameters:\n\n- `limit`: An integer up to 500 specifying the maximum number of items to query in the order book.\n\nExamples:\n- `limit = 10` — Queries up to 10 items in the order book.\n- `limit = 500` — Queries up to 500 items in the order book.",
+                "operationId": "condenser_get_order_book",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_order_book"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_order_book_response"
+                                },
+                                "example": [
+                                    {
+                                        "block": 1,
+                                        "op": [
+                                            "producer_reward",
+                                            {
+                                                "producer": "initminer",
+                                                "vesting_shares": "1.000000 VESTS"
+                                            }
+                                        ],
+                                        "op_in_trx": 1,
+                                        "timestamp": "2016-03-24T16:05:00",
+                                        "trx_id": "0000000000000000000000000000000000000000",
+                                        "trx_in_block": 4294967295,
+                                        "virtual_op": true
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_owner_history": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the owner history of an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExample:\n- `account = \"hiveio\"` — Queries the owner history for account named \"hiveio\".",
+                "operationId": "condenser_get_owner_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_owner_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_owner_history_response"
+                                },
+                                "example": [
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "condenser_api.get_post_discussions_by_payout": {
             "post": {
                 "tags": [
@@ -4659,6 +4911,38 @@
                 }
             }
         },
+        "condenser_api.get_potential_signatures": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "This method will return the set of all public keys that could possibly sign for a given transaction.",
+                "operationId": "condenser_get_potential_signatures",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_potential_signatures"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_potential_signatures_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "condenser_api.get_reblogged_by": {
             "post": {
                 "tags": [
@@ -4711,6 +4995,87 @@
                                     "victoriabsb",
                                     "zangano"
                                 ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_recent_trades": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the most recent trades for the internal HBD:HIVE market.",
+                "description": "Parameters:\n\n- `limit`: An integer up to 1000 specifying the maximum number of latest trades to retrieve.\n\nExamples:\n- `limit = 10` — Queries up to 10 latest trades.\n- `limit = 500` — Queries up to 500 latest trades.",
+                "operationId": "condenser_get_recent_trades",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_recent_trades"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_recent_trades_response"
+                                },
+                                "example": [
+                                    {
+                                        "current_pays": "0.062 HBD",
+                                        "date": "2025-09-08T11:04:18",
+                                        "maker": "xzy",
+                                        "open_pays": "0.304 HIVE",
+                                        "taker": "roadstories"
+                                    },
+                                    {
+                                        "current_pays": "26.699 HIVE",
+                                        "date": "2025-09-08T11:01:57",
+                                        "maker": "risingstargame",
+                                        "open_pays": "5.420 HBD",
+                                        "taker": "hbdstabilizer"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_recovery_request": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the recovery request for an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExample:\n- `account = \"hiveio\"` — Queries the recovery requests for account named \"hiveio\".",
+                "operationId": "condenser_get_recovery_request",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_recovery_request"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_recovery_request_response"
+                                },
+                                "example": null
                             }
                         }
                     }
@@ -4810,6 +5175,310 @@
                 }
             }
         },
+        "condenser_api.get_required_signatures": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "This API will take a partially signed transaction and a set of public keys that the owner has the ability to sign for and return the minimal subset of public keys that should add signatures to the transaction.",
+                "description": "Parameters:\n\n- `trx`: An object representing a transaction.\n- `available_keys`: An array of strings listing the available keys related to the transaction.",
+                "operationId": "condenser_get_required_signatures",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_required_signatures"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_required_signatures_response"
+                                },
+                                "example": []
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_reward_fund": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns information about the current reward funds.",
+                "operationId": "condenser_get_reward_fund",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_reward_fund"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_reward_fund_response"
+                                },
+                                "example": {
+                                    "author_reward_curve": "linear",
+                                    "content_constant": "2000000000000",
+                                    "curation_reward_curve": "linear",
+                                    "id": 0,
+                                    "last_update": "2025-09-08T12:40:06",
+                                    "name": "post",
+                                    "percent_content_rewards": 10000,
+                                    "percent_curation_rewards": 5000,
+                                    "recent_claims": "709847774236745463",
+                                    "reward_balance": "1021728.453 HIVE"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_savings_withdraw_from": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns savings withdraw from an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExample:\n- `account = \"hiveio\"` — Queries the savings withdrawal for account named \"hiveio\".",
+                "operationId": "condenser_get_savings_withdraw_from",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_savings_withdraw_from"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_savings_withdraw_from_response"
+                                },
+                                "example": []
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_savings_withdraw_to": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns savings withdraw to an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExample:\n- `account = \"hiveio\"` — Queries the savings withdrawal for account named \"hiveio\".",
+                "operationId": "condenser_get_savings_withdraw_to",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_savings_withdraw_to"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_savings_withdraw_to_response"
+                                },
+                                "example": []
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_ticker": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the market ticker for the internal HBD:HIVE market.",
+                "operationId": "condenser_get_ticker",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_ticker_response"
+                                },
+                                "example": {
+                                    "hbd_volume": "27989.419 HBD",
+                                    "highest_bid": "0.20486765549455052",
+                                    "hive_volume": "138874.125 HIVE",
+                                    "latest": "0.20507777974191269",
+                                    "lowest_ask": "0.20486874598288285",
+                                    "percent_change": "1.68470572079342595"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_trade_history": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the trade history for the internal HBD:HIVE market.",
+                "description": "Parameters:\n\n- `start`: A timestamp indicating the beginning of the query period.\n- `end`: A timestamp indicating the end of the query period.\n- `limit`: An integer up to 1000 specifying the maximum number of trades to retrieve.\n\nExample:\n- `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"`, `limit = 10` — Queries up to 10 trades between January 1st, 2018 and January 2nd, 2018.",
+                "operationId": "condenser_get_trade_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_trade_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_trade_history_response"
+                                },
+                                "example": [
+                                    {
+                                        "current_pays": "0.582 HBD",
+                                        "date": "2018-01-01T00:07:48",
+                                        "maker": "calimeatwagon",
+                                        "open_pays": "1.462 HIVE",
+                                        "taker": "whd"
+                                    },
+                                    {
+                                        "current_pays": "1.992 HBD",
+                                        "date": "2018-01-01T00:07:48",
+                                        "maker": "tellafriend",
+                                        "open_pays": "5.000 HIVE",
+                                        "taker": "whd"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_transaction": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the details of a transaction based on a transaction id.",
+                "description": "Parameters:\n\n- `trx_id`: A string representing the transaction ID to query.\n\nExample:\n- `trx_id = \"6fde0190a97835ea6d9e651293e90c89911f933c\"` — Queries for this exact transaction ID.",
+                "operationId": "condenser_get_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_transaction_response"
+                                },
+                                "example": {
+                                    "ref_block_num": 0,
+                                    "ref_block_prefix": 0,
+                                    "expiration": "1970-01-01T00:00:00",
+                                    "operations": [],
+                                    "extensions": [],
+                                    "signatures": [],
+                                    "transaction_id": "0000000000000000000000000000000000000000",
+                                    "block_num": 0,
+                                    "transaction_num": 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_transaction_hex": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns a hexdump of the serialized binary form of a transaction.",
+                "operationId": "condenser_get_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_transaction_hex"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_transaction_hex_response"
+                                },
+                                "example": ""
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "condenser_api.get_trending_tags": {
             "post": {
                 "tags": [
@@ -4849,6 +5518,961 @@
                                         "total_payouts": "6461.421 HBD"
                                     }
                                 ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_version": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the versions of blockchain, hive, and FC.",
+                "operationId": "condenser_get_version",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_version_response"
+                                },
+                                "example": {
+                                    "blockchain_version": "1.27.11",
+                                    "chain_id": "beeab0de00000000000000000000000000000000000000000000000000000000",
+                                    "fc_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                                    "haf_revision": "0e2bd7c69cc26928665281435165fd3288940db9",
+                                    "hive_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                                    "node_type": "mainnet"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_vesting_delegations": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the vesting delegations by an account.",
+                "description": "Parameters:\n\n- `delegator_account`: A string representing the account that delegated vesting.\n- `start_account`: A string indicating the account to start from (optional).\n- `limit`: An integer up to 1000 specifying the maximum number of vesting delegations to retrieve.\n\nExample:\n- `delegator_account = \"hiveio\"`, `limit = 10` — Queries up to 10 vesting delegations by \"hiveio\".",
+                "operationId": "condenser_get_vesting_delegations",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_vesting_delegations"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_vesting_delegations_response"
+                                },
+                                "example": [
+                                    {
+                                        "delegatee": "sharker",
+                                        "delegator": "ecency",
+                                        "id": 2454889,
+                                        "min_delegation_time": "2024-03-07T15:35:00",
+                                        "vesting_shares": "314566.314850 VESTS"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_volume": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the market volume for the past 24 hours.",
+                "operationId": "condenser_get_volume",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_volume_response"
+                                },
+                                "example": {
+                                    "hive_volume": "0.000 HIVE",
+                                    "hbd_volume": "0.000 HIVE"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_withdraw_routes": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the withdraw routes for an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name.\n- `type`: A string indicating the type of withdraw routes to query, e.g., 'outgoing', 'incoming', or 'all'.\n\nExamples:\n- `account = \"hiveio\"`, `type = \"outgoing\"` — Queries outgoing withdraw routes by \"hiveio\".\n- `account = \"hiveio\"`, `type = \"incoming\"` — Queries incoming withdraw routes by \"hiveio\".\n- `account = \"hiveio\"`, `type = \"all\"` — Queries all withdraw routes by \"hiveio\".",
+                "operationId": "condenser_get_withdraw_routes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_withdraw_routes"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_withdraw_routes_response"
+                                },
+                                "example": [
+                                    {
+                                        "auto_vest": true,
+                                        "from_account": "feruz",
+                                        "id": 49677,
+                                        "percent": 100,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": true,
+                                        "from_account": "esteemapp",
+                                        "id": 49784,
+                                        "percent": 10000,
+                                        "to_account": "ecency"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_witness_by_account": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the witness of an account.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExample:\n- `account = \"hiveio\"` — Queries the witness account of \"hiveio\" (or null if none exists).",
+                "operationId": "condenser_get_witness_by_account",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_witness_by_account"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_witness_by_account_response"
+                                },
+                                "example": {
+                                    "available_witness_account_subsidies": 2452201,
+                                    "created": "2016-06-30T17:22:18",
+                                    "hardfork_time_vote": "2022-10-24T12:00:00",
+                                    "hardfork_version_vote": "1.27.0",
+                                    "hbd_exchange_rate": {
+                                        "base": "0.207 HBD",
+                                        "quote": "1.000 HIVE"
+                                    },
+                                    "id": 9493,
+                                    "last_aslot": 99522626,
+                                    "last_confirmed_block_num": 99270855,
+                                    "last_hbd_exchange_update": "2025-09-09T06:43:09",
+                                    "last_work": "0000000048bf77f525731f28db7c1aa9ad853a475ccc78e71ea952a7782e5459",
+                                    "owner": "gtg",
+                                    "pow_worker": 0,
+                                    "props": {
+                                        "account_creation_fee": "3.000 HIVE",
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1000,
+                                        "maximum_block_size": 65536
+                                    },
+                                    "running_version": "1.27.11",
+                                    "signing_key": "STM8PFEEhF9g3PMZu9mu9vso56bzP6i4aMYM73aWL8CkcKi4LEGLR",
+                                    "total_missed": 988,
+                                    "url": "https://gtg.openhive.network",
+                                    "virtual_last_update": "990761417362868601418459905",
+                                    "virtual_position": "278073518838267952258487335266416950078",
+                                    "virtual_scheduled_time": "990761842934669614988380162",
+                                    "votes": "146177091467314817"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_witness_count": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the witness count.",
+                "operationId": "condenser_get_witness_count",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_witness_count_response"
+                                },
+                                "example": 123
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_witness_schedule": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns the current witness schedule.",
+                "operationId": "condenser_get_witness_schedule",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/empty_array"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_witness_schedule_response"
+                                },
+                                "example": {
+                                    "account_subsidy_rd": {
+                                        "budget_per_time_unit": 797,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 347321,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 157691079,
+                                        "min_decay": 0,
+                                        "pool_eq": 157691079,
+                                        "resource_unit": 10000
+                                    },
+                                    "account_subsidy_witness_rd": {
+                                        "budget_per_time_unit": 996,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 7293741,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 9384019,
+                                        "min_decay": 133,
+                                        "pool_eq": 9384019,
+                                        "resource_unit": 10000
+                                    },
+                                    "current_shuffled_witnesses": [
+                                        "therealwolf",
+                                        "good-karma",
+                                        "anyx",
+                                        "ausbitbank",
+                                        "stoodkev",
+                                        "quochuy",
+                                        "ocd-witness",
+                                        "blocktrades",
+                                        "steempeak",
+                                        "abit",
+                                        "themarkymark",
+                                        "roelandp",
+                                        "deathwing",
+                                        "arcange",
+                                        "threespeak",
+                                        "guiltyparties",
+                                        "yabapmatt",
+                                        "smooth.witness",
+                                        "gtg",
+                                        "pharesim",
+                                        "emrebeyler"
+                                    ],
+                                    "current_virtual_time": "990775784437024207545111439",
+                                    "elected_weight": 1,
+                                    "hardfork_required_witnesses": 17,
+                                    "id": 0,
+                                    "majority_version": "1.27.4",
+                                    "max_miner_witnesses": 0,
+                                    "max_runner_witnesses": 1,
+                                    "max_voted_witnesses": 20,
+                                    "median_props": {
+                                        "account_creation_fee": "3.000 HIVE",
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1500,
+                                        "maximum_block_size": 65536
+                                    },
+                                    "min_witness_account_subsidy_decay": 0,
+                                    "miner_weight": 1,
+                                    "next_shuffle_block_num": 99272691,
+                                    "num_scheduled_witnesses": 21,
+                                    "timeshare_weight": 5,
+                                    "witness_pay_normalization_factor": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_witnesses": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns current witnesses.",
+                "operationId": "condenser_get_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_witnesses"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_witnesses_response"
+                                },
+                                "example": [
+                                    {
+                                        "available_witness_account_subsidies": 0,
+                                        "created": "2016-03-24T17:00:21",
+                                        "hardfork_time_vote": "2016-03-24T16:00:00",
+                                        "hardfork_version_vote": "0.0.0",
+                                        "hbd_exchange_rate": {
+                                            "base": "0.000 HIVE",
+                                            "quote": "0.000 HIVE"
+                                        },
+                                        "id": 28,
+                                        "last_aslot": 3898,
+                                        "last_confirmed_block_num": 3767,
+                                        "last_hbd_exchange_update": "1970-01-01T00:00:00",
+                                        "last_work": "000000642e1a0a95e8704393c5327198de55f43795c415c148be87e3af9274fe",
+                                        "owner": "dantheman3",
+                                        "pow_worker": 0,
+                                        "props": {
+                                            "account_creation_fee": "100.000 HIVE",
+                                            "account_subsidy_budget": 797,
+                                            "account_subsidy_decay": 347321,
+                                            "hbd_interest_rate": 1000,
+                                            "maximum_block_size": 131072
+                                        },
+                                        "running_version": "0.0.0",
+                                        "signing_key": "STM5Jna5tmYoiNV7RyABdwYgRCKJGgbrt3EVB5RqzJvvx3ecG5YPp",
+                                        "total_missed": 1,
+                                        "url": "",
+                                        "virtual_last_update": "0",
+                                        "virtual_position": "0",
+                                        "virtual_scheduled_time": "340282366920938463463374607431768211455",
+                                        "votes": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.get_witnesses_by_vote": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns current witnesses by vote.",
+                "description": "Parameters:\n\n- `start_name`: A string indicating the starting name for the query (optional).\n- `limit`: An integer up to 1000 specifying the maximum number of witness votes to retrieve.\n\nExamples:\n- `start_name = null`, `limit = 21` — Queries top 21 witness votes.\n- `start_name = \"a\"`, `limit = 1` — Queries top 1 witness votes starting with \"a\".",
+                "operationId": "condenser_get_witnesses_by_vote",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_witnesses_by_vote"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_witnesses_by_vote_response"
+                                },
+                                "example": [
+                                    {
+                                        "available_witness_account_subsidies": 0,
+                                        "created": "2016-03-24T17:00:21",
+                                        "hardfork_time_vote": "2016-03-24T16:00:00",
+                                        "hardfork_version_vote": "0.0.0",
+                                        "hbd_exchange_rate": {
+                                            "base": "0.000 HIVE",
+                                            "quote": "0.000 HIVE"
+                                        },
+                                        "id": 28,
+                                        "last_aslot": 3898,
+                                        "last_confirmed_block_num": 3767,
+                                        "last_hbd_exchange_update": "1970-01-01T00:00:00",
+                                        "last_work": "000000642e1a0a95e8704393c5327198de55f43795c415c148be87e3af9274fe",
+                                        "owner": "dantheman3",
+                                        "pow_worker": 0,
+                                        "props": {
+                                            "account_creation_fee": "100.000 HIVE",
+                                            "account_subsidy_budget": 797,
+                                            "account_subsidy_decay": 347321,
+                                            "hbd_interest_rate": 1000,
+                                            "maximum_block_size": 131072
+                                        },
+                                        "running_version": "0.0.0",
+                                        "signing_key": "STM5Jna5tmYoiNV7RyABdwYgRCKJGgbrt3EVB5RqzJvvx3ecG5YPp",
+                                        "total_missed": 1,
+                                        "url": "",
+                                        "virtual_last_update": "0",
+                                        "virtual_position": "0",
+                                        "virtual_scheduled_time": "340282366920938463463374607431768211455",
+                                        "votes": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.is_known_transaction": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Only return true if the transaction has not expired or been invalidated. If this method is called with a VERY old transaction we will return false, use account_history_api.get_transaction.",
+                "operationId": "condenser_is_known_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_is_known_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_is_known_transaction_response"
+                                },
+                                "example": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.list_proposal_votes": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns all proposal votes, starting with the specified voter or `proposal.id`.",
+                "description": "Parameters:\n\n- `start`: An array that depends on the order parameter, e.g., [\"voter_name\"] for 'by_voter_proposal' or [proposal_id] for 'by_proposal_voter'.\n- `limit`: An integer up to 1000 specifying the maximum number of results to retrieve.\n- `order`: A string specifying the ordering criterion, which can be 'by_voter_proposal' or 'by_proposal_voter'.\n- `order_direction`: A string indicating the direction of the order, which can be 'ascending' or 'descending'.\n- `status`: A string representing the proposal status, which can be 'all', 'inactive', 'active', 'expired', or 'votable'.\n\nExamples:\n- `start = [\"alice\"]`, `limit = 10`, `order = \"by_voter_proposal\"`, `order_direction = \"ascending\"`, `status = \"active\"` — Lists 10 proposals with active status, ordered by voter, ascending.\n- `start = [10]`, `limit = 1000`, `order = \"by_proposal_voter\"`, `order_direction = \"ascending\"`, `status = \"votable\"` — Lists 1000 votes on proposal 10, ordered by proposal.id, ascending.",
+                "operationId": "condenser_list_proposal_votes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_list_proposal_votes"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_list_proposal_votes_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 208219,
+                                        "proposal": {
+                                            "creator": "gtg",
+                                            "daily_pay": "240000000.000 HBD",
+                                            "end_date": "2029-12-31T23:59:59",
+                                            "id": 0,
+                                            "permlink": "dhf",
+                                            "proposal_id": 0,
+                                            "receiver": "steem.dao",
+                                            "start_date": "2019-08-27T00:00:00",
+                                            "status": "active",
+                                            "subject": "Return Proposal",
+                                            "total_votes": "67510813430564212"
+                                        },
+                                        "voter": "a11co"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.list_proposals": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns all proposals, starting with the specified creator or start date.",
+                "description": "Parameters:\n\n- `start`: An array that is determined by the order parameter, e.g., [\"creator_name\"] for 'by_creator', [\"start_date\"] for 'by_start_date', [\"end_date\"] for 'by_end_date', or [total_votes] for 'by_total_votes'.\n- `limit`: An integer up to 1000 specifying the maximum number of results to retrieve.\n- `order`: A string specifying the ordering criterion, which can be 'by_creator', 'by_start_date', 'by_end_date', or 'by_total_votes'.\n- `order_direction`: A string indicating the direction of the order, which can be 'ascending' or 'descending'.\n- `status`: A string representing the proposal status, which can be 'all', 'inactive', 'active', 'expired', or 'votable'.",
+                "operationId": "condenser_list_proposals",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_list_proposals"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_list_proposals_response"
+                                },
+                                "example": [
+                                    {
+                                        "creator": "actifit",
+                                        "daily_pay": "230.000 HBD",
+                                        "end_date": "2026-04-15T00:00:00",
+                                        "id": 337,
+                                        "permlink": "actifit-proposal-3--collabs-development-infra--growth",
+                                        "proposal_id": 337,
+                                        "receiver": "actifit.funds",
+                                        "start_date": "2025-03-27T00:00:00",
+                                        "subject": "Actifit Proposal #3 - Collabs, Development, Infra & Growth",
+                                        "total_votes": "67771955892524535"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.list_rc_accounts": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Find accounts and their RC delegations.",
+                "operationId": "condenser_list_rc_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_list_rc_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_list_rc_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "account": "ecency",
+                                        "delegated_rc": 1399000000000,
+                                        "max_rc": 7195539161984247,
+                                        "max_rc_creation_adjustment": "5851.327807 VESTS",
+                                        "rc_manabar": {
+                                            "current_mana": 13519852071493,
+                                            "last_update_time": 1757410884
+                                        },
+                                        "received_delegated_rc": 4445047400706271
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.list_rc_direct_delegations": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Get list of “from” “to” which account how much RC was delegated.",
+                "operationId": "condenser_list_rc_direct_delegations",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_list_rc_direct_delegations"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_list_rc_direct_delegations_response"
+                                },
+                                "example": [
+                                    {
+                                        "delegated_rc": 15000000000,
+                                        "from": "ecency",
+                                        "to": "gojosator"
+                                    },
+                                    {
+                                        "delegated_rc": 15000000000,
+                                        "from": "ecency",
+                                        "to": "sixeyes"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.lookup_account_names": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Looks up account names.",
+                "description": "Parameters:\n\n- `accounts`: An array of strings representing account names.\n- `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes.\n\nThis parameter set allows querying for multiple accounts with an optional filter on the status of delayed votes.",
+                "operationId": "condenser_lookup_account_names",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_lookup_account_names"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_lookup_account_names_response"
+                                },
+                                "example": [
+                                    {
+                                        "active": {
+                                            "account_auths": [
+                                                [
+                                                    "pettycash",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "balance": "283.441 HIVE",
+                                        "can_vote": true,
+                                        "comment_count": 0,
+                                        "created": "2020-03-06T12:22:51",
+                                        "curation_rewards": 20,
+                                        "delegated_vesting_shares": "0.000000 VESTS",
+                                        "downvote_manabar": {
+                                            "current_mana": 78641578712,
+                                            "last_update_time": 1754586540
+                                        },
+                                        "governance_vote_expiration_ts": "2026-05-11T00:45:09",
+                                        "hbd_balance": "50.418 HBD",
+                                        "hbd_last_interest_payment": "2020-10-21T02:45:12",
+                                        "hbd_seconds": "0",
+                                        "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                        "id": 1370484,
+                                        "json_metadata": "",
+                                        "last_account_recovery": "1970-01-01T00:00:00",
+                                        "last_account_update": "2021-11-09T21:56:27",
+                                        "last_owner_update": "1970-01-01T00:00:00",
+                                        "last_post": "2025-03-20T16:39:33",
+                                        "last_root_post": "2025-03-20T16:39:33",
+                                        "last_vote_time": "2025-01-01T06:03:33",
+                                        "lifetime_vote_count": 0,
+                                        "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
+                                        "mined": false,
+                                        "name": "hiveio",
+                                        "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                                        "open_recurrent_transfers": 0,
+                                        "owner": {
+                                            "account_auths": [],
+                                            "key_auths": [
+                                                [
+                                                    "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "pending_claimed_accounts": 0,
+                                        "pending_transfers": 0,
+                                        "post_bandwidth": 0,
+                                        "post_count": 80,
+                                        "post_voting_power": "314566.314850 VESTS",
+                                        "posting": {
+                                            "account_auths": [
+                                                [
+                                                    "threespeak",
+                                                    1
+                                                ],
+                                                [
+                                                    "vimm.app",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                        "posting_rewards": 1919844,
+                                        "previous_owner_update": "1970-01-01T00:00:00",
+                                        "proxied_vsf_votes": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "proxy": "",
+                                        "received_vesting_shares": "0.000000 VESTS",
+                                        "recovery_account": "steempeak",
+                                        "reset_account": "null",
+                                        "reward_hbd_balance": "0.000 HBD",
+                                        "reward_hive_balance": "0.000 HIVE",
+                                        "reward_vesting_balance": "0.000000 VESTS",
+                                        "reward_vesting_hive": "0.000 HIVE",
+                                        "savings_balance": "0.000 HIVE",
+                                        "savings_hbd_balance": "0.000 HBD",
+                                        "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                        "savings_hbd_seconds": "0",
+                                        "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                        "savings_withdraw_requests": 0,
+                                        "to_withdraw": 0,
+                                        "vesting_shares": "314566.314850 VESTS",
+                                        "vesting_withdraw_rate": "0.000000 VESTS",
+                                        "voting_manabar": {
+                                            "current_mana": 314566314850,
+                                            "last_update_time": 1754586540
+                                        },
+                                        "voting_power": 0,
+                                        "withdraw_routes": 0,
+                                        "withdrawn": 0,
+                                        "witnesses_voted_for": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.lookup_accounts": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Looks up accounts starting with name.",
+                "description": "Parameters:\n\n- `lower_bound_name`: A string indicating the starting account name for the query.\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to retrieve.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` — Queries up to 10 accounts that start with \"a\".",
+                "operationId": "condenser_lookup_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_lookup_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_lookup_accounts_response"
+                                },
+                                "example": [
+                                    "a--------------0"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.lookup_witness_accounts": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Looks up witness accounts starting with name.",
+                "description": "Parameters:\n\n- `lower_bound_name`: A string indicating the starting account name for the query.\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to retrieve.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` — Queries up to 10 accounts that start with \"a\".",
+                "operationId": "condenser_lookup_witness_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_lookup_witness_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_lookup_witness_accounts_response"
+                                },
+                                "example": [
+                                    "a--------------0"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "condenser_api.verify_authority": {
+            "post": {
+                "tags": [
+                    "condenser_api"
+                ],
+                "summary": "Returns true if the transaction has all of the required signatures.",
+                "operationId": "condenser_verify_authority",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_verify_authority"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_verify_authority_response"
+                                },
+                                "example": false
                             }
                         }
                     }
@@ -5456,7 +7080,7 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Finds proposals by proposal.id.",
+                "summary": "Finds proposals by `proposal.id`.",
                 "description": "Parameters:\n\n- `proposal_ids`: An array of int representing ids of proposals. Examples:\n  - `[0]` — queries the id `0` proposal.\n  - `[0,1,2]` — queries proposals with id `0,1,2`.\n",
                 "operationId": "find_proposals",
                 "requestBody": {
@@ -7543,7 +9167,7 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Returns all proposal votes, starting with the specified voter or proposal.id.",
+                "summary": "Returns all proposal votes, starting with the specified voter or `proposal.id`.",
                 "description": "Parameters:\n\n- `start`: An array whose content depends on the `order` parameter.\n  - If `order` is `by_voter_proposal`: `start` is an array with one element: voter account name string (e.g., `[\"alice\"]`).\n  - If `order` is `by_proposal_voter`: `start` is an array with one element: proposal id (integer) (e.g., `[10]`).\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return.\n\n- `order`: A string indicating the sorting order. Possible values:\n  - `by_voter_proposal` — order by voter for each proposal.\n  - `by_proposal_voter` — order by proposal id.\n\n- `order_direction`: A string determining the sort direction:\n  - `ascending`\n  - `descending`\n\n- `status`: A string filter for proposal status:\n  - `all`\n  - `inactive`\n  - `active`\n  - `expired`\n  - `votable`\n\nExamples:\n\n- `start = [\"alice\"]`, `limit = 10`, `order = \"by_voter_proposal\"`, `order_direction = \"ascending\"`, `status = \"active\"` — list 10 proposals with active status, ordered by voter ascending.\n\n- `start = [10]`, `limit = 1000`, `order = \"by_proposal_voter\"`, `order_direction = \"ascending\"`, `status = \"votable\"` — list 1000 votes on proposal 10, ordered by proposal id ascending.\n",
                 "operationId": "list_proposal_votes",
                 "requestBody": {
@@ -9990,7 +11614,7 @@
                     }
                 ]
             },
-            "account_condenser_api": {
+            "account_extended_condenser_api": {
                 "allOf": [
                     {
                         "$ref": "#/components/schemas/account_template"
@@ -10160,6 +11784,88 @@
                     }
                 ]
             },
+            "account_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/account_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "balance": {
+                                "type": "string",
+                                "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_balance": {
+                                "type": "string",
+                                "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "hbd_balance": {
+                                "type": "string",
+                                "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "savings_hbd_balance": {
+                                "type": "string",
+                                "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hbd_balance": {
+                                "type": "string",
+                                "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_hive_balance": {
+                                "type": "string",
+                                "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_balance": {
+                                "type": "string",
+                                "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "reward_vesting_hive": {
+                                "type": "string",
+                                "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_shares": {
+                                "type": "string",
+                                "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "delegated_vesting_shares": {
+                                "type": "string",
+                                "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "received_vesting_shares": {
+                                "type": "string",
+                                "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "vesting_withdraw_rate": {
+                                "type": "string",
+                                "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "post_voting_power": {
+                                "type": "string",
+                                "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                            }
+                        },
+                        "required": [
+                            "balance",
+                            "savings_balance",
+                            "hbd_balance",
+                            "savings_hbd_balance",
+                            "reward_hbd_balance",
+                            "reward_hive_balance",
+                            "reward_vesting_balance",
+                            "reward_vesting_hive",
+                            "vesting_shares",
+                            "delegated_vesting_shares",
+                            "received_vesting_shares",
+                            "vesting_withdraw_rate",
+                            "post_voting_power"
+                        ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/account_optional"
+                    }
+                ]
+            },
             "account_history_array": {
                 "type": "array",
                 "items": {
@@ -10284,19 +11990,19 @@
                         }
                     },
                     "max_pool_size": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 157691079
                     },
                     "min_decay": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 0
                     },
                     "pool_eq": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 157691079
                     },
                     "resource_unit": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 10000
                     }
                 },
@@ -10598,7 +12304,7 @@
                     ]
                 }
             },
-            "bids_and_asks": {
+            "bids_and_asks_template": {
                 "type": "object",
                 "properties": {
                     "created": {
@@ -10617,9 +12323,6 @@
                         "example": 97538,
                         "description": "The amount of HIVE in the order."
                     },
-                    "order_price": {
-                        "$ref": "#/components/schemas/base_and_quote"
-                    },
                     "real_price": {
                         "type": "string",
                         "example": "0.00000000000000000"
@@ -10629,8 +12332,43 @@
                     "created",
                     "hbd",
                     "hive",
-                    "order_price",
                     "real_price"
+                ]
+            },
+            "bids_and_asks_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/bids_and_asks_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "order_price": {
+                                "$ref": "#/components/schemas/base_and_quote"
+                            }
+                        },
+                        "required": [
+                            "order_price"
+                        ]
+                    }
+                ]
+            },
+            "bids_and_asks_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/bids_and_asks_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "order_price": {
+                                "$ref": "#/components/schemas/base_and_quote_condenser_api"
+                            }
+                        },
+                        "required": [
+                            "order_price"
+                        ]
+                    }
                 ]
             },
             "block_template": {
@@ -10849,7 +12587,7 @@
                 "type": "object",
                 "properties": {
                     "trx": {
-                        "$ref": "#/components/schemas/transaction"
+                        "$ref": "#/components/schemas/transaction_short"
                     },
                     "max_block_age": {
                         "type": "integer",
@@ -11395,7 +13133,7 @@
             "condenser_broadcast_transaction": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/transaction"
+                    "$ref": "#/components/schemas/transaction_short"
                 }
             },
             "condenser_broadcast_transaction_response": {
@@ -11404,7 +13142,7 @@
             "condenser_broadcast_transaction_synchronous": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/transaction"
+                    "$ref": "#/components/schemas/transaction_short"
                 }
             },
             "condenser_broadcast_transaction_synchronous_response": {
@@ -11519,7 +13257,7 @@
             "condenser_get_accounts_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/account_condenser_api"
+                    "$ref": "#/components/schemas/account_extended_condenser_api"
                 }
             },
             "condenser_get_active_votes": {
@@ -11923,7 +13661,6 @@
                     "$ref": "#/components/schemas/post_condenser_api"
                 }
             },
-
             "condenser_get_dynamic_global_properties_response": {
                 "$ref": "#/components/schemas/dynamic_global_properties_condenser_api"
             },
@@ -12094,6 +13831,100 @@
                     "$ref": "#/components/schemas/market_history"
                 }
             },
+            "condenser_get_market_history_buckets_response": {
+                "type": "array",
+                "items": {
+                    "type": "integer"
+                }
+            },
+            "condenser_get_open_orders": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_open_orders_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/limit_order_condenser_api"
+                }
+            },
+            "condenser_get_ops_in_block": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "example": [
+                    1,
+                    false
+                ]
+            },
+            "condenser_get_ops_in_block_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/operation_condenser_api"
+                }
+            },
+            "condenser_get_order_book": {
+                "type": "array",
+                "items": {
+                    "type": "integer",
+                    "example": 10
+                }
+            },
+            "condenser_get_order_book_response": {
+                "type": "object",
+                "properties": {
+                    "asks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/bids_and_asks_condenser_api"
+                        }
+                    },
+                    "bids": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/bids_and_asks_condenser_api"
+                        }
+                    }
+                },
+                "required": [
+                    "asks",
+                    "bids"
+                ]
+            },
+            "condenser_get_owner_history": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_owner_history_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/owner_auth_history"
+                }
+            },
+            "condenser_get_potential_signatures": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/transaction_short"
+                }
+            },
+            "condenser_get_potential_signatures_response": {
+                "type": "object"
+            },
             "condenser_get_reblogged_by": {
                 "type": "object",
                 "properties": {
@@ -12117,6 +13948,153 @@
                     "type": "string"
                 }
             },
+            "condenser_get_recent_trades": {
+                "type": "array",
+                "items": {
+                    "type": "integer",
+                    "example": 10
+                }
+            },
+            "condenser_get_recent_trades_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/trade_condenser_api"
+                }
+            },
+            "condenser_get_recovery_request": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_recovery_request_response": {
+                "anyOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "$ref": "#/components/schemas/account_recovery"
+                    }
+                ]
+            },
+            "condenser_get_required_signatures": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/components/schemas/transaction_short"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [
+                    {
+                        "ref_block_num": 0,
+                        "ref_block_prefix": 0,
+                        "expiration": "1970-01-01T00:00:00",
+                        "operations": [],
+                        "extensions": [],
+                        "signatures": []
+                    },
+                    []
+                ]
+            },
+            "condenser_get_required_signatures_response": {
+                "type": "array"
+            },
+            "condenser_get_reward_fund": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "post"
+                }
+            },
+            "condenser_get_reward_fund_response": {
+                "$ref": "#/components/schemas/reward_funds_condenser_api"
+            },
+            "condenser_get_savings_withdraw_from": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_savings_withdraw_from_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/savings_withdrawal_condenser_api"
+                }
+            },
+            "condenser_get_savings_withdraw_to": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_savings_withdraw_to_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/savings_withdrawal_condenser_api"
+                }
+            },
+            "condenser_get_ticker_response": {
+                "$ref": "#/components/schemas/ticker_condenser_api"
+            },
+            "condenser_get_trade_history": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 3,
+                "example": [
+                    "2018-01-01T00:00:00",
+                    "2018-01-02T00:00:00",
+                    10
+                ]
+            },
+            "condenser_get_trade_history_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/trade_condenser_api"
+                }
+            },
+            "condenser_get_transaction": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "6fde0190a97835ea6d9e651293e90c89911f933c"
+                }
+            },
+            "condenser_get_transaction_response": {
+                "$ref": "#/components/schemas/transaction_condenser_api"
+            },
+            "condenser_get_transaction_hex": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/transaction_short"
+                }
+            },
+            "condenser_get_transaction_hex_response": {
+                "type": "string"
+            },
             "condenser_get_trending_tags": {
                 "type": "object",
                 "properties": {
@@ -12135,6 +14113,369 @@
                 "items": {
                     "$ref": "#/components/schemas/trending_tag"
                 }
+            },
+            "condenser_get_vesting_delegations": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 3,
+                "example": [
+                    "hiveio",
+                    "null",
+                    10
+                ]
+            },
+            "condenser_get_vesting_delegations_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/vesting_delegation_condenser_api"
+                }
+            },
+            "condenser_get_volume_response": {
+                "$ref": "#/components/schemas/volume_condenser_api"
+            },
+            "condenser_get_withdraw_routes": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    "outgoing"
+                ]
+            },
+            "condenser_get_withdraw_routes_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/withdraw_vesting_routes"
+                }
+            },
+            "condenser_get_witness_by_account": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "hiveio"
+                }
+            },
+            "condenser_get_witness_by_account_response": {
+                "anyOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "$ref": "#/components/schemas/witness_condenser_api"
+                    }
+                ]
+            },
+            "condenser_get_witness_count_response": {
+                "type": "integer"
+            },
+            "condenser_get_witness_schedule_response": {
+                "$ref": "#/components/schemas/witness_schedule_condenser_api"
+            },
+            "condenser_get_witnesses": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "example": "28"
+                    }
+                }
+            },
+            "condenser_get_witnesses_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/witness_condenser_api"
+                }
+            },
+            "condenser_get_witnesses_by_vote": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    10
+                ]
+            },
+            "condenser_get_witnesses_by_vote_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/witness_condenser_api"
+                }
+            },
+            "condenser_is_known_transaction": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "example": "0000000000000000000000000000000000000000"
+                }
+            },
+            "condenser_is_known_transaction_response": {
+                "type": "boolean"
+            },
+            "condenser_list_proposal_votes": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "array"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "example": [
+                    [
+                        "alice"
+                    ],
+                    10,
+                    "by_voter_proposal",
+                    "ascending",
+                    "all"
+                ]
+            },
+            "condenser_list_proposal_votes_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/proposal_vote_condenser_api"
+                }
+            },
+            "condenser_list_proposals": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "array"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "example": [
+                    [
+                        "alice"
+                    ],
+                    10,
+                    "by_creator",
+                    "ascending",
+                    "all"
+                ]
+            },
+            "condenser_list_proposals_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/proposals_condenser_api"
+                }
+            },
+            "condenser_list_rc_accounts": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 0,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    10
+                ]
+            },
+            "condenser_list_rc_accounts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/rc_account_condenser_api"
+                }
+            },
+            "condenser_list_rc_direct_delegations": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "array"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 0,
+                "maxItems": 2,
+                "example": [
+                    [
+                        "ecency",
+                        ""
+                    ],
+                    10
+                ]
+            },
+            "condenser_list_rc_direct_delegations_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/rc_account_delegation"
+                }
+            },
+            "condenser_lookup_account_names": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "example": [
+                    [
+                        "hiveio"
+                    ],
+                    true
+                ]
+            },
+            "condenser_lookup_account_names_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_condenser_api"
+                }
+            },
+            "condenser_lookup_accounts": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    10
+                ]
+            },
+            "condenser_lookup_accounts_response": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "condenser_lookup_witness_accounts": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ]
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    10
+                ]
+            },
+            "condenser_lookup_witness_accounts_response": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "condenser_verify_authority": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/transaction_short"
+                }
+            },
+            "condenser_verify_authority_response": {
+                "type": "boolean"
+            },
+            "condenser_get_next_scheduled_hardfork_response": {
+                "type": "object",
+                "properties": {
+                    "hf_version": {
+                        "type": "string",
+                        "example": "1.27.0"
+                    },
+                    "live_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2022-10-24T12:00:00"
+                    }
+                },
+                "required": [
+                    "hf_version",
+                    "live_time"
+                ]
             },
             "context": {
                 "type": "object",
@@ -13489,7 +15830,7 @@
                     "withdrawals": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/savings_withdrawal"
+                            "$ref": "#/components/schemas/savings_withdrawal_default"
                         }
                     }
                 },
@@ -13543,7 +15884,7 @@
                     "delegations": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/vesting_delegation"
+                            "$ref": "#/components/schemas/vesting_delegation_default"
                         }
                     }
                 },
@@ -13641,7 +15982,7 @@
                     "witnesses": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/witness"
+                            "$ref": "#/components/schemas/witness_default"
                         }
                     }
                 },
@@ -15642,13 +17983,13 @@
                     "asks": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/bids_and_asks"
+                            "$ref": "#/components/schemas/bids_and_asks_default"
                         }
                     },
                     "bids": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/bids_and_asks"
+                            "$ref": "#/components/schemas/bids_and_asks_default"
                         }
                     }
                 },
@@ -15746,7 +18087,7 @@
                 "type": "object",
                 "properties": {
                     "trx": {
-                        "$ref": "#/components/schemas/transaction"
+                        "$ref": "#/components/schemas/transaction_short"
                     }
                 },
                 "required": [
@@ -15901,7 +18242,7 @@
                 "type": "object",
                 "properties": {
                     "trx": {
-                        "$ref": "#/components/schemas/transaction"
+                        "$ref": "#/components/schemas/transaction_short"
                     }
                 },
                 "required": [
@@ -15914,7 +18255,7 @@
                     "funds": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/reward_funds"
+                            "$ref": "#/components/schemas/reward_funds_default"
                         }
                     }
                 },
@@ -15947,7 +18288,7 @@
                 "type": "object",
                 "properties": {
                     "trx": {
-                        "$ref": "#/components/schemas/transaction"
+                        "$ref": "#/components/schemas/transaction_short"
                     }
                 },
                 "required": [
@@ -16032,7 +18373,7 @@
                 ]
             },
             "get_witness_schedule_response": {
-                "$ref": "#/components/schemas/witness_schedule"
+                "$ref": "#/components/schemas/witness_schedule_default"
             },
             "hbd_conversion": {
                 "type": "object",
@@ -16126,6 +18467,19 @@
                 "minItems": 5,
                 "maxItems": 5
             },
+            "limit_order_optional": {
+                "type": "object",
+                "properties": {
+                    "rewarded": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "real_price": {
+                        "type": "string",
+                        "example": "0.20930232558139536"
+                    }
+                }
+            },
             "limit_order_template": {
                 "type": "object",
                 "properties": {
@@ -16187,6 +18541,9 @@
                         "required": [
                             "sell_price"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/limit_order_optional"
                     }
                 ]
             },
@@ -16207,6 +18564,9 @@
                         "required": [
                             "sell_price"
                         ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/limit_order_optional"
                     }
                 ]
             },
@@ -16516,7 +18876,7 @@
                     "proposal_votes": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/proposal_vote"
+                            "$ref": "#/components/schemas/proposal_vote_default"
                         }
                     }
                 },
@@ -16579,7 +18939,7 @@
                     "withdrawals": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/savings_withdrawal"
+                            "$ref": "#/components/schemas/savings_withdrawal_default"
                         }
                     }
                 },
@@ -16613,7 +18973,7 @@
                     "delegations": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/vesting_delegation"
+                            "$ref": "#/components/schemas/vesting_delegation_default"
                         }
                     }
                 },
@@ -16681,7 +19041,7 @@
                     "witnesses": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/witness"
+                            "$ref": "#/components/schemas/witness_default"
                         }
                     }
                 },
@@ -17776,7 +20136,7 @@
                     "stats"
                 ]
             },
-            "proposal_vote": {
+            "proposal_vote_template": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -17787,15 +20147,47 @@
                         "type": "string",
                         "example": "charlie",
                         "description": "The name of the account that voted on the proposal."
-                    },
-                    "proposal": {
-                        "$ref": "#/components/schemas/proposals_default"
                     }
                 },
                 "required": [
                     "id",
-                    "voter",
-                    "proposal"
+                    "voter"
+                ]
+            },
+            "proposal_vote_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/proposal_vote_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "proposal": {
+                                "$ref": "#/components/schemas/proposals_default"
+                            }
+                        },
+                        "required": [
+                            "proposal"
+                        ]
+                    }
+                ]
+            },
+            "proposal_vote_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/proposal_vote_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "proposal": {
+                                "$ref": "#/components/schemas/proposals_condenser_api"
+                            }
+                        },
+                        "required": [
+                            "proposal"
+                        ]
+                    }
                 ]
             },
             "proposals_template": {
@@ -17984,6 +20376,25 @@
                     }
                 ]
             },
+            "rc_account_delegation": {
+                "type": "object",
+                "properties": {
+                    "delegated_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "from": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "delegated_rc",
+                    "from",
+                    "to"
+                ]
+            },
             "recurrent_transfer_template": {
                 "type": "object",
                 "properties": {
@@ -18077,7 +20488,7 @@
                     }
                 ]
             },
-            "reward_funds": {
+            "reward_funds_template": {
                 "type": "object",
                 "properties": {
                     "author_reward_curve": {
@@ -18119,9 +20530,6 @@
                     "recent_claims": {
                         "$ref": "#/components/schemas/hive_int",
                         "example": "711345102753889024"
-                    },
-                    "reward_balance": {
-                        "$ref": "#/components/schemas/balance"
                     }
                 },
                 "required": [
@@ -18133,17 +20541,48 @@
                     "name",
                     "percent_content_rewards",
                     "percent_curation_rewards",
-                    "recent_claims",
-                    "reward_balance"
+                    "recent_claims"
                 ]
             },
-            "savings_withdrawal": {
+            "reward_funds_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/reward_funds_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "reward_balance": {
+                                "$ref": "#/components/schemas/balance"
+                            }
+                        },
+                        "required": [
+                            "reward_balance"
+                        ]
+                    }
+                ]
+            },
+            "reward_funds_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/reward_funds_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "reward_balance": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "reward_balance"
+                        ]
+                    }
+                ]
+            },
+            "savings_withdrawal_template": {
                 "type": "object",
                 "properties": {
-                    "amount": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The amount of the withdrawal."
-                    },
                     "complete": {
                         "type": "string",
                         "format": "date-time",
@@ -18177,13 +20616,50 @@
                     }
                 },
                 "required": [
-                    "amount",
                     "complete",
                     "from",
                     "id",
                     "memo",
                     "request_id",
                     "to"
+                ]
+            },
+            "savings_withdrawal_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/savings_withdrawal_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The amount of the withdrawal."
+                            }
+                        },
+                        "required": [
+                            "amount"
+                        ]
+                    }
+                ]
+            },
+            "savings_withdrawal_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/savings_withdrawal_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "type": "string",
+                                "description": "The amount of the withdrawal."
+                            }
+                        },
+                        "required": [
+                            "amount"
+                        ]
+                    }
                 ]
             },
             "start_limit": {
@@ -18374,78 +20850,73 @@
                 "minItems": 3,
                 "maxItems": 3
             },
-            "transaction": {
+            "trade_template": {
                 "type": "object",
                 "properties": {
-                    "ref_block_num": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "ref_block_prefix": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "expiration": {
+                    "date": {
                         "type": "string",
-                        "format": "date-time",
-                        "example": "1970-01-01T00:00:00"
+                        "format": "date-time"
                     },
-                    "operations": {
-                        "$ref": "#/components/schemas/array_of_operations",
-                        "example": []
+                    "taker": {
+                        "type": "string"
                     },
-                    "extensions": {
-                        "$ref": "#/components/schemas/extensions",
-                        "example": []
-                    },
-                    "signatures": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": []
+                    "maker": {
+                        "type": "string"
                     }
                 },
                 "required": [
-                    "ref_block_num",
-                    "ref_block_prefix",
-                    "expiration",
-                    "operations",
-                    "extensions",
-                    "signatures"
+                    "date",
+                    "taker",
+                    "maker"
                 ]
             },
-            "transaction_account_history": {
+            "trade_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/trade_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "current_pays": {
+                                "$ref": "#/components/schemas/balance"
+                            },
+                            "open_pays": {
+                                "$ref": "#/components/schemas/balance"
+                            }
+                        },
+                        "required": [
+                            "current_pays",
+                            "open_pays"
+                        ]
+                    }
+                ]
+            },
+            "trade_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/trade_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "current_pays": {
+                                "type": "string"
+                            },
+                            "open_pays": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "current_pays",
+                            "open_pays"
+                        ]
+                    }
+                ]
+            },
+            "transaction_extended": {
                 "type": "object",
                 "properties": {
-                    "ref_block_num": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "ref_block_prefix": {
-                        "type": "integer",
-                        "example": 0
-                    },
-                    "expiration": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "1970-01-01T00:00:00"
-                    },
-                    "operations": {
-                        "$ref": "#/components/schemas/array_of_operations",
-                        "example": []
-                    },
-                    "extensions": {
-                        "$ref": "#/components/schemas/extensions",
-                        "example": []
-                    },
-                    "signatures": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": []
-                    },
                     "block_num": {
                         "type": "integer",
                         "example": 21401130
@@ -18462,15 +20933,154 @@
                     }
                 },
                 "required": [
-                    "ref_block_num",
-                    "ref_block_prefix",
-                    "expiration",
-                    "operations",
-                    "extensions",
-                    "signatures",
                     "block_num",
                     "transaction_id",
                     "transaction_num"
+                ]
+            },
+            "transaction_template": {
+                "type": "object",
+                "properties": {
+                    "ref_block_num": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "ref_block_prefix": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "expiration": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    },
+                    "extensions": {
+                        "$ref": "#/components/schemas/extensions",
+                        "example": []
+                    },
+                    "signatures": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": []
+                    }
+                },
+                "required": [
+                    "ref_block_num",
+                    "ref_block_prefix",
+                    "expiration",
+                    "extensions",
+                    "signatures"
+                ]
+            },
+            "transaction_account_history": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/transaction_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "operations": {
+                                "$ref": "#/components/schemas/array_of_operations",
+                                "example": []
+                            }
+                        },
+                        "required": [
+                            "operations"
+                        ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/transaction_extended"
+                    }
+                ]
+            },
+            "transaction_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/transaction_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "operations": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/operation_body_condenser_api"
+                                },
+                                "example": []
+                            }
+                        },
+                        "required": [
+                            "operations"
+                        ]
+                    },
+                    {
+                        "$ref": "#/components/schemas/transaction_extended"
+                    }
+                ]
+            },
+            "transaction_short": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/transaction_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "operations": {
+                                "$ref": "#/components/schemas/array_of_operations",
+                                "example": []
+                            }
+                        },
+                        "required": [
+                            "operations"
+                        ]
+                    }
+                ]
+            },
+            "ticker_template": {
+                "type": "object",
+                "properties": {
+                    "highest_bid": {
+                        "type": "string"
+                    },
+                    "latest": {
+                        "type": "string"
+                    },
+                    "lowest_ask": {
+                        "type": "string"
+                    },
+                    "percent_change": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "highest_bid",
+                    "latest",
+                    "lowest_ask",
+                    "percent_change"
+                ]
+            },
+            "ticker_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ticker_template"
+                    },
+                    {
+                        "$ref": "#/components/schemas/volume_default"
+                    }
+                ]
+            },
+            "ticker_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ticker_template"
+                    },
+                    {
+                        "$ref": "#/components/schemas/volume_condenser_api"
+                    }
                 ]
             },
             "trending_tag": {
@@ -18575,7 +21185,7 @@
                 "type": "object",
                 "properties": {
                     "trx": {
-                        "$ref": "#/components/schemas/transaction"
+                        "$ref": "#/components/schemas/transaction_short"
                     },
                     "pack": {
                         "type": "string",
@@ -18669,7 +21279,7 @@
                     "valid"
                 ]
             },
-            "vesting_delegation": {
+            "vesting_delegation_template": {
                 "type": "object",
                 "properties": {
                     "delegator": {
@@ -18691,18 +21301,51 @@
                         "type": "string",
                         "format": "date-time",
                         "example": "2024-03-07T15:35:00"
-                    },
-                    "vesting_shares": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The amount of vesting shares delegated."
                     }
                 },
                 "required": [
                     "delegator",
                     "delegatee",
                     "id",
-                    "min_delegation_time",
-                    "vesting_shares"
+                    "min_delegation_time"
+                ]
+            },
+            "vesting_delegation_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/vesting_delegation_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "vesting_shares": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The amount of vesting shares delegated."
+                            }
+                        },
+                        "required": [
+                            "vesting_shares"
+                        ]
+                    }
+                ]
+            },
+            "vesting_delegation_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/vesting_delegation_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "vesting_shares": {
+                                "type": "string",
+                                "description": "The amount of vesting shares delegated."
+                            }
+                        },
+                        "required": [
+                            "vesting_shares"
+                        ]
+                    }
                 ]
             },
             "vesting_delegation_expirations_template": {
@@ -18768,6 +21411,36 @@
                     }
                 ]
             },
+            "volume_default": {
+                "type": "object",
+                "properties": {
+                    "hive_volume": {
+                        "$ref": "#/components/schemas/balance"
+                    },
+                    "hbd_volume": {
+                        "$ref": "#/components/schemas/balance"
+                    }
+                },
+                "required": [
+                    "hive_volume",
+                    "hbd_volume"
+                ]
+            },
+            "volume_condenser_api": {
+                "type": "object",
+                "properties": {
+                    "hive_volume": {
+                        "type": "string"
+                    },
+                    "hbd_volume": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "hive_volume",
+                    "hbd_volume"
+                ]
+            },
             "voting_manabar": {
                 "type": "object",
                 "properties": {
@@ -18818,7 +21491,7 @@
                     "id"
                 ]
             },
-            "witness": {
+            "witness_template": {
                 "type": "object",
                 "properties": {
                     "available_witness_account_subsidies": {
@@ -18838,10 +21511,6 @@
                     "hardfork_version_vote": {
                         "type": "string",
                         "description": "The version of the hardfork that was voted for."
-                    },
-                    "hbd_exchange_rate": {
-                        "$ref": "#/components/schemas/base_and_quote",
-                        "description": "The HBD exchange rate."
                     },
                     "id": {
                         "type": "integer",
@@ -18871,9 +21540,6 @@
                     "pow_worker": {
                         "$ref": "#/components/schemas/hive_int",
                         "description": "The proof-of-work worker of the witness."
-                    },
-                    "props": {
-                        "$ref": "#/components/schemas/witness_props"
                     },
                     "running_version": {
                         "type": "string",
@@ -18908,7 +21574,6 @@
                     "created",
                     "hardfork_time_vote",
                     "hardfork_version_vote",
-                    "hbd_exchange_rate",
                     "id",
                     "last_aslot",
                     "last_confirmed_block_num",
@@ -18916,7 +21581,6 @@
                     "last_work",
                     "owner",
                     "pow_worker",
-                    "props",
                     "running_version",
                     "signing_key",
                     "total_missed",
@@ -18927,13 +21591,55 @@
                     "votes"
                 ]
             },
-            "witness_props": {
+            "witness_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "props": {
+                                "$ref": "#/components/schemas/witness_props_default"
+                            },
+                            "hbd_exchange_rate": {
+                                "$ref": "#/components/schemas/base_and_quote",
+                                "description": "The HBD exchange rate."
+                            }
+                        },
+                        "required": [
+                            "props",
+                            "hbd_exchange_rate"
+                        ]
+                    }
+                ]
+            },
+            "witness_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "props": {
+                                "$ref": "#/components/schemas/witness_props_condenser_api"
+                            },
+                            "hbd_exchange_rate": {
+                                "$ref": "#/components/schemas/base_and_quote_condenser_api",
+                                "description": "The HBD exchange rate."
+                            }
+                        },
+                        "required": [
+                            "props",
+                            "hbd_exchange_rate"
+                        ]
+                    }
+                ]
+            },
+            "witness_props_template": {
                 "type": "object",
                 "properties": {
-                    "account_creation_fee": {
-                        "$ref": "#/components/schemas/balance",
-                        "description": "The fee for creating an account."
-                    },
                     "account_subsidy_budget": {
                         "type": "integer",
                         "description": "The budget for account subsidies."
@@ -18952,14 +21658,51 @@
                     }
                 },
                 "required": [
-                    "account_creation_fee",
                     "account_subsidy_budget",
                     "account_subsidy_decay",
                     "hbd_interest_rate",
                     "maximum_block_size"
                 ]
             },
-            "witness_schedule": {
+            "witness_props_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_props_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account_creation_fee": {
+                                "$ref": "#/components/schemas/balance",
+                                "description": "The fee for creating an account."
+                            }
+                        },
+                        "required": [
+                            "account_creation_fee"
+                        ]
+                    }
+                ]
+            },
+            "witness_props_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_props_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "account_creation_fee": {
+                                "type": "string",
+                                "description": "The fee for creating an account."
+                            }
+                        },
+                        "required": [
+                            "account_creation_fee"
+                        ]
+                    }
+                ]
+            },
+            "witness_schedule_template": {
                 "type": "object",
                 "properties": {
                     "account_subsidy_rd": {
@@ -19010,9 +21753,6 @@
                         "type": "integer",
                         "example": 20
                     },
-                    "median_props": {
-                        "$ref": "#/components/schemas/witness_props"
-                    },
                     "min_witness_account_subsidy_decay": {
                         "$ref": "#/components/schemas/hive_int",
                         "example": 0
@@ -19050,13 +21790,48 @@
                     "max_miner_witnesses",
                     "max_runner_witnesses",
                     "max_voted_witnesses",
-                    "median_props",
                     "min_witness_account_subsidy_decay",
                     "miner_weight",
                     "next_shuffle_block_num",
                     "num_scheduled_witnesses",
                     "timeshare_weight",
                     "witness_pay_normalization_factor"
+                ]
+            },
+            "witness_schedule_default": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_schedule_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "median_props": {
+                                "$ref": "#/components/schemas/witness_props_default"
+                            }
+                        },
+                        "required": [
+                            "median_props"
+                        ]
+                    }
+                ]
+            },
+            "witness_schedule_condenser_api": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_schedule_template"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "median_props": {
+                                "$ref": "#/components/schemas/witness_props_condenser_api"
+                            }
+                        },
+                        "required": [
+                            "median_props"
+                        ]
+                    }
                 ]
             },
             "witness_vote": {
