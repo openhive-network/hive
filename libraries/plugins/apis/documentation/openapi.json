@@ -10191,40 +10191,17 @@
                 }
             },
             "condenser_get_account_reputations": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account_lower_bound": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            }
-                        }
+                "type": "object",
+                "properties": {
+                    "account_lower_bound": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                }
-                            ]
-                        },
-                        "minItems": 0,
-                        "maxItems": 2,
-                        "example": [
-                            "hiveio",
-                            10
-                        ]
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
                     }
-                ]
+                }
             },
             "condenser_get_account_reputations_response": {
                 "type": "array",
@@ -10249,40 +10226,24 @@
                 }
             },
             "condenser_get_active_votes": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account",
-                            "permlink"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "minItems": 2,
-                        "maxItems": 3,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections"
-                        ]
+                    "permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account",
+                    "permlink"
                 ]
             },
             "condenser_get_active_votes_response": {
@@ -10322,51 +10283,27 @@
                 "$ref": "#/components/schemas/block_header"
             },
             "condenser_get_blog": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "start_entry_id": {
-                                "type": "integer",
-                                "example": 0
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 50
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 4,
-                        "example": [
-                            "hiveio",
-                            0,
-                            50
-                        ]
+                    "start_entry_id": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 50
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "condenser_get_blog_response": {
@@ -10376,51 +10313,27 @@
                 }
             },
             "condenser_get_blog_entries": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "start_entry_id": {
-                                "type": "integer",
-                                "example": 0
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 50
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 4,
-                        "example": [
-                            "hiveio",
-                            0,
-                            50
-                        ]
+                    "start_entry_id": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 50
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "condenser_get_blog_entries_response": {
@@ -10450,73 +10363,33 @@
                 }
             },
             "condenser_get_discussions_by": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "start_author": {
-                                "type": "string",
-                                "example": "alice"
-                            },
-                            "start_permlink": {
-                                "type": "string",
-                                "example": "test-post"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            },
-                            "tag": {
-                                "type": "string",
-                                "example": "hive"
-                            },
-                            "truncate_body": {
-                                "type": "integer",
-                                "example": 100
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        }
+                "type": "object",
+                "properties": {
+                    "start_author": {
+                        "type": "string",
+                        "example": "alice"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "start_author": {
-                                    "type": "string",
-                                    "example": "alice"
-                                },
-                                "start_permlink": {
-                                    "type": "string",
-                                    "example": "test-post"
-                                },
-                                "limit": {
-                                    "type": "integer",
-                                    "example": 10
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "example": "hive"
-                                },
-                                "truncate_body": {
-                                    "type": "integer",
-                                    "example": 100
-                                },
-                                "observer": {
-                                    "type": "string",
-                                    "example": "bob"
-                                }
-                            },
-                            "example": {
-                                "tag": "hive",
-                                "limit": 10
-                            }
-                        }
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "test-post"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "tag": {
+                        "type": "string",
+                        "example": "hive"
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
-                ]
+                }
             },
             "condenser_get_config": {
                 "type": "array",
@@ -10600,80 +10473,48 @@
                 ]
             },
             "condenser_get_content": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account",
-                            "permlink"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "minItems": 2,
-                        "maxItems": 3,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections"
-                        ]
+                    "permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account",
+                    "permlink"
                 ]
             },
             "condenser_get_content_response": {
                 "$ref": "#/components/schemas/post_default"
             },
             "condenser_get_content_replies": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account",
-                            "permlink"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "minItems": 2,
-                        "maxItems": 3,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections"
-                        ]
+                    "permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account",
+                    "permlink"
                 ]
             },
             "condenser_get_content_replies_response": {
@@ -10703,174 +10544,96 @@
                 "$ref": "#/components/schemas/base_and_quote_condenser_api"
             },
             "condenser_get_discussions_by_blog_or_feed": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "tag": {
-                                "type": "string",
-                                "example": "steemit"
-                            },
-                            "start_author": {
-                                "type": "string",
-                                "example": "steem"
-                            },
-                            "start_permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            },
-                            "truncate_body": {
-                                "type": "integer",
-                                "example": 0
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "tag"
-                        ]
+                "type": "object",
+                "properties": {
+                    "tag": {
+                        "type": "string",
+                        "example": "steemit"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 6,
-                        "example": [
-                            "steemit",
-                            "steem",
-                            "around-the-hive-reflections",
-                            10
-                        ]
+                    "start_author": {
+                        "type": "string",
+                        "example": "steem"
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "tag"
                 ]
             },
             "condenser_get_discussions_by_author_before_date": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "start_permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "before_date": {
-                                "type": "string",
-                                "format": "date-time",
-                                "example": "2016-04-19T22:49:43"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            },
-                            "truncate_body": {
-                                "type": "integer",
-                                "example": 0
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "string",
-                                    "format": "date-time"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 6,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections",
-                            "2016-04-19T22:49:43",
-                            10
-                        ]
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "before_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-04-19T22:49:43"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "condenser_get_discussions_by_comments": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "start_author": {
-                                "type": "string",
-                                "example": "steem"
-                            },
-                            "start_permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            },
-                            "truncate_body": {
-                                "type": "integer",
-                                "example": 0
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "bob"
-                            }
-                        },
-                        "required": [
-                            "start_author"
-                        ]
+                "type": "object",
+                "properties": {
+                    "start_author": {
+                        "type": "string",
+                        "example": "steem"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 5,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections",
-                            10
-                        ]
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
                     }
+                },
+                "required": [
+                    "start_author"
                 ]
             },
             "condenser_get_discussions_by_response": {
@@ -10949,86 +10712,47 @@
                 "$ref": "#/components/schemas/feed_history_condenser_api"
             },
             "condenser_get_follow_count": {
-                "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "example": "hiveio"
-                        }
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "condenser_get_follow_count_response": {
                 "$ref": "#/components/schemas/follow_count"
             },
             "condenser_get_followers_and_following": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "start": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "example": null
-                            },
-                            "follow_type": {
-                                "type": "string",
-                                "example": "blog",
-                                "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10,
-                                "description": "Maximum number of results to return"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 4,
-                        "example": [
-                            "hiveio",
-                            null,
-                            "blog",
-                            10
-                        ]
+                    "start": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": null
+                    },
+                    "follow_type": {
+                        "type": "string",
+                        "example": "blog",
+                        "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "Maximum number of results to return"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "condenser_get_followers_response": {
@@ -11101,36 +10825,20 @@
                 }
             },
             "condenser_get_reblogged_by": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "author": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            }
-                        },
-                        "required": [
-                            "author",
-                            "permlink"
-                        ]
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "minItems": 2,
-                        "maxItems": 2,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections"
-                        ]
+                    "permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
                     }
+                },
+                "required": [
+                    "author",
+                    "permlink"
                 ]
             },
             "condenser_get_reblogged_by_response": {
@@ -11140,37 +10848,17 @@
                 }
             },
             "condenser_get_trending_tags": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "start_tag": {
-                                "type": "string",
-                                "example": "hive"
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10
-                            }
-                        }
+                "type": "object",
+                "properties": {
+                    "start_tag": {
+                        "type": "string",
+                        "example": "hive"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        },
-                        "minItems": 0,
-                        "maxItems": 2,
-                        "example": []
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
                     }
-                ]
+                }
             },
             "condenser_get_trending_tags_response": {
                 "type": "array",
@@ -12754,60 +12442,32 @@
                 ]
             },
             "follow_get_followers_and_following": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "start": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "example": null
-                            },
-                            "type": {
-                                "type": "string",
-                                "example": "blog",
-                                "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "example": 10,
-                                "description": "Maximum number of results to return"
-                            }
-                        },
-                        "required": [
-                            "account"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ]
-                        },
-                        "minItems": 1,
-                        "maxItems": 4,
-                        "example": [
-                            "hiveio",
-                            null,
-                            "blog",
-                            10
-                        ]
+                    "start": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": null
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "blog",
+                        "description": "Type of follow relationship, e.g., 'blog' or 'ignore'."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "Maximum number of results to return"
                     }
+                },
+                "required": [
+                    "account"
                 ]
             },
             "get_block": {
@@ -14898,39 +14558,23 @@
                 }
             },
             "get_relationship_between_accounts": {
-                 "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "account1": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "account2": {
-                                "type": "string",
-                                "example": "gtg"
-                            },
-                            "observer": {
-                                "type": "string",
-                                "example": "hiveio"
-                            }
-                        },
-                        "required": [
-                            "account1"
-                        ]
+                "type": "object",
+                "properties": {
+                    "account1": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "minItems": 1,
-                        "maxItems": 3,
-                        "example": [
-                            "alice",
-                            "bob"
-                        ]
+                    "account2": {
+                        "type": "string",
+                        "example": "gtg"
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "hiveio"
                     }
+                },
+                "required": [
+                    "account1"
                 ]
             },
             "get_relationship_between_accounts_response": {
