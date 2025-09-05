@@ -2115,7 +2115,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_account_count"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -2475,7 +2475,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_active_witnesses"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -2752,7 +2752,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_chain_properties"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -2915,7 +2915,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_config"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -3428,7 +3428,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_current_median_history_price"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -4114,7 +4114,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_dynamic_global_properties"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -4263,7 +4263,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_feed_history"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -4456,7 +4456,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_hardfork_version"
+                                "$ref": "#/components/schemas/empty_array"
                             }
                         }
                     },
@@ -11455,10 +11455,6 @@
                     "$ref": "#/components/schemas/recurrent_transfer_condenser_api"
                 }
             },
-            "condenser_get_account_count": {
-                "type": "array",
-                "example": []
-            },
             "condenser_get_account_count_response": {
                 "type": "integer",
                 "example": 123456
@@ -11553,10 +11549,6 @@
                     "$ref": "#/components/schemas/active_votes_default"
                 }
             },
-            "condenser_get_active_witnesses": {
-                "type": "array",
-                "example": []
-            },
             "condenser_get_active_witnesses_response": {
                 "type": "array",
                 "items": {
@@ -11643,10 +11635,6 @@
                     "$ref": "#/components/schemas/blog_entries"
                 }
             },
-            "condenser_get_chain_properties": {
-                "type": "array",
-                "example": []
-            },
             "condenser_get_chain_properties_response": {
                 "$ref": "#/components/schemas/chain_properties"
             },
@@ -11691,10 +11679,6 @@
                         "example": "bob"
                     }
                 }
-            },
-            "condenser_get_config": {
-                "type": "array",
-                "example": []
             },
             "condenser_get_config_response": {
                 "allOf": [
@@ -11837,10 +11821,6 @@
                     "$ref": "#/components/schemas/conversion_request"
                 }
             },
-            "condenser_get_current_median_history_price": {
-                "type": "array",
-                "example": []
-            },
             "condenser_get_current_median_history_price_response": {
                 "$ref": "#/components/schemas/base_and_quote_condenser_api"
             },
@@ -11943,10 +11923,7 @@
                     "$ref": "#/components/schemas/post_condenser_api"
                 }
             },
-            "condenser_get_dynamic_global_properties": {
-                "type": "array",
-                "example": []
-            },
+
             "condenser_get_dynamic_global_properties_response": {
                 "$ref": "#/components/schemas/dynamic_global_properties_condenser_api"
             },
@@ -12004,10 +11981,6 @@
                 "items": {
                     "$ref": "#/components/schemas/vesting_delegation_expirations_condenser_api"
                 }
-            },
-            "condenser_get_feed_history": {
-                "type": "array",
-                "example": []
             },
             "condenser_get_feed_history_response": {
                 "$ref": "#/components/schemas/feed_history_condenser_api"
@@ -12067,10 +12040,6 @@
                 "items": {
                     "$ref": "#/components/schemas/follow_condenser_api"
                 }
-            },
-            "condenser_get_hardfork_version": {
-                "type": "array",
-                "example": []
             },
             "condenser_get_hardfork_version_response": {
                 "type": "string"
@@ -12638,6 +12607,10 @@
                         }
                     }
                 ]
+            },
+            "empty_array": {
+                "type": "array",
+                "example": []
             },
             "enum_virtual_ops": {
                 "type": "object",
@@ -13442,7 +13415,7 @@
             "find_rc_accounts": {
                 "type": "object",
                 "properties": {
-                    "keys": {
+                    "accounts": {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -13454,7 +13427,7 @@
                     }
                 },
                 "required": [
-                    "keys"
+                    "accounts"
                 ]
             },
             "find_rc_accounts_response": {
