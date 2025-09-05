@@ -16002,30 +16002,9 @@
                     "blacklists"
                 ]
             },
-            "post_optional": {
+            "post_extended": {
                 "type": "object",
                 "properties": {
-                    "reblogged_by": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [
-                            "bob",
-                            "charlie"
-                        ],
-                        "description": "An array of accounts that have reblogged the post."
-                    },
-                    "id": {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Unique identifier for the resource; appears only when post_id is absent."
-                    },
-                    "post_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Unique identifier for a post; appears only when id is absent."
-                    },
                     "author_rewards": {
                         "$ref": "#/components/schemas/hive_int",
                         "example": 10000,
@@ -16096,6 +16075,39 @@
                     "abs_rshares": {
                         "$ref": "#/components/schemas/hive_int",
                         "example": 10000
+                    }
+                },
+                "required": [
+                    "author_rewards",
+                    "max_cashout_time",
+                    "reward_weight",
+                    "root_author",
+                    "root_permlink",
+                    "allow_replies",
+                    "allow_votes",
+                    "allow_curation_rewards",
+                    "net_votes",
+                    "children_abs_rshares",
+                    "total_pending_payout_value",
+                    "total_vote_weight",
+                    "vote_rshares",
+                    "net_rshares",
+                    "abs_rshares"
+                ]
+            },
+            "post_optional": {
+                "type": "object",
+                "properties": {
+                    "reblogged_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bob",
+                            "charlie"
+                        ],
+                        "description": "An array of accounts that have reblogged the post."
                     }
                 }
             },
@@ -16278,7 +16290,23 @@
             "post_default": {
                 "allOf": [
                     {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1,
+                                "description": "Unique identifier for the resource; appears only when post_id is absent."
+                            }
+                        },
+                        "required": [
+                            "id"
+                        ]
+                    },
+                    {
                         "$ref": "#/components/schemas/post_template"
+                    },
+                    {
+                        "$ref": "#/components/schemas/post_extended"
                     },
                     {
                         "$ref": "#/components/schemas/active_votes_default_object"
@@ -16290,6 +16318,19 @@
             },
             "post_condenser_api": {
                 "allOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "post_id": {
+                                "type": "integer",
+                                "example": 1,
+                                "description": "Unique identifier for the resource; appears only when post_id is absent."
+                            }
+                        },
+                        "required": [
+                            "post_id"
+                        ]
+                    },
                     {
                         "$ref": "#/components/schemas/post_template"
                     },
